@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-guidance-framework.dev/schemas/ai-guidance-graph.schema.json",
+  "title": "AI Guidance Graph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "nodes", "resolverPrecedence"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "defaultResolution": {
+      "$ref": "#/$defs/resolution"
+    },
+    "nonSliceableInvariants": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "resolverPrecedence": {
+      "$ref": "#/$defs/stringArray"
+    },
+    "resolutionRules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "match", "resolution"],
+        "properties": {
+          "id": { "type": "string" },
+          "match": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["patterns"],
+            "properties": {
+              "patterns": { "$ref": "#/$defs/stringArray" }
+            }
+          },
+          "resolution": { "$ref": "#/$defs/resolution" }
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "label", "patterns"],
+        "properties": {
+          "id": { "type": "string" },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "product-surface",
+              "shared-contract-surface",
+              "verification-surface",
+              "governance-surface",
+              "tooling-surface",
+              "delivery-surface",
+              "shared-package",
+              "example-surface"
+            ]
+          },
+          "label": { "type": "string" },
+          "patterns": { "$ref": "#/$defs/stringArray" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "stringArray": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase", "workstream", "matchedArtifacts"],
+      "properties": {
+        "phase": { "type": "string" },
+        "workstream": { "type": "string" },
+        "matchedArtifacts": { "$ref": "#/$defs/stringArray" }
+      }
+    }
+  }
+}
+

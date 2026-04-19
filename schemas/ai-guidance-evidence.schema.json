@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-guidance-framework.dev/schemas/ai-guidance-evidence.schema.json",
+  "title": "AI Guidance Evidence Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "framework_version",
+    "run_id",
+    "timestamp",
+    "source_ref",
+    "resolved_phase",
+    "resolved_workstream",
+    "matched_artifacts",
+    "affected_nodes",
+    "affected_lanes",
+    "baseline_ci_fast_passed",
+    "recommendations",
+    "false_positive_review",
+    "promotion_candidate",
+    "override_or_bypass",
+    "files",
+    "unresolved_files",
+    "promotion_allowed",
+    "framework",
+    "adapter"
+  ],
+  "properties": {
+    "framework_version": { "type": "integer", "minimum": 1 },
+    "run_id": { "type": "string" },
+    "timestamp": { "type": "string" },
+    "source_ref": { "type": "string" },
+    "resolved_phase": { "type": "string" },
+    "resolved_workstream": { "type": "string" },
+    "matched_artifacts": { "$ref": "#/$defs/stringArray" },
+    "affected_nodes": { "$ref": "#/$defs/stringArray" },
+    "affected_lanes": { "$ref": "#/$defs/stringArray" },
+    "baseline_ci_fast_passed": { "type": ["boolean", "null"] },
+    "recommendations": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "false_positive_review": { "$ref": "#/$defs/reviewState" },
+    "promotion_candidate": { "type": "boolean" },
+    "override_or_bypass": { "type": "boolean" },
+    "owner": { "type": ["string", "null"] },
+    "files": { "$ref": "#/$defs/stringArray" },
+    "unresolved_files": { "$ref": "#/$defs/stringArray" },
+    "promotion_allowed": { "type": "boolean" },
+    "framework": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "resolver_precedence", "policy_defaults"],
+      "properties": {
+        "version": { "type": "integer", "minimum": 1 },
+        "resolver_precedence": { "$ref": "#/$defs/stringArray" },
+        "policy_defaults": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "false_positive_review",
+            "promotion_candidate",
+            "override_or_bypass"
+          ],
+          "properties": {
+            "false_positive_review": { "$ref": "#/$defs/reviewState" },
+            "promotion_candidate": { "type": "boolean" },
+            "override_or_bypass": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "kind",
+        "report_transport",
+        "default_resolution",
+        "non_sliceable_invariants",
+        "required_proof_lanes"
+      ],
+      "properties": {
+        "name": { "type": "string" },
+        "kind": { "type": "string" },
+        "report_transport": { "type": "string" },
+        "default_resolution": { "$ref": "#/$defs/resolution" },
+        "non_sliceable_invariants": { "$ref": "#/$defs/stringArray" },
+        "required_proof_lanes": { "$ref": "#/$defs/stringArray" }
+      }
+    }
+  },
+  "$defs": {
+    "stringArray": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "reviewState": {
+      "type": "string",
+      "enum": ["unknown", "accepted", "rejected"]
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase", "workstream", "matchedArtifacts"],
+      "properties": {
+        "phase": { "type": "string" },
+        "workstream": { "type": "string" },
+        "matchedArtifacts": { "$ref": "#/$defs/stringArray" }
+      }
+    }
+  }
+}
+

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-guidance-framework.dev/schemas/ai-guidance-policy-pack.schema.json",
+  "title": "AI Guidance Policy Pack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "name", "rules"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "classification", "stage", "message"],
+        "properties": {
+          "id": { "type": "string" },
+          "classification": {
+            "type": "string",
+            "enum": [
+              "hard-invariant",
+              "promotable-policy",
+              "advisory-pattern",
+              "brittle-implementation-check"
+            ]
+          },
+          "stage": {
+            "type": "string",
+            "enum": ["recommend", "warn", "block"]
+          },
+          "message": { "type": "string" },
+          "owner": { "type": ["string", "null"] },
+          "rollback_switch": { "type": ["string", "null"] },
+          "match": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  }
+}
+

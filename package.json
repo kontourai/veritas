@@ -1,0 +1,10 @@
+{
+  "name": "ai-guidance-framework",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "verify": "node scripts/verify.mjs",
+    "test": "node --test tests/framework.test.mjs"
+  }
+}
+

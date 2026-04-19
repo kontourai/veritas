@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "name": "work-agent-convergence",
+  "description": "Initial extraction of convergence-style rules from work-agent into a policy-pack vocabulary.",
+  "rules": [
+    {
+      "id": "required-repo-artifacts",
+      "classification": "hard-invariant",
+      "stage": "block",
+      "message": "Required repository governance and CI artifacts must exist.",
+      "owner": "repo-core",
+      "rollback_switch": null,
+      "match": {
+        "artifacts": [
+          ".github/workflows/ci.yml",
+          ".github/workflows/ci-extended.yml",
+          ".github/pull_request_template.md",
+          "SECURITY.md"
+        ]
+      }
+    },
+    {
+      "id": "baseline-proof-lane",
+      "classification": "hard-invariant",
+      "stage": "block",
+      "message": "The primary PR workflow must execute the baseline proof lane and the connected-agents suite.",
+      "owner": "repo-core",
+      "rollback_switch": null,
+      "match": {
+        "workflow": ".github/workflows/ci.yml"
+      }
+    },
+    {
+      "id": "forbid-shared-root-imports",
+      "classification": "promotable-policy",
+      "stage": "block",
+      "message": "New code should not import from the @stallion-ai/shared root; use contracts or explicit helper subpaths.",
+      "owner": "repo-architecture",
+      "rollback_switch": "disable-shared-root-import-check",
+      "match": {
+        "pattern": "@stallion-ai/shared"
+      }
+    },
+    {
+      "id": "extracted-transport-helper-shape",
+      "classification": "brittle-implementation-check",
+      "stage": "recommend",
+      "message": "Certain files currently assert exact extracted-helper source shapes; these should be reviewed for eventual replacement with stronger semantic checks.",
+      "owner": "repo-architecture",
+      "rollback_switch": "soften-source-shape-checks",
+      "match": {
+        "files": [
+          "packages/sdk/src/query-domains/systemRuntime.ts",
+          "packages/sdk/src/query-domains/catalog.ts"
+        ]
+      }
+    }
+  ]
+}
+

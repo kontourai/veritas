@@ -1,0 +1,72 @@
+{
+  "name": "work-agent",
+  "kind": "repo-adapter",
+  "graph": {
+    "version": 1,
+    "defaultResolution": {
+      "phase": "Phase 1 (Harden & Onboard)",
+      "workstream": "Entity Hierarchy & Navigation Restructure",
+      "matchedArtifacts": ["docs/strategy/roadmap.md"]
+    },
+    "nonSliceableInvariants": [
+      "CLI/API/UI parity",
+      "SDK contract integrity",
+      "plugin/core boundary protection",
+      "mandatory CI coverage"
+    ],
+    "resolverPrecedence": [
+      "explicit roadmap task or issue reference in prompt/branch/PR title",
+      "matching initiative plan under docs/plans/**",
+      "matching local artifact under .omx/plans/**",
+      "active initiative from docs/strategy/roadmap.md",
+      "multi-workstream fallback suppresses promotion"
+    ],
+    "resolutionRules": [
+      {
+        "id": "initiative-plan",
+        "match": {
+          "patterns": ["docs/plans/"]
+        },
+        "resolution": {
+          "phase": "Phase 1 (Harden & Onboard)",
+          "workstream": "Entity Hierarchy & Navigation Restructure",
+          "matchedArtifacts": ["docs/plans/**"]
+        }
+      },
+      {
+        "id": "local-plan",
+        "match": {
+          "patterns": [".omx/plans/"]
+        },
+        "resolution": {
+          "phase": "Phase 1 (Harden & Onboard)",
+          "workstream": "Entity Hierarchy & Navigation Restructure",
+          "matchedArtifacts": [".omx/plans/**"]
+        }
+      }
+    ],
+    "nodes": [
+      { "id": "product.src-server", "kind": "product-surface", "label": "src-server", "patterns": ["src-server/"] },
+      { "id": "product.src-ui", "kind": "product-surface", "label": "src-ui", "patterns": ["src-ui/"] },
+      { "id": "package.cli", "kind": "shared-package", "label": "packages/cli", "patterns": ["packages/cli/"] },
+      { "id": "package.connect", "kind": "shared-package", "label": "packages/connect", "patterns": ["packages/connect/"] },
+      { "id": "package.contracts", "kind": "shared-contract-surface", "label": "packages/contracts", "patterns": ["packages/contracts/"] },
+      { "id": "package.sdk", "kind": "shared-contract-surface", "label": "packages/sdk", "patterns": ["packages/sdk/"] },
+      { "id": "package.shared", "kind": "shared-package", "label": "packages/shared", "patterns": ["packages/shared/"] },
+      { "id": "example.catalog", "kind": "example-surface", "label": "examples/*", "patterns": ["examples/"] },
+      { "id": "delivery.github", "kind": "delivery-surface", "label": ".github/**", "patterns": [".github/"] },
+      { "id": "tooling.scripts", "kind": "tooling-surface", "label": "scripts/**", "patterns": ["scripts/"] },
+      { "id": "governance.strategy", "kind": "governance-surface", "label": "docs/strategy/**", "patterns": ["docs/strategy/"] },
+      { "id": "governance.plans", "kind": "governance-surface", "label": "docs/plans/**", "patterns": ["docs/plans/"] },
+      { "id": "governance.local-plans", "kind": "governance-surface", "label": ".omx/plans/**", "patterns": [".omx/plans/"] },
+      { "id": "verification.tests", "kind": "verification-surface", "label": "tests/**", "patterns": ["tests/"] },
+      { "id": "governance.root-manifests", "kind": "governance-surface", "label": "root manifests", "patterns": ["package.json", "package-lock.json", "AGENTS.md", ".gitignore"] }
+    ]
+  },
+  "evidence": {
+    "artifactDir": ".omx/evidence/work-agent-pilot",
+    "requiredProofLanes": ["npm run ci:fast"],
+    "reportTransport": "github-step-summary"
+  }
+}
+

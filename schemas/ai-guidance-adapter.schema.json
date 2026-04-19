@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-guidance-framework.dev/schemas/ai-guidance-adapter.schema.json",
+  "title": "AI Guidance Adapter",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "kind", "graph", "evidence"],
+  "properties": {
+    "name": { "type": "string" },
+    "kind": {
+      "type": "string",
+      "enum": ["repo-adapter"]
+    },
+    "graph": { "$ref": "./ai-guidance-graph.schema.json" },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifactDir", "requiredProofLanes", "reportTransport"],
+      "properties": {
+        "artifactDir": { "type": "string" },
+        "requiredProofLanes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "reportTransport": { "type": "string" }
+      }
+    }
+  }
+}
+
