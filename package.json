@@ -1,10 +1,16 @@
 {
   "name": "ai-guidance-framework",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "bin": {
+    "ai-guidance-report": "./bin/ai-guidance-report.mjs"
+  },
   "scripts": {
     "verify": "node scripts/verify.mjs",
     "test": "node --test tests/framework.test.mjs"
   }
 }
-

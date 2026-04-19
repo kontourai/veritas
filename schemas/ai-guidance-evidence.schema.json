@@ -23,7 +23,8 @@
     "unresolved_files",
     "promotion_allowed",
     "framework",
-    "adapter"
+    "adapter",
+    "policy_pack"
   ],
   "properties": {
     "framework_version": { "type": "integer", "minimum": 1 },
@@ -89,6 +90,16 @@
         "non_sliceable_invariants": { "$ref": "#/$defs/stringArray" },
         "required_proof_lanes": { "$ref": "#/$defs/stringArray" }
       }
+    },
+    "policy_pack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "rule_count"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "integer", "minimum": 1 },
+        "rule_count": { "type": "integer", "minimum": 0 }
+      }
     }
   },
   "$defs": {
@@ -112,4 +123,3 @@
     }
   }
 }
-

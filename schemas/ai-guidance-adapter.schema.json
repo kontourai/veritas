@@ -11,6 +11,23 @@
       "type": "string",
       "enum": ["repo-adapter"]
     },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "defaultFalsePositiveReview",
+        "defaultPromotionCandidate",
+        "defaultOverrideOrBypass"
+      ],
+      "properties": {
+        "defaultFalsePositiveReview": {
+          "type": "string",
+          "enum": ["unknown", "accepted", "rejected"]
+        },
+        "defaultPromotionCandidate": { "type": "boolean" },
+        "defaultOverrideOrBypass": { "type": "boolean" }
+      }
+    },
     "graph": { "$ref": "./ai-guidance-graph.schema.json" },
     "evidence": {
       "type": "object",
@@ -27,4 +44,3 @@
     }
   }
 }
-

@@ -1,6 +1,11 @@
 {
   "name": "work-agent",
   "kind": "repo-adapter",
+  "policy": {
+    "defaultFalsePositiveReview": "unknown",
+    "defaultPromotionCandidate": false,
+    "defaultOverrideOrBypass": false
+  },
   "graph": {
     "version": 1,
     "defaultResolution": {
@@ -69,4 +74,3 @@
     "reportTransport": "github-step-summary"
   }
 }
-
