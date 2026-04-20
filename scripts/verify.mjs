@@ -76,6 +76,10 @@ assert(
   'Getting-started guide must include the shadow run command.',
 );
 assert(
+  gettingStartedGuide.includes('npm exec -- ai-guidance apply git-hook --configure-git'),
+  'Getting-started guide must include the git-hook apply command.',
+);
+assert(
   gettingStartedGuide.includes('repo-local under `.ai-guidance/evidence/`'),
   'Getting-started guide must explain repo-local evidence provenance for eval capture.',
 );
@@ -128,6 +132,10 @@ assert(
 assert(
   liveEvalGuide.includes('run `shadow run`'),
   'Live-eval guide must describe the passive shadow-run flow.',
+);
+assert(
+  liveEvalGuide.includes('tracked `.githooks/*` file'),
+  'Live-eval guide must describe tracked git-hook adapters.',
 );
 assert(
   liveEvalGuide.includes('immutable digest'),
@@ -220,6 +228,10 @@ assert(
   'Bootstrap guide must include the shadow run command.',
 );
 assert(
+  bootstrapGuide.includes('npm exec -- ai-guidance apply git-hook --configure-git'),
+  'Bootstrap guide must include the git-hook apply command.',
+);
+assert(
   bootstrapGuide.includes('reruns should use `--force`'),
   'Bootstrap guide must explain explicit overwrite for eval reruns.',
 );
@@ -266,6 +278,10 @@ assert(
   'README must describe the hook-friendly shadow flow as a current capability.',
 );
 assert(
+  rootReadme.includes('generate tracked git-hook adapters'),
+  'README must describe tracked git-hook adapters as a current capability.',
+);
+assert(
   rootReadme.includes('npm exec -- ai-guidance eval record'),
   'README must include the eval record command.',
 );
@@ -276,6 +292,10 @@ assert(
 assert(
   rootReadme.includes('npm exec -- ai-guidance shadow run'),
   'README must include the shadow run command.',
+);
+assert(
+  rootReadme.includes('npm exec -- ai-guidance apply git-hook --configure-git'),
+  'README must include the git-hook apply command.',
 );
 assert(
   rootReadme.includes('refuses to overwrite an existing eval artifact unless you pass `--force`'),

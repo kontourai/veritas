@@ -1,5 +1,6 @@
 import {
   appendFileSync,
+  chmodSync,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -1019,6 +1020,27 @@ export function buildSuggestedCiSnippet({
 `;
 }
 
+export function buildSuggestedGitHook({ hook = 'post-commit' } = {}) {
+  if (hook !== 'post-commit') {
+    throw new Error(`Unsupported git hook kind: ${hook}`);
+  }
+
+  return `#!/bin/sh
+set -eu
+
+if [ "\${AI_GUIDANCE_HOOK_SKIP:-0}" = "1" ]; then
+  exit 0
+fi
+
+if git rev-parse --verify --quiet HEAD~1 >/dev/null; then
+  npm exec -- ai-guidance shadow run --changed-from HEAD~1 --changed-to HEAD
+else
+  EMPTY_TREE="$(git hash-object -t tree /dev/null)"
+  npm exec -- ai-guidance shadow run --changed-from "$EMPTY_TREE" --changed-to HEAD
+fi
+`;
+}
+
 export function applyPackageScripts({
   rootDir,
   proofLane = 'npm test',
@@ -1091,6 +1113,56 @@ export function applyCiSnippet({
     outputPath: relativeOutputPath,
     proofLane,
     baseRef,
+  };
+}
+
+export function applyGitHook({
+  rootDir,
+  hook = 'post-commit',
+  outputPath = `.githooks/${hook}`,
+  force = false,
+  configureGit = false,
+}) {
+  const resolvedOutputPath = resolve(rootDir, outputPath);
+  const relativeOutputPath = relative(rootDir, resolvedOutputPath).replaceAll('\\', '/');
+
+  if (
+    relativeOutputPath.startsWith('..') ||
+    !relativeOutputPath.startsWith('.githooks/')
+  ) {
+    throw new Error('apply git-hook only supports writing inside .githooks/');
+  }
+
+  if (existsSync(resolvedOutputPath) && !force) {
+    throw new Error(
+      `Refusing to overwrite existing file: ${relativeOutputPath} (use --force to replace it)`,
+    );
+  }
+  if (configureGit && basename(relativeOutputPath) !== hook) {
+    throw new Error(
+      `apply git-hook with --configure-git requires the output filename to match ${hook}`,
+    );
+  }
+
+  mkdirSync(dirname(resolvedOutputPath), { recursive: true });
+  writeFileSync(resolvedOutputPath, buildSuggestedGitHook({ hook }), 'utf8');
+  chmodSync(resolvedOutputPath, 0o755);
+
+  let configuredHooksPath = null;
+  if (configureGit) {
+    configuredHooksPath = dirname(relativeOutputPath);
+    execFileSync('git', ['config', 'core.hooksPath', configuredHooksPath], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      windowsHide: true,
+    });
+  }
+
+  return {
+    rootDir,
+    hook,
+    outputPath: relativeOutputPath,
+    configuredHooksPath,
   };
 }
 
@@ -1493,6 +1565,11 @@ export function parsePrintArgs(argv) {
     if (token === '--proof-lane') {
       options.proofLane = argv[index + 1];
       index += 1;
+      continue;
+    }
+    if (token === '--hook') {
+      options.hook = argv[index + 1];
+      index += 1;
     }
   }
 
@@ -1519,8 +1596,17 @@ export function parseApplyArgs(argv) {
       index += 1;
       continue;
     }
+    if (token === '--hook') {
+      options.hook = argv[index + 1];
+      index += 1;
+      continue;
+    }
     if (token === '--force') {
       options.force = true;
+      continue;
+    }
+    if (token === '--configure-git') {
+      options.configureGit = true;
     }
   }
 
@@ -2017,6 +2103,25 @@ export function runPrintCiSnippetCli(argv = process.argv.slice(2), defaults = {}
   );
 }
 
+export function runPrintGitHookCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parsePrintArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const hook = options.hook ?? 'post-commit';
+
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        rootDir,
+        hook,
+        hookBody: buildSuggestedGitHook({ hook }),
+        suggestedHooksPath: '.githooks',
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
 export function runApplyPackageScriptsCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseApplyArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
@@ -2064,6 +2169,21 @@ export function runApplyCiSnippetCli(argv = process.argv.slice(2), defaults = {}
       2,
     )}\n`,
   );
+}
+
+export function runApplyGitHookCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseApplyArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const hook = options.hook ?? 'post-commit';
+  const result = applyGitHook({
+    rootDir,
+    hook,
+    outputPath: options.outputPath ?? `.githooks/${hook}`,
+    force: options.force ?? false,
+    configureGit: options.configureGit ?? false,
+  });
+
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
 export function runEvalRecordCli(argv = process.argv.slice(2), defaults = {}) {

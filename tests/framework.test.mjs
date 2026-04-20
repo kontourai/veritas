@@ -1,16 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
   applyCiSnippet,
+  applyGitHook,
   applyPackageScripts,
   buildEvidenceRecord,
   buildEvalDraft,
   buildEvalRecord,
+  buildSuggestedGitHook,
   buildSuggestedCiSnippet,
   buildSuggestedPackageScripts,
   classifyNodes,
@@ -1345,6 +1347,24 @@ test('print ci-snippet returns a copy-paste starter snippet', () => {
   assert.match(parsed.ciSnippet, /--changed-from <base-ref> --changed-to HEAD/);
 });
 
+test('print git-hook returns a tracked post-commit adapter', () => {
+  const hookBody = buildSuggestedGitHook({ hook: 'post-commit' });
+  assert.match(hookBody, /^#!\/bin\/sh/m);
+  assert.match(hookBody, /ai-guidance shadow run --changed-from HEAD~1 --changed-to HEAD/);
+
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-print-hook-'));
+  const stdout = execFileSync(
+    'npm',
+    ['exec', '--', 'ai-guidance', 'print', 'git-hook', '--root', rootDir],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.hook, 'post-commit');
+  assert.equal(parsed.suggestedHooksPath, '.githooks');
+  assert.match(parsed.hookBody, /AI_GUIDANCE_HOOK_SKIP/);
+});
+
 test('apply package-scripts writes the suggested guidance scripts into package.json', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-scripts-'));
   writeFileSync(
@@ -1413,6 +1433,51 @@ test('apply ci-snippet writes a stable snippet file', () => {
   assert.match(contents, /--changed-from main --changed-to HEAD/);
 });
 
+test('apply git-hook writes a tracked executable hook file', () => {
+  const rootDir = initCommittedRepo('ai-guidance-apply-hook-');
+  const result = applyGitHook({
+    rootDir,
+    hook: 'post-commit',
+  });
+  const contents = readFileSync(join(rootDir, '.githooks/post-commit'), 'utf8');
+
+  assert.equal(result.outputPath, '.githooks/post-commit');
+  assert.equal(result.hook, 'post-commit');
+  assert.match(contents, /ai-guidance shadow run --changed-from HEAD~1 --changed-to HEAD/);
+});
+
+test('apply git-hook can configure the local hooks path explicitly', () => {
+  const rootDir = initCommittedRepo('ai-guidance-apply-hook-config-');
+  const result = applyGitHook({
+    rootDir,
+    hook: 'post-commit',
+    configureGit: true,
+  });
+  const configuredHooksPath = execFileSync(
+    'git',
+    ['config', '--get', 'core.hooksPath'],
+    { cwd: rootDir, encoding: 'utf8' },
+  ).trim();
+
+  assert.equal(result.configuredHooksPath, '.githooks');
+  assert.equal(configuredHooksPath, '.githooks');
+});
+
+test('apply git-hook rejects configured installs with a non-discoverable filename', () => {
+  const rootDir = initCommittedRepo('ai-guidance-apply-hook-bad-name-');
+
+  assert.throws(
+    () =>
+      applyGitHook({
+        rootDir,
+        hook: 'post-commit',
+        outputPath: '.githooks/custom-hook',
+        configureGit: true,
+      }),
+    /requires the output filename to match post-commit/,
+  );
+});
+
 test('apply ci-snippet rejects paths outside the reviewable snippet area', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-ci-outside-'));
 
@@ -1424,6 +1489,100 @@ test('apply ci-snippet rejects paths outside the reviewable snippet area', () =>
       }),
     /only supports writing inside \.ai-guidance\/snippets\//,
   );
+});
+
+test('apply git-hook rejects unsupported hook kinds', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-hook-unsupported-'));
+
+  assert.throws(
+    () =>
+      buildSuggestedGitHook({
+        hook: 'pre-push',
+      }),
+    /Unsupported git hook kind: pre-push/,
+  );
+
+  assert.throws(
+    () =>
+      applyGitHook({
+        rootDir,
+        hook: 'pre-push',
+      }),
+    /Unsupported git hook kind: pre-push/,
+  );
+});
+
+test('generated post-commit hook runs successfully after the initial commit boundary', () => {
+  const rootDir = initCommittedRepo('ai-guidance-hook-root-commit-');
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  execFileSync('git', ['add', 'package.json'], { cwd: rootDir, encoding: 'utf8' });
+  installLocalAiGuidanceBin(rootDir);
+
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Hook Root Commit Demo',
+      '--proof-lane',
+      'node -e "process.exit(0)"',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  applyGitHook({ rootDir, hook: 'post-commit' });
+  commitAll(rootDir, 'Initial guided commit');
+
+  const stdout = execFileSync(join(rootDir, '.githooks/post-commit'), {
+    cwd: rootDir,
+    encoding: 'utf8',
+  });
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.mode, 'report-and-draft');
+  assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
+});
+
+test('generated post-commit hook runs successfully on a normal subsequent commit path', () => {
+  const rootDir = initCommittedRepo('ai-guidance-hook-followup-commit-');
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  installLocalAiGuidanceBin(rootDir);
+
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Hook Followup Commit Demo',
+      '--proof-lane',
+      'node -e "process.exit(0)"',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  applyGitHook({ rootDir, hook: 'post-commit' });
+  commitAll(rootDir, 'Initial guided commit');
+
+  writeFileSync(join(rootDir, 'README.md'), '# changed\n');
+  execFileSync('git', ['add', 'README.md'], { cwd: rootDir, encoding: 'utf8' });
+  commitAll(rootDir, 'Followup change');
+
+  const stdout = execFileSync(join(rootDir, '.githooks/post-commit'), {
+    cwd: rootDir,
+    encoding: 'utf8',
+  });
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.mode, 'report-and-draft');
+  assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
 });
 
 test('adaptive bootstrap detects a workspace-shaped repo', () => {
@@ -1625,4 +1784,16 @@ function initCommittedRepo(prefix) {
 function commitAll(rootDir, message) {
   execFileSync('git', ['add', '.'], { cwd: rootDir, encoding: 'utf8' });
   execFileSync('git', ['commit', '-m', message], { cwd: rootDir, encoding: 'utf8' });
+}
+
+function installLocalAiGuidanceBin(rootDir) {
+  const binDir = join(rootDir, 'node_modules/.bin');
+  mkdirp(binDir);
+  const wrapperPath = join(binDir, 'ai-guidance');
+  writeFileSync(
+    wrapperPath,
+    `#!/bin/sh\nexec node ${JSON.stringify(join(frameworkRootDir, 'bin/ai-guidance.mjs'))} "$@"\n`,
+    'utf8',
+  );
+  chmodSync(wrapperPath, 0o755);
 }

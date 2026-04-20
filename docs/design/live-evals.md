@@ -43,6 +43,12 @@ The first passive automation layer should still use the same primitives:
 2. let it handle proof, report, and draft creation
 3. only confirm the remaining judgment fields if you want to finish the eval immediately
 
+The first installable adapter for that layer should stay reviewable:
+
+- tracked `.githooks/*` file
+- explicit `core.hooksPath` wiring
+- no hidden global git mutation by default
+
 That capture path should enforce provenance, not merely suggest it:
 
 - repo-local evidence artifact

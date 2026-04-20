@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 import {
   runApplyCiSnippetCli,
+  runApplyGitHookCli,
   runApplyPackageScriptsCli,
   runEvalDraftCli,
   runEvalRecordCli,
   runGuidanceReportCli,
   runInitCli,
   runPrintCiSnippetCli,
+  runPrintGitHookCli,
   runPrintPackageScriptsCli,
   runShadowRunCli,
 } from '../src/index.mjs';
@@ -26,10 +28,13 @@ if (subcommand === 'init') {
     runPrintPackageScriptsCli(printArgs, { rootDir: cwd });
   } else if (kind === 'ci-snippet') {
     runPrintCiSnippetCli(printArgs, { rootDir: cwd });
+  } else if (kind === 'git-hook') {
+    runPrintGitHookCli(printArgs, { rootDir: cwd });
   } else {
     process.stderr.write(`Usage:
   ai-guidance print package-scripts [--root <path>] [--proof-lane <cmd>]
   ai-guidance print ci-snippet [--root <path>] [--proof-lane <cmd>]
+  ai-guidance print git-hook [--root <path>] [--hook post-commit]
 `);
     process.exitCode = 1;
   }
@@ -39,10 +44,13 @@ if (subcommand === 'init') {
     runApplyPackageScriptsCli(applyArgs, { rootDir: cwd });
   } else if (kind === 'ci-snippet') {
     runApplyCiSnippetCli(applyArgs, { rootDir: cwd });
+  } else if (kind === 'git-hook') {
+    runApplyGitHookCli(applyArgs, { rootDir: cwd });
   } else {
     process.stderr.write(`Usage:
   ai-guidance apply package-scripts [--root <path>] [--proof-lane <cmd>] [--force]
   ai-guidance apply ci-snippet [--root <path>] [--output <path>] [--proof-lane <cmd>] [--force]
+  ai-guidance apply git-hook [--root <path>] [--hook post-commit] [--output <path>] [--configure-git] [--force]
 `);
     process.exitCode = 1;
   }
@@ -106,8 +114,10 @@ if (subcommand === 'init') {
   ai-guidance eval record --draft <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false>
   ai-guidance print package-scripts [--root <path>] [--proof-lane <cmd>]
   ai-guidance print ci-snippet [--root <path>] [--proof-lane <cmd>]
+  ai-guidance print git-hook [--root <path>] [--hook post-commit]
   ai-guidance apply package-scripts [--root <path>] [--proof-lane <cmd>] [--force]
   ai-guidance apply ci-snippet [--root <path>] [--output <path>] [--proof-lane <cmd>] [--force]
+  ai-guidance apply git-hook [--root <path>] [--hook post-commit] [--output <path>] [--configure-git] [--force]
 `);
   process.exitCode = 1;
 }
