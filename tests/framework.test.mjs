@@ -11,11 +11,14 @@ import {
   evaluatePolicyPack,
   loadPolicyPack,
   resolveWorkstream,
+  writeBootstrapStarterKit,
 } from '../src/index.mjs';
 
 function readJson(relativePath) {
   return JSON.parse(readFileSync(new URL(relativePath, import.meta.url), 'utf8'));
 }
+
+const frameworkRootDir = fileURLToPath(new URL('..', import.meta.url));
 
 test('adapter example declares nodes and proof lanes', () => {
   const adapter = readJson('../adapters/work-agent.adapter.json');
@@ -156,6 +159,68 @@ test('guidance CLI can run with explicit adapter and policy-pack inputs', () => 
   });
 });
 
+test('init CLI writes a conservative starter kit and report CLI can use it', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-init-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}');
+
+  const initStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Demo Starter',
+      '--proof-lane',
+      'npm run test:smoke',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const initResult = JSON.parse(initStdout);
+  assert.equal(initResult.projectName, 'Demo Starter');
+  assert.equal(initResult.proofLane, 'npm run test:smoke');
+  assert.ok(
+    initResult.generatedFiles.includes('.ai-guidance/repo.adapter.json'),
+  );
+
+  const starterAdapter = readJsonFromAbsolute(
+    join(rootDir, '.ai-guidance/repo.adapter.json'),
+  );
+  const starterPolicyPack = readJsonFromAbsolute(
+    join(rootDir, '.ai-guidance/policy-packs/default.policy-pack.json'),
+  );
+  const starterTeamProfile = readJsonFromAbsolute(
+    join(rootDir, '.ai-guidance/team/default.team-profile.json'),
+  );
+
+  assert.equal(starterAdapter.name, 'demo-starter');
+  assert.equal(starterPolicyPack.name, 'demo-starter-default');
+  assert.equal(starterTeamProfile.defaults.mode, 'shadow');
+
+  const reportStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'report',
+      '--root',
+      rootDir,
+      '--run-id',
+      'bootstrap-smoke',
+      'package.json',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const reportResult = JSON.parse(reportStdout);
+  assert.equal(reportResult.run_id, 'bootstrap-smoke');
+  assert.equal(reportResult.adapter.name, 'demo-starter');
+  assert.equal(reportResult.policy_pack.name, 'demo-starter-default');
+});
+
 test('fixture adapters and evidence examples stay readable', () => {
   const docsAdapter = readJson('../adapters/demo-docs-site.adapter.json');
   assert.equal(docsAdapter.name, 'demo-docs-site');
@@ -191,3 +256,21 @@ test('live-eval fixtures explain outcome measurement and team tuning', () => {
     true,
   );
 });
+
+test('starter kit helper refuses to overwrite without force', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-init-overwrite-'));
+  writeBootstrapStarterKit({ rootDir, projectName: 'Overwrite Demo' });
+
+  assert.throws(
+    () =>
+      writeBootstrapStarterKit({
+        rootDir,
+        projectName: 'Overwrite Demo',
+      }),
+    /Refusing to overwrite existing file/,
+  );
+});
+
+function readJsonFromAbsolute(path) {
+  return JSON.parse(readFileSync(path, 'utf8'));
+}

@@ -54,6 +54,16 @@ npm test
 
 If those pass, move straight into adapter + policy-pack setup.
 
+## Bootstrap The Repo
+
+The fastest way to start is:
+
+```bash
+npm exec -- ai-guidance init --proof-lane "npm test"
+```
+
+That gives you a starter adapter, policy pack, team profile, and local README under `.ai-guidance/`.
+
 ## Step 1: Create an Adapter
 
 An adapter should answer:
@@ -81,7 +91,7 @@ The first executable rule in the framework is `required-repo-artifacts`. It is u
 Run the CLI with your adapter and policy pack:
 
 ```bash
-node bin/ai-guidance-report.mjs \
+npm exec -- ai-guidance report \
   --root /path/to/repo \
   --adapter ./adapters/work-agent.adapter.json \
   --policy-pack ./policy-packs/work-agent-convergence.policy-pack.json \

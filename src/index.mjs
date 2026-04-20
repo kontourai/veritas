@@ -5,7 +5,7 @@ import {
   readFileSync,
   writeFileSync,
 } from 'node:fs';
-import { relative, resolve } from 'node:path';
+import { basename, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 export function loadAdapterConfig(configPath) {
@@ -235,6 +235,273 @@ export function evaluatePolicyPack(policyPack, context, options = {}) {
     .map((rule) => evaluatePolicyRule(rule, context));
 }
 
+export function slugifyProjectName(name) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'project';
+}
+
+export function buildStarterAdapter({
+  projectName,
+  proofLane = 'npm test',
+}) {
+  const projectSlug = slugifyProjectName(projectName);
+
+  return {
+    name: projectSlug,
+    kind: 'repo-adapter',
+    policy: {
+      defaultFalsePositiveReview: 'unknown',
+      defaultPromotionCandidate: false,
+      defaultOverrideOrBypass: false,
+    },
+    graph: {
+      version: 1,
+      defaultResolution: {
+        phase: 'Phase 0 (Bootstrap)',
+        workstream: 'Initial Project Setup',
+        matchedArtifacts: ['README.md'],
+      },
+      nonSliceableInvariants: [
+        'baseline proof lane',
+        'repo-local guidance',
+        'tracked policy artifacts',
+      ],
+      resolverPrecedence: [
+        'explicit task or issue reference',
+        'matching local artifact under .ai-guidance/**',
+        'active repo roadmap or README guidance',
+        'multi-workstream fallback suppresses promotion',
+      ],
+      resolutionRules: [
+        {
+          id: 'guidance-files',
+          match: {
+            patterns: ['.ai-guidance/'],
+          },
+          resolution: {
+            phase: 'Phase 0 (Bootstrap)',
+            workstream: 'Initial Project Setup',
+            matchedArtifacts: ['.ai-guidance/**'],
+          },
+        },
+      ],
+      nodes: [
+        {
+          id: 'app.src',
+          kind: 'product-surface',
+          label: 'src/**',
+          patterns: ['src/'],
+        },
+        {
+          id: 'verification.tests',
+          kind: 'verification-surface',
+          label: 'tests/**',
+          patterns: ['tests/'],
+        },
+        {
+          id: 'delivery.workflows',
+          kind: 'delivery-surface',
+          label: '.github/**',
+          patterns: ['.github/'],
+        },
+        {
+          id: 'governance.guidance',
+          kind: 'governance-surface',
+          label: '.ai-guidance/**',
+          patterns: ['.ai-guidance/'],
+        },
+        {
+          id: 'governance.root-manifests',
+          kind: 'governance-surface',
+          label: 'root manifests',
+          patterns: ['package.json', 'README.md', '.gitignore', 'AGENTS.md'],
+        },
+      ],
+    },
+    evidence: {
+      artifactDir: '.ai-guidance/evidence',
+      requiredProofLanes: [proofLane],
+      reportTransport: 'local-json',
+    },
+  };
+}
+
+export function buildStarterPolicyPack({ projectName }) {
+  const projectSlug = slugifyProjectName(projectName);
+
+  return {
+    version: 1,
+    name: `${projectSlug}-default`,
+    description:
+      'Conservative starter policy pack for a newly bootstrapped AI-guided repository.',
+    rules: [
+      {
+        id: 'required-guidance-artifacts',
+        classification: 'hard-invariant',
+        stage: 'block',
+        message:
+          'The bootstrap guidance artifacts must stay present so agents and reviewers share the same baseline.',
+        owner: 'repo-core',
+        rollback_switch: null,
+        match: {
+          artifacts: [
+            '.ai-guidance/README.md',
+            '.ai-guidance/repo.adapter.json',
+            '.ai-guidance/policy-packs/default.policy-pack.json',
+            '.ai-guidance/team/default.team-profile.json',
+          ],
+        },
+      },
+      {
+        id: 'prefer-guidance-routed-delivery',
+        classification: 'promotable-policy',
+        stage: 'recommend',
+        message:
+          'Prefer running new AI-guided changes through the guidance report and the documented proof lane before review.',
+        owner: 'repo-maintainers',
+        rollback_switch: 'soften-guidance-route',
+        match: {
+          files: ['.ai-guidance/README.md'],
+        },
+      },
+    ],
+  };
+}
+
+export function buildStarterTeamProfile({ projectName, proofLane = 'npm test' }) {
+  const projectSlug = slugifyProjectName(projectName);
+
+  return {
+    version: 1,
+    id: `${projectSlug}-default`,
+    name: `${projectName} Default`,
+    description:
+      'Conservative starter profile: begin in shadow mode, learn first, and only harden rules after repeated evidence.',
+    defaults: {
+      mode: 'shadow',
+      new_rule_stage: 'recommend',
+    },
+    review_preferences: {
+      human_signoff_required_for_stage_promotion: true,
+      reviewer_confidence_scale: ['low', 'medium', 'high'],
+      major_rewrite_definition:
+        'A major rewrite replaces the main structure or control flow instead of making local edits.',
+    },
+    promotion_preferences: {
+      proof_lanes_required_before_block: [proofLane],
+      warnings_block_in_ci: false,
+      require_consistent_eval_before_promotion: true,
+    },
+  };
+}
+
+export function buildBootstrapReadme({ projectName, proofLane = 'npm test' }) {
+  return `# AI Guidance Starter Kit
+
+This repo was bootstrapped for \`${projectName}\` with a conservative starter kit for agent-guided development.
+
+## Generated Files
+
+- \`.ai-guidance/repo.adapter.json\`
+- \`.ai-guidance/policy-packs/default.policy-pack.json\`
+- \`.ai-guidance/team/default.team-profile.json\`
+
+## What To Do Next
+
+1. Adjust the adapter node patterns to match the real repo layout.
+2. Replace the default proof lane with the command that proves your project is healthy.
+3. Keep the team profile in \`shadow\` mode until you have enough evidence to tighten rules.
+
+## Suggested Commands
+
+\`\`\`bash
+npm exec -- ai-guidance report package.json
+\`\`\`
+
+If you prefer explicit paths:
+
+\`\`\`bash
+npm exec -- ai-guidance report \\
+  --adapter ./.ai-guidance/repo.adapter.json \\
+  --policy-pack ./.ai-guidance/policy-packs/default.policy-pack.json \\
+  package.json
+\`\`\`
+
+## Suggested Proof Lane
+
+\`${proofLane}\`
+
+## Why This Exists
+
+The goal is to give any compatible agent just-in-time repo guidance from day one, while keeping review and CI grounded in the same starter rules.
+`;
+}
+
+export function writeBootstrapStarterKit({
+  rootDir,
+  projectName = basename(resolve(rootDir)),
+  proofLane = 'npm test',
+  force = false,
+}) {
+  const adapterPath = resolve(rootDir, '.ai-guidance/repo.adapter.json');
+  const policyPackPath = resolve(
+    rootDir,
+    '.ai-guidance/policy-packs/default.policy-pack.json',
+  );
+  const teamProfilePath = resolve(
+    rootDir,
+    '.ai-guidance/team/default.team-profile.json',
+  );
+  const readmePath = resolve(rootDir, '.ai-guidance/README.md');
+
+  const files = [
+    [adapterPath, buildStarterAdapter({ projectName, proofLane })],
+    [policyPackPath, buildStarterPolicyPack({ projectName })],
+    [teamProfilePath, buildStarterTeamProfile({ projectName, proofLane })],
+  ];
+
+  for (const [filePath] of files) {
+    if (existsSync(filePath) && !force) {
+      throw new Error(
+        `Refusing to overwrite existing file: ${relative(rootDir, filePath)} (use --force to replace it)`,
+      );
+    }
+  }
+  if (existsSync(readmePath) && !force) {
+    throw new Error(
+      'Refusing to overwrite existing file: .ai-guidance/README.md (use --force to replace it)',
+    );
+  }
+
+  mkdirSync(resolve(rootDir, '.ai-guidance/policy-packs'), { recursive: true });
+  mkdirSync(resolve(rootDir, '.ai-guidance/team'), { recursive: true });
+  mkdirSync(resolve(rootDir, '.ai-guidance/evidence'), { recursive: true });
+
+  for (const [filePath, payload] of files) {
+    writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  }
+
+  writeFileSync(
+    readmePath,
+    buildBootstrapReadme({ projectName, proofLane }),
+    'utf8',
+  );
+
+  return {
+    rootDir,
+    projectName,
+    proofLane,
+    generatedFiles: [
+      relative(rootDir, readmePath).replaceAll('\\', '/'),
+      relative(rootDir, adapterPath).replaceAll('\\', '/'),
+      relative(rootDir, policyPackPath).replaceAll('\\', '/'),
+      relative(rootDir, teamProfilePath).replaceAll('\\', '/'),
+    ],
+  };
+}
+
 export function writeEvidenceArtifact(record, config, rootDir) {
   const artifactDir = resolve(rootDir, config.evidence.artifactDir);
   mkdirSync(artifactDir, { recursive: true });
@@ -362,15 +629,50 @@ export function parseArgs(argv) {
   return { options, files };
 }
 
+export function parseInitArgs(argv) {
+  const options = {};
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+    if (token === '--root') {
+      options.rootDir = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--project-name') {
+      options.projectName = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--proof-lane') {
+      options.proofLane = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--force') {
+      options.force = true;
+    }
+  }
+
+  return options;
+}
+
 export function runGuidanceReportCli(argv = process.argv.slice(2), defaults = {}) {
   const { options, files: explicitFiles } = parseArgs(argv);
   const rootDir = options.rootDir ? resolve(options.rootDir) : defaults.rootDir;
+  const defaultAdapterPath =
+    defaults.adapterPath ?? (rootDir ? resolve(rootDir, '.ai-guidance/repo.adapter.json') : undefined);
+  const defaultPolicyPackPath =
+    defaults.policyPackPath ??
+    (rootDir
+      ? resolve(rootDir, '.ai-guidance/policy-packs/default.policy-pack.json')
+      : undefined);
   const adapterPath = options.adapterPath
     ? resolve(options.adapterPath)
-    : defaults.adapterPath;
+    : defaultAdapterPath;
   const policyPackPath = options.policyPackPath
     ? resolve(options.policyPackPath)
-    : defaults.policyPackPath;
+    : defaultPolicyPackPath;
 
   if (!rootDir || !adapterPath || !policyPackPath) {
     throw new Error(
@@ -421,4 +723,19 @@ export function runGuidanceReportCli(argv = process.argv.slice(2), defaults = {}
       2,
     )}\n`,
   );
+}
+
+export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseInitArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const projectName = options.projectName ?? defaults.projectName ?? basename(rootDir);
+  const proofLane = options.proofLane ?? defaults.proofLane ?? 'npm test';
+  const result = writeBootstrapStarterKit({
+    rootDir,
+    projectName,
+    proofLane,
+    force: options.force ?? false,
+  });
+
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }

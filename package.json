@@ -7,6 +7,7 @@
     ".": "./src/index.mjs"
   },
   "bin": {
+    "ai-guidance": "./bin/ai-guidance.mjs",
     "ai-guidance-report": "./bin/ai-guidance-report.mjs"
   },
   "scripts": {

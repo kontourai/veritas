@@ -7,10 +7,10 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 runGuidanceReportCli(process.argv.slice(2), {
   rootDir: process.cwd(),
-  adapterPath: resolve(process.cwd(), '.ai-guidance/work-agent.adapter.json'),
+  adapterPath: resolve(process.cwd(), '.ai-guidance/repo.adapter.json'),
   policyPackPath: resolve(
     process.cwd(),
-    '.ai-guidance/policy-packs/work-agent-convergence.policy-pack.json',
+    '.ai-guidance/policy-packs/default.policy-pack.json',
   ),
   frameworkRootDir: repoRoot,
 });

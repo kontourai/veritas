@@ -40,6 +40,10 @@ assert(
   'Getting-started guide must prioritize installation and usage.',
 );
 assert(
+  gettingStartedGuide.includes('npm exec -- ai-guidance init'),
+  'Getting-started guide must include the bootstrap command.',
+);
+assert(
   gettingStartedGuide.includes('The point is not only to make agents faster.'),
   'Getting-started guide must explain the differentiator in end-user terms.',
 );
@@ -104,8 +108,8 @@ assert(
 
 const bootstrapGuide = readText('docs/guides/start-your-next-project.md');
 assert(
-  bootstrapGuide.includes('The Ideal Future Experience'),
-  'Bootstrap guide must explain the desired future init flow.',
+  bootstrapGuide.includes('The Current Experience'),
+  'Bootstrap guide must explain the current init flow.',
 );
 assert(
   bootstrapGuide.includes('The Minimum Starter Kit'),
@@ -114,6 +118,20 @@ assert(
 assert(
   bootstrapGuide.includes('Activation In Practice'),
   'Bootstrap guide must connect bootstrap to activation.',
+);
+assert(
+  bootstrapGuide.includes('npm exec -- ai-guidance init'),
+  'Bootstrap guide must include the bootstrap command.',
+);
+
+const rootReadme = readText('README.md');
+assert(
+  rootReadme.includes('npm exec -- ai-guidance init'),
+  'README must present the bootstrap command.',
+);
+assert(
+  rootReadme.includes('bootstrap a starter `.ai-guidance/` setup'),
+  'README must describe bootstrap as a current capability.',
 );
 
 const contributingGuide = readText('CONTRIBUTING.md');
@@ -129,6 +147,11 @@ for (const schemaFileName of readdirSync(new URL('schemas/', rootUrl))) {
 
   readJson(`schemas/${schemaFileName}`);
 }
+
+assert(
+  readText('package.json').includes('"ai-guidance": "./bin/ai-guidance.mjs"'),
+  'package.json must expose the ai-guidance CLI.',
+);
 
 const workAgentAdapter = readJson('adapters/work-agent.adapter.json');
 assert(

@@ -1,8 +1,14 @@
 # AI Guidance Framework
 
-`ai-guidance-framework` is a lightweight framework for keeping AI-driven development focused, reviewable, and auditable without forcing humans to manually rediscover the same guardrails on every change.
+> “A good harness is really operationalized around giving the model text at the right time so it can look at the work it has done and the information around what a good job looks like.”
+>
+> Ryan Laapo, OpenAI
 
-It is designed to be:
+Code is free. Trusted delivery is not.
+
+This framework gives teams a shared operating layer for agentic development, with just-in-time guidance, standardized construction paths, baseline compliance, and evidence-backed feedback loops. The result is faster delivery, safer parallelization, and scalable agent output without making human review the bottleneck.
+
+`ai-guidance-framework` is designed to be:
 
 - easy for an agent to operate inside
 - easy for a team to install and use
@@ -10,7 +16,7 @@ It is designed to be:
 
 It should guide the repo in a way that is available to whatever AI is touching the codebase, not only one specific agent runtime.
 
-It does that with three pieces:
+It does that through three pieces:
 
 - a **[framework core](docs/design/framework-core-vs-adapter.md)** that understands graph nodes, resolution, evidence, and policy evaluation
 - a **[repo adapter](docs/design/framework-core-vs-adapter.md)** that maps those abstractions onto a real codebase
@@ -34,6 +40,7 @@ This framework is structured to avoid both failure modes.
 
 Today the framework can:
 
+- bootstrap a starter `.ai-guidance/` setup for a new repo
 - load repo adapters and policy packs
 - resolve changed files into graph nodes and workstreams
 - emit structured evidence records and Markdown summaries
@@ -51,30 +58,34 @@ The install path should stay short.
 npm install
 ```
 
-Then start with just three things:
+Then bootstrap the repo:
+
+```bash
+npm exec -- ai-guidance init --proof-lane "npm test"
+```
+
+That writes the minimum starter kit:
 
 1. one adapter
 2. one policy pack
-3. one CLI run
+3. one team profile
+4. one local README
 
 ## Use It
 
 The primary workflow is:
 
-1. point the framework at a repo
-2. give it an adapter and policy pack
-3. generate evidence
-4. use that evidence in review, CI, or future live evals
+1. bootstrap the repo
+2. run the guidance report against changed files
+3. use that evidence in review, CI, or future live evals
 
 ```bash
 npm run verify
 npm test
 
-node bin/ai-guidance-report.mjs \
-  --root /path/to/repo \
-  --adapter ./adapters/work-agent.adapter.json \
-  --policy-pack ./policy-packs/work-agent-convergence.policy-pack.json \
-  --run-id local-smoke \
+npm exec -- ai-guidance init --proof-lane "npm test"
+
+npm exec -- ai-guidance report --run-id local-smoke \
   package.json
 ```
 
@@ -99,8 +110,7 @@ If you want the shortest path to understanding the system as a user:
 ## Repository Layout
 
 - `src/` — framework core and policy evaluation
-- `bin/` — CLI entrypoint
-- `schemas/` — JSON schemas for graph, adapter, evidence, and policy-pack artifacts
+- `bin/` — CLI entrypoints for bootstrap and reporting
 - `schemas/` — JSON schemas for graph, adapter, evidence, policy-pack, eval, and team-profile artifacts
 - `adapters/` — example adapters
 - `policy-packs/` — example policy packs

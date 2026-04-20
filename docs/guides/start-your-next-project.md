@@ -14,28 +14,20 @@ The goal is:
 - get the right starter files
 - let the repo guide the AI from the beginning
 
-## The Ideal Future Experience
+## The Current Experience
 
-The target UX is something like:
+The framework now ships a first bootstrap command:
 
 ```bash
-npx ai-guidance init
+npm exec -- ai-guidance init --proof-lane "npm test"
 ```
 
-Or, in a skill-driven environment:
-
-```text
-$ai-guidance-bootstrap
-```
-
-That bootstrap flow should set up the minimum starter kit:
+That command writes the minimum starter kit:
 
 1. an adapter
 2. a starter policy pack
 3. a team profile
-4. local commands such as `guidance:report`
-5. CI wiring
-6. short human-friendly docs in the repo
+4. a short human-friendly README in the repo
 
 ## The Minimum Starter Kit
 
@@ -73,8 +65,8 @@ The bootstrap path should:
 
 ### Wire normal development flow
 
-- local wrapper commands
-- CI hooks
+- suggested local wrapper commands
+- suggested CI hooks
 - short onboarding docs
 
 ## Why This Matters
@@ -99,13 +91,12 @@ It needs the repo to expose guidance clearly and consistently.
 
 ## What To Do Today
 
-Until a dedicated bootstrap command exists, use this manual sequence:
+Use this sequence:
 
-1. copy a starter adapter
-2. copy a starter policy pack
-3. copy a starter team profile
-4. add one proof-lane command
-5. add one guidance-report command
-6. document the expected repo workflow in one short guide
+1. run `npm exec -- ai-guidance init --proof-lane "npm test"`
+2. review the generated `.ai-guidance/` files
+3. replace the default proof lane with the one that proves your repo is healthy
+4. run `npm exec -- ai-guidance report package.json`
+5. wire the same paths into review and CI
 
-That manual path is the current version of the future bootstrap command.
+The first slice is intentionally conservative. It gives you a real starter kit without pretending it can infer every repo perfectly on day one.
