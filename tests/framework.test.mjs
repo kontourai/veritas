@@ -9,6 +9,7 @@ import {
   applyCiSnippet,
   applyCodexHook,
   applyGitHook,
+  inspectRuntimeAdapterStatus,
   applyRuntimeHook,
   applyPackageScripts,
   buildEvidenceRecord,
@@ -1776,6 +1777,105 @@ test('apply codex-hook rejects conflicting target hooks path and Codex home inpu
   );
 });
 
+test('runtime status reports missing adapter state and next commands', () => {
+  const rootDir = initCommittedRepo('ai-guidance-runtime-status-missing-');
+  const status = inspectRuntimeAdapterStatus(rootDir);
+
+  assert.equal(status.gitHook.exists, false);
+  assert.equal(status.runtimeHook.exists, false);
+  assert.equal(status.codexArtifact.exists, false);
+  assert.equal(status.codexTarget.checked, false);
+  assert.equal(status.codexTarget.resolvedTargetPath, null);
+  assert.ok(status.nextCommands.includes('npm exec -- ai-guidance apply git-hook --configure-git'));
+  assert.ok(status.nextCommands.includes('npm exec -- ai-guidance apply runtime-hook'));
+  assert.ok(status.nextCommands.includes('npm exec -- ai-guidance print codex-hook'));
+  assert.ok(
+    status.nextCommands.includes(
+      'npm exec -- ai-guidance print codex-hook --codex-home /path/to/.codex',
+    ),
+  );
+});
+
+test('runtime status reports installed adapter state including codex target', () => {
+  const rootDir = initCommittedRepo('ai-guidance-runtime-status-installed-');
+  applyGitHook({ rootDir, configureGit: true });
+  applyRuntimeHook({ rootDir });
+  const codexHome = join(rootDir, 'tmp-codex-home');
+  mkdirp(codexHome);
+  writeFileSync(join(codexHome, 'hooks.json'), JSON.stringify({ hooks: {} }, null, 2));
+  applyCodexHook({ rootDir, codexHome });
+
+  const status = inspectRuntimeAdapterStatus(rootDir, { codexHome });
+
+  assert.equal(status.gitHook.exists, true);
+  assert.equal(status.gitHook.configured, true);
+  assert.equal(status.runtimeHook.exists, true);
+  assert.equal(status.codexArtifact.exists, true);
+  assert.equal(status.codexTarget.checked, true);
+  assert.equal(status.codexTarget.targetExists, true);
+  assert.equal(status.codexTarget.adapterInstalled, true);
+  assert.deepEqual(status.nextCommands, []);
+});
+
+test('runtime status recommends repair commands for non-executable managed hooks', () => {
+  const rootDir = initCommittedRepo('ai-guidance-runtime-status-broken-hooks-');
+  applyGitHook({ rootDir, configureGit: true });
+  applyRuntimeHook({ rootDir });
+  chmodSync(join(rootDir, '.githooks/post-commit'), 0o644);
+  chmodSync(join(rootDir, '.ai-guidance/hooks/agent-runtime.sh'), 0o644);
+
+  const status = inspectRuntimeAdapterStatus(rootDir);
+
+  assert.equal(status.gitHook.exists, true);
+  assert.equal(status.gitHook.executable, false);
+  assert.equal(status.runtimeHook.exists, true);
+  assert.equal(status.runtimeHook.executable, false);
+  assert.ok(
+    status.nextCommands.includes(
+      'npm exec -- ai-guidance apply git-hook --configure-git --force',
+    ),
+  );
+  assert.ok(
+    status.nextCommands.includes('npm exec -- ai-guidance apply runtime-hook --force'),
+  );
+});
+
+test('runtime status recommends forceful codex repair when the tracked artifact exists but target is stale', () => {
+  const rootDir = initCommittedRepo('ai-guidance-runtime-status-codex-repair-');
+  const codexHome = join(rootDir, 'tmp-codex-home');
+  mkdirp(codexHome);
+  writeFileSync(join(codexHome, 'hooks.json'), JSON.stringify({ hooks: {} }, null, 2));
+  applyCodexHook({ rootDir, codexHome });
+  writeFileSync(
+    join(codexHome, 'hooks.json'),
+    JSON.stringify(
+      {
+        hooks: {
+          Stop: [
+            {
+              matcher: '.*',
+              hooks: [{ type: 'command', command: 'echo missing-adapter' }],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    ),
+  );
+
+  const status = inspectRuntimeAdapterStatus(rootDir, { codexHome });
+
+  assert.equal(status.codexArtifact.exists, true);
+  assert.equal(status.codexTarget.checked, true);
+  assert.equal(status.codexTarget.adapterInstalled, false);
+  assert.ok(
+    status.nextCommands.includes(
+      `npm exec -- ai-guidance apply codex-hook --codex-home ${codexHome.replaceAll('\\', '/')} --force`,
+    ),
+  );
+});
+
 test('generated post-commit hook runs successfully after the initial commit boundary', () => {
   const rootDir = initCommittedRepo('ai-guidance-hook-root-commit-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
@@ -2051,6 +2151,7 @@ test('script suggestion helper returns the expected keys', () => {
     'guidance:print:ci',
     'guidance:report',
     'guidance:report:diff',
+    'guidance:status:runtime',
     'guidance:proof',
   ]);
 });

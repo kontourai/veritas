@@ -121,6 +121,7 @@ npm exec -- ai-guidance print codex-hook
 npm exec -- ai-guidance print codex-hook --codex-home /path/to/.codex
 npm exec -- ai-guidance apply codex-hook --codex-home /path/to/.codex
 npm exec -- ai-guidance apply codex-hook --target-hooks-file /path/to/hooks.json
+npm exec -- ai-guidance runtime status --codex-home /path/to/.codex
 
 npm exec -- ai-guidance eval draft \
   --evidence .ai-guidance/evidence/local-smoke.json
@@ -146,6 +147,8 @@ The eval step stays conservative:
 - `apply runtime-hook` is the shortest tracked non-git hook install path
 - `apply codex-hook --codex-home ...` is the shortest higher-level Codex hook merge path
 - `print codex-hook --codex-home ...` is the shortest no-mutation preview path for that install target
+- `runtime status` is the shortest cross-adapter diagnostic path
+- when no `--codex-home` or `--target-hooks-file` is supplied, it should tell you that no Codex target was checked yet
 - the evidence input must be repo-local under `.ai-guidance/evidence/`
 - the draft artifact stays repo-local under `.ai-guidance/eval-drafts/`
 - reviewer confidence should match the team profile scale, or use `unknown`

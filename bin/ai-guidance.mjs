@@ -14,6 +14,7 @@ import {
   runPrintGitHookCli,
   runPrintRuntimeHookCli,
   runPrintPackageScriptsCli,
+  runRuntimeStatusCli,
   runShadowRunCli,
 } from '../src/index.mjs';
 
@@ -120,11 +121,22 @@ if (subcommand === 'init') {
 `);
     process.exitCode = 1;
   }
+} else if (subcommand === 'runtime') {
+  const [kind, ...runtimeArgs] = args;
+  if (kind === 'status') {
+    runRuntimeStatusCli(runtimeArgs, { rootDir: cwd });
+  } else {
+    process.stderr.write(`Usage:
+  ai-guidance runtime status [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
+`);
+    process.exitCode = 1;
+  }
 } else {
   process.stderr.write(`Usage:
   ai-guidance init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--force]
   ai-guidance report [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [file ...]
   ai-guidance shadow run [--root <path>] [--adapter <path>] [--policy-pack <path>] [--team-profile <path>] [--proof-command <cmd>] [--skip-proof]
+  ai-guidance runtime status [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
   ai-guidance eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
   ai-guidance eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false> --reviewer-confidence <scale-entry|unknown> --time-to-green-minutes <number> --override-count <number>
   ai-guidance eval record --draft <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false>

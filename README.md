@@ -129,6 +129,7 @@ npm exec -- ai-guidance print codex-hook
 npm exec -- ai-guidance print codex-hook --codex-home /path/to/.codex
 npm exec -- ai-guidance apply codex-hook --codex-home /path/to/.codex
 npm exec -- ai-guidance apply codex-hook --target-hooks-file /path/to/hooks.json
+npm exec -- ai-guidance runtime status --codex-home /path/to/.codex
 
 npm exec -- ai-guidance report --working-tree
 npm exec -- ai-guidance report --changed-from main --changed-to HEAD
@@ -154,6 +155,8 @@ It only accepts repo-local evidence artifacts under `.ai-guidance/evidence/`, us
 `print runtime-hook` and `apply runtime-hook` are the first non-git hook templates. They generate a tracked `.ai-guidance/hooks/agent-runtime.sh` script that defaults to `shadow run --working-tree` and can be invoked by agent runtimes as a repo-local post-task hook.
 
 `print codex-hook` and `apply codex-hook` are the first runtime-specific adapter layer on top of that generic hook. They generate a tracked `.ai-guidance/runtime/codex-hooks.json` snippet, can preview the resolved target and install state, and can explicitly merge it into either a chosen Codex `hooks.json` file or a chosen Codex home via `--codex-home`, without silently mutating global config by default.
+
+`runtime status` is the first cross-adapter doctor surface. It inspects the git-hook, runtime-hook, and Codex-hook layers together, tells you what is present or missing, and explicitly tells you when no Codex target was checked yet so the next preview/apply step is obvious.
 
 If you want the shortest path to understanding the system as a user:
 

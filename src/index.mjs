@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -905,6 +906,7 @@ npm exec -- ai-guidance print package-scripts
 npm exec -- ai-guidance print ci-snippet
 npm exec -- ai-guidance apply package-scripts
 npm exec -- ai-guidance apply ci-snippet
+npm exec -- ai-guidance runtime status
 npm exec -- ai-guidance report package.json
 \`\`\`
 
@@ -1003,6 +1005,7 @@ export function buildSuggestedPackageScripts({
     'guidance:print:ci': 'npm exec -- ai-guidance print ci-snippet',
     'guidance:report': 'npm exec -- ai-guidance report --run-id local-smoke package.json',
     'guidance:report:diff': `npm exec -- ai-guidance report --changed-from ${baseRef} --changed-to HEAD`,
+    'guidance:status:runtime': 'npm exec -- ai-guidance runtime status',
     'guidance:proof': proofLane,
   };
 }
@@ -1294,6 +1297,7 @@ function inspectCodexHookTarget(rootDir, options = {}) {
   if (!resolvedTargetPath) {
     return {
       resolvedTargetPath: null,
+      checked: false,
       targetExists: false,
       adapterInstalled: false,
     };
@@ -1316,9 +1320,90 @@ function inspectCodexHookTarget(rootDir, options = {}) {
 
   return {
     resolvedTargetPath: formatTargetPath(rootDir, resolvedTargetPath),
+    checked: true,
     targetExists,
     adapterInstalled,
   };
+}
+
+function isExecutable(path) {
+  try {
+    return (statSync(path).mode & 0o111) !== 0;
+  } catch {
+    return false;
+  }
+}
+
+function readGitConfigValue(rootDir, key) {
+  try {
+    return execFileSync('git', ['config', '--get', key], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      windowsHide: true,
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+export function inspectRuntimeAdapterStatus(rootDir, options = {}) {
+  const gitHookPath = resolve(rootDir, '.githooks/post-commit');
+  const runtimeHookPath = resolve(rootDir, '.ai-guidance/hooks/agent-runtime.sh');
+  const codexArtifactPath = resolve(rootDir, '.ai-guidance/runtime/codex-hooks.json');
+  const configuredHooksPath = readGitConfigValue(rootDir, 'core.hooksPath');
+  const codexTarget = inspectCodexHookTarget(rootDir, options);
+
+  const status = {
+    gitHook: {
+      path: '.githooks/post-commit',
+      exists: existsSync(gitHookPath),
+      executable: isExecutable(gitHookPath),
+      configuredHooksPath,
+      configured: configuredHooksPath === '.githooks',
+    },
+    runtimeHook: {
+      path: '.ai-guidance/hooks/agent-runtime.sh',
+      exists: existsSync(runtimeHookPath),
+      executable: isExecutable(runtimeHookPath),
+    },
+    codexArtifact: {
+      path: '.ai-guidance/runtime/codex-hooks.json',
+      exists: existsSync(codexArtifactPath),
+    },
+    codexTarget,
+    nextCommands: [],
+  };
+
+  if (!status.gitHook.exists || !status.gitHook.configured) {
+    status.nextCommands.push(
+      `npm exec -- ai-guidance apply git-hook --configure-git${status.gitHook.exists ? ' --force' : ''}`,
+    );
+  } else if (!status.gitHook.executable) {
+    status.nextCommands.push('npm exec -- ai-guidance apply git-hook --configure-git --force');
+  }
+  if (!status.runtimeHook.exists) {
+    status.nextCommands.push('npm exec -- ai-guidance apply runtime-hook');
+  } else if (!status.runtimeHook.executable) {
+    status.nextCommands.push('npm exec -- ai-guidance apply runtime-hook --force');
+  }
+  if (!status.codexArtifact.exists) {
+    status.nextCommands.push('npm exec -- ai-guidance print codex-hook');
+  }
+  if (!codexTarget.checked) {
+    status.nextCommands.push(
+      'npm exec -- ai-guidance print codex-hook --codex-home /path/to/.codex',
+    );
+  } else if (options.codexHome && !codexTarget.adapterInstalled) {
+    status.nextCommands.push(
+      `npm exec -- ai-guidance apply codex-hook --codex-home ${shellQuote(options.codexHome)}${status.codexArtifact.exists ? ' --force' : ''}`,
+    );
+  } else if (options.targetHooksFile && !codexTarget.adapterInstalled) {
+    status.nextCommands.push(
+      `npm exec -- ai-guidance apply codex-hook --target-hooks-file ${shellQuote(options.targetHooksFile)}${status.codexArtifact.exists ? ' --force' : ''}`,
+    );
+  }
+
+  return status;
 }
 
 export function applyCodexHook({
@@ -2390,6 +2475,26 @@ export function runPrintCodexHookCli(argv = process.argv.slice(2), defaults = {}
         targetStatus,
         suggestedApplyCommand,
         hookConfig: buildSuggestedCodexHookConfig(),
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
+export function runRuntimeStatusCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parsePrintArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const status = inspectRuntimeAdapterStatus(rootDir, {
+    targetHooksFile: options.targetHooksFile,
+    codexHome: options.codexHome,
+  });
+
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        rootDir,
+        ...status,
       },
       null,
       2,
