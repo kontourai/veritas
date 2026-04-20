@@ -3,6 +3,16 @@
   "run_id": "work-agent-shadow-001",
   "team_profile_id": "work-agent-default",
   "mode": "shadow",
+  "evidence": {
+    "artifact_path": ".ai-guidance/evidence/work-agent-shadow-001.json",
+    "artifact_digest": "2db8e73290eab9bf01eb3b56167ff0915ccf0f73bfc1f7f3acb4b8dbf6f49093",
+    "timestamp": "2026-04-19T00:00:00.000Z",
+    "source_ref": "refs/heads/main",
+    "source_kind": "branch-diff",
+    "source_scope": ["changed-from:origin/main", "changed-to:HEAD"],
+    "affected_nodes": ["delivery.github", "governance.root-manifests"],
+    "affected_lanes": [".github/**", "root manifests"]
+  },
   "outcome": {
     "accepted_without_major_rewrite": true,
     "required_followup": false,

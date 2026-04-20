@@ -109,6 +109,29 @@ The output gives you:
 - policy-pack provenance
 - a durable evidence artifact for review or CI
 
+If you want to start Phase 1 live eval, capture a shadow eval from that evidence artifact:
+
+```bash
+npm exec -- ai-guidance eval record \
+  --evidence .ai-guidance/evidence/local-smoke.json \
+  --accepted-without-major-rewrite true \
+  --required-followup false \
+  --reviewer-confidence high \
+  --time-to-green-minutes 12 \
+  --override-count 0
+```
+
+That keeps the workflow explicit:
+
+1. report what happened
+2. then record how useful that guidance was afterward
+
+The eval step stays conservative:
+
+- the evidence input must be repo-local under `.ai-guidance/evidence/`
+- reviewer confidence should match the team profile scale, or use `unknown`
+- existing eval artifacts are not overwritten unless you pass `--force`
+
 If you want current-state truth instead of an explicit file list, use one of the working-tree modes:
 
 ```bash

@@ -103,8 +103,12 @@ Use this sequence:
 6. run `npm exec -- ai-guidance apply package-scripts`
 7. run `npm exec -- ai-guidance apply ci-snippet`
 8. run `npm exec -- ai-guidance report --working-tree`
-9. wire the same paths into review and CI if you want them in your permanent workflow files
+9. optionally run `npm exec -- ai-guidance eval record --evidence .ai-guidance/evidence/<run-id>.json ...`
+10. wire the same paths into review and CI if you want them in your permanent workflow files
 
 This slice is intentionally conservative. It prints the suggested wiring first, then only writes changes when the user explicitly asks it to.
 
 Use `--changed-from <ref> --changed-to <ref>` when you want branch-diff evidence instead of current-state evidence.
+
+Use `eval record` only after `report`. That keeps shadow eval grounded in a real run instead of free-floating operator notes.
+The eval input must come from `.ai-guidance/evidence/`, and reruns should use `--force` if you intentionally want to replace an existing eval artifact.

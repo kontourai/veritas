@@ -63,6 +63,14 @@ assert(
   gettingStartedGuide.includes('--changed-from main --changed-to HEAD'),
   'Getting-started guide must include the branch-diff report command.',
 );
+assert(
+  gettingStartedGuide.includes('npm exec -- ai-guidance eval record'),
+  'Getting-started guide must include the eval record command.',
+);
+assert(
+  gettingStartedGuide.includes('repo-local under `.ai-guidance/evidence/`'),
+  'Getting-started guide must explain repo-local evidence provenance for eval capture.',
+);
 
 const activationGuide = readText('docs/design/agent-activation.md');
 assert(
@@ -101,6 +109,14 @@ assert(
   liveEvalGuide.includes('current working tree'),
   'Live-eval guide must mention current-state evidence sources.',
 );
+assert(
+  liveEvalGuide.includes('run `eval record` against that artifact'),
+  'Live-eval guide must describe the explicit report-to-eval flow.',
+);
+assert(
+  liveEvalGuide.includes('immutable digest'),
+  'Live-eval guide must describe immutable evidence provenance in eval capture.',
+);
 
 const liveEvalRoadmap = readText('docs/design/live-eval-roadmap.md');
 assert(
@@ -110,6 +126,10 @@ assert(
 assert(
   liveEvalRoadmap.includes('Phase 3: Gate Mode'),
   'Live-eval roadmap must describe gate mode.',
+);
+assert(
+  liveEvalRoadmap.includes('report artifact to eval artifact'),
+  'Live-eval roadmap must mention the shipped report-to-eval CLI path.',
 );
 
 const teamTuningGuide = readText('docs/guides/tune-for-your-team.md');
@@ -167,6 +187,14 @@ assert(
   bootstrapGuide.includes('--changed-from <ref> --changed-to <ref>'),
   'Bootstrap guide must include the branch-diff report guidance.',
 );
+assert(
+  bootstrapGuide.includes('npm exec -- ai-guidance eval record'),
+  'Bootstrap guide must include the eval record command.',
+);
+assert(
+  bootstrapGuide.includes('reruns should use `--force`'),
+  'Bootstrap guide must explain explicit overwrite for eval reruns.',
+);
 
 const rootReadme = readText('README.md');
 assert(
@@ -196,6 +224,18 @@ assert(
 assert(
   rootReadme.includes('branch-diff reports'),
   'README must distinguish branch-diff reports from other report modes.',
+);
+assert(
+  rootReadme.includes('capture a shadow eval record'),
+  'README must describe shadow eval capture as a current capability.',
+);
+assert(
+  rootReadme.includes('npm exec -- ai-guidance eval record'),
+  'README must include the eval record command.',
+);
+assert(
+  rootReadme.includes('refuses to overwrite an existing eval artifact unless you pass `--force`'),
+  'README must describe explicit overwrite behavior for eval artifacts.',
 );
 
 const contributingGuide = readText('CONTRIBUTING.md');

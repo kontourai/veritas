@@ -9,6 +9,7 @@ import {
   applyCiSnippet,
   applyPackageScripts,
   buildEvidenceRecord,
+  buildEvalRecord,
   buildSuggestedCiSnippet,
   buildSuggestedPackageScripts,
   classifyNodes,
@@ -233,6 +234,115 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
   assert.deepEqual(reportResult.source_scope, ['explicit']);
 });
 
+test('buildEvalRecord links a real evidence artifact to a team profile', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-build-eval-'));
+  mkdirp(join(rootDir, '.ai-guidance/evidence'));
+  writeFileSync(
+    join(rootDir, '.ai-guidance/evidence/eval-build-smoke.json'),
+    JSON.stringify(
+      {
+        framework_version: 1,
+        run_id: 'eval-build-smoke',
+        timestamp: '2026-04-20T16:00:00.000Z',
+        source_ref: 'working-tree',
+        source_kind: 'working-tree',
+        source_scope: ['staged', 'unstaged'],
+        affected_nodes: ['governance.root-manifests'],
+        affected_lanes: ['root manifests'],
+      },
+      null,
+      2,
+    ),
+  );
+  const evidenceRecord = {
+    run_id: 'eval-build-smoke',
+    framework_version: 1,
+    timestamp: '2026-04-20T16:00:00.000Z',
+    source_ref: 'working-tree',
+    source_kind: 'working-tree',
+    source_scope: ['staged', 'unstaged'],
+    affected_nodes: ['governance.root-manifests'],
+    affected_lanes: ['root manifests'],
+  };
+  const teamProfile = readJson('../examples/evals/work-agent-team-profile.json');
+
+  const record = buildEvalRecord({
+    evidenceRecord,
+    evidencePath: join(rootDir, '.ai-guidance/evidence/eval-build-smoke.json'),
+    teamProfile,
+    options: {
+      acceptedWithoutMajorRewrite: true,
+      requiredFollowup: false,
+      reviewerConfidence: 'high',
+      timeToGreenMinutes: 18,
+      overrideCount: 0,
+      falsePositiveRules: [],
+      missedIssues: [],
+      notes: ['Grounded in a real evidence artifact.'],
+    },
+    rootDir,
+  });
+
+  assert.equal(record.run_id, 'eval-build-smoke');
+  assert.equal(record.team_profile_id, 'work-agent-default');
+  assert.equal(record.mode, 'shadow');
+  assert.equal(record.evidence.source_ref, 'working-tree');
+  assert.equal(record.evidence.source_kind, 'working-tree');
+  assert.deepEqual(record.evidence.source_scope, ['staged', 'unstaged']);
+  assert.equal(
+    record.evidence.artifact_path,
+    '.ai-guidance/evidence/eval-build-smoke.json',
+  );
+  assert.match(record.evidence.artifact_digest, /^[a-f0-9]{64}$/);
+});
+
+test('buildEvalRecord accepts reviewer confidence values from the team profile scale', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-build-eval-scale-'));
+  mkdirp(join(rootDir, '.ai-guidance/evidence'));
+  const evidencePath = join(rootDir, '.ai-guidance/evidence/eval-scale-smoke.json');
+  writeFileSync(
+    evidencePath,
+    JSON.stringify(
+      {
+        framework_version: 1,
+        run_id: 'eval-scale-smoke',
+        timestamp: '2026-04-20T16:05:00.000Z',
+        source_ref: 'refs/heads/main',
+        source_kind: 'explicit-files',
+        source_scope: ['explicit'],
+        affected_nodes: [],
+        affected_lanes: [],
+      },
+      null,
+      2,
+    ),
+  );
+  const teamProfile = {
+    id: 'custom-team',
+    defaults: { mode: 'shadow' },
+    review_preferences: { reviewer_confidence_scale: ['red', 'yellow', 'green'] },
+  };
+
+  const record = buildEvalRecord({
+    evidenceRecord: readJsonFromAbsolute(evidencePath),
+    evidencePath,
+    teamProfile,
+    options: {
+      acceptedWithoutMajorRewrite: true,
+      requiredFollowup: false,
+      reviewerConfidence: 'green',
+      timeToGreenMinutes: 10,
+      overrideCount: 0,
+      falsePositiveRules: [],
+      missedIssues: [],
+      notes: [],
+    },
+    rootDir,
+  });
+
+  assert.equal(record.outcome.reviewer_confidence, 'green');
+});
+
 test('working-tree helpers collect staged, unstaged, and untracked files distinctly', () => {
   const rootDir = initCommittedRepo('ai-guidance-working-tree-');
   writeFileSync(join(rootDir, 'tracked.txt'), 'before\n');
@@ -372,6 +482,254 @@ test('report CLI preserves branch-diff behavior', () => {
     '.ai-guidance/repo.adapter.json',
     '.ai-guidance/team/default.team-profile.json',
   ]);
+});
+
+test('eval record CLI writes a repo-local shadow eval artifact from report output', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-cli-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Eval Demo',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+
+  const reportStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'report',
+      '--root',
+      rootDir,
+      '--run-id',
+      'eval-cli-smoke',
+      'package.json',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const reportResult = JSON.parse(reportStdout);
+
+  const evalStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'eval',
+      'record',
+      '--root',
+      rootDir,
+      '--evidence',
+      reportResult.artifactPath,
+      '--accepted-without-major-rewrite',
+      'true',
+      '--required-followup',
+      'false',
+      '--reviewer-confidence',
+      'high',
+      '--time-to-green-minutes',
+      '14',
+      '--override-count',
+      '0',
+      '--note',
+      'The evidence artifact was enough for a quick review.',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const evalResult = JSON.parse(evalStdout);
+  const evalArtifact = readJsonFromAbsolute(join(rootDir, evalResult.artifactPath));
+
+  assert.equal(evalResult.artifactPath, '.ai-guidance/evals/eval-cli-smoke.json');
+  assert.equal(evalResult.run_id, 'eval-cli-smoke');
+  assert.equal(evalResult.team_profile_id, 'eval-demo-default');
+  assert.equal(evalResult.mode, 'shadow');
+  assert.equal(evalResult.evidence.artifact_path, reportResult.artifactPath);
+  assert.match(evalResult.evidence.artifact_digest, /^[a-f0-9]{64}$/);
+  assert.equal(evalArtifact.outcome.reviewer_confidence, 'high');
+  assert.deepEqual(evalArtifact.notes, [
+    'The evidence artifact was enough for a quick review.',
+  ]);
+});
+
+test('eval record CLI supports explicit team-profile and output paths', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-cli-explicit-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  const initResult = writeBootstrapStarterKit({ rootDir, projectName: 'Eval Explicit Demo' });
+
+  const reportStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'report',
+      '--root',
+      rootDir,
+      '--run-id',
+      'eval-cli-explicit-smoke',
+      'package.json',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const reportResult = JSON.parse(reportStdout);
+
+  const evalStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'eval',
+      'record',
+      '--root',
+      rootDir,
+      '--evidence',
+      reportResult.artifactPath,
+      '--team-profile',
+      initResult.generatedFiles.find((path) => path.endsWith('default.team-profile.json')),
+      '--output',
+      '.ai-guidance/evals/custom-shadow.json',
+      '--accepted-without-major-rewrite',
+      'false',
+      '--required-followup',
+      'true',
+      '--reviewer-confidence',
+      'unknown',
+      '--time-to-green-minutes',
+      '25',
+      '--override-count',
+      '2',
+      '--false-positive-rule',
+      'required-guidance-artifacts',
+      '--missed-issue',
+      'Return-package assembly still needed manual review.',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const evalResult = JSON.parse(evalStdout);
+
+  assert.equal(evalResult.artifactPath, '.ai-guidance/evals/custom-shadow.json');
+  assert.equal(evalResult.outcome.accepted_without_major_rewrite, false);
+  assert.equal(evalResult.outcome.required_followup, true);
+  assert.equal(evalResult.outcome.reviewer_confidence, 'unknown');
+  assert.deepEqual(evalResult.measurements.false_positive_rules, [
+    'required-guidance-artifacts',
+  ]);
+  assert.deepEqual(evalResult.measurements.missed_issues, [
+    'Return-package assembly still needed manual review.',
+  ]);
+});
+
+test('eval record CLI rejects evidence outside the repo-local evidence area', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-cli-invalid-evidence-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  writeBootstrapStarterKit({ rootDir, projectName: 'Eval Invalid Evidence Demo' });
+  mkdirp(join(rootDir, 'tmp'));
+  writeFileSync(
+    join(rootDir, 'tmp/not-evidence.json'),
+    JSON.stringify(
+      {
+        run_id: 'bad-evidence',
+      },
+      null,
+      2,
+    ),
+  );
+
+  assert.throws(
+    () =>
+      execFileSync(
+        'npm',
+        [
+          'exec',
+          '--',
+          'ai-guidance',
+          'eval',
+          'record',
+          '--root',
+          rootDir,
+          '--evidence',
+          'tmp/not-evidence.json',
+          '--accepted-without-major-rewrite',
+          'true',
+          '--required-followup',
+          'false',
+          '--reviewer-confidence',
+          'unknown',
+          '--time-to-green-minutes',
+          '5',
+          '--override-count',
+          '0',
+        ],
+        { cwd: frameworkRootDir, encoding: 'utf8' },
+      ),
+    /repo-local evidence artifact inside \.ai-guidance\/evidence/,
+  );
+});
+
+test('eval record CLI refuses to overwrite an existing eval artifact without force', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-cli-overwrite-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  writeBootstrapStarterKit({ rootDir, projectName: 'Eval Overwrite Demo' });
+
+  const reportStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'report',
+      '--root',
+      rootDir,
+      '--run-id',
+      'eval-overwrite-smoke',
+      'package.json',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const reportResult = JSON.parse(reportStdout);
+  const baseArgs = [
+    'exec',
+    '--',
+    'ai-guidance',
+    'eval',
+    'record',
+    '--root',
+    rootDir,
+    '--evidence',
+    reportResult.artifactPath,
+    '--accepted-without-major-rewrite',
+    'true',
+    '--required-followup',
+    'false',
+    '--reviewer-confidence',
+    'unknown',
+    '--time-to-green-minutes',
+    '5',
+    '--override-count',
+    '0',
+  ];
+
+  execFileSync('npm', baseArgs, { cwd: frameworkRootDir, encoding: 'utf8' });
+  assert.throws(
+    () => execFileSync('npm', baseArgs, { cwd: frameworkRootDir, encoding: 'utf8' }),
+    /Refusing to overwrite existing file/,
+  );
+  execFileSync('npm', [...baseArgs, '--force'], {
+    cwd: frameworkRootDir,
+    encoding: 'utf8',
+  });
 });
 
 test('print package-scripts returns conservative suggestions from inferred proof lane', () => {
@@ -636,9 +994,11 @@ test('live-eval fixtures explain outcome measurement and team tuning', () => {
   const teamProfileSchema = readJson('../schemas/ai-guidance-team-profile.schema.json');
 
   assert.ok(evalSchema.required.includes('measurements'));
+  assert.ok(evalSchema.required.includes('evidence'));
   assert.ok(teamProfileSchema.required.includes('promotion_preferences'));
 
   assert.equal(evalRecord.mode, 'shadow');
+  assert.equal(evalRecord.evidence.source_kind, 'branch-diff');
   assert.equal(evalRecord.outcome.accepted_without_major_rewrite, true);
   assert.equal(teamProfile.defaults.new_rule_stage, 'recommend');
   assert.equal(teamProfile.promotion_preferences.warnings_block_in_ci, false);

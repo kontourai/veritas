@@ -5,7 +5,8 @@ import {
   readFileSync,
   writeFileSync,
 } from 'node:fs';
-import { basename, relative, resolve } from 'node:path';
+import { createHash } from 'node:crypto';
+import { basename, dirname, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 export function loadAdapterConfig(configPath) {
@@ -14,6 +15,18 @@ export function loadAdapterConfig(configPath) {
 
 export function loadPolicyPack(policyPackPath) {
   return JSON.parse(readFileSync(policyPackPath, 'utf8'));
+}
+
+export function loadTeamProfile(teamProfilePath) {
+  return JSON.parse(readFileSync(teamProfilePath, 'utf8'));
+}
+
+export function loadEvidenceArtifact(evidencePath) {
+  return JSON.parse(readFileSync(evidencePath, 'utf8'));
+}
+
+function sha256Hex(value) {
+  return createHash('sha256').update(value).digest('hex');
 }
 
 export function normalizeRepoPath(filePath, rootDir) {
@@ -184,6 +197,110 @@ export function buildEvidenceRecord({
       version: resolvedPolicyPack.version,
       rule_count: resolvedPolicyPack.rules.length,
     },
+  };
+}
+
+function parseBooleanFlag(value, optionName) {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  throw new Error(`${optionName} must be either true or false`);
+}
+
+export function buildEvalRecord({
+  evidenceRecord,
+  evidencePath,
+  teamProfile,
+  options = {},
+  rootDir,
+}) {
+  if (!evidenceRecord?.run_id) {
+    throw new Error('buildEvalRecord requires an evidence record with run_id');
+  }
+  if (!teamProfile?.id) {
+    throw new Error('buildEvalRecord requires a team profile with id');
+  }
+  if (typeof options.timeToGreenMinutes !== 'number' || Number.isNaN(options.timeToGreenMinutes)) {
+    throw new Error('buildEvalRecord requires timeToGreenMinutes');
+  }
+  if (typeof options.overrideCount !== 'number' || Number.isNaN(options.overrideCount)) {
+    throw new Error('buildEvalRecord requires overrideCount');
+  }
+  if (typeof options.acceptedWithoutMajorRewrite !== 'boolean') {
+    throw new Error('buildEvalRecord requires acceptedWithoutMajorRewrite');
+  }
+  if (typeof options.requiredFollowup !== 'boolean') {
+    throw new Error('buildEvalRecord requires requiredFollowup');
+  }
+  if (options.timeToGreenMinutes < 0) {
+    throw new Error('timeToGreenMinutes must be zero or greater');
+  }
+  if (!Number.isInteger(options.overrideCount) || options.overrideCount < 0) {
+    throw new Error('overrideCount must be a non-negative integer');
+  }
+  if (
+    options.reviewerConfidence &&
+    options.reviewerConfidence !== 'unknown' &&
+    !(
+      teamProfile.review_preferences?.reviewer_confidence_scale ?? ['low', 'medium', 'high']
+    ).includes(options.reviewerConfidence)
+  ) {
+    throw new Error(
+      'reviewerConfidence must be listed in the team profile scale or be unknown',
+    );
+  }
+  const evidenceRelativePath = relative(rootDir, resolve(evidencePath)).replaceAll('\\', '/');
+  if (
+    evidenceRelativePath.startsWith('..') ||
+    !evidenceRelativePath.startsWith('.ai-guidance/evidence/')
+  ) {
+    throw new Error(
+      'eval record requires a repo-local evidence artifact inside .ai-guidance/evidence/',
+    );
+  }
+  const requiredEvidenceKeys = [
+    'framework_version',
+    'run_id',
+    'timestamp',
+    'source_ref',
+    'source_kind',
+    'source_scope',
+    'affected_nodes',
+    'affected_lanes',
+  ];
+  for (const key of requiredEvidenceKeys) {
+    if (!(key in evidenceRecord)) {
+      throw new Error(`evidence artifact is missing required key: ${key}`);
+    }
+  }
+  const evidenceDigest = sha256Hex(readFileSync(evidencePath, 'utf8'));
+
+  return {
+    version: 1,
+    run_id: evidenceRecord.run_id,
+    team_profile_id: teamProfile.id,
+    mode: teamProfile.defaults?.mode ?? 'shadow',
+    evidence: {
+      artifact_path: evidenceRelativePath,
+      artifact_digest: evidenceDigest,
+      timestamp: evidenceRecord.timestamp,
+      source_ref: evidenceRecord.source_ref,
+      source_kind: evidenceRecord.source_kind,
+      source_scope: evidenceRecord.source_scope ?? [],
+      affected_nodes: evidenceRecord.affected_nodes ?? [],
+      affected_lanes: evidenceRecord.affected_lanes ?? [],
+    },
+    outcome: {
+      accepted_without_major_rewrite: options.acceptedWithoutMajorRewrite,
+      required_followup: options.requiredFollowup,
+      reviewer_confidence: options.reviewerConfidence ?? 'unknown',
+    },
+    measurements: {
+      time_to_green_minutes: options.timeToGreenMinutes,
+      override_count: options.overrideCount,
+      false_positive_rules: options.falsePositiveRules ?? [],
+      missed_issues: options.missedIssues ?? [],
+    },
+    notes: options.notes ?? [],
   };
 }
 
@@ -795,6 +912,32 @@ export function writeEvidenceArtifact(record, config, rootDir) {
   return artifactPath;
 }
 
+export function writeEvalArtifact(
+  record,
+  rootDir,
+  outputPath = `.ai-guidance/evals/${record.run_id}.json`,
+  force = false,
+) {
+  const artifactPath = resolve(rootDir, outputPath);
+  const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
+  if (
+    relativeArtifactPath.startsWith('..') ||
+    !relativeArtifactPath.startsWith('.ai-guidance/evals/')
+  ) {
+    throw new Error(
+      'eval artifacts may only be written inside .ai-guidance/evals/',
+    );
+  }
+  if (existsSync(artifactPath) && !force) {
+    throw new Error(
+      `Refusing to overwrite existing file: ${relativeArtifactPath} (use --force to replace it)`,
+    );
+  }
+  mkdirSync(dirname(artifactPath), { recursive: true });
+  writeFileSync(artifactPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+  return artifactPath;
+}
+
 export function listChangedFiles(fromRef, toRef, rootDir) {
   if (!fromRef || !toRef) return [];
 
@@ -944,6 +1087,40 @@ export function buildMarkdownSummary(record, artifactPath) {
     }
   } else {
     lines.push('', '- No recommendations.');
+  }
+
+  return `${lines.join('\n')}\n`;
+}
+
+export function buildEvalMarkdownSummary(record, artifactPath) {
+  const lines = [
+    '## Guidance Eval',
+    '',
+    `- **Run ID:** ${record.run_id}`,
+    `- **Mode:** ${record.mode}`,
+    `- **Team profile:** ${record.team_profile_id}`,
+    `- **Evidence artifact:** \`${record.evidence.artifact_path}\``,
+    `- **Eval artifact:** \`${artifactPath}\``,
+    `- **Accepted without major rewrite:** ${record.outcome.accepted_without_major_rewrite ? 'yes' : 'no'}`,
+    `- **Required follow-up:** ${record.outcome.required_followup ? 'yes' : 'no'}`,
+    `- **Reviewer confidence:** ${record.outcome.reviewer_confidence}`,
+    `- **Time to green:** ${record.measurements.time_to_green_minutes} minutes`,
+    `- **Override count:** ${record.measurements.override_count}`,
+  ];
+
+  if (record.measurements.false_positive_rules.length > 0) {
+    lines.push(`- **False-positive rules:** ${record.measurements.false_positive_rules.join(', ')}`);
+  }
+
+  if (record.measurements.missed_issues.length > 0) {
+    lines.push(`- **Missed issues:** ${record.measurements.missed_issues.join(', ')}`);
+  }
+
+  if (record.notes.length > 0) {
+    lines.push('', '### Notes');
+    for (const note of record.notes) {
+      lines.push(`- ${note}`);
+    }
   }
 
   return `${lines.join('\n')}\n`;
@@ -1106,6 +1283,90 @@ export function parseApplyArgs(argv) {
     }
     if (token === '--force') {
       options.force = true;
+    }
+  }
+
+  return options;
+}
+
+export function parseEvalArgs(argv) {
+  const options = {
+    falsePositiveRules: [],
+    missedIssues: [],
+    notes: [],
+  };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+    if (token === '--root') {
+      options.rootDir = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--evidence') {
+      options.evidencePath = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--team-profile') {
+      options.teamProfilePath = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--output') {
+      options.outputPath = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--accepted-without-major-rewrite') {
+      options.acceptedWithoutMajorRewrite = parseBooleanFlag(
+        argv[index + 1],
+        '--accepted-without-major-rewrite',
+      );
+      index += 1;
+      continue;
+    }
+    if (token === '--required-followup') {
+      options.requiredFollowup = parseBooleanFlag(
+        argv[index + 1],
+        '--required-followup',
+      );
+      index += 1;
+      continue;
+    }
+    if (token === '--reviewer-confidence') {
+      options.reviewerConfidence = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--time-to-green-minutes') {
+      options.timeToGreenMinutes = Number(argv[index + 1]);
+      index += 1;
+      continue;
+    }
+    if (token === '--override-count') {
+      options.overrideCount = Number(argv[index + 1]);
+      index += 1;
+      continue;
+    }
+    if (token === '--false-positive-rule') {
+      options.falsePositiveRules.push(argv[index + 1]);
+      index += 1;
+      continue;
+    }
+    if (token === '--missed-issue') {
+      options.missedIssues.push(argv[index + 1]);
+      index += 1;
+      continue;
+    }
+    if (token === '--note') {
+      options.notes.push(argv[index + 1]);
+      index += 1;
+      continue;
+    }
+    if (token === '--force') {
+      options.force = true;
+      continue;
     }
   }
 
@@ -1285,6 +1546,51 @@ export function runApplyCiSnippetCli(argv = process.argv.slice(2), defaults = {}
       {
         ...result,
         repoInsights,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
+export function runEvalRecordCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseEvalArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const evidencePath = options.evidencePath
+    ? resolve(rootDir, options.evidencePath)
+    : undefined;
+  const teamProfilePath = options.teamProfilePath
+    ? resolve(rootDir, options.teamProfilePath)
+    : resolve(rootDir, '.ai-guidance/team/default.team-profile.json');
+
+  if (!evidencePath) {
+    throw new Error('guidance eval record requires --evidence <path>');
+  }
+
+  const evidenceRecord = loadEvidenceArtifact(evidencePath);
+  const teamProfile = loadTeamProfile(teamProfilePath);
+  const record = buildEvalRecord({
+    evidenceRecord,
+    evidencePath,
+    teamProfile,
+    options,
+    rootDir,
+  });
+  const artifactPath = writeEvalArtifact(
+    record,
+    rootDir,
+    options.outputPath,
+    options.force ?? false,
+  );
+  const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
+  const markdownSummary = buildEvalMarkdownSummary(record, relativeArtifactPath);
+
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        artifactPath: relativeArtifactPath,
+        markdownSummary,
+        ...record,
       },
       null,
       2,

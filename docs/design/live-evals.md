@@ -30,6 +30,19 @@ For every AI-guided run, keep two records:
 
 That second record is what lets the framework measure effectiveness instead of only intent.
 
+The first operational workflow should stay explicit:
+
+1. run `report`
+2. review the evidence artifact
+3. run `eval record` against that artifact
+
+That capture path should enforce provenance, not merely suggest it:
+
+- repo-local evidence artifact
+- copied source metadata and immutable digest
+- team-profile-aware reviewer confidence
+- explicit overwrite only with `--force`
+
 ## What Should Be Measured
 
 The first live-eval version should stay practical.
@@ -94,6 +107,12 @@ Use this phase to learn:
 - which rules are noisy
 - which evidence fields matter to reviewers
 - where the framework is still missing coverage
+
+The first shipped capture path should stay lightweight and manual enough that teams can trust it:
+
+- one evidence artifact in
+- one eval artifact out
+- no hidden blocking behavior
 
 ### Phase 2: Assist Mode
 

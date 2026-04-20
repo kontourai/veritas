@@ -9,6 +9,7 @@
     "run_id",
     "team_profile_id",
     "mode",
+    "evidence",
     "outcome",
     "measurements",
     "notes"
@@ -21,6 +22,42 @@
       "type": "string",
       "enum": ["shadow", "assist", "gate"]
     },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_path",
+        "artifact_digest",
+        "timestamp",
+        "source_ref",
+        "source_kind",
+        "source_scope",
+        "affected_nodes",
+        "affected_lanes"
+      ],
+      "properties": {
+        "artifact_path": { "type": "string" },
+        "artifact_digest": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "source_ref": { "type": "string" },
+        "source_kind": {
+          "type": "string",
+          "enum": ["explicit-files", "branch-diff", "working-tree"]
+        },
+        "source_scope": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "affected_nodes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "affected_lanes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
     "outcome": {
       "type": "object",
       "additionalProperties": false,
@@ -32,8 +69,7 @@
         "accepted_without_major_rewrite": { "type": "boolean" },
         "required_followup": { "type": "boolean" },
         "reviewer_confidence": {
-          "type": "string",
-          "enum": ["low", "medium", "high"]
+          "type": "string"
         }
       }
     },

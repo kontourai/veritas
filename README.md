@@ -47,6 +47,7 @@ Today the framework can:
 - load repo adapters and policy packs
 - resolve changed files into graph nodes and workstreams
 - report explicit files, branch diffs, or the current working tree truthfully
+- capture a shadow eval record from a real guidance report artifact
 - emit structured evidence records and Markdown summaries
 - evaluate executable policy-pack rules
 - define live-eval and team-tuning artifacts for measuring usefulness over time
@@ -87,7 +88,8 @@ The primary workflow is:
 2. print suggested scripts and CI wiring
 3. explicitly apply the wiring you want
 4. run the guidance report against changed files
-5. use that evidence in review, CI, or future live evals
+5. capture a shadow eval from the report artifact when you want Phase 1 feedback
+6. use that evidence in review, CI, or future live evals
 
 ```bash
 npm run verify
@@ -102,6 +104,14 @@ npm exec -- ai-guidance apply ci-snippet
 npm exec -- ai-guidance report --run-id local-smoke \
   package.json
 
+npm exec -- ai-guidance eval record \
+  --evidence .ai-guidance/evidence/local-smoke.json \
+  --accepted-without-major-rewrite true \
+  --required-followup false \
+  --reviewer-confidence high \
+  --time-to-green-minutes 12 \
+  --override-count 0
+
 npm exec -- ai-guidance report --working-tree
 npm exec -- ai-guidance report --changed-from main --changed-to HEAD
 ```
@@ -113,6 +123,9 @@ npm exec -- ai-guidance report --changed-from main --changed-to HEAD
 - current-state working-tree reports
 
 That keeps the evidence artifact honest about what it actually measured.
+
+`eval record` is the first operational Phase 1 live-eval path: it records how useful that guidance was after the run without changing enforcement.
+It only accepts repo-local evidence artifacts under `.ai-guidance/evidence/`, uses the team profile's confidence scale, and refuses to overwrite an existing eval artifact unless you pass `--force`.
 
 If you want the shortest path to understanding the system as a user:
 
