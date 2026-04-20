@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import {
   buildEvidenceRecord,
   classifyNodes,
+  evaluatePolicyPack,
   loadPolicyPack,
   resolveWorkstream,
 } from '../src/index.mjs';
@@ -29,6 +30,19 @@ test('policy pack includes multiple rule classes', () => {
   assert.ok(classes.has('hard-invariant'));
   assert.ok(classes.has('promotable-policy'));
   assert.ok(classes.has('brittle-implementation-check'));
+});
+
+test('classification artifact groups the current convergence rule surface', () => {
+  const classification = readJson(
+    '../examples/classification/work-agent-convergence-rule-families.json',
+  );
+  assert.equal(classification.source_repo, 'work-agent');
+  assert.ok(classification.families.length >= 10);
+  assert.ok(
+    classification.families.some(
+      (family) => family.id === 'runtime-and-orchestration-decomposition',
+    ),
+  );
 });
 
 test('evidence schema requires framework and adapter sections', () => {
@@ -89,6 +103,18 @@ test('core classifies nodes and builds evidence from an adapter config', () => {
     defaultPromotionCandidate: false,
     defaultOverrideOrBypass: false,
   });
+
+  const evaluatedRules = evaluatePolicyPack(policyPack, { rootDir }, {
+    ruleIds: ['required-repo-artifacts'],
+  });
+  assert.equal(evaluatedRules.length, 1);
+  assert.equal(evaluatedRules[0].implemented, true);
+  assert.equal(evaluatedRules[0].passed, false);
+  assert.ok(
+    evaluatedRules[0].findings.some(
+      (finding) => finding.artifact === '.github/dependabot.yml',
+    ),
+  );
 });
 
 test('guidance CLI can run with explicit adapter and policy-pack inputs', () => {
@@ -128,4 +154,21 @@ test('guidance CLI can run with explicit adapter and policy-pack inputs', () => 
     version: 1,
     rule_count: 4,
   });
+});
+
+test('fixture adapters and evidence examples stay readable', () => {
+  const docsAdapter = readJson('../adapters/demo-docs-site.adapter.json');
+  assert.equal(docsAdapter.name, 'demo-docs-site');
+  assert.deepEqual(docsAdapter.evidence.requiredProofLanes, [
+    'npm run docs:build',
+    'npm test',
+  ]);
+
+  const passExample = readJson('../examples/evidence/work-agent-pass.json');
+  const failExample = readJson('../examples/evidence/work-agent-fail.json');
+  const policyGapExample = readJson('../examples/evidence/work-agent-policy-gap.json');
+
+  assert.equal(passExample.baseline_ci_fast_passed, true);
+  assert.equal(failExample.baseline_ci_fast_passed, false);
+  assert.equal(policyGapExample.recommendations[0].kind, 'policy-gap');
 });

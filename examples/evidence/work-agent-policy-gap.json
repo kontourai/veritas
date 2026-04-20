@@ -1,0 +1,62 @@
+{
+  "framework_version": 1,
+  "run_id": "work-agent-policy-gap-example",
+  "timestamp": "2026-04-19T00:10:00.000Z",
+  "source_ref": "refs/pull/415/head",
+  "resolved_phase": "Phase 1 (Harden & Onboard)",
+  "resolved_workstream": "Entity Hierarchy & Navigation Restructure",
+  "matched_artifacts": [".omx/plans/**"],
+  "affected_nodes": ["tooling.scripts"],
+  "affected_lanes": ["scripts/**"],
+  "baseline_ci_fast_passed": true,
+  "recommendations": [
+    {
+      "kind": "policy-gap",
+      "message": "The diff stayed within known lanes, but the framework has no executable rule for the new runtime-health helper split yet."
+    }
+  ],
+  "false_positive_review": "accepted",
+  "promotion_candidate": true,
+  "override_or_bypass": false,
+  "owner": "repo-architecture",
+  "files": ["scripts/verify-convergence.mjs"],
+  "unresolved_files": [],
+  "promotion_allowed": true,
+  "framework": {
+    "version": 1,
+    "resolver_precedence": [
+      "explicit roadmap task or issue reference in prompt/branch/PR title",
+      "matching initiative plan under docs/plans/**",
+      "matching local artifact under .omx/plans/**",
+      "active initiative from docs/strategy/roadmap.md",
+      "multi-workstream fallback suppresses promotion"
+    ],
+    "policy_defaults": {
+      "false_positive_review": "unknown",
+      "promotion_candidate": false,
+      "override_or_bypass": false
+    }
+  },
+  "adapter": {
+    "name": "work-agent",
+    "kind": "repo-adapter",
+    "report_transport": "github-step-summary",
+    "default_resolution": {
+      "phase": "Phase 1 (Harden & Onboard)",
+      "workstream": "Entity Hierarchy & Navigation Restructure",
+      "matchedArtifacts": ["docs/strategy/roadmap.md"]
+    },
+    "non_sliceable_invariants": [
+      "CLI/API/UI parity",
+      "SDK contract integrity",
+      "plugin/core boundary protection",
+      "mandatory CI coverage"
+    ],
+    "required_proof_lanes": ["npm run ci:fast"]
+  },
+  "policy_pack": {
+    "name": "work-agent-convergence",
+    "version": 1,
+    "rule_count": 4
+  }
+}

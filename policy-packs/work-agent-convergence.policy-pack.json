@@ -12,9 +12,19 @@
       "rollback_switch": null,
       "match": {
         "artifacts": [
+          ".github/dependabot.yml",
           ".github/workflows/ci.yml",
           ".github/workflows/ci-extended.yml",
+          ".github/ISSUE_TEMPLATE/bug-report.yml",
+          ".github/ISSUE_TEMPLATE/feature-request.yml",
+          ".github/ISSUE_TEMPLATE/docs-issue.yml",
+          ".github/ISSUE_TEMPLATE/config.yml",
           ".github/pull_request_template.md",
+          ".ai-guidance/work-agent.adapter.json",
+          ".ai-guidance/policy-packs/work-agent-convergence.policy-pack.json",
+          "vendor/ai-guidance-framework/adapters/work-agent.adapter.json",
+          "vendor/ai-guidance-framework/policy-packs/work-agent-convergence.policy-pack.json",
+          "docs/reference/contracts.md",
           "SECURITY.md"
         ]
       }

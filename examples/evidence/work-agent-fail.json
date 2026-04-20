@@ -1,0 +1,63 @@
+{
+  "framework_version": 1,
+  "run_id": "work-agent-fail-example",
+  "timestamp": "2026-04-19T00:05:00.000Z",
+  "source_ref": "refs/pull/412/head",
+  "resolved_phase": "Phase 1 (Harden & Onboard)",
+  "resolved_workstream": "multi-workstream",
+  "matched_artifacts": ["explicit-workstream"],
+  "affected_nodes": ["governance.root-manifests"],
+  "affected_lanes": ["root manifests"],
+  "baseline_ci_fast_passed": false,
+  "recommendations": [
+    {
+      "kind": "unmatched-files",
+      "message": "Some files do not match a configured lane and need manual review.",
+      "files": ["tmp/generated-note.txt"]
+    }
+  ],
+  "false_positive_review": "unknown",
+  "promotion_candidate": false,
+  "override_or_bypass": false,
+  "owner": null,
+  "files": ["package.json", "tmp/generated-note.txt"],
+  "unresolved_files": ["tmp/generated-note.txt"],
+  "promotion_allowed": false,
+  "framework": {
+    "version": 1,
+    "resolver_precedence": [
+      "explicit roadmap task or issue reference in prompt/branch/PR title",
+      "matching initiative plan under docs/plans/**",
+      "matching local artifact under .omx/plans/**",
+      "active initiative from docs/strategy/roadmap.md",
+      "multi-workstream fallback suppresses promotion"
+    ],
+    "policy_defaults": {
+      "false_positive_review": "unknown",
+      "promotion_candidate": false,
+      "override_or_bypass": false
+    }
+  },
+  "adapter": {
+    "name": "work-agent",
+    "kind": "repo-adapter",
+    "report_transport": "github-step-summary",
+    "default_resolution": {
+      "phase": "Phase 1 (Harden & Onboard)",
+      "workstream": "Entity Hierarchy & Navigation Restructure",
+      "matchedArtifacts": ["docs/strategy/roadmap.md"]
+    },
+    "non_sliceable_invariants": [
+      "CLI/API/UI parity",
+      "SDK contract integrity",
+      "plugin/core boundary protection",
+      "mandatory CI coverage"
+    ],
+    "required_proof_lanes": ["npm run ci:fast"]
+  },
+  "policy_pack": {
+    "name": "work-agent-convergence",
+    "version": 1,
+    "rule_count": 4
+  }
+}

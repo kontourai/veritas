@@ -1,4 +1,10 @@
-import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
@@ -177,6 +183,56 @@ export function buildEvidenceRecord({
       rule_count: resolvedPolicyPack.rules.length,
     },
   };
+}
+
+function buildRuleResult(rule, overrides = {}) {
+  return {
+    rule_id: rule.id,
+    classification: rule.classification,
+    stage: rule.stage,
+    message: rule.message,
+    owner: rule.owner ?? null,
+    rollback_switch: rule.rollback_switch ?? null,
+    implemented: false,
+    passed: null,
+    summary: `Rule ${rule.id} is metadata-only in the current framework.`,
+    findings: [],
+    ...overrides,
+  };
+}
+
+export function evaluateRequiredArtifactsRule(rule, { rootDir }) {
+  const missingArtifacts = (rule.match?.artifacts ?? []).filter(
+    (artifact) => !existsSync(resolve(rootDir, artifact)),
+  );
+
+  return buildRuleResult(rule, {
+    implemented: true,
+    passed: missingArtifacts.length === 0,
+    summary:
+      missingArtifacts.length === 0
+        ? 'All required repository artifacts are present.'
+        : 'Some required repository artifacts are missing.',
+    findings: missingArtifacts.map((artifact) => ({
+      kind: 'missing-artifact',
+      artifact,
+    })),
+  });
+}
+
+export function evaluatePolicyRule(rule, context) {
+  if (Array.isArray(rule.match?.artifacts)) {
+    return evaluateRequiredArtifactsRule(rule, context);
+  }
+
+  return buildRuleResult(rule);
+}
+
+export function evaluatePolicyPack(policyPack, context, options = {}) {
+  const selectedRuleIds = new Set(options.ruleIds ?? []);
+  return policyPack.rules
+    .filter((rule) => selectedRuleIds.size === 0 || selectedRuleIds.has(rule.id))
+    .map((rule) => evaluatePolicyRule(rule, context));
 }
 
 export function writeEvidenceArtifact(record, config, rootDir) {

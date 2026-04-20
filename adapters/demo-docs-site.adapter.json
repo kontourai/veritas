@@ -1,0 +1,72 @@
+{
+  "name": "demo-docs-site",
+  "kind": "repo-adapter",
+  "policy": {
+    "defaultFalsePositiveReview": "unknown",
+    "defaultPromotionCandidate": false,
+    "defaultOverrideOrBypass": false
+  },
+  "graph": {
+    "version": 1,
+    "defaultResolution": {
+      "phase": "Phase 0 (Bootstrap)",
+      "workstream": "Docs Navigation Hardening",
+      "matchedArtifacts": ["docs/adr/0001-navigation.md"]
+    },
+    "nonSliceableInvariants": [
+      "navigation/content parity",
+      "search index integrity",
+      "build output consistency"
+    ],
+    "resolverPrecedence": [
+      "explicit task reference",
+      "matching ADR under docs/adr/**",
+      "active roadmap item",
+      "multi-workstream fallback suppresses promotion"
+    ],
+    "resolutionRules": [
+      {
+        "id": "adr-doc",
+        "match": {
+          "patterns": ["docs/adr/"]
+        },
+        "resolution": {
+          "phase": "Phase 0 (Bootstrap)",
+          "workstream": "Docs Navigation Hardening",
+          "matchedArtifacts": ["docs/adr/**"]
+        }
+      }
+    ],
+    "nodes": [
+      {
+        "id": "docs.content",
+        "kind": "docs-surface",
+        "label": "docs/content",
+        "patterns": ["content/"]
+      },
+      {
+        "id": "docs.theme",
+        "kind": "presentation-surface",
+        "label": "docs/theme",
+        "patterns": ["src/theme/"]
+      },
+      {
+        "id": "docs.nav",
+        "kind": "navigation-surface",
+        "label": "docs/navigation",
+        "patterns": ["src/navigation/"]
+      },
+      {
+        "id": "docs.governance",
+        "kind": "governance-surface",
+        "label": "docs/adr",
+        "patterns": ["docs/adr/"]
+      }
+    ]
+  },
+  "evidence": {
+    "artifactDir": ".omx/evidence/demo-docs-site",
+    "requiredProofLanes": ["npm run docs:build", "npm test"],
+    "reportTransport": "local-json"
+  }
+}

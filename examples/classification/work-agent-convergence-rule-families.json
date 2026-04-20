@@ -1,0 +1,285 @@
+{
+  "version": 1,
+  "source_repo": "work-agent",
+  "source_script": "scripts/verify-convergence.mjs",
+  "representation": "Grouped rule families. Every current convergence check maps into one of the families below, even when the live script still uses exact string assertions.",
+  "families": [
+    {
+      "id": "repo-governance-and-distribution",
+      "classification": "hard-invariant",
+      "file_scopes": [
+        ".github/**",
+        ".ai-guidance/**",
+        "vendor/ai-guidance-framework/**",
+        "package.json",
+        "SECURITY.md",
+        "docs/reference/contracts.md"
+      ],
+      "enforcement_patterns": [
+        "required artifact presence",
+        "tracked-vs-vendored parity",
+        "required npm scripts",
+        "legacy file removal"
+      ]
+    },
+    {
+      "id": "ci-proof-lanes-and-pr-baseline",
+      "classification": "hard-invariant",
+      "file_scopes": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/ci-extended.yml"
+      ],
+      "enforcement_patterns": [
+        "must execute ci:fast",
+        "must execute connected-agents suite",
+        "must not use continue-on-error"
+      ]
+    },
+    {
+      "id": "shared-import-boundaries",
+      "classification": "hard-invariant",
+      "file_scopes": [
+        "packages/cli/**",
+        "packages/connect/**",
+        "packages/contracts/**",
+        "packages/sdk/**",
+        "src-server/**",
+        "src-ui/**"
+      ],
+      "enforcement_patterns": [
+        "forbid @stallion-ai/shared root imports",
+        "allow only approved helper subpaths",
+        "enforce contract-owned type imports"
+      ]
+    },
+    {
+      "id": "terminal-and-process-decomposition",
+      "classification": "promotable-policy",
+      "file_scopes": [
+        "src-server/services/terminal-service.ts",
+        "src-server/services/terminal-shells.ts",
+        "src-server/services/terminal-subprocess-state.ts"
+      ],
+      "enforcement_patterns": [
+        "delegate shell resolution",
+        "delegate subprocess polling",
+        "retire inline terminal helpers"
+      ]
+    },
+    {
+      "id": "sdk-request-transport-extraction",
+      "classification": "promotable-policy",
+      "file_scopes": [
+        "packages/sdk/src/query-domains/systemRuntime*.ts",
+        "packages/sdk/src/query-domains/catalog*.ts",
+        "src-ui/src/views/ToolManagementView.tsx",
+        "src-ui/src/views/RegistryView.tsx",
+        "src-ui/src/views/IntegrationsView.tsx"
+      ],
+      "enforcement_patterns": [
+        "extract raw fetch helpers",
+        "route UI through shared SDK hooks",
+        "retire inline request orchestration"
+      ]
+    },
+    {
+      "id": "playbooks-and-ui-viewmodel-extraction",
+      "classification": "promotable-policy",
+      "file_scopes": [
+        "src-ui/src/views/PlaybooksView.tsx",
+        "src-ui/src/views/playbooks/**"
+      ],
+      "enforcement_patterns": [
+        "delegate orchestration to usePlaybooksViewModel",
+        "delegate modal/editor/utils layers",
+        "retire inline playbook helpers"
+      ]
+    },
+    {
+      "id": "contexts-and-hooks-no-raw-fetch",
+      "classification": "promotable-policy",
+      "file_scopes": [
+        "src-ui/src/contexts/**",
+        "src-ui/src/hooks/**"
+      ],
+      "enforcement_patterns": [
+        "forbid raw fetch in contexts/hooks",
+        "require shared SDK query/mutation hooks",
+        "require extracted orchestration helpers"
+      ]
+    },
+    {
+      "id": "analytics-feedback-and-monitoring-extraction",
+      "classification": "promotable-policy",
+      "file_scopes": [
+        "src-server/analytics/**",
+        "src-server/services/feedback-*.ts",
+        "src-ui/src/components/monitoring/**",
+        "src-ui/src/views/monitoring/**"
+      ],
+      "enforcement_patterns": [
+        "delegate state math",
+        "delegate analysis helpers",
+        "retire inline monitoring helpers"
+      ]
+    },
+    {
+      "id": "runtime-and-orchestration-decomposition",
+      "classification": "promotable-policy",
+      "file_scopes": [
+        "src-server/runtime/**",
+        "src-server/services/orchestration-*.ts"
+      ],
+      "enforcement_patterns": [
+        "break runtime into focused modules",
+        "retire inline orchestration/session logic",
+        "keep service bootstrap and shutdown delegated"
+      ]
+    },
+    {
+      "id": "acp-service-decomposition",
+      "classification": "promotable-policy",
+      "file_scopes": [
+        "src-server/services/acp-*.ts",
+        "src-ui/src/components/acp-connections/**",
+        "src-ui/src/hooks/useACPConnections.ts"
+      ],
+      "enforcement_patterns": [
+        "delegate ACP event, chat, session, and lifecycle logic",
+        "keep ACP UI extracted",
+        "require shared ACP helpers"
+      ]
+    },
+    {
+      "id": "knowledge-memory-and-storage-decomposition",
+      "classification": "promotable-policy",
+      "file_scopes": [
+        "src-server/services/knowledge-*.ts",
+        "src-server/adapters/file/**",
+        "src-server/domain/file-storage-*.ts"
+      ],
+      "enforcement_patterns": [
+        "delegate context, namespace, filesystem, and document helpers",
+        "delegate memory adapter helper families",
+        "retire inline storage logic"
+      ]
+    },
+    {
+      "id": "scheduler-provider-and-route-decomposition",
+      "classification": "promotable-policy",
+      "file_scopes": [
+        "src-server/services/builtin-scheduler*.ts",
+        "src-server/providers/**",
+        "src-server/routes/**"
+      ],
+      "enforcement_patterns": [
+        "delegate scheduler storage and execution",
+        "extract provider registry logic",
+        "extract route schemas and route helper families"
+      ]
+    },
+    {
+      "id": "sdk-api-barrel-and-type-ownership",
+      "classification": "hard-invariant",
+      "file_scopes": [
+        "packages/shared/**",
+        "packages/contracts/**",
+        "packages/sdk/**"
+      ],
+      "enforcement_patterns": [
+        "enforce contract-owned type surfaces",
+        "keep barrels thin",
+        "retire legacy declarations after extraction"
+      ]
+    },
+    {
+      "id": "cli-install-dev-and-template-decomposition",
+      "classification": "promotable-policy",
+      "file_scopes": [
+        "packages/cli/src/commands/**",
+        "packages/cli/src/dev/**"
+      ],
+      "enforcement_patterns": [
+        "delegate install preview/source/registry/layout flows",
+        "delegate doctor and dev-server helpers",
+        "retire inline template/dev-server logic"
+      ]
+    },
+    {
+      "id": "coding-chat-and-session-extraction",
+      "classification": "promotable-policy",
+      "file_scopes": [
+        "src-ui/src/components/CodingLayout.tsx",
+        "src-ui/src/components/chat-dock/**",
+        "src-server/routes/chat*.ts",
+        "src-ui/src/contexts/ActiveChatsContext.tsx",
+        "src-ui/src/hooks/useActiveChatSessions*.ts"
+      ],
+      "enforcement_patterns": [
+        "delegate coding layout helpers",
+        "delegate chat request/stream/persistence layers",
+        "retire inline active-chat/session logic"
+      ]
+    },
+    {
+      "id": "provider-adapters-and-control-surfaces",
+      "classification": "promotable-policy",
+      "file_scopes": [
+        "src-server/providers/adapters/**",
+        "src-server/tools/stallion-control-*.ts",
+        "src-server/voice/providers/**"
+      ],
+      "enforcement_patterns": [
+        "delegate provider protocol/event mapping",
+        "delegate control-server helpers",
+        "delegate voice stream-event parsing"
+      ]
+    },
+    {
+      "id": "settings-plugin-layout-and-navigation-ui",
+      "classification": "promotable-policy",
+      "file_scopes": [
+        "src-ui/src/views/SettingsView.tsx",
+        "src-ui/src/views/PluginManagementView.tsx",
+        "src-ui/src/views/LayoutView.tsx",
+        "src-ui/src/contexts/NavigationContext.tsx",
+        "src-ui/src/components/PathAutocomplete.tsx"
+      ],
+      "enforcement_patterns": [
+        "forbid raw fetch in settings/plugin flows",
+        "delegate plugin modal/view-model/state helpers",
+        "retire legacy standalone layout flows",
+        "keep navigation/path browsing on shared helpers"
+      ]
+    },
+    {
+      "id": "dashboard-sidebar-and-project-ui-extraction",
+      "classification": "promotable-policy",
+      "file_scopes": [
+        "src-ui/src/components/InsightsDashboard.tsx",
+        "src-ui/src/components/ProjectSidebar.tsx",
+        "src-ui/src/views/ProjectPage.tsx",
+        "src-ui/src/views/ScheduleView.tsx",
+        "src-ui/src/components/chat/MessageBubble.tsx"
+      ],
+      "enforcement_patterns": [
+        "delegate derived dashboard helpers",
+        "extract sidebar/page/message-bubble UI helpers",
+        "retire inline UI control logic"
+      ]
+    },
+    {
+      "id": "legacy-surface-retirement",
+      "classification": "hard-invariant",
+      "file_scopes": [
+        "src-ui/src/views/PromptsView.tsx",
+        "legacy standalone layout surfaces",
+        "retired deleted files enumerated in convergence"
+      ],
+      "enforcement_patterns": [
+        "deleted paths must stay deleted",
+        "legacy prompts/layout surfaces must not return"
+      ]
+    }
+  ]
+}
