@@ -100,7 +100,9 @@ Use this sequence:
 3. replace the default proof lane with the one that proves your repo is healthy
 4. run `npm exec -- ai-guidance print package-scripts`
 5. run `npm exec -- ai-guidance print ci-snippet`
-6. run `npm exec -- ai-guidance report package.json`
-7. wire the same paths into review and CI
+6. run `npm exec -- ai-guidance apply package-scripts`
+7. run `npm exec -- ai-guidance apply ci-snippet`
+8. run `npm exec -- ai-guidance report package.json`
+9. wire the same paths into review and CI if you want them in your permanent workflow files
 
-This slice is intentionally conservative. It prints the suggested wiring first so teams can copy and review it before touching manifests or workflow files.
+This slice is intentionally conservative. It prints the suggested wiring first, then only writes changes when the user explicitly asks it to.

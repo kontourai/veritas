@@ -6,6 +6,8 @@ import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
+  applyCiSnippet,
+  applyPackageScripts,
   buildEvidenceRecord,
   buildSuggestedCiSnippet,
   buildSuggestedPackageScripts,
@@ -279,6 +281,87 @@ test('print ci-snippet returns a copy-paste starter snippet', () => {
   assert.equal(parsed.repoInsights.baseRef, '<base-ref>');
   assert.match(parsed.ciSnippet, /run: npm run verify/);
   assert.match(parsed.ciSnippet, /--changed-from <base-ref> --changed-to HEAD/);
+});
+
+test('apply package-scripts writes the suggested guidance scripts into package.json', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-scripts-'));
+  writeFileSync(
+    join(rootDir, 'package.json'),
+    JSON.stringify({ scripts: { test: 'vitest run' } }, null, 2),
+  );
+  execFileSync('git', ['init', '-b', 'main'], { cwd: rootDir, encoding: 'utf8' });
+
+  const stdout = execFileSync(
+    'npm',
+    ['exec', '--', 'ai-guidance', 'apply', 'package-scripts', '--root', rootDir],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+  const pkg = readJsonFromAbsolute(join(rootDir, 'package.json'));
+
+  assert.equal(parsed.packageJsonPath, 'package.json');
+  assert.equal(parsed.baseRef, 'main');
+  assert.equal(pkg.scripts['guidance:init'], 'npm exec -- ai-guidance init');
+  assert.equal(
+    pkg.scripts['guidance:report:diff'],
+    'npm exec -- ai-guidance report --changed-from main --changed-to HEAD',
+  );
+});
+
+test('apply package-scripts surfaces script conflicts without force', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-conflict-'));
+  writeFileSync(
+    join(rootDir, 'package.json'),
+    JSON.stringify(
+      {
+        scripts: {
+          'guidance:proof': 'echo custom',
+        },
+      },
+      null,
+      2,
+    ),
+  );
+
+  assert.throws(
+    () =>
+      applyPackageScripts({
+        rootDir,
+        proofLane: 'npm test',
+        baseRef: '<base-ref>',
+      }),
+    /Refusing to overwrite existing script guidance:proof/,
+  );
+});
+
+test('apply ci-snippet writes a stable snippet file', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-ci-'));
+  const result = applyCiSnippet({
+    rootDir,
+    proofLane: 'npm run verify',
+    baseRef: 'main',
+  });
+  const contents = readFileSync(
+    join(rootDir, '.ai-guidance/snippets/ci-snippet.yml'),
+    'utf8',
+  );
+
+  assert.equal(result.outputPath, '.ai-guidance/snippets/ci-snippet.yml');
+  assert.match(contents, /run: npm run verify/);
+  assert.match(contents, /--changed-from main --changed-to HEAD/);
+});
+
+test('apply ci-snippet rejects paths outside the reviewable snippet area', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-ci-outside-'));
+
+  assert.throws(
+    () =>
+      applyCiSnippet({
+        rootDir,
+        outputPath: '../outside.yml',
+      }),
+    /only supports writing inside \.ai-guidance\/snippets\//,
+  );
 });
 
 test('adaptive bootstrap detects a workspace-shaped repo', () => {

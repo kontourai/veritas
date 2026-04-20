@@ -136,6 +136,14 @@ assert(
   'Bootstrap guide must include the CI snippet helper command.',
 );
 assert(
+  bootstrapGuide.includes('npm exec -- ai-guidance apply package-scripts'),
+  'Bootstrap guide must include the package-script apply command.',
+);
+assert(
+  bootstrapGuide.includes('npm exec -- ai-guidance apply ci-snippet'),
+  'Bootstrap guide must include the CI snippet apply command.',
+);
+assert(
   bootstrapGuide.includes('repo shape it inferred'),
   'Bootstrap guide must explain inferred repo decisions.',
 );
@@ -156,6 +164,10 @@ assert(
 assert(
   rootReadme.includes('print suggested package scripts and a starter CI snippet'),
   'README must describe the print-first integration helper capability.',
+);
+assert(
+  rootReadme.includes('explicitly apply suggested package scripts'),
+  'README must describe the explicit apply capability.',
 );
 
 const contributingGuide = readText('CONTRIBUTING.md');

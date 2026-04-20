@@ -593,6 +593,8 @@ This repo was bootstrapped for \`${projectName}\` with a conservative starter ki
 \`\`\`bash
 npm exec -- ai-guidance print package-scripts
 npm exec -- ai-guidance print ci-snippet
+npm exec -- ai-guidance apply package-scripts
+npm exec -- ai-guidance apply ci-snippet
 npm exec -- ai-guidance report package.json
 \`\`\`
 
@@ -706,6 +708,81 @@ export function buildSuggestedCiSnippet({
 - name: Generate guidance report
   run: npm exec -- ai-guidance report --changed-from ${baseRef} --changed-to HEAD
 `;
+}
+
+export function applyPackageScripts({
+  rootDir,
+  proofLane = 'npm test',
+  baseRef = '<base-ref>',
+  force = false,
+}) {
+  const packageJsonPath = resolve(rootDir, 'package.json');
+  if (!existsSync(packageJsonPath)) {
+    throw new Error('apply package-scripts requires package.json at the repo root');
+  }
+
+  const packageJson = loadAdapterConfig(packageJsonPath);
+  const nextScripts = buildSuggestedPackageScripts({ proofLane, baseRef });
+  const currentScripts = packageJson.scripts ?? {};
+
+  for (const [key, value] of Object.entries(nextScripts)) {
+    if (!force && key in currentScripts && currentScripts[key] !== value) {
+      throw new Error(
+        `Refusing to overwrite existing script ${key}; rerun with --force if you want to replace it`,
+      );
+    }
+  }
+
+  packageJson.scripts = { ...currentScripts, ...nextScripts };
+  writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf8');
+
+  return {
+    rootDir,
+    packageJsonPath: relative(rootDir, packageJsonPath).replaceAll('\\', '/'),
+    proofLane,
+    baseRef,
+    appliedScripts: Object.keys(nextScripts),
+  };
+}
+
+export function applyCiSnippet({
+  rootDir,
+  proofLane = 'npm test',
+  baseRef = '<base-ref>',
+  outputPath = '.ai-guidance/snippets/ci-snippet.yml',
+  force = false,
+}) {
+  const resolvedOutputPath = resolve(rootDir, outputPath);
+  const relativeOutputPath = relative(rootDir, resolvedOutputPath).replaceAll('\\', '/');
+
+  if (
+    relativeOutputPath.startsWith('..') ||
+    !relativeOutputPath.startsWith('.ai-guidance/snippets/')
+  ) {
+    throw new Error(
+      'apply ci-snippet only supports writing inside .ai-guidance/snippets/',
+    );
+  }
+
+  if (existsSync(resolvedOutputPath) && !force) {
+    throw new Error(
+      `Refusing to overwrite existing file: ${outputPath} (use --force to replace it)`,
+    );
+  }
+
+  mkdirSync(resolve(rootDir, '.ai-guidance/snippets'), { recursive: true });
+  writeFileSync(
+    resolvedOutputPath,
+    buildSuggestedCiSnippet({ proofLane, baseRef }),
+    'utf8',
+  );
+
+  return {
+    rootDir,
+    outputPath: relativeOutputPath,
+    proofLane,
+    baseRef,
+  };
 }
 
 export function writeEvidenceArtifact(record, config, rootDir) {
@@ -882,6 +959,34 @@ export function parsePrintArgs(argv) {
   return options;
 }
 
+export function parseApplyArgs(argv) {
+  const options = {};
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+    if (token === '--root') {
+      options.rootDir = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--proof-lane') {
+      options.proofLane = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--output') {
+      options.outputPath = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--force') {
+      options.force = true;
+    }
+  }
+
+  return options;
+}
+
 export function runGuidanceReportCli(argv = process.argv.slice(2), defaults = {}) {
   const { options, files: explicitFiles } = parseArgs(argv);
   const rootDir = options.rootDir ? resolve(options.rootDir) : defaults.rootDir;
@@ -1003,6 +1108,55 @@ export function runPrintCiSnippetCli(argv = process.argv.slice(2), defaults = {}
           proofLane,
           baseRef: repoInsights.baseRef,
         }),
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
+export function runApplyPackageScriptsCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseApplyArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const repoInsights = inferBootstrapRepoInsights(rootDir);
+  const proofLane = options.proofLane ?? repoInsights.proofLane;
+  const result = applyPackageScripts({
+    rootDir,
+    proofLane,
+    baseRef: repoInsights.baseRef,
+    force: options.force ?? false,
+  });
+
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        ...result,
+        repoInsights,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
+export function runApplyCiSnippetCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseApplyArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const repoInsights = inferBootstrapRepoInsights(rootDir);
+  const proofLane = options.proofLane ?? repoInsights.proofLane;
+  const result = applyCiSnippet({
+    rootDir,
+    proofLane,
+    baseRef: repoInsights.baseRef,
+    outputPath: options.outputPath ?? '.ai-guidance/snippets/ci-snippet.yml',
+    force: options.force ?? false,
+  });
+
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        ...result,
+        repoInsights,
       },
       null,
       2,
