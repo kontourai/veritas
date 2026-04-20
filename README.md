@@ -41,6 +41,7 @@ This framework is structured to avoid both failure modes.
 Today the framework can:
 
 - bootstrap a starter `.ai-guidance/` setup for a new repo
+- infer conservative starter defaults from the target repo shape
 - load repo adapters and policy packs
 - resolve changed files into graph nodes and workstreams
 - emit structured evidence records and Markdown summaries
@@ -61,7 +62,7 @@ npm install
 Then bootstrap the repo:
 
 ```bash
-npm exec -- ai-guidance init --proof-lane "npm test"
+npm exec -- ai-guidance init
 ```
 
 That writes the minimum starter kit:
@@ -70,6 +71,10 @@ That writes the minimum starter kit:
 2. one policy pack
 3. one team profile
 4. one local README
+
+The first adaptive slice also inspects the repo for likely source roots, test roots, workflow presence, and a likely proof lane, then writes those decisions into the generated starter README so the team can confirm them quickly.
+
+If you already know the right proof lane, you can still override it with `--proof-lane`.
 
 ## Use It
 
@@ -83,7 +88,7 @@ The primary workflow is:
 npm run verify
 npm test
 
-npm exec -- ai-guidance init --proof-lane "npm test"
+npm exec -- ai-guidance init
 
 npm exec -- ai-guidance report --run-id local-smoke \
   package.json

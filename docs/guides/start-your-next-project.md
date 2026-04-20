@@ -19,7 +19,7 @@ The goal is:
 The framework now ships a first bootstrap command:
 
 ```bash
-npm exec -- ai-guidance init --proof-lane "npm test"
+npm exec -- ai-guidance init
 ```
 
 That command writes the minimum starter kit:
@@ -28,6 +28,8 @@ That command writes the minimum starter kit:
 2. a starter policy pack
 3. a team profile
 4. a short human-friendly README in the repo
+
+It also records the repo shape it inferred so the team can review the guessed source roots, test roots, and proof lane before moving on.
 
 ## The Minimum Starter Kit
 
@@ -93,7 +95,7 @@ It needs the repo to expose guidance clearly and consistently.
 
 Use this sequence:
 
-1. run `npm exec -- ai-guidance init --proof-lane "npm test"`
+1. run `npm exec -- ai-guidance init`
 2. review the generated `.ai-guidance/` files
 3. replace the default proof lane with the one that proves your repo is healthy
 4. run `npm exec -- ai-guidance report package.json`

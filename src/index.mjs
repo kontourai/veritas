@@ -242,9 +242,146 @@ export function slugifyProjectName(name) {
     .replace(/^-+|-+$/g, '') || 'project';
 }
 
+function readJsonIfExists(path) {
+  if (!existsSync(path)) return null;
+  return JSON.parse(readFileSync(path, 'utf8'));
+}
+
+function detectSourceRoots(rootDir) {
+  return ['src/', 'app/', 'packages/', 'apps/', 'docs/', 'content/'].filter((path) =>
+    existsSync(resolve(rootDir, path)),
+  );
+}
+
+function detectTestRoots(rootDir) {
+  return ['tests/', 'test/', 'spec/'].filter((path) =>
+    existsSync(resolve(rootDir, path)),
+  );
+}
+
+export function inferBootstrapRepoInsights(rootDir) {
+  const packageJson = readJsonIfExists(resolve(rootDir, 'package.json'));
+  const scripts = packageJson?.scripts ?? {};
+  const sourceRoots = detectSourceRoots(rootDir);
+  const testRoots = detectTestRoots(rootDir);
+  const hasWorkflows = existsSync(resolve(rootDir, '.github/workflows'));
+  const hasWorkspaceConfig =
+    existsSync(resolve(rootDir, 'pnpm-workspace.yaml')) ||
+    existsSync(resolve(rootDir, 'turbo.json')) ||
+    existsSync(resolve(rootDir, 'nx.json')) ||
+    existsSync(resolve(rootDir, 'package.json')) &&
+      Array.isArray(packageJson?.workspaces);
+
+  let repoKind = 'application';
+  if (hasWorkspaceConfig || sourceRoots.includes('packages/') || sourceRoots.includes('apps/')) {
+    repoKind = 'workspace';
+  } else if (
+    (sourceRoots.includes('docs/') || sourceRoots.includes('content/')) &&
+    !sourceRoots.includes('src/') &&
+    !sourceRoots.includes('app/')
+  ) {
+    repoKind = 'docs';
+  }
+
+  const scriptPriority =
+    repoKind === 'docs'
+      ? ['docs:build', 'build', 'test', 'verify']
+      : ['ci:fast', 'verify', 'test:smoke', 'test', 'build'];
+  const matchingScript = scriptPriority.find((name) => typeof scripts[name] === 'string');
+  const proofLane = matchingScript ? `npm run ${matchingScript}` : 'npm test';
+
+  return {
+    repoKind,
+    sourceRoots,
+    testRoots,
+    hasWorkflows,
+    proofLane,
+    packageManager: packageJson ? 'npm' : 'unknown',
+    matchedScripts: scriptPriority.filter((name) => typeof scripts[name] === 'string'),
+  };
+}
+
+function buildAdaptiveNodes(repoInsights) {
+  const nodes = [
+    {
+      id: 'governance.guidance',
+      kind: 'governance-surface',
+      label: '.ai-guidance/**',
+      patterns: ['.ai-guidance/'],
+    },
+    {
+      id: 'governance.root-manifests',
+      kind: 'governance-surface',
+      label: 'root manifests',
+      patterns: ['package.json', 'README.md', '.gitignore', 'AGENTS.md'],
+    },
+  ];
+
+  if (repoInsights.hasWorkflows) {
+    nodes.push({
+      id: 'delivery.workflows',
+      kind: 'delivery-surface',
+      label: '.github/**',
+      patterns: ['.github/'],
+    });
+  }
+
+  const sourceRoots = repoInsights.sourceRoots.length > 0 ? repoInsights.sourceRoots : ['src/'];
+  const testRoots = repoInsights.testRoots.length > 0 ? repoInsights.testRoots : ['tests/'];
+
+  for (const root of sourceRoots) {
+    const label = `${root}**`;
+    const idBase = root.replace(/\/$/, '').replace(/[^a-z0-9]+/g, '.');
+
+    if (root === 'packages/' || root === 'apps/') {
+      nodes.push({
+        id: `workspace.${idBase}`,
+        kind: 'shared-package',
+        label,
+        patterns: [root],
+      });
+      continue;
+    }
+
+    if (root === 'docs/' || root === 'content/') {
+      nodes.push({
+        id: `docs.${idBase}`,
+        kind: 'product-surface',
+        label,
+        patterns: [root],
+      });
+      continue;
+    }
+
+    nodes.push({
+      id: `app.${idBase}`,
+      kind: 'product-surface',
+      label,
+      patterns: [root],
+    });
+  }
+
+  for (const root of testRoots) {
+    nodes.push({
+      id: `verification.${root.replace(/\/$/, '').replace(/[^a-z0-9]+/g, '.')}`,
+      kind: 'verification-surface',
+      label: `${root}**`,
+      patterns: [root],
+    });
+  }
+
+  return nodes;
+}
+
 export function buildStarterAdapter({
   projectName,
   proofLane = 'npm test',
+  repoInsights = {
+    repoKind: 'application',
+    sourceRoots: [],
+    testRoots: [],
+    hasWorkflows: true,
+  },
 }) {
   const projectSlug = slugifyProjectName(projectName);
 
@@ -287,38 +424,7 @@ export function buildStarterAdapter({
           },
         },
       ],
-      nodes: [
-        {
-          id: 'app.src',
-          kind: 'product-surface',
-          label: 'src/**',
-          patterns: ['src/'],
-        },
-        {
-          id: 'verification.tests',
-          kind: 'verification-surface',
-          label: 'tests/**',
-          patterns: ['tests/'],
-        },
-        {
-          id: 'delivery.workflows',
-          kind: 'delivery-surface',
-          label: '.github/**',
-          patterns: ['.github/'],
-        },
-        {
-          id: 'governance.guidance',
-          kind: 'governance-surface',
-          label: '.ai-guidance/**',
-          patterns: ['.ai-guidance/'],
-        },
-        {
-          id: 'governance.root-manifests',
-          kind: 'governance-surface',
-          label: 'root manifests',
-          patterns: ['package.json', 'README.md', '.gitignore', 'AGENTS.md'],
-        },
-      ],
+      nodes: buildAdaptiveNodes(repoInsights),
     },
     evidence: {
       artifactDir: '.ai-guidance/evidence',
@@ -397,7 +503,17 @@ export function buildStarterTeamProfile({ projectName, proofLane = 'npm test' })
   };
 }
 
-export function buildBootstrapReadme({ projectName, proofLane = 'npm test' }) {
+export function buildBootstrapReadme({
+  projectName,
+  proofLane = 'npm test',
+  repoInsights = {
+    repoKind: 'application',
+    sourceRoots: [],
+    testRoots: [],
+    hasWorkflows: false,
+    matchedScripts: [],
+  },
+}) {
   return `# AI Guidance Starter Kit
 
 This repo was bootstrapped for \`${projectName}\` with a conservative starter kit for agent-guided development.
@@ -408,10 +524,30 @@ This repo was bootstrapped for \`${projectName}\` with a conservative starter ki
 - \`.ai-guidance/policy-packs/default.policy-pack.json\`
 - \`.ai-guidance/team/default.team-profile.json\`
 
+## Inferred Repo Shape
+
+- Repo kind: \`${repoInsights.repoKind}\`
+- Source roots: ${
+    repoInsights.sourceRoots.length > 0
+      ? `\`${repoInsights.sourceRoots.join('`, `')}\``
+      : '`src/` (default)'
+  }
+- Test roots: ${
+    repoInsights.testRoots.length > 0
+      ? `\`${repoInsights.testRoots.join('`, `')}\``
+      : '`tests/` (default)'
+  }
+- GitHub workflows detected: \`${repoInsights.hasWorkflows ? 'yes' : 'no'}\`
+- Matching scripts seen: ${
+    repoInsights.matchedScripts.length > 0
+      ? `\`${repoInsights.matchedScripts.join('`, `')}\``
+      : '`none`'
+  }
+
 ## What To Do Next
 
-1. Adjust the adapter node patterns to match the real repo layout.
-2. Replace the default proof lane with the command that proves your project is healthy.
+1. Confirm the inferred source/test roots match the real repo layout.
+2. Replace the suggested proof lane if a stronger project health command exists.
 3. Keep the team profile in \`shadow\` mode until you have enough evidence to tighten rules.
 
 ## Suggested Commands
@@ -442,9 +578,11 @@ The goal is to give any compatible agent just-in-time repo guidance from day one
 export function writeBootstrapStarterKit({
   rootDir,
   projectName = basename(resolve(rootDir)),
-  proofLane = 'npm test',
+  proofLane,
   force = false,
 }) {
+  const repoInsights = inferBootstrapRepoInsights(rootDir);
+  const resolvedProofLane = proofLane ?? repoInsights.proofLane;
   const adapterPath = resolve(rootDir, '.ai-guidance/repo.adapter.json');
   const policyPackPath = resolve(
     rootDir,
@@ -457,9 +595,9 @@ export function writeBootstrapStarterKit({
   const readmePath = resolve(rootDir, '.ai-guidance/README.md');
 
   const files = [
-    [adapterPath, buildStarterAdapter({ projectName, proofLane })],
+    [adapterPath, buildStarterAdapter({ projectName, proofLane: resolvedProofLane, repoInsights })],
     [policyPackPath, buildStarterPolicyPack({ projectName })],
-    [teamProfilePath, buildStarterTeamProfile({ projectName, proofLane })],
+    [teamProfilePath, buildStarterTeamProfile({ projectName, proofLane: resolvedProofLane })],
   ];
 
   for (const [filePath] of files) {
@@ -485,14 +623,15 @@ export function writeBootstrapStarterKit({
 
   writeFileSync(
     readmePath,
-    buildBootstrapReadme({ projectName, proofLane }),
+    buildBootstrapReadme({ projectName, proofLane: resolvedProofLane, repoInsights }),
     'utf8',
   );
 
   return {
     rootDir,
     projectName,
-    proofLane,
+    proofLane: resolvedProofLane,
+    repoInsights,
     generatedFiles: [
       relative(rootDir, readmePath).replaceAll('\\', '/'),
       relative(rootDir, adapterPath).replaceAll('\\', '/'),
@@ -729,11 +868,10 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseInitArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const projectName = options.projectName ?? defaults.projectName ?? basename(rootDir);
-  const proofLane = options.proofLane ?? defaults.proofLane ?? 'npm test';
   const result = writeBootstrapStarterKit({
     rootDir,
     projectName,
-    proofLane,
+    proofLane: options.proofLane ?? defaults.proofLane,
     force: options.force ?? false,
   });
 

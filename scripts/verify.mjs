@@ -44,6 +44,10 @@ assert(
   'Getting-started guide must include the bootstrap command.',
 );
 assert(
+  gettingStartedGuide.includes('inferred about the repo'),
+  'Getting-started guide must mention inferred bootstrap decisions.',
+);
+assert(
   gettingStartedGuide.includes('The point is not only to make agents faster.'),
   'Getting-started guide must explain the differentiator in end-user terms.',
 );
@@ -123,6 +127,10 @@ assert(
   bootstrapGuide.includes('npm exec -- ai-guidance init'),
   'Bootstrap guide must include the bootstrap command.',
 );
+assert(
+  bootstrapGuide.includes('repo shape it inferred'),
+  'Bootstrap guide must explain inferred repo decisions.',
+);
 
 const rootReadme = readText('README.md');
 assert(
@@ -132,6 +140,10 @@ assert(
 assert(
   rootReadme.includes('bootstrap a starter `.ai-guidance/` setup'),
   'README must describe bootstrap as a current capability.',
+);
+assert(
+  rootReadme.includes('infer conservative starter defaults'),
+  'README must describe adaptive bootstrap as a current capability.',
 );
 
 const contributingGuide = readText('CONTRIBUTING.md');

@@ -40,19 +40,19 @@
     "nodes": [
       {
         "id": "docs.content",
-        "kind": "docs-surface",
+        "kind": "product-surface",
         "label": "docs/content",
         "patterns": ["content/"]
       },
       {
         "id": "docs.theme",
-        "kind": "presentation-surface",
+        "kind": "product-surface",
         "label": "docs/theme",
         "patterns": ["src/theme/"]
       },
       {
         "id": "docs.nav",
-        "kind": "navigation-surface",
+        "kind": "product-surface",
         "label": "docs/navigation",
         "patterns": ["src/navigation/"]
       },

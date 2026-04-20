@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
@@ -9,6 +9,7 @@ import {
   buildEvidenceRecord,
   classifyNodes,
   evaluatePolicyPack,
+  inferBootstrapRepoInsights,
   loadPolicyPack,
   resolveWorkstream,
   writeBootstrapStarterKit,
@@ -199,6 +200,7 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
   assert.equal(starterAdapter.name, 'demo-starter');
   assert.equal(starterPolicyPack.name, 'demo-starter-default');
   assert.equal(starterTeamProfile.defaults.mode, 'shadow');
+  assert.equal(initResult.repoInsights.repoKind, 'application');
 
   const reportStdout = execFileSync(
     'npm',
@@ -219,6 +221,107 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
   assert.equal(reportResult.run_id, 'bootstrap-smoke');
   assert.equal(reportResult.adapter.name, 'demo-starter');
   assert.equal(reportResult.policy_pack.name, 'demo-starter-default');
+});
+
+test('adaptive bootstrap detects a workspace-shaped repo', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-workspace-'));
+  writeFileSync(
+    join(rootDir, 'package.json'),
+    JSON.stringify(
+      {
+        private: true,
+        workspaces: ['packages/*'],
+        scripts: {
+          verify: 'turbo run verify',
+          test: 'turbo run test',
+        },
+      },
+      null,
+      2,
+    ),
+  );
+  writeFileSync(join(rootDir, 'pnpm-workspace.yaml'), 'packages:\n  - packages/*\n');
+  writeFileSync(join(rootDir, '.gitignore'), 'node_modules\n');
+  writeFileSync(join(rootDir, 'README.md'), '# Workspace\n');
+  writeFileSync(join(rootDir, 'AGENTS.md'), '# agents\n');
+  mkdirp(join(rootDir, 'packages/app'));
+  mkdirp(join(rootDir, 'tests'));
+  mkdirp(join(rootDir, '.github/workflows'));
+
+  const result = writeBootstrapStarterKit({ rootDir, projectName: 'Workspace Demo' });
+  const adapter = readJsonFromAbsolute(join(rootDir, '.ai-guidance/repo.adapter.json'));
+  const bootstrapReadme = readFileSync(join(rootDir, '.ai-guidance/README.md'), 'utf8');
+
+  assert.equal(result.repoInsights.repoKind, 'workspace');
+  assert.equal(result.proofLane, 'npm run verify');
+  assert.ok(adapter.graph.nodes.some((node) => node.patterns.includes('packages/')));
+  assert.match(bootstrapReadme, /Repo kind: `workspace`/);
+});
+
+test('adaptive bootstrap infers the proof lane through the shipped CLI path', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-workspace-cli-'));
+  writeFileSync(
+    join(rootDir, 'package.json'),
+    JSON.stringify(
+      {
+        private: true,
+        workspaces: ['packages/*'],
+        scripts: {
+          verify: 'turbo run verify',
+          test: 'turbo run test',
+        },
+      },
+      null,
+      2,
+    ),
+  );
+  writeFileSync(join(rootDir, '.gitignore'), 'node_modules\n');
+  writeFileSync(join(rootDir, 'README.md'), '# Workspace\n');
+  writeFileSync(join(rootDir, 'AGENTS.md'), '# agents\n');
+  mkdirp(join(rootDir, 'packages/app'));
+
+  const initStdout = execFileSync(
+    'npm',
+    ['exec', '--', 'ai-guidance', 'init', '--root', rootDir],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const initResult = JSON.parse(initStdout);
+
+  assert.equal(initResult.proofLane, 'npm run verify');
+  assert.equal(initResult.repoInsights.repoKind, 'workspace');
+});
+
+test('adaptive bootstrap detects a docs-shaped repo', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-docs-'));
+  writeFileSync(
+    join(rootDir, 'package.json'),
+    JSON.stringify(
+      {
+        scripts: {
+          'docs:build': 'docusaurus build',
+        },
+      },
+      null,
+      2,
+    ),
+  );
+  writeFileSync(join(rootDir, '.gitignore'), 'node_modules\n');
+  writeFileSync(join(rootDir, 'README.md'), '# Docs\n');
+  writeFileSync(join(rootDir, 'AGENTS.md'), '# agents\n');
+  mkdirp(join(rootDir, 'docs'));
+  mkdirp(join(rootDir, 'content'));
+
+  const insights = inferBootstrapRepoInsights(rootDir);
+  const result = writeBootstrapStarterKit({ rootDir, projectName: 'Docs Demo' });
+  const adapter = readJsonFromAbsolute(join(rootDir, '.ai-guidance/repo.adapter.json'));
+
+  assert.equal(insights.repoKind, 'docs');
+  assert.equal(result.proofLane, 'npm run docs:build');
+  assert.ok(
+    adapter.graph.nodes.some(
+      (node) => node.kind === 'product-surface' && node.patterns.includes('docs/'),
+    ),
+  );
 });
 
 test('fixture adapters and evidence examples stay readable', () => {
@@ -273,4 +376,8 @@ test('starter kit helper refuses to overwrite without force', () => {
 
 function readJsonFromAbsolute(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
+}
+
+function mkdirp(path) {
+  mkdirSync(path, { recursive: true });
 }

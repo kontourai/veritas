@@ -59,10 +59,12 @@ If those pass, move straight into adapter + policy-pack setup.
 The fastest way to start is:
 
 ```bash
-npm exec -- ai-guidance init --proof-lane "npm test"
+npm exec -- ai-guidance init
 ```
 
 That gives you a starter adapter, policy pack, team profile, and local README under `.ai-guidance/`.
+
+The bootstrap README also tells you what the framework inferred about the repo so you can confirm or correct it right away.
 
 ## Step 1: Create an Adapter
 
