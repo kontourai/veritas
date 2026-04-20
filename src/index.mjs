@@ -1009,11 +1009,14 @@ export function resolveReportInputs(explicitFiles, options, rootDir) {
   }
 
   if (options.changedFrom || options.changedTo) {
+    if (!options.changedFrom || !options.changedTo) {
+      throw new Error(
+        'branch-diff reporting requires both --changed-from and --changed-to',
+      );
+    }
     const sourceRef =
       options.sourceRef ??
-      (options.changedFrom && options.changedTo
-        ? `${options.changedFrom}..${options.changedTo}`
-        : 'branch-diff');
+      `${options.changedFrom}..${options.changedTo}`;
     return {
       files: listChangedFiles(options.changedFrom, options.changedTo, rootDir),
       sourceKind: 'branch-diff',

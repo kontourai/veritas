@@ -368,6 +368,11 @@ test('report input resolution keeps branch-diff and working-tree modes explicit'
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   commitAll(rootDir, 'Add package manifest');
 
+  assert.throws(
+    () => resolveReportInputs([], { changedFrom: 'HEAD~1' }, rootDir),
+    /requires both --changed-from and --changed-to/,
+  );
+
   const branchInputs = resolveReportInputs(
     [],
     { changedFrom: 'HEAD~1', changedTo: 'HEAD' },
