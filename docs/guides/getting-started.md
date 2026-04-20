@@ -112,6 +112,8 @@ The output gives you:
 If you want to start Phase 1 live eval, capture a shadow eval from that evidence artifact:
 
 ```bash
+npm exec -- ai-guidance shadow run
+
 npm exec -- ai-guidance eval draft \
   --evidence .ai-guidance/evidence/local-smoke.json
 
@@ -131,6 +133,7 @@ That keeps the workflow explicit:
 
 The eval step stays conservative:
 
+- `shadow run` is the shortest hook-friendly path for proof + report + draft
 - the evidence input must be repo-local under `.ai-guidance/evidence/`
 - the draft artifact stays repo-local under `.ai-guidance/eval-drafts/`
 - reviewer confidence should match the team profile scale, or use `unknown`

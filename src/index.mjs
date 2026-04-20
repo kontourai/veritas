@@ -1616,22 +1616,152 @@ export function parseEvalArgs(argv) {
   return options;
 }
 
-export function runGuidanceReportCli(argv = process.argv.slice(2), defaults = {}) {
-  const { options, files: explicitFiles } = parseArgs(argv);
+export function parseShadowArgs(argv) {
+  const options = {
+    falsePositiveRules: [],
+    missedIssues: [],
+    notes: [],
+  };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+    if (token === '--root') {
+      options.rootDir = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--adapter') {
+      options.adapterPath = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--policy-pack') {
+      options.policyPackPath = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--team-profile') {
+      options.teamProfilePath = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--run-id') {
+      options.runId = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--working-tree') {
+      options.workingTree = true;
+      continue;
+    }
+    if (token === '--changed-from') {
+      options.changedFrom = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--changed-to') {
+      options.changedTo = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--proof-command') {
+      options.proofCommand = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--skip-proof') {
+      options.skipProof = true;
+      continue;
+    }
+    if (token === '--baseline-ci-fast-status') {
+      options.baselineCiFastStatus = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--accepted-without-major-rewrite') {
+      options.acceptedWithoutMajorRewrite = parseBooleanFlag(
+        argv[index + 1],
+        '--accepted-without-major-rewrite',
+      );
+      index += 1;
+      continue;
+    }
+    if (token === '--required-followup') {
+      options.requiredFollowup = parseBooleanFlag(
+        argv[index + 1],
+        '--required-followup',
+      );
+      index += 1;
+      continue;
+    }
+    if (token === '--reviewer-confidence') {
+      options.reviewerConfidence = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--time-to-green-minutes') {
+      options.timeToGreenMinutes = Number(argv[index + 1]);
+      index += 1;
+      continue;
+    }
+    if (token === '--override-count') {
+      options.overrideCount = Number(argv[index + 1]);
+      index += 1;
+      continue;
+    }
+    if (token === '--false-positive-rule') {
+      options.falsePositiveRules.push(argv[index + 1]);
+      index += 1;
+      continue;
+    }
+    if (token === '--missed-issue') {
+      options.missedIssues.push(argv[index + 1]);
+      index += 1;
+      continue;
+    }
+    if (token === '--note') {
+      options.notes.push(argv[index + 1]);
+      index += 1;
+      continue;
+    }
+    if (token === '--force') {
+      options.force = true;
+    }
+  }
+
+  return options;
+}
+
+function resolveGuidancePaths(options, defaults = {}) {
   const rootDir = options.rootDir ? resolve(options.rootDir) : defaults.rootDir;
   const defaultAdapterPath =
-    defaults.adapterPath ?? (rootDir ? resolve(rootDir, '.ai-guidance/repo.adapter.json') : undefined);
+    defaults.adapterPath ??
+    (rootDir ? resolve(rootDir, '.ai-guidance/repo.adapter.json') : undefined);
   const defaultPolicyPackPath =
     defaults.policyPackPath ??
     (rootDir
       ? resolve(rootDir, '.ai-guidance/policy-packs/default.policy-pack.json')
       : undefined);
-  const adapterPath = options.adapterPath
-    ? resolve(options.adapterPath)
-    : defaultAdapterPath;
-  const policyPackPath = options.policyPackPath
-    ? resolve(options.policyPackPath)
-    : defaultPolicyPackPath;
+  const defaultTeamProfilePath =
+    defaults.teamProfilePath ??
+    (rootDir ? resolve(rootDir, '.ai-guidance/team/default.team-profile.json') : undefined);
+
+  return {
+    rootDir,
+    adapterPath: options.adapterPath
+      ? resolve(rootDir ?? process.cwd(), options.adapterPath)
+      : defaultAdapterPath,
+    policyPackPath: options.policyPackPath
+      ? resolve(rootDir ?? process.cwd(), options.policyPackPath)
+      : defaultPolicyPackPath,
+    teamProfilePath: options.teamProfilePath
+      ? resolve(rootDir ?? process.cwd(), options.teamProfilePath)
+      : defaultTeamProfilePath,
+  };
+}
+
+export function generateGuidanceReport(options = {}, defaults = {}, explicitFiles = []) {
+  const { rootDir, adapterPath, policyPackPath } = resolveGuidancePaths(options, defaults);
 
   if (!rootDir || !adapterPath || !policyPackPath) {
     throw new Error(
@@ -1663,7 +1793,6 @@ export function runGuidanceReportCli(argv = process.argv.slice(2), defaults = {}
   const artifactPath = writeEvidenceArtifact(record, config, rootDir);
   const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
   const markdownSummary = buildMarkdownSummary(record, relativeArtifactPath);
-
   const resolvedSummaryPath =
     options.summaryPath ??
     (config.evidence.reportTransport === 'github-step-summary'
@@ -1674,12 +1803,153 @@ export function runGuidanceReportCli(argv = process.argv.slice(2), defaults = {}
     appendFileSync(resolvedSummaryPath, markdownSummary, 'utf8');
   }
 
+  return {
+    rootDir,
+    config,
+    record,
+    artifactPath: relativeArtifactPath,
+    markdownSummary,
+  };
+}
+
+export function generateEvalDraft(options = {}, defaults = {}) {
+  const { rootDir, teamProfilePath } = resolveGuidancePaths(options, defaults);
+  const evidencePath = options.evidencePath
+    ? resolve(rootDir, options.evidencePath)
+    : undefined;
+
+  if (!rootDir || !teamProfilePath) {
+    throw new Error('Guidance eval draft requires rootDir and teamProfilePath');
+  }
+  if (!evidencePath) {
+    throw new Error('guidance eval draft requires --evidence <path>');
+  }
+
+  const evidenceRecord = loadEvidenceArtifact(evidencePath);
+  const teamProfile = loadTeamProfile(teamProfilePath);
+  const record = buildEvalDraft({
+    evidenceRecord,
+    evidencePath,
+    teamProfile,
+    options,
+    rootDir,
+  });
+  const artifactPath = writeEvalDraftArtifact(
+    record,
+    rootDir,
+    options.outputPath,
+    options.force ?? false,
+  );
+  const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
+  const suggestedRecordCommand = buildEvalRecordCommand(relativeArtifactPath, record);
+  const markdownSummary = buildEvalDraftMarkdownSummary(
+    record,
+    relativeArtifactPath,
+    suggestedRecordCommand,
+  );
+
+  return {
+    rootDir,
+    teamProfile,
+    record,
+    artifactPath: relativeArtifactPath,
+    suggestedRecordCommand,
+    markdownSummary,
+  };
+}
+
+export function generateEvalRecord(options = {}, defaults = {}) {
+  const { rootDir, teamProfilePath } = resolveGuidancePaths(options, defaults);
+  if (!rootDir || !teamProfilePath) {
+    throw new Error('Guidance eval record requires rootDir and teamProfilePath');
+  }
+  if (options.evidencePath && options.draftPath) {
+    throw new Error('guidance eval record accepts either --evidence or --draft, not both');
+  }
+  if (!options.evidencePath && !options.draftPath) {
+    throw new Error('guidance eval record requires --evidence <path> or --draft <path>');
+  }
+
+  const teamProfile = loadTeamProfile(teamProfilePath);
+  const draft = options.draftPath
+    ? loadEvalDraftArtifact(resolve(rootDir, options.draftPath))
+    : null;
+  if (draft) {
+    validateEvalDraftContext({
+      draftPath: resolve(rootDir, options.draftPath),
+      draftRecord: draft,
+      rootDir,
+      teamProfile,
+    });
+  }
+  const evidencePath = options.evidencePath
+    ? resolve(rootDir, options.evidencePath)
+    : resolve(rootDir, draft.evidence.artifact_path);
+  const evidenceRecord = loadEvidenceArtifact(evidencePath);
+  const record = buildEvalRecord({
+    evidenceRecord,
+    evidencePath,
+    teamProfile,
+    options: mergeEvalRecordOptions(options, draft),
+    rootDir,
+  });
+  const artifactPath = writeEvalArtifact(
+    record,
+    rootDir,
+    options.outputPath,
+    options.force ?? false,
+  );
+  const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
+  const markdownSummary = buildEvalMarkdownSummary(record, relativeArtifactPath);
+
+  return {
+    rootDir,
+    teamProfile,
+    record,
+    artifactPath: relativeArtifactPath,
+    markdownSummary,
+  };
+}
+
+function resolveProofCommands(adapterPath, explicitProofCommand) {
+  if (explicitProofCommand) {
+    return [explicitProofCommand];
+  }
+  if (!adapterPath) {
+    return [];
+  }
+  const config = loadAdapterConfig(adapterPath);
+  return config.evidence?.requiredProofLanes ?? [];
+}
+
+function runProofCommand(command, rootDir) {
+  const shell = process.env.SHELL ?? '/bin/sh';
+  execFileSync(shell, ['-lc', `${command} 1>&2`], {
+    cwd: rootDir,
+    encoding: 'utf8',
+    windowsHide: true,
+  });
+}
+
+function hasShadowOutcomeInputs(options) {
+  return (
+    typeof options.acceptedWithoutMajorRewrite === 'boolean' &&
+    typeof options.requiredFollowup === 'boolean' &&
+    typeof options.timeToGreenMinutes === 'number' &&
+    !Number.isNaN(options.timeToGreenMinutes)
+  );
+}
+
+export function runGuidanceReportCli(argv = process.argv.slice(2), defaults = {}) {
+  const { options, files: explicitFiles } = parseArgs(argv);
+  const result = generateGuidanceReport(options, defaults, explicitFiles);
+
   process.stdout.write(
     `${JSON.stringify(
       {
-        artifactPath: relativeArtifactPath,
-        markdownSummary,
-        ...record,
+        artifactPath: result.artifactPath,
+        markdownSummary: result.markdownSummary,
+        ...result.record,
       },
       null,
       2,
@@ -1798,56 +2068,17 @@ export function runApplyCiSnippetCli(argv = process.argv.slice(2), defaults = {}
 
 export function runEvalRecordCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseEvalArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  if (options.evidencePath && options.draftPath) {
-    throw new Error('guidance eval record accepts either --evidence or --draft, not both');
-  }
-  const teamProfilePath = options.teamProfilePath
-    ? resolve(rootDir, options.teamProfilePath)
-    : resolve(rootDir, '.ai-guidance/team/default.team-profile.json');
-
-  if (!options.evidencePath && !options.draftPath) {
-    throw new Error('guidance eval record requires --evidence <path> or --draft <path>');
-  }
-
-  const teamProfile = loadTeamProfile(teamProfilePath);
-  const draft = options.draftPath
-    ? loadEvalDraftArtifact(resolve(rootDir, options.draftPath))
-    : null;
-  if (draft) {
-    validateEvalDraftContext({
-      draftPath: resolve(rootDir, options.draftPath),
-      draftRecord: draft,
-      rootDir,
-      teamProfile,
-    });
-  }
-  const evidencePath = options.evidencePath
-    ? resolve(rootDir, options.evidencePath)
-    : resolve(rootDir, draft.evidence.artifact_path);
-  const evidenceRecord = loadEvidenceArtifact(evidencePath);
-  const record = buildEvalRecord({
-    evidenceRecord,
-    evidencePath,
-    teamProfile,
-    options: mergeEvalRecordOptions(options, draft),
-    rootDir,
+  const result = generateEvalRecord(options, {
+    ...defaults,
+    rootDir: resolve(options.rootDir ?? defaults.rootDir ?? process.cwd()),
   });
-  const artifactPath = writeEvalArtifact(
-    record,
-    rootDir,
-    options.outputPath,
-    options.force ?? false,
-  );
-  const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
-  const markdownSummary = buildEvalMarkdownSummary(record, relativeArtifactPath);
 
   process.stdout.write(
     `${JSON.stringify(
       {
-        artifactPath: relativeArtifactPath,
-        markdownSummary,
-        ...record,
+        artifactPath: result.artifactPath,
+        markdownSummary: result.markdownSummary,
+        ...result.record,
       },
       null,
       2,
@@ -1857,48 +2088,111 @@ export function runEvalRecordCli(argv = process.argv.slice(2), defaults = {}) {
 
 export function runEvalDraftCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseEvalArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  const evidencePath = options.evidencePath
-    ? resolve(rootDir, options.evidencePath)
-    : undefined;
-  const teamProfilePath = options.teamProfilePath
-    ? resolve(rootDir, options.teamProfilePath)
-    : resolve(rootDir, '.ai-guidance/team/default.team-profile.json');
-
-  if (!evidencePath) {
-    throw new Error('guidance eval draft requires --evidence <path>');
-  }
-
-  const evidenceRecord = loadEvidenceArtifact(evidencePath);
-  const teamProfile = loadTeamProfile(teamProfilePath);
-  const record = buildEvalDraft({
-    evidenceRecord,
-    evidencePath,
-    teamProfile,
-    options,
-    rootDir,
+  const result = generateEvalDraft(options, {
+    ...defaults,
+    rootDir: resolve(options.rootDir ?? defaults.rootDir ?? process.cwd()),
   });
-  const artifactPath = writeEvalDraftArtifact(
-    record,
-    rootDir,
-    options.outputPath,
-    options.force ?? false,
-  );
-  const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
-  const suggestedRecordCommand = buildEvalRecordCommand(relativeArtifactPath, record);
-  const markdownSummary = buildEvalDraftMarkdownSummary(
-    record,
-    relativeArtifactPath,
-    suggestedRecordCommand,
-  );
 
   process.stdout.write(
     `${JSON.stringify(
       {
-        artifactPath: relativeArtifactPath,
-        suggestedRecordCommand,
-        markdownSummary,
-        ...record,
+        artifactPath: result.artifactPath,
+        suggestedRecordCommand: result.suggestedRecordCommand,
+        markdownSummary: result.markdownSummary,
+        ...result.record,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
+export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseShadowArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const { adapterPath } = resolveGuidancePaths(
+    { ...options, rootDir },
+    { ...defaults, rootDir },
+  );
+
+  const proofCommands = resolveProofCommands(adapterPath, options.proofCommand);
+  if (!options.skipProof && proofCommands.length === 0) {
+    throw new Error(
+      'guidance shadow run requires a proof command or an adapter required proof lane',
+    );
+  }
+
+  if (!options.skipProof) {
+    for (const proofCommand of proofCommands) {
+      runProofCommand(proofCommand, rootDir);
+    }
+  }
+
+  const reportResult = generateGuidanceReport(
+    {
+      ...options,
+      rootDir,
+      workingTree:
+        options.workingTree || (!options.changedFrom && !options.changedTo),
+      baselineCiFastStatus:
+        options.baselineCiFastStatus ?? (options.skipProof ? undefined : 'success'),
+    },
+    { ...defaults, rootDir },
+  );
+  const draftResult = generateEvalDraft(
+    {
+      ...options,
+      rootDir,
+      evidencePath: reportResult.artifactPath,
+      force: options.force ?? false,
+    },
+    { ...defaults, rootDir },
+  );
+
+  if (!hasShadowOutcomeInputs(options)) {
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          mode: 'report-and-draft',
+          proofCommands: options.skipProof ? [] : proofCommands,
+          proofRan: !options.skipProof,
+          reportArtifactPath: reportResult.artifactPath,
+          draftArtifactPath: draftResult.artifactPath,
+          reportRunId: reportResult.record.run_id,
+          reportSourceKind: reportResult.record.source_kind,
+          suggestedEvalCommand: draftResult.suggestedRecordCommand,
+          message:
+            'Proof, report, and eval draft completed. The final judgment fields still need confirmation.',
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    return;
+  }
+
+  const evalResult = generateEvalRecord(
+    {
+      ...options,
+      rootDir,
+      draftPath: draftResult.artifactPath,
+      force: options.force ?? false,
+    },
+    { ...defaults, rootDir },
+  );
+
+  process.stdout.write(
+    `${JSON.stringify(
+        {
+          mode: 'report-draft-and-eval',
+        proofCommands: options.skipProof ? [] : proofCommands,
+        proofRan: !options.skipProof,
+        reportArtifactPath: reportResult.artifactPath,
+        draftArtifactPath: draftResult.artifactPath,
+        evalArtifactPath: evalResult.artifactPath,
+        reportRunId: reportResult.record.run_id,
+        reportSourceKind: reportResult.record.source_kind,
+        evalMode: evalResult.record.mode,
       },
       null,
       2,

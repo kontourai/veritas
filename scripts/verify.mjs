@@ -72,6 +72,10 @@ assert(
   'Getting-started guide must include the eval draft command.',
 );
 assert(
+  gettingStartedGuide.includes('npm exec -- ai-guidance shadow run'),
+  'Getting-started guide must include the shadow run command.',
+);
+assert(
   gettingStartedGuide.includes('repo-local under `.ai-guidance/evidence/`'),
   'Getting-started guide must explain repo-local evidence provenance for eval capture.',
 );
@@ -120,6 +124,10 @@ assert(
 assert(
   liveEvalGuide.includes('run `eval draft` against that artifact'),
   'Live-eval guide must describe the draft-first report-to-eval flow.',
+);
+assert(
+  liveEvalGuide.includes('run `shadow run`'),
+  'Live-eval guide must describe the passive shadow-run flow.',
 );
 assert(
   liveEvalGuide.includes('immutable digest'),
@@ -208,6 +216,10 @@ assert(
   'Bootstrap guide must include the eval draft command.',
 );
 assert(
+  bootstrapGuide.includes('npm exec -- ai-guidance shadow run'),
+  'Bootstrap guide must include the shadow run command.',
+);
+assert(
   bootstrapGuide.includes('reruns should use `--force`'),
   'Bootstrap guide must explain explicit overwrite for eval reruns.',
 );
@@ -250,12 +262,20 @@ assert(
   'README must describe shadow eval draft preparation as a current capability.',
 );
 assert(
+  rootReadme.includes('hook-friendly shadow flow'),
+  'README must describe the hook-friendly shadow flow as a current capability.',
+);
+assert(
   rootReadme.includes('npm exec -- ai-guidance eval record'),
   'README must include the eval record command.',
 );
 assert(
   rootReadme.includes('npm exec -- ai-guidance eval draft'),
   'README must include the eval draft command.',
+);
+assert(
+  rootReadme.includes('npm exec -- ai-guidance shadow run'),
+  'README must include the shadow run command.',
 );
 assert(
   rootReadme.includes('refuses to overwrite an existing eval artifact unless you pass `--force`'),

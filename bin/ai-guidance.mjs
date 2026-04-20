@@ -8,6 +8,7 @@ import {
   runInitCli,
   runPrintCiSnippetCli,
   runPrintPackageScriptsCli,
+  runShadowRunCli,
 } from '../src/index.mjs';
 
 const [subcommand, ...args] = process.argv.slice(2);
@@ -73,10 +74,33 @@ if (subcommand === 'init') {
 `);
     process.exitCode = 1;
   }
+} else if (subcommand === 'shadow') {
+  const [kind, ...shadowArgs] = args;
+  if (kind === 'run') {
+    runShadowRunCli(shadowArgs, { rootDir: cwd });
+  } else {
+    process.stderr.write(`Usage:
+  ai-guidance shadow run [--root <path>] [--adapter <path>] [--policy-pack <path>] [--team-profile <path>]
+    [--proof-command <cmd>] [--skip-proof]
+    [--working-tree | --changed-from <ref> --changed-to <ref>]
+    [--run-id <id>]
+    [--reviewer-confidence <scale-entry|unknown>]
+    [--time-to-green-minutes <number>]
+    [--override-count <number>]
+    [--false-positive-rule <rule-id>]
+    [--missed-issue <text>]
+    [--note <text>]
+    [--accepted-without-major-rewrite <true|false>]
+    [--required-followup <true|false>]
+    [--force]
+`);
+    process.exitCode = 1;
+  }
 } else {
   process.stderr.write(`Usage:
   ai-guidance init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--force]
   ai-guidance report [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [file ...]
+  ai-guidance shadow run [--root <path>] [--adapter <path>] [--policy-pack <path>] [--team-profile <path>] [--proof-command <cmd>] [--skip-proof]
   ai-guidance eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
   ai-guidance eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false> --reviewer-confidence <scale-entry|unknown> --time-to-green-minutes <number> --override-count <number>
   ai-guidance eval record --draft <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false>

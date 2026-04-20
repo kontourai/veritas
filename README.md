@@ -49,6 +49,7 @@ Today the framework can:
 - report explicit files, branch diffs, or the current working tree truthfully
 - capture a shadow eval record from a real guidance report artifact
 - prepare a shadow eval draft artifact with a framework-generated next step
+- run a hook-friendly shadow flow that handles proof, report, and eval draft in one command
 - emit structured evidence records and Markdown summaries
 - evaluate executable policy-pack rules
 - define live-eval and team-tuning artifacts for measuring usefulness over time
@@ -116,6 +117,8 @@ npm exec -- ai-guidance eval record \
 npm exec -- ai-guidance eval draft \
   --evidence .ai-guidance/evidence/local-smoke.json
 
+npm exec -- ai-guidance shadow run
+
 npm exec -- ai-guidance report --working-tree
 npm exec -- ai-guidance report --changed-from main --changed-to HEAD
 ```
@@ -132,6 +135,8 @@ That keeps the evidence artifact honest about what it actually measured.
 It only accepts repo-local evidence artifacts under `.ai-guidance/evidence/`, uses the team profile's confidence scale, and refuses to overwrite an existing eval artifact unless you pass `--force`.
 
 `eval draft` is the draft-first companion path: it prepares a repo-local draft artifact and a prefilled `eval record --draft ...` command without inventing the missing judgment fields.
+
+`shadow run` is the first hook-friendly passive automation path: it can run proof, capture a report, and prepare an eval draft in one command, then finish `eval record` only if the remaining judgment fields are already supplied.
 
 If you want the shortest path to understanding the system as a user:
 

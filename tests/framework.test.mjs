@@ -1122,6 +1122,173 @@ test('eval record CLI refuses to overwrite an existing eval artifact without for
   });
 });
 
+test('shadow run CLI stops at report and draft when judgment fields are missing', () => {
+  const rootDir = initCommittedRepo('ai-guidance-shadow-run-draft-');
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Shadow Run Demo',
+      '--proof-lane',
+      'node -e "process.exit(0)"',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+
+  const stdout = execFileSync(
+    'npm',
+    ['exec', '--', 'ai-guidance', 'shadow', 'run', '--root', rootDir],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.mode, 'report-and-draft');
+  assert.equal(parsed.proofRan, true);
+  assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
+  assert.match(parsed.suggestedEvalCommand, /ai-guidance eval record --draft/);
+});
+
+test('shadow run CLI can complete the full draft-and-record path', () => {
+  const rootDir = initCommittedRepo('ai-guidance-shadow-run-record-');
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Shadow Run Record Demo',
+      '--proof-lane',
+      'node -e "process.exit(0)"',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+
+  const stdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'shadow',
+      'run',
+      '--root',
+      rootDir,
+      '--accepted-without-major-rewrite',
+      'true',
+      '--required-followup',
+      'false',
+      '--time-to-green-minutes',
+      '7',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.mode, 'report-draft-and-eval');
+  assert.equal(parsed.evalMode, 'shadow');
+  assert.equal(parsed.proofRan, true);
+  assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
+});
+
+test('shadow run CLI rejects incomplete branch-diff refs', () => {
+  const rootDir = initCommittedRepo('ai-guidance-shadow-run-diff-');
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Shadow Run Diff Demo',
+      '--proof-lane',
+      'node -e "process.exit(0)"',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+
+  assert.throws(
+    () =>
+      execFileSync(
+        'npm',
+        [
+          'exec',
+          '--',
+          'ai-guidance',
+          'shadow',
+          'run',
+          '--root',
+          rootDir,
+          '--skip-proof',
+          '--changed-from',
+          'HEAD~1',
+        ],
+        { cwd: frameworkRootDir, encoding: 'utf8' },
+      ),
+    /requires both --changed-from and --changed-to/,
+  );
+});
+
+test('shadow run CLI executes every required proof lane from the adapter', () => {
+  const rootDir = initCommittedRepo('ai-guidance-shadow-run-multi-proof-');
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Shadow Run Multi Proof Demo',
+      '--proof-lane',
+      'node -e "process.exit(0)"',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+
+  const adapterPath = join(rootDir, '.ai-guidance/repo.adapter.json');
+  const adapter = readJsonFromAbsolute(adapterPath);
+  adapter.evidence.requiredProofLanes = [
+    'node -e "process.exit(0)"',
+    'node -e "process.exit(0)"',
+  ];
+  writeFileSync(adapterPath, `${JSON.stringify(adapter, null, 2)}\n`, 'utf8');
+
+  const stdout = execFileSync(
+    'npm',
+    ['exec', '--', 'ai-guidance', 'shadow', 'run', '--root', rootDir],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+
+  assert.deepEqual(parsed.proofCommands, [
+    'node -e "process.exit(0)"',
+    'node -e "process.exit(0)"',
+  ]);
+});
+
 test('print package-scripts returns conservative suggestions from inferred proof lane', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-print-scripts-'));
   writeFileSync(
