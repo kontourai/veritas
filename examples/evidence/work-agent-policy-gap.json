@@ -3,6 +3,8 @@
   "run_id": "work-agent-policy-gap-example",
   "timestamp": "2026-04-19T00:10:00.000Z",
   "source_ref": "refs/pull/415/head",
+  "source_kind": "branch-diff",
+  "source_scope": ["changed-from:origin/main", "changed-to:HEAD"],
   "resolved_phase": "Phase 1 (Harden & Onboard)",
   "resolved_workstream": "Entity Hierarchy & Navigation Restructure",
   "matched_artifacts": [".omx/plans/**"],

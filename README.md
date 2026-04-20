@@ -46,6 +46,7 @@ Today the framework can:
 - explicitly apply suggested package scripts and write a reviewable CI snippet file
 - load repo adapters and policy packs
 - resolve changed files into graph nodes and workstreams
+- report explicit files, branch diffs, or the current working tree truthfully
 - emit structured evidence records and Markdown summaries
 - evaluate executable policy-pack rules
 - define live-eval and team-tuning artifacts for measuring usefulness over time
@@ -100,7 +101,18 @@ npm exec -- ai-guidance apply ci-snippet
 
 npm exec -- ai-guidance report --run-id local-smoke \
   package.json
+
+npm exec -- ai-guidance report --working-tree
+npm exec -- ai-guidance report --changed-from main --changed-to HEAD
 ```
+
+`report` now distinguishes between:
+
+- explicit-file reports
+- branch-diff reports
+- current-state working-tree reports
+
+That keeps the evidence artifact honest about what it actually measured.
 
 If you want the shortest path to understanding the system as a user:
 

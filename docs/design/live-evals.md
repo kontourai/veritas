@@ -8,6 +8,12 @@ The framework already knows:
 - what policy applied
 - what proof lane ran
 
+That evidence gets stronger when the source is explicit about what it measured:
+
+- explicit files
+- a branch diff
+- the current working tree
+
 Live eval adds the missing layer:
 
 - **was the guidance useful**

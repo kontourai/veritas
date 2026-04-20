@@ -14,7 +14,9 @@ import {
   classifyNodes,
   evaluatePolicyPack,
   inferBootstrapRepoInsights,
+  listWorkingTreeFiles,
   loadPolicyPack,
+  resolveReportInputs,
   resolveWorkstream,
   writeBootstrapStarterKit,
 } from '../src/index.mjs';
@@ -100,6 +102,8 @@ test('core classifies nodes and builds evidence from an adapter config', () => {
   assert.equal(record.framework_version, 1);
   assert.equal(record.framework.version, 1);
   assert.equal(record.baseline_ci_fast_passed, false);
+  assert.equal(record.source_kind, 'explicit-files');
+  assert.deepEqual(record.source_scope, ['explicit']);
   assert.equal(record.adapter.name, 'work-agent');
   assert.deepEqual(record.policy_pack, {
     name: 'work-agent-convergence',
@@ -225,6 +229,149 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
   assert.equal(reportResult.run_id, 'bootstrap-smoke');
   assert.equal(reportResult.adapter.name, 'demo-starter');
   assert.equal(reportResult.policy_pack.name, 'demo-starter-default');
+  assert.equal(reportResult.source_kind, 'explicit-files');
+  assert.deepEqual(reportResult.source_scope, ['explicit']);
+});
+
+test('working-tree helpers collect staged, unstaged, and untracked files distinctly', () => {
+  const rootDir = initCommittedRepo('ai-guidance-working-tree-');
+  writeFileSync(join(rootDir, 'tracked.txt'), 'before\n');
+  commitAll(rootDir, 'Add tracked file');
+
+  writeFileSync(join(rootDir, 'staged.txt'), 'staged\n');
+  execFileSync('git', ['add', 'staged.txt'], { cwd: rootDir, encoding: 'utf8' });
+  writeFileSync(join(rootDir, 'tracked.txt'), 'after\n');
+  writeFileSync(join(rootDir, 'untracked.txt'), 'untracked\n');
+
+  assert.deepEqual(listWorkingTreeFiles({ staged: true }, rootDir), ['staged.txt']);
+  assert.deepEqual(listWorkingTreeFiles({ unstaged: true }, rootDir), ['tracked.txt']);
+  assert.deepEqual(listWorkingTreeFiles({ untracked: true }, rootDir), ['untracked.txt']);
+  assert.deepEqual(listWorkingTreeFiles({ staged: true, unstaged: true, untracked: true }, rootDir), [
+    'staged.txt',
+    'tracked.txt',
+    'untracked.txt',
+  ]);
+});
+
+test('report input resolution keeps branch-diff and working-tree modes explicit', () => {
+  const rootDir = initCommittedRepo('ai-guidance-report-inputs-');
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  commitAll(rootDir, 'Add package manifest');
+
+  const branchInputs = resolveReportInputs(
+    [],
+    { changedFrom: 'HEAD~1', changedTo: 'HEAD' },
+    rootDir,
+  );
+  assert.equal(branchInputs.sourceKind, 'branch-diff');
+  assert.deepEqual(branchInputs.sourceScope, ['changed-from:HEAD~1', 'changed-to:HEAD']);
+  assert.equal(branchInputs.sourceRef, 'HEAD~1..HEAD');
+
+  writeFileSync(join(rootDir, 'staged.txt'), 'staged\n');
+  execFileSync('git', ['add', 'staged.txt'], { cwd: rootDir, encoding: 'utf8' });
+  const workingTreeInputs = resolveReportInputs([], { staged: true }, rootDir);
+  assert.equal(workingTreeInputs.sourceKind, 'working-tree');
+  assert.deepEqual(workingTreeInputs.sourceScope, ['staged']);
+  assert.equal(workingTreeInputs.sourceRef, 'working-tree');
+  assert.deepEqual(workingTreeInputs.files, ['staged.txt']);
+});
+
+test('report CLI can measure the full working tree', () => {
+  const rootDir = initCommittedRepo('ai-guidance-working-tree-cli-');
+  writeBootstrapStarterKit({ rootDir, projectName: 'Working Tree Demo' });
+  commitAll(rootDir, 'Bootstrap starter kit');
+
+  writeFileSync(join(rootDir, 'package.json'), '{\"name\":\"demo\"}\n');
+  execFileSync('git', ['add', 'package.json'], { cwd: rootDir, encoding: 'utf8' });
+  writeFileSync(join(rootDir, 'README.md'), '# changed\n');
+  writeFileSync(join(rootDir, 'notes.txt'), 'untracked\n');
+
+  const stdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'report',
+      '--root',
+      rootDir,
+      '--working-tree',
+      '--run-id',
+      'working-tree-smoke',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.source_kind, 'working-tree');
+  assert.deepEqual(parsed.source_scope, ['staged', 'unstaged', 'untracked']);
+  assert.deepEqual(parsed.files, ['README.md', 'notes.txt', 'package.json']);
+});
+
+test('report CLI can emit an empty current-state artifact for a clean working tree', () => {
+  const rootDir = initCommittedRepo('ai-guidance-working-tree-clean-');
+  writeBootstrapStarterKit({ rootDir, projectName: 'Clean Working Tree Demo' });
+  commitAll(rootDir, 'Bootstrap starter kit');
+
+  const stdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'report',
+      '--root',
+      rootDir,
+      '--working-tree',
+      '--run-id',
+      'working-tree-clean-smoke',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.source_kind, 'working-tree');
+  assert.deepEqual(parsed.source_scope, ['staged', 'unstaged', 'untracked']);
+  assert.deepEqual(parsed.files, []);
+  assert.deepEqual(parsed.affected_nodes, []);
+  assert.deepEqual(parsed.affected_lanes, []);
+});
+
+test('report CLI preserves branch-diff behavior', () => {
+  const rootDir = initCommittedRepo('ai-guidance-branch-diff-cli-');
+  writeBootstrapStarterKit({ rootDir, projectName: 'Branch Diff Demo' });
+  commitAll(rootDir, 'Bootstrap starter kit');
+
+  writeFileSync(join(rootDir, 'package.json'), '{\"name\":\"demo\"}\n');
+
+  const stdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'report',
+      '--root',
+      rootDir,
+      '--changed-from',
+      'HEAD~1',
+      '--changed-to',
+      'HEAD',
+      '--run-id',
+      'branch-diff-smoke',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.source_kind, 'branch-diff');
+  assert.deepEqual(parsed.source_scope, ['changed-from:HEAD~1', 'changed-to:HEAD']);
+  assert.deepEqual(parsed.files, [
+    '.ai-guidance/README.md',
+    '.ai-guidance/policy-packs/default.policy-pack.json',
+    '.ai-guidance/repo.adapter.json',
+    '.ai-guidance/team/default.team-profile.json',
+  ]);
 });
 
 test('print package-scripts returns conservative suggestions from inferred proof lane', () => {
@@ -536,4 +683,25 @@ function readJsonFromAbsolute(path) {
 
 function mkdirp(path) {
   mkdirSync(path, { recursive: true });
+}
+
+function initCommittedRepo(prefix) {
+  const rootDir = mkdtempSync(join(tmpdir(), prefix));
+  execFileSync('git', ['init', '-b', 'main'], { cwd: rootDir, encoding: 'utf8' });
+  execFileSync('git', ['config', 'user.name', 'AI Guidance Tests'], {
+    cwd: rootDir,
+    encoding: 'utf8',
+  });
+  execFileSync('git', ['config', 'user.email', 'tests@example.com'], {
+    cwd: rootDir,
+    encoding: 'utf8',
+  });
+  writeFileSync(join(rootDir, '.gitignore'), 'node_modules\n');
+  commitAll(rootDir, 'Initial commit');
+  return rootDir;
+}
+
+function commitAll(rootDir, message) {
+  execFileSync('git', ['add', '.'], { cwd: rootDir, encoding: 'utf8' });
+  execFileSync('git', ['commit', '-m', message], { cwd: rootDir, encoding: 'utf8' });
 }

@@ -9,6 +9,8 @@
     "run_id",
     "timestamp",
     "source_ref",
+    "source_kind",
+    "source_scope",
     "resolved_phase",
     "resolved_workstream",
     "matched_artifacts",
@@ -31,6 +33,11 @@
     "run_id": { "type": "string" },
     "timestamp": { "type": "string" },
     "source_ref": { "type": "string" },
+    "source_kind": {
+      "type": "string",
+      "enum": ["explicit-files", "branch-diff", "working-tree"]
+    },
+    "source_scope": { "$ref": "#/$defs/stringArray" },
     "resolved_phase": { "type": "string" },
     "resolved_workstream": { "type": "string" },
     "matched_artifacts": { "$ref": "#/$defs/stringArray" },

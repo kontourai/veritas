@@ -150,6 +150,8 @@ export function buildEvidenceRecord({
     run_id: runId,
     timestamp,
     source_ref: options.sourceRef ?? 'local-dry-run',
+    source_kind: options.sourceKind ?? 'explicit-files',
+    source_scope: options.sourceScope ?? ['explicit'],
     resolved_phase: resolution.resolvedPhase,
     resolved_workstream: resolution.resolvedWorkstream,
     matched_artifacts: resolution.matchedArtifacts,
@@ -806,11 +808,118 @@ export function listChangedFiles(fromRef, toRef, rootDir) {
     .filter(Boolean);
 }
 
+function listGitFiles(args, rootDir) {
+  return execFileSync('git', args, {
+    cwd: rootDir,
+    encoding: 'utf8',
+    windowsHide: true,
+  })
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+export function listWorkingTreeFiles(
+  { staged = false, unstaged = false, untracked = false } = {},
+  rootDir,
+) {
+  const files = new Set();
+
+  if (staged) {
+    for (const file of listGitFiles(
+      ['diff', '--cached', '--name-only', '--diff-filter=ACMR'],
+      rootDir,
+    )) {
+      files.add(file);
+    }
+  }
+
+  if (unstaged) {
+    for (const file of listGitFiles(
+      ['diff', '--name-only', '--diff-filter=ACMR'],
+      rootDir,
+    )) {
+      files.add(file);
+    }
+  }
+
+  if (untracked) {
+    for (const file of listGitFiles(
+      ['ls-files', '--others', '--exclude-standard'],
+      rootDir,
+    )) {
+      files.add(file);
+    }
+  }
+
+  return [...files].sort();
+}
+
+export function resolveReportInputs(explicitFiles, options, rootDir) {
+  if (explicitFiles.length > 0) {
+    return {
+      files: explicitFiles,
+      sourceKind: 'explicit-files',
+      sourceScope: ['explicit'],
+      sourceRef: options.sourceRef ?? 'local-dry-run',
+    };
+  }
+
+  if (options.changedFrom || options.changedTo) {
+    const sourceRef =
+      options.sourceRef ??
+      (options.changedFrom && options.changedTo
+        ? `${options.changedFrom}..${options.changedTo}`
+        : 'branch-diff');
+    return {
+      files: listChangedFiles(options.changedFrom, options.changedTo, rootDir),
+      sourceKind: 'branch-diff',
+      sourceScope: [
+        ...(options.changedFrom ? [`changed-from:${options.changedFrom}`] : []),
+        ...(options.changedTo ? [`changed-to:${options.changedTo}`] : []),
+      ],
+      sourceRef,
+    };
+  }
+
+  const workingTreeScopes = [
+    ...(options.workingTree ? ['staged', 'unstaged', 'untracked'] : []),
+    ...(options.staged ? ['staged'] : []),
+    ...(options.unstaged ? ['unstaged'] : []),
+    ...(options.untracked ? ['untracked'] : []),
+  ];
+
+  if (workingTreeScopes.length > 0) {
+    const uniqueScopes = [...new Set(workingTreeScopes)];
+    return {
+      files: listWorkingTreeFiles(
+        {
+          staged: uniqueScopes.includes('staged'),
+          unstaged: uniqueScopes.includes('unstaged'),
+          untracked: uniqueScopes.includes('untracked'),
+        },
+        rootDir,
+      ),
+      sourceKind: 'working-tree',
+      sourceScope: uniqueScopes,
+      sourceRef: options.sourceRef ?? 'working-tree',
+    };
+  }
+
+  return {
+    files: [],
+    sourceKind: 'explicit-files',
+    sourceScope: ['explicit'],
+    sourceRef: options.sourceRef ?? 'local-dry-run',
+  };
+}
+
 export function buildMarkdownSummary(record, artifactPath) {
   const lines = [
     '## Guidance Report',
     '',
     `- **Adapter:** ${record.adapter.name} (${record.adapter.kind})`,
+    `- **Source:** ${record.source_kind} (${record.source_scope.join(', ')})`,
     `- **Phase:** ${record.resolved_phase}`,
     `- **Workstream:** ${record.resolved_workstream}`,
     `- **Affected nodes:** ${
@@ -899,6 +1008,22 @@ export function parseArgs(argv) {
     if (token === '--changed-to') {
       options.changedTo = argv[index + 1];
       index += 1;
+      continue;
+    }
+    if (token === '--working-tree') {
+      options.workingTree = true;
+      continue;
+    }
+    if (token === '--staged') {
+      options.staged = true;
+      continue;
+    }
+    if (token === '--unstaged') {
+      options.unstaged = true;
+      continue;
+    }
+    if (token === '--untracked') {
+      options.untracked = true;
       continue;
     }
     if (token === '--summary-path') {
@@ -1010,12 +1135,10 @@ export function runGuidanceReportCli(argv = process.argv.slice(2), defaults = {}
     );
   }
 
-  const files =
-    explicitFiles.length > 0
-      ? explicitFiles
-      : listChangedFiles(options.changedFrom, options.changedTo, rootDir);
+  const reportInputs = resolveReportInputs(explicitFiles, options, rootDir);
+  const files = reportInputs.files;
 
-  if (files.length === 0) {
+  if (files.length === 0 && reportInputs.sourceKind === 'explicit-files') {
     throw new Error('guidance-report requires at least one file path');
   }
 
@@ -1023,7 +1146,12 @@ export function runGuidanceReportCli(argv = process.argv.slice(2), defaults = {}
   const policyPack = loadPolicyPack(policyPackPath);
   const record = buildEvidenceRecord({
     files,
-    options,
+    options: {
+      ...options,
+      sourceRef: reportInputs.sourceRef,
+      sourceKind: reportInputs.sourceKind,
+      sourceScope: reportInputs.sourceScope,
+    },
     config,
     policyPack,
     rootDir,

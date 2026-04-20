@@ -3,6 +3,8 @@
   "run_id": "work-agent-pass-example",
   "timestamp": "2026-04-19T00:00:00.000Z",
   "source_ref": "refs/heads/main",
+  "source_kind": "branch-diff",
+  "source_scope": ["changed-from:origin/main", "changed-to:HEAD"],
   "resolved_phase": "Phase 1 (Harden & Onboard)",
   "resolved_workstream": "Entity Hierarchy & Navigation Restructure",
   "matched_artifacts": ["docs/plans/**"],

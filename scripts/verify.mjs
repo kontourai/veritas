@@ -55,6 +55,14 @@ assert(
   gettingStartedGuide.includes('Step 4: Add Live Eval Later, Not First'),
   'Getting-started guide must explain the staged live-eval rollout.',
 );
+assert(
+  gettingStartedGuide.includes('npm exec -- ai-guidance report --working-tree'),
+  'Getting-started guide must include the working-tree report command.',
+);
+assert(
+  gettingStartedGuide.includes('--changed-from main --changed-to HEAD'),
+  'Getting-started guide must include the branch-diff report command.',
+);
 
 const activationGuide = readText('docs/design/agent-activation.md');
 assert(
@@ -88,6 +96,10 @@ assert(
 assert(
   liveEvalGuide.includes('focus') && liveEvalGuide.includes('auditability'),
   'Live-eval guide must explain focus and auditability value.',
+);
+assert(
+  liveEvalGuide.includes('current working tree'),
+  'Live-eval guide must mention current-state evidence sources.',
 );
 
 const liveEvalRoadmap = readText('docs/design/live-eval-roadmap.md');
@@ -147,6 +159,14 @@ assert(
   bootstrapGuide.includes('repo shape it inferred'),
   'Bootstrap guide must explain inferred repo decisions.',
 );
+assert(
+  bootstrapGuide.includes('npm exec -- ai-guidance report --working-tree'),
+  'Bootstrap guide must include the working-tree report command.',
+);
+assert(
+  bootstrapGuide.includes('--changed-from <ref> --changed-to <ref>'),
+  'Bootstrap guide must include the branch-diff report guidance.',
+);
 
 const rootReadme = readText('README.md');
 assert(
@@ -168,6 +188,14 @@ assert(
 assert(
   rootReadme.includes('explicitly apply suggested package scripts'),
   'README must describe the explicit apply capability.',
+);
+assert(
+  rootReadme.includes('current working tree'),
+  'README must describe current-state working-tree reporting.',
+);
+assert(
+  rootReadme.includes('branch-diff reports'),
+  'README must distinguish branch-diff reports from other report modes.',
 );
 
 const contributingGuide = readText('CONTRIBUTING.md');

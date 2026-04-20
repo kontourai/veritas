@@ -46,7 +46,7 @@ if (subcommand === 'init') {
 } else {
   process.stderr.write(`Usage:
   ai-guidance init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--force]
-  ai-guidance report [--adapter <path>] [--policy-pack <path>] [file ...]
+  ai-guidance report [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [file ...]
   ai-guidance print package-scripts [--root <path>] [--proof-lane <cmd>]
   ai-guidance print ci-snippet [--root <path>] [--proof-lane <cmd>]
   ai-guidance apply package-scripts [--root <path>] [--proof-lane <cmd>] [--force]

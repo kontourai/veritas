@@ -102,7 +102,9 @@ Use this sequence:
 5. run `npm exec -- ai-guidance print ci-snippet`
 6. run `npm exec -- ai-guidance apply package-scripts`
 7. run `npm exec -- ai-guidance apply ci-snippet`
-8. run `npm exec -- ai-guidance report package.json`
+8. run `npm exec -- ai-guidance report --working-tree`
 9. wire the same paths into review and CI if you want them in your permanent workflow files
 
 This slice is intentionally conservative. It prints the suggested wiring first, then only writes changes when the user explicitly asks it to.
+
+Use `--changed-from <ref> --changed-to <ref>` when you want branch-diff evidence instead of current-state evidence.

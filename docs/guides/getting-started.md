@@ -109,6 +109,20 @@ The output gives you:
 - policy-pack provenance
 - a durable evidence artifact for review or CI
 
+If you want current-state truth instead of an explicit file list, use one of the working-tree modes:
+
+```bash
+npm exec -- ai-guidance report --working-tree
+npm exec -- ai-guidance report --staged
+npm exec -- ai-guidance report --unstaged --untracked
+```
+
+If you want branch-diff truth, keep using explicit refs:
+
+```bash
+npm exec -- ai-guidance report --changed-from main --changed-to HEAD
+```
+
 ## Step 4: Add Live Eval Later, Not First
 
 Do this only after the first three steps are working.
