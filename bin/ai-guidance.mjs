@@ -2,6 +2,7 @@
 import {
   runApplyCiSnippetCli,
   runApplyPackageScriptsCli,
+  runEvalDraftCli,
   runEvalRecordCli,
   runGuidanceReportCli,
   runInitCli,
@@ -48,9 +49,19 @@ if (subcommand === 'init') {
   const [kind, ...evalArgs] = args;
   if (kind === 'record') {
     runEvalRecordCli(evalArgs, { rootDir: cwd });
+  } else if (kind === 'draft') {
+    runEvalDraftCli(evalArgs, { rootDir: cwd });
   } else {
     process.stderr.write(`Usage:
+  ai-guidance eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
+    [--reviewer-confidence <scale-entry|unknown>]
+    [--time-to-green-minutes <number>]
+    [--override-count <number>]
+    [--false-positive-rule <rule-id>]
+    [--missed-issue <text>]
+    [--note <text>]
   ai-guidance eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force]
+  ai-guidance eval record --draft <path> [--team-profile <path>] [--output <path>] [--force]
     --accepted-without-major-rewrite <true|false>
     --required-followup <true|false>
     --reviewer-confidence <scale-entry|unknown>
@@ -66,7 +77,9 @@ if (subcommand === 'init') {
   process.stderr.write(`Usage:
   ai-guidance init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--force]
   ai-guidance report [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [file ...]
+  ai-guidance eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
   ai-guidance eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false> --reviewer-confidence <scale-entry|unknown> --time-to-green-minutes <number> --override-count <number>
+  ai-guidance eval record --draft <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false>
   ai-guidance print package-scripts [--root <path>] [--proof-lane <cmd>]
   ai-guidance print ci-snippet [--root <path>] [--proof-lane <cmd>]
   ai-guidance apply package-scripts [--root <path>] [--proof-lane <cmd>] [--force]

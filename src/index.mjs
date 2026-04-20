@@ -25,8 +25,19 @@ export function loadEvidenceArtifact(evidencePath) {
   return JSON.parse(readFileSync(evidencePath, 'utf8'));
 }
 
+export function loadEvalDraftArtifact(draftPath) {
+  return JSON.parse(readFileSync(draftPath, 'utf8'));
+}
+
 function sha256Hex(value) {
   return createHash('sha256').update(value).digest('hex');
+}
+
+function shellQuote(value) {
+  if (/^[A-Za-z0-9_./:-]+$/.test(value)) {
+    return value;
+  }
+  return `'${value.replaceAll("'", `'\\''`)}'`;
 }
 
 export function normalizeRepoPath(filePath, rootDir) {
@@ -213,6 +224,8 @@ export function buildEvalRecord({
   options = {},
   rootDir,
 }) {
+  const reviewerConfidenceScale =
+    teamProfile.review_preferences?.reviewer_confidence_scale ?? ['low', 'medium', 'high'];
   if (!evidenceRecord?.run_id) {
     throw new Error('buildEvalRecord requires an evidence record with run_id');
   }
@@ -240,14 +253,36 @@ export function buildEvalRecord({
   if (
     options.reviewerConfidence &&
     options.reviewerConfidence !== 'unknown' &&
-    !(
-      teamProfile.review_preferences?.reviewer_confidence_scale ?? ['low', 'medium', 'high']
-    ).includes(options.reviewerConfidence)
+    !reviewerConfidenceScale.includes(options.reviewerConfidence)
   ) {
     throw new Error(
       'reviewerConfidence must be listed in the team profile scale or be unknown',
     );
   }
+  const evidence = buildEvalEvidenceContext({ evidenceRecord, evidencePath, rootDir });
+
+  return {
+    version: 1,
+    run_id: evidenceRecord.run_id,
+    team_profile_id: teamProfile.id,
+    mode: teamProfile.defaults?.mode ?? 'shadow',
+    evidence,
+    outcome: {
+      accepted_without_major_rewrite: options.acceptedWithoutMajorRewrite,
+      required_followup: options.requiredFollowup,
+      reviewer_confidence: options.reviewerConfidence ?? 'unknown',
+    },
+    measurements: {
+      time_to_green_minutes: options.timeToGreenMinutes,
+      override_count: options.overrideCount,
+      false_positive_rules: options.falsePositiveRules ?? [],
+      missed_issues: options.missedIssues ?? [],
+    },
+    notes: options.notes ?? [],
+  };
+}
+
+function buildEvalEvidenceContext({ evidenceRecord, evidencePath, rootDir }) {
   const evidenceRelativePath = relative(rootDir, resolve(evidencePath)).replaceAll('\\', '/');
   if (
     evidenceRelativePath.startsWith('..') ||
@@ -275,33 +310,188 @@ export function buildEvalRecord({
   const evidenceDigest = sha256Hex(readFileSync(evidencePath, 'utf8'));
 
   return {
+    artifact_path: evidenceRelativePath,
+    artifact_digest: evidenceDigest,
+    timestamp: evidenceRecord.timestamp,
+    source_ref: evidenceRecord.source_ref,
+    source_kind: evidenceRecord.source_kind,
+    source_scope: evidenceRecord.source_scope ?? [],
+    affected_nodes: evidenceRecord.affected_nodes ?? [],
+    affected_lanes: evidenceRecord.affected_lanes ?? [],
+  };
+}
+
+export function buildEvalDraft({
+  evidenceRecord,
+  evidencePath,
+  teamProfile,
+  options = {},
+  rootDir,
+}) {
+  if (!evidenceRecord?.run_id) {
+    throw new Error('buildEvalDraft requires an evidence record with run_id');
+  }
+  if (!teamProfile?.id) {
+    throw new Error('buildEvalDraft requires a team profile with id');
+  }
+  if (
+    options.reviewerConfidence &&
+    options.reviewerConfidence !== 'unknown' &&
+    !(
+      teamProfile.review_preferences?.reviewer_confidence_scale ?? ['low', 'medium', 'high']
+    ).includes(options.reviewerConfidence)
+  ) {
+    throw new Error(
+      'reviewerConfidence must be listed in the team profile scale or be unknown',
+    );
+  }
+  if (
+    options.timeToGreenMinutes !== undefined &&
+    (Number.isNaN(options.timeToGreenMinutes) || options.timeToGreenMinutes < 0)
+  ) {
+    throw new Error('timeToGreenMinutes must be zero or greater when provided');
+  }
+  if (
+    options.overrideCount !== undefined &&
+    (!Number.isInteger(options.overrideCount) || options.overrideCount < 0)
+  ) {
+    throw new Error('overrideCount must be a non-negative integer when provided');
+  }
+
+  const prefilledMeasurements = {
+    time_to_green_minutes: options.timeToGreenMinutes ?? null,
+    override_count: options.overrideCount ?? 0,
+    false_positive_rules: options.falsePositiveRules ?? [],
+    missed_issues: options.missedIssues ?? [],
+  };
+  const draft = {
     version: 1,
     run_id: evidenceRecord.run_id,
     team_profile_id: teamProfile.id,
     mode: teamProfile.defaults?.mode ?? 'shadow',
-    evidence: {
-      artifact_path: evidenceRelativePath,
-      artifact_digest: evidenceDigest,
-      timestamp: evidenceRecord.timestamp,
-      source_ref: evidenceRecord.source_ref,
-      source_kind: evidenceRecord.source_kind,
-      source_scope: evidenceRecord.source_scope ?? [],
-      affected_nodes: evidenceRecord.affected_nodes ?? [],
-      affected_lanes: evidenceRecord.affected_lanes ?? [],
-    },
-    outcome: {
-      accepted_without_major_rewrite: options.acceptedWithoutMajorRewrite,
-      required_followup: options.requiredFollowup,
+    evidence: buildEvalEvidenceContext({ evidenceRecord, evidencePath, rootDir }),
+    reviewer_confidence_scale: [
+      ...(teamProfile.review_preferences?.reviewer_confidence_scale ?? ['low', 'medium', 'high']),
+      'unknown',
+    ],
+    prefilled_outcome: {
       reviewer_confidence: options.reviewerConfidence ?? 'unknown',
     },
-    measurements: {
-      time_to_green_minutes: options.timeToGreenMinutes,
-      override_count: options.overrideCount,
-      false_positive_rules: options.falsePositiveRules ?? [],
-      missed_issues: options.missedIssues ?? [],
-    },
+    prefilled_measurements: prefilledMeasurements,
     notes: options.notes ?? [],
+    missing_confirmation_fields: [
+      'accepted_without_major_rewrite',
+      'required_followup',
+      ...(prefilledMeasurements.time_to_green_minutes === null
+        ? ['time_to_green_minutes']
+        : []),
+    ],
   };
+
+  return draft;
+}
+
+function mergeEvalRecordOptions(options, draft) {
+  return {
+    acceptedWithoutMajorRewrite: options.acceptedWithoutMajorRewrite,
+    requiredFollowup: options.requiredFollowup,
+    reviewerConfidence:
+      options.reviewerConfidence ?? draft?.prefilled_outcome?.reviewer_confidence,
+    timeToGreenMinutes:
+      options.timeToGreenMinutes ??
+      draft?.prefilled_measurements?.time_to_green_minutes,
+    overrideCount:
+      options.overrideCount ?? draft?.prefilled_measurements?.override_count,
+    falsePositiveRules:
+      options.falsePositiveRules.length > 0
+        ? options.falsePositiveRules
+        : (draft?.prefilled_measurements?.false_positive_rules ?? []),
+    missedIssues:
+      options.missedIssues.length > 0
+        ? options.missedIssues
+        : (draft?.prefilled_measurements?.missed_issues ?? []),
+    notes: options.notes.length > 0 ? options.notes : (draft?.notes ?? []),
+  };
+}
+
+function buildEvalRecordCommand(draftPath, draft) {
+  const args = [
+    'npm',
+    'exec',
+    '--',
+    'ai-guidance',
+    'eval',
+    'record',
+    '--draft',
+    draftPath,
+    '--accepted-without-major-rewrite',
+    '<true|false>',
+    '--required-followup',
+    '<true|false>',
+    '--reviewer-confidence',
+    draft.prefilled_outcome.reviewer_confidence,
+    '--time-to-green-minutes',
+    draft.prefilled_measurements.time_to_green_minutes === null
+      ? '<minutes>'
+      : String(draft.prefilled_measurements.time_to_green_minutes),
+    '--override-count',
+    String(draft.prefilled_measurements.override_count),
+  ];
+
+  for (const rule of draft.prefilled_measurements.false_positive_rules) {
+    args.push('--false-positive-rule', rule);
+  }
+  for (const issue of draft.prefilled_measurements.missed_issues) {
+    args.push('--missed-issue', issue);
+  }
+  for (const note of draft.notes) {
+    args.push('--note', note);
+  }
+
+  return args.map(shellQuote).join(' ');
+}
+
+function validateEvalDraftContext({ draftPath, draftRecord, rootDir, teamProfile }) {
+  const draftRelativePath = relative(rootDir, resolve(draftPath)).replaceAll('\\', '/');
+  if (
+    draftRelativePath.startsWith('..') ||
+    !draftRelativePath.startsWith('.ai-guidance/eval-drafts/')
+  ) {
+    throw new Error(
+      'eval record requires a repo-local draft artifact inside .ai-guidance/eval-drafts/',
+    );
+  }
+  const requiredDraftKeys = [
+    'version',
+    'run_id',
+    'team_profile_id',
+    'mode',
+    'evidence',
+    'reviewer_confidence_scale',
+    'prefilled_outcome',
+    'prefilled_measurements',
+    'notes',
+    'missing_confirmation_fields',
+  ];
+  for (const key of requiredDraftKeys) {
+    if (!(key in draftRecord)) {
+      throw new Error(`eval draft is missing required key: ${key}`);
+    }
+  }
+  if (teamProfile.id !== draftRecord.team_profile_id) {
+    throw new Error(
+      'eval record draft must be completed with the same team profile that created it',
+    );
+  }
+  const expectedScale = [
+    ...(teamProfile.review_preferences?.reviewer_confidence_scale ?? ['low', 'medium', 'high']),
+    'unknown',
+  ];
+  if (JSON.stringify(expectedScale) !== JSON.stringify(draftRecord.reviewer_confidence_scale)) {
+    throw new Error(
+      'eval record draft reviewer confidence scale must match the team profile scale',
+    );
+  }
 }
 
 function buildRuleResult(rule, overrides = {}) {
@@ -938,6 +1128,32 @@ export function writeEvalArtifact(
   return artifactPath;
 }
 
+export function writeEvalDraftArtifact(
+  record,
+  rootDir,
+  outputPath = `.ai-guidance/eval-drafts/${record.run_id}.json`,
+  force = false,
+) {
+  const artifactPath = resolve(rootDir, outputPath);
+  const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
+  if (
+    relativeArtifactPath.startsWith('..') ||
+    !relativeArtifactPath.startsWith('.ai-guidance/eval-drafts/')
+  ) {
+    throw new Error(
+      'eval drafts may only be written inside .ai-guidance/eval-drafts/',
+    );
+  }
+  if (existsSync(artifactPath) && !force) {
+    throw new Error(
+      `Refusing to overwrite existing file: ${relativeArtifactPath} (use --force to replace it)`,
+    );
+  }
+  mkdirSync(dirname(artifactPath), { recursive: true });
+  writeFileSync(artifactPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
+  return artifactPath;
+}
+
 export function listChangedFiles(fromRef, toRef, rootDir) {
   if (!fromRef || !toRef) return [];
 
@@ -1129,6 +1345,25 @@ export function buildEvalMarkdownSummary(record, artifactPath) {
   return `${lines.join('\n')}\n`;
 }
 
+export function buildEvalDraftMarkdownSummary(record, artifactPath, suggestedRecordCommand) {
+  const lines = [
+    '## Guidance Eval Draft',
+    '',
+    `- **Run ID:** ${record.run_id}`,
+    `- **Mode:** ${record.mode}`,
+    `- **Team profile:** ${record.team_profile_id}`,
+    `- **Evidence artifact:** \`${record.evidence.artifact_path}\``,
+    `- **Draft artifact:** \`${artifactPath}\``,
+    `- **Missing confirmation fields:** ${record.missing_confirmation_fields.join(', ')}`,
+    '',
+    '### Next Step',
+    '',
+    `\`${suggestedRecordCommand}\``,
+  ];
+
+  return `${lines.join('\n')}\n`;
+}
+
 export function parseArgs(argv) {
   const options = {};
   const files = [];
@@ -1313,6 +1548,11 @@ export function parseEvalArgs(argv) {
     }
     if (token === '--team-profile') {
       options.teamProfilePath = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--draft') {
+      options.draftPath = argv[index + 1];
       index += 1;
       continue;
     }
@@ -1559,24 +1799,38 @@ export function runApplyCiSnippetCli(argv = process.argv.slice(2), defaults = {}
 export function runEvalRecordCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseEvalArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  const evidencePath = options.evidencePath
-    ? resolve(rootDir, options.evidencePath)
-    : undefined;
+  if (options.evidencePath && options.draftPath) {
+    throw new Error('guidance eval record accepts either --evidence or --draft, not both');
+  }
   const teamProfilePath = options.teamProfilePath
     ? resolve(rootDir, options.teamProfilePath)
     : resolve(rootDir, '.ai-guidance/team/default.team-profile.json');
 
-  if (!evidencePath) {
-    throw new Error('guidance eval record requires --evidence <path>');
+  if (!options.evidencePath && !options.draftPath) {
+    throw new Error('guidance eval record requires --evidence <path> or --draft <path>');
   }
 
-  const evidenceRecord = loadEvidenceArtifact(evidencePath);
   const teamProfile = loadTeamProfile(teamProfilePath);
+  const draft = options.draftPath
+    ? loadEvalDraftArtifact(resolve(rootDir, options.draftPath))
+    : null;
+  if (draft) {
+    validateEvalDraftContext({
+      draftPath: resolve(rootDir, options.draftPath),
+      draftRecord: draft,
+      rootDir,
+      teamProfile,
+    });
+  }
+  const evidencePath = options.evidencePath
+    ? resolve(rootDir, options.evidencePath)
+    : resolve(rootDir, draft.evidence.artifact_path);
+  const evidenceRecord = loadEvidenceArtifact(evidencePath);
   const record = buildEvalRecord({
     evidenceRecord,
     evidencePath,
     teamProfile,
-    options,
+    options: mergeEvalRecordOptions(options, draft),
     rootDir,
   });
   const artifactPath = writeEvalArtifact(
@@ -1592,6 +1846,57 @@ export function runEvalRecordCli(argv = process.argv.slice(2), defaults = {}) {
     `${JSON.stringify(
       {
         artifactPath: relativeArtifactPath,
+        markdownSummary,
+        ...record,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
+export function runEvalDraftCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseEvalArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const evidencePath = options.evidencePath
+    ? resolve(rootDir, options.evidencePath)
+    : undefined;
+  const teamProfilePath = options.teamProfilePath
+    ? resolve(rootDir, options.teamProfilePath)
+    : resolve(rootDir, '.ai-guidance/team/default.team-profile.json');
+
+  if (!evidencePath) {
+    throw new Error('guidance eval draft requires --evidence <path>');
+  }
+
+  const evidenceRecord = loadEvidenceArtifact(evidencePath);
+  const teamProfile = loadTeamProfile(teamProfilePath);
+  const record = buildEvalDraft({
+    evidenceRecord,
+    evidencePath,
+    teamProfile,
+    options,
+    rootDir,
+  });
+  const artifactPath = writeEvalDraftArtifact(
+    record,
+    rootDir,
+    options.outputPath,
+    options.force ?? false,
+  );
+  const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
+  const suggestedRecordCommand = buildEvalRecordCommand(relativeArtifactPath, record);
+  const markdownSummary = buildEvalDraftMarkdownSummary(
+    record,
+    relativeArtifactPath,
+    suggestedRecordCommand,
+  );
+
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        artifactPath: relativeArtifactPath,
+        suggestedRecordCommand,
         markdownSummary,
         ...record,
       },

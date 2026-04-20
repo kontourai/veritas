@@ -13,6 +13,7 @@ Goal:
 Build:
 
 - eval record capture
+- eval draft capture
 - team profile capture
 - simple outcome summaries
 - shipped CLI path from report artifact to eval artifact

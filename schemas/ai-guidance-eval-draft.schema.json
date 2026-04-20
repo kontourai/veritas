@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-guidance-framework.dev/schemas/ai-guidance-eval-draft.schema.json",
+  "title": "AI Guidance Eval Draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "run_id",
+    "team_profile_id",
+    "mode",
+    "evidence",
+    "reviewer_confidence_scale",
+    "prefilled_outcome",
+    "prefilled_measurements",
+    "notes",
+    "missing_confirmation_fields"
+  ],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "run_id": { "type": "string" },
+    "team_profile_id": { "type": "string" },
+    "mode": {
+      "type": "string",
+      "enum": ["shadow", "assist", "gate"]
+    },
+    "evidence": { "$ref": "./ai-guidance-eval-record.schema.json#/properties/evidence" },
+    "reviewer_confidence_scale": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "prefilled_outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reviewer_confidence"],
+      "properties": {
+        "reviewer_confidence": { "type": "string" }
+      }
+    },
+    "prefilled_measurements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "time_to_green_minutes",
+        "override_count",
+        "false_positive_rules",
+        "missed_issues"
+      ],
+      "properties": {
+        "time_to_green_minutes": { "type": ["number", "null"], "minimum": 0 },
+        "override_count": { "type": "integer", "minimum": 0 },
+        "false_positive_rules": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "missed_issues": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "missing_confirmation_fields": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

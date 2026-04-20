@@ -48,6 +48,7 @@ Today the framework can:
 - resolve changed files into graph nodes and workstreams
 - report explicit files, branch diffs, or the current working tree truthfully
 - capture a shadow eval record from a real guidance report artifact
+- prepare a shadow eval draft artifact with a framework-generated next step
 - emit structured evidence records and Markdown summaries
 - evaluate executable policy-pack rules
 - define live-eval and team-tuning artifacts for measuring usefulness over time
@@ -112,6 +113,9 @@ npm exec -- ai-guidance eval record \
   --time-to-green-minutes 12 \
   --override-count 0
 
+npm exec -- ai-guidance eval draft \
+  --evidence .ai-guidance/evidence/local-smoke.json
+
 npm exec -- ai-guidance report --working-tree
 npm exec -- ai-guidance report --changed-from main --changed-to HEAD
 ```
@@ -126,6 +130,8 @@ That keeps the evidence artifact honest about what it actually measured.
 
 `eval record` is the first operational Phase 1 live-eval path: it records how useful that guidance was after the run without changing enforcement.
 It only accepts repo-local evidence artifacts under `.ai-guidance/evidence/`, uses the team profile's confidence scale, and refuses to overwrite an existing eval artifact unless you pass `--force`.
+
+`eval draft` is the draft-first companion path: it prepares a repo-local draft artifact and a prefilled `eval record --draft ...` command without inventing the missing judgment fields.
 
 If you want the shortest path to understanding the system as a user:
 

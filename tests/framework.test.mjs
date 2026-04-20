@@ -9,6 +9,7 @@ import {
   applyCiSnippet,
   applyPackageScripts,
   buildEvidenceRecord,
+  buildEvalDraft,
   buildEvalRecord,
   buildSuggestedCiSnippet,
   buildSuggestedPackageScripts,
@@ -343,6 +344,50 @@ test('buildEvalRecord accepts reviewer confidence values from the team profile s
   assert.equal(record.outcome.reviewer_confidence, 'green');
 });
 
+test('buildEvalDraft captures prefilled context without fabricating judgment', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-build-eval-draft-'));
+  mkdirp(join(rootDir, '.ai-guidance/evidence'));
+  const evidencePath = join(rootDir, '.ai-guidance/evidence/eval-draft-smoke.json');
+  writeFileSync(
+    evidencePath,
+    JSON.stringify(
+      {
+        framework_version: 1,
+        run_id: 'eval-draft-smoke',
+        timestamp: '2026-04-20T17:00:00.000Z',
+        source_ref: 'working-tree',
+        source_kind: 'working-tree',
+        source_scope: ['staged'],
+        affected_nodes: ['governance.root-manifests'],
+        affected_lanes: ['root manifests'],
+      },
+      null,
+      2,
+    ),
+  );
+  const teamProfile = readJson('../examples/evals/work-agent-team-profile.json');
+
+  const draft = buildEvalDraft({
+    evidenceRecord: readJsonFromAbsolute(evidencePath),
+    evidencePath,
+    teamProfile,
+    options: {
+      overrideCount: 0,
+      notes: ['Prefilled from the framework draft flow.'],
+    },
+    rootDir,
+  });
+
+  assert.equal(draft.run_id, 'eval-draft-smoke');
+  assert.equal(draft.prefilled_outcome.reviewer_confidence, 'unknown');
+  assert.equal(draft.prefilled_measurements.time_to_green_minutes, null);
+  assert.deepEqual(draft.missing_confirmation_fields, [
+    'accepted_without_major_rewrite',
+    'required_followup',
+    'time_to_green_minutes',
+  ]);
+});
+
 test('working-tree helpers collect staged, unstaged, and untracked files distinctly', () => {
   const rootDir = initCommittedRepo('ai-guidance-working-tree-');
   writeFileSync(join(rootDir, 'tracked.txt'), 'before\n');
@@ -565,6 +610,346 @@ test('eval record CLI writes a repo-local shadow eval artifact from report outpu
   assert.deepEqual(evalArtifact.notes, [
     'The evidence artifact was enough for a quick review.',
   ]);
+});
+
+test('eval draft CLI writes a repo-local draft artifact and suggested next step', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-draft-cli-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Eval Draft Demo',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+
+  const reportStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'report',
+      '--root',
+      rootDir,
+      '--run-id',
+      'eval-draft-cli-smoke',
+      'package.json',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const reportResult = JSON.parse(reportStdout);
+
+  const draftStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'eval',
+      'draft',
+      '--root',
+      rootDir,
+      '--evidence',
+      reportResult.artifactPath,
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const draftResult = JSON.parse(draftStdout);
+  const draftArtifact = readJsonFromAbsolute(join(rootDir, draftResult.artifactPath));
+
+  assert.equal(draftResult.artifactPath, '.ai-guidance/eval-drafts/eval-draft-cli-smoke.json');
+  assert.match(draftResult.suggestedRecordCommand, /ai-guidance eval record --draft/);
+  assert.deepEqual(draftArtifact.missing_confirmation_fields, [
+    'accepted_without_major_rewrite',
+    'required_followup',
+    'time_to_green_minutes',
+  ]);
+});
+
+test('eval record CLI can consume a draft artifact', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-record-from-draft-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Eval Record Draft Demo',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+
+  const reportStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'report',
+      '--root',
+      rootDir,
+      '--run-id',
+      'eval-record-draft-smoke',
+      'package.json',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const reportResult = JSON.parse(reportStdout);
+
+  const draftStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'eval',
+      'draft',
+      '--root',
+      rootDir,
+      '--evidence',
+      reportResult.artifactPath,
+      '--override-count',
+      '1',
+      '--note',
+      'Draft-first flow.',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const draftResult = JSON.parse(draftStdout);
+
+  const evalStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'eval',
+      'record',
+      '--root',
+      rootDir,
+      '--draft',
+      draftResult.artifactPath,
+      '--accepted-without-major-rewrite',
+      'true',
+      '--required-followup',
+      'false',
+      '--time-to-green-minutes',
+      '9',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const evalResult = JSON.parse(evalStdout);
+
+  assert.equal(evalResult.evidence.artifact_path, reportResult.artifactPath);
+  assert.equal(evalResult.measurements.override_count, 1);
+  assert.deepEqual(evalResult.notes, ['Draft-first flow.']);
+  assert.equal(evalResult.outcome.accepted_without_major_rewrite, true);
+  assert.equal(evalResult.measurements.time_to_green_minutes, 9);
+});
+
+test('eval record CLI rejects draft artifacts outside the repo-local draft area', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-record-external-draft-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Eval Record External Draft Demo',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+
+  const reportStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'report',
+      '--root',
+      rootDir,
+      '--run-id',
+      'eval-record-external-draft-smoke',
+      'package.json',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const reportResult = JSON.parse(reportStdout);
+  const draftStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'eval',
+      'draft',
+      '--root',
+      rootDir,
+      '--evidence',
+      reportResult.artifactPath,
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const draftResult = JSON.parse(draftStdout);
+  const externalDraftPath = join(tmpdir(), 'external-eval-draft.json');
+  writeFileSync(
+    externalDraftPath,
+    JSON.stringify(readJsonFromAbsolute(join(rootDir, draftResult.artifactPath)), null, 2),
+  );
+
+  assert.throws(
+    () =>
+      execFileSync(
+        'npm',
+        [
+          'exec',
+          '--',
+          'ai-guidance',
+          'eval',
+          'record',
+          '--root',
+          rootDir,
+          '--draft',
+          externalDraftPath,
+          '--accepted-without-major-rewrite',
+          'true',
+          '--required-followup',
+          'false',
+          '--time-to-green-minutes',
+          '9',
+        ],
+        { cwd: frameworkRootDir, encoding: 'utf8' },
+      ),
+    /repo-local draft artifact inside \.ai-guidance\/eval-drafts/,
+  );
+});
+
+test('eval record CLI rejects draft/team-profile rebinding', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-record-draft-profile-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Eval Record Draft Profile Demo',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const altTeamProfilePath = join(rootDir, '.ai-guidance/team/alt.team-profile.json');
+  writeFileSync(
+    altTeamProfilePath,
+    JSON.stringify(
+      {
+        version: 1,
+        id: 'alt-team',
+        name: 'Alt Team',
+        description: 'Alt scale',
+        defaults: { mode: 'shadow', new_rule_stage: 'recommend' },
+        review_preferences: {
+          human_signoff_required_for_stage_promotion: true,
+          reviewer_confidence_scale: ['red', 'yellow', 'green'],
+          major_rewrite_definition: 'Alt',
+        },
+        promotion_preferences: {
+          proof_lanes_required_before_block: ['npm test'],
+          warnings_block_in_ci: false,
+          require_consistent_eval_before_promotion: true,
+        },
+      },
+      null,
+      2,
+    ),
+  );
+
+  const reportStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'report',
+      '--root',
+      rootDir,
+      '--run-id',
+      'eval-record-draft-profile-smoke',
+      'package.json',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const reportResult = JSON.parse(reportStdout);
+  const draftStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'eval',
+      'draft',
+      '--root',
+      rootDir,
+      '--evidence',
+      reportResult.artifactPath,
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const draftResult = JSON.parse(draftStdout);
+
+  assert.throws(
+    () =>
+      execFileSync(
+        'npm',
+        [
+          'exec',
+          '--',
+          'ai-guidance',
+          'eval',
+          'record',
+          '--root',
+          rootDir,
+          '--draft',
+          draftResult.artifactPath,
+          '--team-profile',
+          '.ai-guidance/team/alt.team-profile.json',
+          '--accepted-without-major-rewrite',
+          'true',
+          '--required-followup',
+          'false',
+          '--time-to-green-minutes',
+          '9',
+        ],
+        { cwd: frameworkRootDir, encoding: 'utf8' },
+      ),
+    /must be completed with the same team profile/,
+  );
 });
 
 test('eval record CLI supports explicit team-profile and output paths', () => {
@@ -994,16 +1379,20 @@ test('fixture adapters and evidence examples stay readable', () => {
 
 test('live-eval fixtures explain outcome measurement and team tuning', () => {
   const evalRecord = readJson('../examples/evals/work-agent-shadow-eval.json');
+  const evalDraft = readJson('../examples/evals/work-agent-shadow-eval-draft.json');
   const teamProfile = readJson('../examples/evals/work-agent-team-profile.json');
   const evalSchema = readJson('../schemas/ai-guidance-eval-record.schema.json');
+  const evalDraftSchema = readJson('../schemas/ai-guidance-eval-draft.schema.json');
   const teamProfileSchema = readJson('../schemas/ai-guidance-team-profile.schema.json');
 
   assert.ok(evalSchema.required.includes('measurements'));
+  assert.ok(evalDraftSchema.required.includes('prefilled_measurements'));
   assert.ok(evalSchema.required.includes('evidence'));
   assert.ok(teamProfileSchema.required.includes('promotion_preferences'));
 
   assert.equal(evalRecord.mode, 'shadow');
   assert.equal(evalRecord.evidence.source_kind, 'branch-diff');
+  assert.equal(evalDraft.prefilled_outcome.reviewer_confidence, 'unknown');
   assert.equal(evalRecord.outcome.accepted_without_major_rewrite, true);
   assert.equal(teamProfile.defaults.new_rule_stage, 'recommend');
   assert.equal(teamProfile.promotion_preferences.warnings_block_in_ci, false);

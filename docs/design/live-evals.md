@@ -34,11 +34,13 @@ The first operational workflow should stay explicit:
 
 1. run `report`
 2. review the evidence artifact
-3. run `eval record` against that artifact
+3. run `eval draft` against that artifact
+4. run `eval record --draft ...`
 
 That capture path should enforce provenance, not merely suggest it:
 
 - repo-local evidence artifact
+- repo-local eval draft artifact
 - copied source metadata and immutable digest
 - team-profile-aware reviewer confidence
 - explicit overwrite only with `--force`

@@ -68,6 +68,10 @@ assert(
   'Getting-started guide must include the eval record command.',
 );
 assert(
+  gettingStartedGuide.includes('npm exec -- ai-guidance eval draft'),
+  'Getting-started guide must include the eval draft command.',
+);
+assert(
   gettingStartedGuide.includes('repo-local under `.ai-guidance/evidence/`'),
   'Getting-started guide must explain repo-local evidence provenance for eval capture.',
 );
@@ -110,8 +114,12 @@ assert(
   'Live-eval guide must mention current-state evidence sources.',
 );
 assert(
-  liveEvalGuide.includes('run `eval record` against that artifact'),
+  liveEvalGuide.includes('run `eval record --draft ...`'),
   'Live-eval guide must describe the explicit report-to-eval flow.',
+);
+assert(
+  liveEvalGuide.includes('run `eval draft` against that artifact'),
+  'Live-eval guide must describe the draft-first report-to-eval flow.',
 );
 assert(
   liveEvalGuide.includes('immutable digest'),
@@ -130,6 +138,10 @@ assert(
 assert(
   liveEvalRoadmap.includes('report artifact to eval artifact'),
   'Live-eval roadmap must mention the shipped report-to-eval CLI path.',
+);
+assert(
+  liveEvalRoadmap.includes('eval draft capture'),
+  'Live-eval roadmap must mention eval draft capture.',
 );
 
 const teamTuningGuide = readText('docs/guides/tune-for-your-team.md');
@@ -192,6 +204,10 @@ assert(
   'Bootstrap guide must include the eval record command.',
 );
 assert(
+  bootstrapGuide.includes('npm exec -- ai-guidance eval draft'),
+  'Bootstrap guide must include the eval draft command.',
+);
+assert(
   bootstrapGuide.includes('reruns should use `--force`'),
   'Bootstrap guide must explain explicit overwrite for eval reruns.',
 );
@@ -230,8 +246,16 @@ assert(
   'README must describe shadow eval capture as a current capability.',
 );
 assert(
+  rootReadme.includes('prepare a shadow eval draft artifact'),
+  'README must describe shadow eval draft preparation as a current capability.',
+);
+assert(
   rootReadme.includes('npm exec -- ai-guidance eval record'),
   'README must include the eval record command.',
+);
+assert(
+  rootReadme.includes('npm exec -- ai-guidance eval draft'),
+  'README must include the eval draft command.',
 );
 assert(
   rootReadme.includes('refuses to overwrite an existing eval artifact unless you pass `--force`'),
