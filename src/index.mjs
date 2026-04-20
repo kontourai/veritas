@@ -1267,7 +1267,13 @@ export function applyCodexHook({
   outputPath = '.ai-guidance/runtime/codex-hooks.json',
   force = false,
   targetHooksFile,
+  codexHome,
 }) {
+  if (targetHooksFile && codexHome) {
+    throw new Error(
+      'apply codex-hook accepts either --target-hooks-file or --codex-home, not both',
+    );
+  }
   const resolvedOutputPath = resolve(rootDir, outputPath);
   const relativeOutputPath = relative(rootDir, resolvedOutputPath).replaceAll('\\', '/');
 
@@ -1291,8 +1297,12 @@ export function applyCodexHook({
   writeFileSync(resolvedOutputPath, `${JSON.stringify(adapterConfig, null, 2)}\n`, 'utf8');
 
   let mergedTargetPath = null;
-  if (targetHooksFile) {
-    const resolvedTargetPath = resolve(rootDir, targetHooksFile);
+  const resolvedTargetPath = targetHooksFile
+    ? resolve(rootDir, targetHooksFile)
+    : codexHome
+      ? resolve(rootDir, codexHome, 'hooks.json')
+      : null;
+  if (resolvedTargetPath) {
     const existingConfig = existsSync(resolvedTargetPath)
       ? JSON.parse(readFileSync(resolvedTargetPath, 'utf8'))
       : {};
@@ -1718,6 +1728,11 @@ export function parsePrintArgs(argv) {
     if (token === '--target-hooks-file') {
       options.targetHooksFile = argv[index + 1];
       index += 1;
+      continue;
+    }
+    if (token === '--codex-home') {
+      options.codexHome = argv[index + 1];
+      index += 1;
     }
   }
 
@@ -1759,6 +1774,11 @@ export function parseApplyArgs(argv) {
     }
     if (token === '--target-hooks-file') {
       options.targetHooksFile = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--codex-home') {
+      options.codexHome = argv[index + 1];
       index += 1;
     }
   }
@@ -2303,6 +2323,7 @@ export function runPrintCodexHookCli(argv = process.argv.slice(2), defaults = {}
         rootDir,
         outputPath: '.ai-guidance/runtime/codex-hooks.json',
         targetHooksFile: options.targetHooksFile ?? null,
+        codexHome: options.codexHome ?? null,
         hookConfig: buildSuggestedCodexHookConfig(),
       },
       null,
@@ -2395,6 +2416,7 @@ export function runApplyCodexHookCli(argv = process.argv.slice(2), defaults = {}
     outputPath: options.outputPath ?? '.ai-guidance/runtime/codex-hooks.json',
     force: options.force ?? false,
     targetHooksFile: options.targetHooksFile,
+    codexHome: options.codexHome,
   });
 
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

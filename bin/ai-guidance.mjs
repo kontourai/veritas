@@ -44,7 +44,7 @@ if (subcommand === 'init') {
   ai-guidance print ci-snippet [--root <path>] [--proof-lane <cmd>]
   ai-guidance print git-hook [--root <path>] [--hook post-commit]
   ai-guidance print runtime-hook [--root <path>]
-  ai-guidance print codex-hook [--root <path>] [--target-hooks-file <path>]
+  ai-guidance print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
 `);
     process.exitCode = 1;
   }
@@ -66,7 +66,7 @@ if (subcommand === 'init') {
   ai-guidance apply ci-snippet [--root <path>] [--output <path>] [--proof-lane <cmd>] [--force]
   ai-guidance apply git-hook [--root <path>] [--hook post-commit] [--output <path>] [--configure-git] [--force]
   ai-guidance apply runtime-hook [--root <path>] [--output <path>] [--force]
-  ai-guidance apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path>] [--force]
+  ai-guidance apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]
 `);
     process.exitCode = 1;
   }
@@ -132,12 +132,12 @@ if (subcommand === 'init') {
   ai-guidance print ci-snippet [--root <path>] [--proof-lane <cmd>]
   ai-guidance print git-hook [--root <path>] [--hook post-commit]
   ai-guidance print runtime-hook [--root <path>]
-  ai-guidance print codex-hook [--root <path>] [--target-hooks-file <path>]
+  ai-guidance print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
   ai-guidance apply package-scripts [--root <path>] [--proof-lane <cmd>] [--force]
   ai-guidance apply ci-snippet [--root <path>] [--output <path>] [--proof-lane <cmd>] [--force]
   ai-guidance apply git-hook [--root <path>] [--hook post-commit] [--output <path>] [--configure-git] [--force]
   ai-guidance apply runtime-hook [--root <path>] [--output <path>] [--force]
-  ai-guidance apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path>] [--force]
+  ai-guidance apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]
 `);
   process.exitCode = 1;
 }

@@ -1557,6 +1557,40 @@ test('apply codex-hook writes a tracked codex hooks artifact and can merge it', 
   assert.equal(merged.hooks.Stop[1].hooks[0].command, '.ai-guidance/hooks/agent-runtime.sh');
 });
 
+test('apply codex-hook can resolve a Codex home into hooks.json', () => {
+  const rootDir = initCommittedRepo('ai-guidance-apply-codex-home-');
+  const codexHome = join(rootDir, 'tmp-codex-home');
+  const targetHooksFile = join(codexHome, 'hooks.json');
+  mkdirp(codexHome);
+  writeFileSync(
+    targetHooksFile,
+    JSON.stringify(
+      {
+        hooks: {
+          SessionStart: [
+            {
+              matcher: 'startup',
+              hooks: [{ type: 'command', command: 'echo existing' }],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    ),
+  );
+
+  const result = applyCodexHook({
+    rootDir,
+    codexHome,
+  });
+  const merged = readJsonFromAbsolute(targetHooksFile);
+
+  assert.equal(result.mergedTargetPath, 'tmp-codex-home/hooks.json');
+  assert.equal(merged.hooks.SessionStart[0].hooks[0].command, 'echo existing');
+  assert.equal(merged.hooks.Stop[0].hooks[0].command, '.ai-guidance/hooks/agent-runtime.sh');
+});
+
 test('apply git-hook rejects configured installs with a non-discoverable filename', () => {
   const rootDir = initCommittedRepo('ai-guidance-apply-hook-bad-name-');
 
@@ -1629,6 +1663,20 @@ test('apply codex-hook rejects paths outside the reviewable codex hook area', ()
         outputPath: '../outside.json',
       }),
     /only supports writing inside \.ai-guidance\/runtime\//,
+  );
+});
+
+test('apply codex-hook rejects conflicting target hooks path and Codex home inputs', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-codex-hook-conflict-'));
+
+  assert.throws(
+    () =>
+      applyCodexHook({
+        rootDir,
+        targetHooksFile: 'hooks.json',
+        codexHome: '.codex',
+      }),
+    /accepts either --target-hooks-file or --codex-home, not both/,
   );
 });
 
