@@ -80,6 +80,10 @@ assert(
   'Getting-started guide must include the git-hook apply command.',
 );
 assert(
+  gettingStartedGuide.includes('npm exec -- ai-guidance apply runtime-hook'),
+  'Getting-started guide must include the runtime-hook apply command.',
+);
+assert(
   gettingStartedGuide.includes('repo-local under `.ai-guidance/evidence/`'),
   'Getting-started guide must explain repo-local evidence provenance for eval capture.',
 );
@@ -96,6 +100,10 @@ assert(
 assert(
   activationGuide.includes('agent-agnostic'),
   'Activation guide must explain the agent-agnostic goal.',
+);
+assert(
+  activationGuide.includes('.ai-guidance/hooks/agent-runtime.sh'),
+  'Activation guide must mention the tracked runtime-hook adapter.',
 );
 
 const policyPackGuide = readText('docs/design/policy-packs.md');
@@ -232,6 +240,10 @@ assert(
   'Bootstrap guide must include the git-hook apply command.',
 );
 assert(
+  bootstrapGuide.includes('npm exec -- ai-guidance apply runtime-hook'),
+  'Bootstrap guide must include the runtime-hook apply command.',
+);
+assert(
   bootstrapGuide.includes('reruns should use `--force`'),
   'Bootstrap guide must explain explicit overwrite for eval reruns.',
 );
@@ -282,6 +294,10 @@ assert(
   'README must describe tracked git-hook adapters as a current capability.',
 );
 assert(
+  rootReadme.includes('generate tracked runtime-hook templates'),
+  'README must describe tracked runtime-hook templates as a current capability.',
+);
+assert(
   rootReadme.includes('npm exec -- ai-guidance eval record'),
   'README must include the eval record command.',
 );
@@ -296,6 +312,10 @@ assert(
 assert(
   rootReadme.includes('npm exec -- ai-guidance apply git-hook --configure-git'),
   'README must include the git-hook apply command.',
+);
+assert(
+  rootReadme.includes('npm exec -- ai-guidance apply runtime-hook'),
+  'README must include the runtime-hook apply command.',
 );
 assert(
   rootReadme.includes('refuses to overwrite an existing eval artifact unless you pass `--force`'),

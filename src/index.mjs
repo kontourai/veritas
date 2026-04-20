@@ -1041,6 +1041,22 @@ fi
 `;
 }
 
+export function buildSuggestedRuntimeHook() {
+  return `#!/bin/sh
+set -eu
+
+if [ "\${AI_GUIDANCE_HOOK_SKIP:-0}" = "1" ]; then
+  exit 0
+fi
+
+if [ "$#" -eq 0 ]; then
+  exec npm exec -- ai-guidance shadow run --working-tree
+fi
+
+exec npm exec -- ai-guidance shadow run "$@"
+`;
+}
+
 export function applyPackageScripts({
   rootDir,
   proofLane = 'npm test',
@@ -1163,6 +1179,39 @@ export function applyGitHook({
     hook,
     outputPath: relativeOutputPath,
     configuredHooksPath,
+  };
+}
+
+export function applyRuntimeHook({
+  rootDir,
+  outputPath = '.ai-guidance/hooks/agent-runtime.sh',
+  force = false,
+}) {
+  const resolvedOutputPath = resolve(rootDir, outputPath);
+  const relativeOutputPath = relative(rootDir, resolvedOutputPath).replaceAll('\\', '/');
+
+  if (
+    relativeOutputPath.startsWith('..') ||
+    !relativeOutputPath.startsWith('.ai-guidance/hooks/')
+  ) {
+    throw new Error(
+      'apply runtime-hook only supports writing inside .ai-guidance/hooks/',
+    );
+  }
+
+  if (existsSync(resolvedOutputPath) && !force) {
+    throw new Error(
+      `Refusing to overwrite existing file: ${relativeOutputPath} (use --force to replace it)`,
+    );
+  }
+
+  mkdirSync(dirname(resolvedOutputPath), { recursive: true });
+  writeFileSync(resolvedOutputPath, buildSuggestedRuntimeHook(), 'utf8');
+  chmodSync(resolvedOutputPath, 0o755);
+
+  return {
+    rootDir,
+    outputPath: relativeOutputPath,
   };
 }
 
@@ -2122,6 +2171,24 @@ export function runPrintGitHookCli(argv = process.argv.slice(2), defaults = {}) 
   );
 }
 
+export function runPrintRuntimeHookCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parsePrintArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        rootDir,
+        outputPath: '.ai-guidance/hooks/agent-runtime.sh',
+        hookBody: buildSuggestedRuntimeHook(),
+        defaultInvocation: '.ai-guidance/hooks/agent-runtime.sh',
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
 export function runApplyPackageScriptsCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseApplyArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
@@ -2181,6 +2248,18 @@ export function runApplyGitHookCli(argv = process.argv.slice(2), defaults = {}) 
     outputPath: options.outputPath ?? `.githooks/${hook}`,
     force: options.force ?? false,
     configureGit: options.configureGit ?? false,
+  });
+
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+}
+
+export function runApplyRuntimeHookCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseApplyArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const result = applyRuntimeHook({
+    rootDir,
+    outputPath: options.outputPath ?? '.ai-guidance/hooks/agent-runtime.sh',
+    force: options.force ?? false,
   });
 
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

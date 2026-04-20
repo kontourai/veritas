@@ -115,6 +115,8 @@ If you want to start Phase 1 live eval, capture a shadow eval from that evidence
 npm exec -- ai-guidance shadow run
 npm exec -- ai-guidance print git-hook
 npm exec -- ai-guidance apply git-hook --configure-git
+npm exec -- ai-guidance print runtime-hook
+npm exec -- ai-guidance apply runtime-hook
 
 npm exec -- ai-guidance eval draft \
   --evidence .ai-guidance/evidence/local-smoke.json
@@ -137,6 +139,7 @@ The eval step stays conservative:
 
 - `shadow run` is the shortest hook-friendly path for proof + report + draft
 - `apply git-hook --configure-git` is the shortest tracked git-hook install path
+- `apply runtime-hook` is the shortest tracked non-git hook install path
 - the evidence input must be repo-local under `.ai-guidance/evidence/`
 - the draft artifact stays repo-local under `.ai-guidance/eval-drafts/`
 - reviewer confidence should match the team profile scale, or use `unknown`

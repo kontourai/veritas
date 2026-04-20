@@ -8,11 +8,13 @@ import { fileURLToPath } from 'node:url';
 import {
   applyCiSnippet,
   applyGitHook,
+  applyRuntimeHook,
   applyPackageScripts,
   buildEvidenceRecord,
   buildEvalDraft,
   buildEvalRecord,
   buildSuggestedGitHook,
+  buildSuggestedRuntimeHook,
   buildSuggestedCiSnippet,
   buildSuggestedPackageScripts,
   classifyNodes,
@@ -1365,6 +1367,24 @@ test('print git-hook returns a tracked post-commit adapter', () => {
   assert.match(parsed.hookBody, /AI_GUIDANCE_HOOK_SKIP/);
 });
 
+test('print runtime-hook returns a tracked agent-runtime adapter', () => {
+  const hookBody = buildSuggestedRuntimeHook();
+  assert.match(hookBody, /^#!\/bin\/sh/m);
+  assert.match(hookBody, /ai-guidance shadow run --working-tree/);
+
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-print-runtime-hook-'));
+  const stdout = execFileSync(
+    'npm',
+    ['exec', '--', 'ai-guidance', 'print', 'runtime-hook', '--root', rootDir],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.outputPath, '.ai-guidance/hooks/agent-runtime.sh');
+  assert.equal(parsed.defaultInvocation, '.ai-guidance/hooks/agent-runtime.sh');
+  assert.match(parsed.hookBody, /AI_GUIDANCE_HOOK_SKIP/);
+});
+
 test('apply package-scripts writes the suggested guidance scripts into package.json', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-scripts-'));
   writeFileSync(
@@ -1463,6 +1483,17 @@ test('apply git-hook can configure the local hooks path explicitly', () => {
   assert.equal(configuredHooksPath, '.githooks');
 });
 
+test('apply runtime-hook writes a tracked executable runtime hook file', () => {
+  const rootDir = initCommittedRepo('ai-guidance-apply-runtime-hook-');
+  const result = applyRuntimeHook({
+    rootDir,
+  });
+  const contents = readFileSync(join(rootDir, '.ai-guidance/hooks/agent-runtime.sh'), 'utf8');
+
+  assert.equal(result.outputPath, '.ai-guidance/hooks/agent-runtime.sh');
+  assert.match(contents, /ai-guidance shadow run --working-tree/);
+});
+
 test('apply git-hook rejects configured installs with a non-discoverable filename', () => {
   const rootDir = initCommittedRepo('ai-guidance-apply-hook-bad-name-');
 
@@ -1509,6 +1540,19 @@ test('apply git-hook rejects unsupported hook kinds', () => {
         hook: 'pre-push',
       }),
     /Unsupported git hook kind: pre-push/,
+  );
+});
+
+test('apply runtime-hook rejects paths outside the reviewable hook area', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-runtime-hook-outside-'));
+
+  assert.throws(
+    () =>
+      applyRuntimeHook({
+        rootDir,
+        outputPath: '../outside.sh',
+      }),
+    /only supports writing inside \.ai-guidance\/hooks\//,
   );
 });
 
@@ -1583,6 +1627,40 @@ test('generated post-commit hook runs successfully on a normal subsequent commit
 
   assert.equal(parsed.mode, 'report-and-draft');
   assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
+});
+
+test('generated runtime hook runs successfully with the default working-tree path', () => {
+  const rootDir = initCommittedRepo('ai-guidance-runtime-hook-run-');
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  installLocalAiGuidanceBin(rootDir);
+
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Runtime Hook Demo',
+      '--proof-lane',
+      'node -e "process.exit(0)"',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  applyRuntimeHook({ rootDir });
+
+  const stdout = execFileSync(join(rootDir, '.ai-guidance/hooks/agent-runtime.sh'), {
+    cwd: rootDir,
+    encoding: 'utf8',
+  });
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.mode, 'report-and-draft');
+  assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
+  assert.equal(parsed.reportSourceKind, 'working-tree');
 });
 
 test('adaptive bootstrap detects a workspace-shaped repo', () => {

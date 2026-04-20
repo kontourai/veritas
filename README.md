@@ -51,6 +51,7 @@ Today the framework can:
 - prepare a shadow eval draft artifact with a framework-generated next step
 - run a hook-friendly shadow flow that handles proof, report, and eval draft in one command
 - generate tracked git-hook adapters for the passive shadow flow
+- generate tracked runtime-hook templates for agent runtimes
 - emit structured evidence records and Markdown summaries
 - evaluate executable policy-pack rules
 - define live-eval and team-tuning artifacts for measuring usefulness over time
@@ -121,6 +122,8 @@ npm exec -- ai-guidance eval draft \
 npm exec -- ai-guidance shadow run
 npm exec -- ai-guidance print git-hook
 npm exec -- ai-guidance apply git-hook --configure-git
+npm exec -- ai-guidance print runtime-hook
+npm exec -- ai-guidance apply runtime-hook
 
 npm exec -- ai-guidance report --working-tree
 npm exec -- ai-guidance report --changed-from main --changed-to HEAD
@@ -142,6 +145,8 @@ It only accepts repo-local evidence artifacts under `.ai-guidance/evidence/`, us
 `shadow run` is the first hook-friendly passive automation path: it can run proof, capture a report, and prepare an eval draft in one command, then finish `eval record` only if the remaining judgment fields are already supplied.
 
 `print git-hook` and `apply git-hook` are the first tracked adapter surfaces for that passive path. They generate a repo-local `.githooks/post-commit` script that calls `ai-guidance shadow run`, and `apply git-hook --configure-git` can explicitly set `core.hooksPath` to use it.
+
+`print runtime-hook` and `apply runtime-hook` are the first non-git hook templates. They generate a tracked `.ai-guidance/hooks/agent-runtime.sh` script that defaults to `shadow run --working-tree` and can be invoked by agent runtimes as a repo-local post-task hook.
 
 If you want the shortest path to understanding the system as a user:
 

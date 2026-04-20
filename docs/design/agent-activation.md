@@ -27,6 +27,12 @@ That means the important activation surfaces are:
 
 Those are the things an agent can encounter at the moment it starts interacting with the repo.
 
+Tracked runtime-hook adapters make that more concrete for post-task integration:
+
+- `.ai-guidance/hooks/agent-runtime.sh`
+- repo-local invocation of `shadow run`
+- no requirement that the framework know one runtime vendor's config format
+
 ## The Three Activation Modes
 
 ### 1. Ambient Activation
