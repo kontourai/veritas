@@ -53,8 +53,12 @@ export function classifyNodes(files, config, rootDir) {
 
 export function resolveWorkstream(options, config, normalizedFiles = []) {
   if (options.workstream) {
+    const resolvedPhase =
+      options.phase ??
+      config.graph.activePhase ??
+      config.graph.defaultResolution?.phase;
     return {
-      resolvedPhase: options.phase ?? config.graph.activePhase,
+      resolvedPhase,
       resolvedWorkstream: options.workstream,
       matchedArtifacts: ['explicit-workstream'],
       promotionAllowed: options.workstream !== 'multi-workstream',

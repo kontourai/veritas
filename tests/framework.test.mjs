@@ -60,6 +60,14 @@ test('core classifies nodes and builds evidence from an adapter config', () => {
   ]);
   assert.deepEqual(resolution.matchedArtifacts, ['docs/plans/**']);
 
+  const explicitResolution = resolveWorkstream(
+    { workstream: 'explicit-demo' },
+    adapter,
+    ['package.json'],
+  );
+  assert.equal(explicitResolution.resolvedPhase, 'Phase 1 (Harden & Onboard)');
+  assert.equal(explicitResolution.resolvedWorkstream, 'explicit-demo');
+
   const record = buildEvidenceRecord({
     files: ['package.json'],
     options: { baselineCiFastStatus: 'failed' },
