@@ -172,3 +172,22 @@ test('fixture adapters and evidence examples stay readable', () => {
   assert.equal(failExample.baseline_ci_fast_passed, false);
   assert.equal(policyGapExample.recommendations[0].kind, 'policy-gap');
 });
+
+test('live-eval fixtures explain outcome measurement and team tuning', () => {
+  const evalRecord = readJson('../examples/evals/work-agent-shadow-eval.json');
+  const teamProfile = readJson('../examples/evals/work-agent-team-profile.json');
+  const evalSchema = readJson('../schemas/ai-guidance-eval-record.schema.json');
+  const teamProfileSchema = readJson('../schemas/ai-guidance-team-profile.schema.json');
+
+  assert.ok(evalSchema.required.includes('measurements'));
+  assert.ok(teamProfileSchema.required.includes('promotion_preferences'));
+
+  assert.equal(evalRecord.mode, 'shadow');
+  assert.equal(evalRecord.outcome.accepted_without_major_rewrite, true);
+  assert.equal(teamProfile.defaults.new_rule_stage, 'recommend');
+  assert.equal(teamProfile.promotion_preferences.warnings_block_in_ci, false);
+  assert.equal(
+    teamProfile.promotion_preferences.require_consistent_eval_before_promotion,
+    true,
+  );
+});

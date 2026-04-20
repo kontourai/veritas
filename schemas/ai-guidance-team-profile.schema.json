@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-guidance-framework.dev/schemas/ai-guidance-team-profile.schema.json",
+  "title": "AI Guidance Team Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "id",
+    "name",
+    "defaults",
+    "review_preferences",
+    "promotion_preferences"
+  ],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "new_rule_stage"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["shadow", "assist", "gate"]
+        },
+        "new_rule_stage": {
+          "type": "string",
+          "enum": ["recommend", "warn", "block"]
+        }
+      }
+    },
+    "review_preferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "human_signoff_required_for_stage_promotion",
+        "reviewer_confidence_scale"
+      ],
+      "properties": {
+        "human_signoff_required_for_stage_promotion": { "type": "boolean" },
+        "reviewer_confidence_scale": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 3
+        },
+        "major_rewrite_definition": { "type": "string" }
+      }
+    },
+    "promotion_preferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["proof_lanes_required_before_block"],
+      "properties": {
+        "proof_lanes_required_before_block": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "warnings_block_in_ci": { "type": "boolean" },
+        "require_consistent_eval_before_promotion": { "type": "boolean" }
+      }
+    }
+  }
+}

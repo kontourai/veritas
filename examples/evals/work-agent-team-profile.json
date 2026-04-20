@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "id": "work-agent-default",
+  "name": "Work Agent Default",
+  "description": "A conservative starting profile: learn in shadow mode first, then tighten rules after repeated evidence.",
+  "defaults": {
+    "mode": "shadow",
+    "new_rule_stage": "recommend"
+  },
+  "review_preferences": {
+    "human_signoff_required_for_stage_promotion": true,
+    "reviewer_confidence_scale": ["low", "medium", "high"],
+    "major_rewrite_definition": "A change counts as a major rewrite when a reviewer replaces the main structure or control flow rather than making local edits."
+  },
+  "promotion_preferences": {
+    "proof_lanes_required_before_block": ["npm run ci:fast"],
+    "warnings_block_in_ci": false,
+    "require_consistent_eval_before_promotion": true
+  }
+}

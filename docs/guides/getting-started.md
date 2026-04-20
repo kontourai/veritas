@@ -8,6 +8,9 @@ The goal is simple:
 - define the few rules that actually matter
 - emit an evidence artifact that a human can trust quickly
 
+This guide is about installation and use first.
+Framework development belongs in `CONTRIBUTING.md`.
+
 ## Mental Model
 
 Use the framework as:
@@ -15,6 +18,7 @@ Use the framework as:
 1. **adapter**: "what parts of this repo exist and how should they be grouped?"
 2. **policy pack**: "what do we require, prefer, or still treat as brittle?"
 3. **evidence**: "what did the AI touch, what lane did that map to, and what proof do we have?"
+4. **live eval**: "did this guidance actually help the team?"
 
 If you keep those three concepts separate, the system stays understandable.
 
@@ -30,6 +34,23 @@ Start with:
 4. one executable rule
 
 That is enough to make the framework useful.
+
+## Install First
+
+The install path should feel boring:
+
+```bash
+npm install
+```
+
+Then verify the repo artifacts:
+
+```bash
+npm run verify
+npm test
+```
+
+If those pass, move straight into adapter + policy-pack setup.
 
 ## Step 1: Create an Adapter
 
@@ -73,6 +94,20 @@ The output gives you:
 - proof-lane status
 - policy-pack provenance
 - a durable evidence artifact for review or CI
+
+## Step 4: Add Live Eval Later, Not First
+
+Do this only after the first three steps are working.
+
+Add:
+
+1. one team profile
+2. one eval record example
+3. `shadow` mode as the default rollout
+
+That lets you measure usefulness before you harden more rules.
+
+If you want that next, read [Tune The Framework For Your Team](./tune-for-your-team.md) and [Live Evals](../design/live-evals.md).
 
 ## Why Teams Care
 

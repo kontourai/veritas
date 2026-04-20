@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "run_id": "work-agent-shadow-001",
+  "team_profile_id": "work-agent-default",
+  "mode": "shadow",
+  "outcome": {
+    "accepted_without_major_rewrite": true,
+    "required_followup": false,
+    "reviewer_confidence": "high"
+  },
+  "measurements": {
+    "time_to_green_minutes": 18,
+    "override_count": 0,
+    "false_positive_rules": [],
+    "missed_issues": []
+  },
+  "notes": [
+    "Evidence artifact was enough for the reviewer to understand the lane quickly.",
+    "No policy waivers were needed on this run."
+  ]
+}

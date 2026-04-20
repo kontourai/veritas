@@ -2,6 +2,12 @@
 
 `ai-guidance-framework` is a lightweight framework for keeping AI-driven development focused, reviewable, and auditable without forcing humans to manually rediscover the same guardrails on every change.
 
+It is designed to be:
+
+- easy for an agent to operate inside
+- easy for a team to install and use
+- easy for reviewers to trust
+
 It does that with three pieces:
 
 - a **[framework core](docs/design/framework-core-vs-adapter.md)** that understands graph nodes, resolution, evidence, and policy evaluation
@@ -30,20 +36,35 @@ Today the framework can:
 - resolve changed files into graph nodes and workstreams
 - emit structured evidence records and Markdown summaries
 - evaluate executable policy-pack rules
+- define live-eval and team-tuning artifacts for measuring usefulness over time
 - ship canonical fixtures for adapters, evidence, and convergence rule families
 
 The first interpreted rule class is `required-repo-artifacts`, which `work-agent` now consumes through the framework instead of keeping fully bespoke in `verify:convergence`.
 
-## Quick Start
+## Install
 
-The onboarding path is intentionally short.
-
-1. Copy or author one adapter JSON for your repo.
-2. Author one policy pack with the handful of rules you actually care about first.
-3. Run the CLI against a changed-file set or a git diff.
+The install path should stay short.
 
 ```bash
 npm install
+```
+
+Then start with just three things:
+
+1. one adapter
+2. one policy pack
+3. one CLI run
+
+## Use It
+
+The primary workflow is:
+
+1. point the framework at a repo
+2. give it an adapter and policy pack
+3. generate evidence
+4. use that evidence in review, CI, or future live evals
+
+```bash
 npm run verify
 npm test
 
@@ -55,22 +76,28 @@ node bin/ai-guidance-report.mjs \
   package.json
 ```
 
-If you want the shortest path to understanding the model:
+If you want the shortest path to understanding the system as a user:
 
 - read [docs/design/framework-core-vs-adapter.md](docs/design/framework-core-vs-adapter.md)
+- read [docs/design/live-evals.md](docs/design/live-evals.md)
+- read [docs/design/live-eval-roadmap.md](docs/design/live-eval-roadmap.md)
 - read [docs/design/policy-packs.md](docs/design/policy-packs.md)
 - read [docs/guides/getting-started.md](docs/guides/getting-started.md)
+- read [docs/guides/tune-for-your-team.md](docs/guides/tune-for-your-team.md)
 - inspect:
   - [adapters/work-agent.adapter.json](adapters/work-agent.adapter.json)
   - [adapters/demo-docs-site.adapter.json](adapters/demo-docs-site.adapter.json)
   - [policy-packs/work-agent-convergence.policy-pack.json](policy-packs/work-agent-convergence.policy-pack.json)
   - [examples/evidence/work-agent-pass.json](examples/evidence/work-agent-pass.json)
+  - [examples/evals/work-agent-shadow-eval.json](examples/evals/work-agent-shadow-eval.json)
+  - [examples/evals/work-agent-team-profile.json](examples/evals/work-agent-team-profile.json)
 
 ## Repository Layout
 
 - `src/` — framework core and policy evaluation
 - `bin/` — CLI entrypoint
 - `schemas/` — JSON schemas for graph, adapter, evidence, and policy-pack artifacts
+- `schemas/` — JSON schemas for graph, adapter, evidence, policy-pack, eval, and team-profile artifacts
 - `adapters/` — example adapters
 - `policy-packs/` — example policy packs
 - `examples/` — canonical evidence fixtures and grouped convergence classification artifacts
@@ -83,3 +110,7 @@ If you want the shortest path to understanding the model:
 npm run verify
 npm test
 ```
+
+## Developing The Framework
+
+If you want to contribute to the framework itself, use [CONTRIBUTING.md](CONTRIBUTING.md).

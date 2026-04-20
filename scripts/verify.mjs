@@ -36,8 +36,16 @@ assert(
   'Getting-started guide must include a minimal onboarding section.',
 );
 assert(
+  gettingStartedGuide.includes('Install First'),
+  'Getting-started guide must prioritize installation and usage.',
+);
+assert(
   gettingStartedGuide.includes('The point is not only to make agents faster.'),
   'Getting-started guide must explain the differentiator in end-user terms.',
+);
+assert(
+  gettingStartedGuide.includes('Step 4: Add Live Eval Later, Not First'),
+  'Getting-started guide must explain the staged live-eval rollout.',
 );
 
 const policyPackGuide = readText('docs/design/policy-packs.md');
@@ -48,6 +56,42 @@ assert(
 assert(
   policyPackGuide.includes('Enforcement Stages'),
   'Policy-pack guide must explain enforcement stages.',
+);
+
+const liveEvalGuide = readText('docs/design/live-evals.md');
+assert(
+  liveEvalGuide.includes('Phase 1: Shadow Mode'),
+  'Live-eval guide must describe a staged rollout.',
+);
+assert(
+  liveEvalGuide.includes('focus') && liveEvalGuide.includes('auditability'),
+  'Live-eval guide must explain focus and auditability value.',
+);
+
+const liveEvalRoadmap = readText('docs/design/live-eval-roadmap.md');
+assert(
+  liveEvalRoadmap.includes('Phase 1: Shadow Mode'),
+  'Live-eval roadmap must describe shadow mode.',
+);
+assert(
+  liveEvalRoadmap.includes('Phase 3: Gate Mode'),
+  'Live-eval roadmap must describe gate mode.',
+);
+
+const teamTuningGuide = readText('docs/guides/tune-for-your-team.md');
+assert(
+  teamTuningGuide.includes('The Two Things To Adjust'),
+  'Team-tuning guide must explain the main operator controls.',
+);
+assert(
+  teamTuningGuide.includes('Do not start with model fine-tuning.'),
+  'Team-tuning guide must steer users toward framework tuning first.',
+);
+
+const contributingGuide = readText('CONTRIBUTING.md');
+assert(
+  contributingGuide.includes('The main docs in this repo are written for people installing and using the framework.'),
+  'Contributing guide must keep install/use docs as the primary surface.',
 );
 
 for (const schemaFileName of readdirSync(new URL('schemas/', rootUrl))) {
@@ -113,5 +157,26 @@ for (const evidenceExample of [
   assert(parsed.policy_pack?.name === 'work-agent-convergence', `${evidenceExample} must name the work-agent policy pack.`);
   assert(parsed.framework?.version === 1, `${evidenceExample} must target framework version 1.`);
 }
+
+const evalRecordExample = readJson('examples/evals/work-agent-shadow-eval.json');
+assert(evalRecordExample.mode === 'shadow', 'Eval example must use shadow mode.');
+assert(
+  typeof evalRecordExample.measurements.time_to_green_minutes === 'number',
+  'Eval example must include time-to-green.',
+);
+
+const teamProfileExample = readJson('examples/evals/work-agent-team-profile.json');
+assert(
+  teamProfileExample.defaults.mode === 'shadow',
+  'Team profile example must default to shadow mode.',
+);
+assert(
+  teamProfileExample.review_preferences.human_signoff_required_for_stage_promotion === true,
+  'Team profile example must describe stage-promotion signoff.',
+);
+assert(
+  teamProfileExample.promotion_preferences.warnings_block_in_ci === false,
+  'Team profile example must describe warning behavior in CI.',
+);
 
 console.log('Framework verification passed.');

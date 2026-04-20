@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-guidance-framework.dev/schemas/ai-guidance-eval-record.schema.json",
+  "title": "AI Guidance Eval Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "run_id",
+    "team_profile_id",
+    "mode",
+    "outcome",
+    "measurements",
+    "notes"
+  ],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "run_id": { "type": "string" },
+    "team_profile_id": { "type": "string" },
+    "mode": {
+      "type": "string",
+      "enum": ["shadow", "assist", "gate"]
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accepted_without_major_rewrite",
+        "required_followup"
+      ],
+      "properties": {
+        "accepted_without_major_rewrite": { "type": "boolean" },
+        "required_followup": { "type": "boolean" },
+        "reviewer_confidence": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        }
+      }
+    },
+    "measurements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "time_to_green_minutes",
+        "override_count",
+        "false_positive_rules",
+        "missed_issues"
+      ],
+      "properties": {
+        "time_to_green_minutes": { "type": "number", "minimum": 0 },
+        "override_count": { "type": "integer", "minimum": 0 },
+        "false_positive_rules": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "missed_issues": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
