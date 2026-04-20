@@ -259,6 +259,43 @@ function detectTestRoots(rootDir) {
   );
 }
 
+function inferBaseRef(rootDir) {
+  for (const candidate of ['origin/main', 'origin/master', 'origin/trunk']) {
+    const remoteRef = candidate.replace('origin/', '');
+    if (existsSync(resolve(rootDir, `.git/refs/remotes/origin/${remoteRef}`))) {
+      return candidate;
+    }
+  }
+
+  for (const candidate of ['main', 'master', 'trunk']) {
+    if (existsSync(resolve(rootDir, `.git/refs/heads/${candidate}`))) {
+      return candidate;
+    }
+  }
+
+  if (existsSync(resolve(rootDir, '.git'))) {
+    try {
+      const headBranch = execFileSync(
+        'git',
+        ['symbolic-ref', '--quiet', '--short', 'HEAD'],
+        {
+          cwd: rootDir,
+          encoding: 'utf8',
+          windowsHide: true,
+        },
+      )
+        .trim();
+      if (headBranch) {
+        return headBranch;
+      }
+    } catch {
+      // ignore and fall through to placeholder
+    }
+  }
+
+  return '<base-ref>';
+}
+
 export function inferBootstrapRepoInsights(rootDir) {
   const packageJson = readJsonIfExists(resolve(rootDir, 'package.json'));
   const scripts = packageJson?.scripts ?? {};
@@ -296,6 +333,7 @@ export function inferBootstrapRepoInsights(rootDir) {
     testRoots,
     hasWorkflows,
     proofLane,
+    baseRef: inferBaseRef(rootDir),
     packageManager: packageJson ? 'npm' : 'unknown',
     matchedScripts: scriptPriority.filter((name) => typeof scripts[name] === 'string'),
   };
@@ -553,6 +591,8 @@ This repo was bootstrapped for \`${projectName}\` with a conservative starter ki
 ## Suggested Commands
 
 \`\`\`bash
+npm exec -- ai-guidance print package-scripts
+npm exec -- ai-guidance print ci-snippet
 npm exec -- ai-guidance report package.json
 \`\`\`
 
@@ -639,6 +679,33 @@ export function writeBootstrapStarterKit({
       relative(rootDir, teamProfilePath).replaceAll('\\', '/'),
     ],
   };
+}
+
+export function buildSuggestedPackageScripts({
+  proofLane = 'npm test',
+  baseRef = '<base-ref>',
+}) {
+  return {
+    'guidance:init': 'npm exec -- ai-guidance init',
+    'guidance:print:scripts': 'npm exec -- ai-guidance print package-scripts',
+    'guidance:print:ci': 'npm exec -- ai-guidance print ci-snippet',
+    'guidance:report': 'npm exec -- ai-guidance report --run-id local-smoke package.json',
+    'guidance:report:diff': `npm exec -- ai-guidance report --changed-from ${baseRef} --changed-to HEAD`,
+    'guidance:proof': proofLane,
+  };
+}
+
+export function buildSuggestedCiSnippet({
+  proofLane = 'npm test',
+  baseRef = '<base-ref>',
+}) {
+  return `# Suggested ai-guidance CI snippet
+- name: Run project proof lane
+  run: ${proofLane}
+
+- name: Generate guidance report
+  run: npm exec -- ai-guidance report --changed-from ${baseRef} --changed-to HEAD
+`;
 }
 
 export function writeEvidenceArtifact(record, config, rootDir) {
@@ -796,6 +863,25 @@ export function parseInitArgs(argv) {
   return options;
 }
 
+export function parsePrintArgs(argv) {
+  const options = {};
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+    if (token === '--root') {
+      options.rootDir = argv[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token === '--proof-lane') {
+      options.proofLane = argv[index + 1];
+      index += 1;
+    }
+  }
+
+  return options;
+}
+
 export function runGuidanceReportCli(argv = process.argv.slice(2), defaults = {}) {
   const { options, files: explicitFiles } = parseArgs(argv);
   const rootDir = options.rootDir ? resolve(options.rootDir) : defaults.rootDir;
@@ -876,4 +962,50 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
   });
 
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+}
+
+export function runPrintPackageScriptsCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parsePrintArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const repoInsights = inferBootstrapRepoInsights(rootDir);
+  const proofLane = options.proofLane ?? repoInsights.proofLane;
+
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        rootDir,
+        proofLane,
+        repoInsights,
+        scripts: buildSuggestedPackageScripts({
+          proofLane,
+          baseRef: repoInsights.baseRef,
+        }),
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
+export function runPrintCiSnippetCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parsePrintArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const repoInsights = inferBootstrapRepoInsights(rootDir);
+  const proofLane = options.proofLane ?? repoInsights.proofLane;
+
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        rootDir,
+        proofLane,
+        repoInsights,
+        ciSnippet: buildSuggestedCiSnippet({
+          proofLane,
+          baseRef: repoInsights.baseRef,
+        }),
+      },
+      null,
+      2,
+    )}\n`,
+  );
 }

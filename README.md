@@ -42,6 +42,7 @@ Today the framework can:
 
 - bootstrap a starter `.ai-guidance/` setup for a new repo
 - infer conservative starter defaults from the target repo shape
+- print suggested package scripts and a starter CI snippet
 - load repo adapters and policy packs
 - resolve changed files into graph nodes and workstreams
 - emit structured evidence records and Markdown summaries
@@ -81,14 +82,17 @@ If you already know the right proof lane, you can still override it with `--proo
 The primary workflow is:
 
 1. bootstrap the repo
-2. run the guidance report against changed files
-3. use that evidence in review, CI, or future live evals
+2. print suggested scripts and CI wiring
+3. run the guidance report against changed files
+4. use that evidence in review, CI, or future live evals
 
 ```bash
 npm run verify
 npm test
 
 npm exec -- ai-guidance init
+npm exec -- ai-guidance print package-scripts
+npm exec -- ai-guidance print ci-snippet
 
 npm exec -- ai-guidance report --run-id local-smoke \
   package.json

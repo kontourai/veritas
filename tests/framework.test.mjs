@@ -7,6 +7,8 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
   buildEvidenceRecord,
+  buildSuggestedCiSnippet,
+  buildSuggestedPackageScripts,
   classifyNodes,
   evaluatePolicyPack,
   inferBootstrapRepoInsights,
@@ -223,6 +225,62 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
   assert.equal(reportResult.policy_pack.name, 'demo-starter-default');
 });
 
+test('print package-scripts returns conservative suggestions from inferred proof lane', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-print-scripts-'));
+  writeFileSync(
+    join(rootDir, 'package.json'),
+    JSON.stringify(
+      {
+        scripts: {
+          verify: 'turbo run verify',
+        },
+      },
+      null,
+      2,
+    ),
+  );
+  execFileSync('git', ['init', '-b', 'main'], { cwd: rootDir, encoding: 'utf8' });
+
+  const stdout = execFileSync(
+    'npm',
+    ['exec', '--', 'ai-guidance', 'print', 'package-scripts', '--root', rootDir],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.proofLane, 'npm run verify');
+  assert.equal(parsed.repoInsights.baseRef, 'main');
+  assert.equal(parsed.scripts['guidance:init'], 'npm exec -- ai-guidance init');
+  assert.equal(parsed.scripts['guidance:proof'], 'npm run verify');
+  assert.equal(
+    parsed.scripts['guidance:report:diff'],
+    'npm exec -- ai-guidance report --changed-from main --changed-to HEAD',
+  );
+});
+
+test('print ci-snippet returns a copy-paste starter snippet', () => {
+  const snippet = buildSuggestedCiSnippet({
+    proofLane: 'npm run verify',
+    baseRef: 'main',
+  });
+  assert.match(snippet, /Run project proof lane/);
+  assert.match(snippet, /npm exec -- ai-guidance report --changed-from main --changed-to HEAD/);
+
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-print-ci-'));
+  writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { verify: 'turbo run verify' } }, null, 2));
+
+  const stdout = execFileSync(
+    'npm',
+    ['exec', '--', 'ai-guidance', 'print', 'ci-snippet', '--root', rootDir],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+  assert.equal(parsed.proofLane, 'npm run verify');
+  assert.equal(parsed.repoInsights.baseRef, '<base-ref>');
+  assert.match(parsed.ciSnippet, /run: npm run verify/);
+  assert.match(parsed.ciSnippet, /--changed-from <base-ref> --changed-to HEAD/);
+});
+
 test('adaptive bootstrap detects a workspace-shaped repo', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-workspace-'));
   writeFileSync(
@@ -372,6 +430,21 @@ test('starter kit helper refuses to overwrite without force', () => {
       }),
     /Refusing to overwrite existing file/,
   );
+});
+
+test('script suggestion helper returns the expected keys', () => {
+  const scripts = buildSuggestedPackageScripts({
+    proofLane: 'npm run verify',
+    baseRef: 'main',
+  });
+  assert.deepEqual(Object.keys(scripts), [
+    'guidance:init',
+    'guidance:print:scripts',
+    'guidance:print:ci',
+    'guidance:report',
+    'guidance:report:diff',
+    'guidance:proof',
+  ]);
 });
 
 function readJsonFromAbsolute(path) {

@@ -98,7 +98,9 @@ Use this sequence:
 1. run `npm exec -- ai-guidance init`
 2. review the generated `.ai-guidance/` files
 3. replace the default proof lane with the one that proves your repo is healthy
-4. run `npm exec -- ai-guidance report package.json`
-5. wire the same paths into review and CI
+4. run `npm exec -- ai-guidance print package-scripts`
+5. run `npm exec -- ai-guidance print ci-snippet`
+6. run `npm exec -- ai-guidance report package.json`
+7. wire the same paths into review and CI
 
-The first slice is intentionally conservative. It gives you a real starter kit without pretending it can infer every repo perfectly on day one.
+This slice is intentionally conservative. It prints the suggested wiring first so teams can copy and review it before touching manifests or workflow files.
