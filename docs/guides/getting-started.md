@@ -118,6 +118,7 @@ npm exec -- ai-guidance apply git-hook --configure-git
 npm exec -- ai-guidance print runtime-hook
 npm exec -- ai-guidance apply runtime-hook
 npm exec -- ai-guidance print codex-hook
+npm exec -- ai-guidance print codex-hook --codex-home /path/to/.codex
 npm exec -- ai-guidance apply codex-hook --codex-home /path/to/.codex
 npm exec -- ai-guidance apply codex-hook --target-hooks-file /path/to/hooks.json
 
@@ -144,6 +145,7 @@ The eval step stays conservative:
 - `apply git-hook --configure-git` is the shortest tracked git-hook install path
 - `apply runtime-hook` is the shortest tracked non-git hook install path
 - `apply codex-hook --codex-home ...` is the shortest higher-level Codex hook merge path
+- `print codex-hook --codex-home ...` is the shortest no-mutation preview path for that install target
 - the evidence input must be repo-local under `.ai-guidance/evidence/`
 - the draft artifact stays repo-local under `.ai-guidance/eval-drafts/`
 - reviewer confidence should match the team profile scale, or use `unknown`

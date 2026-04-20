@@ -92,6 +92,10 @@ assert(
   'Getting-started guide must include the Codex-home apply command.',
 );
 assert(
+  gettingStartedGuide.includes('npm exec -- ai-guidance print codex-hook --codex-home'),
+  'Getting-started guide must include the Codex-home preview command.',
+);
+assert(
   gettingStartedGuide.includes('repo-local under `.ai-guidance/evidence/`'),
   'Getting-started guide must explain repo-local evidence provenance for eval capture.',
 );
@@ -264,6 +268,10 @@ assert(
   'Bootstrap guide must include the Codex-home apply command.',
 );
 assert(
+  bootstrapGuide.includes('npm exec -- ai-guidance print codex-hook --codex-home'),
+  'Bootstrap guide must include the Codex-home preview command.',
+);
+assert(
   bootstrapGuide.includes('reruns should use `--force`'),
   'Bootstrap guide must explain explicit overwrite for eval reruns.',
 );
@@ -348,6 +356,10 @@ assert(
 assert(
   rootReadme.includes('npm exec -- ai-guidance apply codex-hook --codex-home'),
   'README must include the Codex-home apply command.',
+);
+assert(
+  rootReadme.includes('npm exec -- ai-guidance print codex-hook --codex-home'),
+  'README must include the Codex-home preview command.',
 );
 assert(
   rootReadme.includes('refuses to overwrite an existing eval artifact unless you pass `--force`'),

@@ -1401,6 +1401,88 @@ test('print codex-hook returns a tracked codex hooks adapter', () => {
 
   assert.equal(parsed.outputPath, '.ai-guidance/runtime/codex-hooks.json');
   assert.equal(parsed.hookConfig.hooks.Stop[0].hooks[0].command, '.ai-guidance/hooks/agent-runtime.sh');
+  assert.equal(parsed.targetStatus.resolvedTargetPath, null);
+  assert.equal(parsed.targetStatus.targetExists, false);
+  assert.equal(parsed.targetStatus.adapterInstalled, false);
+});
+
+test('print codex-hook can preview a Codex home target and install state', () => {
+  const rootDir = initCommittedRepo('ai-guidance-print-codex-hook-home-');
+  const codexHome = join(rootDir, 'tmp-codex-home');
+  mkdirp(codexHome);
+  writeFileSync(
+    join(codexHome, 'hooks.json'),
+    JSON.stringify(
+      {
+        hooks: {
+          Stop: [
+            {
+              matcher: '.*',
+              hooks: [
+                {
+                  type: 'command',
+                  command: '.ai-guidance/hooks/agent-runtime.sh',
+                },
+              ],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    ),
+  );
+
+  const stdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'print',
+      'codex-hook',
+      '--root',
+      rootDir,
+      '--codex-home',
+      'tmp-codex-home',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.targetStatus.resolvedTargetPath, 'tmp-codex-home/hooks.json');
+  assert.equal(parsed.targetStatus.targetExists, true);
+  assert.equal(parsed.targetStatus.adapterInstalled, true);
+  assert.match(parsed.suggestedApplyCommand, /--codex-home tmp-codex-home/);
+});
+
+test('print codex-hook reports an absolute external Codex home path clearly', () => {
+  const rootDir = initCommittedRepo('ai-guidance-print-codex-hook-external-');
+  const codexHome = mkdtempSync(join(tmpdir(), 'external-codex-home-'));
+  writeFileSync(
+    join(codexHome, 'hooks.json'),
+    JSON.stringify({ hooks: {} }, null, 2),
+  );
+
+  const stdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'ai-guidance',
+      'print',
+      'codex-hook',
+      '--root',
+      rootDir,
+      '--codex-home',
+      codexHome,
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.targetStatus.resolvedTargetPath, `${codexHome.replaceAll('\\', '/')}/hooks.json`);
+  assert.equal(parsed.targetStatus.targetExists, true);
 });
 
 test('apply package-scripts writes the suggested guidance scripts into package.json', () => {
@@ -1589,6 +1671,20 @@ test('apply codex-hook can resolve a Codex home into hooks.json', () => {
   assert.equal(result.mergedTargetPath, 'tmp-codex-home/hooks.json');
   assert.equal(merged.hooks.SessionStart[0].hooks[0].command, 'echo existing');
   assert.equal(merged.hooks.Stop[0].hooks[0].command, '.ai-guidance/hooks/agent-runtime.sh');
+});
+
+test('apply codex-hook reports an absolute external Codex home target clearly', () => {
+  const rootDir = initCommittedRepo('ai-guidance-apply-codex-home-external-');
+  const codexHome = mkdtempSync(join(tmpdir(), 'external-codex-home-'));
+  const targetHooksFile = join(codexHome, 'hooks.json');
+  writeFileSync(targetHooksFile, JSON.stringify({ hooks: {} }, null, 2));
+
+  const result = applyCodexHook({
+    rootDir,
+    codexHome,
+  });
+
+  assert.equal(result.mergedTargetPath, `${codexHome.replaceAll('\\', '/')}/hooks.json`);
 });
 
 test('apply git-hook rejects configured installs with a non-discoverable filename', () => {

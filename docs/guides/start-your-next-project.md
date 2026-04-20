@@ -106,11 +106,12 @@ Use this sequence:
 9. or run `npm exec -- ai-guidance shadow run`
 10. optionally run `npm exec -- ai-guidance apply git-hook --configure-git`
 11. or run `npm exec -- ai-guidance apply runtime-hook`
-12. or run `npm exec -- ai-guidance apply codex-hook --codex-home /path/to/.codex`
-13. or run `npm exec -- ai-guidance apply codex-hook --target-hooks-file /path/to/hooks.json`
-14. optionally run `npm exec -- ai-guidance eval draft --evidence .ai-guidance/evidence/<run-id>.json`
-15. then run `npm exec -- ai-guidance eval record --draft .ai-guidance/eval-drafts/<run-id>.json ...`
-16. wire the same paths into review and CI if you want them in your permanent workflow files
+12. or run `npm exec -- ai-guidance print codex-hook --codex-home /path/to/.codex`
+13. then run `npm exec -- ai-guidance apply codex-hook --codex-home /path/to/.codex`
+14. or run `npm exec -- ai-guidance apply codex-hook --target-hooks-file /path/to/hooks.json`
+15. optionally run `npm exec -- ai-guidance eval draft --evidence .ai-guidance/evidence/<run-id>.json`
+16. then run `npm exec -- ai-guidance eval record --draft .ai-guidance/eval-drafts/<run-id>.json ...`
+17. wire the same paths into review and CI if you want them in your permanent workflow files
 
 This slice is intentionally conservative. It prints the suggested wiring first, then only writes changes when the user explicitly asks it to.
 

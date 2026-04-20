@@ -1262,6 +1262,65 @@ function mergeCodexHooksConfig(existingConfig, adapterConfig) {
   return merged;
 }
 
+function resolveCodexHooksTarget(rootDir, options = {}) {
+  if (options.targetHooksFile && options.codexHome) {
+    throw new Error(
+      'codex-hook accepts either --target-hooks-file or --codex-home, not both',
+    );
+  }
+
+  if (options.targetHooksFile) {
+    return resolve(rootDir, options.targetHooksFile);
+  }
+  if (options.codexHome) {
+    return resolve(rootDir, options.codexHome, 'hooks.json');
+  }
+  return null;
+}
+
+function codexHookAdapterCommand() {
+  return buildSuggestedCodexHookConfig().hooks.Stop[0].hooks[0].command;
+}
+
+function formatTargetPath(rootDir, targetPath) {
+  const relativeTargetPath = relative(rootDir, targetPath).replaceAll('\\', '/');
+  return relativeTargetPath.startsWith('..')
+    ? targetPath.replaceAll('\\', '/')
+    : relativeTargetPath;
+}
+
+function inspectCodexHookTarget(rootDir, options = {}) {
+  const resolvedTargetPath = resolveCodexHooksTarget(rootDir, options);
+  if (!resolvedTargetPath) {
+    return {
+      resolvedTargetPath: null,
+      targetExists: false,
+      adapterInstalled: false,
+    };
+  }
+
+  const targetExists = existsSync(resolvedTargetPath);
+  let adapterInstalled = false;
+  if (targetExists) {
+    try {
+      const parsed = JSON.parse(readFileSync(resolvedTargetPath, 'utf8'));
+      const stopEntries = Array.isArray(parsed?.hooks?.Stop) ? parsed.hooks.Stop : [];
+      adapterInstalled = stopEntries.some((entry) => {
+        const hooks = Array.isArray(entry?.hooks) ? entry.hooks : [];
+        return hooks.some((hook) => hook?.command === codexHookAdapterCommand());
+      });
+    } catch {
+      adapterInstalled = false;
+    }
+  }
+
+  return {
+    resolvedTargetPath: formatTargetPath(rootDir, resolvedTargetPath),
+    targetExists,
+    adapterInstalled,
+  };
+}
+
 export function applyCodexHook({
   rootDir,
   outputPath = '.ai-guidance/runtime/codex-hooks.json',
@@ -1269,11 +1328,7 @@ export function applyCodexHook({
   targetHooksFile,
   codexHome,
 }) {
-  if (targetHooksFile && codexHome) {
-    throw new Error(
-      'apply codex-hook accepts either --target-hooks-file or --codex-home, not both',
-    );
-  }
+  resolveCodexHooksTarget(rootDir, { targetHooksFile, codexHome });
   const resolvedOutputPath = resolve(rootDir, outputPath);
   const relativeOutputPath = relative(rootDir, resolvedOutputPath).replaceAll('\\', '/');
 
@@ -1297,11 +1352,10 @@ export function applyCodexHook({
   writeFileSync(resolvedOutputPath, `${JSON.stringify(adapterConfig, null, 2)}\n`, 'utf8');
 
   let mergedTargetPath = null;
-  const resolvedTargetPath = targetHooksFile
-    ? resolve(rootDir, targetHooksFile)
-    : codexHome
-      ? resolve(rootDir, codexHome, 'hooks.json')
-      : null;
+  const resolvedTargetPath = resolveCodexHooksTarget(rootDir, {
+    targetHooksFile,
+    codexHome,
+  });
   if (resolvedTargetPath) {
     const existingConfig = existsSync(resolvedTargetPath)
       ? JSON.parse(readFileSync(resolvedTargetPath, 'utf8'))
@@ -1309,7 +1363,7 @@ export function applyCodexHook({
     const mergedConfig = mergeCodexHooksConfig(existingConfig, adapterConfig);
     mkdirSync(dirname(resolvedTargetPath), { recursive: true });
     writeFileSync(resolvedTargetPath, `${JSON.stringify(mergedConfig, null, 2)}\n`, 'utf8');
-    mergedTargetPath = relative(rootDir, resolvedTargetPath).replaceAll('\\', '/');
+    mergedTargetPath = formatTargetPath(rootDir, resolvedTargetPath);
   }
 
   return {
@@ -2316,6 +2370,15 @@ export function runPrintRuntimeHookCli(argv = process.argv.slice(2), defaults = 
 export function runPrintCodexHookCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parsePrintArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const targetStatus = inspectCodexHookTarget(rootDir, {
+    targetHooksFile: options.targetHooksFile,
+    codexHome: options.codexHome,
+  });
+  const suggestedApplyCommand = options.codexHome
+    ? `npm exec -- ai-guidance apply codex-hook --codex-home ${shellQuote(options.codexHome)}`
+    : options.targetHooksFile
+      ? `npm exec -- ai-guidance apply codex-hook --target-hooks-file ${shellQuote(options.targetHooksFile)}`
+      : null;
 
   process.stdout.write(
     `${JSON.stringify(
@@ -2324,6 +2387,8 @@ export function runPrintCodexHookCli(argv = process.argv.slice(2), defaults = {}
         outputPath: '.ai-guidance/runtime/codex-hooks.json',
         targetHooksFile: options.targetHooksFile ?? null,
         codexHome: options.codexHome ?? null,
+        targetStatus,
+        suggestedApplyCommand,
         hookConfig: buildSuggestedCodexHookConfig(),
       },
       null,
