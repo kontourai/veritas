@@ -48,6 +48,20 @@ assert(
   'Getting-started guide must explain the staged live-eval rollout.',
 );
 
+const activationGuide = readText('docs/design/agent-activation.md');
+assert(
+  activationGuide.includes('The Three Activation Modes'),
+  'Activation guide must explain the activation modes.',
+);
+assert(
+  activationGuide.includes('Does It Work With Every Agent?'),
+  'Activation guide must answer the compatibility question directly.',
+);
+assert(
+  activationGuide.includes('agent-agnostic'),
+  'Activation guide must explain the agent-agnostic goal.',
+);
+
 const policyPackGuide = readText('docs/design/policy-packs.md');
 assert(
   policyPackGuide.includes('Rule Classes'),
@@ -86,6 +100,20 @@ assert(
 assert(
   teamTuningGuide.includes('Do not start with model fine-tuning.'),
   'Team-tuning guide must steer users toward framework tuning first.',
+);
+
+const bootstrapGuide = readText('docs/guides/start-your-next-project.md');
+assert(
+  bootstrapGuide.includes('The Ideal Future Experience'),
+  'Bootstrap guide must explain the desired future init flow.',
+);
+assert(
+  bootstrapGuide.includes('The Minimum Starter Kit'),
+  'Bootstrap guide must define the minimum starter kit.',
+);
+assert(
+  bootstrapGuide.includes('Activation In Practice'),
+  'Bootstrap guide must connect bootstrap to activation.',
 );
 
 const contributingGuide = readText('CONTRIBUTING.md');

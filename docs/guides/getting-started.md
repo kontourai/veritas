@@ -11,6 +11,8 @@ The goal is simple:
 This guide is about installation and use first.
 Framework development belongs in `CONTRIBUTING.md`.
 
+If your next question is "how does this turn on for the AI?", read [Agent Activation](../design/agent-activation.md) after this guide.
+
 ## Mental Model
 
 Use the framework as:
@@ -108,6 +110,10 @@ Add:
 That lets you measure usefulness before you harden more rules.
 
 If you want that next, read [Tune The Framework For Your Team](./tune-for-your-team.md) and [Live Evals](../design/live-evals.md).
+
+## Start The Next Project This Way
+
+If you are setting up a brand-new repo, the next guide to read is [Start Your Next Project With AI Guidance](./start-your-next-project.md).
 
 ## Why Teams Care
 

@@ -8,6 +8,8 @@ It is designed to be:
 - easy for a team to install and use
 - easy for reviewers to trust
 
+It should guide the repo in a way that is available to whatever AI is touching the codebase, not only one specific agent runtime.
+
 It does that with three pieces:
 
 - a **[framework core](docs/design/framework-core-vs-adapter.md)** that understands graph nodes, resolution, evidence, and policy evaluation
@@ -78,11 +80,13 @@ node bin/ai-guidance-report.mjs \
 
 If you want the shortest path to understanding the system as a user:
 
+- read [docs/design/agent-activation.md](docs/design/agent-activation.md)
 - read [docs/design/framework-core-vs-adapter.md](docs/design/framework-core-vs-adapter.md)
 - read [docs/design/live-evals.md](docs/design/live-evals.md)
 - read [docs/design/live-eval-roadmap.md](docs/design/live-eval-roadmap.md)
 - read [docs/design/policy-packs.md](docs/design/policy-packs.md)
 - read [docs/guides/getting-started.md](docs/guides/getting-started.md)
+- read [docs/guides/start-your-next-project.md](docs/guides/start-your-next-project.md)
 - read [docs/guides/tune-for-your-team.md](docs/guides/tune-for-your-team.md)
 - inspect:
   - [adapters/work-agent.adapter.json](adapters/work-agent.adapter.json)
@@ -102,7 +106,7 @@ If you want the shortest path to understanding the system as a user:
 - `policy-packs/` — example policy packs
 - `examples/` — canonical evidence fixtures and grouped convergence classification artifacts
 - `docs/design/` — framework rationale and structure
-- `docs/guides/` — onboarding and operator-oriented usage guidance
+- `docs/guides/` — onboarding, bootstrap, and operator-oriented usage guidance
 
 ## Commands
 
