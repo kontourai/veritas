@@ -33,6 +33,12 @@ Tracked runtime-hook adapters make that more concrete for post-task integration:
 - repo-local invocation of `shadow run`
 - no requirement that the framework know one runtime vendor's config format
 
+When a runtime-specific layer is worth adding, keep it outside the generic hook:
+
+- tracked runtime-specific artifact
+- explicit merge/install step
+- no silent mutation of global runtime config
+
 ## The Three Activation Modes
 
 ### 1. Ambient Activation

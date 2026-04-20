@@ -1057,6 +1057,26 @@ exec npm exec -- ai-guidance shadow run "$@"
 `;
 }
 
+export function buildSuggestedCodexHookConfig() {
+  return {
+    hooks: {
+      Stop: [
+        {
+          matcher: '.*',
+          hooks: [
+            {
+              type: 'command',
+              command: '.ai-guidance/hooks/agent-runtime.sh',
+              statusMessage: 'Running Veritas shadow automation',
+              timeout: 60,
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
 export function applyPackageScripts({
   rootDir,
   proofLane = 'npm test',
@@ -1212,6 +1232,80 @@ export function applyRuntimeHook({
   return {
     rootDir,
     outputPath: relativeOutputPath,
+  };
+}
+
+function mergeCodexHooksConfig(existingConfig, adapterConfig) {
+  const merged = {
+    ...existingConfig,
+    hooks: { ...(existingConfig?.hooks ?? {}) },
+  };
+  const adapterEntries = Array.isArray(adapterConfig?.hooks?.Stop)
+    ? adapterConfig.hooks.Stop
+    : [];
+  const currentEntries = Array.isArray(merged.hooks.Stop) ? merged.hooks.Stop : [];
+  const adapterCommand = adapterEntries[0]?.hooks?.[0]?.command;
+  const filteredEntries = currentEntries
+    .map((entry) => {
+      const hooks = Array.isArray(entry?.hooks) ? entry.hooks : [];
+      const remainingHooks = hooks.filter((hook) => hook?.command !== adapterCommand);
+      if (remainingHooks.length === 0) {
+        return null;
+      }
+      return {
+        ...entry,
+        hooks: remainingHooks,
+      };
+    })
+    .filter(Boolean);
+  merged.hooks.Stop = [...filteredEntries, ...adapterEntries];
+  return merged;
+}
+
+export function applyCodexHook({
+  rootDir,
+  outputPath = '.ai-guidance/runtime/codex-hooks.json',
+  force = false,
+  targetHooksFile,
+}) {
+  const resolvedOutputPath = resolve(rootDir, outputPath);
+  const relativeOutputPath = relative(rootDir, resolvedOutputPath).replaceAll('\\', '/');
+
+  if (
+    relativeOutputPath.startsWith('..') ||
+    !relativeOutputPath.startsWith('.ai-guidance/runtime/')
+  ) {
+    throw new Error(
+      'apply codex-hook only supports writing inside .ai-guidance/runtime/',
+    );
+  }
+
+  if (existsSync(resolvedOutputPath) && !force) {
+    throw new Error(
+      `Refusing to overwrite existing file: ${relativeOutputPath} (use --force to replace it)`,
+    );
+  }
+
+  const adapterConfig = buildSuggestedCodexHookConfig();
+  mkdirSync(dirname(resolvedOutputPath), { recursive: true });
+  writeFileSync(resolvedOutputPath, `${JSON.stringify(adapterConfig, null, 2)}\n`, 'utf8');
+
+  let mergedTargetPath = null;
+  if (targetHooksFile) {
+    const resolvedTargetPath = resolve(rootDir, targetHooksFile);
+    const existingConfig = existsSync(resolvedTargetPath)
+      ? JSON.parse(readFileSync(resolvedTargetPath, 'utf8'))
+      : {};
+    const mergedConfig = mergeCodexHooksConfig(existingConfig, adapterConfig);
+    mkdirSync(dirname(resolvedTargetPath), { recursive: true });
+    writeFileSync(resolvedTargetPath, `${JSON.stringify(mergedConfig, null, 2)}\n`, 'utf8');
+    mergedTargetPath = relative(rootDir, resolvedTargetPath).replaceAll('\\', '/');
+  }
+
+  return {
+    rootDir,
+    outputPath: relativeOutputPath,
+    mergedTargetPath,
   };
 }
 
@@ -1619,6 +1713,11 @@ export function parsePrintArgs(argv) {
     if (token === '--hook') {
       options.hook = argv[index + 1];
       index += 1;
+      continue;
+    }
+    if (token === '--target-hooks-file') {
+      options.targetHooksFile = argv[index + 1];
+      index += 1;
     }
   }
 
@@ -1656,6 +1755,11 @@ export function parseApplyArgs(argv) {
     }
     if (token === '--configure-git') {
       options.configureGit = true;
+      continue;
+    }
+    if (token === '--target-hooks-file') {
+      options.targetHooksFile = argv[index + 1];
+      index += 1;
     }
   }
 
@@ -2189,6 +2293,24 @@ export function runPrintRuntimeHookCli(argv = process.argv.slice(2), defaults = 
   );
 }
 
+export function runPrintCodexHookCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parsePrintArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        rootDir,
+        outputPath: '.ai-guidance/runtime/codex-hooks.json',
+        targetHooksFile: options.targetHooksFile ?? null,
+        hookConfig: buildSuggestedCodexHookConfig(),
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
 export function runApplyPackageScriptsCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseApplyArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
@@ -2260,6 +2382,19 @@ export function runApplyRuntimeHookCli(argv = process.argv.slice(2), defaults = 
     rootDir,
     outputPath: options.outputPath ?? '.ai-guidance/hooks/agent-runtime.sh',
     force: options.force ?? false,
+  });
+
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+}
+
+export function runApplyCodexHookCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseApplyArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const result = applyCodexHook({
+    rootDir,
+    outputPath: options.outputPath ?? '.ai-guidance/runtime/codex-hooks.json',
+    force: options.force ?? false,
+    targetHooksFile: options.targetHooksFile,
   });
 
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

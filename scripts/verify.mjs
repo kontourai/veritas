@@ -84,6 +84,10 @@ assert(
   'Getting-started guide must include the runtime-hook apply command.',
 );
 assert(
+  gettingStartedGuide.includes('npm exec -- ai-guidance apply codex-hook --target-hooks-file'),
+  'Getting-started guide must include the Codex hook apply command.',
+);
+assert(
   gettingStartedGuide.includes('repo-local under `.ai-guidance/evidence/`'),
   'Getting-started guide must explain repo-local evidence provenance for eval capture.',
 );
@@ -104,6 +108,10 @@ assert(
 assert(
   activationGuide.includes('.ai-guidance/hooks/agent-runtime.sh'),
   'Activation guide must mention the tracked runtime-hook adapter.',
+);
+assert(
+  activationGuide.includes('tracked runtime-specific artifact'),
+  'Activation guide must explain runtime-specific adapters as explicit tracked artifacts.',
 );
 
 const policyPackGuide = readText('docs/design/policy-packs.md');
@@ -244,6 +252,10 @@ assert(
   'Bootstrap guide must include the runtime-hook apply command.',
 );
 assert(
+  bootstrapGuide.includes('npm exec -- ai-guidance apply codex-hook --target-hooks-file'),
+  'Bootstrap guide must include the Codex hook apply command.',
+);
+assert(
   bootstrapGuide.includes('reruns should use `--force`'),
   'Bootstrap guide must explain explicit overwrite for eval reruns.',
 );
@@ -298,6 +310,10 @@ assert(
   'README must describe tracked runtime-hook templates as a current capability.',
 );
 assert(
+  rootReadme.includes('generate tracked Codex hook adapters'),
+  'README must describe tracked Codex hook adapters as a current capability.',
+);
+assert(
   rootReadme.includes('npm exec -- ai-guidance eval record'),
   'README must include the eval record command.',
 );
@@ -316,6 +332,10 @@ assert(
 assert(
   rootReadme.includes('npm exec -- ai-guidance apply runtime-hook'),
   'README must include the runtime-hook apply command.',
+);
+assert(
+  rootReadme.includes('npm exec -- ai-guidance apply codex-hook --target-hooks-file'),
+  'README must include the Codex hook apply command.',
 );
 assert(
   rootReadme.includes('refuses to overwrite an existing eval artifact unless you pass `--force`'),

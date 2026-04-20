@@ -7,12 +7,14 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
   applyCiSnippet,
+  applyCodexHook,
   applyGitHook,
   applyRuntimeHook,
   applyPackageScripts,
   buildEvidenceRecord,
   buildEvalDraft,
   buildEvalRecord,
+  buildSuggestedCodexHookConfig,
   buildSuggestedGitHook,
   buildSuggestedRuntimeHook,
   buildSuggestedCiSnippet,
@@ -1385,6 +1387,22 @@ test('print runtime-hook returns a tracked agent-runtime adapter', () => {
   assert.match(parsed.hookBody, /AI_GUIDANCE_HOOK_SKIP/);
 });
 
+test('print codex-hook returns a tracked codex hooks adapter', () => {
+  const hookConfig = buildSuggestedCodexHookConfig();
+  assert.equal(hookConfig.hooks.Stop[0].hooks[0].command, '.ai-guidance/hooks/agent-runtime.sh');
+
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-print-codex-hook-'));
+  const stdout = execFileSync(
+    'npm',
+    ['exec', '--', 'ai-guidance', 'print', 'codex-hook', '--root', rootDir],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.outputPath, '.ai-guidance/runtime/codex-hooks.json');
+  assert.equal(parsed.hookConfig.hooks.Stop[0].hooks[0].command, '.ai-guidance/hooks/agent-runtime.sh');
+});
+
 test('apply package-scripts writes the suggested guidance scripts into package.json', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-scripts-'));
   writeFileSync(
@@ -1494,6 +1512,51 @@ test('apply runtime-hook writes a tracked executable runtime hook file', () => {
   assert.match(contents, /ai-guidance shadow run --working-tree/);
 });
 
+test('apply codex-hook writes a tracked codex hooks artifact and can merge it', () => {
+  const rootDir = initCommittedRepo('ai-guidance-apply-codex-hook-');
+  const targetHooksFile = join(rootDir, 'tmp-hooks.json');
+  writeFileSync(
+    targetHooksFile,
+    JSON.stringify(
+      {
+        hooks: {
+          SessionStart: [
+            {
+              matcher: 'startup',
+              hooks: [{ type: 'command', command: 'echo existing' }],
+            },
+          ],
+          Stop: [
+            {
+              matcher: '.*',
+              hooks: [
+                { type: 'command', command: '.ai-guidance/hooks/agent-runtime.sh' },
+                { type: 'command', command: 'echo keep-me' },
+              ],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    ),
+  );
+
+  const result = applyCodexHook({
+    rootDir,
+    targetHooksFile,
+  });
+  const contents = readJsonFromAbsolute(join(rootDir, '.ai-guidance/runtime/codex-hooks.json'));
+  const merged = readJsonFromAbsolute(targetHooksFile);
+
+  assert.equal(result.outputPath, '.ai-guidance/runtime/codex-hooks.json');
+  assert.equal(result.mergedTargetPath, 'tmp-hooks.json');
+  assert.equal(contents.hooks.Stop[0].hooks[0].command, '.ai-guidance/hooks/agent-runtime.sh');
+  assert.equal(merged.hooks.SessionStart[0].hooks[0].command, 'echo existing');
+  assert.equal(merged.hooks.Stop[0].hooks[0].command, 'echo keep-me');
+  assert.equal(merged.hooks.Stop[1].hooks[0].command, '.ai-guidance/hooks/agent-runtime.sh');
+});
+
 test('apply git-hook rejects configured installs with a non-discoverable filename', () => {
   const rootDir = initCommittedRepo('ai-guidance-apply-hook-bad-name-');
 
@@ -1553,6 +1616,19 @@ test('apply runtime-hook rejects paths outside the reviewable hook area', () => 
         outputPath: '../outside.sh',
       }),
     /only supports writing inside \.ai-guidance\/hooks\//,
+  );
+});
+
+test('apply codex-hook rejects paths outside the reviewable codex hook area', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-codex-hook-outside-'));
+
+  assert.throws(
+    () =>
+      applyCodexHook({
+        rootDir,
+        outputPath: '../outside.json',
+      }),
+    /only supports writing inside \.ai-guidance\/runtime\//,
   );
 });
 

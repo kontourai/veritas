@@ -52,6 +52,7 @@ Today the framework can:
 - run a hook-friendly shadow flow that handles proof, report, and eval draft in one command
 - generate tracked git-hook adapters for the passive shadow flow
 - generate tracked runtime-hook templates for agent runtimes
+- generate tracked Codex hook adapters on top of the runtime-hook surface
 - emit structured evidence records and Markdown summaries
 - evaluate executable policy-pack rules
 - define live-eval and team-tuning artifacts for measuring usefulness over time
@@ -124,6 +125,8 @@ npm exec -- ai-guidance print git-hook
 npm exec -- ai-guidance apply git-hook --configure-git
 npm exec -- ai-guidance print runtime-hook
 npm exec -- ai-guidance apply runtime-hook
+npm exec -- ai-guidance print codex-hook
+npm exec -- ai-guidance apply codex-hook --target-hooks-file /path/to/hooks.json
 
 npm exec -- ai-guidance report --working-tree
 npm exec -- ai-guidance report --changed-from main --changed-to HEAD
@@ -147,6 +150,8 @@ It only accepts repo-local evidence artifacts under `.ai-guidance/evidence/`, us
 `print git-hook` and `apply git-hook` are the first tracked adapter surfaces for that passive path. They generate a repo-local `.githooks/post-commit` script that calls `ai-guidance shadow run`, and `apply git-hook --configure-git` can explicitly set `core.hooksPath` to use it.
 
 `print runtime-hook` and `apply runtime-hook` are the first non-git hook templates. They generate a tracked `.ai-guidance/hooks/agent-runtime.sh` script that defaults to `shadow run --working-tree` and can be invoked by agent runtimes as a repo-local post-task hook.
+
+`print codex-hook` and `apply codex-hook` are the first runtime-specific adapter layer on top of that generic hook. They generate a tracked `.ai-guidance/runtime/codex-hooks.json` snippet and can explicitly merge it into a chosen Codex `hooks.json` file without silently mutating global config by default.
 
 If you want the shortest path to understanding the system as a user:
 
