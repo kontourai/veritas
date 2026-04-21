@@ -32,6 +32,7 @@ Most AI coding systems fail in one of two ways:
 This framework is structured to avoid both failure modes.
 
 - **AI focus:** the adapter turns a repo into bounded nodes and proof lanes, so the model can reason about where it is operating instead of treating the whole repo as one blob.
+- **Surface-aware verification:** when an adapter declares per-surface proof routing, the framework can choose proof commands from the changed surfaces instead of forcing one repo-global lane for every change.
 - **Auditability:** the evidence record turns "the agent seemed fine" into a concrete artifact with phase, workstream, affected nodes, proof-lane status, and policy-pack provenance.
 - **Policy evolution:** policy packs let a team distinguish hard invariants from softer guidance instead of encoding every rule as an equally rigid one-off script.
 - **Differentiation:** most agent tooling stops at prompting or orchestration. This repo is about making agent behavior legible, reviewable, and enforceable at the repo boundary.
@@ -42,10 +43,12 @@ Today the framework can:
 
 - bootstrap a starter `.ai-guidance/` setup for a new repo
 - infer conservative starter defaults from the target repo shape
+- infer when a repo shape justifies surface-aware proof routing
 - print suggested package scripts and a starter CI snippet
 - explicitly apply suggested package scripts and write a reviewable CI snippet file
 - load repo adapters and policy packs
 - resolve changed files into graph nodes and workstreams
+- resolve changed files into proof commands by matched adapter surface
 - report explicit files, branch diffs, or the current working tree truthfully
 - capture a shadow eval record from a real guidance report artifact
 - prepare a shadow eval draft artifact with a framework-generated next step
@@ -54,6 +57,7 @@ Today the framework can:
 - generate tracked runtime-hook templates for agent runtimes
 - generate tracked Codex hook adapters on top of the runtime-hook surface
 - emit structured evidence records and Markdown summaries
+- record selected proof commands, proof-resolution source, and uncovered-path outcomes in evidence artifacts
 - evaluate executable policy-pack rules
 - define live-eval and team-tuning artifacts for measuring usefulness over time
 - ship canonical fixtures for adapters, evidence, and convergence rule families

@@ -463,6 +463,12 @@ for (const evidenceExample of [
   const parsed = readJson(evidenceExample);
   assert(parsed.policy_pack?.name === 'work-agent-convergence', `${evidenceExample} must name the work-agent policy pack.`);
   assert(parsed.framework?.version === 1, `${evidenceExample} must target framework version 1.`);
+  assert(Array.isArray(parsed.selected_proof_commands), `${evidenceExample} must include selected proof commands.`);
+  assert(typeof parsed.proof_resolution_source === 'string', `${evidenceExample} must include a proof resolution source.`);
+  assert(typeof parsed.uncovered_path_result === 'string', `${evidenceExample} must include an uncovered-path result.`);
+  assert(Array.isArray(parsed.adapter?.default_proof_lanes), `${evidenceExample} must include adapter default proof lanes.`);
+  assert(Array.isArray(parsed.adapter?.surface_proof_lanes), `${evidenceExample} must include adapter surface proof lanes.`);
+  assert(typeof parsed.adapter?.uncovered_path_policy === 'string', `${evidenceExample} must include an adapter uncovered-path policy.`);
 }
 
 const evalRecordExample = readJson('examples/evals/work-agent-shadow-eval.json');

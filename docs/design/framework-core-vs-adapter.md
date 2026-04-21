@@ -64,6 +64,7 @@ An adapter owns:
 - default resolution
 - repo-specific invariants
 - required proof lanes
+- optional surface-aware proof routing
 - reporting transport details
 
 An adapter does not own:
@@ -72,6 +73,8 @@ An adapter does not own:
 - evidence semantics
 - policy evaluation semantics
 - promotion lifecycle
+
+When an adapter uses surface-aware proof routing, it should route by existing node IDs rather than introducing a second path-matching surface. The graph continues to own path-to-node mapping; proof selection becomes a consequence of matched nodes.
 
 ## Policy Packs
 

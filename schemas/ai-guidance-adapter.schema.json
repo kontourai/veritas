@@ -32,15 +32,48 @@
     "evidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["artifactDir", "requiredProofLanes", "reportTransport"],
+      "required": ["artifactDir", "reportTransport"],
       "properties": {
         "artifactDir": { "type": "string" },
         "requiredProofLanes": {
           "type": "array",
           "items": { "type": "string" }
         },
+        "defaultProofLanes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "surfaceProofLanes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["nodeIds", "proofLanes"],
+            "properties": {
+              "nodeIds": {
+                "type": "array",
+                "items": { "type": "string" },
+                "minItems": 1
+              },
+              "proofLanes": {
+                "type": "array",
+                "items": { "type": "string" },
+                "minItems": 1
+              }
+            }
+          }
+        },
+        "uncoveredPathPolicy": {
+          "type": "string",
+          "enum": ["ignore", "warn", "fail"]
+        },
         "reportTransport": { "type": "string" }
-      }
+      },
+      "anyOf": [
+        { "required": ["requiredProofLanes"] },
+        { "required": ["defaultProofLanes"] },
+        { "required": ["surfaceProofLanes"] }
+      ]
     }
   }
 }

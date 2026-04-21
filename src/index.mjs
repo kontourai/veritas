@@ -56,6 +56,10 @@ export function matchesPatternsForAnyFile(files, patterns) {
   return files.some((file) => matchesPatterns(file, patterns));
 }
 
+function uniqueStrings(items = []) {
+  return [...new Set(items.filter((item) => typeof item === 'string' && item.length > 0))];
+}
+
 export function classifyNodes(files, config, rootDir) {
   const matchedNodeIds = new Set();
   const matchedLaneLabels = new Set();
@@ -80,6 +84,93 @@ export function classifyNodes(files, config, rootDir) {
     affectedNodes: [...matchedNodeIds].sort(),
     affectedLanes: [...matchedLaneLabels].sort(),
     unmatchedFiles,
+  };
+}
+
+function readSurfaceProofRoutes(config) {
+  return Array.isArray(config.evidence?.surfaceProofLanes)
+    ? config.evidence.surfaceProofLanes
+    : [];
+}
+
+function readDefaultProofLanes(config) {
+  return uniqueStrings(config.evidence?.defaultProofLanes ?? []);
+}
+
+function readLegacyProofLanes(config) {
+  return uniqueStrings(config.evidence?.requiredProofLanes ?? []);
+}
+
+function readUncoveredPathPolicy(config) {
+  const policy = config.evidence?.uncoveredPathPolicy;
+  if (policy === 'ignore' || policy === 'fail') {
+    return policy;
+  }
+  return 'warn';
+}
+
+function routeMatchesAnyNode(route, affectedNodes) {
+  return (route.nodeIds ?? []).some((nodeId) => affectedNodes.includes(nodeId));
+}
+
+function serializeSurfaceProofRoutes(config) {
+  return readSurfaceProofRoutes(config).map((route) => ({
+    node_ids: uniqueStrings(route.nodeIds ?? []),
+    proof_lanes: uniqueStrings(route.proofLanes ?? []),
+  }));
+}
+
+export function resolveProofPlan({
+  files,
+  config,
+  rootDir,
+  explicitProofCommand,
+}) {
+  const { affectedNodes, affectedLanes, unmatchedFiles } = classifyNodes(files, config, rootDir);
+  const uncoveredPathPolicy = readUncoveredPathPolicy(config);
+  const surfaceRoutes = readSurfaceProofRoutes(config);
+  const matchedRoutes = surfaceRoutes.filter((route) => routeMatchesAnyNode(route, affectedNodes));
+  let proofCommands = [];
+  let resolutionSource = 'none';
+
+  if (explicitProofCommand) {
+    proofCommands = [explicitProofCommand];
+    resolutionSource = 'explicit';
+  } else if (matchedRoutes.length > 0) {
+    const routedNodeIds = new Set(
+      matchedRoutes.flatMap((route) => (route.nodeIds ?? []).filter((nodeId) => affectedNodes.includes(nodeId))),
+    );
+    proofCommands = uniqueStrings(matchedRoutes.flatMap((route) => route.proofLanes ?? []));
+    if (affectedNodes.some((nodeId) => !routedNodeIds.has(nodeId))) {
+      const defaultProofLanes = readDefaultProofLanes(config);
+      const legacyProofLanes = readLegacyProofLanes(config);
+      proofCommands = uniqueStrings([
+        ...proofCommands,
+        ...(defaultProofLanes.length > 0 ? defaultProofLanes : legacyProofLanes),
+      ]);
+    }
+    resolutionSource = 'surface';
+  } else {
+    const defaultProofLanes = readDefaultProofLanes(config);
+    const legacyProofLanes = readLegacyProofLanes(config);
+
+    if (defaultProofLanes.length > 0) {
+      proofCommands = defaultProofLanes;
+      resolutionSource = 'default';
+    } else if (legacyProofLanes.length > 0) {
+      proofCommands = legacyProofLanes;
+      resolutionSource = 'legacy';
+    }
+  }
+
+  return {
+    affectedNodes,
+    affectedLanes,
+    unmatchedFiles,
+    uncoveredPathPolicy,
+    uncoveredPathResult: unmatchedFiles.length > 0 ? uncoveredPathPolicy : 'clear',
+    proofCommands,
+    resolutionSource,
   };
 }
 
@@ -140,11 +231,31 @@ export function buildEvidenceRecord({
   const runId = options.runId ?? `guidance-${Date.now()}`;
   const timestamp = new Date().toISOString();
   const normalizedFiles = files.map((file) => normalizeRepoPath(file, rootDir));
-  const { affectedNodes, affectedLanes, unmatchedFiles } = classifyNodes(
-    files,
-    config,
-    rootDir,
-  );
+  const proofPlan =
+    options.proofPlan ??
+    resolveProofPlan({
+      files,
+      config,
+      rootDir,
+      explicitProofCommand: options.explicitProofCommand,
+    });
+  const { affectedNodes, affectedLanes, unmatchedFiles } = proofPlan;
+  const unresolvedMessage =
+    proofPlan.uncoveredPathResult === 'fail'
+      ? 'Some files do not match a configured surface and fail the uncovered-path policy.'
+      : proofPlan.uncoveredPathResult === 'ignore'
+        ? 'Some files do not match a configured surface and were ignored by policy.'
+        : 'Some files do not match a configured surface and need manual review.';
+  const recommendations = unmatchedFiles.length
+    ? [
+        {
+          kind: 'unmatched-files',
+          severity: proofPlan.uncoveredPathResult,
+          message: unresolvedMessage,
+          files: unmatchedFiles,
+        },
+      ]
+    : [];
   const resolution = resolveWorkstream(options, config, normalizedFiles);
   const baselineCiFastPassed = parseBaselineCiFastStatus(
     options.baselineCiFastStatus,
@@ -154,15 +265,6 @@ export function buildEvidenceRecord({
     promotion_candidate: config.policy?.defaultPromotionCandidate ?? false,
     override_or_bypass: config.policy?.defaultOverrideOrBypass ?? false,
   };
-  const recommendations = unmatchedFiles.length
-    ? [
-        {
-          kind: 'unmatched-files',
-          message: 'Some files do not match a configured lane and need manual review.',
-          files: unmatchedFiles,
-        },
-      ]
-    : [];
   const adapterName = config.name ?? config.adapter?.name;
   const adapterKind = config.kind ?? config.adapter?.kind;
   const resolvedPolicyPack =
@@ -183,6 +285,9 @@ export function buildEvidenceRecord({
     matched_artifacts: resolution.matchedArtifacts,
     affected_nodes: affectedNodes,
     affected_lanes: affectedLanes,
+    selected_proof_commands: proofPlan.proofCommands,
+    proof_resolution_source: proofPlan.resolutionSource,
+    uncovered_path_result: proofPlan.uncoveredPathResult,
     baseline_ci_fast_passed: baselineCiFastPassed,
     recommendations,
     false_positive_review: policyDefaults.false_positive_review,
@@ -203,7 +308,10 @@ export function buildEvidenceRecord({
       report_transport: config.evidence.reportTransport,
       default_resolution: config.graph.defaultResolution,
       non_sliceable_invariants: config.graph.nonSliceableInvariants,
-      required_proof_lanes: config.evidence.requiredProofLanes,
+      required_proof_lanes: readLegacyProofLanes(config),
+      default_proof_lanes: readDefaultProofLanes(config),
+      surface_proof_lanes: serializeSurfaceProofRoutes(config),
+      uncovered_path_policy: proofPlan.uncoveredPathPolicy,
     },
     policy_pack: {
       name: resolvedPolicyPack.name,
@@ -564,6 +672,10 @@ function detectSourceRoots(rootDir) {
   );
 }
 
+function detectToolingRoots(rootDir) {
+  return ['scripts/', 'vendor/'].filter((path) => existsSync(resolve(rootDir, path)));
+}
+
 function detectTestRoots(rootDir) {
   return ['tests/', 'test/', 'spec/'].filter((path) =>
     existsSync(resolve(rootDir, path)),
@@ -611,6 +723,7 @@ export function inferBootstrapRepoInsights(rootDir) {
   const packageJson = readJsonIfExists(resolve(rootDir, 'package.json'));
   const scripts = packageJson?.scripts ?? {};
   const sourceRoots = detectSourceRoots(rootDir);
+  const toolingRoots = detectToolingRoots(rootDir);
   const testRoots = detectTestRoots(rootDir);
   const hasWorkflows = existsSync(resolve(rootDir, '.github/workflows'));
   const hasWorkspaceConfig =
@@ -641,9 +754,12 @@ export function inferBootstrapRepoInsights(rootDir) {
   return {
     repoKind,
     sourceRoots,
+    toolingRoots,
     testRoots,
     hasWorkflows,
     proofLane,
+    enableSurfaceProofRouting:
+      repoKind === 'workspace' || toolingRoots.length > 0,
     baseRef: inferBaseRef(rootDir),
     packageManager: packageJson ? 'npm' : 'unknown',
     matchedScripts: scriptPriority.filter((name) => typeof scripts[name] === 'string'),
@@ -672,6 +788,15 @@ function buildAdaptiveNodes(repoInsights) {
       kind: 'delivery-surface',
       label: '.github/**',
       patterns: ['.github/'],
+    });
+  }
+
+  for (const root of repoInsights.toolingRoots ?? []) {
+    nodes.push({
+      id: `tooling.${root.replace(/\/$/, '').replace(/[^a-z0-9]+/g, '.')}`,
+      kind: 'tooling-surface',
+      label: `${root}**`,
+      patterns: [root],
     });
   }
 
@@ -722,12 +847,28 @@ function buildAdaptiveNodes(repoInsights) {
   return nodes;
 }
 
+function buildStarterEvidenceConfig({ proofLane, repoInsights }) {
+  const evidence = {
+    artifactDir: '.ai-guidance/evidence',
+    requiredProofLanes: [proofLane],
+    reportTransport: 'local-json',
+  };
+
+  if (repoInsights.enableSurfaceProofRouting) {
+    evidence.defaultProofLanes = [proofLane];
+    evidence.uncoveredPathPolicy = 'warn';
+  }
+
+  return evidence;
+}
+
 export function buildStarterAdapter({
   projectName,
   proofLane = 'npm test',
   repoInsights = {
     repoKind: 'application',
     sourceRoots: [],
+    toolingRoots: [],
     testRoots: [],
     hasWorkflows: true,
   },
@@ -775,11 +916,7 @@ export function buildStarterAdapter({
       ],
       nodes: buildAdaptiveNodes(repoInsights),
     },
-    evidence: {
-      artifactDir: '.ai-guidance/evidence',
-      requiredProofLanes: [proofLane],
-      reportTransport: 'local-json',
-    },
+    evidence: buildStarterEvidenceConfig({ proofLane, repoInsights }),
   };
 }
 
@@ -858,6 +995,7 @@ export function buildBootstrapReadme({
   repoInsights = {
     repoKind: 'application',
     sourceRoots: [],
+    toolingRoots: [],
     testRoots: [],
     hasWorkflows: false,
     matchedScripts: [],
@@ -880,6 +1018,11 @@ This repo was bootstrapped for \`${projectName}\` with a conservative starter ki
     repoInsights.sourceRoots.length > 0
       ? `\`${repoInsights.sourceRoots.join('`, `')}\``
       : '`src/` (default)'
+  }
+- Tooling roots: ${
+    (repoInsights.toolingRoots ?? []).length > 0
+      ? `\`${repoInsights.toolingRoots.join('`, `')}\``
+      : '`none`'
   }
 - Test roots: ${
     repoInsights.testRoots.length > 0
@@ -922,6 +1065,14 @@ npm exec -- ai-guidance report \\
 ## Suggested Proof Lane
 
 \`${proofLane}\`
+
+## Surface-Aware Routing
+
+${
+  repoInsights.enableSurfaceProofRouting
+    ? 'This repo shape justifies surface-aware proof routing, so the starter adapter also includes `defaultProofLanes` and `uncoveredPathPolicy` alongside the legacy flat proof lane for compatibility.'
+    : 'This starter stays on the minimal single-proof-lane path by default. Surface-aware proof routing can be added later if the repo grows multiple independently verified surfaces.'
+}
 
 ## Why This Exists
 
@@ -1004,9 +1155,11 @@ export function buildSuggestedPackageScripts({
     'guidance:print:scripts': 'npm exec -- ai-guidance print package-scripts',
     'guidance:print:ci': 'npm exec -- ai-guidance print ci-snippet',
     'guidance:report': 'npm exec -- ai-guidance report --run-id local-smoke package.json',
+    'guidance:report:working-tree': 'npm exec -- ai-guidance report --working-tree',
     'guidance:report:diff': `npm exec -- ai-guidance report --changed-from ${baseRef} --changed-to HEAD`,
     'guidance:status:runtime': 'npm exec -- ai-guidance runtime status',
     'guidance:proof': proofLane,
+    'guidance:eval': 'npm exec -- ai-guidance shadow run',
   };
 }
 
@@ -1654,7 +1807,9 @@ export function buildMarkdownSummary(record, artifactPath) {
     `- **Affected lanes:** ${
       record.affected_lanes.length ? record.affected_lanes.join(', ') : 'none'
     }`,
-    `- **Required proof lane:** \`${record.adapter.required_proof_lanes.join(', ')}\``,
+    `- **Selected proof commands:** \`${record.selected_proof_commands.join(', ') || 'none'}\``,
+    `- **Proof resolution source:** ${record.proof_resolution_source}`,
+    `- **Uncovered path result:** ${record.uncovered_path_result}`,
     `- **Baseline \`ci:fast\` passed:** ${formatTriState(record.baseline_ci_fast_passed)}`,
     `- **Report transport:** ${record.adapter.report_transport}`,
     `- **Artifact:** \`${artifactPath}\``,
@@ -2176,6 +2331,12 @@ export function generateGuidanceReport(options = {}, defaults = {}, explicitFile
 
   const config = loadAdapterConfig(adapterPath);
   const policyPack = loadPolicyPack(policyPackPath);
+  const proofPlan = resolveProofPlan({
+    files,
+    config,
+    rootDir,
+    explicitProofCommand: options.explicitProofCommand,
+  });
   const record = buildEvidenceRecord({
     files,
     options: {
@@ -2183,6 +2344,7 @@ export function generateGuidanceReport(options = {}, defaults = {}, explicitFile
       sourceRef: reportInputs.sourceRef,
       sourceKind: reportInputs.sourceKind,
       sourceScope: reportInputs.sourceScope,
+      proofPlan,
     },
     config,
     policyPack,
@@ -2309,15 +2471,25 @@ export function generateEvalRecord(options = {}, defaults = {}) {
   };
 }
 
-function resolveProofCommands(adapterPath, explicitProofCommand) {
-  if (explicitProofCommand) {
-    return [explicitProofCommand];
-  }
-  if (!adapterPath) {
-    return [];
+export function resolveProofCommands({ adapterPath, files = [], rootDir, explicitProofCommand }) {
+  if (!adapterPath || !rootDir) {
+    return {
+      proofCommands: explicitProofCommand ? [explicitProofCommand] : [],
+      resolutionSource: explicitProofCommand ? 'explicit' : 'none',
+      affectedNodes: [],
+      affectedLanes: [],
+      unmatchedFiles: [],
+      uncoveredPathPolicy: 'warn',
+      uncoveredPathResult: 'clear',
+    };
   }
   const config = loadAdapterConfig(adapterPath);
-  return config.evidence?.requiredProofLanes ?? [];
+  return resolveProofPlan({
+    files,
+    config,
+    rootDir,
+    explicitProofCommand,
+  });
 }
 
 function runProofCommand(command, rootDir) {
@@ -2640,8 +2812,22 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
     { ...options, rootDir },
     { ...defaults, rootDir },
   );
-
-  const proofCommands = resolveProofCommands(adapterPath, options.proofCommand);
+  const reportInputs = resolveReportInputs(
+    [],
+    {
+      ...options,
+      workingTree:
+        options.workingTree || (!options.changedFrom && !options.changedTo),
+    },
+    rootDir,
+  );
+  const proofPlan = resolveProofCommands({
+    adapterPath,
+    files: reportInputs.files,
+    rootDir,
+    explicitProofCommand: options.proofCommand,
+  });
+  const proofCommands = proofPlan.proofCommands;
   if (!options.skipProof && proofCommands.length === 0) {
     throw new Error(
       'guidance shadow run requires a proof command or an adapter required proof lane',
@@ -2662,9 +2848,15 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
         options.workingTree || (!options.changedFrom && !options.changedTo),
       baselineCiFastStatus:
         options.baselineCiFastStatus ?? (options.skipProof ? undefined : 'success'),
+      explicitProofCommand: options.proofCommand,
     },
     { ...defaults, rootDir },
   );
+  if (reportResult.record.uncovered_path_result === 'fail') {
+    throw new Error(
+      'guidance shadow run encountered changed files outside configured surfaces and the uncovered-path policy is fail',
+    );
+  }
   const draftResult = generateEvalDraft(
     {
       ...options,
@@ -2681,6 +2873,7 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
         {
           mode: 'report-and-draft',
           proofCommands: options.skipProof ? [] : proofCommands,
+          proofResolutionSource: proofPlan.resolutionSource,
           proofRan: !options.skipProof,
           reportArtifactPath: reportResult.artifactPath,
           draftArtifactPath: draftResult.artifactPath,
@@ -2711,15 +2904,16 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
     `${JSON.stringify(
         {
           mode: 'report-draft-and-eval',
-        proofCommands: options.skipProof ? [] : proofCommands,
-        proofRan: !options.skipProof,
-        reportArtifactPath: reportResult.artifactPath,
-        draftArtifactPath: draftResult.artifactPath,
-        evalArtifactPath: evalResult.artifactPath,
-        reportRunId: reportResult.record.run_id,
-        reportSourceKind: reportResult.record.source_kind,
-        evalMode: evalResult.record.mode,
-      },
+          proofCommands: options.skipProof ? [] : proofCommands,
+          proofResolutionSource: proofPlan.resolutionSource,
+          proofRan: !options.skipProof,
+          reportArtifactPath: reportResult.artifactPath,
+          draftArtifactPath: draftResult.artifactPath,
+          evalArtifactPath: evalResult.artifactPath,
+          reportRunId: reportResult.record.run_id,
+          reportSourceKind: reportResult.record.source_kind,
+          evalMode: evalResult.record.mode,
+        },
       null,
       2,
     )}\n`,

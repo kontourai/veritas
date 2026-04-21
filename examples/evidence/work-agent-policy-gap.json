@@ -10,6 +10,9 @@
   "matched_artifacts": [".omx/plans/**"],
   "affected_nodes": ["tooling.scripts"],
   "affected_lanes": ["scripts/**"],
+  "selected_proof_commands": ["npm run ci:fast"],
+  "proof_resolution_source": "legacy",
+  "uncovered_path_result": "clear",
   "baseline_ci_fast_passed": true,
   "recommendations": [
     {
@@ -54,7 +57,10 @@
       "plugin/core boundary protection",
       "mandatory CI coverage"
     ],
-    "required_proof_lanes": ["npm run ci:fast"]
+    "required_proof_lanes": ["npm run ci:fast"],
+    "default_proof_lanes": [],
+    "surface_proof_lanes": [],
+    "uncovered_path_policy": "warn"
   },
   "policy_pack": {
     "name": "work-agent-convergence",

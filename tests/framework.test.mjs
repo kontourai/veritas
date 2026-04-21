@@ -25,6 +25,7 @@ import {
   inferBootstrapRepoInsights,
   listWorkingTreeFiles,
   loadPolicyPack,
+  resolveProofCommands,
   resolveReportInputs,
   resolveWorkstream,
   writeBootstrapStarterKit,
@@ -68,6 +69,8 @@ test('evidence schema requires framework and adapter sections', () => {
   const evidenceSchema = readJson('../schemas/ai-guidance-evidence.schema.json');
   assert.ok(evidenceSchema.required.includes('framework'));
   assert.ok(evidenceSchema.required.includes('adapter'));
+  assert.ok(evidenceSchema.required.includes('selected_proof_commands'));
+  assert.ok(evidenceSchema.required.includes('proof_resolution_source'));
 });
 
 test('core classifies nodes and builds evidence from an adapter config', () => {
@@ -113,6 +116,8 @@ test('core classifies nodes and builds evidence from an adapter config', () => {
   assert.equal(record.baseline_ci_fast_passed, false);
   assert.equal(record.source_kind, 'explicit-files');
   assert.deepEqual(record.source_scope, ['explicit']);
+  assert.deepEqual(record.selected_proof_commands, ['npm run ci:fast']);
+  assert.equal(record.proof_resolution_source, 'legacy');
   assert.equal(record.adapter.name, 'work-agent');
   assert.deepEqual(record.policy_pack, {
     name: 'work-agent-convergence',
@@ -136,6 +141,82 @@ test('core classifies nodes and builds evidence from an adapter config', () => {
       (finding) => finding.artifact === '.github/dependabot.yml',
     ),
   );
+});
+
+test('surface-aware proof routing prefers surface routes, then default, then legacy', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-proof-plan-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}');
+  mkdirp(join(rootDir, 'scripts'));
+  mkdirp(join(rootDir, 'packages/core'));
+  mkdirp(join(rootDir, 'docs'));
+
+  const adapter = {
+    name: 'surface-proof-demo',
+    kind: 'repo-adapter',
+    policy: {
+      defaultFalsePositiveReview: 'unknown',
+      defaultPromotionCandidate: false,
+      defaultOverrideOrBypass: false,
+    },
+    graph: {
+      version: 1,
+      defaultResolution: {
+        phase: 'Phase 0',
+        workstream: 'Demo',
+        matchedArtifacts: ['README.md'],
+      },
+      nonSliceableInvariants: [],
+      resolverPrecedence: ['explicit'],
+      nodes: [
+        { id: 'tooling.scripts', kind: 'tooling-surface', label: 'scripts/**', patterns: ['scripts/'] },
+        { id: 'workspace.packages', kind: 'shared-package', label: 'packages/**', patterns: ['packages/'] },
+        { id: 'docs.docs', kind: 'product-surface', label: 'docs/**', patterns: ['docs/'] },
+      ],
+    },
+    evidence: {
+      artifactDir: '.ai-guidance/evidence',
+      reportTransport: 'local-json',
+      requiredProofLanes: ['npm run legacy-proof'],
+      defaultProofLanes: ['npm run default-proof'],
+      surfaceProofLanes: [
+        { nodeIds: ['tooling.scripts'], proofLanes: ['npm run viewer:build', 'npm run viewer:build'] },
+      ],
+      uncoveredPathPolicy: 'warn',
+    },
+  };
+
+  const surfacePlan = resolveProofCommands({
+    adapterPath: writeTempAdapter(rootDir, adapter),
+    files: ['scripts/build-viewer.mjs'],
+    rootDir,
+  });
+  assert.deepEqual(surfacePlan.proofCommands, ['npm run viewer:build']);
+  assert.equal(surfacePlan.resolutionSource, 'surface');
+
+  const defaultPlan = resolveProofCommands({
+    adapterPath: writeTempAdapter(rootDir, adapter),
+    files: ['packages/core/index.ts'],
+    rootDir,
+  });
+  assert.deepEqual(defaultPlan.proofCommands, ['npm run default-proof']);
+  assert.equal(defaultPlan.resolutionSource, 'default');
+
+  const mixedPlan = resolveProofCommands({
+    adapterPath: writeTempAdapter(rootDir, adapter),
+    files: ['scripts/build-viewer.mjs', 'packages/core/index.ts'],
+    rootDir,
+  });
+  assert.deepEqual(mixedPlan.proofCommands, ['npm run viewer:build', 'npm run default-proof']);
+  assert.equal(mixedPlan.resolutionSource, 'surface');
+
+  delete adapter.evidence.defaultProofLanes;
+  const legacyPlan = resolveProofCommands({
+    adapterPath: writeTempAdapter(rootDir, adapter),
+    files: ['docs/guide.md'],
+    rootDir,
+  });
+  assert.deepEqual(legacyPlan.proofCommands, ['npm run legacy-proof']);
+  assert.equal(legacyPlan.resolutionSource, 'legacy');
 });
 
 test('guidance CLI can run with explicit adapter and policy-pack inputs', () => {
@@ -218,6 +299,8 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
   assert.equal(starterPolicyPack.name, 'demo-starter-default');
   assert.equal(starterTeamProfile.defaults.mode, 'shadow');
   assert.equal(initResult.repoInsights.repoKind, 'application');
+  assert.equal(starterAdapter.evidence.defaultProofLanes, undefined);
+  assert.equal(starterAdapter.evidence.uncoveredPathPolicy, undefined);
 
   const reportStdout = execFileSync(
     'npm',
@@ -1290,10 +1373,8 @@ test('shadow run CLI executes every required proof lane from the adapter', () =>
   );
   const parsed = JSON.parse(stdout);
 
-  assert.deepEqual(parsed.proofCommands, [
-    'node -e "process.exit(0)"',
-    'node -e "process.exit(0)"',
-  ]);
+  assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
+  assert.equal(parsed.proofResolutionSource, 'legacy');
 });
 
 test('print package-scripts returns conservative suggestions from inferred proof lane', () => {
@@ -1323,6 +1404,11 @@ test('print package-scripts returns conservative suggestions from inferred proof
   assert.equal(parsed.repoInsights.baseRef, 'main');
   assert.equal(parsed.scripts['guidance:init'], 'npm exec -- ai-guidance init');
   assert.equal(parsed.scripts['guidance:proof'], 'npm run verify');
+  assert.equal(
+    parsed.scripts['guidance:report:working-tree'],
+    'npm exec -- ai-guidance report --working-tree',
+  );
+  assert.equal(parsed.scripts['guidance:eval'], 'npm exec -- ai-guidance shadow run');
   assert.equal(
     parsed.scripts['guidance:report:diff'],
     'npm exec -- ai-guidance report --changed-from main --changed-to HEAD',
@@ -2015,7 +2101,10 @@ test('adaptive bootstrap detects a workspace-shaped repo', () => {
   assert.equal(result.repoInsights.repoKind, 'workspace');
   assert.equal(result.proofLane, 'npm run verify');
   assert.ok(adapter.graph.nodes.some((node) => node.patterns.includes('packages/')));
+  assert.deepEqual(adapter.evidence.defaultProofLanes, ['npm run verify']);
+  assert.equal(adapter.evidence.uncoveredPathPolicy, 'warn');
   assert.match(bootstrapReadme, /Repo kind: `workspace`/);
+  assert.match(bootstrapReadme, /Surface-Aware Routing/);
 });
 
 test('adaptive bootstrap infers the proof lane through the shipped CLI path', () => {
@@ -2049,6 +2138,7 @@ test('adaptive bootstrap infers the proof lane through the shipped CLI path', ()
 
   assert.equal(initResult.proofLane, 'npm run verify');
   assert.equal(initResult.repoInsights.repoKind, 'workspace');
+  assert.equal(initResult.repoInsights.enableSurfaceProofRouting, true);
 });
 
 test('adaptive bootstrap detects a docs-shaped repo', () => {
@@ -2150,14 +2240,22 @@ test('script suggestion helper returns the expected keys', () => {
     'guidance:print:scripts',
     'guidance:print:ci',
     'guidance:report',
+    'guidance:report:working-tree',
     'guidance:report:diff',
     'guidance:status:runtime',
     'guidance:proof',
+    'guidance:eval',
   ]);
 });
 
 function readJsonFromAbsolute(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
+}
+
+function writeTempAdapter(rootDir, adapter) {
+  const adapterPath = join(rootDir, '.ai-guidance-repo.adapter.json');
+  writeFileSync(adapterPath, `${JSON.stringify(adapter, null, 2)}\n`);
+  return adapterPath;
 }
 
 function mkdirp(path) {

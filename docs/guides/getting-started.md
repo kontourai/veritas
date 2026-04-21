@@ -72,6 +72,7 @@ An adapter should answer:
 
 - what are the meaningful repo surfaces?
 - what proof lane do changes need?
+- when different surfaces need different proof commands, which node IDs route to which proof lanes?
 - how should unresolved files be treated?
 
 Use [adapters/work-agent.adapter.json](../../adapters/work-agent.adapter.json) as the richer example and [adapters/demo-docs-site.adapter.json](../../adapters/demo-docs-site.adapter.json) as the smaller one.
@@ -143,6 +144,7 @@ That keeps the workflow explicit:
 The eval step stays conservative:
 
 - `shadow run` is the shortest hook-friendly path for proof + report + draft
+- if the adapter defines surface-aware proof routing, `shadow run` is also the shortest path to ensure the changed surfaces select the right proof commands
 - `apply git-hook --configure-git` is the shortest tracked git-hook install path
 - `apply runtime-hook` is the shortest tracked non-git hook install path
 - `apply codex-hook --codex-home ...` is the shortest higher-level Codex hook merge path

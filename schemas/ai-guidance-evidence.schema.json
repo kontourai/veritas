@@ -16,6 +16,9 @@
     "matched_artifacts",
     "affected_nodes",
     "affected_lanes",
+    "selected_proof_commands",
+    "proof_resolution_source",
+    "uncovered_path_result",
     "baseline_ci_fast_passed",
     "recommendations",
     "false_positive_review",
@@ -43,6 +46,12 @@
     "matched_artifacts": { "$ref": "#/$defs/stringArray" },
     "affected_nodes": { "$ref": "#/$defs/stringArray" },
     "affected_lanes": { "$ref": "#/$defs/stringArray" },
+    "selected_proof_commands": { "$ref": "#/$defs/stringArray" },
+    "proof_resolution_source": { "type": "string" },
+    "uncovered_path_result": {
+      "type": "string",
+      "enum": ["clear", "ignore", "warn", "fail"]
+    },
     "baseline_ci_fast_passed": { "type": ["boolean", "null"] },
     "recommendations": {
       "type": "array",
@@ -87,7 +96,10 @@
         "report_transport",
         "default_resolution",
         "non_sliceable_invariants",
-        "required_proof_lanes"
+        "required_proof_lanes",
+        "default_proof_lanes",
+        "surface_proof_lanes",
+        "uncovered_path_policy"
       ],
       "properties": {
         "name": { "type": "string" },
@@ -95,7 +107,24 @@
         "report_transport": { "type": "string" },
         "default_resolution": { "$ref": "#/$defs/resolution" },
         "non_sliceable_invariants": { "$ref": "#/$defs/stringArray" },
-        "required_proof_lanes": { "$ref": "#/$defs/stringArray" }
+        "required_proof_lanes": { "$ref": "#/$defs/stringArray" },
+        "default_proof_lanes": { "$ref": "#/$defs/stringArray" },
+        "surface_proof_lanes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["node_ids", "proof_lanes"],
+            "properties": {
+              "node_ids": { "$ref": "#/$defs/stringArray" },
+              "proof_lanes": { "$ref": "#/$defs/stringArray" }
+            }
+          }
+        },
+        "uncovered_path_policy": {
+          "type": "string",
+          "enum": ["ignore", "warn", "fail"]
+        }
       }
     },
     "policy_pack": {
