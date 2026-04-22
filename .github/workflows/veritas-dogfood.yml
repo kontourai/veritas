@@ -1,5 +1,8 @@
 name: Veritas Dogfood
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   pull_request:
   push:
@@ -25,7 +28,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
 
       - name: Install
         run: npm install --no-fund --no-audit
@@ -65,7 +67,7 @@ jobs:
             examples/dogfood/
 
       - name: Update PR Comment
-        if: always() && github.event_name == 'pull_request'
+        if: always() && github.event_name == 'pull_request' && steps.checkin.outcome == 'success'
         uses: actions/github-script@v7
         with:
           script: |
@@ -99,7 +101,7 @@ jobs:
             }
 
       - name: Update Dogfood Health Issue
-        if: always() && github.event_name != 'pull_request'
+        if: always() && github.event_name != 'pull_request' && steps.checkin.outcome == 'success'
         uses: actions/github-script@v7
         with:
           script: |
@@ -167,7 +169,7 @@ jobs:
             }
 
       - name: Fail On Red Dogfood Health
-        if: steps.checkin.outputs.health_status == 'red'
+        if: steps.checkin.outcome == 'success' && steps.checkin.outputs.health_status == 'red'
         run: |
           echo "Veritas dogfood health is red; see .veritas/checkins/latest.md and uploaded artifacts."
           exit 1
