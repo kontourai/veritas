@@ -49,6 +49,7 @@ The automated check-in path adds two more things:
 
 5. the repo emits a machine-readable snapshot under `.veritas/checkins/` during automation runs
 6. the workflow uploads evidence, eval drafts, and check-in artifacts so future runs can be inspected without committing local state
+This guide is also the lowest-risk surface for validating PR-comment automation on a temporary branch.
 
 The workflow also elevates the result:
 
