@@ -1,0 +1,40 @@
+name: Veritas Dogfood
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  schedule:
+    - cron: '17 15 * * 1'
+
+jobs:
+  dogfood:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install
+        run: npm install --no-fund --no-audit
+
+      - name: Run Veritas Dogfood Lane
+        run: npm run veritas:ci:dogfood
+
+      - name: Upload Veritas Dogfood Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: veritas-dogfood-${{ github.run_id }}
+          path: |
+            .veritas/evidence/
+            .veritas/eval-drafts/
+            .veritas/evals/
+            .veritas/checkins/
+            examples/dogfood/

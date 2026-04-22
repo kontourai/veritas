@@ -1,4 +1,4 @@
-# AI Guidance Framework
+# Veritas
 
 ## Intent
 

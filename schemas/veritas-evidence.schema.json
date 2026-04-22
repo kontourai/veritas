@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://ai-guidance-framework.dev/schemas/ai-guidance-evidence.schema.json",
-  "title": "AI Guidance Evidence Record",
+  "$id": "https://veritas.dev/schemas/veritas-evidence.schema.json",
+  "title": "Veritas Evidence Record",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -29,7 +29,8 @@
     "promotion_allowed",
     "framework",
     "adapter",
-    "policy_pack"
+    "policy_pack",
+    "policy_results"
   ],
   "properties": {
     "framework_version": { "type": "integer", "minimum": 1 },
@@ -136,6 +137,10 @@
         "version": { "type": "integer", "minimum": 1 },
         "rule_count": { "type": "integer", "minimum": 0 }
       }
+    },
+    "policy_results": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/policyResult" }
     }
   },
   "$defs": {
@@ -155,6 +160,37 @@
         "phase": { "type": "string" },
         "workstream": { "type": "string" },
         "matchedArtifacts": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "policyResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rule_id",
+        "classification",
+        "stage",
+        "message",
+        "owner",
+        "rollback_switch",
+        "implemented",
+        "passed",
+        "summary",
+        "findings"
+      ],
+      "properties": {
+        "rule_id": { "type": "string" },
+        "classification": { "type": "string" },
+        "stage": { "type": "string" },
+        "message": { "type": "string" },
+        "owner": { "type": ["string", "null"] },
+        "rollback_switch": { "type": ["string", "null"] },
+        "implemented": { "type": "boolean" },
+        "passed": { "type": ["boolean", "null"] },
+        "summary": { "type": "string" },
+        "findings": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
       }
     }
   }

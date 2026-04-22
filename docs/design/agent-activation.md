@@ -29,7 +29,7 @@ Those are the things an agent can encounter at the moment it starts interacting 
 
 Tracked runtime-hook adapters make that more concrete for post-task integration:
 
-- `.ai-guidance/hooks/agent-runtime.sh`
+- `.veritas/hooks/agent-runtime.sh`
 - repo-local invocation of `shadow run`
 - no requirement that the framework know one runtime vendor's config format
 
@@ -72,7 +72,7 @@ Examples:
 - a local wrapper command
 - a skill
 - an `init` or bootstrap command
-- a `guidance:report` or `guidance:verify` command
+- a `veritas:report` or `veritas:verify` command
 
 This is useful when you want stronger guarantees than ambient repo context alone can provide.
 

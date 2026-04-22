@@ -228,8 +228,8 @@ export function buildEvidenceRecord({
   rootDir,
 }) {
   const frameworkVersion = config.frameworkVersion ?? config.graph?.version;
-  const runId = options.runId ?? `guidance-${Date.now()}`;
-  const timestamp = new Date().toISOString();
+  const runId = options.runId ?? `veritas-${Date.now()}`;
+  const timestamp = options.timestamp ?? new Date().toISOString();
   const normalizedFiles = files.map((file) => normalizeRepoPath(file, rootDir));
   const proofPlan =
     options.proofPlan ??
@@ -272,6 +272,8 @@ export function buildEvidenceRecord({
     (() => {
       throw new Error('buildEvidenceRecord requires a policyPack');
     })();
+  const policyResults =
+    options.policyResults ?? evaluatePolicyPack(resolvedPolicyPack, { rootDir });
 
   return {
     framework_version: frameworkVersion,
@@ -318,6 +320,7 @@ export function buildEvidenceRecord({
       version: resolvedPolicyPack.version,
       rule_count: resolvedPolicyPack.rules.length,
     },
+    policy_results: policyResults,
   };
 }
 
@@ -396,10 +399,10 @@ function buildEvalEvidenceContext({ evidenceRecord, evidencePath, rootDir }) {
   const evidenceRelativePath = relative(rootDir, resolve(evidencePath)).replaceAll('\\', '/');
   if (
     evidenceRelativePath.startsWith('..') ||
-    !evidenceRelativePath.startsWith('.ai-guidance/evidence/')
+    !evidenceRelativePath.startsWith('.veritas/evidence/')
   ) {
     throw new Error(
-      'eval record requires a repo-local evidence artifact inside .ai-guidance/evidence/',
+      'eval record requires a repo-local evidence artifact inside .veritas/evidence/',
     );
   }
   const requiredEvidenceKeys = [
@@ -502,6 +505,10 @@ export function buildEvalDraft({
 }
 
 function mergeEvalRecordOptions(options, draft) {
+  const falsePositiveRules = options.falsePositiveRules ?? [];
+  const missedIssues = options.missedIssues ?? [];
+  const notes = options.notes ?? [];
+
   return {
     acceptedWithoutMajorRewrite: options.acceptedWithoutMajorRewrite,
     requiredFollowup: options.requiredFollowup,
@@ -513,14 +520,14 @@ function mergeEvalRecordOptions(options, draft) {
     overrideCount:
       options.overrideCount ?? draft?.prefilled_measurements?.override_count,
     falsePositiveRules:
-      options.falsePositiveRules.length > 0
-        ? options.falsePositiveRules
+      falsePositiveRules.length > 0
+        ? falsePositiveRules
         : (draft?.prefilled_measurements?.false_positive_rules ?? []),
     missedIssues:
-      options.missedIssues.length > 0
-        ? options.missedIssues
+      missedIssues.length > 0
+        ? missedIssues
         : (draft?.prefilled_measurements?.missed_issues ?? []),
-    notes: options.notes.length > 0 ? options.notes : (draft?.notes ?? []),
+    notes: notes.length > 0 ? notes : (draft?.notes ?? []),
   };
 }
 
@@ -529,7 +536,7 @@ function buildEvalRecordCommand(draftPath, draft) {
     'npm',
     'exec',
     '--',
-    'ai-guidance',
+    'veritas',
     'eval',
     'record',
     '--draft',
@@ -565,10 +572,10 @@ function validateEvalDraftContext({ draftPath, draftRecord, rootDir, teamProfile
   const draftRelativePath = relative(rootDir, resolve(draftPath)).replaceAll('\\', '/');
   if (
     draftRelativePath.startsWith('..') ||
-    !draftRelativePath.startsWith('.ai-guidance/eval-drafts/')
+    !draftRelativePath.startsWith('.veritas/eval-drafts/')
   ) {
     throw new Error(
-      'eval record requires a repo-local draft artifact inside .ai-guidance/eval-drafts/',
+      'eval record requires a repo-local draft artifact inside .veritas/eval-drafts/',
     );
   }
   const requiredDraftKeys = [
@@ -771,8 +778,8 @@ function buildAdaptiveNodes(repoInsights) {
     {
       id: 'governance.guidance',
       kind: 'governance-surface',
-      label: '.ai-guidance/**',
-      patterns: ['.ai-guidance/'],
+      label: '.veritas/**',
+      patterns: ['.veritas/'],
     },
     {
       id: 'governance.root-manifests',
@@ -849,7 +856,7 @@ function buildAdaptiveNodes(repoInsights) {
 
 function buildStarterEvidenceConfig({ proofLane, repoInsights }) {
   const evidence = {
-    artifactDir: '.ai-guidance/evidence',
+    artifactDir: '.veritas/evidence',
     requiredProofLanes: [proofLane],
     reportTransport: 'local-json',
   };
@@ -897,20 +904,20 @@ export function buildStarterAdapter({
       ],
       resolverPrecedence: [
         'explicit task or issue reference',
-        'matching local artifact under .ai-guidance/**',
+        'matching local artifact under .veritas/**',
         'active repo roadmap or README guidance',
         'multi-workstream fallback suppresses promotion',
       ],
       resolutionRules: [
         {
-          id: 'guidance-files',
+          id: 'veritas-files',
           match: {
-            patterns: ['.ai-guidance/'],
+            patterns: ['.veritas/'],
           },
           resolution: {
             phase: 'Phase 0 (Bootstrap)',
             workstream: 'Initial Project Setup',
-            matchedArtifacts: ['.ai-guidance/**'],
+            matchedArtifacts: ['.veritas/**'],
           },
         },
       ],
@@ -927,35 +934,35 @@ export function buildStarterPolicyPack({ projectName }) {
     version: 1,
     name: `${projectSlug}-default`,
     description:
-      'Conservative starter policy pack for a newly bootstrapped AI-guided repository.',
+      'Conservative starter policy pack for a newly bootstrapped Veritas-enabled repository.',
     rules: [
       {
-        id: 'required-guidance-artifacts',
+        id: 'required-veritas-artifacts',
         classification: 'hard-invariant',
         stage: 'block',
         message:
-          'The bootstrap guidance artifacts must stay present so agents and reviewers share the same baseline.',
+          'The bootstrap Veritas artifacts must stay present so agents and reviewers share the same baseline.',
         owner: 'repo-core',
         rollback_switch: null,
         match: {
           artifacts: [
-            '.ai-guidance/README.md',
-            '.ai-guidance/repo.adapter.json',
-            '.ai-guidance/policy-packs/default.policy-pack.json',
-            '.ai-guidance/team/default.team-profile.json',
+            '.veritas/README.md',
+            '.veritas/repo.adapter.json',
+            '.veritas/policy-packs/default.policy-pack.json',
+            '.veritas/team/default.team-profile.json',
           ],
         },
       },
       {
-        id: 'prefer-guidance-routed-delivery',
+        id: 'prefer-veritas-routed-delivery',
         classification: 'promotable-policy',
         stage: 'recommend',
         message:
-          'Prefer running new AI-guided changes through the guidance report and the documented proof lane before review.',
+          'Prefer running new AI-guided changes through the Veritas report and the documented proof lane before review.',
         owner: 'repo-maintainers',
-        rollback_switch: 'soften-guidance-route',
+        rollback_switch: 'soften-veritas-route',
         match: {
-          files: ['.ai-guidance/README.md'],
+          files: ['.veritas/README.md'],
         },
       },
     ],
@@ -1001,15 +1008,15 @@ export function buildBootstrapReadme({
     matchedScripts: [],
   },
 }) {
-  return `# AI Guidance Starter Kit
+  return `# Veritas Starter Kit
 
 This repo was bootstrapped for \`${projectName}\` with a conservative starter kit for agent-guided development.
 
 ## Generated Files
 
-- \`.ai-guidance/repo.adapter.json\`
-- \`.ai-guidance/policy-packs/default.policy-pack.json\`
-- \`.ai-guidance/team/default.team-profile.json\`
+- \`.veritas/repo.adapter.json\`
+- \`.veritas/policy-packs/default.policy-pack.json\`
+- \`.veritas/team/default.team-profile.json\`
 
 ## Inferred Repo Shape
 
@@ -1045,20 +1052,20 @@ This repo was bootstrapped for \`${projectName}\` with a conservative starter ki
 ## Suggested Commands
 
 \`\`\`bash
-npm exec -- ai-guidance print package-scripts
-npm exec -- ai-guidance print ci-snippet
-npm exec -- ai-guidance apply package-scripts
-npm exec -- ai-guidance apply ci-snippet
-npm exec -- ai-guidance runtime status
-npm exec -- ai-guidance report package.json
+npm exec -- veritas print package-scripts
+npm exec -- veritas print ci-snippet
+npm exec -- veritas apply package-scripts
+npm exec -- veritas apply ci-snippet
+npm exec -- veritas runtime status
+npm exec -- veritas report package.json
 \`\`\`
 
 If you prefer explicit paths:
 
 \`\`\`bash
-npm exec -- ai-guidance report \\
-  --adapter ./.ai-guidance/repo.adapter.json \\
-  --policy-pack ./.ai-guidance/policy-packs/default.policy-pack.json \\
+npm exec -- veritas report \\
+  --adapter ./.veritas/repo.adapter.json \\
+  --policy-pack ./.veritas/policy-packs/default.policy-pack.json \\
   package.json
 \`\`\`
 
@@ -1088,16 +1095,16 @@ export function writeBootstrapStarterKit({
 }) {
   const repoInsights = inferBootstrapRepoInsights(rootDir);
   const resolvedProofLane = proofLane ?? repoInsights.proofLane;
-  const adapterPath = resolve(rootDir, '.ai-guidance/repo.adapter.json');
+  const adapterPath = resolve(rootDir, '.veritas/repo.adapter.json');
   const policyPackPath = resolve(
     rootDir,
-    '.ai-guidance/policy-packs/default.policy-pack.json',
+    '.veritas/policy-packs/default.policy-pack.json',
   );
   const teamProfilePath = resolve(
     rootDir,
-    '.ai-guidance/team/default.team-profile.json',
+    '.veritas/team/default.team-profile.json',
   );
-  const readmePath = resolve(rootDir, '.ai-guidance/README.md');
+  const readmePath = resolve(rootDir, '.veritas/README.md');
 
   const files = [
     [adapterPath, buildStarterAdapter({ projectName, proofLane: resolvedProofLane, repoInsights })],
@@ -1114,13 +1121,13 @@ export function writeBootstrapStarterKit({
   }
   if (existsSync(readmePath) && !force) {
     throw new Error(
-      'Refusing to overwrite existing file: .ai-guidance/README.md (use --force to replace it)',
+      'Refusing to overwrite existing file: .veritas/README.md (use --force to replace it)',
     );
   }
 
-  mkdirSync(resolve(rootDir, '.ai-guidance/policy-packs'), { recursive: true });
-  mkdirSync(resolve(rootDir, '.ai-guidance/team'), { recursive: true });
-  mkdirSync(resolve(rootDir, '.ai-guidance/evidence'), { recursive: true });
+  mkdirSync(resolve(rootDir, '.veritas/policy-packs'), { recursive: true });
+  mkdirSync(resolve(rootDir, '.veritas/team'), { recursive: true });
+  mkdirSync(resolve(rootDir, '.veritas/evidence'), { recursive: true });
 
   for (const [filePath, payload] of files) {
     writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
@@ -1151,15 +1158,15 @@ export function buildSuggestedPackageScripts({
   baseRef = '<base-ref>',
 }) {
   return {
-    'guidance:init': 'npm exec -- ai-guidance init',
-    'guidance:print:scripts': 'npm exec -- ai-guidance print package-scripts',
-    'guidance:print:ci': 'npm exec -- ai-guidance print ci-snippet',
-    'guidance:report': 'npm exec -- ai-guidance report --run-id local-smoke package.json',
-    'guidance:report:working-tree': 'npm exec -- ai-guidance report --working-tree',
-    'guidance:report:diff': `npm exec -- ai-guidance report --changed-from ${baseRef} --changed-to HEAD`,
-    'guidance:status:runtime': 'npm exec -- ai-guidance runtime status',
-    'guidance:proof': proofLane,
-    'guidance:eval': 'npm exec -- ai-guidance shadow run',
+    'veritas:init': 'npm exec -- veritas init',
+    'veritas:print:scripts': 'npm exec -- veritas print package-scripts',
+    'veritas:print:ci': 'npm exec -- veritas print ci-snippet',
+    'veritas:report': 'npm exec -- veritas report --run-id local-smoke package.json',
+    'veritas:report:working-tree': 'npm exec -- veritas report --working-tree',
+    'veritas:report:diff': `npm exec -- veritas report --changed-from ${baseRef} --changed-to HEAD`,
+    'veritas:status:runtime': 'npm exec -- veritas runtime status',
+    'veritas:proof': proofLane,
+    'veritas:eval': 'npm exec -- veritas shadow run',
   };
 }
 
@@ -1167,12 +1174,12 @@ export function buildSuggestedCiSnippet({
   proofLane = 'npm test',
   baseRef = '<base-ref>',
 }) {
-  return `# Suggested ai-guidance CI snippet
+  return `# Suggested Veritas CI snippet
 - name: Run project proof lane
   run: ${proofLane}
 
-- name: Generate guidance report
-  run: npm exec -- ai-guidance report --changed-from ${baseRef} --changed-to HEAD
+- name: Generate Veritas report
+  run: npm exec -- veritas report --changed-from ${baseRef} --changed-to HEAD
 `;
 }
 
@@ -1184,15 +1191,15 @@ export function buildSuggestedGitHook({ hook = 'post-commit' } = {}) {
   return `#!/bin/sh
 set -eu
 
-if [ "\${AI_GUIDANCE_HOOK_SKIP:-0}" = "1" ]; then
+if [ "\${VERITAS_HOOK_SKIP:-\${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
   exit 0
 fi
 
 if git rev-parse --verify --quiet HEAD~1 >/dev/null; then
-  npm exec -- ai-guidance shadow run --changed-from HEAD~1 --changed-to HEAD
+  npm exec -- veritas shadow run --changed-from HEAD~1 --changed-to HEAD
 else
   EMPTY_TREE="$(git hash-object -t tree /dev/null)"
-  npm exec -- ai-guidance shadow run --changed-from "$EMPTY_TREE" --changed-to HEAD
+  npm exec -- veritas shadow run --changed-from "$EMPTY_TREE" --changed-to HEAD
 fi
 `;
 }
@@ -1201,15 +1208,15 @@ export function buildSuggestedRuntimeHook() {
   return `#!/bin/sh
 set -eu
 
-if [ "\${AI_GUIDANCE_HOOK_SKIP:-0}" = "1" ]; then
+if [ "\${VERITAS_HOOK_SKIP:-\${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
   exit 0
 fi
 
 if [ "$#" -eq 0 ]; then
-  exec npm exec -- ai-guidance shadow run --working-tree
+  exec npm exec -- veritas shadow run --working-tree
 fi
 
-exec npm exec -- ai-guidance shadow run "$@"
+exec npm exec -- veritas shadow run "$@"
 `;
 }
 
@@ -1222,7 +1229,7 @@ export function buildSuggestedCodexHookConfig() {
           hooks: [
             {
               type: 'command',
-              command: '.ai-guidance/hooks/agent-runtime.sh',
+              command: '.veritas/hooks/agent-runtime.sh',
               statusMessage: 'Running Veritas shadow automation',
               timeout: 60,
             },
@@ -1272,7 +1279,7 @@ export function applyCiSnippet({
   rootDir,
   proofLane = 'npm test',
   baseRef = '<base-ref>',
-  outputPath = '.ai-guidance/snippets/ci-snippet.yml',
+  outputPath = '.veritas/snippets/ci-snippet.yml',
   force = false,
 }) {
   const resolvedOutputPath = resolve(rootDir, outputPath);
@@ -1280,10 +1287,10 @@ export function applyCiSnippet({
 
   if (
     relativeOutputPath.startsWith('..') ||
-    !relativeOutputPath.startsWith('.ai-guidance/snippets/')
+    !relativeOutputPath.startsWith('.veritas/snippets/')
   ) {
     throw new Error(
-      'apply ci-snippet only supports writing inside .ai-guidance/snippets/',
+      'apply ci-snippet only supports writing inside .veritas/snippets/',
     );
   }
 
@@ -1293,7 +1300,7 @@ export function applyCiSnippet({
     );
   }
 
-  mkdirSync(resolve(rootDir, '.ai-guidance/snippets'), { recursive: true });
+  mkdirSync(resolve(rootDir, '.veritas/snippets'), { recursive: true });
   writeFileSync(
     resolvedOutputPath,
     buildSuggestedCiSnippet({ proofLane, baseRef }),
@@ -1360,7 +1367,7 @@ export function applyGitHook({
 
 export function applyRuntimeHook({
   rootDir,
-  outputPath = '.ai-guidance/hooks/agent-runtime.sh',
+  outputPath = '.veritas/hooks/agent-runtime.sh',
   force = false,
 }) {
   const resolvedOutputPath = resolve(rootDir, outputPath);
@@ -1368,10 +1375,10 @@ export function applyRuntimeHook({
 
   if (
     relativeOutputPath.startsWith('..') ||
-    !relativeOutputPath.startsWith('.ai-guidance/hooks/')
+    !relativeOutputPath.startsWith('.veritas/hooks/')
   ) {
     throw new Error(
-      'apply runtime-hook only supports writing inside .ai-guidance/hooks/',
+      'apply runtime-hook only supports writing inside .veritas/hooks/',
     );
   }
 
@@ -1501,8 +1508,8 @@ function readGitConfigValue(rootDir, key) {
 
 export function inspectRuntimeAdapterStatus(rootDir, options = {}) {
   const gitHookPath = resolve(rootDir, '.githooks/post-commit');
-  const runtimeHookPath = resolve(rootDir, '.ai-guidance/hooks/agent-runtime.sh');
-  const codexArtifactPath = resolve(rootDir, '.ai-guidance/runtime/codex-hooks.json');
+  const runtimeHookPath = resolve(rootDir, '.veritas/hooks/agent-runtime.sh');
+  const codexArtifactPath = resolve(rootDir, '.veritas/runtime/codex-hooks.json');
   const configuredHooksPath = readGitConfigValue(rootDir, 'core.hooksPath');
   const codexTarget = inspectCodexHookTarget(rootDir, options);
 
@@ -1515,12 +1522,12 @@ export function inspectRuntimeAdapterStatus(rootDir, options = {}) {
       configured: configuredHooksPath === '.githooks',
     },
     runtimeHook: {
-      path: '.ai-guidance/hooks/agent-runtime.sh',
+      path: '.veritas/hooks/agent-runtime.sh',
       exists: existsSync(runtimeHookPath),
       executable: isExecutable(runtimeHookPath),
     },
     codexArtifact: {
-      path: '.ai-guidance/runtime/codex-hooks.json',
+      path: '.veritas/runtime/codex-hooks.json',
       exists: existsSync(codexArtifactPath),
     },
     codexTarget,
@@ -1529,30 +1536,30 @@ export function inspectRuntimeAdapterStatus(rootDir, options = {}) {
 
   if (!status.gitHook.exists || !status.gitHook.configured) {
     status.nextCommands.push(
-      `npm exec -- ai-guidance apply git-hook --configure-git${status.gitHook.exists ? ' --force' : ''}`,
+      `npm exec -- veritas apply git-hook --configure-git${status.gitHook.exists ? ' --force' : ''}`,
     );
   } else if (!status.gitHook.executable) {
-    status.nextCommands.push('npm exec -- ai-guidance apply git-hook --configure-git --force');
+    status.nextCommands.push('npm exec -- veritas apply git-hook --configure-git --force');
   }
   if (!status.runtimeHook.exists) {
-    status.nextCommands.push('npm exec -- ai-guidance apply runtime-hook');
+    status.nextCommands.push('npm exec -- veritas apply runtime-hook');
   } else if (!status.runtimeHook.executable) {
-    status.nextCommands.push('npm exec -- ai-guidance apply runtime-hook --force');
+    status.nextCommands.push('npm exec -- veritas apply runtime-hook --force');
   }
   if (!status.codexArtifact.exists) {
-    status.nextCommands.push('npm exec -- ai-guidance print codex-hook');
+    status.nextCommands.push('npm exec -- veritas print codex-hook');
   }
   if (!codexTarget.checked) {
     status.nextCommands.push(
-      'npm exec -- ai-guidance print codex-hook --codex-home /path/to/.codex',
+      'npm exec -- veritas print codex-hook --codex-home /path/to/.codex',
     );
   } else if (options.codexHome && !codexTarget.adapterInstalled) {
     status.nextCommands.push(
-      `npm exec -- ai-guidance apply codex-hook --codex-home ${shellQuote(options.codexHome)}${status.codexArtifact.exists ? ' --force' : ''}`,
+      `npm exec -- veritas apply codex-hook --codex-home ${shellQuote(options.codexHome)}${status.codexArtifact.exists ? ' --force' : ''}`,
     );
   } else if (options.targetHooksFile && !codexTarget.adapterInstalled) {
     status.nextCommands.push(
-      `npm exec -- ai-guidance apply codex-hook --target-hooks-file ${shellQuote(options.targetHooksFile)}${status.codexArtifact.exists ? ' --force' : ''}`,
+      `npm exec -- veritas apply codex-hook --target-hooks-file ${shellQuote(options.targetHooksFile)}${status.codexArtifact.exists ? ' --force' : ''}`,
     );
   }
 
@@ -1561,7 +1568,7 @@ export function inspectRuntimeAdapterStatus(rootDir, options = {}) {
 
 export function applyCodexHook({
   rootDir,
-  outputPath = '.ai-guidance/runtime/codex-hooks.json',
+  outputPath = '.veritas/runtime/codex-hooks.json',
   force = false,
   targetHooksFile,
   codexHome,
@@ -1572,10 +1579,10 @@ export function applyCodexHook({
 
   if (
     relativeOutputPath.startsWith('..') ||
-    !relativeOutputPath.startsWith('.ai-guidance/runtime/')
+    !relativeOutputPath.startsWith('.veritas/runtime/')
   ) {
     throw new Error(
-      'apply codex-hook only supports writing inside .ai-guidance/runtime/',
+      'apply codex-hook only supports writing inside .veritas/runtime/',
     );
   }
 
@@ -1622,17 +1629,17 @@ export function writeEvidenceArtifact(record, config, rootDir) {
 export function writeEvalArtifact(
   record,
   rootDir,
-  outputPath = `.ai-guidance/evals/${record.run_id}.json`,
+  outputPath = `.veritas/evals/${record.run_id}.json`,
   force = false,
 ) {
   const artifactPath = resolve(rootDir, outputPath);
   const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
   if (
     relativeArtifactPath.startsWith('..') ||
-    !relativeArtifactPath.startsWith('.ai-guidance/evals/')
+    !relativeArtifactPath.startsWith('.veritas/evals/')
   ) {
     throw new Error(
-      'eval artifacts may only be written inside .ai-guidance/evals/',
+      'eval artifacts may only be written inside .veritas/evals/',
     );
   }
   if (existsSync(artifactPath) && !force) {
@@ -1648,17 +1655,17 @@ export function writeEvalArtifact(
 export function writeEvalDraftArtifact(
   record,
   rootDir,
-  outputPath = `.ai-guidance/eval-drafts/${record.run_id}.json`,
+  outputPath = `.veritas/eval-drafts/${record.run_id}.json`,
   force = false,
 ) {
   const artifactPath = resolve(rootDir, outputPath);
   const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
   if (
     relativeArtifactPath.startsWith('..') ||
-    !relativeArtifactPath.startsWith('.ai-guidance/eval-drafts/')
+    !relativeArtifactPath.startsWith('.veritas/eval-drafts/')
   ) {
     throw new Error(
-      'eval drafts may only be written inside .ai-guidance/eval-drafts/',
+      'eval drafts may only be written inside .veritas/eval-drafts/',
     );
   }
   if (existsSync(artifactPath) && !force) {
@@ -1794,8 +1801,13 @@ export function resolveReportInputs(explicitFiles, options, rootDir) {
 }
 
 export function buildMarkdownSummary(record, artifactPath) {
+  const policyPassCount = record.policy_results.filter((result) => result.passed === true).length;
+  const policyFailCount = record.policy_results.filter((result) => result.passed === false).length;
+  const policyMetadataOnlyCount = record.policy_results.filter(
+    (result) => result.passed === null,
+  ).length;
   const lines = [
-    '## Guidance Report',
+    '## Veritas Report',
     '',
     `- **Adapter:** ${record.adapter.name} (${record.adapter.kind})`,
     `- **Source:** ${record.source_kind} (${record.source_scope.join(', ')})`,
@@ -1812,8 +1824,23 @@ export function buildMarkdownSummary(record, artifactPath) {
     `- **Uncovered path result:** ${record.uncovered_path_result}`,
     `- **Baseline \`ci:fast\` passed:** ${formatTriState(record.baseline_ci_fast_passed)}`,
     `- **Report transport:** ${record.adapter.report_transport}`,
+    `- **Policy results:** ${policyPassCount} passed, ${policyFailCount} failed, ${policyMetadataOnlyCount} metadata-only`,
     `- **Artifact:** \`${artifactPath}\``,
   ];
+
+  if (record.policy_results.length > 0) {
+    lines.push('', '### Policy Results');
+    for (const result of record.policy_results) {
+      const status =
+        result.passed === true ? 'pass' : result.passed === false ? 'fail' : 'metadata-only';
+      lines.push(`- ${result.rule_id}: ${status} — ${result.summary}`);
+      for (const finding of result.findings ?? []) {
+        if (finding.artifact) {
+          lines.push(`  - Artifact: ${finding.artifact}`);
+        }
+      }
+    }
+  }
 
   if (record.recommendations.length > 0) {
     lines.push('', '### Recommendations');
@@ -1832,7 +1859,7 @@ export function buildMarkdownSummary(record, artifactPath) {
 
 export function buildEvalMarkdownSummary(record, artifactPath) {
   const lines = [
-    '## Guidance Eval',
+    '## Veritas Eval',
     '',
     `- **Run ID:** ${record.run_id}`,
     `- **Mode:** ${record.mode}`,
@@ -1866,7 +1893,7 @@ export function buildEvalMarkdownSummary(record, artifactPath) {
 
 export function buildEvalDraftMarkdownSummary(record, artifactPath, suggestedRecordCommand) {
   const lines = [
-    '## Guidance Eval Draft',
+    '## Veritas Eval Draft',
     '',
     `- **Run ID:** ${record.run_id}`,
     `- **Mode:** ${record.mode}`,
@@ -2285,19 +2312,19 @@ export function parseShadowArgs(argv) {
   return options;
 }
 
-function resolveGuidancePaths(options, defaults = {}) {
+function resolveVeritasPaths(options, defaults = {}) {
   const rootDir = options.rootDir ? resolve(options.rootDir) : defaults.rootDir;
   const defaultAdapterPath =
     defaults.adapterPath ??
-    (rootDir ? resolve(rootDir, '.ai-guidance/repo.adapter.json') : undefined);
+    (rootDir ? resolve(rootDir, '.veritas/repo.adapter.json') : undefined);
   const defaultPolicyPackPath =
     defaults.policyPackPath ??
     (rootDir
-      ? resolve(rootDir, '.ai-guidance/policy-packs/default.policy-pack.json')
+      ? resolve(rootDir, '.veritas/policy-packs/default.policy-pack.json')
       : undefined);
   const defaultTeamProfilePath =
     defaults.teamProfilePath ??
-    (rootDir ? resolve(rootDir, '.ai-guidance/team/default.team-profile.json') : undefined);
+    (rootDir ? resolve(rootDir, '.veritas/team/default.team-profile.json') : undefined);
 
   return {
     rootDir,
@@ -2313,12 +2340,12 @@ function resolveGuidancePaths(options, defaults = {}) {
   };
 }
 
-export function generateGuidanceReport(options = {}, defaults = {}, explicitFiles = []) {
-  const { rootDir, adapterPath, policyPackPath } = resolveGuidancePaths(options, defaults);
+export function generateVeritasReport(options = {}, defaults = {}, explicitFiles = []) {
+  const { rootDir, adapterPath, policyPackPath } = resolveVeritasPaths(options, defaults);
 
   if (!rootDir || !adapterPath || !policyPackPath) {
     throw new Error(
-      'Guidance report requires rootDir, adapterPath, and policyPackPath',
+      'Veritas report requires rootDir, adapterPath, and policyPackPath',
     );
   }
 
@@ -2326,7 +2353,7 @@ export function generateGuidanceReport(options = {}, defaults = {}, explicitFile
   const files = reportInputs.files;
 
   if (files.length === 0 && reportInputs.sourceKind === 'explicit-files') {
-    throw new Error('guidance-report requires at least one file path');
+    throw new Error('veritas report requires at least one file path');
   }
 
   const config = loadAdapterConfig(adapterPath);
@@ -2373,16 +2400,16 @@ export function generateGuidanceReport(options = {}, defaults = {}, explicitFile
 }
 
 export function generateEvalDraft(options = {}, defaults = {}) {
-  const { rootDir, teamProfilePath } = resolveGuidancePaths(options, defaults);
+  const { rootDir, teamProfilePath } = resolveVeritasPaths(options, defaults);
   const evidencePath = options.evidencePath
     ? resolve(rootDir, options.evidencePath)
     : undefined;
 
   if (!rootDir || !teamProfilePath) {
-    throw new Error('Guidance eval draft requires rootDir and teamProfilePath');
+    throw new Error('Veritas eval draft requires rootDir and teamProfilePath');
   }
   if (!evidencePath) {
-    throw new Error('guidance eval draft requires --evidence <path>');
+    throw new Error('veritas eval draft requires --evidence <path>');
   }
 
   const evidenceRecord = loadEvidenceArtifact(evidencePath);
@@ -2419,15 +2446,15 @@ export function generateEvalDraft(options = {}, defaults = {}) {
 }
 
 export function generateEvalRecord(options = {}, defaults = {}) {
-  const { rootDir, teamProfilePath } = resolveGuidancePaths(options, defaults);
+  const { rootDir, teamProfilePath } = resolveVeritasPaths(options, defaults);
   if (!rootDir || !teamProfilePath) {
-    throw new Error('Guidance eval record requires rootDir and teamProfilePath');
+    throw new Error('Veritas eval record requires rootDir and teamProfilePath');
   }
   if (options.evidencePath && options.draftPath) {
-    throw new Error('guidance eval record accepts either --evidence or --draft, not both');
+    throw new Error('veritas eval record accepts either --evidence or --draft, not both');
   }
   if (!options.evidencePath && !options.draftPath) {
-    throw new Error('guidance eval record requires --evidence <path> or --draft <path>');
+    throw new Error('veritas eval record requires --evidence <path> or --draft <path>');
   }
 
   const teamProfile = loadTeamProfile(teamProfilePath);
@@ -2510,9 +2537,9 @@ function hasShadowOutcomeInputs(options) {
   );
 }
 
-export function runGuidanceReportCli(argv = process.argv.slice(2), defaults = {}) {
+export function runVeritasReportCli(argv = process.argv.slice(2), defaults = {}) {
   const { options, files: explicitFiles } = parseArgs(argv);
-  const result = generateGuidanceReport(options, defaults, explicitFiles);
+  const result = generateVeritasReport(options, defaults, explicitFiles);
 
   process.stdout.write(
     `${JSON.stringify(
@@ -2614,9 +2641,9 @@ export function runPrintRuntimeHookCli(argv = process.argv.slice(2), defaults = 
     `${JSON.stringify(
       {
         rootDir,
-        outputPath: '.ai-guidance/hooks/agent-runtime.sh',
+        outputPath: '.veritas/hooks/agent-runtime.sh',
         hookBody: buildSuggestedRuntimeHook(),
-        defaultInvocation: '.ai-guidance/hooks/agent-runtime.sh',
+        defaultInvocation: '.veritas/hooks/agent-runtime.sh',
       },
       null,
       2,
@@ -2632,16 +2659,16 @@ export function runPrintCodexHookCli(argv = process.argv.slice(2), defaults = {}
     codexHome: options.codexHome,
   });
   const suggestedApplyCommand = options.codexHome
-    ? `npm exec -- ai-guidance apply codex-hook --codex-home ${shellQuote(options.codexHome)}`
+    ? `npm exec -- veritas apply codex-hook --codex-home ${shellQuote(options.codexHome)}`
     : options.targetHooksFile
-      ? `npm exec -- ai-guidance apply codex-hook --target-hooks-file ${shellQuote(options.targetHooksFile)}`
+      ? `npm exec -- veritas apply codex-hook --target-hooks-file ${shellQuote(options.targetHooksFile)}`
       : null;
 
   process.stdout.write(
     `${JSON.stringify(
       {
         rootDir,
-        outputPath: '.ai-guidance/runtime/codex-hooks.json',
+        outputPath: '.veritas/runtime/codex-hooks.json',
         targetHooksFile: options.targetHooksFile ?? null,
         codexHome: options.codexHome ?? null,
         targetStatus,
@@ -2707,7 +2734,7 @@ export function runApplyCiSnippetCli(argv = process.argv.slice(2), defaults = {}
     rootDir,
     proofLane,
     baseRef: repoInsights.baseRef,
-    outputPath: options.outputPath ?? '.ai-guidance/snippets/ci-snippet.yml',
+    outputPath: options.outputPath ?? '.veritas/snippets/ci-snippet.yml',
     force: options.force ?? false,
   });
 
@@ -2743,7 +2770,7 @@ export function runApplyRuntimeHookCli(argv = process.argv.slice(2), defaults = 
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const result = applyRuntimeHook({
     rootDir,
-    outputPath: options.outputPath ?? '.ai-guidance/hooks/agent-runtime.sh',
+    outputPath: options.outputPath ?? '.veritas/hooks/agent-runtime.sh',
     force: options.force ?? false,
   });
 
@@ -2755,7 +2782,7 @@ export function runApplyCodexHookCli(argv = process.argv.slice(2), defaults = {}
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const result = applyCodexHook({
     rootDir,
-    outputPath: options.outputPath ?? '.ai-guidance/runtime/codex-hooks.json',
+    outputPath: options.outputPath ?? '.veritas/runtime/codex-hooks.json',
     force: options.force ?? false,
     targetHooksFile: options.targetHooksFile,
     codexHome: options.codexHome,
@@ -2808,7 +2835,7 @@ export function runEvalDraftCli(argv = process.argv.slice(2), defaults = {}) {
 export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseShadowArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  const { adapterPath } = resolveGuidancePaths(
+  const { adapterPath } = resolveVeritasPaths(
     { ...options, rootDir },
     { ...defaults, rootDir },
   );
@@ -2830,7 +2857,7 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
   const proofCommands = proofPlan.proofCommands;
   if (!options.skipProof && proofCommands.length === 0) {
     throw new Error(
-      'guidance shadow run requires a proof command or an adapter required proof lane',
+      'veritas shadow run requires a proof command or an adapter required proof lane',
     );
   }
 
@@ -2840,7 +2867,7 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
     }
   }
 
-  const reportResult = generateGuidanceReport(
+  const reportResult = generateVeritasReport(
     {
       ...options,
       rootDir,
@@ -2854,7 +2881,7 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
   );
   if (reportResult.record.uncovered_path_result === 'fail') {
     throw new Error(
-      'guidance shadow run encountered changed files outside configured surfaces and the uncovered-path policy is fail',
+      'veritas shadow run encountered changed files outside configured surfaces and the uncovered-path policy is fail',
     );
   }
   const draftResult = generateEvalDraft(

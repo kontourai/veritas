@@ -1,203 +1,135 @@
-# AI Guidance Framework
+# Veritas
 
-> “A good harness is really operationalized around giving the model text at the right time so it can look at the work it has done and the information around what a good job looks like.”
->
-> Ryan Laapo, OpenAI
+`veritas` is a repo-local framework and CLI for making AI-assisted development easier to trust.
 
-Code is free. Trusted delivery is not.
+It gives a codebase four things:
 
-This framework gives teams a shared operating layer for agentic development, with just-in-time guidance, standardized construction paths, baseline compliance, and evidence-backed feedback loops. The result is faster delivery, safer parallelization, and scalable agent output without making human review the bottleneck.
+- a typed map of the repo through an **adapter**
+- a staged ruleset through a **policy pack**
+- a durable record of what changed through **evidence artifacts**
+- a feedback loop for usefulness through **live eval artifacts**
 
-`ai-guidance-framework` is designed to be:
+The framework is intentionally agent-agnostic. It does not require one proprietary runtime, and it does not assume the framework repo owns the product code it is guiding.
 
-- easy for an agent to operate inside
-- easy for a team to install and use
-- easy for reviewers to trust
+## What This Project Ships
 
-It should guide the repo in a way that is available to whatever AI is touching the codebase, not only one specific agent runtime.
+- a small Node CLI in `bin/` for bootstrap, reporting, shadow runs, eval capture, and hook setup
+- framework logic in `src/index.mjs`
+- JSON schemas in `schemas/`
+- reference adapters and policy packs in `adapters/` and `policy-packs/`
+- canonical example artifacts in `examples/`
+- design, guide, and reference docs in `docs/`
 
-It does that through three pieces:
+All shipped CLI commands print JSON to stdout, and the command surfaces described in the docs are exercised by the test suite.
 
-- a **[framework core](docs/design/framework-core-vs-adapter.md)** that understands graph nodes, resolution, evidence, and policy evaluation
-- a **[repo adapter](docs/design/framework-core-vs-adapter.md)** that maps those abstractions onto a real codebase
-- **[policy packs](docs/design/policy-packs.md)** that define what a repo treats as required, promotable, or still too brittle to trust fully
+## What This Project Does Not Try To Be
 
-## Why This Structure Matters
+- a hosted control plane
+- a single-agent runtime
+- a repo-specific product implementation
+- a pile of one-off CI assertions with no reusable structure
 
-Most AI coding systems fail in one of two ways:
+Repo-specific bindings belong in adapters and policy packs.
 
-1. they are too loose, so the model wanders and humans have to audit everything manually
-2. they are too repo-specific, so the "framework" is really just a pile of local checks that cannot transfer
+## Dogfooding
 
-This framework is structured to avoid both failure modes.
+This repo uses `veritas` on itself through the tracked files in `.veritas/`.
 
-- **AI focus:** the adapter turns a repo into bounded nodes and proof lanes, so the model can reason about where it is operating instead of treating the whole repo as one blob.
-- **Surface-aware verification:** when an adapter declares per-surface proof routing, the framework can choose proof commands from the changed surfaces instead of forcing one repo-global lane for every change.
-- **Auditability:** the evidence record turns "the agent seemed fine" into a concrete artifact with phase, workstream, affected nodes, proof-lane status, and policy-pack provenance.
-- **Policy evolution:** policy packs let a team distinguish hard invariants from softer guidance instead of encoding every rule as an equally rigid one-off script.
-- **Differentiation:** most agent tooling stops at prompting or orchestration. This repo is about making agent behavior legible, reviewable, and enforceable at the repo boundary.
+- keep `.veritas/repo.adapter.json`, `.veritas/policy-packs/default.policy-pack.json`, `.veritas/team/default.team-profile.json`, and `.veritas/README.md` reviewable and tracked
+- keep the repo in `shadow` mode while the operator surface is still evolving
+- treat `.veritas/evidence/`, `.veritas/eval-drafts/`, and `.veritas/evals/` as disposable local outputs, not source artifacts
+- if self-hosting feels awkward, fix the product surface rather than hardcoding special behavior for the `veritas` repo
 
-## Current Capabilities
+Use these repo-local scripts:
 
-Today the framework can:
+```bash
+npm run veritas:dogfood:report
+npm run veritas:dogfood:shadow
+npm run veritas:dogfood:checkin
+npm run veritas:dogfood:examples
+npm run veritas:dogfood:prove
+```
 
-- bootstrap a starter `.ai-guidance/` setup for a new repo
-- infer conservative starter defaults from the target repo shape
-- infer when a repo shape justifies surface-aware proof routing
-- print suggested package scripts and a starter CI snippet
-- explicitly apply suggested package scripts and write a reviewable CI snippet file
-- load repo adapters and policy packs
-- resolve changed files into graph nodes and workstreams
-- resolve changed files into proof commands by matched adapter surface
-- report explicit files, branch diffs, or the current working tree truthfully
-- capture a shadow eval record from a real guidance report artifact
-- prepare a shadow eval draft artifact with a framework-generated next step
-- run a hook-friendly shadow flow that handles proof, report, and eval draft in one command
-- generate tracked git-hook adapters for the passive shadow flow
-- generate tracked runtime-hook templates for agent runtimes
-- generate tracked Codex hook adapters on top of the runtime-hook surface
-- emit structured evidence records and Markdown summaries
-- record selected proof commands, proof-resolution source, and uncovered-path outcomes in evidence artifacts
-- evaluate executable policy-pack rules
-- define live-eval and team-tuning artifacts for measuring usefulness over time
-- ship canonical fixtures for adapters, evidence, and convergence rule families
+The committed proof examples live under [examples/dogfood](/Users/brian/dev/github/kontourai/veritas/examples/dogfood), and the dogfood workflow is documented in [docs/guides/dogfooding-veritas.md](/Users/brian/dev/github/kontourai/veritas/docs/guides/dogfooding-veritas.md).
 
-The first interpreted rule class is `required-repo-artifacts`, which `work-agent` now consumes through the framework instead of keeping fully bespoke in `verify:convergence`.
+There is also a scheduled GitHub Actions workflow at [.github/workflows/veritas-dogfood.yml](/Users/brian/dev/github/kontourai/veritas/.github/workflows/veritas-dogfood.yml) that runs the dogfood lane on `main`, on pull requests, on manual dispatch, and weekly. It uploads the generated `.veritas` check-in artifacts so you can inspect how the self-hosting lane is behaving over time.
 
-## Install
+## Quickstart
 
-The install path should stay short.
+Install dependencies and verify the framework repo itself:
 
 ```bash
 npm install
-```
-
-Then bootstrap the repo:
-
-```bash
-npm exec -- ai-guidance init
-```
-
-That writes the minimum starter kit:
-
-1. one adapter
-2. one policy pack
-3. one team profile
-4. one local README
-
-The first adaptive slice also inspects the repo for likely source roots, test roots, workflow presence, and a likely proof lane, then writes those decisions into the generated starter README so the team can confirm them quickly.
-
-If you already know the right proof lane, you can still override it with `--proof-lane`.
-
-## Use It
-
-The primary workflow is:
-
-1. bootstrap the repo
-2. print suggested scripts and CI wiring
-3. explicitly apply the wiring you want
-4. run the guidance report against changed files
-5. capture a shadow eval from the report artifact when you want Phase 1 feedback
-6. use that evidence in review, CI, or future live evals
-
-```bash
 npm run verify
 npm test
-
-npm exec -- ai-guidance init
-npm exec -- ai-guidance print package-scripts
-npm exec -- ai-guidance print ci-snippet
-npm exec -- ai-guidance apply package-scripts
-npm exec -- ai-guidance apply ci-snippet
-
-npm exec -- ai-guidance report --run-id local-smoke \
-  package.json
-
-npm exec -- ai-guidance eval record \
-  --evidence .ai-guidance/evidence/local-smoke.json \
-  --accepted-without-major-rewrite true \
-  --required-followup false \
-  --reviewer-confidence high \
-  --time-to-green-minutes 12 \
-  --override-count 0
-
-npm exec -- ai-guidance eval draft \
-  --evidence .ai-guidance/evidence/local-smoke.json
-
-npm exec -- ai-guidance shadow run
-npm exec -- ai-guidance print git-hook
-npm exec -- ai-guidance apply git-hook --configure-git
-npm exec -- ai-guidance print runtime-hook
-npm exec -- ai-guidance apply runtime-hook
-npm exec -- ai-guidance print codex-hook
-npm exec -- ai-guidance print codex-hook --codex-home /path/to/.codex
-npm exec -- ai-guidance apply codex-hook --codex-home /path/to/.codex
-npm exec -- ai-guidance apply codex-hook --target-hooks-file /path/to/hooks.json
-npm exec -- ai-guidance runtime status --codex-home /path/to/.codex
-
-npm exec -- ai-guidance report --working-tree
-npm exec -- ai-guidance report --changed-from main --changed-to HEAD
 ```
 
-`report` now distinguishes between:
+Bootstrap a target repo with the starter kit:
 
-- explicit-file reports
-- branch-diff reports
-- current-state working-tree reports
+```bash
+npm exec -- veritas init
+```
 
-That keeps the evidence artifact honest about what it actually measured.
+Then use the normal operator flow:
 
-`eval record` is the first operational Phase 1 live-eval path: it records how useful that guidance was after the run without changing enforcement.
-It only accepts repo-local evidence artifacts under `.ai-guidance/evidence/`, uses the team profile's confidence scale, and refuses to overwrite an existing eval artifact unless you pass `--force`.
+```bash
+npm exec -- veritas print package-scripts
+npm exec -- veritas print ci-snippet
+npm exec -- veritas apply package-scripts
+npm exec -- veritas apply ci-snippet
+npm exec -- veritas report --working-tree
+npm exec -- veritas shadow run
+```
 
-`eval draft` is the draft-first companion path: it prepares a repo-local draft artifact and a prefilled `eval record --draft ...` command without inventing the missing judgment fields.
+If you want exact flags instead of the short path, use:
 
-`shadow run` is the first hook-friendly passive automation path: it can run proof, capture a report, and prepare an eval draft in one command, then finish `eval record` only if the remaining judgment fields are already supplied.
+```bash
+npm exec -- veritas --help
+npm exec -- veritas report --help
+```
 
-`print git-hook` and `apply git-hook` are the first tracked adapter surfaces for that passive path. They generate a repo-local `.githooks/post-commit` script that calls `ai-guidance shadow run`, and `apply git-hook --configure-git` can explicitly set `core.hooksPath` to use it.
+## Documentation Map
 
-`print runtime-hook` and `apply runtime-hook` are the first non-git hook templates. They generate a tracked `.ai-guidance/hooks/agent-runtime.sh` script that defaults to `shadow run --working-tree` and can be invoked by agent runtimes as a repo-local post-task hook.
+Start here:
 
-`print codex-hook` and `apply codex-hook` are the first runtime-specific adapter layer on top of that generic hook. They generate a tracked `.ai-guidance/runtime/codex-hooks.json` snippet, can preview the resolved target and install state, and can explicitly merge it into either a chosen Codex `hooks.json` file or a chosen Codex home via `--codex-home`, without silently mutating global config by default.
+- [Docs Home](docs/README.md) for the reading map by audience and repo area
+- [Getting Started](docs/guides/getting-started.md) for first-time setup and the basic workflow
+- [CLI Reference](docs/reference/cli.md) for exact commands, flags, outputs, and generated files
+- [Artifacts and Schemas](docs/reference/artifacts-and-schemas.md) for the repo structure and JSON contract surface
+- [Example Fixtures](docs/reference/examples.md) for the shipped evidence, eval, and classification examples
 
-`runtime status` is the first cross-adapter doctor surface. It inspects the git-hook, runtime-hook, and Codex-hook layers together, tells you what is present or missing, and explicitly tells you when no Codex target was checked yet so the next preview/apply step is obvious.
+Go deeper here:
 
-If you want the shortest path to understanding the system as a user:
-
-- read [docs/design/agent-activation.md](docs/design/agent-activation.md)
-- read [docs/design/framework-core-vs-adapter.md](docs/design/framework-core-vs-adapter.md)
-- read [docs/design/live-evals.md](docs/design/live-evals.md)
-- read [docs/design/live-eval-roadmap.md](docs/design/live-eval-roadmap.md)
-- read [docs/design/policy-packs.md](docs/design/policy-packs.md)
-- read [docs/guides/getting-started.md](docs/guides/getting-started.md)
-- read [docs/guides/start-your-next-project.md](docs/guides/start-your-next-project.md)
-- read [docs/guides/tune-for-your-team.md](docs/guides/tune-for-your-team.md)
-- inspect:
-  - [adapters/work-agent.adapter.json](adapters/work-agent.adapter.json)
-  - [adapters/demo-docs-site.adapter.json](adapters/demo-docs-site.adapter.json)
-  - [policy-packs/work-agent-convergence.policy-pack.json](policy-packs/work-agent-convergence.policy-pack.json)
-  - [examples/evidence/work-agent-pass.json](examples/evidence/work-agent-pass.json)
-  - [examples/evals/work-agent-shadow-eval.json](examples/evals/work-agent-shadow-eval.json)
-  - [examples/evals/work-agent-team-profile.json](examples/evals/work-agent-team-profile.json)
+- [Framework Core vs Adapter](docs/design/framework-core-vs-adapter.md)
+- [Agent Activation](docs/design/agent-activation.md)
+- [Policy Packs](docs/design/policy-packs.md)
+- [Live Evals](docs/design/live-evals.md)
+- [Live Eval Roadmap](docs/design/live-eval-roadmap.md)
+- [Dogfooding Veritas](docs/guides/dogfooding-veritas.md)
+- [Tune The Framework For Your Team](docs/guides/tune-for-your-team.md)
+- [Start Your Next Project With Veritas](docs/guides/start-your-next-project.md)
 
 ## Repository Layout
 
-- `src/` — framework core and policy evaluation
-- `bin/` — CLI entrypoints for bootstrap and reporting
-- `schemas/` — JSON schemas for graph, adapter, evidence, policy-pack, eval, and team-profile artifacts
-- `adapters/` — example adapters
-- `policy-packs/` — example policy packs
-- `examples/` — canonical evidence fixtures and grouped convergence classification artifacts
-- `docs/design/` — framework rationale and structure
-- `docs/guides/` — onboarding, bootstrap, and operator-oriented usage guidance
+- `bin/` — CLI entrypoints
+- `src/` — framework logic and exported helpers
+- `schemas/` — JSON schemas for adapters, evidence, evals, graphs, policy packs, and team profiles
+- `adapters/` — reference repo adapters
+- `policy-packs/` — reference policy packs
+- `examples/` — example evidence, eval, and rule-family artifacts
+- `docs/` — guides, design notes, and reference material
+- `tests/` — CLI and framework smoke coverage
+- `scripts/verify.mjs` — low-cost repository verification for docs and fixtures
 
-## Commands
+## Verification
+
+Before calling the repo ready:
 
 ```bash
 npm run verify
 npm test
 ```
 
-## Developing The Framework
+## Contributing
 
-If you want to contribute to the framework itself, use [CONTRIBUTING.md](CONTRIBUTING.md).
+Framework development guidance lives in [CONTRIBUTING.md](CONTRIBUTING.md).

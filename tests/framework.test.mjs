@@ -22,6 +22,7 @@ import {
   buildSuggestedPackageScripts,
   classifyNodes,
   evaluatePolicyPack,
+  generateEvalRecord,
   inferBootstrapRepoInsights,
   listWorkingTreeFiles,
   loadPolicyPack,
@@ -66,11 +67,12 @@ test('classification artifact groups the current convergence rule surface', () =
 });
 
 test('evidence schema requires framework and adapter sections', () => {
-  const evidenceSchema = readJson('../schemas/ai-guidance-evidence.schema.json');
+  const evidenceSchema = readJson('../schemas/veritas-evidence.schema.json');
   assert.ok(evidenceSchema.required.includes('framework'));
   assert.ok(evidenceSchema.required.includes('adapter'));
   assert.ok(evidenceSchema.required.includes('selected_proof_commands'));
   assert.ok(evidenceSchema.required.includes('proof_resolution_source'));
+  assert.ok(evidenceSchema.required.includes('policy_results'));
 });
 
 test('core classifies nodes and builds evidence from an adapter config', () => {
@@ -78,7 +80,7 @@ test('core classifies nodes and builds evidence from an adapter config', () => {
   const policyPack = loadPolicyPack(
     new URL('../policy-packs/work-agent-convergence.policy-pack.json', import.meta.url),
   );
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-framework-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
 
   const classification = classifyNodes(
@@ -124,6 +126,10 @@ test('core classifies nodes and builds evidence from an adapter config', () => {
     version: 1,
     rule_count: 4,
   });
+  assert.equal(record.policy_results.length, 4);
+  assert.equal(record.policy_results[0].rule_id, 'required-repo-artifacts');
+  assert.equal(record.policy_results[0].implemented, true);
+  assert.equal(record.policy_results[0].passed, false);
   assert.deepEqual(adapter.policy, {
     defaultFalsePositiveReview: 'unknown',
     defaultPromotionCandidate: false,
@@ -144,7 +150,7 @@ test('core classifies nodes and builds evidence from an adapter config', () => {
 });
 
 test('surface-aware proof routing prefers surface routes, then default, then legacy', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-proof-plan-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-proof-plan-'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
   mkdirp(join(rootDir, 'scripts'));
   mkdirp(join(rootDir, 'packages/core'));
@@ -174,7 +180,7 @@ test('surface-aware proof routing prefers surface routes, then default, then leg
       ],
     },
     evidence: {
-      artifactDir: '.ai-guidance/evidence',
+      artifactDir: '.veritas/evidence',
       reportTransport: 'local-json',
       requiredProofLanes: ['npm run legacy-proof'],
       defaultProofLanes: ['npm run default-proof'],
@@ -220,13 +226,13 @@ test('surface-aware proof routing prefers surface routes, then default, then leg
 });
 
 test('guidance CLI can run with explicit adapter and policy-pack inputs', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-cli-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-cli-'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
 
   const stdout = execFileSync(
     'node',
     [
-      fileURLToPath(new URL('../bin/ai-guidance-report.mjs', import.meta.url)),
+      fileURLToPath(new URL('../bin/veritas-report.mjs', import.meta.url)),
       '--root',
       rootDir,
       '--adapter',
@@ -258,8 +264,41 @@ test('guidance CLI can run with explicit adapter and policy-pack inputs', () => 
   });
 });
 
+test('CLI entrypoints expose help text for publishable operator surfaces', () => {
+  const mainHelp = execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', '--help'],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  assert.match(mainHelp, /veritas init/);
+  assert.match(mainHelp, /veritas shadow run/);
+
+  const reportHelp = execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'report', '--help'],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  assert.match(reportHelp, /veritas report/);
+  assert.match(reportHelp, /--changed-from <ref> --changed-to <ref>/);
+
+  const printHelp = execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'print', 'codex-hook', '--help'],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  assert.match(printHelp, /veritas print codex-hook/);
+  assert.match(printHelp, /--codex-home <path>/);
+
+  const reportBinaryHelp = execFileSync(
+    'node',
+    [fileURLToPath(new URL('../bin/veritas-report.mjs', import.meta.url)), '--help'],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  assert.match(reportBinaryHelp, /veritas-report/);
+});
+
 test('init CLI writes a conservative starter kit and report CLI can use it', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-init-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
 
   const initStdout = execFileSync(
@@ -267,7 +306,7 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'init',
       '--root',
       rootDir,
@@ -282,17 +321,17 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
   assert.equal(initResult.projectName, 'Demo Starter');
   assert.equal(initResult.proofLane, 'npm run test:smoke');
   assert.ok(
-    initResult.generatedFiles.includes('.ai-guidance/repo.adapter.json'),
+    initResult.generatedFiles.includes('.veritas/repo.adapter.json'),
   );
 
   const starterAdapter = readJsonFromAbsolute(
-    join(rootDir, '.ai-guidance/repo.adapter.json'),
+    join(rootDir, '.veritas/repo.adapter.json'),
   );
   const starterPolicyPack = readJsonFromAbsolute(
-    join(rootDir, '.ai-guidance/policy-packs/default.policy-pack.json'),
+    join(rootDir, '.veritas/policy-packs/default.policy-pack.json'),
   );
   const starterTeamProfile = readJsonFromAbsolute(
-    join(rootDir, '.ai-guidance/team/default.team-profile.json'),
+    join(rootDir, '.veritas/team/default.team-profile.json'),
   );
 
   assert.equal(starterAdapter.name, 'demo-starter');
@@ -307,7 +346,7 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'report',
       '--root',
       rootDir,
@@ -326,10 +365,10 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
 });
 
 test('buildEvalRecord links a real evidence artifact to a team profile', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-build-eval-'));
-  mkdirp(join(rootDir, '.ai-guidance/evidence'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-build-eval-'));
+  mkdirp(join(rootDir, '.veritas/evidence'));
   writeFileSync(
-    join(rootDir, '.ai-guidance/evidence/eval-build-smoke.json'),
+    join(rootDir, '.veritas/evidence/eval-build-smoke.json'),
     JSON.stringify(
       {
         framework_version: 1,
@@ -359,7 +398,7 @@ test('buildEvalRecord links a real evidence artifact to a team profile', () => {
 
   const record = buildEvalRecord({
     evidenceRecord,
-    evidencePath: join(rootDir, '.ai-guidance/evidence/eval-build-smoke.json'),
+    evidencePath: join(rootDir, '.veritas/evidence/eval-build-smoke.json'),
     teamProfile,
     options: {
       acceptedWithoutMajorRewrite: true,
@@ -382,15 +421,15 @@ test('buildEvalRecord links a real evidence artifact to a team profile', () => {
   assert.deepEqual(record.evidence.source_scope, ['staged', 'unstaged']);
   assert.equal(
     record.evidence.artifact_path,
-    '.ai-guidance/evidence/eval-build-smoke.json',
+    '.veritas/evidence/eval-build-smoke.json',
   );
   assert.match(record.evidence.artifact_digest, /^[a-f0-9]{64}$/);
 });
 
 test('buildEvalRecord accepts reviewer confidence values from the team profile scale', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-build-eval-scale-'));
-  mkdirp(join(rootDir, '.ai-guidance/evidence'));
-  const evidencePath = join(rootDir, '.ai-guidance/evidence/eval-scale-smoke.json');
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-build-eval-scale-'));
+  mkdirp(join(rootDir, '.veritas/evidence'));
+  const evidencePath = join(rootDir, '.veritas/evidence/eval-scale-smoke.json');
   writeFileSync(
     evidencePath,
     JSON.stringify(
@@ -435,9 +474,9 @@ test('buildEvalRecord accepts reviewer confidence values from the team profile s
 });
 
 test('buildEvalDraft captures prefilled context without fabricating judgment', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-build-eval-draft-'));
-  mkdirp(join(rootDir, '.ai-guidance/evidence'));
-  const evidencePath = join(rootDir, '.ai-guidance/evidence/eval-draft-smoke.json');
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-build-eval-draft-'));
+  mkdirp(join(rootDir, '.veritas/evidence'));
+  const evidencePath = join(rootDir, '.veritas/evidence/eval-draft-smoke.json');
   writeFileSync(
     evidencePath,
     JSON.stringify(
@@ -478,8 +517,40 @@ test('buildEvalDraft captures prefilled context without fabricating judgment', (
   ]);
 });
 
+test('generateEvalRecord accepts programmatic options without CLI array defaults', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-generate-eval-record-'));
+  mkdirp(join(rootDir, '.veritas/evidence'));
+  mkdirp(join(rootDir, '.veritas/team'));
+
+  writeFileSync(
+    join(rootDir, '.veritas/evidence/programmatic-eval.json'),
+    JSON.stringify(readJson('../examples/evidence/work-agent-pass.json'), null, 2),
+  );
+  writeFileSync(
+    join(rootDir, '.veritas/team/default.team-profile.json'),
+    JSON.stringify(readJson('../examples/evals/work-agent-team-profile.json'), null, 2),
+  );
+
+  const result = generateEvalRecord(
+    {
+      rootDir,
+      evidencePath: '.veritas/evidence/programmatic-eval.json',
+      teamProfilePath: '.veritas/team/default.team-profile.json',
+      acceptedWithoutMajorRewrite: true,
+      requiredFollowup: false,
+      reviewerConfidence: 'high',
+      timeToGreenMinutes: 3,
+      overrideCount: 0,
+    },
+    { rootDir },
+  );
+
+  assert.equal(result.record.run_id, 'work-agent-pass-example');
+  assert.equal(result.record.measurements.override_count, 0);
+});
+
 test('working-tree helpers collect staged, unstaged, and untracked files distinctly', () => {
-  const rootDir = initCommittedRepo('ai-guidance-working-tree-');
+  const rootDir = initCommittedRepo('veritas-working-tree-');
   writeFileSync(join(rootDir, 'tracked.txt'), 'before\n');
   commitAll(rootDir, 'Add tracked file');
 
@@ -499,7 +570,7 @@ test('working-tree helpers collect staged, unstaged, and untracked files distinc
 });
 
 test('report input resolution keeps branch-diff and working-tree modes explicit', () => {
-  const rootDir = initCommittedRepo('ai-guidance-report-inputs-');
+  const rootDir = initCommittedRepo('veritas-report-inputs-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   commitAll(rootDir, 'Add package manifest');
 
@@ -527,7 +598,7 @@ test('report input resolution keeps branch-diff and working-tree modes explicit'
 });
 
 test('report CLI can measure the full working tree', () => {
-  const rootDir = initCommittedRepo('ai-guidance-working-tree-cli-');
+  const rootDir = initCommittedRepo('veritas-working-tree-cli-');
   writeBootstrapStarterKit({ rootDir, projectName: 'Working Tree Demo' });
   commitAll(rootDir, 'Bootstrap starter kit');
 
@@ -541,7 +612,7 @@ test('report CLI can measure the full working tree', () => {
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'report',
       '--root',
       rootDir,
@@ -559,7 +630,7 @@ test('report CLI can measure the full working tree', () => {
 });
 
 test('report CLI can emit an empty current-state artifact for a clean working tree', () => {
-  const rootDir = initCommittedRepo('ai-guidance-working-tree-clean-');
+  const rootDir = initCommittedRepo('veritas-working-tree-clean-');
   writeBootstrapStarterKit({ rootDir, projectName: 'Clean Working Tree Demo' });
   commitAll(rootDir, 'Bootstrap starter kit');
 
@@ -568,7 +639,7 @@ test('report CLI can emit an empty current-state artifact for a clean working tr
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'report',
       '--root',
       rootDir,
@@ -588,7 +659,7 @@ test('report CLI can emit an empty current-state artifact for a clean working tr
 });
 
 test('report CLI preserves branch-diff behavior', () => {
-  const rootDir = initCommittedRepo('ai-guidance-branch-diff-cli-');
+  const rootDir = initCommittedRepo('veritas-branch-diff-cli-');
   writeBootstrapStarterKit({ rootDir, projectName: 'Branch Diff Demo' });
   commitAll(rootDir, 'Bootstrap starter kit');
 
@@ -599,7 +670,7 @@ test('report CLI preserves branch-diff behavior', () => {
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'report',
       '--root',
       rootDir,
@@ -617,15 +688,15 @@ test('report CLI preserves branch-diff behavior', () => {
   assert.equal(parsed.source_kind, 'branch-diff');
   assert.deepEqual(parsed.source_scope, ['changed-from:HEAD~1', 'changed-to:HEAD']);
   assert.deepEqual(parsed.files, [
-    '.ai-guidance/README.md',
-    '.ai-guidance/policy-packs/default.policy-pack.json',
-    '.ai-guidance/repo.adapter.json',
-    '.ai-guidance/team/default.team-profile.json',
+    '.veritas/README.md',
+    '.veritas/policy-packs/default.policy-pack.json',
+    '.veritas/repo.adapter.json',
+    '.veritas/team/default.team-profile.json',
   ]);
 });
 
 test('eval record CLI writes a repo-local shadow eval artifact from report output', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-cli-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-cli-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -633,7 +704,7 @@ test('eval record CLI writes a repo-local shadow eval artifact from report outpu
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'init',
       '--root',
       rootDir,
@@ -648,7 +719,7 @@ test('eval record CLI writes a repo-local shadow eval artifact from report outpu
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'report',
       '--root',
       rootDir,
@@ -665,7 +736,7 @@ test('eval record CLI writes a repo-local shadow eval artifact from report outpu
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'eval',
       'record',
       '--root',
@@ -690,7 +761,7 @@ test('eval record CLI writes a repo-local shadow eval artifact from report outpu
   const evalResult = JSON.parse(evalStdout);
   const evalArtifact = readJsonFromAbsolute(join(rootDir, evalResult.artifactPath));
 
-  assert.equal(evalResult.artifactPath, '.ai-guidance/evals/eval-cli-smoke.json');
+  assert.equal(evalResult.artifactPath, '.veritas/evals/eval-cli-smoke.json');
   assert.equal(evalResult.run_id, 'eval-cli-smoke');
   assert.equal(evalResult.team_profile_id, 'eval-demo-default');
   assert.equal(evalResult.mode, 'shadow');
@@ -703,7 +774,7 @@ test('eval record CLI writes a repo-local shadow eval artifact from report outpu
 });
 
 test('eval draft CLI writes a repo-local draft artifact and suggested next step', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-draft-cli-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-draft-cli-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -711,7 +782,7 @@ test('eval draft CLI writes a repo-local draft artifact and suggested next step'
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'init',
       '--root',
       rootDir,
@@ -726,7 +797,7 @@ test('eval draft CLI writes a repo-local draft artifact and suggested next step'
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'report',
       '--root',
       rootDir,
@@ -743,7 +814,7 @@ test('eval draft CLI writes a repo-local draft artifact and suggested next step'
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'eval',
       'draft',
       '--root',
@@ -756,8 +827,8 @@ test('eval draft CLI writes a repo-local draft artifact and suggested next step'
   const draftResult = JSON.parse(draftStdout);
   const draftArtifact = readJsonFromAbsolute(join(rootDir, draftResult.artifactPath));
 
-  assert.equal(draftResult.artifactPath, '.ai-guidance/eval-drafts/eval-draft-cli-smoke.json');
-  assert.match(draftResult.suggestedRecordCommand, /ai-guidance eval record --draft/);
+  assert.equal(draftResult.artifactPath, '.veritas/eval-drafts/eval-draft-cli-smoke.json');
+  assert.match(draftResult.suggestedRecordCommand, /veritas eval record --draft/);
   assert.deepEqual(draftArtifact.missing_confirmation_fields, [
     'accepted_without_major_rewrite',
     'required_followup',
@@ -766,7 +837,7 @@ test('eval draft CLI writes a repo-local draft artifact and suggested next step'
 });
 
 test('eval record CLI can consume a draft artifact', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-record-from-draft-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-record-from-draft-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -774,7 +845,7 @@ test('eval record CLI can consume a draft artifact', () => {
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'init',
       '--root',
       rootDir,
@@ -789,7 +860,7 @@ test('eval record CLI can consume a draft artifact', () => {
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'report',
       '--root',
       rootDir,
@@ -806,7 +877,7 @@ test('eval record CLI can consume a draft artifact', () => {
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'eval',
       'draft',
       '--root',
@@ -827,7 +898,7 @@ test('eval record CLI can consume a draft artifact', () => {
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'eval',
       'record',
       '--root',
@@ -853,7 +924,7 @@ test('eval record CLI can consume a draft artifact', () => {
 });
 
 test('eval record CLI rejects draft artifacts outside the repo-local draft area', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-record-external-draft-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-record-external-draft-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -861,7 +932,7 @@ test('eval record CLI rejects draft artifacts outside the repo-local draft area'
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'init',
       '--root',
       rootDir,
@@ -876,7 +947,7 @@ test('eval record CLI rejects draft artifacts outside the repo-local draft area'
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'report',
       '--root',
       rootDir,
@@ -892,7 +963,7 @@ test('eval record CLI rejects draft artifacts outside the repo-local draft area'
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'eval',
       'draft',
       '--root',
@@ -916,7 +987,7 @@ test('eval record CLI rejects draft artifacts outside the repo-local draft area'
         [
           'exec',
           '--',
-          'ai-guidance',
+          'veritas',
           'eval',
           'record',
           '--root',
@@ -932,12 +1003,12 @@ test('eval record CLI rejects draft artifacts outside the repo-local draft area'
         ],
         { cwd: frameworkRootDir, encoding: 'utf8' },
       ),
-    /repo-local draft artifact inside \.ai-guidance\/eval-drafts/,
+    /repo-local draft artifact inside \.veritas\/eval-drafts/,
   );
 });
 
 test('eval record CLI rejects draft/team-profile rebinding', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-record-draft-profile-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-record-draft-profile-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -945,7 +1016,7 @@ test('eval record CLI rejects draft/team-profile rebinding', () => {
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'init',
       '--root',
       rootDir,
@@ -954,7 +1025,7 @@ test('eval record CLI rejects draft/team-profile rebinding', () => {
     ],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
-  const altTeamProfilePath = join(rootDir, '.ai-guidance/team/alt.team-profile.json');
+  const altTeamProfilePath = join(rootDir, '.veritas/team/alt.team-profile.json');
   writeFileSync(
     altTeamProfilePath,
     JSON.stringify(
@@ -985,7 +1056,7 @@ test('eval record CLI rejects draft/team-profile rebinding', () => {
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'report',
       '--root',
       rootDir,
@@ -1001,7 +1072,7 @@ test('eval record CLI rejects draft/team-profile rebinding', () => {
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'eval',
       'draft',
       '--root',
@@ -1020,7 +1091,7 @@ test('eval record CLI rejects draft/team-profile rebinding', () => {
         [
           'exec',
           '--',
-          'ai-guidance',
+          'veritas',
           'eval',
           'record',
           '--root',
@@ -1028,7 +1099,7 @@ test('eval record CLI rejects draft/team-profile rebinding', () => {
           '--draft',
           draftResult.artifactPath,
           '--team-profile',
-          '.ai-guidance/team/alt.team-profile.json',
+          '.veritas/team/alt.team-profile.json',
           '--accepted-without-major-rewrite',
           'true',
           '--required-followup',
@@ -1043,7 +1114,7 @@ test('eval record CLI rejects draft/team-profile rebinding', () => {
 });
 
 test('eval record CLI supports explicit team-profile and output paths', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-cli-explicit-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-cli-explicit-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   const initResult = writeBootstrapStarterKit({ rootDir, projectName: 'Eval Explicit Demo' });
 
@@ -1052,7 +1123,7 @@ test('eval record CLI supports explicit team-profile and output paths', () => {
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'report',
       '--root',
       rootDir,
@@ -1069,7 +1140,7 @@ test('eval record CLI supports explicit team-profile and output paths', () => {
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'eval',
       'record',
       '--root',
@@ -1079,7 +1150,7 @@ test('eval record CLI supports explicit team-profile and output paths', () => {
       '--team-profile',
       initResult.generatedFiles.find((path) => path.endsWith('default.team-profile.json')),
       '--output',
-      '.ai-guidance/evals/custom-shadow.json',
+      '.veritas/evals/custom-shadow.json',
       '--accepted-without-major-rewrite',
       'false',
       '--required-followup',
@@ -1091,7 +1162,7 @@ test('eval record CLI supports explicit team-profile and output paths', () => {
       '--override-count',
       '2',
       '--false-positive-rule',
-      'required-guidance-artifacts',
+      'required-veritas-artifacts',
       '--missed-issue',
       'Return-package assembly still needed manual review.',
     ],
@@ -1099,12 +1170,12 @@ test('eval record CLI supports explicit team-profile and output paths', () => {
   );
   const evalResult = JSON.parse(evalStdout);
 
-  assert.equal(evalResult.artifactPath, '.ai-guidance/evals/custom-shadow.json');
+  assert.equal(evalResult.artifactPath, '.veritas/evals/custom-shadow.json');
   assert.equal(evalResult.outcome.accepted_without_major_rewrite, false);
   assert.equal(evalResult.outcome.required_followup, true);
   assert.equal(evalResult.outcome.reviewer_confidence, 'unknown');
   assert.deepEqual(evalResult.measurements.false_positive_rules, [
-    'required-guidance-artifacts',
+    'required-veritas-artifacts',
   ]);
   assert.deepEqual(evalResult.measurements.missed_issues, [
     'Return-package assembly still needed manual review.',
@@ -1112,7 +1183,7 @@ test('eval record CLI supports explicit team-profile and output paths', () => {
 });
 
 test('eval record CLI rejects evidence outside the repo-local evidence area', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-cli-invalid-evidence-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-cli-invalid-evidence-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   writeBootstrapStarterKit({ rootDir, projectName: 'Eval Invalid Evidence Demo' });
   mkdirp(join(rootDir, 'tmp'));
@@ -1134,7 +1205,7 @@ test('eval record CLI rejects evidence outside the repo-local evidence area', ()
         [
           'exec',
           '--',
-          'ai-guidance',
+          'veritas',
           'eval',
           'record',
           '--root',
@@ -1154,12 +1225,12 @@ test('eval record CLI rejects evidence outside the repo-local evidence area', ()
         ],
         { cwd: frameworkRootDir, encoding: 'utf8' },
       ),
-    /repo-local evidence artifact inside \.ai-guidance\/evidence/,
+    /repo-local evidence artifact inside \.veritas\/evidence/,
   );
 });
 
 test('eval record CLI refuses to overwrite an existing eval artifact without force', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-eval-cli-overwrite-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-cli-overwrite-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   writeBootstrapStarterKit({ rootDir, projectName: 'Eval Overwrite Demo' });
 
@@ -1168,7 +1239,7 @@ test('eval record CLI refuses to overwrite an existing eval artifact without for
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'report',
       '--root',
       rootDir,
@@ -1182,7 +1253,7 @@ test('eval record CLI refuses to overwrite an existing eval artifact without for
   const baseArgs = [
     'exec',
     '--',
-    'ai-guidance',
+    'veritas',
     'eval',
     'record',
     '--root',
@@ -1213,7 +1284,7 @@ test('eval record CLI refuses to overwrite an existing eval artifact without for
 });
 
 test('shadow run CLI stops at report and draft when judgment fields are missing', () => {
-  const rootDir = initCommittedRepo('ai-guidance-shadow-run-draft-');
+  const rootDir = initCommittedRepo('veritas-shadow-run-draft-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -1221,7 +1292,7 @@ test('shadow run CLI stops at report and draft when judgment fields are missing'
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'init',
       '--root',
       rootDir,
@@ -1235,7 +1306,7 @@ test('shadow run CLI stops at report and draft when judgment fields are missing'
 
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'ai-guidance', 'shadow', 'run', '--root', rootDir],
+    ['exec', '--', 'veritas', 'shadow', 'run', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   const parsed = JSON.parse(stdout);
@@ -1243,11 +1314,11 @@ test('shadow run CLI stops at report and draft when judgment fields are missing'
   assert.equal(parsed.mode, 'report-and-draft');
   assert.equal(parsed.proofRan, true);
   assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
-  assert.match(parsed.suggestedEvalCommand, /ai-guidance eval record --draft/);
+  assert.match(parsed.suggestedEvalCommand, /veritas eval record --draft/);
 });
 
 test('shadow run CLI can complete the full draft-and-record path', () => {
-  const rootDir = initCommittedRepo('ai-guidance-shadow-run-record-');
+  const rootDir = initCommittedRepo('veritas-shadow-run-record-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -1255,7 +1326,7 @@ test('shadow run CLI can complete the full draft-and-record path', () => {
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'init',
       '--root',
       rootDir,
@@ -1272,7 +1343,7 @@ test('shadow run CLI can complete the full draft-and-record path', () => {
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'shadow',
       'run',
       '--root',
@@ -1295,7 +1366,7 @@ test('shadow run CLI can complete the full draft-and-record path', () => {
 });
 
 test('shadow run CLI rejects incomplete branch-diff refs', () => {
-  const rootDir = initCommittedRepo('ai-guidance-shadow-run-diff-');
+  const rootDir = initCommittedRepo('veritas-shadow-run-diff-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -1303,7 +1374,7 @@ test('shadow run CLI rejects incomplete branch-diff refs', () => {
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'init',
       '--root',
       rootDir,
@@ -1322,7 +1393,7 @@ test('shadow run CLI rejects incomplete branch-diff refs', () => {
         [
           'exec',
           '--',
-          'ai-guidance',
+          'veritas',
           'shadow',
           'run',
           '--root',
@@ -1338,7 +1409,7 @@ test('shadow run CLI rejects incomplete branch-diff refs', () => {
 });
 
 test('shadow run CLI executes every required proof lane from the adapter', () => {
-  const rootDir = initCommittedRepo('ai-guidance-shadow-run-multi-proof-');
+  const rootDir = initCommittedRepo('veritas-shadow-run-multi-proof-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -1346,7 +1417,7 @@ test('shadow run CLI executes every required proof lane from the adapter', () =>
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'init',
       '--root',
       rootDir,
@@ -1358,7 +1429,7 @@ test('shadow run CLI executes every required proof lane from the adapter', () =>
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
 
-  const adapterPath = join(rootDir, '.ai-guidance/repo.adapter.json');
+  const adapterPath = join(rootDir, '.veritas/repo.adapter.json');
   const adapter = readJsonFromAbsolute(adapterPath);
   adapter.evidence.requiredProofLanes = [
     'node -e "process.exit(0)"',
@@ -1368,7 +1439,7 @@ test('shadow run CLI executes every required proof lane from the adapter', () =>
 
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'ai-guidance', 'shadow', 'run', '--root', rootDir],
+    ['exec', '--', 'veritas', 'shadow', 'run', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   const parsed = JSON.parse(stdout);
@@ -1378,7 +1449,7 @@ test('shadow run CLI executes every required proof lane from the adapter', () =>
 });
 
 test('print package-scripts returns conservative suggestions from inferred proof lane', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-print-scripts-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-print-scripts-'));
   writeFileSync(
     join(rootDir, 'package.json'),
     JSON.stringify(
@@ -1395,23 +1466,23 @@ test('print package-scripts returns conservative suggestions from inferred proof
 
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'ai-guidance', 'print', 'package-scripts', '--root', rootDir],
+    ['exec', '--', 'veritas', 'print', 'package-scripts', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   const parsed = JSON.parse(stdout);
 
   assert.equal(parsed.proofLane, 'npm run verify');
   assert.equal(parsed.repoInsights.baseRef, 'main');
-  assert.equal(parsed.scripts['guidance:init'], 'npm exec -- ai-guidance init');
-  assert.equal(parsed.scripts['guidance:proof'], 'npm run verify');
+  assert.equal(parsed.scripts['veritas:init'], 'npm exec -- veritas init');
+  assert.equal(parsed.scripts['veritas:proof'], 'npm run verify');
   assert.equal(
-    parsed.scripts['guidance:report:working-tree'],
-    'npm exec -- ai-guidance report --working-tree',
+    parsed.scripts['veritas:report:working-tree'],
+    'npm exec -- veritas report --working-tree',
   );
-  assert.equal(parsed.scripts['guidance:eval'], 'npm exec -- ai-guidance shadow run');
+  assert.equal(parsed.scripts['veritas:eval'], 'npm exec -- veritas shadow run');
   assert.equal(
-    parsed.scripts['guidance:report:diff'],
-    'npm exec -- ai-guidance report --changed-from main --changed-to HEAD',
+    parsed.scripts['veritas:report:diff'],
+    'npm exec -- veritas report --changed-from main --changed-to HEAD',
   );
 });
 
@@ -1421,14 +1492,14 @@ test('print ci-snippet returns a copy-paste starter snippet', () => {
     baseRef: 'main',
   });
   assert.match(snippet, /Run project proof lane/);
-  assert.match(snippet, /npm exec -- ai-guidance report --changed-from main --changed-to HEAD/);
+  assert.match(snippet, /npm exec -- veritas report --changed-from main --changed-to HEAD/);
 
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-print-ci-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-print-ci-'));
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { verify: 'turbo run verify' } }, null, 2));
 
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'ai-guidance', 'print', 'ci-snippet', '--root', rootDir],
+    ['exec', '--', 'veritas', 'print', 'ci-snippet', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   const parsed = JSON.parse(stdout);
@@ -1441,60 +1512,60 @@ test('print ci-snippet returns a copy-paste starter snippet', () => {
 test('print git-hook returns a tracked post-commit adapter', () => {
   const hookBody = buildSuggestedGitHook({ hook: 'post-commit' });
   assert.match(hookBody, /^#!\/bin\/sh/m);
-  assert.match(hookBody, /ai-guidance shadow run --changed-from HEAD~1 --changed-to HEAD/);
+  assert.match(hookBody, /veritas shadow run --changed-from HEAD~1 --changed-to HEAD/);
 
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-print-hook-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-print-hook-'));
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'ai-guidance', 'print', 'git-hook', '--root', rootDir],
+    ['exec', '--', 'veritas', 'print', 'git-hook', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   const parsed = JSON.parse(stdout);
 
   assert.equal(parsed.hook, 'post-commit');
   assert.equal(parsed.suggestedHooksPath, '.githooks');
-  assert.match(parsed.hookBody, /AI_GUIDANCE_HOOK_SKIP/);
+  assert.match(parsed.hookBody, /VERITAS_HOOK_SKIP/);
 });
 
 test('print runtime-hook returns a tracked agent-runtime adapter', () => {
   const hookBody = buildSuggestedRuntimeHook();
   assert.match(hookBody, /^#!\/bin\/sh/m);
-  assert.match(hookBody, /ai-guidance shadow run --working-tree/);
+  assert.match(hookBody, /veritas shadow run --working-tree/);
 
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-print-runtime-hook-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-print-runtime-hook-'));
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'ai-guidance', 'print', 'runtime-hook', '--root', rootDir],
+    ['exec', '--', 'veritas', 'print', 'runtime-hook', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   const parsed = JSON.parse(stdout);
 
-  assert.equal(parsed.outputPath, '.ai-guidance/hooks/agent-runtime.sh');
-  assert.equal(parsed.defaultInvocation, '.ai-guidance/hooks/agent-runtime.sh');
-  assert.match(parsed.hookBody, /AI_GUIDANCE_HOOK_SKIP/);
+  assert.equal(parsed.outputPath, '.veritas/hooks/agent-runtime.sh');
+  assert.equal(parsed.defaultInvocation, '.veritas/hooks/agent-runtime.sh');
+  assert.match(parsed.hookBody, /VERITAS_HOOK_SKIP/);
 });
 
 test('print codex-hook returns a tracked codex hooks adapter', () => {
   const hookConfig = buildSuggestedCodexHookConfig();
-  assert.equal(hookConfig.hooks.Stop[0].hooks[0].command, '.ai-guidance/hooks/agent-runtime.sh');
+  assert.equal(hookConfig.hooks.Stop[0].hooks[0].command, '.veritas/hooks/agent-runtime.sh');
 
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-print-codex-hook-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-print-codex-hook-'));
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'ai-guidance', 'print', 'codex-hook', '--root', rootDir],
+    ['exec', '--', 'veritas', 'print', 'codex-hook', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   const parsed = JSON.parse(stdout);
 
-  assert.equal(parsed.outputPath, '.ai-guidance/runtime/codex-hooks.json');
-  assert.equal(parsed.hookConfig.hooks.Stop[0].hooks[0].command, '.ai-guidance/hooks/agent-runtime.sh');
+  assert.equal(parsed.outputPath, '.veritas/runtime/codex-hooks.json');
+  assert.equal(parsed.hookConfig.hooks.Stop[0].hooks[0].command, '.veritas/hooks/agent-runtime.sh');
   assert.equal(parsed.targetStatus.resolvedTargetPath, null);
   assert.equal(parsed.targetStatus.targetExists, false);
   assert.equal(parsed.targetStatus.adapterInstalled, false);
 });
 
 test('print codex-hook can preview a Codex home target and install state', () => {
-  const rootDir = initCommittedRepo('ai-guidance-print-codex-hook-home-');
+  const rootDir = initCommittedRepo('veritas-print-codex-hook-home-');
   const codexHome = join(rootDir, 'tmp-codex-home');
   mkdirp(codexHome);
   writeFileSync(
@@ -1508,7 +1579,7 @@ test('print codex-hook can preview a Codex home target and install state', () =>
               hooks: [
                 {
                   type: 'command',
-                  command: '.ai-guidance/hooks/agent-runtime.sh',
+                  command: '.veritas/hooks/agent-runtime.sh',
                 },
               ],
             },
@@ -1525,7 +1596,7 @@ test('print codex-hook can preview a Codex home target and install state', () =>
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'print',
       'codex-hook',
       '--root',
@@ -1544,7 +1615,7 @@ test('print codex-hook can preview a Codex home target and install state', () =>
 });
 
 test('print codex-hook reports an absolute external Codex home path clearly', () => {
-  const rootDir = initCommittedRepo('ai-guidance-print-codex-hook-external-');
+  const rootDir = initCommittedRepo('veritas-print-codex-hook-external-');
   const codexHome = mkdtempSync(join(tmpdir(), 'external-codex-home-'));
   writeFileSync(
     join(codexHome, 'hooks.json'),
@@ -1556,7 +1627,7 @@ test('print codex-hook reports an absolute external Codex home path clearly', ()
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'print',
       'codex-hook',
       '--root',
@@ -1573,7 +1644,7 @@ test('print codex-hook reports an absolute external Codex home path clearly', ()
 });
 
 test('apply package-scripts writes the suggested guidance scripts into package.json', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-scripts-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-scripts-'));
   writeFileSync(
     join(rootDir, 'package.json'),
     JSON.stringify({ scripts: { test: 'vitest run' } }, null, 2),
@@ -1582,7 +1653,7 @@ test('apply package-scripts writes the suggested guidance scripts into package.j
 
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'ai-guidance', 'apply', 'package-scripts', '--root', rootDir],
+    ['exec', '--', 'veritas', 'apply', 'package-scripts', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   const parsed = JSON.parse(stdout);
@@ -1590,21 +1661,21 @@ test('apply package-scripts writes the suggested guidance scripts into package.j
 
   assert.equal(parsed.packageJsonPath, 'package.json');
   assert.equal(parsed.baseRef, 'main');
-  assert.equal(pkg.scripts['guidance:init'], 'npm exec -- ai-guidance init');
+  assert.equal(pkg.scripts['veritas:init'], 'npm exec -- veritas init');
   assert.equal(
-    pkg.scripts['guidance:report:diff'],
-    'npm exec -- ai-guidance report --changed-from main --changed-to HEAD',
+    pkg.scripts['veritas:report:diff'],
+    'npm exec -- veritas report --changed-from main --changed-to HEAD',
   );
 });
 
 test('apply package-scripts surfaces script conflicts without force', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-conflict-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-conflict-'));
   writeFileSync(
     join(rootDir, 'package.json'),
     JSON.stringify(
       {
         scripts: {
-          'guidance:proof': 'echo custom',
+          'veritas:proof': 'echo custom',
         },
       },
       null,
@@ -1619,29 +1690,29 @@ test('apply package-scripts surfaces script conflicts without force', () => {
         proofLane: 'npm test',
         baseRef: '<base-ref>',
       }),
-    /Refusing to overwrite existing script guidance:proof/,
+    /Refusing to overwrite existing script veritas:proof/,
   );
 });
 
 test('apply ci-snippet writes a stable snippet file', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-ci-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-ci-'));
   const result = applyCiSnippet({
     rootDir,
     proofLane: 'npm run verify',
     baseRef: 'main',
   });
   const contents = readFileSync(
-    join(rootDir, '.ai-guidance/snippets/ci-snippet.yml'),
+    join(rootDir, '.veritas/snippets/ci-snippet.yml'),
     'utf8',
   );
 
-  assert.equal(result.outputPath, '.ai-guidance/snippets/ci-snippet.yml');
+  assert.equal(result.outputPath, '.veritas/snippets/ci-snippet.yml');
   assert.match(contents, /run: npm run verify/);
   assert.match(contents, /--changed-from main --changed-to HEAD/);
 });
 
 test('apply git-hook writes a tracked executable hook file', () => {
-  const rootDir = initCommittedRepo('ai-guidance-apply-hook-');
+  const rootDir = initCommittedRepo('veritas-apply-hook-');
   const result = applyGitHook({
     rootDir,
     hook: 'post-commit',
@@ -1650,11 +1721,11 @@ test('apply git-hook writes a tracked executable hook file', () => {
 
   assert.equal(result.outputPath, '.githooks/post-commit');
   assert.equal(result.hook, 'post-commit');
-  assert.match(contents, /ai-guidance shadow run --changed-from HEAD~1 --changed-to HEAD/);
+  assert.match(contents, /veritas shadow run --changed-from HEAD~1 --changed-to HEAD/);
 });
 
 test('apply git-hook can configure the local hooks path explicitly', () => {
-  const rootDir = initCommittedRepo('ai-guidance-apply-hook-config-');
+  const rootDir = initCommittedRepo('veritas-apply-hook-config-');
   const result = applyGitHook({
     rootDir,
     hook: 'post-commit',
@@ -1671,18 +1742,18 @@ test('apply git-hook can configure the local hooks path explicitly', () => {
 });
 
 test('apply runtime-hook writes a tracked executable runtime hook file', () => {
-  const rootDir = initCommittedRepo('ai-guidance-apply-runtime-hook-');
+  const rootDir = initCommittedRepo('veritas-apply-runtime-hook-');
   const result = applyRuntimeHook({
     rootDir,
   });
-  const contents = readFileSync(join(rootDir, '.ai-guidance/hooks/agent-runtime.sh'), 'utf8');
+  const contents = readFileSync(join(rootDir, '.veritas/hooks/agent-runtime.sh'), 'utf8');
 
-  assert.equal(result.outputPath, '.ai-guidance/hooks/agent-runtime.sh');
-  assert.match(contents, /ai-guidance shadow run --working-tree/);
+  assert.equal(result.outputPath, '.veritas/hooks/agent-runtime.sh');
+  assert.match(contents, /veritas shadow run --working-tree/);
 });
 
 test('apply codex-hook writes a tracked codex hooks artifact and can merge it', () => {
-  const rootDir = initCommittedRepo('ai-guidance-apply-codex-hook-');
+  const rootDir = initCommittedRepo('veritas-apply-codex-hook-');
   const targetHooksFile = join(rootDir, 'tmp-hooks.json');
   writeFileSync(
     targetHooksFile,
@@ -1699,7 +1770,7 @@ test('apply codex-hook writes a tracked codex hooks artifact and can merge it', 
             {
               matcher: '.*',
               hooks: [
-                { type: 'command', command: '.ai-guidance/hooks/agent-runtime.sh' },
+                { type: 'command', command: '.veritas/hooks/agent-runtime.sh' },
                 { type: 'command', command: 'echo keep-me' },
               ],
             },
@@ -1715,19 +1786,19 @@ test('apply codex-hook writes a tracked codex hooks artifact and can merge it', 
     rootDir,
     targetHooksFile,
   });
-  const contents = readJsonFromAbsolute(join(rootDir, '.ai-guidance/runtime/codex-hooks.json'));
+  const contents = readJsonFromAbsolute(join(rootDir, '.veritas/runtime/codex-hooks.json'));
   const merged = readJsonFromAbsolute(targetHooksFile);
 
-  assert.equal(result.outputPath, '.ai-guidance/runtime/codex-hooks.json');
+  assert.equal(result.outputPath, '.veritas/runtime/codex-hooks.json');
   assert.equal(result.mergedTargetPath, 'tmp-hooks.json');
-  assert.equal(contents.hooks.Stop[0].hooks[0].command, '.ai-guidance/hooks/agent-runtime.sh');
+  assert.equal(contents.hooks.Stop[0].hooks[0].command, '.veritas/hooks/agent-runtime.sh');
   assert.equal(merged.hooks.SessionStart[0].hooks[0].command, 'echo existing');
   assert.equal(merged.hooks.Stop[0].hooks[0].command, 'echo keep-me');
-  assert.equal(merged.hooks.Stop[1].hooks[0].command, '.ai-guidance/hooks/agent-runtime.sh');
+  assert.equal(merged.hooks.Stop[1].hooks[0].command, '.veritas/hooks/agent-runtime.sh');
 });
 
 test('apply codex-hook can resolve a Codex home into hooks.json', () => {
-  const rootDir = initCommittedRepo('ai-guidance-apply-codex-home-');
+  const rootDir = initCommittedRepo('veritas-apply-codex-home-');
   const codexHome = join(rootDir, 'tmp-codex-home');
   const targetHooksFile = join(codexHome, 'hooks.json');
   mkdirp(codexHome);
@@ -1757,11 +1828,11 @@ test('apply codex-hook can resolve a Codex home into hooks.json', () => {
 
   assert.equal(result.mergedTargetPath, 'tmp-codex-home/hooks.json');
   assert.equal(merged.hooks.SessionStart[0].hooks[0].command, 'echo existing');
-  assert.equal(merged.hooks.Stop[0].hooks[0].command, '.ai-guidance/hooks/agent-runtime.sh');
+  assert.equal(merged.hooks.Stop[0].hooks[0].command, '.veritas/hooks/agent-runtime.sh');
 });
 
 test('apply codex-hook reports an absolute external Codex home target clearly', () => {
-  const rootDir = initCommittedRepo('ai-guidance-apply-codex-home-external-');
+  const rootDir = initCommittedRepo('veritas-apply-codex-home-external-');
   const codexHome = mkdtempSync(join(tmpdir(), 'external-codex-home-'));
   const targetHooksFile = join(codexHome, 'hooks.json');
   writeFileSync(targetHooksFile, JSON.stringify({ hooks: {} }, null, 2));
@@ -1775,7 +1846,7 @@ test('apply codex-hook reports an absolute external Codex home target clearly', 
 });
 
 test('apply git-hook rejects configured installs with a non-discoverable filename', () => {
-  const rootDir = initCommittedRepo('ai-guidance-apply-hook-bad-name-');
+  const rootDir = initCommittedRepo('veritas-apply-hook-bad-name-');
 
   assert.throws(
     () =>
@@ -1790,7 +1861,7 @@ test('apply git-hook rejects configured installs with a non-discoverable filenam
 });
 
 test('apply ci-snippet rejects paths outside the reviewable snippet area', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-ci-outside-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-ci-outside-'));
 
   assert.throws(
     () =>
@@ -1798,12 +1869,12 @@ test('apply ci-snippet rejects paths outside the reviewable snippet area', () =>
         rootDir,
         outputPath: '../outside.yml',
       }),
-    /only supports writing inside \.ai-guidance\/snippets\//,
+    /only supports writing inside \.veritas\/snippets\//,
   );
 });
 
 test('apply git-hook rejects unsupported hook kinds', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-hook-unsupported-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-hook-unsupported-'));
 
   assert.throws(
     () =>
@@ -1824,7 +1895,7 @@ test('apply git-hook rejects unsupported hook kinds', () => {
 });
 
 test('apply runtime-hook rejects paths outside the reviewable hook area', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-runtime-hook-outside-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-runtime-hook-outside-'));
 
   assert.throws(
     () =>
@@ -1832,12 +1903,12 @@ test('apply runtime-hook rejects paths outside the reviewable hook area', () => 
         rootDir,
         outputPath: '../outside.sh',
       }),
-    /only supports writing inside \.ai-guidance\/hooks\//,
+    /only supports writing inside \.veritas\/hooks\//,
   );
 });
 
 test('apply codex-hook rejects paths outside the reviewable codex hook area', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-codex-hook-outside-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-codex-hook-outside-'));
 
   assert.throws(
     () =>
@@ -1845,12 +1916,12 @@ test('apply codex-hook rejects paths outside the reviewable codex hook area', ()
         rootDir,
         outputPath: '../outside.json',
       }),
-    /only supports writing inside \.ai-guidance\/runtime\//,
+    /only supports writing inside \.veritas\/runtime\//,
   );
 });
 
 test('apply codex-hook rejects conflicting target hooks path and Codex home inputs', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-apply-codex-hook-conflict-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-codex-hook-conflict-'));
 
   assert.throws(
     () =>
@@ -1864,7 +1935,7 @@ test('apply codex-hook rejects conflicting target hooks path and Codex home inpu
 });
 
 test('runtime status reports missing adapter state and next commands', () => {
-  const rootDir = initCommittedRepo('ai-guidance-runtime-status-missing-');
+  const rootDir = initCommittedRepo('veritas-runtime-status-missing-');
   const status = inspectRuntimeAdapterStatus(rootDir);
 
   assert.equal(status.gitHook.exists, false);
@@ -1872,18 +1943,18 @@ test('runtime status reports missing adapter state and next commands', () => {
   assert.equal(status.codexArtifact.exists, false);
   assert.equal(status.codexTarget.checked, false);
   assert.equal(status.codexTarget.resolvedTargetPath, null);
-  assert.ok(status.nextCommands.includes('npm exec -- ai-guidance apply git-hook --configure-git'));
-  assert.ok(status.nextCommands.includes('npm exec -- ai-guidance apply runtime-hook'));
-  assert.ok(status.nextCommands.includes('npm exec -- ai-guidance print codex-hook'));
+  assert.ok(status.nextCommands.includes('npm exec -- veritas apply git-hook --configure-git'));
+  assert.ok(status.nextCommands.includes('npm exec -- veritas apply runtime-hook'));
+  assert.ok(status.nextCommands.includes('npm exec -- veritas print codex-hook'));
   assert.ok(
     status.nextCommands.includes(
-      'npm exec -- ai-guidance print codex-hook --codex-home /path/to/.codex',
+      'npm exec -- veritas print codex-hook --codex-home /path/to/.codex',
     ),
   );
 });
 
 test('runtime status reports installed adapter state including codex target', () => {
-  const rootDir = initCommittedRepo('ai-guidance-runtime-status-installed-');
+  const rootDir = initCommittedRepo('veritas-runtime-status-installed-');
   applyGitHook({ rootDir, configureGit: true });
   applyRuntimeHook({ rootDir });
   const codexHome = join(rootDir, 'tmp-codex-home');
@@ -1904,11 +1975,11 @@ test('runtime status reports installed adapter state including codex target', ()
 });
 
 test('runtime status recommends repair commands for non-executable managed hooks', () => {
-  const rootDir = initCommittedRepo('ai-guidance-runtime-status-broken-hooks-');
+  const rootDir = initCommittedRepo('veritas-runtime-status-broken-hooks-');
   applyGitHook({ rootDir, configureGit: true });
   applyRuntimeHook({ rootDir });
   chmodSync(join(rootDir, '.githooks/post-commit'), 0o644);
-  chmodSync(join(rootDir, '.ai-guidance/hooks/agent-runtime.sh'), 0o644);
+  chmodSync(join(rootDir, '.veritas/hooks/agent-runtime.sh'), 0o644);
 
   const status = inspectRuntimeAdapterStatus(rootDir);
 
@@ -1918,16 +1989,16 @@ test('runtime status recommends repair commands for non-executable managed hooks
   assert.equal(status.runtimeHook.executable, false);
   assert.ok(
     status.nextCommands.includes(
-      'npm exec -- ai-guidance apply git-hook --configure-git --force',
+      'npm exec -- veritas apply git-hook --configure-git --force',
     ),
   );
   assert.ok(
-    status.nextCommands.includes('npm exec -- ai-guidance apply runtime-hook --force'),
+    status.nextCommands.includes('npm exec -- veritas apply runtime-hook --force'),
   );
 });
 
 test('runtime status recommends forceful codex repair when the tracked artifact exists but target is stale', () => {
-  const rootDir = initCommittedRepo('ai-guidance-runtime-status-codex-repair-');
+  const rootDir = initCommittedRepo('veritas-runtime-status-codex-repair-');
   const codexHome = join(rootDir, 'tmp-codex-home');
   mkdirp(codexHome);
   writeFileSync(join(codexHome, 'hooks.json'), JSON.stringify({ hooks: {} }, null, 2));
@@ -1957,23 +2028,23 @@ test('runtime status recommends forceful codex repair when the tracked artifact 
   assert.equal(status.codexTarget.adapterInstalled, false);
   assert.ok(
     status.nextCommands.includes(
-      `npm exec -- ai-guidance apply codex-hook --codex-home ${codexHome.replaceAll('\\', '/')} --force`,
+      `npm exec -- veritas apply codex-hook --codex-home ${codexHome.replaceAll('\\', '/')} --force`,
     ),
   );
 });
 
 test('generated post-commit hook runs successfully after the initial commit boundary', () => {
-  const rootDir = initCommittedRepo('ai-guidance-hook-root-commit-');
+  const rootDir = initCommittedRepo('veritas-hook-root-commit-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   execFileSync('git', ['add', 'package.json'], { cwd: rootDir, encoding: 'utf8' });
-  installLocalAiGuidanceBin(rootDir);
+  installLocalVeritasBin(rootDir);
 
   execFileSync(
     'npm',
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'init',
       '--root',
       rootDir,
@@ -1998,16 +2069,16 @@ test('generated post-commit hook runs successfully after the initial commit boun
 });
 
 test('generated post-commit hook runs successfully on a normal subsequent commit path', () => {
-  const rootDir = initCommittedRepo('ai-guidance-hook-followup-commit-');
+  const rootDir = initCommittedRepo('veritas-hook-followup-commit-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
-  installLocalAiGuidanceBin(rootDir);
+  installLocalVeritasBin(rootDir);
 
   execFileSync(
     'npm',
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'init',
       '--root',
       rootDir,
@@ -2036,16 +2107,16 @@ test('generated post-commit hook runs successfully on a normal subsequent commit
 });
 
 test('generated runtime hook runs successfully with the default working-tree path', () => {
-  const rootDir = initCommittedRepo('ai-guidance-runtime-hook-run-');
+  const rootDir = initCommittedRepo('veritas-runtime-hook-run-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
-  installLocalAiGuidanceBin(rootDir);
+  installLocalVeritasBin(rootDir);
 
   execFileSync(
     'npm',
     [
       'exec',
       '--',
-      'ai-guidance',
+      'veritas',
       'init',
       '--root',
       rootDir,
@@ -2058,7 +2129,7 @@ test('generated runtime hook runs successfully with the default working-tree pat
   );
   applyRuntimeHook({ rootDir });
 
-  const stdout = execFileSync(join(rootDir, '.ai-guidance/hooks/agent-runtime.sh'), {
+  const stdout = execFileSync(join(rootDir, '.veritas/hooks/agent-runtime.sh'), {
     cwd: rootDir,
     encoding: 'utf8',
   });
@@ -2070,7 +2141,7 @@ test('generated runtime hook runs successfully with the default working-tree pat
 });
 
 test('adaptive bootstrap detects a workspace-shaped repo', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-workspace-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-workspace-'));
   writeFileSync(
     join(rootDir, 'package.json'),
     JSON.stringify(
@@ -2095,8 +2166,8 @@ test('adaptive bootstrap detects a workspace-shaped repo', () => {
   mkdirp(join(rootDir, '.github/workflows'));
 
   const result = writeBootstrapStarterKit({ rootDir, projectName: 'Workspace Demo' });
-  const adapter = readJsonFromAbsolute(join(rootDir, '.ai-guidance/repo.adapter.json'));
-  const bootstrapReadme = readFileSync(join(rootDir, '.ai-guidance/README.md'), 'utf8');
+  const adapter = readJsonFromAbsolute(join(rootDir, '.veritas/repo.adapter.json'));
+  const bootstrapReadme = readFileSync(join(rootDir, '.veritas/README.md'), 'utf8');
 
   assert.equal(result.repoInsights.repoKind, 'workspace');
   assert.equal(result.proofLane, 'npm run verify');
@@ -2108,7 +2179,7 @@ test('adaptive bootstrap detects a workspace-shaped repo', () => {
 });
 
 test('adaptive bootstrap infers the proof lane through the shipped CLI path', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-workspace-cli-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-workspace-cli-'));
   writeFileSync(
     join(rootDir, 'package.json'),
     JSON.stringify(
@@ -2131,7 +2202,7 @@ test('adaptive bootstrap infers the proof lane through the shipped CLI path', ()
 
   const initStdout = execFileSync(
     'npm',
-    ['exec', '--', 'ai-guidance', 'init', '--root', rootDir],
+    ['exec', '--', 'veritas', 'init', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   const initResult = JSON.parse(initStdout);
@@ -2142,7 +2213,7 @@ test('adaptive bootstrap infers the proof lane through the shipped CLI path', ()
 });
 
 test('adaptive bootstrap detects a docs-shaped repo', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-docs-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-docs-'));
   writeFileSync(
     join(rootDir, 'package.json'),
     JSON.stringify(
@@ -2163,7 +2234,7 @@ test('adaptive bootstrap detects a docs-shaped repo', () => {
 
   const insights = inferBootstrapRepoInsights(rootDir);
   const result = writeBootstrapStarterKit({ rootDir, projectName: 'Docs Demo' });
-  const adapter = readJsonFromAbsolute(join(rootDir, '.ai-guidance/repo.adapter.json'));
+  const adapter = readJsonFromAbsolute(join(rootDir, '.veritas/repo.adapter.json'));
 
   assert.equal(insights.repoKind, 'docs');
   assert.equal(result.proofLane, 'npm run docs:build');
@@ -2189,15 +2260,18 @@ test('fixture adapters and evidence examples stay readable', () => {
   assert.equal(passExample.baseline_ci_fast_passed, true);
   assert.equal(failExample.baseline_ci_fast_passed, false);
   assert.equal(policyGapExample.recommendations[0].kind, 'policy-gap');
+  assert.ok(Array.isArray(passExample.policy_results));
+  assert.equal(passExample.policy_results[0].rule_id, 'required-repo-artifacts');
+  assert.equal(failExample.policy_results[0].passed, false);
 });
 
 test('live-eval fixtures explain outcome measurement and team tuning', () => {
   const evalRecord = readJson('../examples/evals/work-agent-shadow-eval.json');
   const evalDraft = readJson('../examples/evals/work-agent-shadow-eval-draft.json');
   const teamProfile = readJson('../examples/evals/work-agent-team-profile.json');
-  const evalSchema = readJson('../schemas/ai-guidance-eval-record.schema.json');
-  const evalDraftSchema = readJson('../schemas/ai-guidance-eval-draft.schema.json');
-  const teamProfileSchema = readJson('../schemas/ai-guidance-team-profile.schema.json');
+  const evalSchema = readJson('../schemas/veritas-eval-record.schema.json');
+  const evalDraftSchema = readJson('../schemas/veritas-eval-draft.schema.json');
+  const teamProfileSchema = readJson('../schemas/veritas-team-profile.schema.json');
 
   assert.ok(evalSchema.required.includes('measurements'));
   assert.ok(evalDraftSchema.required.includes('prefilled_measurements'));
@@ -2214,10 +2288,44 @@ test('live-eval fixtures explain outcome measurement and team tuning', () => {
     teamProfile.promotion_preferences.require_consistent_eval_before_promotion,
     true,
   );
+
+  const dogfoodReport = readJson('../examples/dogfood/veritas-repo-report.json');
+  assert.equal(dogfoodReport.adapter.name, 'veritas');
+  assert.ok(Array.isArray(dogfoodReport.policy_results));
+  assert.ok(dogfoodReport.policy_results.some((result) => result.passed === true));
+});
+
+test('repo-local dogfood config covers the framework repo surface', () => {
+  const adapter = readJson('../.veritas/repo.adapter.json');
+  const nodeIds = new Set(adapter.graph.nodes.map((node) => node.id));
+  assert.ok(nodeIds.has('tooling.bin'));
+  assert.ok(nodeIds.has('governance.schemas'));
+  assert.ok(nodeIds.has('governance.policy-packs'));
+  assert.ok(nodeIds.has('examples.fixtures'));
+
+  const policyPack = readJson('../.veritas/policy-packs/default.policy-pack.json');
+  assert.ok(policyPack.rules.length >= 3);
+  assert.ok(
+    policyPack.rules.some(
+      (rule) =>
+        Array.isArray(rule.match?.artifacts) && rule.match.artifacts.includes('bin/veritas.mjs'),
+    ),
+  );
+});
+
+test('repo includes an automated dogfood workflow', () => {
+  const workflow = readFileSync(
+    new URL('../.github/workflows/veritas-dogfood.yml', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(workflow, /schedule:/);
+  assert.match(workflow, /npm run veritas:ci:dogfood/);
+  assert.match(workflow, /actions\/upload-artifact@v4/);
 });
 
 test('starter kit helper refuses to overwrite without force', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'ai-guidance-init-overwrite-'));
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-overwrite-'));
   writeBootstrapStarterKit({ rootDir, projectName: 'Overwrite Demo' });
 
   assert.throws(
@@ -2236,15 +2344,15 @@ test('script suggestion helper returns the expected keys', () => {
     baseRef: 'main',
   });
   assert.deepEqual(Object.keys(scripts), [
-    'guidance:init',
-    'guidance:print:scripts',
-    'guidance:print:ci',
-    'guidance:report',
-    'guidance:report:working-tree',
-    'guidance:report:diff',
-    'guidance:status:runtime',
-    'guidance:proof',
-    'guidance:eval',
+    'veritas:init',
+    'veritas:print:scripts',
+    'veritas:print:ci',
+    'veritas:report',
+    'veritas:report:working-tree',
+    'veritas:report:diff',
+    'veritas:status:runtime',
+    'veritas:proof',
+    'veritas:eval',
   ]);
 });
 
@@ -2253,7 +2361,7 @@ function readJsonFromAbsolute(path) {
 }
 
 function writeTempAdapter(rootDir, adapter) {
-  const adapterPath = join(rootDir, '.ai-guidance-repo.adapter.json');
+  const adapterPath = join(rootDir, '.veritas-repo.adapter.json');
   writeFileSync(adapterPath, `${JSON.stringify(adapter, null, 2)}\n`);
   return adapterPath;
 }
@@ -2265,7 +2373,7 @@ function mkdirp(path) {
 function initCommittedRepo(prefix) {
   const rootDir = mkdtempSync(join(tmpdir(), prefix));
   execFileSync('git', ['init', '-b', 'main'], { cwd: rootDir, encoding: 'utf8' });
-  execFileSync('git', ['config', 'user.name', 'AI Guidance Tests'], {
+  execFileSync('git', ['config', 'user.name', 'Veritas Tests'], {
     cwd: rootDir,
     encoding: 'utf8',
   });
@@ -2283,13 +2391,13 @@ function commitAll(rootDir, message) {
   execFileSync('git', ['commit', '-m', message], { cwd: rootDir, encoding: 'utf8' });
 }
 
-function installLocalAiGuidanceBin(rootDir) {
+function installLocalVeritasBin(rootDir) {
   const binDir = join(rootDir, 'node_modules/.bin');
   mkdirp(binDir);
-  const wrapperPath = join(binDir, 'ai-guidance');
+  const wrapperPath = join(binDir, 'veritas');
   writeFileSync(
     wrapperPath,
-    `#!/bin/sh\nexec node ${JSON.stringify(join(frameworkRootDir, 'bin/ai-guidance.mjs'))} "$@"\n`,
+    `#!/bin/sh\nexec node ${JSON.stringify(join(frameworkRootDir, 'bin/veritas.mjs'))} "$@"\n`,
     'utf8',
   );
   chmodSync(wrapperPath, 0o755);

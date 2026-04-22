@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://ai-guidance-framework.dev/schemas/ai-guidance-team-profile.schema.json",
-  "title": "AI Guidance Team Profile",
+  "$id": "https://veritas.dev/schemas/veritas-team-profile.schema.json",
+  "title": "Veritas Team Profile",
   "type": "object",
   "additionalProperties": false,
   "required": [

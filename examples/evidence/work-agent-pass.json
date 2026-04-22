@@ -61,5 +61,55 @@
     "name": "work-agent-convergence",
     "version": 1,
     "rule_count": 4
-  }
+  },
+  "policy_results": [
+    {
+      "rule_id": "required-repo-artifacts",
+      "classification": "hard-invariant",
+      "stage": "block",
+      "message": "Required repository governance and CI artifacts must exist.",
+      "owner": "repo-core",
+      "rollback_switch": null,
+      "implemented": true,
+      "passed": true,
+      "summary": "All required repository artifacts are present.",
+      "findings": []
+    },
+    {
+      "rule_id": "baseline-proof-lane",
+      "classification": "hard-invariant",
+      "stage": "block",
+      "message": "The primary PR workflow must execute the baseline proof lane and the connected-agents suite.",
+      "owner": "repo-core",
+      "rollback_switch": null,
+      "implemented": false,
+      "passed": null,
+      "summary": "Rule baseline-proof-lane is metadata-only in the current framework.",
+      "findings": []
+    },
+    {
+      "rule_id": "forbid-shared-root-imports",
+      "classification": "promotable-policy",
+      "stage": "block",
+      "message": "New code should not import from the @stallion-ai/shared root; use contracts or explicit helper subpaths.",
+      "owner": "repo-architecture",
+      "rollback_switch": "disable-shared-root-import-check",
+      "implemented": false,
+      "passed": null,
+      "summary": "Rule forbid-shared-root-imports is metadata-only in the current framework.",
+      "findings": []
+    },
+    {
+      "rule_id": "extracted-transport-helper-shape",
+      "classification": "brittle-implementation-check",
+      "stage": "recommend",
+      "message": "Certain files currently assert exact extracted-helper source shapes; these should be reviewed for eventual replacement with stronger semantic checks.",
+      "owner": "repo-architecture",
+      "rollback_switch": "soften-source-shape-checks",
+      "implemented": false,
+      "passed": null,
+      "summary": "Rule extracted-transport-helper-shape is metadata-only in the current framework.",
+      "findings": []
+    }
+  ]
 }

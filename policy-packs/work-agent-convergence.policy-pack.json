@@ -20,10 +20,10 @@
           ".github/ISSUE_TEMPLATE/docs-issue.yml",
           ".github/ISSUE_TEMPLATE/config.yml",
           ".github/pull_request_template.md",
-          ".ai-guidance/work-agent.adapter.json",
-          ".ai-guidance/policy-packs/work-agent-convergence.policy-pack.json",
-          "vendor/ai-guidance-framework/adapters/work-agent.adapter.json",
-          "vendor/ai-guidance-framework/policy-packs/work-agent-convergence.policy-pack.json",
+          ".veritas/work-agent.adapter.json",
+          ".veritas/policy-packs/work-agent-convergence.policy-pack.json",
+          "vendor/veritas/adapters/work-agent.adapter.json",
+          "vendor/veritas/policy-packs/work-agent-convergence.policy-pack.json",
           "docs/reference/contracts.md",
           "SECURITY.md"
         ]

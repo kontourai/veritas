@@ -1,0 +1,152 @@
+{
+  "name": "veritas",
+  "kind": "repo-adapter",
+  "policy": {
+    "defaultFalsePositiveReview": "unknown",
+    "defaultPromotionCandidate": false,
+    "defaultOverrideOrBypass": false
+  },
+  "graph": {
+    "version": 1,
+    "defaultResolution": {
+      "phase": "Phase 0 (Bootstrap)",
+      "workstream": "Initial Project Setup",
+      "matchedArtifacts": [
+        "README.md"
+      ]
+    },
+    "nonSliceableInvariants": [
+      "baseline proof lane",
+      "repo-local guidance",
+      "tracked policy artifacts"
+    ],
+    "resolverPrecedence": [
+      "explicit task or issue reference",
+      "matching local artifact under .veritas/**",
+      "active repo roadmap or README guidance",
+      "multi-workstream fallback suppresses promotion"
+    ],
+    "resolutionRules": [
+      {
+        "id": "veritas-files",
+        "match": {
+          "patterns": [
+            ".veritas/"
+          ]
+        },
+        "resolution": {
+          "phase": "Phase 0 (Bootstrap)",
+          "workstream": "Initial Project Setup",
+          "matchedArtifacts": [
+            ".veritas/**"
+          ]
+        }
+      }
+    ],
+    "nodes": [
+      {
+        "id": "governance.guidance",
+        "kind": "governance-surface",
+        "label": ".veritas/**",
+        "patterns": [
+          ".veritas/"
+        ]
+      },
+      {
+        "id": "governance.root-manifests",
+        "kind": "governance-surface",
+        "label": "root manifests",
+        "patterns": [
+          "package.json",
+          "README.md",
+          "CONTRIBUTING.md",
+          ".gitignore",
+          "AGENTS.md"
+        ]
+      },
+      {
+        "id": "tooling.bin",
+        "kind": "tooling-surface",
+        "label": "bin/**",
+        "patterns": [
+          "bin/"
+        ]
+      },
+      {
+        "id": "tooling.scripts",
+        "kind": "tooling-surface",
+        "label": "scripts/**",
+        "patterns": [
+          "scripts/"
+        ]
+      },
+      {
+        "id": "governance.schemas",
+        "kind": "governance-surface",
+        "label": "schemas/**",
+        "patterns": [
+          "schemas/"
+        ]
+      },
+      {
+        "id": "governance.adapters",
+        "kind": "governance-surface",
+        "label": "adapters/**",
+        "patterns": [
+          "adapters/"
+        ]
+      },
+      {
+        "id": "governance.policy-packs",
+        "kind": "governance-surface",
+        "label": "policy-packs/**",
+        "patterns": [
+          "policy-packs/"
+        ]
+      },
+      {
+        "id": "examples.fixtures",
+        "kind": "example-surface",
+        "label": "examples/**",
+        "patterns": [
+          "examples/"
+        ]
+      },
+      {
+        "id": "app.src",
+        "kind": "product-surface",
+        "label": "src/**",
+        "patterns": [
+          "src/"
+        ]
+      },
+      {
+        "id": "docs.docs",
+        "kind": "product-surface",
+        "label": "docs/**",
+        "patterns": [
+          "docs/"
+        ]
+      },
+      {
+        "id": "verification.tests",
+        "kind": "verification-surface",
+        "label": "tests/**",
+        "patterns": [
+          "tests/"
+        ]
+      }
+    ]
+  },
+  "evidence": {
+    "artifactDir": ".veritas/evidence",
+    "requiredProofLanes": [
+      "npm run verify"
+    ],
+    "reportTransport": "local-json",
+    "defaultProofLanes": [
+      "npm run verify"
+    ],
+    "uncoveredPathPolicy": "warn"
+  }
+}

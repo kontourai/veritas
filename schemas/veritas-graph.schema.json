@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://ai-guidance-framework.dev/schemas/ai-guidance-graph.schema.json",
-  "title": "AI Guidance Graph",
+  "$id": "https://veritas.dev/schemas/veritas-graph.schema.json",
+  "title": "Veritas Graph",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "nodes", "resolverPrecedence"],

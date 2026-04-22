@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://ai-guidance-framework.dev/schemas/ai-guidance-policy-pack.schema.json",
-  "title": "AI Guidance Policy Pack",
+  "$id": "https://veritas.dev/schemas/veritas-policy-pack.schema.json",
+  "title": "Veritas Policy Pack",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "name", "rules"],

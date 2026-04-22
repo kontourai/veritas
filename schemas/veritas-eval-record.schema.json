@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://ai-guidance-framework.dev/schemas/ai-guidance-eval-record.schema.json",
-  "title": "AI Guidance Eval Record",
+  "$id": "https://veritas.dev/schemas/veritas-eval-record.schema.json",
+  "title": "Veritas Eval Record",
   "type": "object",
   "additionalProperties": false,
   "required": [

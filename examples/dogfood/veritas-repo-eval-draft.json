@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "run_id": "veritas-repo-dogfood",
+  "team_profile_id": "veritas-default",
+  "mode": "shadow",
+  "evidence": {
+    "artifact_path": ".veritas/evidence/veritas-repo-dogfood.json",
+    "artifact_digest": "3748bf4a9f69ef0da706e2da8c727b0d7a63f1d894284ac615be82b2ed504f81",
+    "timestamp": "2026-04-21T22:00:00.000Z",
+    "source_ref": "refs/heads/main",
+    "source_kind": "explicit-files",
+    "source_scope": [
+      "explicit"
+    ],
+    "affected_nodes": [
+      "app.src",
+      "docs.docs",
+      "governance.guidance",
+      "governance.root-manifests",
+      "governance.schemas",
+      "tooling.bin",
+      "verification.tests"
+    ],
+    "affected_lanes": [
+      ".veritas/**",
+      "bin/**",
+      "docs/**",
+      "root manifests",
+      "schemas/**",
+      "src/**",
+      "tests/**"
+    ]
+  },
+  "reviewer_confidence_scale": [
+    "low",
+    "medium",
+    "high",
+    "unknown"
+  ],
+  "prefilled_outcome": {
+    "reviewer_confidence": "high"
+  },
+  "prefilled_measurements": {
+    "time_to_green_minutes": 12,
+    "override_count": 0,
+    "false_positive_rules": [],
+    "missed_issues": []
+  },
+  "notes": [
+    "This example is generated from the Veritas repo using its tracked .veritas config.",
+    "The goal is to show a self-hosted report and eval flow without making local evidence outputs part of the distributed package."
+  ],
+  "missing_confirmation_fields": [
+    "accepted_without_major_rewrite",
+    "required_followup"
+  ]
+}

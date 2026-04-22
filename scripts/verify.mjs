@@ -16,6 +16,152 @@ function assert(condition, message) {
   }
 }
 
+const readme = readText('README.md');
+assert(
+  readme.includes('## What This Project Ships'),
+  'README must explain what the project ships.',
+);
+assert(
+  readme.includes('## Quickstart'),
+  'README must include a quickstart section.',
+);
+assert(
+  readme.includes('docs/reference/cli.md'),
+  'README must link to the CLI reference.',
+);
+assert(
+  readme.includes('docs/reference/artifacts-and-schemas.md'),
+  'README must link to the artifacts and schemas reference.',
+);
+assert(
+  readme.includes('docs/reference/examples.md'),
+  'README must link to the example fixtures reference.',
+);
+assert(
+  readme.includes('## Dogfooding'),
+  'README must include a dogfooding section.',
+);
+assert(
+  readme.includes('veritas:dogfood:examples'),
+  'README must mention the dogfood example command.',
+);
+assert(
+  readme.includes('.github/workflows/veritas-dogfood.yml'),
+  'README must mention the dogfood workflow.',
+);
+
+const docsIndex = readText('docs/README.md');
+assert(
+  docsIndex.includes('## Guides'),
+  'Docs index must include a guides section.',
+);
+assert(
+  docsIndex.includes('## Reference'),
+  'Docs index must include a reference section.',
+);
+assert(
+  docsIndex.includes('## Design'),
+  'Docs index must include a design section.',
+);
+assert(
+  docsIndex.includes('reference/cli.md'),
+  'Docs index must link to the CLI reference.',
+);
+assert(
+  docsIndex.includes('reference/artifacts-and-schemas.md'),
+  'Docs index must link to the artifacts and schemas reference.',
+);
+assert(
+  docsIndex.includes('reference/examples.md'),
+  'Docs index must link to the example fixtures reference.',
+);
+assert(
+  docsIndex.includes('guides/dogfooding-veritas.md'),
+  'Docs index must link to the dogfooding guide.',
+);
+
+const cliReference = readText('docs/reference/cli.md');
+assert(
+  cliReference.includes('All commands print JSON to stdout'),
+  'CLI reference must explain the JSON stdout contract.',
+);
+assert(
+  cliReference.includes('npm exec -- veritas --help'),
+  'CLI reference must include the top-level help path.',
+);
+assert(
+  cliReference.includes('npm exec -- veritas report --help'),
+  'CLI reference must include subcommand help.',
+);
+assert(
+  cliReference.includes('npx') === false,
+  'CLI reference should stay aligned with npm exec usage in this repo.',
+);
+assert(
+  cliReference.includes('veritas shadow run'),
+  'CLI reference must document shadow run.',
+);
+assert(
+  cliReference.includes('veritas runtime status'),
+  'CLI reference must document runtime status.',
+);
+assert(
+  cliReference.includes('veritas-report'),
+  'CLI reference must document the report binary.',
+);
+assert(
+  cliReference.includes('VERITAS_HOOK_SKIP=1'),
+  'CLI reference must document the Veritas hook skip environment variable.',
+);
+
+const artifactsReference = readText('docs/reference/artifacts-and-schemas.md');
+assert(
+  artifactsReference.includes('.veritas/repo.adapter.json'),
+  'Artifacts reference must include the starter adapter path.',
+);
+assert(
+  artifactsReference.includes('.veritas/evidence/<run-id>.json'),
+  'Artifacts reference must include evidence output paths.',
+);
+assert(
+  artifactsReference.includes('schemas/'),
+  'Artifacts reference must mention schema files.',
+);
+assert(
+  artifactsReference.includes('adapters/'),
+  'Artifacts reference must mention adapters.',
+);
+assert(
+  artifactsReference.includes('policy-packs/'),
+  'Artifacts reference must mention policy packs.',
+);
+assert(
+  artifactsReference.includes('examples/'),
+  'Artifacts reference must mention example fixtures.',
+);
+
+const examplesReference = readText('docs/reference/examples.md');
+assert(
+  examplesReference.includes('examples/evidence/work-agent-pass.json'),
+  'Examples reference must include the pass evidence fixture.',
+);
+assert(
+  examplesReference.includes('examples/evidence/work-agent-fail.json'),
+  'Examples reference must include the fail evidence fixture.',
+);
+assert(
+  examplesReference.includes('examples/evals/work-agent-shadow-eval-draft.json'),
+  'Examples reference must include the eval draft fixture.',
+);
+assert(
+  examplesReference.includes('examples/classification/work-agent-convergence-rule-families.json'),
+  'Examples reference must include the classification fixture.',
+);
+assert(
+  examplesReference.includes('examples/dogfood/veritas-repo-report.json'),
+  'Examples reference must include the dogfood report example.',
+);
+
 const designDoc = readText('docs/design/framework-core-vs-adapter.md');
 assert(
   designDoc.includes('framework core') || designDoc.includes('Framework Core'),
@@ -40,7 +186,7 @@ assert(
   'Getting-started guide must prioritize installation and usage.',
 );
 assert(
-  gettingStartedGuide.includes('npm exec -- ai-guidance init'),
+  gettingStartedGuide.includes('npm exec -- veritas init'),
   'Getting-started guide must include the bootstrap command.',
 );
 assert(
@@ -56,7 +202,7 @@ assert(
   'Getting-started guide must explain the staged live-eval rollout.',
 );
 assert(
-  gettingStartedGuide.includes('npm exec -- ai-guidance report --working-tree'),
+  gettingStartedGuide.includes('npm exec -- veritas report --working-tree'),
   'Getting-started guide must include the working-tree report command.',
 );
 assert(
@@ -64,39 +210,39 @@ assert(
   'Getting-started guide must include the branch-diff report command.',
 );
 assert(
-  gettingStartedGuide.includes('npm exec -- ai-guidance eval record'),
+  gettingStartedGuide.includes('npm exec -- veritas eval record'),
   'Getting-started guide must include the eval record command.',
 );
 assert(
-  gettingStartedGuide.includes('npm exec -- ai-guidance eval draft'),
+  gettingStartedGuide.includes('npm exec -- veritas eval draft'),
   'Getting-started guide must include the eval draft command.',
 );
 assert(
-  gettingStartedGuide.includes('npm exec -- ai-guidance shadow run'),
+  gettingStartedGuide.includes('npm exec -- veritas shadow run'),
   'Getting-started guide must include the shadow run command.',
 );
 assert(
-  gettingStartedGuide.includes('npm exec -- ai-guidance apply git-hook --configure-git'),
+  gettingStartedGuide.includes('npm exec -- veritas apply git-hook --configure-git'),
   'Getting-started guide must include the git-hook apply command.',
 );
 assert(
-  gettingStartedGuide.includes('npm exec -- ai-guidance apply runtime-hook'),
+  gettingStartedGuide.includes('npm exec -- veritas apply runtime-hook'),
   'Getting-started guide must include the runtime-hook apply command.',
 );
 assert(
-  gettingStartedGuide.includes('npm exec -- ai-guidance apply codex-hook --target-hooks-file'),
+  gettingStartedGuide.includes('npm exec -- veritas apply codex-hook --target-hooks-file'),
   'Getting-started guide must include the Codex hook apply command.',
 );
 assert(
-  gettingStartedGuide.includes('npm exec -- ai-guidance apply codex-hook --codex-home'),
+  gettingStartedGuide.includes('npm exec -- veritas apply codex-hook --codex-home'),
   'Getting-started guide must include the Codex-home apply command.',
 );
 assert(
-  gettingStartedGuide.includes('npm exec -- ai-guidance print codex-hook --codex-home'),
+  gettingStartedGuide.includes('npm exec -- veritas print codex-hook --codex-home'),
   'Getting-started guide must include the Codex-home preview command.',
 );
 assert(
-  gettingStartedGuide.includes('npm exec -- ai-guidance runtime status --codex-home'),
+  gettingStartedGuide.includes('npm exec -- veritas runtime status --codex-home'),
   'Getting-started guide must include the runtime status command.',
 );
 assert(
@@ -104,7 +250,7 @@ assert(
   'Getting-started guide must explain the no-target-checked runtime status case.',
 );
 assert(
-  gettingStartedGuide.includes('repo-local under `.ai-guidance/evidence/`'),
+  gettingStartedGuide.includes('repo-local under `.veritas/evidence/`'),
   'Getting-started guide must explain repo-local evidence provenance for eval capture.',
 );
 
@@ -122,7 +268,7 @@ assert(
   'Activation guide must explain the agent-agnostic goal.',
 );
 assert(
-  activationGuide.includes('.ai-guidance/hooks/agent-runtime.sh'),
+  activationGuide.includes('.veritas/hooks/agent-runtime.sh'),
   'Activation guide must mention the tracked runtime-hook adapter.',
 );
 assert(
@@ -216,23 +362,23 @@ assert(
   'Bootstrap guide must connect bootstrap to activation.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- ai-guidance init'),
+  bootstrapGuide.includes('npm exec -- veritas init'),
   'Bootstrap guide must include the bootstrap command.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- ai-guidance print package-scripts'),
+  bootstrapGuide.includes('npm exec -- veritas print package-scripts'),
   'Bootstrap guide must include the package-script helper command.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- ai-guidance print ci-snippet'),
+  bootstrapGuide.includes('npm exec -- veritas print ci-snippet'),
   'Bootstrap guide must include the CI snippet helper command.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- ai-guidance apply package-scripts'),
+  bootstrapGuide.includes('npm exec -- veritas apply package-scripts'),
   'Bootstrap guide must include the package-script apply command.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- ai-guidance apply ci-snippet'),
+  bootstrapGuide.includes('npm exec -- veritas apply ci-snippet'),
   'Bootstrap guide must include the CI snippet apply command.',
 );
 assert(
@@ -240,7 +386,7 @@ assert(
   'Bootstrap guide must explain inferred repo decisions.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- ai-guidance report --working-tree'),
+  bootstrapGuide.includes('npm exec -- veritas report --working-tree'),
   'Bootstrap guide must include the working-tree report command.',
 );
 assert(
@@ -248,39 +394,39 @@ assert(
   'Bootstrap guide must include the branch-diff report guidance.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- ai-guidance eval record'),
+  bootstrapGuide.includes('npm exec -- veritas eval record'),
   'Bootstrap guide must include the eval record command.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- ai-guidance eval draft'),
+  bootstrapGuide.includes('npm exec -- veritas eval draft'),
   'Bootstrap guide must include the eval draft command.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- ai-guidance shadow run'),
+  bootstrapGuide.includes('npm exec -- veritas shadow run'),
   'Bootstrap guide must include the shadow run command.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- ai-guidance apply git-hook --configure-git'),
+  bootstrapGuide.includes('npm exec -- veritas apply git-hook --configure-git'),
   'Bootstrap guide must include the git-hook apply command.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- ai-guidance apply runtime-hook'),
+  bootstrapGuide.includes('npm exec -- veritas apply runtime-hook'),
   'Bootstrap guide must include the runtime-hook apply command.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- ai-guidance apply codex-hook --target-hooks-file'),
+  bootstrapGuide.includes('npm exec -- veritas apply codex-hook --target-hooks-file'),
   'Bootstrap guide must include the Codex hook apply command.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- ai-guidance apply codex-hook --codex-home'),
+  bootstrapGuide.includes('npm exec -- veritas apply codex-hook --codex-home'),
   'Bootstrap guide must include the Codex-home apply command.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- ai-guidance print codex-hook --codex-home'),
+  bootstrapGuide.includes('npm exec -- veritas print codex-hook --codex-home'),
   'Bootstrap guide must include the Codex-home preview command.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- ai-guidance runtime status --codex-home'),
+  bootstrapGuide.includes('npm exec -- veritas runtime status --codex-home'),
   'Bootstrap guide must include the runtime status command.',
 );
 assert(
@@ -294,100 +440,56 @@ assert(
 
 const rootReadme = readText('README.md');
 assert(
-  rootReadme.includes('npm exec -- ai-guidance init'),
+  rootReadme.includes('npm exec -- veritas init'),
   'README must present the bootstrap command.',
 );
 assert(
-  rootReadme.includes('bootstrap a starter `.ai-guidance/` setup'),
-  'README must describe bootstrap as a current capability.',
+  rootReadme.includes('## What This Project Ships'),
+  'README must explain what the project ships.',
 );
 assert(
-  rootReadme.includes('infer conservative starter defaults'),
-  'README must describe adaptive bootstrap as a current capability.',
+  rootReadme.includes('repo-local framework and CLI'),
+  'README must describe the project clearly at the top level.',
 );
 assert(
-  rootReadme.includes('print suggested package scripts and a starter CI snippet'),
-  'README must describe the print-first integration helper capability.',
+  rootReadme.includes('docs/README.md'),
+  'README must link to the docs index.',
 );
 assert(
-  rootReadme.includes('explicitly apply suggested package scripts'),
-  'README must describe the explicit apply capability.',
+  rootReadme.includes('docs/reference/cli.md'),
+  'README must link to the CLI reference.',
 );
 assert(
-  rootReadme.includes('current working tree'),
-  'README must describe current-state working-tree reporting.',
+  rootReadme.includes('docs/reference/artifacts-and-schemas.md'),
+  'README must link to the artifacts and schemas reference.',
 );
 assert(
-  rootReadme.includes('branch-diff reports'),
-  'README must distinguish branch-diff reports from other report modes.',
+  rootReadme.includes('docs/reference/examples.md'),
+  'README must link to the example fixtures reference.',
 );
 assert(
-  rootReadme.includes('capture a shadow eval record'),
-  'README must describe shadow eval capture as a current capability.',
+  rootReadme.includes('npm exec -- veritas print package-scripts'),
+  'README must include the package-scripts print command.',
 );
 assert(
-  rootReadme.includes('prepare a shadow eval draft artifact'),
-  'README must describe shadow eval draft preparation as a current capability.',
+  rootReadme.includes('npm exec -- veritas apply package-scripts'),
+  'README must include the package-scripts apply command.',
 );
 assert(
-  rootReadme.includes('hook-friendly shadow flow'),
-  'README must describe the hook-friendly shadow flow as a current capability.',
+  rootReadme.includes('npm exec -- veritas report --working-tree'),
+  'README must include the working-tree report command.',
 );
 assert(
-  rootReadme.includes('generate tracked git-hook adapters'),
-  'README must describe tracked git-hook adapters as a current capability.',
-);
-assert(
-  rootReadme.includes('generate tracked runtime-hook templates'),
-  'README must describe tracked runtime-hook templates as a current capability.',
-);
-assert(
-  rootReadme.includes('generate tracked Codex hook adapters'),
-  'README must describe tracked Codex hook adapters as a current capability.',
-);
-assert(
-  rootReadme.includes('npm exec -- ai-guidance eval record'),
-  'README must include the eval record command.',
-);
-assert(
-  rootReadme.includes('npm exec -- ai-guidance eval draft'),
-  'README must include the eval draft command.',
-);
-assert(
-  rootReadme.includes('npm exec -- ai-guidance shadow run'),
+  rootReadme.includes('npm exec -- veritas shadow run'),
   'README must include the shadow run command.',
 );
 assert(
-  rootReadme.includes('npm exec -- ai-guidance apply git-hook --configure-git'),
-  'README must include the git-hook apply command.',
+  rootReadme.includes('npm exec -- veritas --help'),
+  'README must include the top-level help command.',
 );
 assert(
-  rootReadme.includes('npm exec -- ai-guidance apply runtime-hook'),
-  'README must include the runtime-hook apply command.',
-);
-assert(
-  rootReadme.includes('npm exec -- ai-guidance apply codex-hook --target-hooks-file'),
-  'README must include the Codex hook apply command.',
-);
-assert(
-  rootReadme.includes('npm exec -- ai-guidance apply codex-hook --codex-home'),
-  'README must include the Codex-home apply command.',
-);
-assert(
-  rootReadme.includes('npm exec -- ai-guidance print codex-hook --codex-home'),
-  'README must include the Codex-home preview command.',
-);
-assert(
-  rootReadme.includes('npm exec -- ai-guidance runtime status --codex-home'),
-  'README must include the runtime status command.',
-);
-assert(
-  rootReadme.includes('no Codex target was checked yet'),
-  'README must explain the no-target-checked runtime status case.',
-);
-assert(
-  rootReadme.includes('refuses to overwrite an existing eval artifact unless you pass `--force`'),
-  'README must describe explicit overwrite behavior for eval artifacts.',
+  rootReadme.includes('All shipped CLI commands print JSON to stdout'),
+  'README must explain the CLI output contract.',
 );
 
 const contributingGuide = readText('CONTRIBUTING.md');
@@ -405,8 +507,34 @@ for (const schemaFileName of readdirSync(new URL('schemas/', rootUrl))) {
 }
 
 assert(
-  readText('package.json').includes('"ai-guidance": "./bin/ai-guidance.mjs"'),
-  'package.json must expose the ai-guidance CLI.',
+  readText('package.json').includes('"veritas": "./bin/veritas.mjs"'),
+  'package.json must expose the veritas CLI.',
+);
+assert(
+  readText('package.json').includes('"veritas:dogfood:examples"'),
+  'package.json must expose the dogfood example script.',
+);
+assert(
+  readText('package.json').includes('"veritas:dogfood:checkin"'),
+  'package.json must expose the dogfood checkin script.',
+);
+assert(
+  readText('package.json').includes('"veritas:ci:dogfood"'),
+  'package.json must expose the CI dogfood script.',
+);
+
+const dogfoodWorkflow = readText('.github/workflows/veritas-dogfood.yml');
+assert(
+  dogfoodWorkflow.includes('schedule:'),
+  'Dogfood workflow must include a schedule.',
+);
+assert(
+  dogfoodWorkflow.includes('npm run veritas:ci:dogfood'),
+  'Dogfood workflow must run the CI dogfood script.',
+);
+assert(
+  dogfoodWorkflow.includes('actions/upload-artifact@v4'),
+  'Dogfood workflow must upload artifacts.',
 );
 
 const workAgentAdapter = readJson('adapters/work-agent.adapter.json');
@@ -469,7 +597,44 @@ for (const evidenceExample of [
   assert(Array.isArray(parsed.adapter?.default_proof_lanes), `${evidenceExample} must include adapter default proof lanes.`);
   assert(Array.isArray(parsed.adapter?.surface_proof_lanes), `${evidenceExample} must include adapter surface proof lanes.`);
   assert(typeof parsed.adapter?.uncovered_path_policy === 'string', `${evidenceExample} must include an adapter uncovered-path policy.`);
+  assert(Array.isArray(parsed.policy_results), `${evidenceExample} must include policy results.`);
 }
+
+const dogfoodGuide = readText('docs/guides/dogfooding-veritas.md');
+assert(
+  dogfoodGuide.includes('npm run veritas:dogfood:prove'),
+  'Dogfooding guide must include the prove command.',
+);
+assert(
+  dogfoodGuide.includes('npm run veritas:dogfood:checkin'),
+  'Dogfooding guide must include the checkin command.',
+);
+assert(
+  dogfoodGuide.includes('examples/dogfood/veritas-repo-report.json'),
+  'Dogfooding guide must link to the committed dogfood report example.',
+);
+assert(
+  dogfoodGuide.includes('.github/workflows/veritas-dogfood.yml'),
+  'Dogfooding guide must mention the dogfood workflow.',
+);
+
+const dogfoodReadme = readText('examples/dogfood/README.md');
+assert(
+  dogfoodReadme.includes('npm run veritas:dogfood:examples'),
+  'Dogfood examples README must include the refresh command.',
+);
+assert(
+  dogfoodReadme.includes('npm run veritas:dogfood:checkin'),
+  'Dogfood examples README must include the checkin command.',
+);
+
+const dogfoodReport = readJson('examples/dogfood/veritas-repo-report.json');
+assert(dogfoodReport.adapter?.name === 'veritas', 'Dogfood report must target the veritas adapter.');
+assert(Array.isArray(dogfoodReport.policy_results), 'Dogfood report must include policy results.');
+assert(
+  dogfoodReport.policy_results.some((result) => result.passed === true),
+  'Dogfood report must include passing policy results.',
+);
 
 const evalRecordExample = readJson('examples/evals/work-agent-shadow-eval.json');
 assert(evalRecordExample.mode === 'shadow', 'Eval example must use shadow mode.');

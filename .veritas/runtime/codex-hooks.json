@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".veritas/hooks/agent-runtime.sh",
+            "statusMessage": "Running Veritas shadow automation",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

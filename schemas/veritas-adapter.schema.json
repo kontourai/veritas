@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://ai-guidance-framework.dev/schemas/ai-guidance-adapter.schema.json",
-  "title": "AI Guidance Adapter",
+  "$id": "https://veritas.dev/schemas/veritas-adapter.schema.json",
+  "title": "Veritas Adapter",
   "type": "object",
   "additionalProperties": false,
   "required": ["name", "kind", "graph", "evidence"],
@@ -28,7 +28,7 @@
         "defaultOverrideOrBypass": { "type": "boolean" }
       }
     },
-    "graph": { "$ref": "./ai-guidance-graph.schema.json" },
+    "graph": { "$ref": "./veritas-graph.schema.json" },
     "evidence": {
       "type": "object",
       "additionalProperties": false,

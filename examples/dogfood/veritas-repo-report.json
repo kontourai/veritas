@@ -1,0 +1,164 @@
+{
+  "framework_version": 1,
+  "run_id": "veritas-repo-dogfood",
+  "timestamp": "2026-04-21T22:00:00.000Z",
+  "source_ref": "refs/heads/main",
+  "source_kind": "explicit-files",
+  "source_scope": [
+    "explicit"
+  ],
+  "resolved_phase": "Phase 0 (Bootstrap)",
+  "resolved_workstream": "Initial Project Setup",
+  "matched_artifacts": [
+    ".veritas/**"
+  ],
+  "affected_nodes": [
+    "app.src",
+    "docs.docs",
+    "governance.guidance",
+    "governance.root-manifests",
+    "governance.schemas",
+    "tooling.bin",
+    "verification.tests"
+  ],
+  "affected_lanes": [
+    ".veritas/**",
+    "bin/**",
+    "docs/**",
+    "root manifests",
+    "schemas/**",
+    "src/**",
+    "tests/**"
+  ],
+  "selected_proof_commands": [
+    "npm run verify"
+  ],
+  "proof_resolution_source": "default",
+  "uncovered_path_result": "clear",
+  "baseline_ci_fast_passed": true,
+  "recommendations": [],
+  "false_positive_review": "unknown",
+  "promotion_candidate": false,
+  "override_or_bypass": false,
+  "owner": null,
+  "files": [
+    ".veritas/repo.adapter.json",
+    ".veritas/policy-packs/default.policy-pack.json",
+    ".veritas/team/default.team-profile.json",
+    "README.md",
+    "package.json",
+    "bin/veritas.mjs",
+    "src/index.mjs",
+    "docs/reference/cli.md",
+    "schemas/veritas-evidence.schema.json",
+    "tests/framework.test.mjs"
+  ],
+  "unresolved_files": [],
+  "promotion_allowed": true,
+  "framework": {
+    "version": 1,
+    "resolver_precedence": [
+      "explicit task or issue reference",
+      "matching local artifact under .veritas/**",
+      "active repo roadmap or README guidance",
+      "multi-workstream fallback suppresses promotion"
+    ],
+    "policy_defaults": {
+      "false_positive_review": "unknown",
+      "promotion_candidate": false,
+      "override_or_bypass": false
+    }
+  },
+  "adapter": {
+    "name": "veritas",
+    "kind": "repo-adapter",
+    "report_transport": "local-json",
+    "default_resolution": {
+      "phase": "Phase 0 (Bootstrap)",
+      "workstream": "Initial Project Setup",
+      "matchedArtifacts": [
+        "README.md"
+      ]
+    },
+    "non_sliceable_invariants": [
+      "baseline proof lane",
+      "repo-local guidance",
+      "tracked policy artifacts"
+    ],
+    "required_proof_lanes": [
+      "npm run verify"
+    ],
+    "default_proof_lanes": [
+      "npm run verify"
+    ],
+    "surface_proof_lanes": [],
+    "uncovered_path_policy": "warn"
+  },
+  "policy_pack": {
+    "name": "veritas-default",
+    "version": 1,
+    "rule_count": 5
+  },
+  "policy_results": [
+    {
+      "rule_id": "required-veritas-dogfood-artifacts",
+      "classification": "hard-invariant",
+      "stage": "block",
+      "message": "The tracked Veritas dogfood artifacts must stay present so agents and reviewers share the same baseline.",
+      "owner": "repo-core",
+      "rollback_switch": null,
+      "implemented": true,
+      "passed": true,
+      "summary": "All required repository artifacts are present.",
+      "findings": []
+    },
+    {
+      "rule_id": "required-veritas-cli-artifacts",
+      "classification": "hard-invariant",
+      "stage": "block",
+      "message": "The shipped Veritas CLI entrypoints and package manifest must stay present.",
+      "owner": "repo-core",
+      "rollback_switch": null,
+      "implemented": true,
+      "passed": true,
+      "summary": "All required repository artifacts are present.",
+      "findings": []
+    },
+    {
+      "rule_id": "required-veritas-reference-artifacts",
+      "classification": "hard-invariant",
+      "stage": "block",
+      "message": "The repo must keep the docs that explain the shipped Veritas surface.",
+      "owner": "repo-core",
+      "rollback_switch": null,
+      "implemented": true,
+      "passed": true,
+      "summary": "All required repository artifacts are present.",
+      "findings": []
+    },
+    {
+      "rule_id": "required-veritas-schema-artifacts",
+      "classification": "hard-invariant",
+      "stage": "block",
+      "message": "The shipped Veritas schema set must stay present and reviewable.",
+      "owner": "repo-core",
+      "rollback_switch": null,
+      "implemented": true,
+      "passed": true,
+      "summary": "All required repository artifacts are present.",
+      "findings": []
+    },
+    {
+      "rule_id": "prefer-veritas-routed-delivery",
+      "classification": "promotable-policy",
+      "stage": "recommend",
+      "message": "Prefer running new AI-guided changes through the Veritas report and the documented proof lane before review.",
+      "owner": "repo-maintainers",
+      "rollback_switch": "soften-veritas-route",
+      "implemented": false,
+      "passed": null,
+      "summary": "Rule prefer-veritas-routed-delivery is metadata-only in the current framework.",
+      "findings": []
+    }
+  ]
+}

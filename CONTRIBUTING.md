@@ -11,6 +11,8 @@ This file is the footnote for people developing the framework itself.
 - prefer install/use clarity over maintainer cleverness
 - avoid adding repo-specific assumptions to the core
 - update the relevant docs and examples whenever the operator surface changes
+- keep [README.md](README.md), [docs/README.md](docs/README.md), and the `docs/reference/` pages aligned with the shipped CLI and artifact surface
+- keep the tracked `.veritas/` dogfood config current, but do not commit `.veritas/evidence/`, `.veritas/eval-drafts/`, or `.veritas/evals/`
 - no new dependencies without clear leverage
 
 ## Verification

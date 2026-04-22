@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "name": "veritas-default",
+  "description": "Conservative starter policy pack for a newly bootstrapped AI-guided repository.",
+  "rules": [
+    {
+      "id": "required-veritas-dogfood-artifacts",
+      "classification": "hard-invariant",
+      "stage": "block",
+      "message": "The tracked Veritas dogfood artifacts must stay present so agents and reviewers share the same baseline.",
+      "owner": "repo-core",
+      "rollback_switch": null,
+      "match": {
+        "artifacts": [
+          ".veritas/README.md",
+          ".veritas/repo.adapter.json",
+          ".veritas/policy-packs/default.policy-pack.json",
+          ".veritas/team/default.team-profile.json"
+        ]
+      }
+    },
+    {
+      "id": "required-veritas-cli-artifacts",
+      "classification": "hard-invariant",
+      "stage": "block",
+      "message": "The shipped Veritas CLI entrypoints and package manifest must stay present.",
+      "owner": "repo-core",
+      "rollback_switch": null,
+      "match": {
+        "artifacts": [
+          "package.json",
+          "bin/veritas.mjs",
+          "bin/veritas-report.mjs"
+        ]
+      }
+    },
+    {
+      "id": "required-veritas-reference-artifacts",
+      "classification": "hard-invariant",
+      "stage": "block",
+      "message": "The repo must keep the docs that explain the shipped Veritas surface.",
+      "owner": "repo-core",
+      "rollback_switch": null,
+      "match": {
+        "artifacts": [
+          "README.md",
+          "docs/README.md",
+          "docs/reference/cli.md",
+          "docs/reference/artifacts-and-schemas.md",
+          "docs/reference/examples.md"
+        ]
+      }
+    },
+    {
+      "id": "required-veritas-schema-artifacts",
+      "classification": "hard-invariant",
+      "stage": "block",
+      "message": "The shipped Veritas schema set must stay present and reviewable.",
+      "owner": "repo-core",
+      "rollback_switch": null,
+      "match": {
+        "artifacts": [
+          "schemas/veritas-adapter.schema.json",
+          "schemas/veritas-eval-draft.schema.json",
+          "schemas/veritas-eval-record.schema.json",
+          "schemas/veritas-evidence.schema.json",
+          "schemas/veritas-graph.schema.json",
+          "schemas/veritas-policy-pack.schema.json",
+          "schemas/veritas-team-profile.schema.json"
+        ]
+      }
+    },
+    {
+      "id": "prefer-veritas-routed-delivery",
+      "classification": "promotable-policy",
+      "stage": "recommend",
+      "message": "Prefer running new AI-guided changes through the Veritas report and the documented proof lane before review.",
+      "owner": "repo-maintainers",
+      "rollback_switch": "soften-veritas-route",
+      "match": {
+        "files": [
+          ".veritas/README.md"
+        ]
+      }
+    }
+  ]
+}

@@ -9,8 +9,8 @@
       "classification": "hard-invariant",
       "file_scopes": [
         ".github/**",
-        ".ai-guidance/**",
-        "vendor/ai-guidance-framework/**",
+        ".veritas/**",
+        "vendor/veritas/**",
         "package.json",
         "SECURITY.md",
         "docs/reference/contracts.md"

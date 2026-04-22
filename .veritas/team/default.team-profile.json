@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "id": "veritas-default",
+  "name": "veritas Default",
+  "description": "Conservative starter profile: begin in shadow mode, learn first, and only harden rules after repeated evidence.",
+  "defaults": {
+    "mode": "shadow",
+    "new_rule_stage": "recommend"
+  },
+  "review_preferences": {
+    "human_signoff_required_for_stage_promotion": true,
+    "reviewer_confidence_scale": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "major_rewrite_definition": "A major rewrite replaces the main structure or control flow instead of making local edits."
+  },
+  "promotion_preferences": {
+    "proof_lanes_required_before_block": [
+      "npm run verify"
+    ],
+    "warnings_block_in_ci": false,
+    "require_consistent_eval_before_promotion": true
+  }
+}

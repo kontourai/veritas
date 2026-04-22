@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://ai-guidance-framework.dev/schemas/ai-guidance-eval-draft.schema.json",
-  "title": "AI Guidance Eval Draft",
+  "$id": "https://veritas.dev/schemas/veritas-eval-draft.schema.json",
+  "title": "Veritas Eval Draft",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -24,7 +24,7 @@
       "type": "string",
       "enum": ["shadow", "assist", "gate"]
     },
-    "evidence": { "$ref": "./ai-guidance-eval-record.schema.json#/properties/evidence" },
+    "evidence": { "$ref": "./veritas-eval-record.schema.json#/properties/evidence" },
     "reviewer_confidence_scale": {
       "type": "array",
       "items": { "type": "string" }
