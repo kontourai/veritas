@@ -30,7 +30,7 @@ jobs:
           node-version: '22'
 
       - name: Install
-        run: npm install --no-fund --no-audit
+        run: npm install --no-fund --no-audit --package-lock=false
 
       - name: Run Veritas Proof Lane
         run: npm run veritas:proof
