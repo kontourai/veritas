@@ -107,6 +107,19 @@ function summarizeHealth(alerts) {
   return 'green';
 }
 
+function healthLabel(healthStatus) {
+  if (healthStatus === 'green') return 'Green';
+  if (healthStatus === 'yellow') return 'Yellow';
+  return 'Red';
+}
+
+function summarizeAlertCounts(alerts) {
+  return {
+    errors: alerts.filter((alert) => alert.severity === 'error').length,
+    warnings: alerts.filter((alert) => alert.severity === 'warning').length,
+  };
+}
+
 function writeArtifact(relativePath, content) {
   const outputPath = resolve(rootDir, relativePath);
   mkdirSync(dirname(outputPath), { recursive: true });
@@ -144,6 +157,7 @@ const runtimeStatus = inspectRuntimeAdapterStatus(rootDir);
 const policySummary = summarizePolicyResults(report.record.policy_results);
 const alerts = buildAlerts(report, runtimeStatus);
 const healthStatus = summarizeHealth(alerts);
+const alertSummary = summarizeAlertCounts(alerts);
 
 const checkin = {
   version: 1,
@@ -168,16 +182,12 @@ const checkin = {
 const markdown = [
   '## Veritas Check-in',
   '',
-  `- **Health:** ${healthStatus}`,
-  `- **Run ID:** ${runId}`,
-  `- **Generated at:** ${timestamp}`,
-  `- **Report artifact:** \`${report.artifactPath}\``,
-  `- **Eval draft artifact:** \`${draft.artifactPath}\``,
-  `- **Source:** ${report.record.source_kind} (${report.record.source_scope.join(', ')})`,
+  `- **Health:** ${healthLabel(healthStatus)}`,
+  `- **Alerts:** ${alertSummary.errors} error(s), ${alertSummary.warnings} warning(s)`,
   `- **Unresolved files:** ${report.record.unresolved_files.length}`,
   `- **Policy results:** ${policySummary.passed} passed, ${policySummary.failed} failed, ${policySummary.metadata_only} metadata-only`,
-  `- **Selected proof commands:** \`${report.record.selected_proof_commands.join(', ') || 'none'}\``,
-  `- **Next commands:** ${runtimeStatus.nextCommands.length > 0 ? runtimeStatus.nextCommands.join(' | ') : 'none'}`,
+  `- **Proof command:** \`${report.record.selected_proof_commands.join(', ') || 'none'}\``,
+  `- **Run ID:** ${runId}`,
   '',
 ];
 
@@ -190,10 +200,47 @@ if (alerts.length > 0) {
 }
 
 markdown.push(
-  '### Suggested Eval Command',
+  '<details>',
+  '<summary>Scope and Verification</summary>',
+  '',
+  `- **Generated at:** ${timestamp}`,
+  `- **Source:** ${report.record.source_kind} (${report.record.source_scope.join(', ')})`,
+  `- **Phase:** ${report.record.resolved_phase}`,
+  `- **Workstream:** ${report.record.resolved_workstream}`,
+  `- **Affected nodes:** ${report.record.affected_nodes.length > 0 ? report.record.affected_nodes.join(', ') : 'none'}`,
+  `- **Affected lanes:** ${report.record.affected_lanes.length > 0 ? report.record.affected_lanes.join(', ') : 'none'}`,
+  `- **Proof resolution source:** ${report.record.proof_resolution_source}`,
+  `- **Uncovered path result:** ${report.record.uncovered_path_result}`,
+  `- **Report artifact:** \`${report.artifactPath}\``,
+  `- **Eval draft artifact:** \`${draft.artifactPath}\``,
+  '',
+  '</details>',
+  '',
+  '<details>',
+  '<summary>Policy Results</summary>',
+  '',
+);
+
+for (const result of report.record.policy_results) {
+  const status =
+    result.passed === true ? 'pass' : result.passed === false ? 'fail' : 'metadata-only';
+  markdown.push(`- **${result.rule_id}**: ${status} — ${result.summary}`);
+}
+
+markdown.push(
+  '',
+  '</details>',
+  '',
+  '<details>',
+  '<summary>Operational Follow-up</summary>',
+  '',
+  `- **Next commands:** ${runtimeStatus.nextCommands.length > 0 ? runtimeStatus.nextCommands.join(' | ') : 'none'}`,
+  '',
+  '#### Suggested Eval Command',
   '',
   `\`${draft.suggestedRecordCommand}\``,
   '',
+  '</details>',
 );
 
 const markdownText = markdown.join('\n');
