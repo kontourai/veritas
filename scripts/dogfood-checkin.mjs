@@ -14,6 +14,8 @@ const runId = process.env.VERITAS_RUN_ID ?? `veritas-checkin-${compactStamp}`;
 const summaryPath = process.env.GITHUB_STEP_SUMMARY;
 const failOnAlerts = process.env.VERITAS_FAIL_ON_ALERTS === '1';
 const isCi = process.env.CI === 'true';
+const changedFrom = process.env.VERITAS_CHANGED_FROM;
+const changedTo = process.env.VERITAS_CHANGED_TO;
 
 function summarizePolicyResults(policyResults) {
   return {
@@ -114,7 +116,9 @@ function writeArtifact(relativePath, content) {
 const report = generateVeritasReport(
   {
     rootDir,
-    workingTree: true,
+    workingTree: !changedFrom && !changedTo,
+    changedFrom,
+    changedTo,
     runId,
     baselineCiFastStatus: 'success',
   },

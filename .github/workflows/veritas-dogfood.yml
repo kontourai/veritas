@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -40,6 +42,9 @@ jobs:
         run: npm run veritas:dogfood:examples
 
       - name: Generate Veritas Dogfood Check-in
+        env:
+          VERITAS_CHANGED_FROM: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+          VERITAS_CHANGED_TO: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
         run: node scripts/dogfood-checkin.mjs
 
       - name: Expose Check-in Outputs
