@@ -1,10 +1,10 @@
 ## Veritas Eval
 
-- **Run ID:** veritas-repo-dogfood
+- **Run ID:** veritas-repo-check-in
 - **Mode:** shadow
 - **Team profile:** veritas-default
-- **Evidence artifact:** `.veritas/evidence/veritas-repo-dogfood.json`
-- **Eval artifact:** `.veritas/evals/veritas-repo-dogfood.json`
+- **Evidence artifact:** `.veritas/evidence/veritas-repo-check-in.json`
+- **Eval artifact:** `.veritas/evals/veritas-repo-check-in.json`
 - **Accepted without major rewrite:** yes
 - **Required follow-up:** no
 - **Reviewer confidence:** high

@@ -2289,13 +2289,18 @@ test('live-eval fixtures explain outcome measurement and team tuning', () => {
     true,
   );
 
-  const dogfoodReport = readJson('../examples/dogfood/veritas-repo-report.json');
-  assert.equal(dogfoodReport.adapter.name, 'veritas');
-  assert.ok(Array.isArray(dogfoodReport.policy_results));
-  assert.ok(dogfoodReport.policy_results.some((result) => result.passed === true));
+  const checkinReport = readJson('../examples/checkins/veritas-repo-report.json');
+  assert.equal(checkinReport.adapter.name, 'veritas');
+  assert.ok(Array.isArray(checkinReport.policy_results));
+  assert.ok(checkinReport.policy_results.some((result) => result.passed === true));
+
+  const redCheckin = readJson('../examples/checkins/veritas-repo-checkin-red.json');
+  assert.equal(redCheckin.health_status, 'red');
+  assert.ok(Array.isArray(redCheckin.alerts));
+  assert.ok(redCheckin.alerts.some((alert) => alert.severity === 'error'));
 });
 
-test('repo-local dogfood config covers the framework repo surface', () => {
+test('repo-local operational config covers the framework repo surface', () => {
   const adapter = readJson('../.veritas/repo.adapter.json');
   const nodeIds = new Set(adapter.graph.nodes.map((node) => node.id));
   assert.ok(nodeIds.has('tooling.bin'));
@@ -2313,17 +2318,17 @@ test('repo-local dogfood config covers the framework repo surface', () => {
   );
 });
 
-test('repo includes an automated dogfood workflow', () => {
+test('repo includes an automated check-in workflow', () => {
   const workflow = readFileSync(
-    new URL('../.github/workflows/veritas-dogfood.yml', import.meta.url),
+    new URL('../.github/workflows/veritas-checkins.yml', import.meta.url),
     'utf8',
   );
 
   assert.match(workflow, /schedule:/);
   assert.match(workflow, /npm run veritas:proof/);
-  assert.match(workflow, /node scripts\/dogfood-checkin\.mjs/);
+  assert.match(workflow, /node scripts\/checkin-status\.mjs/);
   assert.match(workflow, /Update PR Comment/);
-  assert.match(workflow, /Update Dogfood Health Issue/);
+  assert.match(workflow, /Update Health Issue/);
   assert.match(workflow, /actions\/upload-artifact@v4/);
 });
 

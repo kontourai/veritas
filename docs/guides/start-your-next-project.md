@@ -21,6 +21,7 @@ For the exact generated paths and artifact contracts behind that starter kit, us
 The framework now ships a first bootstrap command:
 
 ```bash
+npm install -D @kontourai/veritas
 npm exec -- veritas init
 ```
 
@@ -41,7 +42,6 @@ For the framework to guide the next project well, the repo should start with:
 - one **policy pack**
 - one **team profile**
 - one **proof lane**
-- one **wrapper command** or script
 
 That is enough to make the system feel real without overbuilding.
 
@@ -69,7 +69,7 @@ The bootstrap path should:
 
 ### Wire normal development flow
 
-- suggested local wrapper commands
+- suggested local commands
 - suggested CI hooks
 - short onboarding docs
 
@@ -105,7 +105,7 @@ Use this sequence:
 6. run `npm exec -- veritas apply package-scripts`
 7. run `npm exec -- veritas apply ci-snippet`
 8. run `npm exec -- veritas report --working-tree`
-9. or run `npm exec -- veritas shadow run`
+9. or run `npm exec -- veritas shadow run --working-tree`
 10. optionally run `npm exec -- veritas apply git-hook --configure-git`
 11. or run `npm exec -- veritas apply runtime-hook`
 12. or run `npm exec -- veritas print codex-hook --codex-home /path/to/.codex`
@@ -114,9 +114,9 @@ Use this sequence:
 15. or run `npm exec -- veritas runtime status --codex-home /path/to/.codex`
 16. optionally run `npm exec -- veritas eval draft --evidence .veritas/evidence/<run-id>.json`
 17. then run `npm exec -- veritas eval record --draft .veritas/eval-drafts/<run-id>.json ...`
-18. wire the same paths into review and CI if you want them in your permanent workflow files
+13. wire the same paths into review and CI if you want them in your permanent workflow files
 
-This slice is intentionally conservative. It prints the suggested wiring first, then only writes changes when the user explicitly asks it to.
+This slice is intentionally conservative. Install helpers exist, but the core usage should already be clear before you add extra wiring.
 
 Use `--changed-from <ref> --changed-to <ref>` when you want branch-diff evidence instead of current-state evidence.
 

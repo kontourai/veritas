@@ -1,6 +1,6 @@
 {
   "framework_version": 1,
-  "run_id": "veritas-repo-dogfood",
+  "run_id": "veritas-repo-check-in",
   "timestamp": "2026-04-21T22:00:00.000Z",
   "source_ref": "refs/heads/main",
   "source_kind": "explicit-files",
@@ -101,10 +101,10 @@
   },
   "policy_results": [
     {
-      "rule_id": "required-veritas-dogfood-artifacts",
+      "rule_id": "required-veritas-checkins-artifacts",
       "classification": "hard-invariant",
       "stage": "block",
-      "message": "The tracked Veritas dogfood artifacts must stay present so agents and reviewers share the same baseline.",
+      "message": "The tracked Veritas check-in artifacts must stay present so agents and reviewers share the same baseline.",
       "owner": "repo-core",
       "rollback_switch": null,
       "implemented": true,

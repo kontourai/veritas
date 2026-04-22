@@ -1,5 +1,5 @@
 {
-  "name": "veritas",
+  "name": "@kontourai/veritas",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -22,11 +22,11 @@
     "veritas:status:runtime": "npm exec -- veritas runtime status",
     "veritas:proof": "npm run verify",
     "veritas:eval": "npm exec -- veritas shadow run",
-    "veritas:dogfood:report": "npm exec -- veritas report --working-tree --run-id dogfood-local",
-    "veritas:dogfood:shadow": "npm exec -- veritas shadow run --working-tree",
-    "veritas:dogfood:checkin": "node scripts/dogfood-checkin.mjs",
-    "veritas:dogfood:examples": "node scripts/build-dogfood-examples.mjs",
-    "veritas:dogfood:prove": "npm run veritas:proof && npm run veritas:dogfood:examples && npm run veritas:dogfood:checkin",
-    "veritas:ci:dogfood": "npm run veritas:dogfood:prove"
+    "veritas:checkin:report": "npm exec -- veritas report --working-tree --run-id check-in-local",
+    "veritas:checkin:shadow": "npm exec -- veritas shadow run --working-tree",
+    "veritas:checkin": "node scripts/checkin-status.mjs",
+    "veritas:checkin:examples": "node scripts/build-checkin-examples.mjs",
+    "veritas:checkin:prove": "npm run veritas:proof && npm run veritas:checkin:examples && npm run veritas:checkin",
+    "veritas:ci:checkin": "npm run veritas:checkin:prove"
   }
 }

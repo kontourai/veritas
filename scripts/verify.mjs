@@ -38,20 +38,20 @@ assert(
   'README must link to the example fixtures reference.',
 );
 assert(
-  readme.includes('## Dogfooding'),
-  'README must include a dogfooding section.',
+  readme.includes('## Operational Check-ins'),
+  'README must include an operational check-ins section.',
 );
 assert(
-  readme.includes('veritas:dogfood:examples'),
-  'README must mention the dogfood example command.',
+  readme.includes('veritas:checkin:examples'),
+  'README must mention the check-in examples command.',
 );
 assert(
-  readme.includes('.github/workflows/veritas-dogfood.yml'),
-  'README must mention the dogfood workflow.',
+  readme.includes('.github/workflows/veritas-checkins.yml'),
+  'README must mention the check-in workflow.',
 );
 assert(
-  readme.includes('Veritas Dogfood Health'),
-  'README must mention the dogfood health issue.',
+  readme.includes('Veritas Health'),
+  'README must mention the check-in health issue.',
 );
 
 const docsIndex = readText('docs/README.md');
@@ -80,8 +80,8 @@ assert(
   'Docs index must link to the example fixtures reference.',
 );
 assert(
-  docsIndex.includes('guides/dogfooding-veritas.md'),
-  'Docs index must link to the dogfooding guide.',
+  docsIndex.includes('guides/operational-checkins.md'),
+  'Docs index must link to the operational check-ins guide.',
 );
 
 const cliReference = readText('docs/reference/cli.md');
@@ -162,8 +162,12 @@ assert(
   'Examples reference must include the classification fixture.',
 );
 assert(
-  examplesReference.includes('examples/dogfood/veritas-repo-report.json'),
-  'Examples reference must include the dogfood report example.',
+  examplesReference.includes('examples/checkins/veritas-repo-report.json'),
+  'Examples reference must include the check-in report example.',
+);
+assert(
+  examplesReference.includes('examples/checkins/veritas-repo-checkin-red.json'),
+  'Examples reference must include the red checkin example.',
 );
 
 const designDoc = readText('docs/design/framework-core-vs-adapter.md');
@@ -227,31 +231,19 @@ assert(
 );
 assert(
   gettingStartedGuide.includes('npm exec -- veritas apply git-hook --configure-git'),
-  'Getting-started guide must include the git-hook apply command.',
-);
-assert(
-  gettingStartedGuide.includes('npm exec -- veritas apply runtime-hook'),
-  'Getting-started guide must include the runtime-hook apply command.',
+  'Getting-started guide must include the optional git-hook apply command.',
 );
 assert(
   gettingStartedGuide.includes('npm exec -- veritas apply codex-hook --target-hooks-file'),
-  'Getting-started guide must include the Codex hook apply command.',
+  'Getting-started guide must include the optional Codex hook apply command.',
 );
 assert(
   gettingStartedGuide.includes('npm exec -- veritas apply codex-hook --codex-home'),
-  'Getting-started guide must include the Codex-home apply command.',
-);
-assert(
-  gettingStartedGuide.includes('npm exec -- veritas print codex-hook --codex-home'),
-  'Getting-started guide must include the Codex-home preview command.',
+  'Getting-started guide must include the optional Codex-home apply command.',
 );
 assert(
   gettingStartedGuide.includes('npm exec -- veritas runtime status --codex-home'),
   'Getting-started guide must include the runtime status command.',
-);
-assert(
-  gettingStartedGuide.includes('no Codex target was checked yet'),
-  'Getting-started guide must explain the no-target-checked runtime status case.',
 );
 assert(
   gettingStartedGuide.includes('repo-local under `.veritas/evidence/`'),
@@ -370,20 +362,8 @@ assert(
   'Bootstrap guide must include the bootstrap command.',
 );
 assert(
-  bootstrapGuide.includes('npm exec -- veritas print package-scripts'),
-  'Bootstrap guide must include the package-script helper command.',
-);
-assert(
-  bootstrapGuide.includes('npm exec -- veritas print ci-snippet'),
-  'Bootstrap guide must include the CI snippet helper command.',
-);
-assert(
-  bootstrapGuide.includes('npm exec -- veritas apply package-scripts'),
-  'Bootstrap guide must include the package-script apply command.',
-);
-assert(
-  bootstrapGuide.includes('npm exec -- veritas apply ci-snippet'),
-  'Bootstrap guide must include the CI snippet apply command.',
+  bootstrapGuide.includes('npm install -D @kontourai/veritas'),
+  'Bootstrap guide must include the scoped package install command.',
 );
 assert(
   bootstrapGuide.includes('repo shape it inferred'),
@@ -411,31 +391,19 @@ assert(
 );
 assert(
   bootstrapGuide.includes('npm exec -- veritas apply git-hook --configure-git'),
-  'Bootstrap guide must include the git-hook apply command.',
-);
-assert(
-  bootstrapGuide.includes('npm exec -- veritas apply runtime-hook'),
-  'Bootstrap guide must include the runtime-hook apply command.',
+  'Bootstrap guide must include the optional git-hook apply command.',
 );
 assert(
   bootstrapGuide.includes('npm exec -- veritas apply codex-hook --target-hooks-file'),
-  'Bootstrap guide must include the Codex hook apply command.',
+  'Bootstrap guide must include the optional Codex hook apply command.',
 );
 assert(
   bootstrapGuide.includes('npm exec -- veritas apply codex-hook --codex-home'),
-  'Bootstrap guide must include the Codex-home apply command.',
-);
-assert(
-  bootstrapGuide.includes('npm exec -- veritas print codex-hook --codex-home'),
-  'Bootstrap guide must include the Codex-home preview command.',
+  'Bootstrap guide must include the optional Codex-home apply command.',
 );
 assert(
   bootstrapGuide.includes('npm exec -- veritas runtime status --codex-home'),
   'Bootstrap guide must include the runtime status command.',
-);
-assert(
-  bootstrapGuide.includes('Codex target not inspected yet'),
-  'Bootstrap guide must explain the no-target-checked runtime status case.',
 );
 assert(
   bootstrapGuide.includes('reruns should use `--force`'),
@@ -448,11 +416,15 @@ assert(
   'README must present the bootstrap command.',
 );
 assert(
+  rootReadme.includes('npm install -D @kontourai/veritas'),
+  'README must include the scoped package install command.',
+);
+assert(
   rootReadme.includes('## What This Project Ships'),
   'README must explain what the project ships.',
 );
 assert(
-  rootReadme.includes('repo-local framework and CLI'),
+  rootReadme.includes('framework and CLI'),
   'README must describe the project clearly at the top level.',
 );
 assert(
@@ -468,16 +440,12 @@ assert(
   'README must link to the artifacts and schemas reference.',
 );
 assert(
+  rootReadme.includes('docs/reference/telemetry-and-read-models.md'),
+  'README must link to the telemetry/read-model reference.',
+);
+assert(
   rootReadme.includes('docs/reference/examples.md'),
   'README must link to the example fixtures reference.',
-);
-assert(
-  rootReadme.includes('npm exec -- veritas print package-scripts'),
-  'README must include the package-scripts print command.',
-);
-assert(
-  rootReadme.includes('npm exec -- veritas apply package-scripts'),
-  'README must include the package-scripts apply command.',
 );
 assert(
   rootReadme.includes('npm exec -- veritas report --working-tree'),
@@ -515,50 +483,54 @@ assert(
   'package.json must expose the veritas CLI.',
 );
 assert(
-  readText('package.json').includes('"veritas:dogfood:examples"'),
-  'package.json must expose the dogfood example script.',
+  readText('package.json').includes('"name": "@kontourai/veritas"'),
+  'package.json must use the scoped public package name.',
 );
 assert(
-  readText('package.json').includes('"veritas:dogfood:checkin"'),
-  'package.json must expose the dogfood checkin script.',
+  readText('package.json').includes('"veritas:checkin:examples"'),
+  'package.json must expose the check-in example script.',
 );
 assert(
-  readText('package.json').includes('"veritas:ci:dogfood"'),
-  'package.json must expose the CI dogfood script.',
+  readText('package.json').includes('"veritas:checkin"'),
+  'package.json must expose the check-in script.',
+);
+assert(
+  readText('package.json').includes('"veritas:ci:checkin"'),
+  'package.json must expose the CI check-in script.',
 );
 
-const dogfoodWorkflow = readText('.github/workflows/veritas-dogfood.yml');
+const checkinWorkflow = readText('.github/workflows/veritas-checkins.yml');
 assert(
-  dogfoodWorkflow.includes('schedule:'),
-  'Dogfood workflow must include a schedule.',
+  checkinWorkflow.includes('schedule:'),
+  'Check-in workflow must include a schedule.',
 );
 assert(
-  dogfoodWorkflow.includes('Run Veritas Proof Lane'),
-  'Dogfood workflow must run the Veritas proof lane.',
+  checkinWorkflow.includes('Run Veritas Proof Lane'),
+  'Check-in workflow must run the Veritas proof lane.',
 );
 assert(
-  dogfoodWorkflow.includes('Generate Veritas Dogfood Check-in'),
-  'Dogfood workflow must generate a dogfood check-in.',
+  checkinWorkflow.includes('Generate Veritas Check-in'),
+  'Check-in workflow must generate a check-in.',
 );
 assert(
-  dogfoodWorkflow.includes('actions/upload-artifact@v4'),
-  'Dogfood workflow must upload artifacts.',
+  checkinWorkflow.includes('actions/upload-artifact@v4'),
+  'Check-in workflow must upload artifacts.',
 );
 assert(
-  dogfoodWorkflow.includes('actions/github-script@v7'),
-  'Dogfood workflow must use github-script for active escalation.',
+  checkinWorkflow.includes('actions/github-script@v7'),
+  'Check-in workflow must use github-script for active escalation.',
 );
 assert(
-  dogfoodWorkflow.includes('Update PR Comment'),
-  'Dogfood workflow must update PR comments.',
+  checkinWorkflow.includes('Update PR Comment'),
+  'Check-in workflow must update PR comments.',
 );
 assert(
-  dogfoodWorkflow.includes('Update Dogfood Health Issue'),
-  'Dogfood workflow must update the dogfood health issue.',
+  checkinWorkflow.includes('Update Health Issue'),
+  'Check-in workflow must update the health issue.',
 );
 assert(
-  dogfoodWorkflow.includes('Fail On Red Dogfood Health'),
-  'Dogfood workflow must fail on red health.',
+  checkinWorkflow.includes('Fail On Red Health'),
+  'Check-in workflow must fail on red health.',
 );
 
 const workAgentAdapter = readJson('adapters/work-agent.adapter.json');
@@ -624,44 +596,54 @@ for (const evidenceExample of [
   assert(Array.isArray(parsed.policy_results), `${evidenceExample} must include policy results.`);
 }
 
-const dogfoodGuide = readText('docs/guides/dogfooding-veritas.md');
+const checkinGuide = readText('docs/guides/operational-checkins.md');
 assert(
-  dogfoodGuide.includes('npm run veritas:dogfood:prove'),
-  'Dogfooding guide must include the prove command.',
+  checkinGuide.includes('npm run veritas:checkin:prove'),
+  'Operational check-ins guide must include the prove command.',
 );
 assert(
-  dogfoodGuide.includes('npm run veritas:dogfood:checkin'),
-  'Dogfooding guide must include the checkin command.',
+  checkinGuide.includes('npm run veritas:checkin'),
+  'Operational check-ins guide must include the check-in command.',
 );
 assert(
-  dogfoodGuide.includes('examples/dogfood/veritas-repo-report.json'),
-  'Dogfooding guide must link to the committed dogfood report example.',
+  checkinGuide.includes('examples/checkins/veritas-repo-report.json'),
+  'Operational check-ins guide must link to the committed check-in report example.',
 );
 assert(
-  dogfoodGuide.includes('.github/workflows/veritas-dogfood.yml'),
-  'Dogfooding guide must mention the dogfood workflow.',
+  checkinGuide.includes('examples/checkins/veritas-repo-checkin-red.json'),
+  'Operational check-ins guide must link to the committed red check-in example.',
 );
 assert(
-  dogfoodGuide.includes('Veritas Dogfood Health'),
-  'Dogfooding guide must mention the dogfood health issue.',
-);
-
-const dogfoodReadme = readText('examples/dogfood/README.md');
-assert(
-  dogfoodReadme.includes('npm run veritas:dogfood:examples'),
-  'Dogfood examples README must include the refresh command.',
+  checkinGuide.includes('.github/workflows/veritas-checkins.yml'),
+  'Operational check-ins guide must mention the check-in workflow.',
 );
 assert(
-  dogfoodReadme.includes('npm run veritas:dogfood:checkin'),
-  'Dogfood examples README must include the checkin command.',
+  checkinGuide.includes('Veritas Health'),
+  'Operational check-ins guide must mention the health issue.',
 );
 
-const dogfoodReport = readJson('examples/dogfood/veritas-repo-report.json');
-assert(dogfoodReport.adapter?.name === 'veritas', 'Dogfood report must target the veritas adapter.');
-assert(Array.isArray(dogfoodReport.policy_results), 'Dogfood report must include policy results.');
+const checkinReadme = readText('examples/checkins/README.md');
 assert(
-  dogfoodReport.policy_results.some((result) => result.passed === true),
-  'Dogfood report must include passing policy results.',
+  checkinReadme.includes('npm run veritas:checkin:examples'),
+  'Check-in examples README must include the refresh command.',
+);
+assert(
+  checkinReadme.includes('npm run veritas:checkin'),
+  'Check-in examples README must include the check-in command.',
+);
+
+const checkinReport = readJson('examples/checkins/veritas-repo-report.json');
+assert(checkinReport.adapter?.name === 'veritas', 'Check-in report must target the veritas adapter.');
+assert(Array.isArray(checkinReport.policy_results), 'Check-in report must include policy results.');
+assert(
+  checkinReport.policy_results.some((result) => result.passed === true),
+  'Check-in report must include passing policy results.',
+);
+const redCheckin = readJson('examples/checkins/veritas-repo-checkin-red.json');
+assert(redCheckin.health_status === 'red', 'Red check-in must have red health.');
+assert(
+  Array.isArray(redCheckin.alerts) && redCheckin.alerts.some((alert) => alert.severity === 'error'),
+  'Red check-in must include at least one error alert.',
 );
 
 const evalRecordExample = readJson('examples/evals/work-agent-shadow-eval.json');

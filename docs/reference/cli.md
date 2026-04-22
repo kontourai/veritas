@@ -22,16 +22,13 @@ The convenience `veritas-report` binary defaults to repo-local starter paths:
 The shortest end-user path is:
 
 ```bash
+npm install -D @kontourai/veritas
 npm exec -- veritas init
-npm exec -- veritas print package-scripts
-npm exec -- veritas print ci-snippet
-npm exec -- veritas apply package-scripts
-npm exec -- veritas apply ci-snippet
 npm exec -- veritas report --working-tree
-npm exec -- veritas shadow run
+npm exec -- veritas shadow run --working-tree
 ```
 
-Use `report` when you want evidence only. Use `shadow run` when you want proof, evidence, and eval-draft orchestration in one command.
+Use `report` when you want evidence only. Use `shadow run` when you want proof, evidence, and eval-draft orchestration in one command. Treat `print` and `apply` as optional installer helpers, not the main product path.
 
 ## Commands
 

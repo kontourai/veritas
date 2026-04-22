@@ -8,8 +8,8 @@ import {
 } from '../src/index.mjs';
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const examplesDir = resolve(rootDir, 'examples/dogfood');
-const runId = 'veritas-repo-dogfood';
+const examplesDir = resolve(rootDir, 'examples/checkins');
+const runId = 'veritas-repo-check-in';
 const timestamp = '2026-04-21T22:00:00.000Z';
 const explicitFiles = [
   '.veritas/repo.adapter.json',
@@ -85,12 +85,12 @@ const evaluation = generateEvalRecord(
 );
 
 mkdirSync(examplesDir, { recursive: true });
-copyJsonArtifact(report.artifactPath, 'examples/dogfood/veritas-repo-report.json');
-copyJsonArtifact(draft.artifactPath, 'examples/dogfood/veritas-repo-eval-draft.json');
-copyJsonArtifact(evaluation.artifactPath, 'examples/dogfood/veritas-repo-eval.json');
-writeText('examples/dogfood/veritas-repo-report.md', report.markdownSummary);
-writeText('examples/dogfood/veritas-repo-eval-draft.md', draft.markdownSummary);
-writeText('examples/dogfood/veritas-repo-eval.md', evaluation.markdownSummary);
+copyJsonArtifact(report.artifactPath, 'examples/checkins/veritas-repo-report.json');
+copyJsonArtifact(draft.artifactPath, 'examples/checkins/veritas-repo-eval-draft.json');
+copyJsonArtifact(evaluation.artifactPath, 'examples/checkins/veritas-repo-eval.json');
+writeText('examples/checkins/veritas-repo-report.md', report.markdownSummary);
+writeText('examples/checkins/veritas-repo-eval-draft.md', draft.markdownSummary);
+writeText('examples/checkins/veritas-repo-eval.md', evaluation.markdownSummary);
 
 process.stdout.write(
   `${JSON.stringify(
@@ -98,12 +98,12 @@ process.stdout.write(
       runId,
       sourceFiles: explicitFiles,
       outputs: [
-        'examples/dogfood/veritas-repo-report.json',
-        'examples/dogfood/veritas-repo-report.md',
-        'examples/dogfood/veritas-repo-eval-draft.json',
-        'examples/dogfood/veritas-repo-eval-draft.md',
-        'examples/dogfood/veritas-repo-eval.json',
-        'examples/dogfood/veritas-repo-eval.md',
+        'examples/checkins/veritas-repo-report.json',
+        'examples/checkins/veritas-repo-report.md',
+        'examples/checkins/veritas-repo-eval-draft.json',
+        'examples/checkins/veritas-repo-eval-draft.md',
+        'examples/checkins/veritas-repo-eval.json',
+        'examples/checkins/veritas-repo-eval.md',
       ],
     },
     null,

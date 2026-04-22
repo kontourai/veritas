@@ -12,10 +12,10 @@
 - **Baseline `ci:fast` passed:** yes
 - **Report transport:** local-json
 - **Policy results:** 4 passed, 0 failed, 1 metadata-only
-- **Artifact:** `.veritas/evidence/veritas-repo-dogfood.json`
+- **Artifact:** `.veritas/evidence/veritas-repo-check-in.json`
 
 ### Policy Results
-- required-veritas-dogfood-artifacts: pass — All required repository artifacts are present.
+- required-veritas-checkins-artifacts: pass — All required repository artifacts are present.
 - required-veritas-cli-artifacts: pass — All required repository artifacts are present.
 - required-veritas-reference-artifacts: pass — All required repository artifacts are present.
 - required-veritas-schema-artifacts: pass — All required repository artifacts are present.

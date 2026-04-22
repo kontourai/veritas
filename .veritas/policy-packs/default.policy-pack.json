@@ -4,10 +4,10 @@
   "description": "Conservative starter policy pack for a newly bootstrapped AI-guided repository.",
   "rules": [
     {
-      "id": "required-veritas-dogfood-artifacts",
+      "id": "required-veritas-operational-artifacts",
       "classification": "hard-invariant",
       "stage": "block",
-      "message": "The tracked Veritas dogfood artifacts must stay present so agents and reviewers share the same baseline.",
+      "message": "The tracked Veritas operational artifacts must stay present so agents and reviewers share the same baseline.",
       "owner": "repo-core",
       "rollback_switch": null,
       "match": {

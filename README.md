@@ -1,6 +1,6 @@
 # Veritas
 
-`veritas` is a repo-local framework and CLI for making AI-assisted development easier to trust.
+`@kontourai/veritas` is a repo-local framework and CLI for making AI-assisted development easier to trust.
 
 It gives a codebase four things:
 
@@ -31,9 +31,11 @@ All shipped CLI commands print JSON to stdout, and the command surfaces describe
 
 Repo-specific bindings belong in adapters and policy packs.
 
-## Dogfooding
+## Operational Check-ins
 
 This repo uses `veritas` on itself through the tracked files in `.veritas/`.
+
+The intent is to use the same operational check-in flow that a normal consumer repo would use, not a one-off internal lane.
 
 - keep `.veritas/repo.adapter.json`, `.veritas/policy-packs/default.policy-pack.json`, `.veritas/team/default.team-profile.json`, and `.veritas/README.md` reviewable and tracked
 - keep the repo in `shadow` mode while the operator surface is still evolving
@@ -43,21 +45,21 @@ This repo uses `veritas` on itself through the tracked files in `.veritas/`.
 Use these repo-local scripts:
 
 ```bash
-npm run veritas:dogfood:report
-npm run veritas:dogfood:shadow
-npm run veritas:dogfood:checkin
-npm run veritas:dogfood:examples
-npm run veritas:dogfood:prove
+npm run veritas:checkin:report
+npm run veritas:checkin:shadow
+npm run veritas:checkin
+npm run veritas:checkin:examples
+npm run veritas:checkin:prove
 ```
 
-The committed proof examples live under [examples/dogfood](/Users/brian/dev/github/kontourai/veritas/examples/dogfood), and the dogfood workflow is documented in [docs/guides/dogfooding-veritas.md](/Users/brian/dev/github/kontourai/veritas/docs/guides/dogfooding-veritas.md).
+The committed proof examples live under [examples/checkins](/Users/brian/dev/github/kontourai/veritas/examples/checkins), and the check-in workflow is documented in [docs/guides/operational-checkins.md](/Users/brian/dev/github/kontourai/veritas/docs/guides/operational-checkins.md).
 
-There is also a scheduled GitHub Actions workflow at [.github/workflows/veritas-dogfood.yml](/Users/brian/dev/github/kontourai/veritas/.github/workflows/veritas-dogfood.yml) that runs the dogfood lane on `main`, on pull requests, on manual dispatch, and weekly. It uploads the generated `.veritas` check-in artifacts so you can inspect how the self-hosting lane is behaving over time.
+There is also a scheduled GitHub Actions workflow at [.github/workflows/veritas-checkins.yml](/Users/brian/dev/github/kontourai/veritas/.github/workflows/veritas-checkins.yml) that runs the check-in lane on `main`, on pull requests, on manual dispatch, and weekly. It uploads the generated `.veritas` check-in artifacts so you can inspect how the self-hosting lane is behaving over time.
 
 That workflow now actively elevates the evidence:
 
-- pull requests get an updated Veritas dogfood comment
-- non-PR runs update a standing `Veritas Dogfood Health` issue when health is not green
+- pull requests get an updated Veritas check-in comment
+- non-PR runs update a standing `Veritas Health` issue when health is not green
 - the issue closes automatically again when health returns to green
 
 ## Quickstart
@@ -73,6 +75,7 @@ npm test
 Bootstrap a target repo with the starter kit:
 
 ```bash
+npm install -D @kontourai/veritas
 npm exec -- veritas init
 ```
 
@@ -84,7 +87,7 @@ npm exec -- veritas print ci-snippet
 npm exec -- veritas apply package-scripts
 npm exec -- veritas apply ci-snippet
 npm exec -- veritas report --working-tree
-npm exec -- veritas shadow run
+npm exec -- veritas shadow run --working-tree
 ```
 
 If you want exact flags instead of the short path, use:
@@ -102,6 +105,7 @@ Start here:
 - [Getting Started](docs/guides/getting-started.md) for first-time setup and the basic workflow
 - [CLI Reference](docs/reference/cli.md) for exact commands, flags, outputs, and generated files
 - [Artifacts and Schemas](docs/reference/artifacts-and-schemas.md) for the repo structure and JSON contract surface
+- [Telemetry and Read Models](docs/reference/telemetry-and-read-models.md) for canonical artifacts, derived summaries, and optional telemetry export
 - [Example Fixtures](docs/reference/examples.md) for the shipped evidence, eval, and classification examples
 
 Go deeper here:
@@ -111,7 +115,7 @@ Go deeper here:
 - [Policy Packs](docs/design/policy-packs.md)
 - [Live Evals](docs/design/live-evals.md)
 - [Live Eval Roadmap](docs/design/live-eval-roadmap.md)
-- [Dogfooding Veritas](docs/guides/dogfooding-veritas.md)
+- [Operational Check-ins](docs/guides/operational-checkins.md)
 - [Tune The Framework For Your Team](docs/guides/tune-for-your-team.md)
 - [Start Your Next Project With Veritas](docs/guides/start-your-next-project.md)
 

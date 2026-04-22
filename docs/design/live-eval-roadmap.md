@@ -17,6 +17,7 @@ Build:
 - team profile capture
 - simple outcome summaries
 - shipped CLI path from report artifact to eval artifact
+- optional command-level telemetry export only after artifact semantics are stable
 
 Questions answered:
 
@@ -68,6 +69,8 @@ These can wait until the framework has real live-eval history:
 - hosted analytics
 - model fine-tuning loops
 - automatic rule promotion
+
+If telemetry is added before dashboards, it should stay downstream from canonical artifacts and use command-level spans or events rather than a synthetic end-to-end lifecycle trace.
 
 The early goal is not complexity.
 The early goal is to learn what guidance actually works.

@@ -1,4 +1,4 @@
-name: Veritas Dogfood
+name: Veritas Check-ins
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -18,11 +18,13 @@ permissions:
   pull-requests: write
 
 jobs:
-  dogfood:
+  checkin:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -36,11 +38,14 @@ jobs:
       - name: Run Veritas Proof Lane
         run: npm run veritas:proof
 
-      - name: Refresh Committed Dogfood Examples
-        run: npm run veritas:dogfood:examples
+      - name: Refresh Committed Check-in Examples
+        run: npm run veritas:checkin:examples
 
-      - name: Generate Veritas Dogfood Check-in
-        run: node scripts/dogfood-checkin.mjs
+      - name: Generate Veritas Check-in
+        env:
+          VERITAS_CHANGED_FROM: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+          VERITAS_CHANGED_TO: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
+        run: node scripts/checkin-status.mjs
 
       - name: Expose Check-in Outputs
         id: checkin
@@ -55,17 +60,17 @@ jobs:
           console.log(`eval_draft_artifact_path=${checkin.eval_draft_artifact_path}`);
           EOF
 
-      - name: Upload Veritas Dogfood Artifacts
+      - name: Upload Veritas Check-in Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: veritas-dogfood-${{ github.run_id }}
+          name: veritas-checkins-${{ github.run_id }}
           path: |
             .veritas/evidence/
             .veritas/eval-drafts/
             .veritas/evals/
             .veritas/checkins/
-            examples/dogfood/
+            examples/checkins/
 
       - name: Update PR Comment
         if: always() && github.event_name == 'pull_request' && steps.checkin.outcome == 'success'
@@ -74,7 +79,7 @@ jobs:
           script: |
             const fs = require('node:fs');
             const body = fs.readFileSync('.veritas/checkins/latest.md', 'utf8');
-            const marker = '<!-- veritas-dogfood-comment -->';
+            const marker = '<!-- veritas-checkin-comment -->';
             const commentBody = `${marker}\n${body}`;
             const { owner, repo } = context.repo;
             const issue_number = context.payload.pull_request.number;
@@ -101,7 +106,7 @@ jobs:
               });
             }
 
-      - name: Update Dogfood Health Issue
+      - name: Update Health Issue
         if: always() && github.event_name != 'pull_request' && steps.checkin.outcome == 'success'
         uses: actions/github-script@v7
         with:
@@ -109,8 +114,8 @@ jobs:
             const fs = require('node:fs');
             const checkin = JSON.parse(fs.readFileSync('.veritas/checkins/latest.json', 'utf8'));
             const body = fs.readFileSync('.veritas/checkins/latest.md', 'utf8');
-            const title = 'Veritas Dogfood Health';
-            const marker = '<!-- veritas-dogfood-health -->';
+            const title = 'Veritas Health';
+            const marker = '<!-- veritas-health -->';
             const issueBody = `${marker}\n${body}`;
             const { owner, repo } = context.repo;
             const allIssues = await github.paginate(github.rest.issues.listForRepo, {
@@ -150,7 +155,7 @@ jobs:
                 owner,
                 repo,
                 issue_number: existing.number,
-                body: `Automated Veritas dogfood check-in \`${checkin.run_id}\` reported **${checkin.health_status}** health.`,
+                body: `Automated Veritas check-in \`${checkin.run_id}\` reported **${checkin.health_status}** health.`,
               });
             } else if (existing && existing.state === 'closed') {
               await github.rest.issues.update({
@@ -169,8 +174,8 @@ jobs:
               });
             }
 
-      - name: Fail On Red Dogfood Health
+      - name: Fail On Red Health
         if: steps.checkin.outcome == 'success' && steps.checkin.outputs.health_status == 'red'
         run: |
-          echo "Veritas dogfood health is red; see .veritas/checkins/latest.md and uploaded artifacts."
+          echo "Veritas check-in health is red; see .veritas/checkins/latest.md and uploaded artifacts."
           exit 1

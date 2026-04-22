@@ -78,21 +78,24 @@ Use it to see the completed live-eval shape:
 
 This file groups a real repo's current convergence checks into rule families. It is useful when you want to move from bespoke enforcement scripts toward a clearer policy-pack vocabulary.
 
-## Dogfood Examples
+## Check-in Examples
 
-These live under `examples/dogfood/` and show Veritas used on the Veritas repo itself.
+These live under `examples/checkins/` and show Veritas used on the Veritas repo itself.
 
-- [examples/dogfood/README.md](../../examples/dogfood/README.md)
-- [examples/dogfood/veritas-repo-report.json](../../examples/dogfood/veritas-repo-report.json)
-- [examples/dogfood/veritas-repo-report.md](../../examples/dogfood/veritas-repo-report.md)
-- [examples/dogfood/veritas-repo-eval-draft.json](../../examples/dogfood/veritas-repo-eval-draft.json)
-- [examples/dogfood/veritas-repo-eval.json](../../examples/dogfood/veritas-repo-eval.json)
+- [examples/checkins/README.md](../../examples/checkins/README.md)
+- [examples/checkins/veritas-repo-report.json](../../examples/checkins/veritas-repo-report.json)
+- [examples/checkins/veritas-repo-report.md](../../examples/checkins/veritas-repo-report.md)
+- [examples/checkins/veritas-repo-eval-draft.json](../../examples/checkins/veritas-repo-eval-draft.json)
+- [examples/checkins/veritas-repo-eval.json](../../examples/checkins/veritas-repo-eval.json)
+- [examples/checkins/veritas-repo-checkin-red.json](../../examples/checkins/veritas-repo-checkin-red.json)
+- [examples/checkins/veritas-repo-checkin-red.md](../../examples/checkins/veritas-repo-checkin-red.md)
 
 Use these to inspect:
 
 - a repo-local adapter classifying this repo without unresolved files
 - a repo-local policy pack producing concrete `policy_results`
 - a draft-first eval flow on a real self-hosted example
+- the exact shape of a red-health automated check-in when check-in automation detects a regression
 
 ## How To Use These Fixtures
 

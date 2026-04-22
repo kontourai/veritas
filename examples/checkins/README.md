@@ -1,4 +1,4 @@
-# Veritas Dogfood Examples
+# Veritas Check-in Examples
 
 These files are curated proof artifacts generated from the `veritas` repo using its tracked `.veritas/` configuration.
 
@@ -12,15 +12,17 @@ Current example set:
 - `veritas-repo-eval-draft.md`
 - `veritas-repo-eval.json`
 - `veritas-repo-eval.md`
+- `veritas-repo-checkin-red.json`
+- `veritas-repo-checkin-red.md`
 
 Refresh them with:
 
 ```bash
-npm run veritas:dogfood:examples
+npm run veritas:checkin:examples
 ```
 
 Generate an untracked point-in-time self-hosting snapshot with:
 
 ```bash
-npm run veritas:dogfood:checkin
+npm run veritas:checkin
 ```

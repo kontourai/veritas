@@ -41,6 +41,20 @@ These are the paths the framework writes into a target repo.
 
 The CLI intentionally refuses to write these artifacts outside their reviewable directories unless the path class itself is allowed.
 
+## Canonical vs Derived
+
+Canonical records:
+
+- evidence/report artifacts under `.veritas/evidence/`
+- eval drafts under `.veritas/eval-drafts/`
+- eval records under `.veritas/evals/`
+
+Derived read-model artifacts may exist on top of those records. Current example:
+
+- operational check-ins under `.veritas/checkins/`
+
+Derived artifacts are useful summaries, but they should not become second sources of truth.
+
 ## Reference Artifact Types
 
 ### Adapter

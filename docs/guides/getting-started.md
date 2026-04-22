@@ -60,6 +60,7 @@ If those pass, move straight into adapter + policy-pack setup.
 The fastest way to start is:
 
 ```bash
+npm install -D @kontourai/veritas
 npm exec -- veritas init
 ```
 
@@ -114,16 +115,7 @@ The output gives you:
 If you want to start Phase 1 live eval, capture a shadow eval from that evidence artifact:
 
 ```bash
-npm exec -- veritas shadow run
-npm exec -- veritas print git-hook
-npm exec -- veritas apply git-hook --configure-git
-npm exec -- veritas print runtime-hook
-npm exec -- veritas apply runtime-hook
-npm exec -- veritas print codex-hook
-npm exec -- veritas print codex-hook --codex-home /path/to/.codex
-npm exec -- veritas apply codex-hook --codex-home /path/to/.codex
-npm exec -- veritas apply codex-hook --target-hooks-file /path/to/hooks.json
-npm exec -- veritas runtime status --codex-home /path/to/.codex
+npm exec -- veritas shadow run --working-tree
 
 npm exec -- veritas eval draft \
   --evidence .veritas/evidence/local-smoke.json
@@ -135,6 +127,17 @@ npm exec -- veritas eval record \
   --reviewer-confidence high \
   --time-to-green-minutes 12 \
   --override-count 0
+```
+
+Optional runtime installs still exist, but they are not required for the core product path:
+
+```bash
+npm exec -- veritas apply git-hook --configure-git
+npm exec -- veritas apply runtime-hook
+npm exec -- veritas print codex-hook --codex-home /path/to/.codex
+npm exec -- veritas runtime status --codex-home /path/to/.codex
+npm exec -- veritas apply codex-hook --codex-home /path/to/.codex
+npm exec -- veritas apply codex-hook --target-hooks-file /path/to/hooks.json
 ```
 
 That keeps the workflow explicit:

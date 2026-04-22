@@ -4,12 +4,13 @@ This repo was bootstrapped for `veritas` with a conservative starter kit for age
 
 This copy is intentionally tracked and slightly tightened for the framework repo itself, so self-hosting covers `bin/`, `schemas/`, `adapters/`, `policy-packs/`, and `examples/` instead of sending those areas straight to manual review.
 
-The repo-level dogfood commands live in `package.json`:
+The repo-level check-in commands live in `package.json`:
 
-- `npm run veritas:dogfood:report`
-- `npm run veritas:dogfood:shadow`
-- `npm run veritas:dogfood:examples`
-- `npm run veritas:dogfood:prove`
+- `npm run veritas:checkin:report`
+- `npm run veritas:checkin:shadow`
+- `npm run veritas:checkin`
+- `npm run veritas:checkin:examples`
+- `npm run veritas:checkin:prove`
 
 ## Generated Files
 

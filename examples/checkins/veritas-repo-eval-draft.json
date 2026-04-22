@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "run_id": "veritas-repo-dogfood",
+  "run_id": "veritas-repo-check-in",
   "team_profile_id": "veritas-default",
   "mode": "shadow",
   "evidence": {
-    "artifact_path": ".veritas/evidence/veritas-repo-dogfood.json",
+    "artifact_path": ".veritas/evidence/veritas-repo-check-in.json",
     "artifact_digest": "3748bf4a9f69ef0da706e2da8c727b0d7a63f1d894284ac615be82b2ed504f81",
     "timestamp": "2026-04-21T22:00:00.000Z",
     "source_ref": "refs/heads/main",
@@ -31,19 +31,27 @@
       "tests/**"
     ]
   },
-  "outcome": {
-    "accepted_without_major_rewrite": true,
-    "required_followup": false,
+  "reviewer_confidence_scale": [
+    "low",
+    "medium",
+    "high",
+    "unknown"
+  ],
+  "prefilled_outcome": {
     "reviewer_confidence": "high"
   },
-  "measurements": {
+  "prefilled_measurements": {
     "time_to_green_minutes": 12,
     "override_count": 0,
     "false_positive_rules": [],
     "missed_issues": []
   },
   "notes": [
-    "The repo-local adapter and policy pack were sufficient to classify the selected surfaces without unresolved files.",
-    "This example demonstrates the value claim in-repo: focused surface mapping plus reviewable evidence and eval artifacts."
+    "This example is generated from the Veritas repo using its tracked .veritas config.",
+    "The goal is to show a self-hosted report and eval flow without making local evidence outputs part of the distributed package."
+  ],
+  "missing_confirmation_fields": [
+    "accepted_without_major_rewrite",
+    "required_followup"
   ]
 }
