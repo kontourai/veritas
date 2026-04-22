@@ -116,6 +116,8 @@ jobs:
             const body = fs.readFileSync('.veritas/checkins/latest.md', 'utf8');
             const title = 'Veritas Health';
             const marker = '<!-- veritas-health -->';
+            const legacyTitle = 'Veritas Dogfood Health';
+            const legacyMarker = '<!-- veritas-dogfood-health -->';
             const issueBody = `${marker}\n${body}`;
             const { owner, repo } = context.repo;
             const allIssues = await github.paginate(github.rest.issues.listForRepo, {
@@ -124,20 +126,29 @@ jobs:
               state: 'all',
               per_page: 100,
             });
-            const existing = allIssues.find((issue) => issue.title === title);
+            const existing = allIssues.find((issue) =>
+              issue.title === title ||
+              issue.title === legacyTitle ||
+              issue.body?.includes(marker) ||
+              issue.body?.includes(legacyMarker),
+            );
 
             if (checkin.health_status === 'green') {
-              if (existing && existing.state === 'open') {
-                await github.rest.issues.createComment({
-                  owner,
-                  repo,
-                  issue_number: existing.number,
-                  body: `Health returned to green in \`${checkin.run_id}\`.\n\n${body}`,
-                });
+              if (existing) {
+                if (existing.state === 'open') {
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: existing.number,
+                    body: `Health returned to green in \`${checkin.run_id}\`.\n\n${body}`,
+                  });
+                }
                 await github.rest.issues.update({
                   owner,
                   repo,
                   issue_number: existing.number,
+                  title,
+                  body: issueBody,
                   state: 'closed',
                 });
               }
@@ -149,6 +160,7 @@ jobs:
                 owner,
                 repo,
                 issue_number: existing.number,
+                title,
                 body: issueBody,
               });
               await github.rest.issues.createComment({
@@ -162,6 +174,7 @@ jobs:
                 owner,
                 repo,
                 issue_number: existing.number,
+                title,
                 state: 'open',
                 body: issueBody,
               });
