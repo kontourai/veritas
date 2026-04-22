@@ -58,6 +58,7 @@
         "label": "root manifests",
         "patterns": [
           "package.json",
+          "package-lock.json",
           "README.md",
           "CONTRIBUTING.md",
           ".gitignore",

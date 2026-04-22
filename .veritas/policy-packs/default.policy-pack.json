@@ -28,6 +28,7 @@
       "rollback_switch": null,
       "match": {
         "artifacts": [
+          "package-lock.json",
           "package.json",
           "bin/veritas.mjs",
           "bin/veritas-report.mjs"

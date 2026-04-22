@@ -785,7 +785,7 @@ function buildAdaptiveNodes(repoInsights) {
       id: 'governance.root-manifests',
       kind: 'governance-surface',
       label: 'root manifests',
-      patterns: ['package.json', 'README.md', '.gitignore', 'AGENTS.md'],
+      patterns: ['package.json', 'package-lock.json', 'README.md', '.gitignore', 'AGENTS.md'],
     },
   ];
 
