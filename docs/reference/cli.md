@@ -143,6 +143,45 @@ Guardrails:
 - a draft must be completed with the same team profile that created it
 - existing output is not overwritten without `--force`
 
+### `eval marker`
+
+Scores a deterministic marker-surfacing benchmark by comparing one `without Veritas` transcript to one `with Veritas` transcript against the same benchmark scenario.
+
+```bash
+npm exec -- veritas eval marker \
+  --scenario examples/benchmarks/migration-marker-scenario.json \
+  --without-veritas-transcript examples/benchmarks/migration-marker-without-veritas.json \
+  --with-veritas-transcript examples/benchmarks/migration-marker-with-veritas.json
+```
+
+Important behaviors:
+
+- the command is read-only and prints JSON to stdout
+- the scenario defines the required marker phrases and the scoring window
+- transcripts must declare the matching `benchmark_id` plus the expected `without-veritas` or `with-veritas` condition id
+- transcripts must include a trigger tag, and may include a response-window tag when the tagged assistant turn is the response that must carry the marker
+- this command scores one benchmark pair; repeat it across multiple runs when you want `pass^k`-style evidence, or use `marker-suite` for the aggregated `pass_pow_k` metric
+
+### `eval marker-suite`
+
+Scores a suite of marker benchmarks and reports aggregate reliability metrics across multiple scenario groups and trials.
+
+```bash
+npm exec -- veritas eval marker-suite \
+  --suite examples/benchmarks/marker-suite.json
+```
+
+Important behaviors:
+
+- the suite artifact references scenario files plus one or more trial transcript pairs per benchmark
+- each `benchmark_id` and `trial_id` in the suite must be unique
+- aggregate metrics include per-trial rates and grouped reliability summaries
+- `improvement_rate` counts trials where Veritas improves outcome quality or delivers the same correct outcome faster
+- `pass_at_1` is computed from the first listed trial in each benchmark group
+- `pass_at_k` means a benchmark has at least one passing `with Veritas` trial across its recorded trials
+- `pass_pow_k` is the suite report name for `pass^k`: every recorded `with Veritas` trial in a benchmark group passes
+- the command validates every referenced scenario and transcript before producing a suite summary
+
 ### `print`
 
 Print-only helpers return suggested content without changing the repo.
@@ -227,6 +266,8 @@ The exact JSON varies by command, but the operator-facing contract is stable:
 - report returns `artifactPath`, `markdownSummary`, and the full evidence record including `policy_results`
 - eval draft returns `artifactPath`, `suggestedRecordCommand`, `markdownSummary`, and the full draft record
 - eval record returns `artifactPath`, `markdownSummary`, and the full eval record
+- eval marker returns a benchmark comparison object with per-condition timing, false-positive, and pass results
+- eval marker-suite returns a suite report with per-benchmark rollups and aggregate reliability metrics
 - shadow run returns orchestration status plus the artifact paths it created
 
 For the artifact fields themselves, see [Artifacts and Schemas](artifacts-and-schemas.md).

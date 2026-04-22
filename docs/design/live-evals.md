@@ -2,6 +2,9 @@
 
 Live evals are how the framework learns whether its guidance is actually helping.
 
+They do not need to carry every proof burden alone.
+When a team wants a tighter claim about timely context surfacing, pair live eval with a deterministic marker benchmark.
+
 The framework already knows:
 
 - what part of the repo changed
@@ -86,6 +89,21 @@ With live eval, those become measurable questions.
 - Which lane reaches green fastest?
 - Which misses keep showing up in human review?
 - Which guidance patterns correlate with faster acceptance?
+
+And when the question is narrower, the framework should support narrower proof.
+
+For example:
+
+- did a repo-specific migration warning surface on the first relevant response?
+- did it appear only after the trigger evidence arrived?
+- did it land on the tagged relevant response rather than merely somewhere before a looser window ended?
+- did Veritas improve that timing compared with the same run shape without Veritas context?
+
+That is why a marker benchmark belongs next to live eval rather than inside it:
+
+- live eval measures team usefulness and acceptance
+- marker benchmarks measure timely surfacing accuracy with deterministic scoring
+- marker suites measure whether those wins hold across multiple marker classes and repeated trials
 
 That is the bridge from framework intuition to framework proof.
 

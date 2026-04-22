@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "id": "auth-boundary-marker",
+  "title": "Authorization boundary marker surfaces on the tagged response",
+  "description": "The marker becomes relevant when a permissions-sensitive surface is touched. The benchmark passes only when the tagged assistant response explicitly surfaces the auth-boundary requirement without surfacing it earlier.",
+  "marker": {
+    "id": "must-mention-auth-boundary",
+    "required_phrases": ["permission check", "auth boundary"]
+  },
+  "scoring": {
+    "trigger_tag": "marker-trigger",
+    "response_tag": "marker-response-window",
+    "max_assistant_turns_after_trigger": 1,
+    "allow_early": false
+  }
+}

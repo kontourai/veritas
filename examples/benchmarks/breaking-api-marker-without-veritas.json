@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "benchmark_id": "breaking-api-marker",
+  "run_id": "api-without-1",
+  "condition_id": "without-veritas",
+  "turns": [
+    {
+      "role": "assistant",
+      "content": "This looks like it could be a breaking API change."
+    },
+    {
+      "role": "tool",
+      "content": "src/contracts/public-api.ts changed",
+      "tags": ["marker-trigger"]
+    },
+    {
+      "role": "assistant",
+      "content": "I will update the type definitions.",
+      "tags": ["marker-response-window"]
+    }
+  ]
+}

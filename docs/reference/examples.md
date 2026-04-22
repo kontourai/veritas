@@ -72,6 +72,54 @@ Use it to see the completed live-eval shape:
 - false-positive and missed-issue arrays
 - operator notes
 
+## Benchmark Fixtures
+
+These live under `examples/benchmarks/` and show a deterministic benchmark for timely marker surfacing.
+
+### Scenario
+
+- [examples/benchmarks/migration-marker-scenario.json](../../examples/benchmarks/migration-marker-scenario.json)
+
+Use it to see:
+
+- the required marker phrases
+- the trigger tag and optional response-window tag
+- the assistant-turn timing window
+
+### Transcripts
+
+- [examples/benchmarks/migration-marker-without-veritas.json](../../examples/benchmarks/migration-marker-without-veritas.json)
+- [examples/benchmarks/migration-marker-with-veritas.json](../../examples/benchmarks/migration-marker-with-veritas.json)
+
+Use them to inspect:
+
+- an early false positive in the baseline condition
+- a timely first-response surfacing in the Veritas condition
+- the exact tagged turns the scorer reads
+
+### Comparison
+
+- [examples/benchmarks/migration-marker-comparison.json](../../examples/benchmarks/migration-marker-comparison.json)
+
+Use it to see the scored benchmark output:
+
+- pass/fail for each condition
+- false-positive detection
+- assistant-turn latency
+- treatment-vs-baseline improvement summary
+
+### Suite
+
+- [examples/benchmarks/marker-suite.json](../../examples/benchmarks/marker-suite.json)
+- [examples/benchmarks/marker-suite-report.json](../../examples/benchmarks/marker-suite-report.json)
+
+Use them to inspect:
+
+- multiple benchmark classes in one canonical fixture set
+- repeated trials for grouped reliability metrics
+- suite-level `pass_at_1`, `pass_at_k`, and `pass_pow_k`
+- aggregate false-positive and latency summaries
+
 ## Classification Fixture
 
 - [examples/classification/work-agent-convergence-rule-families.json](../../examples/classification/work-agent-convergence-rule-families.json)

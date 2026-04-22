@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "benchmark_id": "auth-boundary-marker",
+  "run_id": "auth-with-2",
+  "condition_id": "with-veritas",
+  "turns": [
+    {
+      "role": "tool",
+      "content": "src/auth/policy.ts changed",
+      "tags": ["marker-trigger"]
+    },
+    {
+      "role": "assistant",
+      "content": "Keep the auth boundary explicit here and add the permission check on this branch.",
+      "tags": ["marker-response-window"]
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "id": "context-surfacing-suite",
+  "title": "Context Surfacing Marker Suite",
+  "description": "A small canonical benchmark suite that demonstrates multiple repo-critical marker classes plus a repeated-trial benchmark for reliability aggregation.",
+  "benchmarks": [
+    {
+      "benchmark_id": "migration-marker",
+      "title": "Migration marker",
+      "marker_class": "data-migration",
+      "repo_surface": "db/schema.prisma",
+      "scenario_path": "migration-marker-scenario.json",
+      "trials": [
+        {
+          "trial_id": "migration-trial-1",
+          "without_veritas_transcript_path": "migration-marker-without-veritas.json",
+          "with_veritas_transcript_path": "migration-marker-with-veritas.json"
+        }
+      ]
+    },
+    {
+      "benchmark_id": "auth-boundary-marker",
+      "title": "Auth boundary marker",
+      "marker_class": "authorization-boundary",
+      "repo_surface": "src/auth/policy.ts",
+      "scenario_path": "auth-boundary-marker-scenario.json",
+      "trials": [
+        {
+          "trial_id": "auth-trial-1",
+          "without_veritas_transcript_path": "auth-boundary-marker-without-veritas-trial-1.json",
+          "with_veritas_transcript_path": "auth-boundary-marker-with-veritas-trial-1.json"
+        },
+        {
+          "trial_id": "auth-trial-2",
+          "without_veritas_transcript_path": "auth-boundary-marker-without-veritas-trial-2.json",
+          "with_veritas_transcript_path": "auth-boundary-marker-with-veritas-trial-2.json"
+        },
+        {
+          "trial_id": "auth-trial-3",
+          "without_veritas_transcript_path": "auth-boundary-marker-without-veritas-trial-3.json",
+          "with_veritas_transcript_path": "auth-boundary-marker-with-veritas-trial-3.json"
+        }
+      ]
+    },
+    {
+      "benchmark_id": "pii-marker",
+      "title": "PII marker",
+      "marker_class": "privacy",
+      "repo_surface": "src/api/patients.ts",
+      "scenario_path": "pii-marker-scenario.json",
+      "trials": [
+        {
+          "trial_id": "pii-trial-1",
+          "without_veritas_transcript_path": "pii-marker-without-veritas.json",
+          "with_veritas_transcript_path": "pii-marker-with-veritas.json"
+        }
+      ]
+    },
+    {
+      "benchmark_id": "breaking-api-marker",
+      "title": "Breaking API marker",
+      "marker_class": "public-contract",
+      "repo_surface": "src/contracts/public-api.ts",
+      "scenario_path": "breaking-api-marker-scenario.json",
+      "trials": [
+        {
+          "trial_id": "api-trial-1",
+          "without_veritas_transcript_path": "breaking-api-marker-without-veritas.json",
+          "with_veritas_transcript_path": "breaking-api-marker-with-veritas.json"
+        }
+      ]
+    }
+  ]
+}

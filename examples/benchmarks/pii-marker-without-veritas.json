@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "benchmark_id": "pii-marker",
+  "run_id": "pii-without-1",
+  "condition_id": "without-veritas",
+  "turns": [
+    {
+      "role": "tool",
+      "content": "src/api/patients.ts changed",
+      "tags": ["marker-trigger"]
+    },
+    {
+      "role": "assistant",
+      "content": "I will update the serializer.",
+      "tags": ["marker-response-window"]
+    }
+  ]
+}

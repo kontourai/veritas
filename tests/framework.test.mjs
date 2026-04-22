@@ -20,9 +20,12 @@ import {
   buildSuggestedRuntimeHook,
   buildSuggestedCiSnippet,
   buildSuggestedPackageScripts,
+  compareMarkerBenchmarkRuns,
   classifyNodes,
   evaluatePolicyPack,
   generateEvalRecord,
+  generateMarkerBenchmarkComparison,
+  generateMarkerBenchmarkSuiteReport,
   inferBootstrapRepoInsights,
   listWorkingTreeFiles,
   loadPolicyPack,
@@ -272,6 +275,8 @@ test('CLI entrypoints expose help text for publishable operator surfaces', () =>
   );
   assert.match(mainHelp, /veritas init/);
   assert.match(mainHelp, /veritas shadow run/);
+  assert.match(mainHelp, /veritas eval marker/);
+  assert.match(mainHelp, /veritas eval marker-suite/);
 
   const reportHelp = execFileSync(
     'npm',
@@ -288,6 +293,22 @@ test('CLI entrypoints expose help text for publishable operator surfaces', () =>
   );
   assert.match(printHelp, /veritas print codex-hook/);
   assert.match(printHelp, /--codex-home <path>/);
+
+  const evalHelp = execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'eval', 'marker', '--help'],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  assert.match(evalHelp, /veritas eval marker/);
+  assert.match(evalHelp, /--without-veritas-transcript <path>/);
+
+  const evalSuiteHelp = execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'eval', 'marker-suite', '--help'],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  assert.match(evalSuiteHelp, /veritas eval marker-suite/);
+  assert.match(evalSuiteHelp, /--suite <path>/);
 
   const reportBinaryHelp = execFileSync(
     'node',
@@ -1365,6 +1386,761 @@ test('shadow run CLI can complete the full draft-and-record path', () => {
   assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
 });
 
+test('marker benchmark comparison scores timely surfacing and false positives', () => {
+  const scenario = {
+    version: 1,
+    id: 'migration-marker',
+    title: 'Migration marker surfaces on the first relevant response',
+    marker: {
+      id: 'must-mention-data-migration',
+      required_phrases: ['data migration', 'run a migration'],
+    },
+    scoring: {
+      trigger_tag: 'marker-trigger',
+      response_tag: 'marker-response-window',
+      max_assistant_turns_after_trigger: 1,
+      allow_early: false,
+    },
+  };
+
+  const comparison = compareMarkerBenchmarkRuns({
+    scenario,
+    withoutVeritas: {
+      version: 1,
+      benchmark_id: 'migration-marker',
+      run_id: 'without-veritas-run',
+      condition_id: 'without-veritas',
+      turns: [
+        { role: 'user', content: 'Open the repo and inspect the task.' },
+        { role: 'assistant', content: 'A data migration is probably required here.' },
+        { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+        {
+          role: 'assistant',
+          content: 'I will update the code path first.',
+          tags: ['marker-response-window'],
+        },
+        { role: 'assistant', content: 'Also, run a migration before shipping this.' },
+      ],
+    },
+    withVeritas: {
+      version: 1,
+      benchmark_id: 'migration-marker',
+      run_id: 'with-veritas-run',
+      condition_id: 'with-veritas',
+      turns: [
+        { role: 'user', content: 'Open the repo and inspect the task.' },
+        { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+        {
+          role: 'assistant',
+          content: 'This change needs a data migration before the code lands.',
+          tags: ['marker-response-window'],
+        },
+      ],
+    },
+  });
+
+  assert.equal(comparison.conditions.without_veritas.pass, false);
+  assert.equal(comparison.conditions.without_veritas.false_positive, true);
+  assert.equal(comparison.conditions.without_veritas.timely, false);
+  assert.equal(comparison.conditions.with_veritas.pass, true);
+  assert.equal(comparison.conditions.with_veritas.timely, true);
+  assert.equal(comparison.conditions.with_veritas.assistant_turn_latency, 1);
+  assert.equal(comparison.comparison.timely_recall_delta, 1);
+  assert.equal(comparison.comparison.false_positive_improvement, 1);
+  assert.equal(comparison.comparison.treatment_beats_baseline, true);
+});
+
+test('marker benchmark response tags do not widen the assistant-turn deadline', () => {
+  const result = compareMarkerBenchmarkRuns({
+    scenario: {
+      version: 1,
+      id: 'strict-response-window',
+      title: 'Response tag stays stricter than the assistant-turn deadline',
+      marker: {
+        id: 'must-mention-data-migration',
+        required_phrases: ['data migration'],
+      },
+      scoring: {
+        trigger_tag: 'marker-trigger',
+        response_tag: 'marker-response-window',
+        max_assistant_turns_after_trigger: 1,
+        allow_early: false,
+      },
+    },
+    withoutVeritas: {
+      version: 1,
+      benchmark_id: 'strict-response-window',
+      run_id: 'baseline',
+      condition_id: 'without-veritas',
+      turns: [
+        { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+        { role: 'assistant', content: 'Investigating.' },
+        { role: 'assistant', content: 'Still checking.' },
+        { role: 'assistant', content: 'This needs a data migration.' },
+        {
+          role: 'assistant',
+          content: 'Final tagged response window.',
+          tags: ['marker-response-window'],
+        },
+      ],
+    },
+    withVeritas: {
+      version: 1,
+      benchmark_id: 'strict-response-window',
+      run_id: 'treatment',
+      condition_id: 'with-veritas',
+      turns: [
+        { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+        {
+          role: 'assistant',
+          content: 'This needs a data migration.',
+          tags: ['marker-response-window'],
+        },
+      ],
+    },
+  });
+
+  assert.equal(result.conditions.without_veritas.assistant_turn_latency, 3);
+  assert.equal(result.conditions.without_veritas.first_response_window_turn, 5);
+  assert.equal(result.conditions.without_veritas.timely, false);
+  assert.equal(result.conditions.without_veritas.pass, false);
+  assert.equal(result.conditions.with_veritas.timely, true);
+});
+
+test('marker benchmark comparison treats latency-only wins as improvement', () => {
+  const result = compareMarkerBenchmarkRuns({
+    scenario: {
+      version: 1,
+      id: 'latency-marker',
+      title: 'Latency-only improvement still counts as improvement',
+      marker: {
+        id: 'must-mention-regression-test',
+        required_phrases: ['regression test'],
+      },
+      scoring: {
+        trigger_tag: 'marker-trigger',
+        max_assistant_turns_after_trigger: 2,
+        allow_early: false,
+      },
+    },
+    withoutVeritas: {
+      version: 1,
+      benchmark_id: 'latency-marker',
+      run_id: 'baseline-latency',
+      condition_id: 'without-veritas',
+      turns: [
+        { role: 'tool', content: 'tests/api.spec.ts changed', tags: ['marker-trigger'] },
+        { role: 'assistant', content: 'Investigating.' },
+        { role: 'assistant', content: 'Add a regression test.' },
+      ],
+    },
+    withVeritas: {
+      version: 1,
+      benchmark_id: 'latency-marker',
+      run_id: 'treatment-latency',
+      condition_id: 'with-veritas',
+      turns: [
+        { role: 'tool', content: 'tests/api.spec.ts changed', tags: ['marker-trigger'] },
+        { role: 'assistant', content: 'Add a regression test.' },
+      ],
+    },
+  });
+
+  assert.equal(result.conditions.without_veritas.pass, true);
+  assert.equal(result.conditions.with_veritas.pass, true);
+  assert.equal(result.comparison.latency_improvement_turns, 1);
+  assert.equal(result.comparison.treatment_beats_baseline, true);
+});
+
+test('eval marker CLI compares without-veritas and with-veritas transcripts', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-marker-benchmark-'));
+  const scenarioPath = writeTempJson(rootDir, 'scenario.json', {
+    version: 1,
+    id: 'migration-marker',
+    title: 'Migration marker surfaces on the first relevant response',
+    marker: {
+      id: 'must-mention-data-migration',
+      required_phrases: ['data migration', 'run a migration'],
+    },
+    scoring: {
+      trigger_tag: 'marker-trigger',
+      response_tag: 'marker-response-window',
+      max_assistant_turns_after_trigger: 1,
+      allow_early: false,
+    },
+  });
+  const withoutPath = writeTempJson(rootDir, 'without.json', {
+    version: 1,
+    benchmark_id: 'migration-marker',
+    run_id: 'without-run',
+    condition_id: 'without-veritas',
+    turns: [
+      { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+      {
+        role: 'assistant',
+        content: 'I will patch the code first.',
+        tags: ['marker-response-window'],
+      },
+    ],
+  });
+  const withPath = writeTempJson(rootDir, 'with.json', {
+    version: 1,
+    benchmark_id: 'migration-marker',
+    run_id: 'with-run',
+    condition_id: 'with-veritas',
+    turns: [
+      { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+      {
+        role: 'assistant',
+        content: 'This change needs a data migration before release.',
+        tags: ['marker-response-window'],
+      },
+    ],
+  });
+
+  const stdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'veritas',
+      'eval',
+      'marker',
+      '--scenario',
+      scenarioPath,
+      '--without-veritas-transcript',
+      withoutPath,
+      '--with-veritas-transcript',
+      withPath,
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.benchmark_id, 'migration-marker');
+  assert.equal(parsed.conditions.without_veritas.pass, false);
+  assert.equal(parsed.conditions.with_veritas.pass, true);
+  assert.equal(parsed.comparison.timely_recall_delta, 1);
+
+  const helperResult = generateMarkerBenchmarkComparison({
+    scenarioPath,
+    withoutVeritasTranscriptPath: withoutPath,
+    withVeritasTranscriptPath: withPath,
+  });
+  assert.equal(helperResult.comparison.treatment_beats_baseline, true);
+});
+
+test('eval marker-suite CLI returns aggregate benchmark metrics', () => {
+  const stdout = execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'eval', 'marker-suite', '--suite', 'examples/benchmarks/marker-suite.json'],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = JSON.parse(stdout);
+
+  assert.equal(parsed.suite_id, 'context-surfacing-suite');
+  assert.equal(parsed.scenario_count, 4);
+  assert.equal(parsed.pair_count, 6);
+  assert.equal(parsed.metrics.treatment_pass_rate, 5 / 6);
+  assert.equal(parsed.metrics.pass_at_1, 1);
+  assert.equal(parsed.metrics.pass_pow_k, 0.75);
+
+  const helperResult = generateMarkerBenchmarkSuiteReport({
+    suitePath: 'examples/benchmarks/marker-suite.json',
+  });
+  assert.equal(helperResult.metrics.improvement_rate, 5 / 6);
+});
+
+test('marker benchmark comparison rejects mismatched benchmark ids and condition ids', () => {
+  assert.throws(
+    () =>
+      compareMarkerBenchmarkRuns({
+        scenario: {
+          version: 1,
+          id: 'migration-marker',
+          title: 'Migration marker surfaces on the first relevant response',
+          marker: {
+            id: 'must-mention-data-migration',
+            required_phrases: ['data migration'],
+          },
+          scoring: {
+            trigger_tag: 'marker-trigger',
+            response_tag: 'marker-response-window',
+            max_assistant_turns_after_trigger: 1,
+            allow_early: false,
+          },
+        },
+        withoutVeritas: {
+          version: 1,
+          benchmark_id: 'wrong-benchmark',
+          run_id: 'without-run',
+          condition_id: 'baseline',
+          turns: [
+            { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+          ],
+        },
+        withVeritas: {
+          version: 1,
+          benchmark_id: 'migration-marker',
+          run_id: 'with-run',
+          condition_id: 'with-veritas',
+          turns: [
+            { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+          ],
+        },
+      }),
+    /benchmark_id must match scenario id|condition_id must be without-veritas/,
+  );
+});
+
+test('marker benchmark comparison rejects malformed scenarios and transcripts', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-marker-invalid-'));
+  const baseScenario = {
+    version: 1,
+    id: 'migration-marker',
+    title: 'Migration marker surfaces on the first relevant response',
+    marker: {
+      id: 'must-mention-data-migration',
+      required_phrases: ['data migration'],
+    },
+    scoring: {
+      trigger_tag: 'marker-trigger',
+      response_tag: 'marker-response-window',
+      max_assistant_turns_after_trigger: 1,
+      allow_early: false,
+    },
+  };
+  const validWithVeritas = {
+    version: 1,
+    benchmark_id: 'migration-marker',
+    run_id: 'with-run',
+    condition_id: 'with-veritas',
+    turns: [
+      { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+      {
+        role: 'assistant',
+        content: 'This needs a data migration.',
+        tags: ['marker-response-window'],
+      },
+    ],
+  };
+
+  assert.throws(
+    () =>
+      compareMarkerBenchmarkRuns({
+        scenario: { ...baseScenario, scoring: {} },
+        withoutVeritas: {
+          version: 1,
+          benchmark_id: 'migration-marker',
+          run_id: 'without-run',
+          condition_id: 'without-veritas',
+          turns: [
+            { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+            { role: 'assistant', content: 'This needs a data migration.' },
+          ],
+        },
+        withVeritas: validWithVeritas,
+      }),
+    /scoring is missing required key: trigger_tag/,
+  );
+
+  assert.throws(
+    () =>
+      compareMarkerBenchmarkRuns({
+        scenario: baseScenario,
+        withoutVeritas: {
+          version: 1,
+          benchmark_id: 'migration-marker',
+          run_id: 'without-run',
+          condition_id: 'without-veritas',
+          turns: [
+            { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+            { role: 'assistant', content: 'This needs a data migration.' },
+          ],
+        },
+        withVeritas: validWithVeritas,
+      }),
+    /must include exactly one response tag marker-response-window/,
+  );
+
+  assert.throws(
+    () =>
+      compareMarkerBenchmarkRuns({
+        scenario: baseScenario,
+        withoutVeritas: {
+          version: 1,
+          benchmark_id: 'migration-marker',
+          run_id: 'without-run',
+          condition_id: 'without-veritas',
+          turns: [
+            { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+            { role: 'tool', content: 'another trigger', tags: ['marker-trigger'] },
+            {
+              role: 'assistant',
+              content: 'This needs a data migration.',
+              tags: ['marker-response-window'],
+            },
+          ],
+        },
+        withVeritas: validWithVeritas,
+      }),
+    /must include exactly one trigger tag marker-trigger/,
+  );
+
+  assert.throws(
+    () =>
+      compareMarkerBenchmarkRuns({
+        scenario: baseScenario,
+        withoutVeritas: {
+          version: 1,
+          benchmark_id: 'migration-marker',
+          run_id: 'without-run',
+          condition_id: 'without-veritas',
+          turns: [
+            { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+            {
+              role: 'assistant',
+              content: 'First tagged response.',
+              tags: ['marker-response-window'],
+            },
+            {
+              role: 'assistant',
+              content: 'Second tagged response.',
+              tags: ['marker-response-window'],
+            },
+          ],
+        },
+        withVeritas: validWithVeritas,
+      }),
+    /must include exactly one response tag marker-response-window/,
+  );
+
+  assert.throws(
+    () =>
+      compareMarkerBenchmarkRuns({
+        scenario: {
+          ...baseScenario,
+          scoring: {
+            ...baseScenario.scoring,
+            extra_rule: 'not-allowed',
+          },
+        },
+        withoutVeritas: {
+          version: 1,
+          benchmark_id: 'migration-marker',
+          run_id: 'without-run',
+          condition_id: 'without-veritas',
+          turns: [
+            {
+              role: 'tool',
+              content: 'db/schema.prisma changed',
+              tags: ['marker-trigger'],
+              extra_field: true,
+            },
+            {
+              role: 'assistant',
+              content: 'This needs a data migration.',
+              tags: ['marker-response-window'],
+            },
+          ],
+        },
+        withVeritas: validWithVeritas,
+      }),
+    /contains unsupported key: extra_rule|contains unsupported key: extra_field/,
+  );
+
+  assert.throws(
+    () =>
+      compareMarkerBenchmarkRuns({
+        scenario: {
+          ...baseScenario,
+          scoring: {
+            ...baseScenario.scoring,
+            response_tag: 'marker-trigger',
+          },
+        },
+        withoutVeritas: {
+          version: 1,
+          benchmark_id: 'migration-marker',
+          run_id: 'without-run',
+          condition_id: 'without-veritas',
+          turns: [
+            { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+            {
+              role: 'assistant',
+              content: 'This needs a data migration.',
+              tags: ['marker-trigger'],
+            },
+          ],
+        },
+        withVeritas: {
+          ...validWithVeritas,
+          turns: [
+            { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+            {
+              role: 'assistant',
+              content: 'This needs a data migration.',
+              tags: ['marker-trigger'],
+            },
+          ],
+        },
+      }),
+    /response_tag must differ from scoring.trigger_tag/,
+  );
+
+  assert.throws(
+    () =>
+      compareMarkerBenchmarkRuns({
+        scenario: baseScenario,
+        withoutVeritas: {
+          version: 1,
+          benchmark_id: 'migration-marker',
+          run_id: 'without-run',
+          condition_id: 'without-veritas',
+          turns: [
+            {
+              role: 'tool',
+              content: 'db/schema.prisma changed',
+              tags: ['marker-trigger', 'marker-response-window'],
+            },
+            {
+              role: 'assistant',
+              content: 'This needs a data migration.',
+              tags: ['marker-response-window'],
+            },
+          ],
+        },
+        withVeritas: validWithVeritas,
+      }),
+    /must include exactly one response tag marker-response-window/,
+  );
+
+  assert.throws(
+    () =>
+      compareMarkerBenchmarkRuns({
+        scenario: baseScenario,
+        withoutVeritas: {
+          version: 1,
+          benchmark_id: 'migration-marker',
+          run_id: 'shared-run',
+          condition_id: 'without-veritas',
+          turns: [
+            { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+            {
+              role: 'assistant',
+              content: 'This needs a data migration.',
+              tags: ['marker-response-window'],
+            },
+          ],
+        },
+        withVeritas: {
+          ...validWithVeritas,
+          run_id: 'shared-run',
+        },
+      }),
+    /requires distinct run_id values/,
+  );
+
+  assert.throws(
+    () =>
+      compareMarkerBenchmarkRuns({
+        scenario: {
+          ...baseScenario,
+          version: '1',
+          marker: {
+            ...baseScenario.marker,
+            id: 7,
+          },
+        },
+        withoutVeritas: {
+          version: 1,
+          benchmark_id: 'migration-marker',
+          run_id: 'without-run',
+          condition_id: 'without-veritas',
+          turns: [
+            { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+            {
+              role: 'assistant',
+              content: 'This needs a data migration.',
+              tags: ['marker-response-window'],
+            },
+          ],
+        },
+        withVeritas: validWithVeritas,
+      }),
+    /scenario version must be an integer|marker\.id must be a non-empty string/,
+  );
+
+  assert.throws(
+    () =>
+      compareMarkerBenchmarkRuns({
+        scenario: baseScenario,
+        withoutVeritas: {
+          version: 1,
+          benchmark_id: 'migration-marker',
+          run_id: 'without-run',
+          condition_id: 'without-veritas',
+          turns: [
+            {
+              role: 'tool',
+              content: 'db/schema.prisma changed',
+              tags: ['marker-trigger', 5],
+            },
+            {
+              role: 'assistant',
+              content: 'This needs a data migration.',
+              tags: ['marker-response-window'],
+            },
+          ],
+        },
+        withVeritas: validWithVeritas,
+      }),
+    /transcript turn tag must be a non-empty string/,
+  );
+
+  assert.throws(
+    () =>
+      compareMarkerBenchmarkRuns({
+        scenario: {
+          ...baseScenario,
+          marker: null,
+        },
+        withoutVeritas: {
+          version: 1,
+          benchmark_id: 'migration-marker',
+          run_id: 'without-run',
+          condition_id: 'without-veritas',
+          turns: [
+            { role: 'tool', content: 'db/schema.prisma changed', tags: ['marker-trigger'] },
+            {
+              role: 'assistant',
+              content: 'This needs a data migration.',
+              tags: ['marker-response-window'],
+            },
+          ],
+        },
+        withVeritas: validWithVeritas,
+      }),
+    /marker benchmark scenario marker must be an object/,
+  );
+
+  assert.throws(
+    () =>
+      generateMarkerBenchmarkSuiteReport({
+        rootDir: rootDir,
+        suitePath: writeTempJson(rootDir, 'bad-suite.json', {
+          version: 1,
+          id: 'bad-suite',
+          title: 'Bad Suite',
+          benchmarks: [null],
+        }),
+      }),
+    /marker benchmark suite benchmark must be an object/,
+  );
+
+  assert.throws(
+    () =>
+      generateMarkerBenchmarkSuiteReport({
+        rootDir,
+        suitePath: writeTempJson(rootDir, 'duplicate-benchmark-suite.json', {
+          version: 1,
+          id: 'duplicate-benchmark-suite',
+          title: 'Duplicate Benchmark Suite',
+          benchmarks: [
+            {
+              benchmark_id: 'dup-benchmark',
+              title: 'Dup Benchmark A',
+              marker_class: 'class-a',
+              repo_surface: 'src/a.ts',
+              scenario_path: 'scenario-a.json',
+              trials: [
+                {
+                  trial_id: 'dup-trial-a',
+                  without_veritas_transcript_path: 'without-a.json',
+                  with_veritas_transcript_path: 'with-a.json',
+                },
+              ],
+            },
+            {
+              benchmark_id: 'dup-benchmark',
+              title: 'Dup Benchmark B',
+              marker_class: 'class-b',
+              repo_surface: 'src/b.ts',
+              scenario_path: 'scenario-b.json',
+              trials: [
+                {
+                  trial_id: 'dup-trial-b',
+                  without_veritas_transcript_path: 'without-b.json',
+                  with_veritas_transcript_path: 'with-b.json',
+                },
+              ],
+            },
+          ],
+        }),
+      }),
+    /benchmark_id must be unique: dup-benchmark/,
+  );
+
+  assert.throws(
+    () =>
+      generateMarkerBenchmarkSuiteReport({
+        rootDir,
+        suitePath: writeTempJson(rootDir, 'duplicate-trial-suite.json', {
+          version: 1,
+          id: 'duplicate-trial-suite',
+          title: 'Duplicate Trial Suite',
+          benchmarks: [
+            {
+              benchmark_id: 'benchmark-a',
+              title: 'Benchmark A',
+              marker_class: 'class-a',
+              repo_surface: 'src/a.ts',
+              scenario_path: 'scenario-a.json',
+              trials: [
+                {
+                  trial_id: 'dup-trial',
+                  without_veritas_transcript_path: 'without-a.json',
+                  with_veritas_transcript_path: 'with-a.json',
+                },
+              ],
+            },
+            {
+              benchmark_id: 'benchmark-b',
+              title: 'Benchmark B',
+              marker_class: 'class-b',
+              repo_surface: 'src/b.ts',
+              scenario_path: 'scenario-b.json',
+              trials: [
+                {
+                  trial_id: 'dup-trial',
+                  without_veritas_transcript_path: 'without-b.json',
+                  with_veritas_transcript_path: 'with-b.json',
+                },
+              ],
+            },
+          ],
+        }),
+      }),
+    /trial_id must be unique: dup-trial/,
+  );
+
+  assert.throws(
+    () =>
+      compareMarkerBenchmarkRuns({
+        scenario: baseScenario,
+        withoutVeritas: {
+          version: 1,
+          benchmark_id: 'migration-marker',
+          run_id: 'without-run',
+          condition_id: 'without-veritas',
+          turns: [null],
+        },
+        withVeritas: validWithVeritas,
+      }),
+    /without-veritas transcript turn must be an object/,
+  );
+});
+
 test('shadow run CLI rejects incomplete branch-diff refs', () => {
   const rootDir = initCommittedRepo('veritas-shadow-run-diff-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
@@ -2310,6 +3086,51 @@ test('live-eval fixtures explain outcome measurement and team tuning', () => {
   assert.equal(redCheckin.policy_results_summary.metadata_only, 0);
 });
 
+test('marker benchmark fixtures explain timely surfacing scoring', () => {
+  const scenario = readJson('../examples/benchmarks/migration-marker-scenario.json');
+  const withoutVeritas = readJson('../examples/benchmarks/migration-marker-without-veritas.json');
+  const withVeritas = readJson('../examples/benchmarks/migration-marker-with-veritas.json');
+  const comparison = readJson('../examples/benchmarks/migration-marker-comparison.json');
+  const suite = readJson('../examples/benchmarks/marker-suite.json');
+  const suiteReport = readJson('../examples/benchmarks/marker-suite-report.json');
+  const scenarioSchema = readJson('../schemas/veritas-marker-benchmark.schema.json');
+  const transcriptSchema = readJson('../schemas/veritas-marker-transcript.schema.json');
+  const comparisonSchema = readJson('../schemas/veritas-marker-score.schema.json');
+  const suiteSchema = readJson('../schemas/veritas-marker-suite.schema.json');
+  const suiteReportSchema = readJson('../schemas/veritas-marker-suite-report.schema.json');
+
+  assert.ok(scenarioSchema.required.includes('marker'));
+  assert.ok(transcriptSchema.required.includes('turns'));
+  assert.ok(transcriptSchema.required.includes('benchmark_id'));
+  assert.ok(comparisonSchema.required.includes('conditions'));
+  assert.ok(suiteSchema.required.includes('benchmarks'));
+  assert.ok(suiteReportSchema.required.includes('metrics'));
+  assert.equal(withoutVeritas.benchmark_id, scenario.id);
+  assert.equal(withVeritas.benchmark_id, scenario.id);
+  assert.equal(scenario.scoring.allow_early, false);
+  assert.equal(comparison.conditions.without_veritas.pass, false);
+  assert.equal(comparison.conditions.with_veritas.pass, true);
+  assert.equal(comparison.comparison.treatment_beats_baseline, true);
+  assert.equal(suite.benchmarks.length, 4);
+  assert.equal(suiteReport.metrics.pass_pow_k, 0.75);
+  assert.equal(suiteReport.metrics.treatment_pass_rate, 5 / 6);
+  assert.deepEqual(
+    compareMarkerBenchmarkRuns({
+      scenario,
+      withoutVeritas,
+      withVeritas,
+    }),
+    comparison,
+  );
+  assert.deepEqual(
+    generateMarkerBenchmarkSuiteReport({
+      suitePath: 'examples/benchmarks/marker-suite.json',
+      rootDir: frameworkRootDir,
+    }),
+    suiteReport,
+  );
+});
+
 test('repo-local operational config covers the framework repo surface', () => {
   const adapter = readJson('../.veritas/repo.adapter.json');
   const nodeIds = new Set(adapter.graph.nodes.map((node) => node.id));
@@ -2376,6 +3197,12 @@ test('script suggestion helper returns the expected keys', () => {
 
 function readJsonFromAbsolute(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
+}
+
+function writeTempJson(rootDir, relativePath, value) {
+  const path = join(rootDir, relativePath);
+  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+  return path;
 }
 
 function writeTempAdapter(rootDir, adapter) {

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "benchmark_id": "breaking-api-marker",
+  "run_id": "api-with-1",
+  "condition_id": "with-veritas",
+  "turns": [
+    {
+      "role": "tool",
+      "content": "src/contracts/public-api.ts changed",
+      "tags": ["marker-trigger"]
+    },
+    {
+      "role": "assistant",
+      "content": "Treat this as a breaking API change and keep backward compatibility in view before merging it.",
+      "tags": ["marker-response-window"]
+    }
+  ]
+}

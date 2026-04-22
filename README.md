@@ -22,6 +22,8 @@ The framework is intentionally agent-agnostic. It does not require one proprieta
 
 All shipped CLI commands print JSON to stdout, and the command surfaces described in the docs are exercised by the test suite.
 
+The benchmark layer now supports both single marker comparisons and multi-scenario suite summaries for proving that Veritas surfaces the right repo-specific context at the right time.
+
 ## What This Project Does Not Try To Be
 
 - a hosted control plane
@@ -95,6 +97,7 @@ If you want exact flags instead of the short path, use:
 ```bash
 npm exec -- veritas --help
 npm exec -- veritas report --help
+npm exec -- veritas eval marker-suite --suite examples/benchmarks/marker-suite.json
 ```
 
 ## Documentation Map
@@ -130,6 +133,8 @@ Go deeper here:
 - `docs/` — guides, design notes, and reference material
 - `tests/` — CLI and framework smoke coverage
 - `scripts/verify.mjs` — low-cost repository verification for docs and fixtures
+
+The `adapters/` directory contains reference adapters for other repo shapes, not the active adapter for this repo. Veritas dogfoods itself through the tracked repo-local adapter at `.veritas/repo.adapter.json`.
 
 ## Verification
 

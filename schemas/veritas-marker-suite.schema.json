@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veritas.dev/schemas/veritas-marker-suite.schema.json",
+  "title": "Veritas Marker Benchmark Suite",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "id", "title", "benchmarks"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "benchmark_id",
+          "title",
+          "marker_class",
+          "repo_surface",
+          "scenario_path",
+          "trials"
+        ],
+        "properties": {
+          "benchmark_id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "marker_class": { "type": "string" },
+          "repo_surface": { "type": "string" },
+          "scenario_path": { "type": "string" },
+          "trials": {
+            "description": "Array order is significant: the first trial is the one used for pass_at_1.",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "trial_id",
+                "without_veritas_transcript_path",
+                "with_veritas_transcript_path"
+              ],
+              "properties": {
+                "trial_id": { "type": "string" },
+                "without_veritas_transcript_path": { "type": "string" },
+                "with_veritas_transcript_path": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "benchmark_id": "migration-marker",
+  "title": "Migration marker surfaces on the first relevant response",
+  "scoring_window_assistant_turns": 1,
+  "conditions": {
+    "without_veritas": {
+      "run_id": "without-veritas-run",
+      "condition_id": "without-veritas",
+      "trigger_seen": true,
+      "trigger_turn": 3,
+      "response_window_tag_used": true,
+      "first_response_window_turn": 4,
+      "first_surface_turn": 5,
+      "assistant_turn_latency": 2,
+      "surfaced": true,
+      "timely": false,
+      "false_positive": true,
+      "matched_phrase": "run a migration",
+      "pass": false
+    },
+    "with_veritas": {
+      "run_id": "with-veritas-run",
+      "condition_id": "with-veritas",
+      "trigger_seen": true,
+      "trigger_turn": 2,
+      "response_window_tag_used": true,
+      "first_response_window_turn": 3,
+      "first_surface_turn": 3,
+      "assistant_turn_latency": 1,
+      "surfaced": true,
+      "timely": true,
+      "false_positive": false,
+      "matched_phrase": "data migration",
+      "pass": true
+    }
+  },
+  "comparison": {
+    "timely_recall_delta": 1,
+    "false_positive_improvement": 1,
+    "latency_improvement_turns": 1,
+    "treatment_beats_baseline": true
+  }
+}

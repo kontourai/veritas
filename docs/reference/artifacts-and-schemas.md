@@ -12,6 +12,7 @@ If you want command syntax, use [CLI Reference](cli.md). If you want sample payl
 - `adapters/` contains reference repo adapters.
 - `policy-packs/` contains reference policy packs.
 - `examples/` contains canonical example artifacts.
+- `examples/benchmarks/` contains canonical marker-benchmark scenarios, transcripts, and scored comparisons.
 - `tests/` exercises the framework and the shipped CLI surfaces.
 
 ## Repo-Local Generated Artifacts
@@ -73,6 +74,11 @@ Reference files:
 
 - [adapters/work-agent.adapter.json](../../adapters/work-agent.adapter.json)
 - [adapters/demo-docs-site.adapter.json](../../adapters/demo-docs-site.adapter.json)
+
+Important distinction:
+
+- files under `adapters/` are reference examples for other repo shapes
+- the `veritas` repo dogfoods through its tracked repo-local adapter at `.veritas/repo.adapter.json`
 
 ### Graph
 
@@ -153,6 +159,33 @@ Defined by:
 
 The draft captures prefilled context without inventing missing judgment. The record captures the completed operator judgment.
 
+### Marker benchmark scenario, transcript, and comparison
+
+Defined by:
+
+- [schemas/veritas-marker-benchmark.schema.json](../../schemas/veritas-marker-benchmark.schema.json)
+- [schemas/veritas-marker-transcript.schema.json](../../schemas/veritas-marker-transcript.schema.json)
+- [schemas/veritas-marker-score.schema.json](../../schemas/veritas-marker-score.schema.json)
+
+These benchmark artifacts support deterministic scoring for "did the right context surface at the right time" comparisons:
+
+- the scenario defines the required marker phrases and scoring window
+- the transcript captures the observed turns for one condition
+- the comparison report scores `without Veritas` against `with Veritas`
+
+### Marker benchmark suite and suite report
+
+Defined by:
+
+- [schemas/veritas-marker-suite.schema.json](../../schemas/veritas-marker-suite.schema.json)
+- [schemas/veritas-marker-suite-report.schema.json](../../schemas/veritas-marker-suite-report.schema.json)
+
+These artifacts support broader benchmark proof:
+
+- the suite artifact groups multiple marker scenarios and trial pairs
+- the suite report summarizes rates, latency, `pass_at_1`, `pass_at_k`, and `pass_pow_k`
+- benchmark groups can contain repeated trials so reliability is measured beyond one pair
+
 ## How The Pieces Fit
 
 The framework flow in this repo is:
@@ -182,4 +215,6 @@ Use these when you want concrete, current examples instead of abstract schema de
 - policy pack: [policy-packs/work-agent-convergence.policy-pack.json](../../policy-packs/work-agent-convergence.policy-pack.json)
 - evidence fixtures: [examples/evidence/work-agent-pass.json](../../examples/evidence/work-agent-pass.json), [examples/evidence/work-agent-fail.json](../../examples/evidence/work-agent-fail.json), [examples/evidence/work-agent-policy-gap.json](../../examples/evidence/work-agent-policy-gap.json)
 - eval fixtures: [examples/evals/work-agent-team-profile.json](../../examples/evals/work-agent-team-profile.json), [examples/evals/work-agent-shadow-eval-draft.json](../../examples/evals/work-agent-shadow-eval-draft.json), [examples/evals/work-agent-shadow-eval.json](../../examples/evals/work-agent-shadow-eval.json)
+- benchmark fixtures: [examples/benchmarks/migration-marker-scenario.json](../../examples/benchmarks/migration-marker-scenario.json), [examples/benchmarks/migration-marker-without-veritas.json](../../examples/benchmarks/migration-marker-without-veritas.json), [examples/benchmarks/migration-marker-with-veritas.json](../../examples/benchmarks/migration-marker-with-veritas.json), [examples/benchmarks/migration-marker-comparison.json](../../examples/benchmarks/migration-marker-comparison.json)
+- suite fixtures: [examples/benchmarks/marker-suite.json](../../examples/benchmarks/marker-suite.json), [examples/benchmarks/marker-suite-report.json](../../examples/benchmarks/marker-suite-report.json)
 - classification fixture: [examples/classification/work-agent-convergence-rule-families.json](../../examples/classification/work-agent-convergence-rule-families.json)

@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "id": "migration-marker",
+  "title": "Migration marker surfaces on the first relevant response",
+  "description": "The marker becomes relevant when a schema-changing surface is observed. The benchmark passes only when the first relevant assistant response surfaces the migration requirement without surfacing it earlier.",
+  "marker": {
+    "id": "must-mention-data-migration",
+    "required_phrases": ["data migration", "run a migration"]
+  },
+  "scoring": {
+    "trigger_tag": "marker-trigger",
+    "response_tag": "marker-response-window",
+    "max_assistant_turns_after_trigger": 1,
+    "allow_early": false
+  }
+}

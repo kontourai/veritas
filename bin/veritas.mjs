@@ -6,6 +6,8 @@ import {
   runApplyRuntimeHookCli,
   runApplyPackageScriptsCli,
   runEvalDraftCli,
+  runEvalMarkerCli,
+  runEvalMarkerSuiteCli,
   runEvalRecordCli,
   runVeritasReportCli,
   runInitCli,
@@ -26,6 +28,8 @@ const MAIN_USAGE = `Usage:
   veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
   veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false> --reviewer-confidence <scale-entry|unknown> --time-to-green-minutes <number> --override-count <number>
   veritas eval record --draft <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false>
+  veritas eval marker --scenario <path> --without-veritas-transcript <path> --with-veritas-transcript <path>
+  veritas eval marker-suite --suite <path>
   veritas print package-scripts [--root <path>] [--proof-lane <cmd>]
   veritas print ci-snippet [--root <path>] [--proof-lane <cmd>]
   veritas print git-hook [--root <path>] [--hook post-commit]
@@ -76,6 +80,10 @@ const EVAL_USAGE = `Usage:
     [--false-positive-rule <rule-id>]
     [--missed-issue <text>]
     [--note <text>]
+  veritas eval marker --scenario <path>
+    --without-veritas-transcript <path>
+    --with-veritas-transcript <path>
+  veritas eval marker-suite --suite <path>
 `;
 
 const SHADOW_USAGE = `Usage:
@@ -204,12 +212,20 @@ if (!subcommand || isHelpToken(subcommand)) {
           'Usage:\n  veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]\n    [--reviewer-confidence <scale-entry|unknown>]\n    [--time-to-green-minutes <number>]\n    [--override-count <number>]\n    [--false-positive-rule <rule-id>]\n    [--missed-issue <text>]\n    [--note <text>]\n',
         record:
           'Usage:\n  veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force]\n  veritas eval record --draft <path> [--team-profile <path>] [--output <path>] [--force]\n    --accepted-without-major-rewrite <true|false>\n    --required-followup <true|false>\n    --reviewer-confidence <scale-entry|unknown>\n    --time-to-green-minutes <number>\n    --override-count <number>\n    [--false-positive-rule <rule-id>]\n    [--missed-issue <text>]\n    [--note <text>]\n',
+        marker:
+          'Usage:\n  veritas eval marker --scenario <path>\n    --without-veritas-transcript <path>\n    --with-veritas-transcript <path>\n',
+        'marker-suite':
+          'Usage:\n  veritas eval marker-suite --suite <path>\n',
       }),
     );
   } else if (kind === 'record') {
     runEvalRecordCli(evalArgs, { rootDir: cwd });
   } else if (kind === 'draft') {
     runEvalDraftCli(evalArgs, { rootDir: cwd });
+  } else if (kind === 'marker') {
+    runEvalMarkerCli(evalArgs, { rootDir: cwd });
+  } else if (kind === 'marker-suite') {
+    runEvalMarkerSuiteCli(evalArgs, { rootDir: cwd });
   } else {
     writeStderr(EVAL_USAGE);
     process.exitCode = 1;

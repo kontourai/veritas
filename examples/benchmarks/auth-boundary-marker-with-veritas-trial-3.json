@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "benchmark_id": "auth-boundary-marker",
+  "run_id": "auth-with-3",
+  "condition_id": "with-veritas",
+  "turns": [
+    {
+      "role": "tool",
+      "content": "src/auth/policy.ts changed",
+      "tags": ["marker-trigger"]
+    },
+    {
+      "role": "assistant",
+      "content": "I will simplify the helper first.",
+      "tags": ["marker-response-window"]
+    },
+    {
+      "role": "assistant",
+      "content": "This auth boundary still needs a permission check."
+    }
+  ]
+}

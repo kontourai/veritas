@@ -110,6 +110,14 @@ assert(
   'CLI reference must document runtime status.',
 );
 assert(
+  cliReference.includes('veritas eval marker'),
+  'CLI reference must document the marker benchmark command.',
+);
+assert(
+  cliReference.includes('veritas eval marker-suite'),
+  'CLI reference must document the marker benchmark suite command.',
+);
+assert(
   cliReference.includes('veritas-report'),
   'CLI reference must document the report binary.',
 );
@@ -168,6 +176,22 @@ assert(
 assert(
   examplesReference.includes('examples/checkins/veritas-repo-checkin-red.json'),
   'Examples reference must include the red checkin example.',
+);
+assert(
+  examplesReference.includes('examples/benchmarks/migration-marker-scenario.json'),
+  'Examples reference must include the marker benchmark scenario fixture.',
+);
+assert(
+  examplesReference.includes('examples/benchmarks/migration-marker-comparison.json'),
+  'Examples reference must include the marker benchmark comparison fixture.',
+);
+assert(
+  examplesReference.includes('examples/benchmarks/marker-suite.json'),
+  'Examples reference must include the marker benchmark suite fixture.',
+);
+assert(
+  examplesReference.includes('examples/benchmarks/marker-suite-report.json'),
+  'Examples reference must include the marker benchmark suite report fixture.',
 );
 
 const designDoc = readText('docs/design/framework-core-vs-adapter.md');
