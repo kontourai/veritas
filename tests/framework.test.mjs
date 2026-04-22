@@ -2293,11 +2293,21 @@ test('live-eval fixtures explain outcome measurement and team tuning', () => {
   assert.equal(checkinReport.adapter.name, 'veritas');
   assert.ok(Array.isArray(checkinReport.policy_results));
   assert.ok(checkinReport.policy_results.some((result) => result.passed === true));
+  assert.equal(
+    checkinReport.policy_results.filter((result) => result.passed === null).length,
+    0,
+  );
+  assert.ok(
+    checkinReport.policy_results.some(
+      (result) => result.rule_id === 'prefer-veritas-routed-delivery' && result.passed === true,
+    ),
+  );
 
   const redCheckin = readJson('../examples/checkins/veritas-repo-checkin-red.json');
   assert.equal(redCheckin.health_status, 'red');
   assert.ok(Array.isArray(redCheckin.alerts));
   assert.ok(redCheckin.alerts.some((alert) => alert.severity === 'error'));
+  assert.equal(redCheckin.policy_results_summary.metadata_only, 0);
 });
 
 test('repo-local operational config covers the framework repo surface', () => {

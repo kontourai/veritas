@@ -19,9 +19,9 @@
   ],
   "uncovered_path_result": "warn",
   "policy_results_summary": {
-    "passed": 4,
+    "passed": 5,
     "failed": 0,
-    "metadata_only": 1
+    "metadata_only": 0
   },
   "health_status": "red",
   "alerts": [

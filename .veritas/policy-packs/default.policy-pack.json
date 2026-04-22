@@ -75,12 +75,15 @@
       "id": "prefer-veritas-routed-delivery",
       "classification": "promotable-policy",
       "stage": "recommend",
-      "message": "Prefer running new AI-guided changes through the Veritas report and the documented proof lane before review.",
+      "message": "Prefer keeping the tracked Veritas proof and check-in integration surfaces present so changes flow through the documented operational path before review.",
       "owner": "repo-maintainers",
       "rollback_switch": "soften-veritas-route",
       "match": {
-        "files": [
-          ".veritas/README.md"
+        "artifacts": [
+          ".githooks/post-commit",
+          ".veritas/hooks/agent-runtime.sh",
+          ".veritas/runtime/codex-hooks.json",
+          ".github/workflows/veritas-checkins.yml"
         ]
       }
     }

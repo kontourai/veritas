@@ -668,11 +668,25 @@ assert(
   checkinReport.policy_results.some((result) => result.passed === true),
   'Check-in report must include passing policy results.',
 );
+assert(
+  checkinReport.policy_results.filter((result) => result.passed === null).length === 0,
+  'Check-in report should no longer include metadata-only policy results.',
+);
+assert(
+  checkinReport.policy_results.some(
+    (result) => result.rule_id === 'prefer-veritas-routed-delivery' && result.passed === true,
+  ),
+  'Check-in report must show prefer-veritas-routed-delivery as an implemented passing rule.',
+);
 const redCheckin = readJson('examples/checkins/veritas-repo-checkin-red.json');
 assert(redCheckin.health_status === 'red', 'Red check-in must have red health.');
 assert(
   Array.isArray(redCheckin.alerts) && redCheckin.alerts.some((alert) => alert.severity === 'error'),
   'Red check-in must include at least one error alert.',
+);
+assert(
+  redCheckin.policy_results_summary.metadata_only === 0,
+  'Red check-in example should no longer report metadata-only policy results.',
 );
 
 const evalRecordExample = readJson('examples/evals/work-agent-shadow-eval.json');

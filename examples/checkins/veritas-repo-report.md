@@ -11,14 +11,14 @@
 - **Uncovered path result:** clear
 - **Baseline `ci:fast` passed:** yes
 - **Report transport:** local-json
-- **Policy results:** 4 passed, 0 failed, 1 metadata-only
+- **Policy results:** 5 passed, 0 failed, 0 metadata-only
 - **Artifact:** `.veritas/evidence/veritas-repo-check-in.json`
 
 ### Policy Results
-- required-veritas-checkins-artifacts: pass — All required repository artifacts are present.
+- required-veritas-operational-artifacts: pass — All required repository artifacts are present.
 - required-veritas-cli-artifacts: pass — All required repository artifacts are present.
 - required-veritas-reference-artifacts: pass — All required repository artifacts are present.
 - required-veritas-schema-artifacts: pass — All required repository artifacts are present.
-- prefer-veritas-routed-delivery: metadata-only — Rule prefer-veritas-routed-delivery is metadata-only in the current framework.
+- prefer-veritas-routed-delivery: pass — All required repository artifacts are present.
 
 - No recommendations.

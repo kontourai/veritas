@@ -101,10 +101,10 @@
   },
   "policy_results": [
     {
-      "rule_id": "required-veritas-checkins-artifacts",
+      "rule_id": "required-veritas-operational-artifacts",
       "classification": "hard-invariant",
       "stage": "block",
-      "message": "The tracked Veritas check-in artifacts must stay present so agents and reviewers share the same baseline.",
+      "message": "The tracked Veritas operational artifacts must stay present so agents and reviewers share the same baseline.",
       "owner": "repo-core",
       "rollback_switch": null,
       "implemented": true,
@@ -152,12 +152,12 @@
       "rule_id": "prefer-veritas-routed-delivery",
       "classification": "promotable-policy",
       "stage": "recommend",
-      "message": "Prefer running new AI-guided changes through the Veritas report and the documented proof lane before review.",
+      "message": "Prefer keeping the tracked Veritas proof and check-in integration surfaces present so changes flow through the documented operational path before review.",
       "owner": "repo-maintainers",
       "rollback_switch": "soften-veritas-route",
-      "implemented": false,
-      "passed": null,
-      "summary": "Rule prefer-veritas-routed-delivery is metadata-only in the current framework.",
+      "implemented": true,
+      "passed": true,
+      "summary": "All required repository artifacts are present.",
       "findings": []
     }
   ]

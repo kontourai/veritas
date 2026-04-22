@@ -5,7 +5,7 @@
   "mode": "shadow",
   "evidence": {
     "artifact_path": ".veritas/evidence/veritas-repo-check-in.json",
-    "artifact_digest": "3748bf4a9f69ef0da706e2da8c727b0d7a63f1d894284ac615be82b2ed504f81",
+    "artifact_digest": "16c031d0cb215fd9d5ee16dd5e2d4088d8799cd710d9d3b3b7811d975575b87d",
     "timestamp": "2026-04-21T22:00:00.000Z",
     "source_ref": "refs/heads/main",
     "source_kind": "explicit-files",
