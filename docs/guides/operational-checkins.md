@@ -1,6 +1,7 @@
 # Operational Check-ins
 
 This repo uses `veritas` on itself through the same operational check-in flow a normal consumer repo would use.
+That makes this guide a safe place to validate the PR comment format on a temporary branch.
 
 The goal is not to make the framework special-case its own repo. The goal is to prove that the normal adapter, policy-pack, evidence, and eval flow are useful on a real codebase that ships the framework.
 
