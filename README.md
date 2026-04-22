@@ -54,6 +54,12 @@ The committed proof examples live under [examples/dogfood](/Users/brian/dev/gith
 
 There is also a scheduled GitHub Actions workflow at [.github/workflows/veritas-dogfood.yml](/Users/brian/dev/github/kontourai/veritas/.github/workflows/veritas-dogfood.yml) that runs the dogfood lane on `main`, on pull requests, on manual dispatch, and weekly. It uploads the generated `.veritas` check-in artifacts so you can inspect how the self-hosting lane is behaving over time.
 
+That workflow now actively elevates the evidence:
+
+- pull requests get an updated Veritas dogfood comment
+- non-PR runs update a standing `Veritas Dogfood Health` issue when health is not green
+- the issue closes automatically again when health returns to green
+
 ## Quickstart
 
 Install dependencies and verify the framework repo itself:

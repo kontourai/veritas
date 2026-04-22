@@ -12,6 +12,8 @@ const timestamp = new Date().toISOString();
 const compactStamp = timestamp.replace(/[:.]/g, '-');
 const runId = process.env.VERITAS_RUN_ID ?? `veritas-checkin-${compactStamp}`;
 const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+const failOnAlerts = process.env.VERITAS_FAIL_ON_ALERTS === '1';
+const isCi = process.env.CI === 'true';
 
 function summarizePolicyResults(policyResults) {
   return {
@@ -19,6 +21,88 @@ function summarizePolicyResults(policyResults) {
     failed: policyResults.filter((result) => result.passed === false).length,
     metadata_only: policyResults.filter((result) => result.passed === null).length,
   };
+}
+
+function buildAlerts(report, runtimeStatus) {
+  const alerts = [];
+
+  if (report.record.policy_results.some((result) => result.passed === false)) {
+    alerts.push({
+      severity: 'error',
+      code: 'policy-failed',
+      message: 'One or more evaluated policy rules failed.',
+    });
+  }
+  if (report.record.unresolved_files.length > 0) {
+    alerts.push({
+      severity: 'error',
+      code: 'unresolved-files',
+      message: `The report still has ${report.record.unresolved_files.length} unresolved file(s).`,
+    });
+  }
+  if (!runtimeStatus.gitHook.exists) {
+    alerts.push({
+      severity: 'error',
+      code: 'missing-git-hook',
+      message: 'The tracked post-commit hook is missing.',
+    });
+  } else if (!runtimeStatus.gitHook.executable) {
+    alerts.push({
+      severity: 'error',
+      code: 'git-hook-not-executable',
+      message: 'The tracked post-commit hook exists but is not executable.',
+    });
+  } else if (!runtimeStatus.gitHook.configured && !isCi) {
+    alerts.push({
+      severity: 'warning',
+      code: 'git-hook-not-configured',
+      message: 'The tracked post-commit hook is present, but git is not configured to use .githooks.',
+    });
+  }
+  if (!runtimeStatus.runtimeHook.exists) {
+    alerts.push({
+      severity: 'error',
+      code: 'missing-runtime-hook',
+      message: 'The tracked runtime hook is missing.',
+    });
+  } else if (!runtimeStatus.runtimeHook.executable) {
+    alerts.push({
+      severity: 'error',
+      code: 'runtime-hook-not-executable',
+      message: 'The tracked runtime hook exists but is not executable.',
+    });
+  }
+  if (!runtimeStatus.codexArtifact.exists) {
+    alerts.push({
+      severity: 'error',
+      code: 'missing-codex-artifact',
+      message: 'The tracked Codex hook artifact is missing.',
+    });
+  } else if (!runtimeStatus.codexTarget.checked && !isCi) {
+    alerts.push({
+      severity: 'warning',
+      code: 'codex-target-not-checked',
+      message: 'No Codex home or hooks target was checked for installation status.',
+    });
+  } else if (runtimeStatus.codexTarget.checked && !runtimeStatus.codexTarget.adapterInstalled) {
+    alerts.push({
+      severity: 'warning',
+      code: 'codex-adapter-not-installed',
+      message: 'A Codex target was checked, but the Veritas adapter is not installed there.',
+    });
+  }
+
+  return alerts;
+}
+
+function summarizeHealth(alerts) {
+  if (alerts.some((alert) => alert.severity === 'error')) {
+    return 'red';
+  }
+  if (alerts.some((alert) => alert.severity === 'warning')) {
+    return 'yellow';
+  }
+  return 'green';
 }
 
 function writeArtifact(relativePath, content) {
@@ -54,6 +138,8 @@ const draft = generateEvalDraft(
 
 const runtimeStatus = inspectRuntimeAdapterStatus(rootDir);
 const policySummary = summarizePolicyResults(report.record.policy_results);
+const alerts = buildAlerts(report, runtimeStatus);
+const healthStatus = summarizeHealth(alerts);
 
 const checkin = {
   version: 1,
@@ -70,12 +156,15 @@ const checkin = {
   selected_proof_commands: report.record.selected_proof_commands,
   uncovered_path_result: report.record.uncovered_path_result,
   policy_results_summary: policySummary,
+  health_status: healthStatus,
+  alerts,
   runtime_status: runtimeStatus,
 };
 
 const markdown = [
   '## Veritas Dogfood Check-in',
   '',
+  `- **Health:** ${healthStatus}`,
   `- **Run ID:** ${runId}`,
   `- **Generated at:** ${timestamp}`,
   `- **Report artifact:** \`${report.artifactPath}\``,
@@ -86,30 +175,49 @@ const markdown = [
   `- **Selected proof commands:** \`${report.record.selected_proof_commands.join(', ') || 'none'}\``,
   `- **Next commands:** ${runtimeStatus.nextCommands.length > 0 ? runtimeStatus.nextCommands.join(' | ') : 'none'}`,
   '',
+];
+
+if (alerts.length > 0) {
+  markdown.push('### Alerts', '');
+  for (const alert of alerts) {
+    markdown.push(`- **${alert.severity}:** ${alert.message}`);
+  }
+  markdown.push('');
+}
+
+markdown.push(
   '### Suggested Eval Command',
   '',
   `\`${draft.suggestedRecordCommand}\``,
   '',
-].join('\n');
+);
+
+const markdownText = markdown.join('\n');
 
 writeArtifact(
   `.veritas/checkins/${runId}.json`,
   `${JSON.stringify(checkin, null, 2)}\n`,
 );
-writeArtifact(`.veritas/checkins/${runId}.md`, `${markdown}\n`);
+writeArtifact(`.veritas/checkins/${runId}.md`, `${markdownText}\n`);
+writeArtifact('.veritas/checkins/latest.json', `${JSON.stringify(checkin, null, 2)}\n`);
+writeArtifact('.veritas/checkins/latest.md', `${markdownText}\n`);
 
 if (summaryPath) {
-  appendFileSync(summaryPath, `${markdown}\n`, 'utf8');
+  appendFileSync(summaryPath, `${markdownText}\n`, 'utf8');
 }
 
 process.stdout.write(
   `${JSON.stringify(
     {
       runId,
+      healthStatus,
+      alerts,
       reportArtifactPath: report.artifactPath,
       evalDraftArtifactPath: draft.artifactPath,
       checkinJsonPath: `.veritas/checkins/${runId}.json`,
       checkinMarkdownPath: `.veritas/checkins/${runId}.md`,
+      latestCheckinJsonPath: '.veritas/checkins/latest.json',
+      latestCheckinMarkdownPath: '.veritas/checkins/latest.md',
       policyResultsSummary: policySummary,
       runtimeStatus,
       suggestedEvalCommand: draft.suggestedRecordCommand,
@@ -118,3 +226,7 @@ process.stdout.write(
     2,
   )}\n`,
 );
+
+if (failOnAlerts && healthStatus === 'red') {
+  process.exitCode = 1;
+}

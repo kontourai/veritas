@@ -9,6 +9,11 @@ on:
   schedule:
     - cron: '17 15 * * 1'
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   dogfood:
     runs-on: ubuntu-latest
@@ -25,10 +30,30 @@ jobs:
       - name: Install
         run: npm install --no-fund --no-audit
 
-      - name: Run Veritas Dogfood Lane
-        run: npm run veritas:ci:dogfood
+      - name: Run Veritas Proof Lane
+        run: npm run veritas:proof
+
+      - name: Refresh Committed Dogfood Examples
+        run: npm run veritas:dogfood:examples
+
+      - name: Generate Veritas Dogfood Check-in
+        run: node scripts/dogfood-checkin.mjs
+
+      - name: Expose Check-in Outputs
+        id: checkin
+        run: |
+          node <<'EOF' >> "$GITHUB_OUTPUT"
+          const { readFileSync } = require('node:fs');
+          const checkin = JSON.parse(readFileSync('.veritas/checkins/latest.json', 'utf8'));
+          console.log(`run_id=${checkin.run_id}`);
+          console.log(`health_status=${checkin.health_status}`);
+          console.log(`alerts_count=${checkin.alerts.length}`);
+          console.log(`report_artifact_path=${checkin.report_artifact_path}`);
+          console.log(`eval_draft_artifact_path=${checkin.eval_draft_artifact_path}`);
+          EOF
 
       - name: Upload Veritas Dogfood Artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: veritas-dogfood-${{ github.run_id }}
@@ -38,3 +63,111 @@ jobs:
             .veritas/evals/
             .veritas/checkins/
             examples/dogfood/
+
+      - name: Update PR Comment
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs');
+            const body = fs.readFileSync('.veritas/checkins/latest.md', 'utf8');
+            const marker = '<!-- veritas-dogfood-comment -->';
+            const commentBody = `${marker}\n${body}`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existing = comments.find((comment) => comment.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body: commentBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: commentBody,
+              });
+            }
+
+      - name: Update Dogfood Health Issue
+        if: always() && github.event_name != 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('node:fs');
+            const checkin = JSON.parse(fs.readFileSync('.veritas/checkins/latest.json', 'utf8'));
+            const body = fs.readFileSync('.veritas/checkins/latest.md', 'utf8');
+            const title = 'Veritas Dogfood Health';
+            const marker = '<!-- veritas-dogfood-health -->';
+            const issueBody = `${marker}\n${body}`;
+            const { owner, repo } = context.repo;
+            const allIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'all',
+              per_page: 100,
+            });
+            const existing = allIssues.find((issue) => issue.title === title);
+
+            if (checkin.health_status === 'green') {
+              if (existing && existing.state === 'open') {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: existing.number,
+                  body: `Health returned to green in \`${checkin.run_id}\`.\n\n${body}`,
+                });
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number: existing.number,
+                  state: 'closed',
+                });
+              }
+              return;
+            }
+
+            if (existing && existing.state === 'open') {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existing.number,
+                body: issueBody,
+              });
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: existing.number,
+                body: `Automated Veritas dogfood check-in \`${checkin.run_id}\` reported **${checkin.health_status}** health.`,
+              });
+            } else if (existing && existing.state === 'closed') {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existing.number,
+                state: 'open',
+                body: issueBody,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner,
+                repo,
+                title,
+                body: issueBody,
+              });
+            }
+
+      - name: Fail On Red Dogfood Health
+        if: steps.checkin.outputs.health_status == 'red'
+        run: |
+          echo "Veritas dogfood health is red; see .veritas/checkins/latest.md and uploaded artifacts."
+          exit 1

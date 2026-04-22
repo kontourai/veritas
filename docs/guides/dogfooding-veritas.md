@@ -50,6 +50,11 @@ The automated check-in path adds two more things:
 5. the repo emits a machine-readable snapshot under `.veritas/checkins/` during automation runs
 6. the workflow uploads evidence, eval drafts, and check-in artifacts so future runs can be inspected without committing local state
 
+The workflow also elevates the result:
+
+7. pull requests get a sticky Veritas dogfood comment with the latest check-in summary
+8. non-PR runs update a standing `Veritas Dogfood Health` issue when health is not green, and close it again when health recovers
+
 ## Where To Inspect The Proof
 
 - [examples/dogfood/veritas-repo-report.json](../../examples/dogfood/veritas-repo-report.json)
@@ -61,6 +66,8 @@ For future check-ins:
 
 - run `npm run veritas:dogfood:checkin` locally
 - inspect the uploaded artifacts from the `Veritas Dogfood` GitHub Actions workflow
+- inspect the PR comment on pull requests
+- inspect the `Veritas Dogfood Health` issue for scheduled or `main`-branch regressions
 - use the suggested eval command emitted by the check-in when you want to turn an automated snapshot into a human-scored eval record
 
 If this dogfood flow feels awkward, the fix should usually land in the product surface, not in a repo-specific framework exception.

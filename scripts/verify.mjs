@@ -49,6 +49,10 @@ assert(
   readme.includes('.github/workflows/veritas-dogfood.yml'),
   'README must mention the dogfood workflow.',
 );
+assert(
+  readme.includes('Veritas Dogfood Health'),
+  'README must mention the dogfood health issue.',
+);
 
 const docsIndex = readText('docs/README.md');
 assert(
@@ -529,12 +533,32 @@ assert(
   'Dogfood workflow must include a schedule.',
 );
 assert(
-  dogfoodWorkflow.includes('npm run veritas:ci:dogfood'),
-  'Dogfood workflow must run the CI dogfood script.',
+  dogfoodWorkflow.includes('Run Veritas Proof Lane'),
+  'Dogfood workflow must run the Veritas proof lane.',
+);
+assert(
+  dogfoodWorkflow.includes('Generate Veritas Dogfood Check-in'),
+  'Dogfood workflow must generate a dogfood check-in.',
 );
 assert(
   dogfoodWorkflow.includes('actions/upload-artifact@v4'),
   'Dogfood workflow must upload artifacts.',
+);
+assert(
+  dogfoodWorkflow.includes('actions/github-script@v7'),
+  'Dogfood workflow must use github-script for active escalation.',
+);
+assert(
+  dogfoodWorkflow.includes('Update PR Comment'),
+  'Dogfood workflow must update PR comments.',
+);
+assert(
+  dogfoodWorkflow.includes('Update Dogfood Health Issue'),
+  'Dogfood workflow must update the dogfood health issue.',
+);
+assert(
+  dogfoodWorkflow.includes('Fail On Red Dogfood Health'),
+  'Dogfood workflow must fail on red health.',
 );
 
 const workAgentAdapter = readJson('adapters/work-agent.adapter.json');
@@ -616,6 +640,10 @@ assert(
 assert(
   dogfoodGuide.includes('.github/workflows/veritas-dogfood.yml'),
   'Dogfooding guide must mention the dogfood workflow.',
+);
+assert(
+  dogfoodGuide.includes('Veritas Dogfood Health'),
+  'Dogfooding guide must mention the dogfood health issue.',
 );
 
 const dogfoodReadme = readText('examples/dogfood/README.md');

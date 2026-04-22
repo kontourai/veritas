@@ -2320,7 +2320,10 @@ test('repo includes an automated dogfood workflow', () => {
   );
 
   assert.match(workflow, /schedule:/);
-  assert.match(workflow, /npm run veritas:ci:dogfood/);
+  assert.match(workflow, /npm run veritas:proof/);
+  assert.match(workflow, /node scripts\/dogfood-checkin\.mjs/);
+  assert.match(workflow, /Update PR Comment/);
+  assert.match(workflow, /Update Dogfood Health Issue/);
   assert.match(workflow, /actions\/upload-artifact@v4/);
 });
 
