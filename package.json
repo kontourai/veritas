@@ -1,8 +1,22 @@
 {
   "name": "@kontourai/veritas",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "type": "module",
+  "files": [
+    "LICENSE",
+    "README.md",
+    "bin/",
+    "src/",
+    "schemas/",
+    "adapters/",
+    "policy-packs/",
+    "docs/",
+    "examples/"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
     ".": "./src/index.mjs"
   },

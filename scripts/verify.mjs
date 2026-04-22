@@ -487,6 +487,19 @@ assert(
   'package.json must use the scoped public package name.',
 );
 assert(
+  readText('package.json').includes('"private": false'),
+  'package.json must not stay private once the docs present a publishable package surface.',
+);
+assert(
+  readText('package.json').includes('"publishConfig"') &&
+    readText('package.json').includes('"access": "public"'),
+  'package.json must include a public publishConfig.',
+);
+assert(
+  readText('package.json').includes('"files"'),
+  'package.json must curate the publish surface with a files allowlist.',
+);
+assert(
   readText('package.json').includes('"veritas:checkin:examples"'),
   'package.json must expose the check-in example script.',
 );
@@ -519,6 +532,22 @@ assert(
 assert(
   checkinWorkflow.includes('actions/github-script@v7'),
   'Check-in workflow must use github-script for active escalation.',
+);
+assert(
+  checkinWorkflow.includes('Workflow run'),
+  'Check-in workflow must include workflow run links in surfaced updates.',
+);
+assert(
+  checkinWorkflow.includes('veritas-health'),
+  'Check-in workflow must manage a veritas-health label.',
+);
+assert(
+  checkinWorkflow.includes('health:active'),
+  'Check-in workflow must manage an active health label.',
+);
+assert(
+  checkinWorkflow.includes('health:green'),
+  'Check-in workflow must manage a green health label.',
 );
 assert(
   checkinWorkflow.includes('Update PR Comment'),

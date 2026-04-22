@@ -24,7 +24,7 @@ The repo-level check-in commands live in `package.json`:
 - Source roots: `src/`, `docs/`
 - Tooling roots: `scripts/`
 - Test roots: `tests/`
-- GitHub workflows detected: `no`
+- GitHub workflows detected: `yes`
 - Matching scripts seen: `verify`, `test`
 
 ## What To Do Next

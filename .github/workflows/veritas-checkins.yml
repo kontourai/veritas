@@ -80,9 +80,10 @@ jobs:
             const fs = require('node:fs');
             const body = fs.readFileSync('.veritas/checkins/latest.md', 'utf8');
             const marker = '<!-- veritas-checkin-comment -->';
-            const commentBody = `${marker}\n${body}`;
             const { owner, repo } = context.repo;
             const issue_number = context.payload.pull_request.number;
+            const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`;
+            const commentBody = `${marker}\n${body}\n### Links\n- [Workflow run](${runUrl})\n`;
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner,
               repo,
@@ -118,8 +119,25 @@ jobs:
             const marker = '<!-- veritas-health -->';
             const legacyTitle = 'Veritas Dogfood Health';
             const legacyMarker = '<!-- veritas-dogfood-health -->';
-            const issueBody = `${marker}\n${body}`;
             const { owner, repo } = context.repo;
+            const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`;
+            const issueBody = `${marker}\n${body}\n### Links\n- [Workflow run](${runUrl})\n`;
+            const healthLabel = 'veritas-health';
+            const activeLabel = 'health:active';
+            const clearLabel = 'health:green';
+
+            for (const [name, color, description] of [
+              [healthLabel, '1d76db', 'Veritas operational health tracking'],
+              [activeLabel, 'd73a4a', 'Veritas health needs attention'],
+              [clearLabel, '0e8a16', 'Veritas health currently green'],
+            ]) {
+              try {
+                await github.rest.issues.createLabel({ owner, repo, name, color, description });
+              } catch (error) {
+                if (error.status !== 422) throw error;
+              }
+            }
+
             const allIssues = await github.paginate(github.rest.issues.listForRepo, {
               owner,
               repo,
@@ -151,6 +169,12 @@ jobs:
                   body: issueBody,
                   state: 'closed',
                 });
+                await github.rest.issues.setLabels({
+                  owner,
+                  repo,
+                  issue_number: existing.number,
+                  labels: [healthLabel, clearLabel],
+                });
               }
               return;
             }
@@ -162,6 +186,12 @@ jobs:
                 issue_number: existing.number,
                 title,
                 body: issueBody,
+              });
+              await github.rest.issues.setLabels({
+                owner,
+                repo,
+                issue_number: existing.number,
+                labels: [healthLabel, activeLabel],
               });
               await github.rest.issues.createComment({
                 owner,
@@ -178,12 +208,24 @@ jobs:
                 state: 'open',
                 body: issueBody,
               });
+              await github.rest.issues.setLabels({
+                owner,
+                repo,
+                issue_number: existing.number,
+                labels: [healthLabel, activeLabel],
+              });
             } else {
-              await github.rest.issues.create({
+              const created = await github.rest.issues.create({
                 owner,
                 repo,
                 title,
                 body: issueBody,
+              });
+              await github.rest.issues.setLabels({
+                owner,
+                repo,
+                issue_number: created.data.number,
+                labels: [healthLabel, activeLabel],
               });
             }
 
