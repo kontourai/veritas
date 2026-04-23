@@ -329,8 +329,20 @@ assert(
   'Pages workflow must use the current setup-node action.',
 );
 assert(
+  pagesWorkflow.includes('actions/configure-pages@v6'),
+  'Pages workflow must use the current configure-pages action.',
+);
+assert(
+  pagesWorkflow.includes('actions/upload-pages-artifact@v5'),
+  'Pages workflow must use the current upload-pages-artifact action.',
+);
+assert(
   pagesWorkflow.includes('actions/deploy-pages'),
   'Pages workflow must deploy to GitHub Pages.',
+);
+assert(
+  pagesWorkflow.includes('actions/deploy-pages@v5'),
+  'Pages workflow must use the current deploy-pages action.',
 );
 
 const publishWorkflow = readText('.github/workflows/publish-npm.yml');
@@ -383,6 +395,18 @@ assert(
 assert(
   checkinsWorkflow.includes('actions/setup-node@v6'),
   'Check-in workflow must use the current setup-node action.',
+);
+assert(
+  checkinsWorkflow.includes('actions/upload-artifact@v7'),
+  'Check-in workflow must use the current upload-artifact action.',
+);
+assert(
+  checkinsWorkflow.includes('actions/download-artifact@v8'),
+  'Check-in workflow must use the current download-artifact action.',
+);
+assert(
+  checkinsWorkflow.includes('actions/github-script@v9'),
+  'Check-in workflow must use the current github-script action.',
 );
 
 execFileSync('node', ['scripts/build-pages-site.mjs'], {
