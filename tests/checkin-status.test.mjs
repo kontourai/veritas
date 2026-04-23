@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { unlinkSync, writeFileSync } from 'node:fs';
+import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { classifyGovernanceSurface, renderGovernanceSurfaceLine } from '../scripts/checkin-status.mjs';
 import { commitAll, initCommittedRepo, mkdirp } from './helpers.mjs';
@@ -115,6 +115,45 @@ test('governance surface treats removals as constitutional modifications', () =>
       path: '.veritas/team/default.team-profile.json',
       status: 'removed',
       additive: false,
+      semantic_change: true,
+    },
+  ]);
+});
+
+test('governance surface treats governance renames as constitutional modifications', () => {
+  const rootDir = createGovernanceRepo('veritas-checkin-rename-');
+  const originalPath = join(rootDir, '.veritas/team/default.team-profile.json');
+  const renamedPath = join(rootDir, '.veritas/team/release.team-profile.json');
+  writeFileSync(
+    renamedPath,
+    readFileSync(originalPath, 'utf8'),
+    'utf8',
+  );
+  unlinkSync(originalPath);
+  commitAll(rootDir, 'Rename team profile');
+
+  const result = classifyGovernanceSurface({
+    rootDir,
+    changedFrom: 'HEAD~1',
+    changedTo: 'HEAD',
+  });
+
+  assert.equal(result.classification, 'constitutional-modification');
+  assert.deepEqual(result.semantic_changed_paths, [
+    '.veritas/team/default.team-profile.json',
+    '.veritas/team/release.team-profile.json',
+  ]);
+  assert.deepEqual(result.files, [
+    {
+      path: '.veritas/team/default.team-profile.json',
+      status: 'removed',
+      additive: false,
+      semantic_change: true,
+    },
+    {
+      path: '.veritas/team/release.team-profile.json',
+      status: 'added',
+      additive: true,
       semantic_change: true,
     },
   ]);

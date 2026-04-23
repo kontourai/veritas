@@ -160,6 +160,26 @@ function readGovernanceJsonAtRef(rootDirOverride, ref, filePath) {
   }
 }
 
+function listGovernancePathsAtRef(rootDirOverride, ref) {
+  try {
+    return git(rootDirOverride, ['ls-tree', '-r', '--name-only', ref, '--', ...governanceRoots])
+      .split(/\r?\n/u)
+      .map((filePath) => filePath.trim())
+      .filter(Boolean)
+      .filter(isGovernancePath)
+      .sort();
+  } catch (error) {
+    const detail = `${error.stderr ?? ''}${error.stdout ?? ''}${error.message ?? ''}`;
+    if (
+      detail.includes('Not a valid object name') ||
+      detail.includes('fatal: Not a valid object name')
+    ) {
+      return [];
+    }
+    throw error;
+  }
+}
+
 function isPlainObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -252,7 +272,7 @@ export function classifyGovernanceSurface({
     };
   }
 
-  const changedFiles = git(rootDirOverride, [
+  const diffPaths = git(rootDirOverride, [
     'diff',
     '--name-only',
     changedFrom,
@@ -263,10 +283,13 @@ export function classifyGovernanceSurface({
     .split(/\r?\n/u)
     .map((filePath) => filePath.trim())
     .filter(Boolean)
-    .filter(isGovernancePath)
-    .sort();
+    .filter(isGovernancePath);
+  const changedPathSet = new Set(diffPaths);
+  const basePaths = listGovernancePathsAtRef(rootDirOverride, changedFrom);
+  const headPaths = listGovernancePathsAtRef(rootDirOverride, changedTo);
+  const candidatePaths = Array.from(new Set([...basePaths, ...headPaths, ...diffPaths])).sort();
 
-  const fileAssessments = changedFiles.map((filePath) => {
+  const fileAssessments = candidatePaths.map((filePath) => {
     const baseSnapshot = readGovernanceJsonAtRef(rootDirOverride, changedFrom, filePath);
     const headSnapshot = readGovernanceJsonAtRef(rootDirOverride, changedTo, filePath);
 
@@ -305,8 +328,11 @@ export function classifyGovernanceSurface({
       semantic_change: true,
     };
   });
+  const relevantAssessments = fileAssessments.filter(
+    (assessment) => assessment.semantic_change || changedPathSet.has(assessment.path),
+  );
 
-  const semanticAssessments = fileAssessments.filter((assessment) => assessment.semantic_change);
+  const semanticAssessments = relevantAssessments.filter((assessment) => assessment.semantic_change);
   const classification =
     semanticAssessments.length === 0
       ? 'clean'
@@ -319,7 +345,7 @@ export function classifyGovernanceSurface({
     summary: formatGovernanceSummary(
       classification,
       semanticAssessments,
-      changedFiles,
+      diffPaths,
       true,
     ),
     evaluated: true,
@@ -327,8 +353,8 @@ export function classifyGovernanceSurface({
       base: changedFrom,
       head: changedTo,
     },
-    files: fileAssessments,
-    changed_paths: changedFiles,
+    files: relevantAssessments,
+    changed_paths: Array.from(changedPathSet).sort(),
     semantic_changed_paths: semanticAssessments.map((assessment) => assessment.path),
   };
 }
