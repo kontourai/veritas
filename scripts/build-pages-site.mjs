@@ -433,6 +433,9 @@ img { max-width: 100%; }
   text-align: center;
   padding: 4rem 0 3rem;
   margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .hero-tagline {
   font-size: 2.4rem;
@@ -449,7 +452,6 @@ img { max-width: 100%; }
   line-height: 1.65;
 }
 .install-cmd {
-  display: inline-block;
   background: var(--install-cmd-bg);
   color: var(--install-cmd-fg);
   padding: 0.65rem 1.5rem;
