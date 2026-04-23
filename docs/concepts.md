@@ -16,7 +16,18 @@ Your repo has different kinds of code. Product features, shared utilities, tests
 
 The adapter is a JSON file at `.veritas/repo.adapter.json` that maps your repo into named nodes. Each node has a kind — `product-surface`, `shared-contract-surface`, `verification-surface`, `governance-surface`, `tooling-surface`, `delivery-surface`, `shared-package`, or `example-surface`. Pattern matching routes files to nodes, and each node specifies which proof lanes apply to it.
 
-A change to `src/api/` might route to a node named `api`, which requires the `unit-test` and `lint` proof lanes. A change to `examples/` routes to an `example-surface` node with lighter requirements. This routing is explicit and repo-local — no conventions inferred from directory names, no guessing.
+Here is a real node definition from the Veritas repo's own adapter:
+
+```json
+{
+  "id": "governance.guidance",
+  "kind": "governance-surface",
+  "label": ".veritas/**",
+  "patterns": [".veritas/"]
+}
+```
+
+A change to any file under `.veritas/` routes to this node, which the adapter can assign its own proof lanes. A change to `examples/` routes to an `example-surface` node with lighter requirements. This routing is explicit and repo-local — no conventions inferred from directory names, no guessing.
 
 For deeper detail, see [Framework Core vs Adapter](design/framework-core-vs-adapter.md).
 
@@ -31,7 +42,19 @@ The policy pack is a JSON file at `.veritas/policy-packs/default.policy-pack.jso
 - **Classification** answers what kind of rule this is: `hard-invariant`, `promotable-policy`, `advisory-pattern`, or `brittle-implementation-check`.
 - **Stage** answers how hard to enforce it right now: `recommend`, `warn`, or `block`.
 
-A `required-repo-artifacts` rule might be a `hard-invariant` at `block` stage — it ensures critical files like `package.json` always exist, and it gates CI. A `prefer-named-exports` rule might be an `advisory-pattern` at `recommend` stage — it surfaces guidance without blocking anything. The distinction matters because it keeps hard invariants and transitional guardrails from collapsing into a single undifferentiated list.
+Here is a real rule from the Veritas repo's own policy pack:
+
+```json
+{
+  "id": "required-veritas-operational-artifacts",
+  "classification": "hard-invariant",
+  "stage": "block",
+  "message": "The tracked Veritas operational artifacts must stay present.",
+  "owner": "repo-core"
+}
+```
+
+This rule is a `hard-invariant` at `block` stage — it gates CI. An `advisory-pattern` at `recommend` stage would surface guidance without blocking anything. The distinction matters because it keeps hard invariants and transitional guardrails from collapsing into a single undifferentiated list.
 
 For deeper detail, see [Policy Packs](design/policy-packs.md).
 
@@ -42,6 +65,21 @@ For deeper detail, see [Policy Packs](design/policy-packs.md).
 After an AI agent makes changes, someone has to review them. Without structure, that means scanning the entire diff and hoping nothing important was missed.
 
 Running `veritas report` generates a structured JSON evidence artifact. It captures which files changed, which nodes in the repo map were affected, which proof commands ran, and which policy rules passed or failed. The reviewer gets a bounded summary instead of a raw diff — a surface with edges rather than an open field.
+
+Here is the core of a real evidence artifact:
+
+```json
+{
+  "affected_nodes": ["delivery.github", "governance.root-manifests"],
+  "policy_results": [{
+    "rule_id": "required-repo-artifacts",
+    "classification": "hard-invariant",
+    "stage": "block",
+    "passed": true,
+    "summary": "All required repository artifacts are present."
+  }]
+}
+```
 
 Evidence artifacts live in `.veritas/evidence/`. The source for generating them can be explicit files, a branch diff, the working tree, or staged changes. The source kind is recorded in the artifact, so the reviewer always knows what was measured and how.
 
@@ -55,7 +93,25 @@ How do you know if the framework is actually helping? Not theoretically — meas
 
 After reviewing an evidence artifact, an operator records an eval. Did they accept the output? How long did it take to reach a verified state? How many overrides did they need? How confident were they in the result? These questions have structured answers — eval records are JSON, not free-text retros. The framework tracks acceptance rate, time-to-green, override count, false positive rate, missed issues, and reviewer confidence.
 
-The key insight is that evidence records capture what happened during the AI-guided run; eval records capture how that run turned out afterward. The second record is what lets you measure effectiveness instead of only intent.
+Here is a real eval record's outcome:
+
+```json
+{
+  "outcome": {
+    "accepted_without_major_rewrite": true,
+    "required_followup": false,
+    "reviewer_confidence": "high"
+  },
+  "measurements": {
+    "time_to_green_minutes": 18,
+    "override_count": 0,
+    "false_positive_rules": [],
+    "missed_issues": []
+  }
+}
+```
+
+Evidence records capture what happened during the AI-guided run; eval records capture how that run turned out afterward. The second record is what lets you measure effectiveness instead of only intent.
 
 For deeper detail, see [Live Evals](design/live-evals.md).
 

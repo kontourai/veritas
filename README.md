@@ -9,8 +9,8 @@ Veritas is a repo-local framework and CLI for trustworthy AI-assisted developmen
 
 ```bash
 npm install -D @kontourai/veritas
-npm exec -- veritas init
-npm exec -- veritas shadow run --working-tree
+npx veritas init
+npx veritas shadow run --working-tree
 ```
 
 That bootstraps your repo with an adapter, policy pack, and team profile, then runs the first shadow check.

@@ -10,7 +10,21 @@
 
 ## The Problem
 
-AI agents will edit forty files without knowing which three are load-bearing, which tests are authoritative, or which patterns your team considers non-negotiable. That knowledge lives in someone's head, not in the repo. When a PR lands, reviewers piece it back together from context they weren't given — scanning full diffs for violations of unwritten rules. There is no structured record of what the agent was told to do, what it touched, or whether the guidance it received actually changed anything.
+**AI doesn't know what matters in your repo.**
+Your codebase has load-bearing files, shared contracts, and surfaces that need different kinds of proof. AI agents treat them all the same.
+Veritas gives the repo a [typed map](concepts.md#repo-map-the-adapter) so agents know what they're touching and what evidence that area requires.
+
+**Rules live as tribal knowledge.**
+Your team's hard invariants, strong preferences, and temporary guardrails exist in someone's head — not in a reviewable, enforceable form.
+Veritas makes them explicit in a [staged policy pack](concepts.md#rules-the-policy-pack) with real classification and enforcement levels.
+
+**Reviewers scan the whole diff.**
+When AI changes dozens of files, a human reconstructs intent from a raw diff with no structured summary of what was proven or what passed.
+Veritas generates a [bounded evidence artifact](concepts.md#evidence-the-artifact) — what changed, what was affected, what proof ran, and which policies held.
+
+**No way to know if guidance helped.**
+You can add context files and prompt instructions, but there is no feedback loop measuring whether they actually improved outcomes.
+Veritas captures [live eval records](concepts.md#feedback-live-evals) — acceptance rate, time-to-green, override count, reviewer confidence.
 
 <div class="pillars">
 
@@ -72,13 +86,13 @@ Three commands cover the core workflow:
 
 ```bash
 # Bootstrap the adapter, policy pack, and team profile for your repo
-npm exec -- veritas init
+npx veritas init
 
 # Emit an evidence artifact for the current working tree
-npm exec -- veritas report --working-tree
+npx veritas report --working-tree
 
 # Run proof, emit evidence, and draft an eval record in one pass
-npm exec -- veritas shadow run --working-tree
+npx veritas shadow run --working-tree
 ```
 
 `init` writes the starter files to `.veritas/` — tracked in source control, owned by your team. `report` produces the evidence artifact your CI or PR workflow can post. `shadow run` adds proof execution and eval drafting on top of that, with no enforcement until you are ready.
