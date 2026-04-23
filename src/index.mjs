@@ -1942,7 +1942,7 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
     force: options.force ?? false,
   });
 
-  process.stdout.write(
+  process.stderr.write(
     `Next Steps\n\nSuggested CODEOWNERS block (not written automatically):\n\n${result.codeownersBlock}\n\n`,
   );
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

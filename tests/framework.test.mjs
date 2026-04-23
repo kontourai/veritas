@@ -373,8 +373,7 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
   const initResult = parseCliJson(initStdout);
   assert.equal(initResult.projectName, 'Demo Starter');
   assert.equal(initResult.proofLane, 'npm run test:smoke');
-  assert.match(initStdout, /Suggested CODEOWNERS block/);
-  assert.match(initStdout, /\.veritas\/repo\.adapter\.json  @your-team\/governance/);
+  assert.match(initResult.codeownersBlock, /\.veritas\/repo\.adapter\.json  @your-team\/governance/);
   assert.ok(
     initResult.generatedFiles.includes('.veritas/repo.adapter.json'),
   );
