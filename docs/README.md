@@ -78,5 +78,6 @@ Find what you need by what you're trying to do.
 
 ### Project
 
+- [Roadmap](design/roadmap.md) — open design questions and planned work
 - [Migrating](MIGRATING.md) — breaking changes and upgrade notes
 - [Releasing](RELEASING.md) — publish and release checklist

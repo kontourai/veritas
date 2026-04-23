@@ -19,6 +19,7 @@ const markdownFiles = [
   'docs/design/agent-activation.md',
   'docs/design/framework-core-vs-adapter.md',
   'docs/design/live-eval-roadmap.md',
+  'docs/design/roadmap.md',
   'docs/design/live-evals.md',
   'docs/design/policy-packs.md',
   'docs/design/schema-evolution.md',
