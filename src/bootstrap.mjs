@@ -121,6 +121,7 @@ function buildAdaptiveNodes(repoInsights) {
       kind: 'governance-surface',
       label: '.veritas/**',
       patterns: ['.veritas/'],
+      'governance-locked': true,
     },
     {
       id: 'governance.root-manifests',
@@ -288,6 +289,7 @@ export function buildStarterPolicyPack({ projectName }) {
         match: {
           artifacts: [
             '.veritas/README.md',
+            '.veritas/GOVERNANCE.md',
             '.veritas/repo.adapter.json',
             '.veritas/policy-packs/default.policy-pack.json',
             '.veritas/team/default.team-profile.json',
@@ -356,6 +358,7 @@ This repo was bootstrapped for \`${projectName}\` with a conservative starter ki
 ## Generated Files
 
 - \`.veritas/README.md\`
+- \`.veritas/GOVERNANCE.md\`
 - \`.veritas/repo.adapter.json\`
 - \`.veritas/policy-packs/default.policy-pack.json\`
 - \`.veritas/team/default.team-profile.json\`
@@ -429,6 +432,35 @@ The goal is to give any compatible agent just-in-time repo guidance from day one
 `;
 }
 
+export function buildGovernanceInstructions() {
+  return `# Governance Surface
+
+Zone 1 is human-owned. Do not modify:
+- \`.veritas/repo.adapter.json\`
+- \`.veritas/policy-packs/\`
+- \`.veritas/team/\`
+
+Zone 2 is additive policy growth. Agents may:
+- add new surface nodes for new feature directories
+- add advisory-tier rules for new surfaces
+
+Do not weaken or delete existing governance.
+
+Zone 3 is generated output:
+- \`.veritas/evidence/\`
+- \`.veritas/eval-drafts/\`
+- \`.veritas/evals/\`
+- \`.veritas/checkins/\`
+`;
+}
+
+export function buildSuggestedCodeownersBlock() {
+  return `# Veritas constitutional core - changes require human governance approval
+.veritas/repo.adapter.json  @your-team/governance
+.veritas/policy-packs/      @your-team/governance
+.veritas/team/              @your-team/governance`;
+}
+
 export function writeBootstrapStarterKit({
   rootDir,
   projectName = basename(resolve(rootDir)),
@@ -441,6 +473,7 @@ export function writeBootstrapStarterKit({
   const policyPackPath = resolve(rootDir, '.veritas/policy-packs/default.policy-pack.json');
   const teamProfilePath = resolve(rootDir, '.veritas/team/default.team-profile.json');
   const readmePath = resolve(rootDir, '.veritas/README.md');
+  const governancePath = resolve(rootDir, '.veritas/GOVERNANCE.md');
 
   const files = [
     [adapterPath, buildStarterAdapter({ projectName, proofLane: resolvedProofLane, repoInsights })],
@@ -460,6 +493,11 @@ export function writeBootstrapStarterKit({
       'Refusing to overwrite existing file: .veritas/README.md (use --force to replace it)',
     );
   }
+  if (existsSync(governancePath) && !force) {
+    throw new Error(
+      'Refusing to overwrite existing file: .veritas/GOVERNANCE.md (use --force to replace it)',
+    );
+  }
 
   mkdirSync(resolve(rootDir, '.veritas/policy-packs'), { recursive: true });
   mkdirSync(resolve(rootDir, '.veritas/team'), { recursive: true });
@@ -474,14 +512,17 @@ export function writeBootstrapStarterKit({
     buildBootstrapReadme({ projectName, proofLane: resolvedProofLane, repoInsights }),
     'utf8',
   );
+  writeFileSync(governancePath, buildGovernanceInstructions(), 'utf8');
 
   return {
     rootDir,
     projectName,
     proofLane: resolvedProofLane,
     repoInsights,
+    codeownersBlock: buildSuggestedCodeownersBlock(),
     generatedFiles: [
       relative(rootDir, readmePath).replaceAll('\\', '/'),
+      relative(rootDir, governancePath).replaceAll('\\', '/'),
       relative(rootDir, adapterPath).replaceAll('\\', '/'),
       relative(rootDir, policyPackPath).replaceAll('\\', '/'),
       relative(rootDir, teamProfilePath).replaceAll('\\', '/'),

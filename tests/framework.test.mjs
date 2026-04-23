@@ -373,12 +373,21 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
   const initResult = parseCliJson(initStdout);
   assert.equal(initResult.projectName, 'Demo Starter');
   assert.equal(initResult.proofLane, 'npm run test:smoke');
+  assert.match(initStdout, /Suggested CODEOWNERS block/);
+  assert.match(initStdout, /\.veritas\/repo\.adapter\.json  @your-team\/governance/);
   assert.ok(
     initResult.generatedFiles.includes('.veritas/repo.adapter.json'),
+  );
+  assert.ok(
+    initResult.generatedFiles.includes('.veritas/GOVERNANCE.md'),
   );
 
   const starterAdapter = readJsonFromAbsolute(
     join(rootDir, '.veritas/repo.adapter.json'),
+  );
+  const governanceInstructions = readFileSync(
+    join(rootDir, '.veritas/GOVERNANCE.md'),
+    'utf8',
   );
   const starterPolicyPack = readJsonFromAbsolute(
     join(rootDir, '.veritas/policy-packs/default.policy-pack.json'),
@@ -388,11 +397,16 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
   );
 
   assert.equal(starterAdapter.name, 'demo-starter');
+  assert.equal(starterAdapter.graph.nodes[0]['governance-locked'], true);
   assert.equal(starterPolicyPack.name, 'demo-starter-default');
   assert.equal(starterTeamProfile.defaults.mode, 'shadow');
   assert.equal(initResult.repoInsights.repoKind, 'application');
   assert.equal(starterAdapter.evidence.defaultProofLanes, undefined);
   assert.equal(starterAdapter.evidence.uncoveredPathPolicy, undefined);
+  assert.match(governanceInstructions, /Do not modify:/);
+  assert.match(governanceInstructions, /\.veritas\/policy-packs\//);
+  assert.match(governanceInstructions, /Zone 2 is additive policy growth/);
+  assert.match(governanceInstructions, /Zone 3 is generated output/);
 
   const reportStdout = execFileSync(
     'npm',
@@ -741,6 +755,7 @@ test('report CLI preserves branch-diff behavior', () => {
   assert.equal(parsed.source_kind, 'branch-diff');
   assert.deepEqual(parsed.source_scope, ['changed-from:HEAD~1', 'changed-to:HEAD']);
   assert.deepEqual(parsed.files, [
+    '.veritas/GOVERNANCE.md',
     '.veritas/README.md',
     '.veritas/policy-packs/default.policy-pack.json',
     '.veritas/repo.adapter.json',
