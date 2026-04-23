@@ -343,8 +343,8 @@ assert(
   'Publish workflow must verify on Node 18 and Node 22 before publishing.',
 );
 assert(
-  publishWorkflow.includes('npm publish --provenance --access public'),
-  'Publish workflow must use npm publish with provenance.',
+  publishWorkflow.includes('npm publish --access public'),
+  'Publish workflow must use npm publish with public access.',
 );
 assert(
   publishWorkflow.includes('Verify Tagged Commit Is On Main'),
@@ -357,6 +357,10 @@ assert(
 assert(
   publishWorkflow.includes('workflow_dispatch') === false,
   'Publish workflow should stay tag-driven unless the docs explicitly describe a manual publish path.',
+);
+assert(
+  publishWorkflow.includes('NODE_AUTH_TOKEN'),
+  'Publish workflow must authenticate npm publish with NODE_AUTH_TOKEN.',
 );
 
 execFileSync('node', ['scripts/build-pages-site.mjs'], {
