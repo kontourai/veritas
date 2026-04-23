@@ -168,6 +168,12 @@ writeFileSync(
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ page.title }} | {{ site.title }}</title>
     <link rel="stylesheet" href="{{ '/assets/site.css' | relative_url }}">
+    <script>
+      (function () {
+        var t = localStorage.getItem('theme');
+        if (t) document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
   </head>
   <body>
     <header class="site-header">
@@ -179,6 +185,9 @@ writeFileSync(
           <a href="{{ '/docs/README.html' | relative_url }}">Docs</a>
           <a href="https://www.npmjs.com/package/@kontourai/veritas">npm</a>
           <a href="https://github.com/kontourai/veritas">GitHub</a>
+          <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark/light mode" title="Toggle dark/light mode">
+            <span class="theme-toggle-icon"></span>
+          </button>
         </nav>
       </div>
     </header>
@@ -195,6 +204,30 @@ writeFileSync(
         </div>
       </div>
     </footer>
+    <script>
+      (function () {
+        function isDark() {
+          var t = document.documentElement.getAttribute('data-theme');
+          if (t === 'dark') return true;
+          if (t === 'light') return false;
+          return window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+        function applyIcon() {
+          var btn = document.getElementById('theme-toggle');
+          if (btn) btn.querySelector('.theme-toggle-icon').textContent = isDark() ? '☀' : '☾';
+        }
+        applyIcon();
+        var btn = document.getElementById('theme-toggle');
+        if (btn) {
+          btn.addEventListener('click', function () {
+            var next = isDark() ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            applyIcon();
+          });
+        }
+      })();
+    </script>
   </body>
 </html>
 `,
@@ -211,6 +244,60 @@ writeFileSync(
   --muted: #5b5a55;
   --line: #ddd8c8;
   --accent: #0e7490;
+  --code-bg: #eeeadc;
+  --pre-bg: #1d1d1b;
+  --pre-fg: #e8e6df;
+  --th-bg: #f2efe3;
+  --pillar-bg: #fffdf7;
+  --before-bg: #faf0f0;
+  --before-border: #dfc8c8;
+  --before-heading: #7a3535;
+  --after-bg: #f0f6f0;
+  --after-border: #c0d8c0;
+  --after-heading: #2a5a2a;
+  --header-bg: rgba(247, 247, 242, 0.92);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1a18;
+    --fg: #e8e6df;
+    --muted: #9b9890;
+    --line: #2e2e2a;
+    --accent: #22d3ee;
+    --code-bg: #2a2a26;
+    --pre-bg: #111110;
+    --pre-fg: #e8e6df;
+    --th-bg: #252520;
+    --pillar-bg: #1e1e1a;
+    --before-bg: #2a1818;
+    --before-border: #4a2a2a;
+    --before-heading: #e07070;
+    --after-bg: #182a18;
+    --after-border: #2a4a2a;
+    --after-heading: #70c070;
+    --header-bg: rgba(26, 26, 24, 0.92);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #1a1a18;
+  --fg: #e8e6df;
+  --muted: #9b9890;
+  --line: #2e2e2a;
+  --accent: #22d3ee;
+  --code-bg: #2a2a26;
+  --pre-bg: #111110;
+  --pre-fg: #e8e6df;
+  --th-bg: #252520;
+  --pillar-bg: #1e1e1a;
+  --before-bg: #2a1818;
+  --before-border: #4a2a2a;
+  --before-heading: #e07070;
+  --after-bg: #182a18;
+  --after-border: #2a4a2a;
+  --after-heading: #70c070;
+  --header-bg: rgba(26, 26, 24, 0.92);
 }
 
 /* ---- Base ---- */
@@ -229,7 +316,7 @@ body {
 /* ---- Header ---- */
 .site-header {
   border-bottom: 1px solid var(--line);
-  background: rgba(247, 247, 242, 0.92);
+  background: var(--header-bg);
   backdrop-filter: blur(8px);
   position: sticky;
   top: 0;
@@ -262,6 +349,18 @@ body {
   transition: color 0.15s;
 }
 .nav a:hover { color: var(--fg); }
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0.2rem 0.45rem;
+  transition: color 0.15s, border-color 0.15s;
+}
+.theme-toggle:hover { color: var(--fg); border-color: var(--muted); }
 
 /* ---- Content ---- */
 .content {
@@ -286,15 +385,15 @@ pre, code {
   font-size: 0.88rem;
 }
 code {
-  background: #eeeadc;
+  background: var(--code-bg);
   padding: 0.15rem 0.35rem;
   border-radius: 3px;
 }
 pre {
   padding: 1.2rem;
   overflow: auto;
-  background: #1d1d1b;
-  color: #e8e6df;
+  background: var(--pre-bg);
+  color: var(--pre-fg);
   border-radius: 6px;
   border: none;
   line-height: 1.5;
@@ -320,7 +419,7 @@ td, th {
   padding: 0.5rem 0.75rem;
   text-align: left;
 }
-th { background: #f2efe3; }
+th { background: var(--th-bg); }
 img { max-width: 100%; }
 
 /* ---- Hero (landing page) ---- */
@@ -388,7 +487,7 @@ img { max-width: 100%; }
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 1.5rem;
-  background: #fffdf7;
+  background: var(--pillar-bg);
 }
 .pillar h3 {
   margin: 0 0 0.6rem;
@@ -444,15 +543,15 @@ img { max-width: 100%; }
   line-height: 1.5;
 }
 .comparison-col--before {
-  background: #faf0f0;
-  border: 1px solid #dfc8c8;
+  background: var(--before-bg);
+  border: 1px solid var(--before-border);
 }
-.comparison-col--before h3 { color: #7a3535; }
+.comparison-col--before h3 { color: var(--before-heading); }
 .comparison-col--after {
-  background: #f0f6f0;
-  border: 1px solid #c0d8c0;
+  background: var(--after-bg);
+  border: 1px solid var(--after-border);
 }
-.comparison-col--after h3 { color: #2a5a2a; }
+.comparison-col--after h3 { color: var(--after-heading); }
 
 /* ---- Footer ---- */
 .site-footer {
