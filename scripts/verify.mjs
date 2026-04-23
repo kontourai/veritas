@@ -343,8 +343,12 @@ assert(
   'Publish workflow should stay tag-driven unless the docs explicitly describe a manual publish path.',
 );
 assert(
-  publishWorkflow.includes('NODE_AUTH_TOKEN'),
-  'Publish workflow must authenticate npm publish with NODE_AUTH_TOKEN.',
+  publishWorkflow.includes('id-token: write'),
+  'Publish workflow must request OIDC token minting for npm trusted publishing.',
+);
+assert(
+  publishWorkflow.includes('NPM_TOKEN') === false,
+  'Publish workflow must not depend on a long-lived NPM_TOKEN secret.',
 );
 
 execFileSync('node', ['scripts/build-pages-site.mjs'], {

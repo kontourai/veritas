@@ -38,4 +38,10 @@ Check:
 
 ## Trusted Publishing
 
-The repo is configured for npm trusted publishing via GitHub Actions OIDC. If that is unavailable, use the fallback path documented in [docs/guides/publish-and-release.md](./guides/publish-and-release.md).
+The repo publishes through npm trusted publishing via GitHub Actions OIDC. Configure npmjs.com to trust:
+
+- organization or user: `kontourai`
+- repository: `veritas`
+- workflow filename: `publish-npm.yml`
+
+If that OIDC path is unavailable, use the fallback path documented in [docs/guides/publish-and-release.md](./guides/publish-and-release.md).

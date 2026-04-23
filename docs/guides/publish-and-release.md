@@ -49,18 +49,21 @@ Once that is enabled, the `Docs Pages` workflow can deploy the generated site to
 
 ### 2. npm Publishing
 
-The current publish workflow is configured for token-based publishing through the GitHub Actions secret:
-
-- `NPM_TOKEN`
+The checked-in publish workflow is configured for npm trusted publishing through GitHub Actions OIDC.
 
 What you need to do on the npm side:
 
 1. make sure the `@kontourai/veritas` package name is available to the `@kontourai` org
-2. create an npm access token with publish permission for that package scope
-3. add it to this GitHub repo as the `NPM_TOKEN` Actions secret
-4. confirm the publishing identity has permission to create or update the package
+2. open the package settings on npmjs.com and add a trusted publisher for GitHub Actions
+3. set the publisher to:
+   - organization or user: `kontourai`
+   - repository: `veritas`
+   - workflow filename: `publish-npm.yml`
+4. confirm the publishing identity can create or update `@kontourai/veritas`
 
-If you later want npm trusted publishing instead, you can swap the workflow back to OIDC-based auth and remove the token secret.
+Once that is configured, the workflow can publish without storing a long-lived npm publish token in GitHub Actions.
+
+If trusted publishing is temporarily unavailable, the fallback is to restore token-based auth with an `NPM_TOKEN` secret, but that is intentionally not the default checked-in path.
 
 ### 3. Release Trigger
 
@@ -78,7 +81,7 @@ So the normal release path is:
 ## Suggested First Publish Checklist
 
 1. Enable GitHub Pages from Actions.
-2. Confirm the `NPM_TOKEN` Actions secret is present and valid for `@kontourai/veritas`.
+2. Confirm npm trusted publishing is configured for `kontourai/veritas` and workflow `publish-npm.yml`.
 3. Run the CI workflow on `main`.
 4. Run the Docs Pages workflow once manually.
 5. Confirm the package metadata looks right on npm:
