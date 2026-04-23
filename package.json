@@ -1,6 +1,6 @@
 {
   "name": "@kontourai/veritas",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Repo-local framework and CLI for making AI-assisted development easier to trust through adapters, policy packs, evidence, and evals.",
   "private": false,
   "license": "Apache-2.0",
@@ -48,8 +48,8 @@
     ".": "./src/index.mjs"
   },
   "bin": {
-    "veritas": "./bin/veritas.mjs",
-    "veritas-report": "./bin/veritas-report.mjs"
+    "veritas": "bin/veritas.mjs",
+    "veritas-report": "bin/veritas-report.mjs"
   },
   "scripts": {
     "docs:pages:build": "node scripts/build-pages-site.mjs",
