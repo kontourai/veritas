@@ -248,6 +248,8 @@ writeFileSync(
   --pre-bg: #1d1d1b;
   --pre-fg: #e8e6df;
   --th-bg: #f2efe3;
+  --install-cmd-bg: #1d1d1b;
+  --install-cmd-fg: #e8e6df;
   --pillar-bg: #fffdf7;
   --before-bg: #faf0f0;
   --before-border: #dfc8c8;
@@ -269,6 +271,8 @@ writeFileSync(
     --pre-bg: #111110;
     --pre-fg: #e8e6df;
     --th-bg: #252520;
+    --install-cmd-bg: #0d0d0c;
+    --install-cmd-fg: #e8e6df;
     --pillar-bg: #1e1e1a;
     --before-bg: #2a1818;
     --before-border: #4a2a2a;
@@ -290,6 +294,8 @@ writeFileSync(
   --pre-bg: #111110;
   --pre-fg: #e8e6df;
   --th-bg: #252520;
+  --install-cmd-bg: #0d0d0c;
+  --install-cmd-fg: #e8e6df;
   --pillar-bg: #1e1e1a;
   --before-bg: #2a1818;
   --before-border: #4a2a2a;
@@ -444,8 +450,8 @@ img { max-width: 100%; }
 }
 .install-cmd {
   display: inline-block;
-  background: var(--fg);
-  color: #e8e6df;
+  background: var(--install-cmd-bg);
+  color: var(--install-cmd-fg);
   padding: 0.65rem 1.5rem;
   border-radius: 6px;
   border: none;
