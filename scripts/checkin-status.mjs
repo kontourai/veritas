@@ -1,6 +1,8 @@
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync, appendFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 import {
   generateEvalDraft,
   generateVeritasReport,
@@ -8,14 +10,7 @@ import {
 } from '../src/index.mjs';
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const timestamp = new Date().toISOString();
-const compactStamp = timestamp.replace(/[:.]/g, '-');
-const runId = process.env.VERITAS_RUN_ID ?? `veritas-checkin-${compactStamp}`;
-const summaryPath = process.env.GITHUB_STEP_SUMMARY;
-const failOnAlerts = process.env.VERITAS_FAIL_ON_ALERTS === '1';
-const isCi = process.env.CI === 'true';
-const changedFrom = process.env.VERITAS_CHANGED_FROM;
-const changedTo = process.env.VERITAS_CHANGED_TO;
+const governanceRoots = ['.veritas/repo.adapter.json', '.veritas/policy-packs', '.veritas/team'];
 
 function summarizePolicyResults(policyResults) {
   return {
@@ -25,7 +20,7 @@ function summarizePolicyResults(policyResults) {
   };
 }
 
-function buildAlerts(report, runtimeStatus) {
+function buildAlerts(report, runtimeStatus, isCi) {
   const alerts = [];
 
   if (report.record.policy_results.some((result) => result.passed === false)) {
@@ -120,164 +115,457 @@ function summarizeAlertCounts(alerts) {
   };
 }
 
-function writeArtifact(relativePath, content) {
-  const outputPath = resolve(rootDir, relativePath);
+function writeArtifact(rootDirOverride, relativePath, content) {
+  const outputPath = resolve(rootDirOverride, relativePath);
   mkdirSync(dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, content, 'utf8');
 }
 
-const report = generateVeritasReport(
-  {
-    rootDir,
-    workingTree: !changedFrom && !changedTo,
+function git(rootDirOverride, args) {
+  return execFileSync('git', args, {
+    cwd: rootDirOverride,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+}
+
+function isGovernancePath(filePath) {
+  return (
+    filePath === '.veritas/repo.adapter.json' ||
+    (filePath.startsWith('.veritas/policy-packs/') && filePath.endsWith('.json')) ||
+    (filePath.startsWith('.veritas/team/') && filePath.endsWith('.json'))
+  );
+}
+
+function readGovernanceJsonAtRef(rootDirOverride, ref, filePath) {
+  try {
+    return {
+      exists: true,
+      value: JSON.parse(git(rootDirOverride, ['show', `${ref}:${filePath}`])),
+    };
+  } catch (error) {
+    const detail = `${error.stderr ?? ''}${error.stdout ?? ''}${error.message ?? ''}`;
+    if (
+      detail.includes('exists on disk, but not in') ||
+      detail.includes('does not exist in') ||
+      detail.includes('Path \'.') ||
+      detail.includes('Path ".')
+    ) {
+      return {
+        exists: false,
+        value: null,
+      };
+    }
+    throw error;
+  }
+}
+
+function isPlainObject(value) {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isAdditiveJsonChange(baseValue, headValue) {
+  if (Array.isArray(baseValue) || Array.isArray(headValue)) {
+    if (!Array.isArray(baseValue) || !Array.isArray(headValue)) {
+      return false;
+    }
+    if (headValue.length < baseValue.length) {
+      return false;
+    }
+    for (let index = 0; index < baseValue.length; index += 1) {
+      if (!isAdditiveJsonChange(baseValue[index], headValue[index])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  if (isPlainObject(baseValue) || isPlainObject(headValue)) {
+    if (!isPlainObject(baseValue) || !isPlainObject(headValue)) {
+      return false;
+    }
+    for (const key of Object.keys(baseValue)) {
+      if (!(key in headValue)) {
+        return false;
+      }
+      if (!isAdditiveJsonChange(baseValue[key], headValue[key])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  return isDeepStrictEqual(baseValue, headValue);
+}
+
+function describeGovernanceAssessment(assessment) {
+  if (assessment.status === 'added') {
+    return `${assessment.path} added`;
+  }
+  if (assessment.status === 'removed') {
+    return `${assessment.path} removed`;
+  }
+  if (assessment.status === 'modified-additive') {
+    return `${assessment.path} extended`;
+  }
+  if (assessment.status === 'equivalent') {
+    return `${assessment.path} reformatted`;
+  }
+  return `${assessment.path} modified`;
+}
+
+function formatGovernanceSummary(classification, semanticAssessments, changedFiles, evaluated) {
+  if (!evaluated) {
+    return 'clean (no PR base/head diff)';
+  }
+  if (classification === 'clean') {
+    return changedFiles.length > 0
+      ? 'clean (no semantic governance changes)'
+      : 'clean (no governance files changed)';
+  }
+
+  const descriptions = semanticAssessments.map(describeGovernanceAssessment);
+  const preview = descriptions.slice(0, 2).join('; ');
+  const remaining = descriptions.length - 2;
+  const suffix = remaining > 0 ? `; +${remaining} more` : '';
+  return `${classification} (${preview}${suffix})`;
+}
+
+export function classifyGovernanceSurface({
+  rootDir: rootDirOverride = rootDir,
+  changedFrom,
+  changedTo,
+} = {}) {
+  const evaluated = Boolean(changedFrom && changedTo);
+  if (!evaluated) {
+    return {
+      classification: 'clean',
+      summary: 'clean (no PR base/head diff)',
+      evaluated: false,
+      compared_refs: {
+        base: changedFrom ?? null,
+        head: changedTo ?? null,
+      },
+      files: [],
+      changed_paths: [],
+      semantic_changed_paths: [],
+    };
+  }
+
+  const changedFiles = git(rootDirOverride, [
+    'diff',
+    '--name-only',
     changedFrom,
     changedTo,
-    runId,
-    baselineCiFastStatus: 'success',
-  },
-  { rootDir },
-);
+    '--',
+    ...governanceRoots,
+  ])
+    .split(/\r?\n/u)
+    .map((filePath) => filePath.trim())
+    .filter(Boolean)
+    .filter(isGovernancePath)
+    .sort();
 
-const draft = generateEvalDraft(
-  {
-    rootDir,
-    evidencePath: report.artifactPath,
-    force: true,
-    reviewerConfidence: 'unknown',
-    overrideCount: 0,
-    notes: [
-      'Automated Veritas check-in generated by scripts/checkin-status.mjs.',
-      'Use this draft when you want to convert the automated snapshot into a human-scored eval record.',
-    ],
-  },
-  { rootDir },
-);
+  const fileAssessments = changedFiles.map((filePath) => {
+    const baseSnapshot = readGovernanceJsonAtRef(rootDirOverride, changedFrom, filePath);
+    const headSnapshot = readGovernanceJsonAtRef(rootDirOverride, changedTo, filePath);
 
-const runtimeStatus = inspectRuntimeAdapterStatus(rootDir);
-const policySummary = summarizePolicyResults(report.record.policy_results);
-const alerts = buildAlerts(report, runtimeStatus);
-const healthStatus = summarizeHealth(alerts);
-const alertSummary = summarizeAlertCounts(alerts);
+    if (!baseSnapshot.exists && headSnapshot.exists) {
+      return {
+        path: filePath,
+        status: 'added',
+        additive: true,
+        semantic_change: true,
+      };
+    }
 
-const checkin = {
-  version: 1,
-  generated_at: timestamp,
-  run_id: runId,
-  report_artifact_path: report.artifactPath,
-  eval_draft_artifact_path: draft.artifactPath,
-  suggested_eval_command: draft.suggestedRecordCommand,
-  source_kind: report.record.source_kind,
-  source_scope: report.record.source_scope,
-  unresolved_files_count: report.record.unresolved_files.length,
-  affected_nodes: report.record.affected_nodes,
-  affected_lanes: report.record.affected_lanes,
-  selected_proof_commands: report.record.selected_proof_commands,
-  uncovered_path_result: report.record.uncovered_path_result,
-  policy_results_summary: policySummary,
-  health_status: healthStatus,
-  alerts,
-  runtime_status: runtimeStatus,
-};
+    if (baseSnapshot.exists && !headSnapshot.exists) {
+      return {
+        path: filePath,
+        status: 'removed',
+        additive: false,
+        semantic_change: true,
+      };
+    }
 
-const markdown = [
-  '## Veritas Check-in',
-  '',
-  `- **Health:** ${healthLabel(healthStatus)}`,
-  `- **Alerts:** ${alertSummary.errors} error(s), ${alertSummary.warnings} warning(s)`,
-  `- **Unresolved files:** ${report.record.unresolved_files.length}`,
-  `- **Policy results:** ${policySummary.passed} passed, ${policySummary.failed} failed, ${policySummary.metadata_only} metadata-only`,
-  `- **Proof command:** \`${report.record.selected_proof_commands.join(', ') || 'none'}\``,
-  `- **Run ID:** ${runId}`,
-  '',
-];
+    if (isDeepStrictEqual(baseSnapshot.value, headSnapshot.value)) {
+      return {
+        path: filePath,
+        status: 'equivalent',
+        additive: true,
+        semantic_change: false,
+      };
+    }
 
-if (alerts.length > 0) {
-  markdown.push('### Alerts', '');
-  for (const alert of alerts) {
-    markdown.push(`- **${alert.severity}:** ${alert.message}`);
-  }
-  markdown.push('');
-}
+    const additive = isAdditiveJsonChange(baseSnapshot.value, headSnapshot.value);
+    return {
+      path: filePath,
+      status: additive ? 'modified-additive' : 'modified-constitutional',
+      additive,
+      semantic_change: true,
+    };
+  });
 
-markdown.push(
-  '<details>',
-  '<summary>Scope and Verification</summary>',
-  '',
-  `- **Generated at:** ${timestamp}`,
-  `- **Source:** ${report.record.source_kind} (${report.record.source_scope.join(', ')})`,
-  `- **Phase:** ${report.record.resolved_phase}`,
-  `- **Workstream:** ${report.record.resolved_workstream}`,
-  `- **Affected nodes:** ${report.record.affected_nodes.length > 0 ? report.record.affected_nodes.join(', ') : 'none'}`,
-  `- **Affected lanes:** ${report.record.affected_lanes.length > 0 ? report.record.affected_lanes.join(', ') : 'none'}`,
-  `- **Proof resolution source:** ${report.record.proof_resolution_source}`,
-  `- **Uncovered path result:** ${report.record.uncovered_path_result}`,
-  `- **Report artifact:** \`${report.artifactPath}\``,
-  `- **Eval draft artifact:** \`${draft.artifactPath}\``,
-  '',
-  '</details>',
-  '',
-  '<details>',
-  '<summary>Policy Results</summary>',
-  '',
-);
+  const semanticAssessments = fileAssessments.filter((assessment) => assessment.semantic_change);
+  const classification =
+    semanticAssessments.length === 0
+      ? 'clean'
+      : semanticAssessments.every((assessment) => assessment.additive)
+        ? 'additive-only'
+        : 'constitutional-modification';
 
-for (const result of report.record.policy_results) {
-  const status =
-    result.passed === true ? 'pass' : result.passed === false ? 'fail' : 'metadata-only';
-  markdown.push(`- **${result.rule_id}**: ${status} — ${result.summary}`);
-}
-
-markdown.push(
-  '',
-  '</details>',
-  '',
-  '<details>',
-  '<summary>Operational Follow-up</summary>',
-  '',
-  `- **Next commands:** ${runtimeStatus.nextCommands.length > 0 ? runtimeStatus.nextCommands.join(' | ') : 'none'}`,
-  '',
-  '#### Suggested Eval Command',
-  '',
-  `\`${draft.suggestedRecordCommand}\``,
-  '',
-  '</details>',
-);
-
-const markdownText = markdown.join('\n');
-
-writeArtifact(
-  `.veritas/checkins/${runId}.json`,
-  `${JSON.stringify(checkin, null, 2)}\n`,
-);
-writeArtifact(`.veritas/checkins/${runId}.md`, `${markdownText}\n`);
-writeArtifact('.veritas/checkins/latest.json', `${JSON.stringify(checkin, null, 2)}\n`);
-writeArtifact('.veritas/checkins/latest.md', `${markdownText}\n`);
-
-if (summaryPath) {
-  appendFileSync(summaryPath, `${markdownText}\n`, 'utf8');
-}
-
-process.stdout.write(
-  `${JSON.stringify(
-    {
-      runId,
-      healthStatus,
-      alerts,
-      reportArtifactPath: report.artifactPath,
-      evalDraftArtifactPath: draft.artifactPath,
-      checkinJsonPath: `.veritas/checkins/${runId}.json`,
-      checkinMarkdownPath: `.veritas/checkins/${runId}.md`,
-      latestCheckinJsonPath: '.veritas/checkins/latest.json',
-      latestCheckinMarkdownPath: '.veritas/checkins/latest.md',
-      policyResultsSummary: policySummary,
-      runtimeStatus,
-      suggestedEvalCommand: draft.suggestedRecordCommand,
+  return {
+    classification,
+    summary: formatGovernanceSummary(
+      classification,
+      semanticAssessments,
+      changedFiles,
+      true,
+    ),
+    evaluated: true,
+    compared_refs: {
+      base: changedFrom,
+      head: changedTo,
     },
-    null,
-    2,
-  )}\n`,
-);
+    files: fileAssessments,
+    changed_paths: changedFiles,
+    semantic_changed_paths: semanticAssessments.map((assessment) => assessment.path),
+  };
+}
 
-if (failOnAlerts && healthStatus === 'red') {
-  process.exitCode = 1;
+export function renderGovernanceSurfaceLine(governanceSurface) {
+  return `- **Governance surface:** ${governanceSurface.summary}`;
+}
+
+function buildMarkdown({
+  runId,
+  timestamp,
+  report,
+  draft,
+  alerts,
+  runtimeStatus,
+  healthStatus,
+  policySummary,
+  governanceSurface,
+}) {
+  const alertSummary = summarizeAlertCounts(alerts);
+  const markdown = [
+    '## Veritas Check-in',
+    '',
+    `- **Health:** ${healthLabel(healthStatus)}`,
+    `- **Alerts:** ${alertSummary.errors} error(s), ${alertSummary.warnings} warning(s)`,
+    `- **Unresolved files:** ${report.record.unresolved_files.length}`,
+    `- **Policy results:** ${policySummary.passed} passed, ${policySummary.failed} failed, ${policySummary.metadata_only} metadata-only`,
+    renderGovernanceSurfaceLine(governanceSurface),
+    `- **Proof command:** \`${report.record.selected_proof_commands.join(', ') || 'none'}\``,
+    `- **Run ID:** ${runId}`,
+    '',
+  ];
+
+  if (alerts.length > 0) {
+    markdown.push('### Alerts', '');
+    for (const alert of alerts) {
+      markdown.push(`- **${alert.severity}:** ${alert.message}`);
+    }
+    markdown.push('');
+  }
+
+  markdown.push(
+    '<details>',
+    '<summary>Scope and Verification</summary>',
+    '',
+    `- **Generated at:** ${timestamp}`,
+    `- **Source:** ${report.record.source_kind} (${report.record.source_scope.join(', ')})`,
+    `- **Phase:** ${report.record.resolved_phase}`,
+    `- **Workstream:** ${report.record.resolved_workstream}`,
+    `- **Affected nodes:** ${report.record.affected_nodes.length > 0 ? report.record.affected_nodes.join(', ') : 'none'}`,
+    `- **Affected lanes:** ${report.record.affected_lanes.length > 0 ? report.record.affected_lanes.join(', ') : 'none'}`,
+    `- **Proof resolution source:** ${report.record.proof_resolution_source}`,
+    `- **Uncovered path result:** ${report.record.uncovered_path_result}`,
+    `- **Report artifact:** \`${report.artifactPath}\``,
+    `- **Eval draft artifact:** \`${draft.artifactPath}\``,
+    '',
+    '</details>',
+    '',
+    '<details>',
+    '<summary>Policy Results</summary>',
+    '',
+  );
+
+  for (const result of report.record.policy_results) {
+    const status =
+      result.passed === true ? 'pass' : result.passed === false ? 'fail' : 'metadata-only';
+    markdown.push(`- **${result.rule_id}**: ${status} — ${result.summary}`);
+  }
+
+  markdown.push(
+    '',
+    '</details>',
+    '',
+    '<details>',
+    '<summary>Operational Follow-up</summary>',
+    '',
+    `- **Next commands:** ${runtimeStatus.nextCommands.length > 0 ? runtimeStatus.nextCommands.join(' | ') : 'none'}`,
+    '',
+    '#### Suggested Eval Command',
+    '',
+    `\`${draft.suggestedRecordCommand}\``,
+    '',
+    '</details>',
+  );
+
+  return `${markdown.join('\n')}\n`;
+}
+
+export function buildCheckinStatus({
+  rootDir: rootDirOverride = rootDir,
+  timestamp = new Date().toISOString(),
+  runId = process.env.VERITAS_RUN_ID ??
+    `veritas-checkin-${timestamp.replace(/[:.]/g, '-')}`,
+  changedFrom = process.env.VERITAS_CHANGED_FROM,
+  changedTo = process.env.VERITAS_CHANGED_TO,
+  isCi = process.env.CI === 'true',
+} = {}) {
+  const report = generateVeritasReport(
+    {
+      rootDir: rootDirOverride,
+      workingTree: !changedFrom && !changedTo,
+      changedFrom,
+      changedTo,
+      runId,
+      baselineCiFastStatus: 'success',
+    },
+    { rootDir: rootDirOverride },
+  );
+
+  const draft = generateEvalDraft(
+    {
+      rootDir: rootDirOverride,
+      evidencePath: report.artifactPath,
+      force: true,
+      reviewerConfidence: 'unknown',
+      overrideCount: 0,
+      notes: [
+        'Automated Veritas check-in generated by scripts/checkin-status.mjs.',
+        'Use this draft when you want to convert the automated snapshot into a human-scored eval record.',
+      ],
+    },
+    { rootDir: rootDirOverride },
+  );
+
+  const runtimeStatus = inspectRuntimeAdapterStatus(rootDirOverride);
+  const policySummary = summarizePolicyResults(report.record.policy_results);
+  const alerts = buildAlerts(report, runtimeStatus, isCi);
+  const healthStatus = summarizeHealth(alerts);
+  const governanceSurface = classifyGovernanceSurface({
+    rootDir: rootDirOverride,
+    changedFrom,
+    changedTo,
+  });
+
+  const checkin = {
+    version: 1,
+    generated_at: timestamp,
+    run_id: runId,
+    report_artifact_path: report.artifactPath,
+    eval_draft_artifact_path: draft.artifactPath,
+    suggested_eval_command: draft.suggestedRecordCommand,
+    source_kind: report.record.source_kind,
+    source_scope: report.record.source_scope,
+    unresolved_files_count: report.record.unresolved_files.length,
+    affected_nodes: report.record.affected_nodes,
+    affected_lanes: report.record.affected_lanes,
+    selected_proof_commands: report.record.selected_proof_commands,
+    uncovered_path_result: report.record.uncovered_path_result,
+    policy_results_summary: policySummary,
+    governance_surface: governanceSurface,
+    health_status: healthStatus,
+    alerts,
+    runtime_status: runtimeStatus,
+  };
+
+  return {
+    runId,
+    report,
+    draft,
+    runtimeStatus,
+    policySummary,
+    governanceSurface,
+    alerts,
+    healthStatus,
+    checkin,
+    markdownText: buildMarkdown({
+      runId,
+      timestamp,
+      report,
+      draft,
+      alerts,
+      runtimeStatus,
+      healthStatus,
+      policySummary,
+      governanceSurface,
+    }),
+  };
+}
+
+export function runCheckinStatus({
+  rootDir: rootDirOverride = rootDir,
+  summaryPath = process.env.GITHUB_STEP_SUMMARY,
+  failOnAlerts = process.env.VERITAS_FAIL_ON_ALERTS === '1',
+  ...options
+} = {}) {
+  const result = buildCheckinStatus({
+    rootDir: rootDirOverride,
+    ...options,
+  });
+
+  writeArtifact(
+    rootDirOverride,
+    `.veritas/checkins/${result.runId}.json`,
+    `${JSON.stringify(result.checkin, null, 2)}\n`,
+  );
+  writeArtifact(rootDirOverride, `.veritas/checkins/${result.runId}.md`, result.markdownText);
+  writeArtifact(
+    rootDirOverride,
+    '.veritas/checkins/latest.json',
+    `${JSON.stringify(result.checkin, null, 2)}\n`,
+  );
+  writeArtifact(rootDirOverride, '.veritas/checkins/latest.md', result.markdownText);
+
+  if (summaryPath) {
+    appendFileSync(summaryPath, result.markdownText, 'utf8');
+  }
+
+  if (failOnAlerts && result.healthStatus === 'red') {
+    process.exitCode = 1;
+  }
+
+  return result;
+}
+
+const isMainModule = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isMainModule) {
+  const result = runCheckinStatus();
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        runId: result.runId,
+        healthStatus: result.healthStatus,
+        alerts: result.alerts,
+        reportArtifactPath: result.report.artifactPath,
+        evalDraftArtifactPath: result.draft.artifactPath,
+        checkinJsonPath: `.veritas/checkins/${result.runId}.json`,
+        checkinMarkdownPath: `.veritas/checkins/${result.runId}.md`,
+        latestCheckinJsonPath: '.veritas/checkins/latest.json',
+        latestCheckinMarkdownPath: '.veritas/checkins/latest.md',
+        policyResultsSummary: result.policySummary,
+        governanceSurface: result.governanceSurface,
+        runtimeStatus: result.runtimeStatus,
+        suggestedEvalCommand: result.draft.suggestedRecordCommand,
+      },
+      null,
+      2,
+    )}\n`,
+  );
 }
