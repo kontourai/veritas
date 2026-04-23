@@ -2,7 +2,26 @@
   "name": "@kontourai/veritas",
   "version": "0.1.0",
   "private": false,
+  "license": "MIT",
   "type": "module",
+  "homepage": "https://kontourai.github.io/veritas/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kontourai/veritas.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kontourai/veritas/issues"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "cli",
+    "developer-tools",
+    "evals",
+    "governance",
+    "policy",
+    "veritas"
+  ],
   "files": [
     "LICENSE",
     "README.md",
@@ -25,6 +44,7 @@
     "veritas-report": "./bin/veritas-report.mjs"
   },
   "scripts": {
+    "docs:pages:build": "node scripts/build-pages-site.mjs",
     "verify": "node scripts/verify.mjs",
     "test": "node --test tests/framework.test.mjs",
     "veritas:init": "npm exec -- veritas init",

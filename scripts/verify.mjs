@@ -1,6 +1,9 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const rootUrl = new URL('../', import.meta.url);
+const rootDir = fileURLToPath(rootUrl);
 
 function readJson(relativePath) {
   return JSON.parse(readFileSync(new URL(relativePath, rootUrl), 'utf8'));
@@ -8,6 +11,21 @@ function readJson(relativePath) {
 
 function readText(relativePath) {
   return readFileSync(new URL(relativePath, rootUrl), 'utf8');
+}
+
+function fileExists(relativePath) {
+  return existsSync(new URL(relativePath, rootUrl));
+}
+
+function assertNoAbsoluteFilesystemLinks(markdown, label) {
+  const absoluteLinkPattern = /\]\(((?:\/|[A-Za-z]:[\\/]|file:\/\/)[^)]+)\)/g;
+  const allowedUrlPattern = /^(https?:\/\/|mailto:)/;
+  for (const match of markdown.matchAll(absoluteLinkPattern)) {
+    const target = match[1];
+    if (!allowedUrlPattern.test(target)) {
+      throw new Error(`${label} must not contain absolute filesystem-style links: ${target}`);
+    }
+  }
 }
 
 function assert(condition, message) {
@@ -38,6 +56,18 @@ assert(
   'README must link to the example fixtures reference.',
 );
 assert(
+  readme.includes('docs/guides/publish-and-release.md'),
+  'README must link to the publish and release guide.',
+);
+assert(
+  readme.includes('img.shields.io/npm/v/%40kontourai%2Fveritas'),
+  'README must include the npm badge.',
+);
+assert(
+  readme.includes('actions/workflows/ci.yml/badge.svg'),
+  'README must include the CI badge.',
+);
+assert(
   readme.includes('## Operational Check-ins'),
   'README must include an operational check-ins section.',
 );
@@ -53,8 +83,10 @@ assert(
   readme.includes('Veritas Health'),
   'README must mention the check-in health issue.',
 );
+assertNoAbsoluteFilesystemLinks(readme, 'README');
 
 const docsIndex = readText('docs/README.md');
+assertNoAbsoluteFilesystemLinks(docsIndex, 'Docs index');
 assert(
   docsIndex.includes('## Guides'),
   'Docs index must include a guides section.',
@@ -82,6 +114,10 @@ assert(
 assert(
   docsIndex.includes('guides/operational-checkins.md'),
   'Docs index must link to the operational check-ins guide.',
+);
+assert(
+  docsIndex.includes('guides/publish-and-release.md'),
+  'Docs index must link to the publish and release guide.',
 );
 
 const cliReference = readText('docs/reference/cli.md');
@@ -193,6 +229,76 @@ assert(
   examplesReference.includes('examples/benchmarks/marker-suite-report.json'),
   'Examples reference must include the marker benchmark suite report fixture.',
 );
+
+const publishGuide = readText('docs/guides/publish-and-release.md');
+assertNoAbsoluteFilesystemLinks(publishGuide, 'Publish guide');
+assert(
+  publishGuide.includes('@kontourai/veritas'),
+  'Publish guide must mention the package name.',
+);
+assert(
+  publishGuide.includes('.github/workflows/publish-npm.yml'),
+  'Publish guide must mention the npm publish workflow.',
+);
+assert(
+  publishGuide.includes('GitHub Actions'),
+  'Publish guide must mention GitHub Actions setup.',
+);
+
+const ciWorkflow = readText('.github/workflows/ci.yml');
+assert(
+  ciWorkflow.includes('npm run verify'),
+  'CI workflow must run npm run verify.',
+);
+assert(
+  ciWorkflow.includes('npm test'),
+  'CI workflow must run npm test.',
+);
+
+const pagesWorkflow = readText('.github/workflows/pages.yml');
+assert(
+  pagesWorkflow.includes('npm run docs:pages:build'),
+  'Pages workflow must build the docs site through the local pages build script.',
+);
+assert(
+  pagesWorkflow.includes('actions/deploy-pages'),
+  'Pages workflow must deploy to GitHub Pages.',
+);
+
+const publishWorkflow = readText('.github/workflows/publish-npm.yml');
+assert(
+  publishWorkflow.includes('npm publish --provenance --access public'),
+  'Publish workflow must use npm publish with provenance.',
+);
+assert(
+  publishWorkflow.includes('Verify Tagged Commit Is On Main'),
+  'Publish workflow must verify that the tagged commit is reachable from main.',
+);
+assert(
+  publishWorkflow.includes('Verify Tag Matches Package Version'),
+  'Publish workflow must verify the pushed tag matches package.json version.',
+);
+assert(
+  publishWorkflow.includes('workflow_dispatch') === false,
+  'Publish workflow should stay tag-driven unless the docs explicitly describe a manual publish path.',
+);
+
+execFileSync('node', ['scripts/build-pages-site.mjs'], {
+  cwd: rootDir,
+  encoding: 'utf8',
+});
+assert(fileExists('.site-src/index.md'), 'Pages build must emit the root index page.');
+assert(
+  readText('.site-src/_config.yml').includes('  - .github'),
+  'Pages build config must explicitly include the .github path for published workflow links.',
+);
+assert(fileExists('.site-src/CONTRIBUTING.md'), 'Pages build must include CONTRIBUTING.md.');
+assert(fileExists('.site-src/examples/checkins/README.md'), 'Pages build must include the check-in README.');
+assert(fileExists('.site-src/package.json'), 'Pages build must include package.json for linked publish docs.');
+assert(fileExists('.site-src/.github/workflows/veritas-checkins.yml'), 'Pages build must include workflow files referenced by the docs.');
+assert(fileExists('.site-src/.github/workflows/ci.yml'), 'Pages build must include the CI workflow file.');
+assert(fileExists('.site-src/.github/workflows/pages.yml'), 'Pages build must include the Pages workflow file.');
+assert(fileExists('.site-src/.github/workflows/publish-npm.yml'), 'Pages build must include the npm publish workflow file.');
 
 const designDoc = readText('docs/design/framework-core-vs-adapter.md');
 assert(

@@ -6,3 +6,5 @@ dist/
 .veritas/eval-drafts/
 .veritas/evals/
 .veritas/checkins/
+.site-src/
+.site-dist/

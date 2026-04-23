@@ -23,6 +23,12 @@ If you are bootstrapping a new repo:
 3. [Artifacts and Schemas](reference/artifacts-and-schemas.md)
 4. [Telemetry and Read Models](reference/telemetry-and-read-models.md)
 
+If you are preparing docs hosting or package release:
+
+1. [Publish And Release](guides/publish-and-release.md)
+2. [CLI Reference](reference/cli.md)
+3. [Artifacts and Schemas](reference/artifacts-and-schemas.md)
+
 If you are tuning policy and rollout:
 
 1. [Tune The Framework For Your Team](guides/tune-for-your-team.md)
@@ -46,6 +52,7 @@ If you are changing framework behavior:
 
 - [Getting Started](guides/getting-started.md)
 - [Operational Check-ins](guides/operational-checkins.md)
+- [Publish And Release](guides/publish-and-release.md)
 - [Start Your Next Project With Veritas](guides/start-your-next-project.md)
 - [Tune The Framework For Your Team](guides/tune-for-your-team.md)
 

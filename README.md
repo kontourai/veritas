@@ -1,5 +1,8 @@
 # Veritas
 
+[![npm version](https://img.shields.io/npm/v/%40kontourai%2Fveritas)](https://www.npmjs.com/package/@kontourai/veritas)
+[![CI](https://github.com/kontourai/veritas/actions/workflows/ci.yml/badge.svg)](https://github.com/kontourai/veritas/actions/workflows/ci.yml)
+
 `@kontourai/veritas` is a repo-local framework and CLI for making AI-assisted development easier to trust.
 
 It gives a codebase four things:
@@ -54,9 +57,9 @@ npm run veritas:checkin:examples
 npm run veritas:checkin:prove
 ```
 
-The committed proof examples live under [examples/checkins](/Users/brian/dev/github/kontourai/veritas/examples/checkins), and the check-in workflow is documented in [docs/guides/operational-checkins.md](/Users/brian/dev/github/kontourai/veritas/docs/guides/operational-checkins.md).
+The committed proof examples live under [examples/checkins/README.md](examples/checkins/README.md), and the check-in workflow is documented in [docs/guides/operational-checkins.md](docs/guides/operational-checkins.md).
 
-There is also a scheduled GitHub Actions workflow at [.github/workflows/veritas-checkins.yml](/Users/brian/dev/github/kontourai/veritas/.github/workflows/veritas-checkins.yml) that runs the check-in lane on `main`, on pull requests, on manual dispatch, and weekly. It uploads the generated `.veritas` check-in artifacts so you can inspect how the self-hosting lane is behaving over time.
+There is also a scheduled GitHub Actions workflow at [.github/workflows/veritas-checkins.yml](.github/workflows/veritas-checkins.yml) that runs the check-in lane on `main`, on pull requests, on manual dispatch, and weekly. It uploads the generated `.veritas` check-in artifacts so you can inspect how the self-hosting lane is behaving over time.
 
 That workflow now actively elevates the evidence:
 
@@ -119,6 +122,7 @@ Go deeper here:
 - [Live Evals](docs/design/live-evals.md)
 - [Live Eval Roadmap](docs/design/live-eval-roadmap.md)
 - [Operational Check-ins](docs/guides/operational-checkins.md)
+- [Publish And Release](docs/guides/publish-and-release.md)
 - [Tune The Framework For Your Team](docs/guides/tune-for-your-team.md)
 - [Start Your Next Project With Veritas](docs/guides/start-your-next-project.md)
 
