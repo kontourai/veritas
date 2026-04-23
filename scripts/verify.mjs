@@ -295,6 +295,14 @@ assert(
   'CI workflow must run the coverage gate.',
 );
 assert(
+  ciWorkflow.includes('actions/checkout@v6'),
+  'CI workflow must use the current checkout action.',
+);
+assert(
+  ciWorkflow.includes('actions/setup-node@v6'),
+  'CI workflow must use the current setup-node action.',
+);
+assert(
   ciWorkflow.includes("node-version: ['18', '22']"),
   'CI workflow must validate on Node 18 and Node 22.',
 );
@@ -311,6 +319,14 @@ const pagesWorkflow = readText('.github/workflows/pages.yml');
 assert(
   pagesWorkflow.includes('npm run docs:pages:build'),
   'Pages workflow must build the docs site through the local pages build script.',
+);
+assert(
+  pagesWorkflow.includes('actions/checkout@v6'),
+  'Pages workflow must use the current checkout action.',
+);
+assert(
+  pagesWorkflow.includes('actions/setup-node@v6'),
+  'Pages workflow must use the current setup-node action.',
 );
 assert(
   pagesWorkflow.includes('actions/deploy-pages'),
@@ -347,8 +363,26 @@ assert(
   'Publish workflow must request OIDC token minting for npm trusted publishing.',
 );
 assert(
+  publishWorkflow.includes('actions/checkout@v6'),
+  'Publish workflow must use the current checkout action.',
+);
+assert(
+  publishWorkflow.includes('actions/setup-node@v6'),
+  'Publish workflow must use the current setup-node action.',
+);
+assert(
   publishWorkflow.includes('NPM_TOKEN') === false,
   'Publish workflow must not depend on a long-lived NPM_TOKEN secret.',
+);
+
+const checkinsWorkflow = readText('.github/workflows/veritas-checkins.yml');
+assert(
+  checkinsWorkflow.includes('actions/checkout@v6'),
+  'Check-in workflow must use the current checkout action.',
+);
+assert(
+  checkinsWorkflow.includes('actions/setup-node@v6'),
+  'Check-in workflow must use the current setup-node action.',
 );
 
 execFileSync('node', ['scripts/build-pages-site.mjs'], {
