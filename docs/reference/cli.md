@@ -30,6 +30,8 @@ npm exec -- veritas shadow run --working-tree
 
 Use `report` when you want evidence only. Use `shadow run` when you want proof, evidence, and eval-draft orchestration in one command. Treat `print` and `apply` as optional installer helpers, not the main product path.
 
+Breaking proof-command migration notes live in [../MIGRATING.md](../MIGRATING.md).
+
 ## Commands
 
 ### `init`
@@ -97,6 +99,8 @@ npm exec -- veritas shadow run [--root <path>] [--adapter <path>] [--policy-pack
 ```
 
 If `accepted_without_major_rewrite`, `required_followup`, and `time_to_green_minutes` are not all present, the command stops after report plus draft and returns a suggested `eval record` command.
+
+Proof commands are executed as tokenized argv, not through an implicit shell. Keep each proof lane to one executable plus arguments, or move compound shell logic into a real script.
 
 ### `eval draft`
 
@@ -257,6 +261,13 @@ It reports:
 - forwards any explicit arguments through to `shadow run`
 
 `print codex-hook` and `apply codex-hook` produce a tracked Codex config that installs the runtime hook as a `Stop` hook.
+
+## Environment Variables
+
+- `VERITAS_HOOK_SKIP=1`: skips generated git/runtime hook execution
+- `AI_GUIDANCE_HOOK_SKIP=1`: legacy alias still honored by generated hooks
+
+Do not set either skip variable in CI if the CI lane is meant to enforce proof execution.
 
 ## Output Shape
 

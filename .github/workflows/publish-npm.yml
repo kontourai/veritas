@@ -10,7 +10,38 @@ permissions:
   id-token: write
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['18', '22']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci --no-fund --no-audit
+
+      - name: Verify
+        run: npm run verify
+
+      - name: Test
+        run: npm test
+
+      - name: Coverage Gate
+        run: npm run test:coverage:check
+
   publish:
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,12 +58,6 @@ jobs:
 
       - name: Install
         run: npm ci --no-fund --no-audit
-
-      - name: Verify
-        run: npm run verify
-
-      - name: Test
-        run: npm test
 
       - name: Verify Tag Matches Package Version
         run: |

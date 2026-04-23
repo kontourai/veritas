@@ -24,8 +24,27 @@ The framework is intentionally agent-agnostic. It does not require one proprieta
 - design, guide, and reference docs in `docs/`
 
 All shipped CLI commands print JSON to stdout, and the command surfaces described in the docs are exercised by the test suite.
+The runtime stays intentionally lightweight: the published package relies on Node itself rather than a large runtime dependency stack.
 
 The benchmark layer now supports both single marker comparisons and multi-scenario suite summaries for proving that Veritas surfaces the right repo-specific context at the right time.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  A[Adapter] --> B[Repo Graph]
+  B --> C[Policy Pack]
+  B --> D[Proof Lane Resolution]
+  C --> E[Evidence Artifact]
+  D --> E
+  E --> F[Eval Draft / Eval Record]
+```
+
+## Without Veritas / With Veritas
+
+Without Veritas, an agent edits files, a reviewer scans the whole diff, and repo-specific expectations stay trapped in tribal memory.
+
+With Veritas, the repo ships its own map, proof lanes, and policy surface. The operator gets a bounded evidence artifact first, then a live eval record that says whether the guidance actually helped.
 
 ## What This Project Does Not Try To Be
 
@@ -109,8 +128,11 @@ Start here:
 
 - [Docs Home](docs/README.md) for the reading map by audience and repo area
 - [Getting Started](docs/guides/getting-started.md) for first-time setup and the basic workflow
+- [Migrating](docs/MIGRATING.md) for breaking changes and operator updates
+- [Releasing Veritas](docs/RELEASING.md) for the package/release checklist
 - [CLI Reference](docs/reference/cli.md) for exact commands, flags, outputs, and generated files
 - [Artifacts and Schemas](docs/reference/artifacts-and-schemas.md) for the repo structure and JSON contract surface
+- [Benchmarking Methodology](docs/reference/benchmarking.md) for how the benchmark fixtures are meant to be interpreted
 - [Telemetry and Read Models](docs/reference/telemetry-and-read-models.md) for canonical artifacts, derived summaries, and optional telemetry export
 - [Example Fixtures](docs/reference/examples.md) for the shipped evidence, eval, and classification examples
 
@@ -121,7 +143,9 @@ Go deeper here:
 - [Policy Packs](docs/design/policy-packs.md)
 - [Live Evals](docs/design/live-evals.md)
 - [Live Eval Roadmap](docs/design/live-eval-roadmap.md)
+- [Schema Evolution Policy](docs/design/schema-evolution.md)
 - [Operational Check-ins](docs/guides/operational-checkins.md)
+- [Agent Runtime Integrations](docs/guides/agent-runtime-integrations.md)
 - [Publish And Release](docs/guides/publish-and-release.md)
 - [Tune The Framework For Your Team](docs/guides/tune-for-your-team.md)
 - [Start Your Next Project With Veritas](docs/guides/start-your-next-project.md)

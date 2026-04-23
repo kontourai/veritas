@@ -1,0 +1,34 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
+
+## [Unreleased]
+
+### Added
+
+- Marker benchmark suite support and benchmark fixture coverage.
+- Release automation for CI, docs pages, and npm publishing.
+- Migration guidance, benchmarking methodology, schema-evolution policy, and release-process documentation.
+- Community files for security reporting, issue intake, and pull requests.
+
+### Changed
+
+- Proof commands now execute as tokenized argv without an implicit shell wrapper.
+- Proof command output now uses inherited stdio instead of rewriting stdout into stderr.
+- Shared CLI token parsing, JSON loading, and path-boundary guard helpers were extracted into dedicated source modules.
+- The Veritas check-in workflow now sanitizes `GITHUB_OUTPUT` values and scopes write permissions to the jobs that need them.
+
+### Security
+
+- Closed the config-level shell-injection path in proof-lane execution.
+- Hardened Codex hook inspection and base-ref inference error handling.
+
+## [0.1.0] - 2026-04-22
+
+### Added
+
+- Initial public package surface for repo-local adapters, policy packs, evidence artifacts, and live eval artifacts.
+- CLI support for bootstrap, reporting, eval drafting/recording, runtime hook setup, and deterministic marker benchmarks.
+- Reference adapters, policy packs, schemas, and shipped example artifacts for evidence, evals, check-ins, and benchmarks.

@@ -8,3 +8,10 @@ dist/
 .veritas/checkins/
 .site-src/
 .site-dist/
+coverage/
+.nyc_output/
+*.log
+.env
+.env.local
+.vscode/
+.idea/

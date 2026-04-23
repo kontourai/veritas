@@ -23,11 +23,18 @@ If you are bootstrapping a new repo:
 3. [Artifacts and Schemas](reference/artifacts-and-schemas.md)
 4. [Telemetry and Read Models](reference/telemetry-and-read-models.md)
 
+If you are wiring Veritas into an agent runtime:
+
+1. [Agent Runtime Integrations](guides/agent-runtime-integrations.md)
+2. [Agent Activation](design/agent-activation.md)
+3. [CLI Reference](reference/cli.md)
+
 If you are preparing docs hosting or package release:
 
 1. [Publish And Release](guides/publish-and-release.md)
-2. [CLI Reference](reference/cli.md)
-3. [Artifacts and Schemas](reference/artifacts-and-schemas.md)
+2. [Releasing Veritas](RELEASING.md)
+3. [CLI Reference](reference/cli.md)
+4. [Artifacts and Schemas](reference/artifacts-and-schemas.md)
 
 If you are tuning policy and rollout:
 
@@ -51,8 +58,11 @@ If you are changing framework behavior:
 ## Guides
 
 - [Getting Started](guides/getting-started.md)
+- [Agent Runtime Integrations](guides/agent-runtime-integrations.md)
+- [Migrating](MIGRATING.md)
 - [Operational Check-ins](guides/operational-checkins.md)
 - [Publish And Release](guides/publish-and-release.md)
+- [Releasing Veritas](RELEASING.md)
 - [Start Your Next Project With Veritas](guides/start-your-next-project.md)
 - [Tune The Framework For Your Team](guides/tune-for-your-team.md)
 
@@ -60,6 +70,7 @@ If you are changing framework behavior:
 
 - [CLI Reference](reference/cli.md)
 - [Artifacts and Schemas](reference/artifacts-and-schemas.md)
+- [Benchmarking Methodology](reference/benchmarking.md)
 - [Telemetry and Read Models](reference/telemetry-and-read-models.md)
 - [Example Fixtures](reference/examples.md)
 
@@ -70,3 +81,4 @@ If you are changing framework behavior:
 - [Policy Packs](design/policy-packs.md)
 - [Live Evals](design/live-evals.md)
 - [Live Eval Roadmap](design/live-eval-roadmap.md)
+- [Schema Evolution Policy](design/schema-evolution.md)

@@ -1,10 +1,15 @@
 {
   "name": "@kontourai/veritas",
   "version": "0.1.0",
+  "description": "Repo-local framework and CLI for making AI-assisted development easier to trust through adapters, policy packs, evidence, and evals.",
   "private": false,
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
+  "author": "kontourai",
   "homepage": "https://kontourai.github.io/veritas/",
+  "engines": {
+    "node": ">=18.17"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kontourai/veritas.git"
@@ -16,6 +21,9 @@
     "ai",
     "agents",
     "cli",
+    "codex",
+    "claude-code",
+    "cursor",
     "developer-tools",
     "evals",
     "governance",
@@ -46,7 +54,10 @@
   "scripts": {
     "docs:pages:build": "node scripts/build-pages-site.mjs",
     "verify": "node scripts/verify.mjs",
-    "test": "node --test tests/framework.test.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:coverage": "node --experimental-test-coverage --test tests/*.test.mjs",
+    "test:coverage:check": "node scripts/check-coverage.mjs",
+    "prepublishOnly": "npm run verify && npm run test:coverage:check && npm pack --dry-run",
     "veritas:init": "npm exec -- veritas init",
     "veritas:print:scripts": "npm exec -- veritas print package-scripts",
     "veritas:print:ci": "npm exec -- veritas print ci-snippet",

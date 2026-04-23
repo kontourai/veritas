@@ -23,7 +23,7 @@ Use the framework as:
 3. **evidence**: "what did the AI touch, what lane did that map to, and what proof do we have?"
 4. **live eval**: "did this guidance actually help the team?"
 
-If you keep those three concepts separate, the system stays understandable.
+If you keep those four concepts separate, the system stays understandable.
 
 ## Minimal Onboarding
 

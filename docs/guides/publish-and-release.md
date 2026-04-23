@@ -29,9 +29,9 @@ That means the npm package is not only the CLI binary. It also publishes the sch
 
 This repo now ships three core automation lanes:
 
-- [CI](../../.github/workflows/ci.yml) runs `npm run verify` and `npm test`
+- [CI](../../.github/workflows/ci.yml) runs `npm run verify`, `npm test`, and the line-coverage gate on Node 18 and Node 22
 - [Docs Pages](../../.github/workflows/pages.yml) builds the Markdown docs into a GitHub Pages site
-- [Publish NPM](../../.github/workflows/publish-npm.yml) publishes `@kontourai/veritas` on tag pushes like `v0.1.0`
+- [Publish NPM](../../.github/workflows/publish-npm.yml) verifies on Node 18 and Node 22, then publishes `@kontourai/veritas` on tag pushes like `v0.1.0`
 
 ## What We Need From You
 
@@ -91,6 +91,8 @@ So the normal release path is:
    - bugs URL
    - README rendering
 6. Tag the first release and let `Publish NPM` run.
+
+The current coverage gate enforces at least 80% aggregate line coverage.
 
 ## Badges
 
