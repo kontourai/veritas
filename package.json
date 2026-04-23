@@ -1,6 +1,6 @@
 {
   "name": "@kontourai/veritas",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Repo-local framework and CLI for making AI-assisted development easier to trust through adapters, policy packs, evidence, and evals.",
   "private": false,
   "license": "Apache-2.0",
