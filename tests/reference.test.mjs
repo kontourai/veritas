@@ -183,5 +183,7 @@ test('repo includes an automated check-in workflow', () => {
   assert.match(workflow, /node scripts\/checkin-status\.mjs/);
   assert.match(workflow, /Update PR Comment/);
   assert.match(workflow, /Update Health Issue/);
-  assert.match(workflow, /actions\/upload-artifact@v4/);
+  assert.match(workflow, /actions\/upload-artifact@v7/);
+  assert.match(workflow, /actions\/download-artifact@v8/);
+  assert.match(workflow, /actions\/github-script@v9/);
 });
