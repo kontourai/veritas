@@ -1,84 +1,82 @@
-# Documentation Map
+# Documentation
 
-This repo has three documentation lanes:
+Find what you need by what you're trying to do.
 
-- **Guides** for people adopting and operating the framework
-- **Reference** for exact commands, artifacts, schemas, and fixtures
-- **Design** for the framework model and the reasons behind it
+## Start Here
 
-## Recommended Reading Order
+- [Concepts Overview](concepts.md) — understand the core ideas in five minutes
+- [Getting Started](guides/getting-started.md) — install, bootstrap, and run your first evidence report
 
-If you are new to the project:
+## I Want To...
 
-1. [Getting Started](guides/getting-started.md)
-2. [CLI Reference](reference/cli.md)
-3. [Artifacts and Schemas](reference/artifacts-and-schemas.md)
-4. [Telemetry and Read Models](reference/telemetry-and-read-models.md)
-5. [Example Fixtures](reference/examples.md)
+### Set up Veritas in a new repo
 
-If you are bootstrapping a new repo:
+- [Getting Started](guides/getting-started.md) for installation and first run
+- [Start Your Next Project](guides/start-your-next-project.md) for greenfield repos
+- [CLI Reference](reference/cli.md) for exact commands and flags
 
-1. [Start Your Next Project With Veritas](guides/start-your-next-project.md)
-2. [CLI Reference](reference/cli.md)
-3. [Artifacts and Schemas](reference/artifacts-and-schemas.md)
-4. [Telemetry and Read Models](reference/telemetry-and-read-models.md)
+### Wire Veritas into my AI agent
 
-If you are wiring Veritas into an agent runtime:
+- [Agent Runtime Integrations](guides/agent-runtime-integrations.md) for Claude Code, Cursor, Codex hooks
+- [Agent Activation](design/agent-activation.md) for how the framework reaches agents
 
-1. [Agent Runtime Integrations](guides/agent-runtime-integrations.md)
-2. [Agent Activation](design/agent-activation.md)
-3. [CLI Reference](reference/cli.md)
+### Write rules for my repo
 
-If you are preparing docs hosting or package release:
+- [Policy Packs](design/policy-packs.md) for classification and staging model
+- [Tune For Your Team](guides/tune-for-your-team.md) for rollout strategy
 
-1. [Publish And Release](guides/publish-and-release.md)
-2. [Releasing Veritas](RELEASING.md)
-3. [CLI Reference](reference/cli.md)
-4. [Artifacts and Schemas](reference/artifacts-and-schemas.md)
+### Understand what reviewers see
 
-If you are tuning policy and rollout:
+- [Artifacts and Schemas](reference/artifacts-and-schemas.md) for the JSON contract surface
+- [Example Fixtures](reference/examples.md) for sample evidence and eval payloads
+- [Telemetry and Read Models](reference/telemetry-and-read-models.md) for derived artifacts
 
-1. [Tune The Framework For Your Team](guides/tune-for-your-team.md)
-2. [Live Evals](design/live-evals.md)
-3. [Policy Packs](design/policy-packs.md)
+### Measure if Veritas is helping
 
-If you want to see the framework used on itself:
+- [Live Evals](design/live-evals.md) for the feedback model
+- [Benchmarking](reference/benchmarking.md) for deterministic marker scoring
+- [Live Eval Roadmap](design/live-eval-roadmap.md) for what's coming
 
-1. [Operational Check-ins](guides/operational-checkins.md)
-2. [Example Fixtures](reference/examples.md)
-3. [Artifacts and Schemas](reference/artifacts-and-schemas.md)
+### Run Veritas in CI
 
-If you are changing framework behavior:
+- [Operational Check-ins](guides/operational-checkins.md) for CI workflow setup
+- [CLI Reference](reference/cli.md) for command flags and output format
 
-1. [Framework Core vs Adapter](design/framework-core-vs-adapter.md)
-2. [Agent Activation](design/agent-activation.md)
-3. [Artifacts and Schemas](reference/artifacts-and-schemas.md)
-4. [CONTRIBUTING.md](../CONTRIBUTING.md)
+### Contribute to the framework
 
-## Guides
+- [Framework Core vs Adapter](design/framework-core-vs-adapter.md) for architecture decisions
+- [Schema Evolution](design/schema-evolution.md) for schema change policy
+- [CONTRIBUTING.md](../CONTRIBUTING.md) for development workflow
 
-- [Getting Started](guides/getting-started.md)
-- [Agent Runtime Integrations](guides/agent-runtime-integrations.md)
-- [Migrating](MIGRATING.md)
-- [Operational Check-ins](guides/operational-checkins.md)
-- [Publish And Release](guides/publish-and-release.md)
-- [Releasing Veritas](RELEASING.md)
-- [Start Your Next Project With Veritas](guides/start-your-next-project.md)
-- [Tune The Framework For Your Team](guides/tune-for-your-team.md)
+## All Pages
 
-## Reference
+### Guides
 
-- [CLI Reference](reference/cli.md)
-- [Artifacts and Schemas](reference/artifacts-and-schemas.md)
-- [Benchmarking Methodology](reference/benchmarking.md)
-- [Telemetry and Read Models](reference/telemetry-and-read-models.md)
-- [Example Fixtures](reference/examples.md)
+- [Getting Started](guides/getting-started.md) — install the framework and run your first evidence report
+- [Agent Runtime Integrations](guides/agent-runtime-integrations.md) — connect Veritas to Claude Code, Cursor, and Codex
+- [Start Your Next Project](guides/start-your-next-project.md) — bootstrap a greenfield repo with Veritas from day one
+- [Tune For Your Team](guides/tune-for-your-team.md) — adapt policy and rollout without forking the framework
+- [Operational Check-ins](guides/operational-checkins.md) — run the check-in flow in CI and interpret the output
+- [Publish And Release](guides/publish-and-release.md) — what gets published, versioned, and how
 
-## Design
+### Reference
 
-- [Framework Core vs Adapter](design/framework-core-vs-adapter.md)
-- [Agent Activation](design/agent-activation.md)
-- [Policy Packs](design/policy-packs.md)
-- [Live Evals](design/live-evals.md)
-- [Live Eval Roadmap](design/live-eval-roadmap.md)
-- [Schema Evolution Policy](design/schema-evolution.md)
+- [CLI Reference](reference/cli.md) — every command, flag, and JSON output shape
+- [Artifacts and Schemas](reference/artifacts-and-schemas.md) — the JSON contract surface the framework ships
+- [Example Fixtures](reference/examples.md) — canonical sample evidence and eval payloads used by tests
+- [Telemetry and Read Models](reference/telemetry-and-read-models.md) — derived artifacts and how to read trends over time
+- [Benchmarking](reference/benchmarking.md) — deterministic scoring against marker fixtures
+
+### Design
+
+- [Framework Core vs Adapter](design/framework-core-vs-adapter.md) — what stays generic and what lives in the repo adapter
+- [Agent Activation](design/agent-activation.md) — how the framework reaches whatever agent is touching the codebase
+- [Policy Packs](design/policy-packs.md) — classification and staging model for repo-specific rules
+- [Live Evals](design/live-evals.md) — how the framework measures whether its guidance is actually helping
+- [Live Eval Roadmap](design/live-eval-roadmap.md) — the build plan for live eval, phase by phase
+- [Schema Evolution](design/schema-evolution.md) — how framework contracts change without breaking consumers
+
+### Project
+
+- [Migrating](MIGRATING.md) — breaking changes and upgrade notes
+- [Releasing](RELEASING.md) — publish and release checklist

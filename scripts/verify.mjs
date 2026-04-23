@@ -61,8 +61,8 @@ assert(
 );
 
 assert(
-  readme.includes('## What This Project Ships'),
-  'README must explain what the project ships.',
+  readme.includes('## What You Get'),
+  'README must explain what the project offers.',
 );
 assert(
   readme.includes('## Quickstart'),
@@ -73,16 +73,16 @@ assert(
   'README must link to the CLI reference.',
 );
 assert(
-  readme.includes('docs/reference/artifacts-and-schemas.md'),
-  'README must link to the artifacts and schemas reference.',
+  readme.includes('docs/concepts.md'),
+  'README must link to the concepts overview.',
 );
 assert(
-  readme.includes('docs/reference/examples.md'),
-  'README must link to the example fixtures reference.',
+  readme.includes('docs/guides/getting-started.md'),
+  'README must link to the getting started guide.',
 );
 assert(
-  readme.includes('docs/guides/publish-and-release.md'),
-  'README must link to the publish and release guide.',
+  readme.includes('https://kontourai.github.io/veritas/'),
+  'README must link to the docs site.',
 );
 assert(
   readme.includes('img.shields.io/npm/v/%40kontourai%2Fveritas'),
@@ -92,36 +92,20 @@ assert(
   readme.includes('actions/workflows/ci.yml/badge.svg'),
   'README must include the CI badge.',
 );
-assert(
-  readme.includes('## Operational Check-ins'),
-  'README must include an operational check-ins section.',
-);
-assert(
-  readme.includes('veritas:checkin:examples'),
-  'README must mention the check-in examples command.',
-);
-assert(
-  readme.includes('.github/workflows/veritas-checkins.yml'),
-  'README must mention the check-in workflow.',
-);
-assert(
-  readme.includes('Veritas Health'),
-  'README must mention the check-in health issue.',
-);
 assertNoAbsoluteFilesystemLinks(readme, 'README');
 
 const docsIndex = readText('docs/README.md');
 assertNoAbsoluteFilesystemLinks(docsIndex, 'Docs index');
 assert(
-  docsIndex.includes('## Guides'),
+  docsIndex.includes('### Guides'),
   'Docs index must include a guides section.',
 );
 assert(
-  docsIndex.includes('## Reference'),
+  docsIndex.includes('### Reference'),
   'Docs index must include a reference section.',
 );
 assert(
-  docsIndex.includes('## Design'),
+  docsIndex.includes('### Design'),
   'Docs index must include a design section.',
 );
 assert(
