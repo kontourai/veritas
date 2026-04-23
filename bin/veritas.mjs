@@ -125,6 +125,11 @@ function selectScopedUsage(kind, fallback, scoped = {}) {
 const [subcommand, ...args] = process.argv.slice(2);
 const cwd = process.cwd();
 
+process.on('uncaughtException', (error) => {
+  process.stderr.write(`${error.message}\n`);
+  process.exit(1);
+});
+
 if (!subcommand || isHelpToken(subcommand)) {
   writeStdout(MAIN_USAGE);
 } else if (subcommand === 'init') {

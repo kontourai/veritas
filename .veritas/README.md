@@ -14,6 +14,7 @@ The repo-level check-in commands live in `package.json`:
 
 ## Generated Files
 
+- `.veritas/GOVERNANCE.md`
 - `.veritas/repo.adapter.json`
 - `.veritas/policy-packs/default.policy-pack.json`
 - `.veritas/team/default.team-profile.json`

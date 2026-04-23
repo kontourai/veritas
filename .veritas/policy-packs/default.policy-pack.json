@@ -12,6 +12,7 @@
       "rollback_switch": null,
       "match": {
         "artifacts": [
+          ".veritas/GOVERNANCE.md",
           ".veritas/README.md",
           ".veritas/repo.adapter.json",
           ".veritas/policy-packs/default.policy-pack.json",

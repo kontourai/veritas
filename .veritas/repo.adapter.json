@@ -48,6 +48,7 @@
         "id": "governance.guidance",
         "kind": "governance-surface",
         "label": ".veritas/**",
+        "governance-locked": true,
         "patterns": [
           ".veritas/"
         ]
@@ -60,6 +61,7 @@
           "package.json",
           "package-lock.json",
           "README.md",
+          "CLAUDE.md",
           "CONTRIBUTING.md",
           ".gitignore",
           "AGENTS.md"
