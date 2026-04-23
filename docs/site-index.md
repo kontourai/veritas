@@ -18,6 +18,10 @@ Veritas gives the repo a [typed map](concepts.md#repo-map-the-adapter) so agents
 Your team's hard invariants, strong preferences, and temporary guardrails exist in someone's head — not in a reviewable, enforceable form.
 Veritas makes them explicit in a [staged policy pack](concepts.md#rules-the-policy-pack) with real classification and enforcement levels.
 
+**Governance rules have no protection.**
+Even when a team writes its rules down, the governance files themselves can still be edited like any other config unless that surface is treated separately.
+Veritas models governance as its own surface and makes the integrity gap explicit in the [roadmap](design/roadmap.md#governance-surface-integrity) instead of leaving it as hidden repo folklore.
+
 **Reviewers scan the whole diff.**
 When AI changes dozens of files, a human reconstructs intent from a raw diff with no structured summary of what was proven or what passed.
 Veritas generates a [bounded evidence artifact](concepts.md#evidence-the-artifact) — what changed, what was affected, what proof ran, and which policies held.
@@ -64,6 +68,7 @@ Veritas captures [live eval records](concepts.md#feedback-live-evals) — accept
 <li>AI agent edits 47 files with no structured guidance surface</li>
 <li>Reviewer scans the full diff looking for violations they have to know to look for</li>
 <li>Repo expectations live as tribal memory — undocumented, unenforced, unmeasured</li>
+<li>Governance files can be weakened like any other config, with no distinct integrity path</li>
 <li>No way to know whether any guidance you gave the agent actually changed its behavior</li>
 </ul>
 </div>
@@ -73,7 +78,7 @@ Veritas captures [live eval records](concepts.md#feedback-live-evals) — accept
 <ul>
 <li>Repo ships its own map and rules; the agent knows what surfaces it is entering</li>
 <li>Reviewer inspects a bounded evidence artifact — what changed, what proof ran, what passed</li>
-<li>Policy results are explicit and tracked in source control, not reconstructed after the fact</li>
+<li>Policy results and governance surfaces are explicit in source control, not reconstructed after the fact</li>
 <li>Live eval record says whether the guidance helped, with numbers</li>
 </ul>
 </div>

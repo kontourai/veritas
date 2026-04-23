@@ -117,6 +117,24 @@ For deeper detail, see [Live Evals](design/live-evals.md).
 
 ---
 
+## Governance Surface Integrity
+
+Some rules describe product code. Other rules describe the trust surface itself. If an AI agent can silently weaken the adapter or policy pack that governs its own work, the framework loses its point.
+
+The `.veritas/` directory is that trust surface. It holds the repo map, policy pack, team profile, and generated artifacts. Veritas already models this as a `governance-surface`, which matters because governance changes should not look like ordinary config churn.
+
+Three categories matter:
+
+- **Constitutional core**: surface definitions, `hard-invariant` rules at `block` stage, and team thresholds. These shape what the repo considers mandatory and should require explicit human accountability to loosen.
+- **Living policy**: additive rules, new nodes for new feature areas, and promotions backed by eval data. This is where the framework should be able to tighten safely over time.
+- **Generated evidence**: `evidence/`, `eval-drafts/`, `evals/`, and `checkins/`. These are outputs, not hand-authored governance.
+
+The design goal is a ratchet: automation may add guidance or tighten enforcement, but it should not silently demote existing hard rules or delete the surfaces they protect. That is what turns governance edits into a distinct review surface instead of just another JSON diff.
+
+For the current design direction and open work, see [Roadmap](design/roadmap.md#governance-surface-integrity).
+
+---
+
 ## Rollout: Shadow, Assist, Enforce
 
 Veritas moves through three rollout phases, and you control the pace.
