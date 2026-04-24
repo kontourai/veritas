@@ -4,6 +4,8 @@
 - **Alerts:** 1 error(s), 0 warning(s)
 - **Unresolved files:** 1
 - **Policy results:** 5 passed, 0 failed, 0 metadata-only
+- **Governance surface:** clean (no governance files changed)
+- **Governance trend:** no prior governance history
 - **Proof command:** `npm run verify`
 - **Run ID:** veritas-checkin-2026-04-22T03-34-08-865Z
 

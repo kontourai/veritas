@@ -23,6 +23,28 @@
     "failed": 0,
     "metadata_only": 0
   },
+  "governance_surface": {
+    "classification": "clean",
+    "summary": "clean (no governance files changed)",
+    "evaluated": true,
+    "compared_refs": {
+      "base": "main",
+      "head": "HEAD"
+    },
+    "files": [],
+    "changed_paths": [],
+    "semantic_changed_paths": []
+  },
+  "governance_trend": {
+    "available_runs": 1,
+    "sampled_runs": 1,
+    "clean": 1,
+    "additive_only": 0,
+    "constitutional_modification": 0,
+    "latest_non_clean_run_id": null,
+    "latest_non_clean_classification": null,
+    "summary": "no prior governance history"
+  },
   "health_status": "red",
   "alerts": [
     {

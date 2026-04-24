@@ -130,7 +130,7 @@ Use them to inspect:
 
 Use them to inspect:
 
-- a benchmark where the correct behavior is refusing or escalating a Zone 1 weakening move
+- a benchmark where the correct behavior is surfacing that a Zone 1 weakening move touches the constitutional core and needs human review
 - a benchmark where the correct behavior is allowing Zone 2 additive-only governance growth
 
 ## Classification Fixture

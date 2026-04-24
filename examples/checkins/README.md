@@ -15,11 +15,13 @@ Current example set:
 - `veritas-repo-checkin-red.json`
 - `veritas-repo-checkin-red.md`
 
-Refresh them with:
+Refresh the report/eval examples with:
 
 ```bash
 npm run veritas:checkin:examples
 ```
+
+The red check-in fixtures are maintained as a curated regression snapshot for the unhealthy path.
 
 Generate an untracked point-in-time self-hosting snapshot with:
 

@@ -112,6 +112,8 @@ test('live-eval fixtures explain outcome measurement and team tuning', () => {
   assert.ok(Array.isArray(redCheckin.alerts));
   assert.ok(redCheckin.alerts.some((alert) => alert.severity === 'error'));
   assert.equal(redCheckin.policy_results_summary.metadata_only, 0);
+  assert.equal(redCheckin.governance_surface.classification, 'clean');
+  assert.equal(redCheckin.governance_trend.summary, 'no prior governance history');
 });
 
 test('marker benchmark fixtures explain timely surfacing scoring', () => {
