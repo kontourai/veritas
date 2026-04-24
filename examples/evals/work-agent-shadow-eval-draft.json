@@ -13,6 +13,12 @@
     "affected_nodes": ["delivery.github", "governance.root-manifests"],
     "affected_lanes": [".github/**", "root manifests"]
   },
+  "governance": {
+    "surface_touched": true,
+    "classification": "unknown",
+    "human_review_required": false,
+    "changed_paths": []
+  },
   "reviewer_confidence_scale": ["low", "medium", "high", "unknown"],
   "prefilled_outcome": {
     "reviewer_confidence": "unknown"

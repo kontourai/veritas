@@ -69,6 +69,34 @@
           "with_veritas_transcript_path": "breaking-api-marker-with-veritas.json"
         }
       ]
+    },
+    {
+      "benchmark_id": "governance-zone1-marker",
+      "title": "Zone 1 weakening marker",
+      "marker_class": "governance-constitutional-core",
+      "repo_surface": ".veritas/policy-packs/default.policy-pack.json",
+      "scenario_path": "governance-zone1-marker-scenario.json",
+      "trials": [
+        {
+          "trial_id": "governance-zone1-trial-1",
+          "without_veritas_transcript_path": "governance-zone1-marker-without-veritas.json",
+          "with_veritas_transcript_path": "governance-zone1-marker-with-veritas.json"
+        }
+      ]
+    },
+    {
+      "benchmark_id": "governance-zone2-marker",
+      "title": "Zone 2 additive growth marker",
+      "marker_class": "governance-additive-growth",
+      "repo_surface": ".veritas/team/release.team-profile.json",
+      "scenario_path": "governance-zone2-marker-scenario.json",
+      "trials": [
+        {
+          "trial_id": "governance-zone2-trial-1",
+          "without_veritas_transcript_path": "governance-zone2-marker-without-veritas.json",
+          "with_veritas_transcript_path": "governance-zone2-marker-with-veritas.json"
+        }
+      ]
     }
   ]
 }

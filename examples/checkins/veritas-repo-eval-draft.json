@@ -5,7 +5,7 @@
   "mode": "shadow",
   "evidence": {
     "artifact_path": ".veritas/evidence/veritas-repo-check-in.json",
-    "artifact_digest": "16c031d0cb215fd9d5ee16dd5e2d4088d8799cd710d9d3b3b7811d975575b87d",
+    "artifact_digest": "888f8855e80cb39e23c2e193aea799b330d4cff35182dbca2ccf5247d42412da",
     "timestamp": "2026-04-21T22:00:00.000Z",
     "source_ref": "refs/heads/main",
     "source_kind": "explicit-files",
@@ -29,6 +29,17 @@
       "schemas/**",
       "src/**",
       "tests/**"
+    ]
+  },
+  "governance": {
+    "surface_touched": true,
+    "classification": "unknown",
+    "human_review_required": false,
+    "changed_paths": [
+      ".veritas/GOVERNANCE.md",
+      ".veritas/repo.adapter.json",
+      ".veritas/policy-packs/default.policy-pack.json",
+      ".veritas/team/default.team-profile.json"
     ]
   },
   "reviewer_confidence_scale": [

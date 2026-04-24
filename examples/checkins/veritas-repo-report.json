@@ -42,9 +42,11 @@
   "override_or_bypass": false,
   "owner": null,
   "files": [
+    ".veritas/GOVERNANCE.md",
     ".veritas/repo.adapter.json",
     ".veritas/policy-packs/default.policy-pack.json",
     ".veritas/team/default.team-profile.json",
+    "CLAUDE.md",
     "README.md",
     "package.json",
     "bin/veritas.mjs",

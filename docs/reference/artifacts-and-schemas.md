@@ -56,6 +56,11 @@ Derived read-model artifacts may exist on top of those records. Current example:
 
 Derived artifacts are useful summaries, but they should not become second sources of truth.
 
+Recent governance additions follow that split:
+
+- eval draft / eval record artifacts now carry a derived `governance` object so governance-touching review outcomes can be measured alongside the core outcome fields
+- operational check-ins carry both the per-run `governance_surface` classification and a derived `governance_trend` summary from local check-in history
+
 ## Reference Artifact Types
 
 ### Adapter
@@ -195,6 +200,8 @@ The framework flow in this repo is:
 3. `eval draft` turns that evidence into a repo-local draft artifact.
 4. `eval record` turns the evidence or draft into a completed live-eval record.
 5. `shadow run` orchestrates the report plus eval path and can also run proof first.
+
+The starter guidance surface also includes `.veritas/GOVERNANCE.md`, which is a committed governance artifact rather than a disposable generated output.
 
 ## Current Safety Rails
 

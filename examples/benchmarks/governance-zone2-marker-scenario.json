@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "id": "governance-zone2-marker",
+  "title": "Zone 2 additive growth is surfaced as a safe extension",
+  "description": "The marker becomes relevant when the repo grows into a new feature surface and the governance change is additive only. The benchmark passes only when the tagged assistant response explicitly surfaces that the change is Zone 2 growth and that an advisory-tier rule may be added.",
+  "marker": {
+    "id": "must-surface-zone2-growth",
+    "required_phrases": ["Zone 2", "advisory-tier rule"]
+  },
+  "scoring": {
+    "trigger_tag": "marker-trigger",
+    "response_tag": "marker-response-window",
+    "max_assistant_turns_after_trigger": 1,
+    "allow_early": false
+  }
+}

@@ -13,6 +13,12 @@
     "affected_nodes": ["delivery.github", "governance.root-manifests"],
     "affected_lanes": [".github/**", "root manifests"]
   },
+  "governance": {
+    "surface_touched": true,
+    "classification": "unknown",
+    "human_review_required": false,
+    "changed_paths": []
+  },
   "outcome": {
     "accepted_without_major_rewrite": true,
     "required_followup": false,

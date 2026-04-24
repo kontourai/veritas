@@ -44,11 +44,14 @@ npm exec -- veritas init [--root <path>] [--project-name <name>] [--proof-lane <
 
 Writes:
 
+- `.veritas/GOVERNANCE.md`
 - `.veritas/README.md`
 - `.veritas/repo.adapter.json`
 - `.veritas/policy-packs/default.policy-pack.json`
 - `.veritas/team/default.team-profile.json`
 - `.veritas/evidence/`
+
+`init` keeps stdout machine-readable JSON and prints the suggested CODEOWNERS block to stderr as informational text.
 
 The bootstrap logic infers:
 
@@ -119,6 +122,7 @@ npm exec -- veritas eval draft --evidence <path> [--team-profile <path>] [--outp
 Guardrail:
 
 - evidence input must be under `.veritas/evidence/`
+- the generated draft now includes a derived `governance` object that records whether the evidence touched the governance surface and whether constitutional review is required
 
 ### `eval record`
 
@@ -145,6 +149,7 @@ Guardrails:
 - evidence input must stay under `.veritas/evidence/`
 - draft input must stay under `.veritas/eval-drafts/`
 - a draft must be completed with the same team profile that created it
+- the completed record keeps the same derived `governance` object so governance-touching evals can be measured later
 - existing output is not overwritten without `--force`
 
 ### `eval marker`

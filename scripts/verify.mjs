@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const rootUrl = new URL('../', import.meta.url);
@@ -24,6 +25,50 @@ function assertNoAbsoluteFilesystemLinks(markdown, label) {
     const target = match[1];
     if (!allowedUrlPattern.test(target)) {
       throw new Error(`${label} must not contain absolute filesystem-style links: ${target}`);
+    }
+  }
+}
+
+function* iterDocFiles(relativeDir) {
+  const dirUrl = new URL(`${relativeDir}/`, rootUrl);
+  for (const entry of readdirSync(dirUrl, { withFileTypes: true })) {
+    if (entry.name.startsWith('.')) continue;
+    const relativePath = `${relativeDir}/${entry.name}`;
+    if (entry.isDirectory()) {
+      yield* iterDocFiles(relativePath);
+      continue;
+    }
+    if (entry.isFile() && entry.name.endsWith('.md')) {
+      yield relativePath;
+    }
+  }
+}
+
+function assertMarkdownLinksResolve(relativePath) {
+  const text = readText(relativePath);
+  const sourceUrl = new URL(relativePath, rootUrl);
+  const markdownLinks = [...text.matchAll(/\]\(([^)]+)\)/g)].map((match) => match[1]);
+  const hrefLinks = [...text.matchAll(/href="([^"]+)"/g)].map((match) => match[1]);
+
+  for (const rawTarget of [...markdownLinks, ...hrefLinks]) {
+    if (
+      rawTarget.startsWith('http://') ||
+      rawTarget.startsWith('https://') ||
+      rawTarget.startsWith('mailto:') ||
+      rawTarget.startsWith('#')
+    ) {
+      continue;
+    }
+
+    const [targetWithoutFragment] = rawTarget.split('#');
+    const [targetPath] = targetWithoutFragment.split('?');
+    if (!targetPath) continue;
+
+    const resolvedUrl = new URL(targetPath, sourceUrl);
+    if (!existsSync(resolvedUrl)) {
+      throw new Error(
+        `${relativePath} contains a broken local link: ${rawTarget}`,
+      );
     }
   }
 }
@@ -93,9 +138,11 @@ assert(
   'README must include the CI badge.',
 );
 assertNoAbsoluteFilesystemLinks(readme, 'README');
+assertMarkdownLinksResolve('README.md');
 
 const docsIndex = readText('docs/README.md');
 assertNoAbsoluteFilesystemLinks(docsIndex, 'Docs index');
+assertMarkdownLinksResolve('docs/README.md');
 assert(
   docsIndex.includes('### Guides'),
   'Docs index must include a guides section.',
@@ -146,6 +193,7 @@ assert(
 );
 
 const cliReference = readText('docs/reference/cli.md');
+assertMarkdownLinksResolve('docs/reference/cli.md');
 assert(
   cliReference.includes('All commands print JSON to stdout'),
   'CLI reference must explain the JSON stdout contract.',
@@ -194,11 +242,20 @@ assert(
   cliReference.includes('../MIGRATING.md'),
   'CLI reference must link to the migration guide.',
 );
+assert(
+  cliReference.includes('.veritas/GOVERNANCE.md'),
+  'CLI reference must include the governance instruction artifact in init output.',
+);
 
 const artifactsReference = readText('docs/reference/artifacts-and-schemas.md');
+assertMarkdownLinksResolve('docs/reference/artifacts-and-schemas.md');
 assert(
   artifactsReference.includes('.veritas/repo.adapter.json'),
   'Artifacts reference must include the starter adapter path.',
+);
+assert(
+  artifactsReference.includes('.veritas/GOVERNANCE.md'),
+  'Artifacts reference must mention the governance instruction artifact.',
 );
 assert(
   artifactsReference.includes('.veritas/evidence/<run-id>.json'),
@@ -222,6 +279,7 @@ assert(
 );
 
 const examplesReference = readText('docs/reference/examples.md');
+assertMarkdownLinksResolve('docs/reference/examples.md');
 assert(
   examplesReference.includes('examples/evidence/work-agent-pass.json'),
   'Examples reference must include the pass evidence fixture.',
@@ -262,8 +320,17 @@ assert(
   examplesReference.includes('examples/benchmarks/marker-suite-report.json'),
   'Examples reference must include the marker benchmark suite report fixture.',
 );
+assert(
+  examplesReference.includes('examples/benchmarks/governance-zone1-marker-scenario.json'),
+  'Examples reference must include the Zone 1 governance benchmark fixture.',
+);
+assert(
+  examplesReference.includes('examples/benchmarks/governance-zone2-marker-scenario.json'),
+  'Examples reference must include the Zone 2 governance benchmark fixture.',
+);
 
 const benchmarkingReference = readText('docs/reference/benchmarking.md');
+assertMarkdownLinksResolve('docs/reference/benchmarking.md');
 assert(
   benchmarkingReference.includes('examples/benchmarks/'),
   'Benchmarking reference must explain the benchmark fixtures directory.',
@@ -272,8 +339,13 @@ assert(
   benchmarkingReference.includes('veritas eval marker-suite'),
   'Benchmarking reference must mention the suite command.',
 );
+assert(
+  benchmarkingReference.includes('Zone 1') && benchmarkingReference.includes('Zone 2'),
+  'Benchmarking reference must explain the governance benchmark classes.',
+);
 
 const schemaEvolution = readText('docs/design/schema-evolution.md');
+assertMarkdownLinksResolve('docs/design/schema-evolution.md');
 assert(
   schemaEvolution.includes('artifact version'),
   'Schema evolution policy must describe artifact versioning.',
@@ -431,6 +503,17 @@ assert(
   designDoc.includes('framework core') || designDoc.includes('Framework Core'),
   'Design doc must explain the framework core.',
 );
+
+for (const relativePath of [
+  'CLAUDE.md',
+  'CONTRIBUTING.md',
+  ...iterDocFiles('docs'),
+  ...iterDocFiles('examples/checkins'),
+  ...iterDocFiles('.veritas'),
+]) {
+  assertNoAbsoluteFilesystemLinks(readText(relativePath), relativePath);
+  assertMarkdownLinksResolve(relativePath);
+}
 
 const benchmarkFixtures = readdirSync(new URL('examples/benchmarks/', rootUrl));
 assert(benchmarkFixtures.length >= 10, 'Expected a richer set of benchmark fixtures.');

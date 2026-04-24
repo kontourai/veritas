@@ -1095,6 +1095,7 @@ export function buildEvalRecord({
     team_profile_id: teamProfile.id,
     mode: teamProfile.defaults?.mode ?? 'shadow',
     evidence,
+    governance: buildEvalGovernanceContext(evidenceRecord),
     outcome: {
       accepted_without_major_rewrite: options.acceptedWithoutMajorRewrite,
       required_followup: options.requiredFollowup,
@@ -1148,6 +1149,36 @@ function buildEvalEvidenceContext({ evidenceRecord, evidenceRaw, evidencePath, r
   };
 }
 
+function isGovernanceAffectedNode(nodeId) {
+  return typeof nodeId === 'string' && nodeId.startsWith('governance.');
+}
+
+function isGovernancePath(filePath) {
+  return (
+    filePath === '.veritas/repo.adapter.json' ||
+    filePath === '.veritas/GOVERNANCE.md' ||
+    (typeof filePath === 'string' && filePath.startsWith('.veritas/policy-packs/')) ||
+    (typeof filePath === 'string' && filePath.startsWith('.veritas/team/'))
+  );
+}
+
+function buildEvalGovernanceContext(evidenceRecord) {
+  const changedPaths = (evidenceRecord.files ?? []).filter(isGovernancePath);
+  const surfaceTouched =
+    (evidenceRecord.affected_nodes ?? []).some(isGovernanceAffectedNode) ||
+    changedPaths.length > 0;
+  const classification =
+    evidenceRecord.governance_surface?.classification ??
+    (surfaceTouched ? 'unknown' : 'clean');
+
+  return {
+    surface_touched: surfaceTouched,
+    classification,
+    human_review_required: classification === 'constitutional-modification',
+    changed_paths: changedPaths,
+  };
+}
+
 export function buildEvalDraft({
   evidenceRecord,
   evidencePath,
@@ -1197,6 +1228,7 @@ export function buildEvalDraft({
     team_profile_id: teamProfile.id,
     mode: teamProfile.defaults?.mode ?? 'shadow',
     evidence: buildEvalEvidenceContext({ evidenceRecord, evidencePath, rootDir }),
+    governance: buildEvalGovernanceContext(evidenceRecord),
     reviewer_confidence_scale: [
       ...(teamProfile.review_preferences?.reviewer_confidence_scale ?? ['low', 'medium', 'high']),
       'unknown',
@@ -1622,7 +1654,14 @@ export function buildEvalMarkdownSummary(record, artifactPath) {
     `- **Reviewer confidence:** ${record.outcome.reviewer_confidence}`,
     `- **Time to green:** ${record.measurements.time_to_green_minutes} minutes`,
     `- **Override count:** ${record.measurements.override_count}`,
+    `- **Governance surface touched:** ${record.governance.surface_touched ? 'yes' : 'no'}`,
+    `- **Governance classification:** ${record.governance.classification}`,
+    `- **Human governance review required:** ${record.governance.human_review_required ? 'yes' : 'no'}`,
   ];
+
+  if (record.governance.changed_paths.length > 0) {
+    lines.push(`- **Governance paths:** ${record.governance.changed_paths.join(', ')}`);
+  }
 
   if (record.measurements.false_positive_rules.length > 0) {
     lines.push(`- **False-positive rules:** ${record.measurements.false_positive_rules.join(', ')}`);
@@ -1652,11 +1691,18 @@ export function buildEvalDraftMarkdownSummary(record, artifactPath, suggestedRec
     `- **Evidence artifact:** \`${record.evidence.artifact_path}\``,
     `- **Draft artifact:** \`${artifactPath}\``,
     `- **Missing confirmation fields:** ${record.missing_confirmation_fields.join(', ')}`,
+    `- **Governance surface touched:** ${record.governance.surface_touched ? 'yes' : 'no'}`,
+    `- **Governance classification:** ${record.governance.classification}`,
+    `- **Human governance review required:** ${record.governance.human_review_required ? 'yes' : 'no'}`,
     '',
     '### Next Step',
     '',
     `\`${suggestedRecordCommand}\``,
   ];
+
+  if (record.governance.changed_paths.length > 0) {
+    lines.splice(8, 0, `- **Governance paths:** ${record.governance.changed_paths.join(', ')}`);
+  }
 
   return `${lines.join('\n')}\n`;
 }

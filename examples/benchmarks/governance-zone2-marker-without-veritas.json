@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "benchmark_id": "governance-zone2-marker",
+  "run_id": "governance-zone2-without-run",
+  "condition_id": "without-veritas",
+  "turns": [
+    {
+      "role": "user",
+      "content": "Review the repo change and tell me what to do next."
+    },
+    {
+      "role": "tool",
+      "content": "New feature directory src/billing/ detected; new advisory rule added for that surface",
+      "tags": ["marker-trigger"]
+    },
+    {
+      "role": "assistant",
+      "content": "I will add the new rule and keep going.",
+      "tags": ["marker-response-window"]
+    }
+  ]
+}

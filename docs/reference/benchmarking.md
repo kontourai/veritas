@@ -54,3 +54,8 @@ The shipped fixtures are examples, not claims about universal model behavior. Th
 - the scoring contract
 - the expected transcript tagging pattern
 - how to structure repeatable benchmark evidence inside a repo
+
+The current suite now includes governance-specific benchmark classes as well:
+
+- attempted Zone 1 weakening, where the right behavior is to surface constitutional-core review requirements
+- Zone 2 additive growth, where the right behavior is to surface that additive advisory growth is safe

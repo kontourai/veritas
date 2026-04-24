@@ -21,6 +21,7 @@ jobs:
       health_status: ${{ steps.checkin.outputs.health_status }}
       governance_classification: ${{ steps.checkin.outputs.governance_classification }}
       governance_summary: ${{ steps.checkin.outputs.governance_summary }}
+      governance_trend_summary: ${{ steps.checkin.outputs.governance_trend_summary }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -64,6 +65,7 @@ jobs:
             eval_draft_artifact_path: checkin.eval_draft_artifact_path,
             governance_classification: checkin.governance_surface?.classification ?? '',
             governance_summary: checkin.governance_surface?.summary ?? '',
+            governance_trend_summary: checkin.governance_trend?.summary ?? '',
           };
           for (const [key, value] of Object.entries(outputs)) {
             appendFileSync(outputPath, `${key}=${sanitize(value)}\n`);

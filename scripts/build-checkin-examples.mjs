@@ -12,9 +12,11 @@ const examplesDir = resolve(rootDir, 'examples/checkins');
 const runId = 'veritas-repo-check-in';
 const timestamp = '2026-04-21T22:00:00.000Z';
 const explicitFiles = [
+  '.veritas/GOVERNANCE.md',
   '.veritas/repo.adapter.json',
   '.veritas/policy-packs/default.policy-pack.json',
   '.veritas/team/default.team-profile.json',
+  'CLAUDE.md',
   'README.md',
   'package.json',
   'bin/veritas.mjs',

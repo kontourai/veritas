@@ -64,7 +64,7 @@ npm install -D @kontourai/veritas
 npm exec -- veritas init
 ```
 
-That gives you a starter adapter, policy pack, team profile, and local README under `.veritas/`.
+That gives you a starter adapter, policy pack, team profile, governance instruction file, and local README under `.veritas/`.
 
 The bootstrap README also tells you what the framework inferred about the repo so you can confirm or correct it right away.
 

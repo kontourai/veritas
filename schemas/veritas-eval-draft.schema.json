@@ -10,6 +10,7 @@
     "team_profile_id",
     "mode",
     "evidence",
+    "governance",
     "reviewer_confidence_scale",
     "prefilled_outcome",
     "prefilled_measurements",
@@ -25,6 +26,7 @@
       "enum": ["shadow", "assist", "gate"]
     },
     "evidence": { "$ref": "./veritas-eval-record.schema.json#/properties/evidence" },
+    "governance": { "$ref": "./veritas-eval-record.schema.json#/properties/governance" },
     "reviewer_confidence_scale": {
       "type": "array",
       "items": { "type": "string" }

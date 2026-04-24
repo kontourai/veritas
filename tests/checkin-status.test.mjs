@@ -2,7 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { classifyGovernanceSurface, renderGovernanceSurfaceLine } from '../scripts/checkin-status.mjs';
+import {
+  classifyGovernanceSurface,
+  renderGovernanceSurfaceLine,
+  summarizeGovernanceTrend,
+} from '../scripts/checkin-status.mjs';
 import { commitAll, initCommittedRepo, mkdirp } from './helpers.mjs';
 
 function writeJsonFile(rootDir, relativePath, value) {
@@ -157,4 +161,46 @@ test('governance surface treats governance renames as constitutional modificatio
       semantic_change: true,
     },
   ]);
+});
+
+test('governance trend summary includes recent classification counts', () => {
+  const rootDir = createGovernanceRepo('veritas-checkin-trend-');
+  mkdirp(join(rootDir, '.veritas/checkins'));
+  writeJsonFile(rootDir, '.veritas/checkins/older-clean.json', {
+    run_id: 'older-clean',
+    generated_at: '2026-04-20T00:00:00.000Z',
+    governance_surface: {
+      classification: 'clean',
+    },
+  });
+  writeJsonFile(rootDir, '.veritas/checkins/older-constitutional.json', {
+    run_id: 'older-constitutional',
+    generated_at: '2026-04-21T00:00:00.000Z',
+    governance_surface: {
+      classification: 'constitutional-modification',
+    },
+  });
+  writeJsonFile(rootDir, '.veritas/team/release.team-profile.json', {
+    name: 'release',
+    reviewers: ['maintainer', 'ops'],
+  });
+  commitAll(rootDir, 'Add release team profile');
+
+  const trend = summarizeGovernanceTrend({
+    rootDir,
+    currentRunId: 'current-run',
+    currentGovernanceSurface: {
+      classification: 'additive-only',
+    },
+  });
+
+  assert.equal(trend.clean, 1);
+  assert.equal(trend.additive_only, 1);
+  assert.equal(trend.constitutional_modification, 1);
+  assert.equal(
+    trend.summary,
+    'last 3 governance run(s): 1 clean, 1 additive-only, 1 constitutional-modification',
+  );
+  assert.equal(trend.latest_non_clean_run_id, 'current-run');
+  assert.equal(trend.latest_non_clean_classification, 'additive-only');
 });

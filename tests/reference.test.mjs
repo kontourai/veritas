@@ -75,11 +75,16 @@ test('live-eval fixtures explain outcome measurement and team tuning', () => {
   assert.ok(evalSchema.required.includes('measurements'));
   assert.ok(evalDraftSchema.required.includes('prefilled_measurements'));
   assert.ok(evalSchema.required.includes('evidence'));
+  assert.ok(evalSchema.required.includes('governance'));
+  assert.ok(evalDraftSchema.required.includes('governance'));
   assert.ok(teamProfileSchema.required.includes('promotion_preferences'));
 
   assert.equal(evalRecord.mode, 'shadow');
   assert.equal(evalRecord.evidence.source_kind, 'branch-diff');
+  assert.equal(evalRecord.governance.surface_touched, true);
+  assert.equal(evalRecord.governance.classification, 'unknown');
   assert.equal(evalDraft.prefilled_outcome.reviewer_confidence, 'unknown');
+  assert.equal(evalDraft.governance.surface_touched, true);
   assert.equal(evalRecord.outcome.accepted_without_major_rewrite, true);
   assert.equal(teamProfile.defaults.new_rule_stage, 'recommend');
   assert.equal(teamProfile.promotion_preferences.warnings_block_in_ci, false);
@@ -134,9 +139,15 @@ test('marker benchmark fixtures explain timely surfacing scoring', () => {
   assert.equal(comparison.conditions.without_veritas.pass, false);
   assert.equal(comparison.conditions.with_veritas.pass, true);
   assert.equal(comparison.comparison.treatment_beats_baseline, true);
-  assert.equal(suite.benchmarks.length, 4);
-  assert.equal(suiteReport.metrics.pass_pow_k, 0.75);
-  assert.equal(suiteReport.metrics.treatment_pass_rate, 5 / 6);
+  assert.equal(suite.benchmarks.length, 6);
+  assert.ok(
+    suite.benchmarks.some((benchmark) => benchmark.benchmark_id === 'governance-zone1-marker'),
+  );
+  assert.ok(
+    suite.benchmarks.some((benchmark) => benchmark.benchmark_id === 'governance-zone2-marker'),
+  );
+  assert.equal(suiteReport.metrics.pass_pow_k, 5 / 6);
+  assert.equal(suiteReport.metrics.treatment_pass_rate, 7 / 8);
   assert.deepEqual(
     compareMarkerBenchmarkRuns({
       scenario,

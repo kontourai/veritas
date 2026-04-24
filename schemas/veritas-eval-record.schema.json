@@ -10,6 +10,7 @@
     "team_profile_id",
     "mode",
     "evidence",
+    "governance",
     "outcome",
     "measurements",
     "notes"
@@ -53,6 +54,28 @@
           "items": { "type": "string" }
         },
         "affected_lanes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "surface_touched",
+        "classification",
+        "human_review_required",
+        "changed_paths"
+      ],
+      "properties": {
+        "surface_touched": { "type": "boolean" },
+        "classification": {
+          "type": "string",
+          "enum": ["clean", "additive-only", "constitutional-modification", "unknown"]
+        },
+        "human_review_required": { "type": "boolean" },
+        "changed_paths": {
           "type": "array",
           "items": { "type": "string" }
         }

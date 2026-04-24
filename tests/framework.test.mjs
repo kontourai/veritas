@@ -490,6 +490,10 @@ test('buildEvalRecord links a real evidence artifact to a team profile', () => {
     '.veritas/evidence/eval-build-smoke.json',
   );
   assert.match(record.evidence.artifact_digest, /^[a-f0-9]{64}$/);
+  assert.equal(record.governance.surface_touched, true);
+  assert.equal(record.governance.classification, 'unknown');
+  assert.equal(record.governance.human_review_required, false);
+  assert.deepEqual(record.governance.changed_paths, []);
 });
 
 test('buildEvalRecord accepts reviewer confidence values from the team profile scale', () => {
@@ -576,6 +580,10 @@ test('buildEvalDraft captures prefilled context without fabricating judgment', (
   assert.equal(draft.run_id, 'eval-draft-smoke');
   assert.equal(draft.prefilled_outcome.reviewer_confidence, 'unknown');
   assert.equal(draft.prefilled_measurements.time_to_green_minutes, null);
+  assert.equal(draft.governance.surface_touched, true);
+  assert.equal(draft.governance.classification, 'unknown');
+  assert.equal(draft.governance.human_review_required, false);
+  assert.deepEqual(draft.governance.changed_paths, []);
   assert.deepEqual(draft.missing_confirmation_fields, [
     'accepted_without_major_rewrite',
     'required_followup',
@@ -1722,16 +1730,16 @@ test('eval marker-suite CLI returns aggregate benchmark metrics', () => {
   const parsed = parseCliJson(stdout);
 
   assert.equal(parsed.suite_id, 'context-surfacing-suite');
-  assert.equal(parsed.scenario_count, 4);
-  assert.equal(parsed.pair_count, 6);
-  assert.equal(parsed.metrics.treatment_pass_rate, 5 / 6);
+  assert.equal(parsed.scenario_count, 6);
+  assert.equal(parsed.pair_count, 8);
+  assert.equal(parsed.metrics.treatment_pass_rate, 7 / 8);
   assert.equal(parsed.metrics.pass_at_1, 1);
-  assert.equal(parsed.metrics.pass_pow_k, 0.75);
+  assert.equal(parsed.metrics.pass_pow_k, 5 / 6);
 
   const helperResult = generateMarkerBenchmarkSuiteReport({
     suitePath: 'examples/benchmarks/marker-suite.json',
   });
-  assert.equal(helperResult.metrics.improvement_rate, 5 / 6);
+  assert.equal(helperResult.metrics.improvement_rate, 7 / 8);
 });
 
 test('marker benchmark comparison rejects mismatched benchmark ids and condition ids', () => {

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync, appendFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync, appendFileSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
@@ -251,6 +251,90 @@ function formatGovernanceSummary(classification, semanticAssessments, changedFil
   return `${classification} (${preview}${suffix})`;
 }
 
+function buildGovernanceTrendSummary(entries) {
+  if (entries.length === 0) {
+    return {
+      available_runs: 0,
+      sampled_runs: 0,
+      clean: 0,
+      additive_only: 0,
+      constitutional_modification: 0,
+      latest_non_clean_run_id: null,
+      latest_non_clean_classification: null,
+      summary: 'no prior governance history',
+    };
+  }
+
+  const counts = {
+    clean: entries.filter((entry) => entry.classification === 'clean').length,
+    additive_only: entries.filter((entry) => entry.classification === 'additive-only').length,
+    constitutional_modification: entries.filter(
+      (entry) => entry.classification === 'constitutional-modification',
+    ).length,
+  };
+  const latestNonClean = [...entries]
+    .reverse()
+    .find((entry) => entry.classification !== 'clean');
+
+  const summary = `last ${entries.length} governance run(s): ${counts.clean} clean, ${counts.additive_only} additive-only, ${counts.constitutional_modification} constitutional-modification`;
+
+  return {
+    available_runs: entries.length,
+    sampled_runs: entries.length,
+    ...counts,
+    latest_non_clean_run_id: latestNonClean?.run_id ?? null,
+    latest_non_clean_classification: latestNonClean?.classification ?? null,
+    summary,
+  };
+}
+
+export function summarizeGovernanceTrend({
+  rootDir: rootDirOverride,
+  currentRunId,
+  currentGovernanceSurface,
+}) {
+  const checkinsDir = resolve(rootDirOverride, '.veritas/checkins');
+  if (!existsSync(checkinsDir) || !readdirSync(checkinsDir, { withFileTypes: false }).length) {
+    return buildGovernanceTrendSummary([
+      {
+        run_id: currentRunId,
+        classification: currentGovernanceSurface.classification,
+      },
+    ]);
+  }
+
+  const historical = [];
+  for (const entry of readdirSync(checkinsDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.json') || entry.name === 'latest.json') {
+      continue;
+    }
+    const filePath = resolve(checkinsDir, entry.name);
+    const parsed = JSON.parse(readFileSync(filePath, 'utf8'));
+    if (!parsed?.governance_surface?.classification) {
+      continue;
+    }
+    if (parsed.run_id === currentRunId) {
+      continue;
+    }
+    historical.push({
+      run_id: parsed.run_id,
+      classification: parsed.governance_surface.classification,
+      generated_at: parsed.generated_at ?? parsed.timestamp ?? null,
+    });
+  }
+
+  historical.sort((left, right) =>
+    String(left.generated_at ?? left.run_id).localeCompare(String(right.generated_at ?? right.run_id)),
+  );
+  const sampled = historical.slice(-9);
+  sampled.push({
+    run_id: currentRunId,
+    classification: currentGovernanceSurface.classification,
+    generated_at: null,
+  });
+  return buildGovernanceTrendSummary(sampled);
+}
+
 export function classifyGovernanceSurface({
   rootDir: rootDirOverride = rootDir,
   changedFrom,
@@ -373,6 +457,7 @@ function buildMarkdown({
   healthStatus,
   policySummary,
   governanceSurface,
+  governanceTrend,
 }) {
   const alertSummary = summarizeAlertCounts(alerts);
   const markdown = [
@@ -383,6 +468,7 @@ function buildMarkdown({
     `- **Unresolved files:** ${report.record.unresolved_files.length}`,
     `- **Policy results:** ${policySummary.passed} passed, ${policySummary.failed} failed, ${policySummary.metadata_only} metadata-only`,
     renderGovernanceSurfaceLine(governanceSurface),
+    `- **Governance trend:** ${governanceTrend.summary}`,
     `- **Proof command:** \`${report.record.selected_proof_commands.join(', ') || 'none'}\``,
     `- **Run ID:** ${runId}`,
     '',
@@ -488,6 +574,11 @@ export function buildCheckinStatus({
     changedFrom,
     changedTo,
   });
+  const governanceTrend = summarizeGovernanceTrend({
+    rootDir: rootDirOverride,
+    currentRunId: runId,
+    currentGovernanceSurface: governanceSurface,
+  });
 
   const checkin = {
     version: 1,
@@ -505,6 +596,7 @@ export function buildCheckinStatus({
     uncovered_path_result: report.record.uncovered_path_result,
     policy_results_summary: policySummary,
     governance_surface: governanceSurface,
+    governance_trend: governanceTrend,
     health_status: healthStatus,
     alerts,
     runtime_status: runtimeStatus,
@@ -517,6 +609,7 @@ export function buildCheckinStatus({
     runtimeStatus,
     policySummary,
     governanceSurface,
+    governanceTrend,
     alerts,
     healthStatus,
     checkin,
@@ -530,6 +623,7 @@ export function buildCheckinStatus({
       healthStatus,
       policySummary,
       governanceSurface,
+      governanceTrend,
     }),
   };
 }

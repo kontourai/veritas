@@ -54,6 +54,9 @@ The workflow also elevates the result:
 
 7. pull requests get a sticky Veritas check-in comment with the latest check-in summary
 8. non-PR runs update a standing `Veritas Health` issue when health is not green, and close it again when health recovers
+9. governance runs now include both a per-run `Governance surface` classification and a short governance trend summary when prior local check-in history exists
+
+The trend summary is derived from local `.veritas/checkins/*.json` history. If no history is present yet, the summary falls back cleanly instead of inventing a baseline.
 
 ## Where To Inspect The Proof
 

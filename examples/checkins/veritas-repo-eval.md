@@ -10,6 +10,10 @@
 - **Reviewer confidence:** high
 - **Time to green:** 12 minutes
 - **Override count:** 0
+- **Governance surface touched:** yes
+- **Governance classification:** unknown
+- **Human governance review required:** no
+- **Governance paths:** .veritas/GOVERNANCE.md, .veritas/repo.adapter.json, .veritas/policy-packs/default.policy-pack.json, .veritas/team/default.team-profile.json
 
 ### Notes
 - The repo-local adapter and policy pack were sufficient to classify the selected surfaces without unresolved files.

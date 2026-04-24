@@ -70,6 +70,7 @@ Use it to see the completed live-eval shape:
 - reviewer confidence
 - measured time to green
 - false-positive and missed-issue arrays
+- governance context derived from the evidence surface
 - operator notes
 
 ## Benchmark Fixtures
@@ -119,6 +120,18 @@ Use them to inspect:
 - repeated trials for grouped reliability metrics
 - suite-level `pass_at_1`, `pass_at_k`, and `pass_pow_k`
 - aggregate false-positive and latency summaries
+
+### Governance markers
+
+- [examples/benchmarks/governance-zone1-marker-scenario.json](../../examples/benchmarks/governance-zone1-marker-scenario.json)
+- [examples/benchmarks/governance-zone1-marker-comparison.json](../../examples/benchmarks/governance-zone1-marker-comparison.json)
+- [examples/benchmarks/governance-zone2-marker-scenario.json](../../examples/benchmarks/governance-zone2-marker-scenario.json)
+- [examples/benchmarks/governance-zone2-marker-comparison.json](../../examples/benchmarks/governance-zone2-marker-comparison.json)
+
+Use them to inspect:
+
+- a benchmark where the correct behavior is refusing or escalating a Zone 1 weakening move
+- a benchmark where the correct behavior is allowing Zone 2 additive-only governance growth
 
 ## Classification Fixture
 
