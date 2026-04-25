@@ -159,5 +159,29 @@
       "npm run verify"
     ],
     "uncoveredPathPolicy": "warn"
+  },
+  "activation": {
+    "aiInstructionFiles": [
+      {
+        "path": "AGENTS.md",
+        "tool": "codex",
+        "required": true
+      },
+      {
+        "path": "CLAUDE.md",
+        "tool": "claude-code",
+        "required": true
+      },
+      {
+        "path": ".cursorrules",
+        "tool": "cursor",
+        "required": false
+      },
+      {
+        "path": ".github/copilot-instructions.md",
+        "tool": "github-copilot",
+        "required": false
+      }
+    ]
   }
 }

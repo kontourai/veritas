@@ -43,11 +43,86 @@ if [ "\${VERITAS_HOOK_SKIP:-\${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
 fi
 
 if [ "$#" -eq 0 ]; then
-  exec npm exec -- veritas shadow run --working-tree
+  exec npm exec -- veritas shadow run --format json --working-tree
 fi
 
-exec npm exec -- veritas shadow run "$@"
+exec npm exec -- veritas shadow run --format json "$@"
 `;
+}
+
+export function buildSuggestedStopHook({ tool = 'generic' } = {}) {
+  if (!['generic', 'claude-code', 'cursor'].includes(tool)) {
+    throw new Error(`Unsupported stop hook tool: ${tool}`);
+  }
+
+  const hookBody = `#!/bin/sh
+# .veritas/hooks/stop.sh -- run by AI tools at Stop/turn-end.
+# Surfaces unresolved Veritas lint issues back to the agent without blocking the session.
+
+if [ "\${VERITAS_HOOK_SKIP:-\${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
+  exit 0
+fi
+
+RESULT=$(npm exec -- veritas shadow run --format feedback --working-tree 2>&1)
+EXIT=$?
+if [ "$EXIT" -ne 0 ]; then
+  echo "$RESULT"
+  echo ""
+  echo "Veritas: address the FAIL lines above before finishing."
+fi
+
+exit 0
+`;
+
+  if (tool === 'claude-code') {
+    return {
+      tool,
+      outputPath: '.veritas/hooks/stop.sh',
+      hookBody,
+      toolConfigPath: '.claude/settings.json',
+      toolConfig: {
+        hooks: {
+          Stop: [
+            {
+              matcher: '.*',
+              hooks: [
+                {
+                  type: 'command',
+                  command: '.veritas/hooks/stop.sh',
+                  timeout: 60,
+                },
+              ],
+            },
+          ],
+        },
+      },
+    };
+  }
+
+  if (tool === 'cursor') {
+    return {
+      tool,
+      outputPath: '.veritas/hooks/stop.sh',
+      hookBody,
+      toolConfigPath: '.cursor/hooks.json',
+      toolConfig: {
+        hooks: {
+          stop: [
+            {
+              command: '.veritas/hooks/stop.sh',
+            },
+          ],
+        },
+      },
+    };
+  }
+
+  return {
+    tool,
+    outputPath: '.veritas/hooks/stop.sh',
+    hookBody,
+    defaultInvocation: '.veritas/hooks/stop.sh',
+  };
 }
 
 export function buildSuggestedCodexHookConfig() {
@@ -215,6 +290,106 @@ export function applyRuntimeHook({
   return {
     rootDir,
     outputPath: relativeOutputPath,
+  };
+}
+
+function mergeHookArrays(existingHooks = [], veritasHooks = []) {
+  const veritasCommands = new Set(
+    veritasHooks
+      .map((hook) => hook?.command)
+      .filter((command) => typeof command === 'string'),
+  );
+  const preservedHooks = existingHooks.filter(
+    (hook) => !veritasCommands.has(hook?.command),
+  );
+  return [...preservedHooks, ...veritasHooks];
+}
+
+function mergeStopHookConfig(existingConfig = {}, suggestedConfig = {}) {
+  const mergedHooks = { ...(existingConfig.hooks ?? {}) };
+  for (const [hookName, suggestedEntries] of Object.entries(suggestedConfig.hooks ?? {})) {
+    const currentEntries = Array.isArray(mergedHooks[hookName])
+      ? mergedHooks[hookName]
+      : [];
+    if (hookName === 'Stop') {
+      const suggestedCommand = suggestedEntries[0]?.hooks?.[0]?.command;
+      mergedHooks[hookName] = [
+        ...currentEntries
+          .map((entry) => {
+            const hooks = Array.isArray(entry?.hooks) ? entry.hooks : [];
+            const remainingHooks = hooks.filter(
+              (hook) => hook?.command !== suggestedCommand,
+            );
+            return remainingHooks.length === 0
+              ? null
+              : { ...entry, hooks: remainingHooks };
+          })
+          .filter(Boolean),
+        ...suggestedEntries,
+      ];
+      continue;
+    }
+    if (hookName === 'stop') {
+      mergedHooks[hookName] = mergeHookArrays(currentEntries, suggestedEntries);
+      continue;
+    }
+    mergedHooks[hookName] = suggestedEntries;
+  }
+
+  return {
+    ...existingConfig,
+    hooks: mergedHooks,
+  };
+}
+
+export function applyStopHook({
+  rootDir,
+  tool = 'generic',
+  outputPath = '.veritas/hooks/stop.sh',
+  force = false,
+}) {
+  const suggestion = buildSuggestedStopHook({ tool });
+  const resolvedOutputPath = resolve(rootDir, outputPath);
+  assertWithinDir(
+    resolvedOutputPath,
+    resolve(rootDir, '.veritas/hooks'),
+    'apply stop-hook only supports writing inside .veritas/hooks/',
+  );
+  const relativeOutputPath = relativeRepoPath(rootDir, resolvedOutputPath);
+
+  if (existsSync(resolvedOutputPath) && !force) {
+    throw new Error(
+      `Refusing to overwrite existing file: ${relativeOutputPath} (use --force to replace it)`,
+    );
+  }
+
+  mkdirSync(dirname(resolvedOutputPath), { recursive: true });
+  writeFileSync(resolvedOutputPath, suggestion.hookBody, 'utf8');
+  chmodSync(resolvedOutputPath, 0o755);
+
+  let configuredToolConfigPath = null;
+  if (suggestion.toolConfigPath) {
+    const resolvedToolConfigPath = resolve(rootDir, suggestion.toolConfigPath);
+    assertWithinDir(
+      resolvedToolConfigPath,
+      rootDir,
+      'apply stop-hook tool config must stay inside the repository',
+    );
+    const existingConfig = existsSync(resolvedToolConfigPath)
+      ? loadJson(resolvedToolConfigPath, `${tool} stop-hook config`)
+      : {};
+    const mergedConfig = mergeStopHookConfig(existingConfig, suggestion.toolConfig);
+    mkdirSync(dirname(resolvedToolConfigPath), { recursive: true });
+    writeFileSync(resolvedToolConfigPath, `${JSON.stringify(mergedConfig, null, 2)}\n`, 'utf8');
+    configuredToolConfigPath = relativeRepoPath(rootDir, resolvedToolConfigPath);
+  }
+
+  return {
+    rootDir,
+    tool,
+    outputPath: relativeOutputPath,
+    toolConfigPath: suggestion.toolConfigPath ?? null,
+    configuredToolConfigPath,
   };
 }
 

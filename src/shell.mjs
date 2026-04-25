@@ -83,11 +83,12 @@ export function tokenizeCommand(command) {
   return tokens;
 }
 
-export function runProofCommand(command, rootDir) {
+export function runProofCommand(command, rootDir, options = {}) {
   const [executable, ...args] = tokenizeCommand(command);
-  execFileSync(executable, args, {
+  return execFileSync(executable, args, {
     cwd: rootDir,
-    stdio: 'inherit',
+    stdio: options.stdio ?? 'inherit',
+    encoding: options.encoding,
     windowsHide: true,
   });
 }

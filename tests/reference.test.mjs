@@ -44,6 +44,21 @@ test('evidence schema requires framework and adapter sections', () => {
   assert.ok(evidenceSchema.required.includes('policy_results'));
 });
 
+test('adapter and policy schemas declare activation and lint rule contracts', () => {
+  const adapterSchema = readJson('../schemas/veritas-adapter.schema.json');
+  const policySchema = readJson('../schemas/veritas-policy-pack.schema.json');
+  const activation = adapterSchema.properties.activation.properties.aiInstructionFiles.items;
+  const matchProperties = policySchema.properties.rules.items.properties.match.properties;
+
+  assert.ok(activation.required.includes('path'));
+  assert.equal(activation.properties.tool.type, 'string');
+  assert.equal(activation.properties.required.type, 'boolean');
+  assert.ok(matchProperties.artifacts);
+  assert.ok(matchProperties['governance-block']);
+  assert.ok(matchProperties['if-changed']);
+  assert.ok(matchProperties['then-require']);
+});
+
 test('fixture adapters and evidence examples stay readable', () => {
   const docsAdapter = readJson('../adapters/demo-docs-site.adapter.json');
   assert.equal(docsAdapter.name, 'demo-docs-site');

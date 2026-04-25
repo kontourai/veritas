@@ -6,7 +6,7 @@ if [ "${VERITAS_HOOK_SKIP:-${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
 fi
 
 if [ "$#" -eq 0 ]; then
-  exec npm exec -- veritas shadow run --working-tree
+  exec npm exec -- veritas shadow run --format json --working-tree
 fi
 
-exec npm exec -- veritas shadow run "$@"
+exec npm exec -- veritas shadow run --format json "$@"

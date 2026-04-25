@@ -2,19 +2,24 @@
 import {
   runApplyCiSnippetCli,
   runApplyCodexHookCli,
+  runApplyGovernanceBlocksCli,
   runApplyGitHookCli,
   runApplyRuntimeHookCli,
+  runApplyStopHookCli,
   runApplyPackageScriptsCli,
   runEvalDraftCli,
   runEvalMarkerCli,
   runEvalMarkerSuiteCli,
   runEvalRecordCli,
+  runEvalSummaryCli,
   runVeritasReportCli,
   runInitCli,
   runPrintCiSnippetCli,
   runPrintCodexHookCli,
+  runPrintGovernanceBlockCli,
   runPrintGitHookCli,
   runPrintRuntimeHookCli,
+  runPrintStopHookCli,
   runPrintPackageScriptsCli,
   runRuntimeStatusCli,
   runShadowRunCli,
@@ -22,28 +27,33 @@ import {
 
 const MAIN_USAGE = `Usage:
   veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--force]
-  veritas report [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
-  veritas shadow run [--root <path>] [--adapter <path>] [--policy-pack <path>] [--team-profile <path>] [--proof-command <cmd>] [--skip-proof]
+  veritas report [--format json|feedback] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
+  veritas shadow run [--format feedback|json] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--team-profile <path>] [--proof-command <cmd>] [--skip-proof]
   veritas runtime status [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
   veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
   veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false> --reviewer-confidence <scale-entry|unknown> --time-to-green-minutes <number> --override-count <number>
   veritas eval record --draft <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false>
   veritas eval marker --scenario <path> --without-veritas-transcript <path> --with-veritas-transcript <path>
   veritas eval marker-suite --suite <path>
+  veritas eval summary [--root <path>]
   veritas print package-scripts [--root <path>] [--proof-lane <cmd>]
   veritas print ci-snippet [--root <path>] [--proof-lane <cmd>]
   veritas print git-hook [--root <path>] [--hook post-commit]
   veritas print runtime-hook [--root <path>]
+  veritas print stop-hook [--root <path>] [--tool generic|claude-code|cursor]
+  veritas print governance-block
   veritas print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
   veritas apply package-scripts [--root <path>] [--proof-lane <cmd>] [--force]
   veritas apply ci-snippet [--root <path>] [--output <path>] [--proof-lane <cmd>] [--force]
   veritas apply git-hook [--root <path>] [--hook post-commit] [--output <path>] [--configure-git] [--force]
   veritas apply runtime-hook [--root <path>] [--output <path>] [--force]
+  veritas apply stop-hook [--root <path>] [--tool generic|claude-code|cursor] [--output <path>] [--force]
+  veritas apply governance-blocks [--root <path>] [--force]
   veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]
 `;
 
 const REPORT_USAGE = `Usage:
-  veritas report [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
+  veritas report [--format json|feedback] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
 `;
 
 const PRINT_USAGE = `Usage:
@@ -51,6 +61,8 @@ const PRINT_USAGE = `Usage:
   veritas print ci-snippet [--root <path>] [--proof-lane <cmd>]
   veritas print git-hook [--root <path>] [--hook post-commit]
   veritas print runtime-hook [--root <path>]
+  veritas print stop-hook [--root <path>] [--tool generic|claude-code|cursor]
+  veritas print governance-block
   veritas print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
 `;
 
@@ -59,6 +71,8 @@ const APPLY_USAGE = `Usage:
   veritas apply ci-snippet [--root <path>] [--output <path>] [--proof-lane <cmd>] [--force]
   veritas apply git-hook [--root <path>] [--hook post-commit] [--output <path>] [--configure-git] [--force]
   veritas apply runtime-hook [--root <path>] [--output <path>] [--force]
+  veritas apply stop-hook [--root <path>] [--tool generic|claude-code|cursor] [--output <path>] [--force]
+  veritas apply governance-blocks [--root <path>] [--force]
   veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]
 `;
 
@@ -84,10 +98,12 @@ const EVAL_USAGE = `Usage:
     --without-veritas-transcript <path>
     --with-veritas-transcript <path>
   veritas eval marker-suite --suite <path>
+  veritas eval summary [--root <path>]
 `;
 
 const SHADOW_USAGE = `Usage:
   veritas shadow run [--root <path>] [--adapter <path>] [--policy-pack <path>] [--team-profile <path>]
+    [--format feedback|json]
     [--proof-command <cmd>] [--skip-proof]
     [--working-tree | --changed-from <ref> --changed-to <ref>]
     [--run-id <id>]
@@ -127,7 +143,7 @@ const cwd = process.cwd();
 
 process.on('uncaughtException', (error) => {
   process.stderr.write(`${error.message}\n`);
-  process.exit(1);
+  process.exit(2);
 });
 
 if (!subcommand || isHelpToken(subcommand)) {
@@ -159,6 +175,10 @@ if (!subcommand || isHelpToken(subcommand)) {
           'Usage:\n  veritas print git-hook [--root <path>] [--hook post-commit]\n',
         'runtime-hook':
           'Usage:\n  veritas print runtime-hook [--root <path>]\n',
+        'stop-hook':
+          'Usage:\n  veritas print stop-hook [--root <path>] [--tool generic|claude-code|cursor]\n',
+        'governance-block':
+          'Usage:\n  veritas print governance-block\n',
         'codex-hook':
           'Usage:\n  veritas print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]\n',
       }),
@@ -171,6 +191,10 @@ if (!subcommand || isHelpToken(subcommand)) {
     runPrintGitHookCli(printArgs, { rootDir: cwd });
   } else if (kind === 'runtime-hook') {
     runPrintRuntimeHookCli(printArgs, { rootDir: cwd });
+  } else if (kind === 'stop-hook') {
+    runPrintStopHookCli(printArgs, { rootDir: cwd });
+  } else if (kind === 'governance-block') {
+    runPrintGovernanceBlockCli(printArgs, { rootDir: cwd });
   } else if (kind === 'codex-hook') {
     runPrintCodexHookCli(printArgs, { rootDir: cwd });
   } else {
@@ -190,6 +214,10 @@ if (!subcommand || isHelpToken(subcommand)) {
           'Usage:\n  veritas apply git-hook [--root <path>] [--hook post-commit] [--output <path>] [--configure-git] [--force]\n',
         'runtime-hook':
           'Usage:\n  veritas apply runtime-hook [--root <path>] [--output <path>] [--force]\n',
+        'stop-hook':
+          'Usage:\n  veritas apply stop-hook [--root <path>] [--tool generic|claude-code|cursor] [--output <path>] [--force]\n',
+        'governance-blocks':
+          'Usage:\n  veritas apply governance-blocks [--root <path>] [--force]\n',
         'codex-hook':
           'Usage:\n  veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]\n',
       }),
@@ -202,6 +230,10 @@ if (!subcommand || isHelpToken(subcommand)) {
     runApplyGitHookCli(applyArgs, { rootDir: cwd });
   } else if (kind === 'runtime-hook') {
     runApplyRuntimeHookCli(applyArgs, { rootDir: cwd });
+  } else if (kind === 'stop-hook') {
+    runApplyStopHookCli(applyArgs, { rootDir: cwd });
+  } else if (kind === 'governance-blocks') {
+    runApplyGovernanceBlocksCli(applyArgs, { rootDir: cwd });
   } else if (kind === 'codex-hook') {
     runApplyCodexHookCli(applyArgs, { rootDir: cwd });
   } else {
@@ -221,6 +253,8 @@ if (!subcommand || isHelpToken(subcommand)) {
           'Usage:\n  veritas eval marker --scenario <path>\n    --without-veritas-transcript <path>\n    --with-veritas-transcript <path>\n',
         'marker-suite':
           'Usage:\n  veritas eval marker-suite --suite <path>\n',
+        summary:
+          'Usage:\n  veritas eval summary [--root <path>]\n',
       }),
     );
   } else if (kind === 'record') {
@@ -231,6 +265,8 @@ if (!subcommand || isHelpToken(subcommand)) {
     runEvalMarkerCli(evalArgs, { rootDir: cwd });
   } else if (kind === 'marker-suite') {
     runEvalMarkerSuiteCli(evalArgs, { rootDir: cwd });
+  } else if (kind === 'summary') {
+    runEvalSummaryCli(evalArgs, { rootDir: cwd });
   } else {
     writeStderr(EVAL_USAGE);
     process.exitCode = 1;

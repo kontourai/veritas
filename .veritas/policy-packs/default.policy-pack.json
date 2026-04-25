@@ -73,6 +73,20 @@
       }
     },
     {
+      "id": "ai-instruction-files-synced",
+      "classification": "hard-invariant",
+      "stage": "warn",
+      "message": "All required AI tool instruction files must contain the Veritas governance block.",
+      "owner": "repo-maintainers",
+      "rollback_switch": null,
+      "match": {
+        "governance-block": [
+          "AGENTS.md",
+          "CLAUDE.md"
+        ]
+      }
+    },
+    {
       "id": "prefer-veritas-routed-delivery",
       "classification": "promotable-policy",
       "stage": "recommend",
@@ -83,6 +97,7 @@
         "artifacts": [
           ".githooks/post-commit",
           ".veritas/hooks/agent-runtime.sh",
+          ".veritas/hooks/stop.sh",
           ".veritas/runtime/codex-hooks.json",
           ".github/workflows/veritas-checkins.yml"
         ]

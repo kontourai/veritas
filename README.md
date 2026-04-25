@@ -3,7 +3,9 @@
 [![npm version](https://img.shields.io/npm/v/%40kontourai%2Fveritas)](https://www.npmjs.com/package/@kontourai/veritas)
 [![CI](https://github.com/kontourai/veritas/actions/workflows/ci.yml/badge.svg)](https://github.com/kontourai/veritas/actions/workflows/ci.yml)
 
-Veritas is a repo-local framework and CLI for trustworthy AI-assisted development. It lets your codebase define its own map, rules, and proof lanes — so AI-generated changes come with structured evidence instead of blind faith. Works with any AI agent. No runtime dependencies beyond Node.
+Veritas is bespoke lint for AI agents. You define what your repo considers mandatory: which files must exist, which tests must pass when a contract changes, which AI instruction files must stay synchronized, and which governance files may never be weakened. When an agent finishes work, Veritas runs your rules and tells it exactly what it got wrong, like a linter would.
+
+It works with any AI agent because the contract is repo-local: adapter, policy pack, proof lanes, hooks, and eval history live in your repository. No runtime dependencies beyond Node.
 
 ## Quickstart
 
@@ -13,14 +15,24 @@ npx veritas init
 npx veritas shadow run --working-tree
 ```
 
-That bootstraps your repo with an adapter, policy pack, and team profile, then runs the first shadow check.
+That bootstraps your repo with an adapter, policy pack, team profile, and AI instruction governance blocks, then runs the first feedback check.
 
 ## What You Get
 
-- **Repo Map** — a typed graph of your codebase so AI knows what it's touching
-- **Rules** — staged policies: invariants, preferences, and temporary rails
-- **Evidence** — a bounded artifact of what changed, what was proven, what passed
-- **Feedback** — live eval records that measure whether guidance actually helped
+- **Rules** — repo-specific lint for agents: required artifacts, governance blocks, proof lanes, and diff-based companion changes
+- **Feedback** — terse `PASS` / `FAIL` / `WARN` output designed to go straight back into an agent's context window
+- **Improvement** — local evidence and eval history so you can measure whether the guidance is helping over time
+
+## Caught In The Wild
+
+In the work-agent case study shape, a rule can say: if `src-server/api/` changes, `tests/api/` must appear in the same diff. Without Veritas, an agent can finish with a green-looking implementation and no API proof. With Veritas:
+
+```text
+FAIL  api-changes-require-test-changes: Changed files matched src-server/api/ but no companion changes matched tests/api/.
+      -> src-server/api/projects.ts
+```
+
+That is the point: the agent sees the missing proof before it declares done.
 
 ## Documentation
 

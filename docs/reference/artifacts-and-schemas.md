@@ -26,18 +26,21 @@ These are the paths the framework writes into a target repo.
 - `.veritas/policy-packs/default.policy-pack.json`
 - `.veritas/team/default.team-profile.json`
 - `.veritas/evidence/`
+- `AGENTS.md` and `CLAUDE.md` governance blocks
 
 ### Evidence and eval capture
 
 - `.veritas/evidence/<run-id>.json`
 - `.veritas/eval-drafts/<run-id>.json`
 - `.veritas/evals/<run-id>.json`
+- `.veritas/evals/history.jsonl`
 
 ### Suggested wiring from `apply`
 
 - `.veritas/snippets/ci-snippet.yml`
 - `.githooks/post-commit`
 - `.veritas/hooks/agent-runtime.sh`
+- `.veritas/hooks/stop.sh`
 - `.veritas/runtime/codex-hooks.json`
 
 The CLI intentionally refuses to write these artifacts outside their reviewable directories unless the path class itself is allowed.
@@ -74,6 +77,7 @@ An adapter owns:
 - proof-lane routing
 - uncovered-path policy
 - report transport
+- activation targets for AI instruction files
 
 Reference files:
 

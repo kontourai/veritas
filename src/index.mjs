@@ -2,6 +2,7 @@ import {
   appendFileSync,
   existsSync,
   mkdirSync,
+  readFileSync,
   writeFileSync,
 } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -45,15 +46,22 @@ import { shellQuote, runProofCommand } from './shell.mjs';
 import {
   buildSuggestedGitHook,
   buildSuggestedRuntimeHook,
+  buildSuggestedStopHook,
   buildSuggestedCodexHookConfig,
   inspectCodexHookTarget,
   applyPackageScripts,
   applyCiSnippet,
   applyGitHook,
   applyRuntimeHook,
+  applyStopHook,
   inspectRuntimeAdapterStatus,
   applyCodexHook,
 } from './hooks.mjs';
+import {
+  applyGovernanceBlocks,
+  buildGovernanceBlock,
+  inspectGovernanceBlockFile,
+} from './governance.mjs';
 
 export {
   loadJson,
@@ -86,11 +94,15 @@ export {
   buildSuggestedCiSnippet,
   buildSuggestedGitHook,
   buildSuggestedRuntimeHook,
+  buildSuggestedStopHook,
   buildSuggestedCodexHookConfig,
+  buildGovernanceBlock,
+  applyGovernanceBlocks,
   applyPackageScripts,
   applyCiSnippet,
   applyGitHook,
   applyRuntimeHook,
+  applyStopHook,
   inspectRuntimeAdapterStatus,
   applyCodexHook,
 };
@@ -988,7 +1000,11 @@ export function buildEvidenceRecord({
       throw new Error('buildEvidenceRecord requires a policyPack');
     })();
   const policyResults =
-    options.policyResults ?? evaluatePolicyPack(resolvedPolicyPack, { rootDir });
+    options.policyResults ??
+    evaluatePolicyPack(resolvedPolicyPack, {
+      rootDir,
+      changedFiles: normalizedFiles,
+    });
 
   return {
     framework_version: frameworkVersion,
@@ -1388,9 +1404,75 @@ export function evaluateRequiredArtifactsRule(rule, { rootDir }) {
   });
 }
 
+export function evaluateGovernanceBlockRule(rule, { rootDir }) {
+  const targets = rule.match?.['governance-block'] ?? [];
+  const findings = targets
+    .map((artifact) => inspectGovernanceBlockFile({ rootDir, filePath: artifact }))
+    .filter((status) => !status.canonical)
+    .map((status) => ({
+      kind: status.exists
+        ? status.stale
+          ? 'stale-governance-block'
+          : 'missing-governance-block'
+        : 'missing-governance-file',
+      artifact: status.path,
+    }));
+
+  return buildRuleResult(rule, {
+    implemented: true,
+    passed: findings.length === 0,
+    summary:
+      findings.length === 0
+        ? 'All required AI instruction files contain the canonical Veritas governance block.'
+        : 'Some AI instruction files are missing the canonical Veritas governance block.',
+    findings,
+  });
+}
+
+export function evaluateDiffRequiredRule(rule, { changedFiles = [] }) {
+  const ifChanged = rule.match?.['if-changed'];
+  const thenRequire = rule.match?.['then-require'];
+  const triggerMatches =
+    typeof ifChanged === 'string'
+      ? changedFiles.filter((file) => matchesPatterns(file, [ifChanged]))
+      : [];
+  const requirementMatches =
+    typeof thenRequire === 'string'
+      ? changedFiles.filter((file) => matchesPatterns(file, [thenRequire]))
+      : [];
+  const triggered = triggerMatches.length > 0;
+  const passed = !triggered || requirementMatches.length > 0;
+
+  return buildRuleResult(rule, {
+    implemented: true,
+    passed,
+    summary: !triggered
+      ? `No changed files matched ${ifChanged}.`
+      : passed
+        ? `Changed files matched ${ifChanged} and included required companion changes under ${thenRequire}.`
+        : `Changed files matched ${ifChanged} but no companion changes matched ${thenRequire}.`,
+    findings: passed
+      ? []
+      : triggerMatches.map((artifact) => ({
+          kind: 'missing-required-diff-companion',
+          artifact,
+          required: thenRequire,
+        })),
+  });
+}
+
 export function evaluatePolicyRule(rule, context) {
   if (Array.isArray(rule.match?.artifacts)) {
     return evaluateRequiredArtifactsRule(rule, context);
+  }
+  if (Array.isArray(rule.match?.['governance-block'])) {
+    return evaluateGovernanceBlockRule(rule, context);
+  }
+  if (
+    typeof rule.match?.['if-changed'] === 'string' &&
+    typeof rule.match?.['then-require'] === 'string'
+  ) {
+    return evaluateDiffRequiredRule(rule, context);
   }
 
   return buildRuleResult(rule);
@@ -1436,6 +1518,23 @@ export function writeEvalArtifact(
   mkdirSync(dirname(artifactPath), { recursive: true });
   writeFileSync(artifactPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
   return artifactPath;
+}
+
+export function appendEvalHistory(record, rootDir) {
+  const historyPath = resolve(rootDir, '.veritas/evals/history.jsonl');
+  mkdirSync(dirname(historyPath), { recursive: true });
+  const historyRecord = {
+    timestamp: record.timestamp,
+    run_id: record.run_id,
+    accepted: record.outcome.accepted_without_major_rewrite,
+    time_to_green_min: record.measurements.time_to_green_minutes,
+    override_count: record.measurements.override_count,
+    confidence: record.outcome.reviewer_confidence,
+    false_positive_rules: record.measurements.false_positive_rules,
+    required_followup: record.outcome.required_followup,
+  };
+  appendFileSync(historyPath, `${JSON.stringify(historyRecord)}\n`, 'utf8');
+  return historyPath;
 }
 
 export function writeEvalDraftArtifact(
@@ -1638,6 +1737,91 @@ export function buildMarkdownSummary(record, artifactPath) {
   }
 
   return `${lines.join('\n')}\n`;
+}
+
+function feedbackStatusForPolicyResult(result) {
+  if (result.passed === true) return 'PASS';
+  if (result.passed === false && result.stage === 'block') return 'FAIL';
+  if (result.passed === false) return 'WARN';
+  return 'INFO';
+}
+
+function summarizeFeedbackCounts(record, proofFailure = null) {
+  let failures = proofFailure ? 1 : 0;
+  let warnings = 0;
+  let passes = 0;
+
+  for (const result of record?.policy_results ?? []) {
+    const status = feedbackStatusForPolicyResult(result);
+    if (status === 'FAIL') failures += 1;
+    if (status === 'WARN') warnings += 1;
+    if (status === 'PASS') passes += 1;
+  }
+
+  return { failures, warnings, passes };
+}
+
+export function buildFeedbackSummary({
+  record,
+  reportArtifactPath = null,
+  draftArtifactPath = null,
+  evalArtifactPath = null,
+  proofCommands = [],
+  proofRan = false,
+  proofFailure = null,
+} = {}) {
+  const affectedNodes = record?.affected_nodes?.length
+    ? record.affected_nodes.join(', ')
+    : 'no matched nodes';
+  const files = record?.files ?? [];
+  const lines = [
+    `veritas: ${files.length} ${files.length === 1 ? 'file' : 'files'} changed -> ${affectedNodes}`,
+  ];
+
+  if (proofRan) {
+    if (proofFailure) {
+      lines.push(`FAIL  proof-command: ${proofFailure.command}`);
+      lines.push(`      -> ${proofFailure.message}`);
+    } else {
+      for (const command of proofCommands) {
+        lines.push(`PASS  proof-command: ${command}`);
+      }
+    }
+  }
+
+  for (const result of record?.policy_results ?? []) {
+    const status = feedbackStatusForPolicyResult(result);
+    if (status === 'INFO') continue;
+    lines.push(`${status.padEnd(5)} ${result.rule_id}: ${result.summary}`);
+    for (const finding of result.findings ?? []) {
+      const target = finding.artifact ?? finding.path ?? finding.required;
+      if (target) {
+        lines.push(`      -> ${target}`);
+      }
+    }
+  }
+
+  const counts = summarizeFeedbackCounts(record, proofFailure);
+  const nouns = [
+    `${counts.failures} ${counts.failures === 1 ? 'failure' : 'failures'}`,
+    `${counts.warnings} ${counts.warnings === 1 ? 'warning' : 'warnings'}`,
+  ];
+  lines.push('', `${nouns.join(' · ')} · run \`veritas report\` for full evidence`);
+
+  const footer = [];
+  if (reportArtifactPath) footer.push(`report: ${reportArtifactPath}`);
+  if (draftArtifactPath) footer.push(`eval draft: ${draftArtifactPath}`);
+  if (evalArtifactPath) footer.push(`eval: ${evalArtifactPath}`);
+  if (record?.run_id) footer.push(`run: ${record.run_id}`);
+  if (footer.length > 0) {
+    lines.push(footer.join(' · '));
+  }
+
+  return `${lines.join('\n')}\n`;
+}
+
+export function feedbackHasFailures(record, proofFailure = null) {
+  return summarizeFeedbackCounts(record, proofFailure).failures > 0;
 }
 
 export function buildEvalMarkdownSummary(record, artifactPath) {
@@ -1884,7 +2068,9 @@ export function generateEvalRecord(options = {}, defaults = {}) {
     options.outputPath,
     options.force ?? false,
   );
+  const historyPath = appendEvalHistory(record, rootDir);
   const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
+  const relativeHistoryPath = relative(rootDir, historyPath).replaceAll('\\', '/');
   const markdownSummary = buildEvalMarkdownSummary(record, relativeArtifactPath);
 
   return {
@@ -1892,6 +2078,7 @@ export function generateEvalRecord(options = {}, defaults = {}) {
     teamProfile,
     record,
     artifactPath: relativeArtifactPath,
+    historyPath: relativeHistoryPath,
     markdownSummary,
   };
 }
@@ -1930,6 +2117,96 @@ export function generateMarkerBenchmarkComparison(options = {}, defaults = {}) {
   });
 }
 
+function averageNumber(values) {
+  if (values.length === 0) return null;
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function incrementCount(map, key) {
+  if (!key) return;
+  map.set(key, (map.get(key) ?? 0) + 1);
+}
+
+function formatAverage(value, suffix = '') {
+  return value === null ? 'n/a' : `${Number(value.toFixed(1))}${suffix}`;
+}
+
+export function generateEvalSummary(options = {}, defaults = {}) {
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const historyPath = resolve(rootDir, '.veritas/evals/history.jsonl');
+  if (!existsSync(historyPath)) {
+    return {
+      rootDir,
+      historyPath: relativeRepoPath(rootDir, historyPath),
+      total: 0,
+      accepted: 0,
+      requiredRewrite: 0,
+      averageTimeToGreenMinutes: null,
+      averageOverrideCount: null,
+      confidenceCounts: {},
+      mostFlaggedRule: null,
+      markdownSummary: 'No Veritas eval history found.\n',
+    };
+  }
+
+  const records = readFileSync(historyPath, 'utf8')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+  const lastRecords = records.slice(-10);
+  const accepted = lastRecords.filter((record) => record.accepted === true).length;
+  const requiredRewrite = lastRecords.length - accepted;
+  const confidenceCounts = new Map();
+  const flaggedRuleCounts = new Map();
+
+  for (const record of lastRecords) {
+    incrementCount(confidenceCounts, record.confidence ?? 'unknown');
+    for (const ruleId of record.false_positive_rules ?? []) {
+      incrementCount(flaggedRuleCounts, ruleId);
+    }
+  }
+
+  const sortedRules = [...flaggedRuleCounts.entries()].sort(
+    (left, right) => right[1] - left[1] || left[0].localeCompare(right[0]),
+  );
+  const averageTimeToGreenMinutes = averageNumber(
+    lastRecords
+      .map((record) => record.time_to_green_min)
+      .filter((value) => typeof value === 'number' && !Number.isNaN(value)),
+  );
+  const averageOverrideCount = averageNumber(
+    lastRecords
+      .map((record) => record.override_count)
+      .filter((value) => typeof value === 'number' && !Number.isNaN(value)),
+  );
+  const confidenceSummary = [...confidenceCounts.entries()]
+    .sort((left, right) => left[0].localeCompare(right[0]))
+    .map(([confidence, count]) => `${confidence} (${count})`)
+    .join(', ');
+  const mostFlaggedRule = sortedRules.length > 0
+    ? { rule_id: sortedRules[0][0], count: sortedRules[0][1] }
+    : null;
+  const lines = [
+    `Last ${lastRecords.length} evals: ${accepted} accepted, ${requiredRewrite} required rewrite`,
+    `Avg time to green: ${formatAverage(averageTimeToGreenMinutes, ' min')} | Avg overrides: ${formatAverage(averageOverrideCount)} | Confidence: ${confidenceSummary || 'n/a'}`,
+    `Most flagged rule: ${mostFlaggedRule ? `${mostFlaggedRule.rule_id} (${mostFlaggedRule.count})` : 'n/a'}`,
+  ];
+
+  return {
+    rootDir,
+    historyPath: relativeRepoPath(rootDir, historyPath),
+    total: lastRecords.length,
+    accepted,
+    requiredRewrite,
+    averageTimeToGreenMinutes,
+    averageOverrideCount,
+    confidenceCounts: Object.fromEntries(confidenceCounts),
+    mostFlaggedRule,
+    markdownSummary: `${lines.join('\n')}\n`,
+  };
+}
+
 export function resolveProofCommands({ adapterPath, files = [], rootDir, explicitProofCommand }) {
   if (!adapterPath || !rootDir) {
     return {
@@ -1960,9 +2237,31 @@ function hasShadowOutcomeInputs(options) {
   );
 }
 
+function normalizeOutputFormat(format, defaultFormat) {
+  const resolvedFormat = format ?? defaultFormat;
+  if (!['json', 'feedback'].includes(resolvedFormat)) {
+    throw new Error('--format must be json or feedback');
+  }
+  return resolvedFormat;
+}
+
 export function runVeritasReportCli(argv = process.argv.slice(2), defaults = {}) {
   const { options, files: explicitFiles } = parseArgs(argv);
+  const format = normalizeOutputFormat(options.format, 'json');
   const result = generateVeritasReport(options, defaults, explicitFiles);
+
+  if (format === 'feedback') {
+    process.stdout.write(
+      buildFeedbackSummary({
+        record: result.record,
+        reportArtifactPath: result.artifactPath,
+      }),
+    );
+    if (feedbackHasFailures(result.record)) {
+      process.exitCode = 1;
+    }
+    return;
+  }
 
   process.stdout.write(
     `${JSON.stringify(
@@ -2075,6 +2374,28 @@ export function runPrintRuntimeHookCli(argv = process.argv.slice(2), defaults = 
       2,
     )}\n`,
   );
+}
+
+export function runPrintStopHookCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parsePrintArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const tool = options.tool ?? 'generic';
+  const suggestion = buildSuggestedStopHook({ tool });
+
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        rootDir,
+        ...suggestion,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
+export function runPrintGovernanceBlockCli() {
+  process.stdout.write(`${buildGovernanceBlock()}\n`);
 }
 
 export function runPrintCodexHookCli(argv = process.argv.slice(2), defaults = {}) {
@@ -2203,6 +2524,30 @@ export function runApplyRuntimeHookCli(argv = process.argv.slice(2), defaults = 
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
+export function runApplyStopHookCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseApplyArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const result = applyStopHook({
+    rootDir,
+    tool: options.tool ?? 'generic',
+    outputPath: options.outputPath ?? '.veritas/hooks/stop.sh',
+    force: options.force ?? false,
+  });
+
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+}
+
+export function runApplyGovernanceBlocksCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseApplyArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const result = applyGovernanceBlocks({
+    rootDir,
+    force: options.force ?? false,
+  });
+
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+}
+
 export function runApplyCodexHookCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseApplyArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
@@ -2228,6 +2573,7 @@ export function runEvalRecordCli(argv = process.argv.slice(2), defaults = {}) {
     `${JSON.stringify(
       {
         artifactPath: result.artifactPath,
+        historyPath: result.historyPath,
         markdownSummary: result.markdownSummary,
         ...result.record,
       },
@@ -2235,6 +2581,16 @@ export function runEvalRecordCli(argv = process.argv.slice(2), defaults = {}) {
       2,
     )}\n`,
   );
+}
+
+export function runEvalSummaryCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseEvalArgs(argv);
+  const result = generateEvalSummary(options, {
+    ...defaults,
+    rootDir: resolve(options.rootDir ?? defaults.rootDir ?? process.cwd()),
+  });
+
+  process.stdout.write(result.markdownSummary);
 }
 
 export function runEvalMarkerCli(argv = process.argv.slice(2), defaults = {}) {
@@ -2280,6 +2636,7 @@ export function runEvalDraftCli(argv = process.argv.slice(2), defaults = {}) {
 
 export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseShadowArgs(argv);
+  const format = normalizeOutputFormat(options.format, 'feedback');
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const { adapterPath } = resolveVeritasPaths(
     { ...options, rootDir },
@@ -2307,9 +2664,21 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
     );
   }
 
+  let proofFailure = null;
   if (!options.skipProof) {
     for (const proofCommand of proofCommands) {
-      runProofCommand(proofCommand, rootDir);
+      try {
+        runProofCommand(proofCommand, rootDir, {
+          stdio: format === 'feedback' ? 'pipe' : 'inherit',
+          encoding: format === 'feedback' ? 'utf8' : undefined,
+        });
+      } catch (error) {
+        proofFailure = {
+          command: proofCommand,
+          message: error.message,
+        };
+        break;
+      }
     }
   }
 
@@ -2320,7 +2689,8 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
       workingTree:
         options.workingTree || (!options.changedFrom && !options.changedTo),
       baselineCiFastStatus:
-        options.baselineCiFastStatus ?? (options.skipProof ? undefined : 'success'),
+        options.baselineCiFastStatus ??
+        (options.skipProof ? undefined : proofFailure ? 'failed' : 'success'),
       explicitProofCommand: options.proofCommand,
     },
     { ...defaults, rootDir },
@@ -2341,6 +2711,23 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
   );
 
   if (!hasShadowOutcomeInputs(options)) {
+    if (format === 'feedback') {
+      process.stdout.write(
+        buildFeedbackSummary({
+          record: reportResult.record,
+          reportArtifactPath: reportResult.artifactPath,
+          draftArtifactPath: draftResult.artifactPath,
+          proofCommands: options.skipProof ? [] : proofCommands,
+          proofRan: !options.skipProof,
+          proofFailure,
+        }),
+      );
+      if (feedbackHasFailures(reportResult.record, proofFailure)) {
+        process.exitCode = 1;
+      }
+      return;
+    }
+
     process.stdout.write(
       `${JSON.stringify(
         {
@@ -2348,6 +2735,7 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
           proofCommands: options.skipProof ? [] : proofCommands,
           proofResolutionSource: proofPlan.resolutionSource,
           proofRan: !options.skipProof,
+          proofFailure,
           reportArtifactPath: reportResult.artifactPath,
           draftArtifactPath: draftResult.artifactPath,
           reportRunId: reportResult.record.run_id,
@@ -2360,6 +2748,9 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
         2,
       )}\n`,
     );
+    if (proofFailure) {
+      process.exitCode = 1;
+    }
     return;
   }
 
@@ -2373,6 +2764,24 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
     { ...defaults, rootDir },
   );
 
+  if (format === 'feedback') {
+    process.stdout.write(
+      buildFeedbackSummary({
+        record: reportResult.record,
+        reportArtifactPath: reportResult.artifactPath,
+        draftArtifactPath: draftResult.artifactPath,
+        evalArtifactPath: evalResult.artifactPath,
+        proofCommands: options.skipProof ? [] : proofCommands,
+        proofRan: !options.skipProof,
+        proofFailure,
+      }),
+    );
+    if (feedbackHasFailures(reportResult.record, proofFailure)) {
+      process.exitCode = 1;
+    }
+    return;
+  }
+
   process.stdout.write(
     `${JSON.stringify(
         {
@@ -2380,6 +2789,7 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
           proofCommands: options.skipProof ? [] : proofCommands,
           proofResolutionSource: proofPlan.resolutionSource,
           proofRan: !options.skipProof,
+          proofFailure,
           reportArtifactPath: reportResult.artifactPath,
           draftArtifactPath: draftResult.artifactPath,
           evalArtifactPath: evalResult.artifactPath,
@@ -2391,4 +2801,7 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
       2,
     )}\n`,
   );
+  if (proofFailure) {
+    process.exitCode = 1;
+  }
 }

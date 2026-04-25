@@ -6,7 +6,8 @@ The goal is simple:
 
 - give your AI a bounded map of the repo
 - define the few rules that actually matter
-- emit an evidence artifact that a human can trust quickly
+- emit lint-style feedback that the agent can fix before it finishes
+- keep evidence and eval history for human review
 
 This guide is about installation and use first.
 Framework development belongs in `CONTRIBUTING.md`.
@@ -18,12 +19,11 @@ If your next question is "what are the exact commands and generated files?", use
 
 Use the framework as:
 
-1. **adapter**: "what parts of this repo exist and how should they be grouped?"
-2. **policy pack**: "what do we require, prefer, or still treat as brittle?"
-3. **evidence**: "what did the AI touch, what lane did that map to, and what proof do we have?"
-4. **live eval**: "did this guidance actually help the team?"
+1. **rules**: "what does this repo require from AI-authored changes?"
+2. **feedback**: "what should the agent fix right now?"
+3. **improvement**: "did this guidance actually help the team?"
 
-If you keep those four concepts separate, the system stays understandable.
+If you keep those concepts separate, the system stays understandable.
 
 ## Minimal Onboarding
 
@@ -64,7 +64,7 @@ npm install -D @kontourai/veritas
 npm exec -- veritas init
 ```
 
-That gives you a starter adapter, policy pack, team profile, governance instruction file, and local README under `.veritas/`.
+That gives you a starter adapter, policy pack, team profile, governance instruction file, local README under `.veritas/`, and marker-bounded governance blocks in AI instruction files.
 
 The bootstrap README also tells you what the framework inferred about the repo so you can confirm or correct it right away.
 
@@ -89,7 +89,11 @@ Prefer:
 - one `promotable-policy` rule that captures a strong preference
 - one `brittle-implementation-check` rule only if you need a temporary safety rail during refactoring
 
-The first executable rule in the framework is `required-repo-artifacts`. It is useful because it is easy to explain, easy to audit, and clearly tied to repo safety.
+Start with executable rules that are easy to explain:
+
+- `artifacts`: required repo files must exist.
+- `governance-block`: AI instruction files must contain the canonical Veritas block.
+- `if-changed` plus `then-require`: if one path changes, a companion path must also change.
 
 ## Step 3: Generate Evidence
 
@@ -112,10 +116,15 @@ The output gives you:
 - policy-pack provenance
 - a durable evidence artifact for review or CI
 
-If you want to start Phase 1 live eval, capture a shadow eval from that evidence artifact:
+If you want proof plus agent-readable feedback, run:
 
 ```bash
 npm exec -- veritas shadow run --working-tree
+```
+
+Then record a local eval when you know the outcome:
+
+```bash
 
 npm exec -- veritas eval draft \
   --evidence .veritas/evidence/local-smoke.json
@@ -127,12 +136,15 @@ npm exec -- veritas eval record \
   --reviewer-confidence high \
   --time-to-green-minutes 12 \
   --override-count 0
+
+npm exec -- veritas eval summary
 ```
 
 Optional runtime installs still exist, but they are not required for the core product path:
 
 ```bash
 npm exec -- veritas apply git-hook --configure-git
+npm exec -- veritas apply stop-hook --tool generic
 npm exec -- veritas apply runtime-hook
 npm exec -- veritas print codex-hook --codex-home /path/to/.codex
 npm exec -- veritas runtime status --codex-home /path/to/.codex

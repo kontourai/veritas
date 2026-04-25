@@ -44,3 +44,8 @@ These are expected. The messages are not failures.
 ## Site
 
 The GitHub Pages site is built from `docs/` via `scripts/build-pages-site.mjs` into `.site-src/` (gitignored). The pages workflow deploys it. Run the build script after any docs changes to verify it builds cleanly.
+
+<!-- veritas:governance-block:start -->
+This repo uses Veritas for AI governance. Read `.veritas/GOVERNANCE.md` before making changes.
+After changes, run `veritas shadow run` and address any FAIL lines before finishing.
+<!-- veritas:governance-block:end -->

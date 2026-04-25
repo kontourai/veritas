@@ -1,7 +1,8 @@
 import { basename, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { loadJson } from './load.mjs';
+import { buildGovernanceBlock, replaceGovernanceBlock } from './governance.mjs';
 
 export function slugifyProjectName(name) {
   return name
@@ -266,6 +267,18 @@ export function buildStarterAdapter({
       nodes: buildAdaptiveNodes(repoInsights),
     },
     evidence: buildStarterEvidenceConfig({ proofLane, repoInsights }),
+    activation: {
+      aiInstructionFiles: [
+        { path: 'AGENTS.md', tool: 'codex', required: true },
+        { path: 'CLAUDE.md', tool: 'claude-code', required: true },
+        { path: '.cursorrules', tool: 'cursor', required: false },
+        {
+          path: '.github/copilot-instructions.md',
+          tool: 'github-copilot',
+          required: false,
+        },
+      ],
+    },
   };
 }
 
@@ -294,6 +307,18 @@ export function buildStarterPolicyPack({ projectName }) {
             '.veritas/policy-packs/default.policy-pack.json',
             '.veritas/team/default.team-profile.json',
           ],
+        },
+      },
+      {
+        id: 'ai-instruction-files-synced',
+        classification: 'hard-invariant',
+        stage: 'warn',
+        message:
+          'All required AI tool instruction files must contain the Veritas governance block.',
+        owner: 'repo-maintainers',
+        rollback_switch: null,
+        match: {
+          'governance-block': ['AGENTS.md', 'CLAUDE.md'],
         },
       },
       {
@@ -474,6 +499,10 @@ export function writeBootstrapStarterKit({
   const teamProfilePath = resolve(rootDir, '.veritas/team/default.team-profile.json');
   const readmePath = resolve(rootDir, '.veritas/README.md');
   const governancePath = resolve(rootDir, '.veritas/GOVERNANCE.md');
+  const requiredInstructionFiles = [
+    resolve(rootDir, 'AGENTS.md'),
+    resolve(rootDir, 'CLAUDE.md'),
+  ];
 
   const files = [
     [adapterPath, buildStarterAdapter({ projectName, proofLane: resolvedProofLane, repoInsights })],
@@ -513,6 +542,17 @@ export function writeBootstrapStarterKit({
     'utf8',
   );
   writeFileSync(governancePath, buildGovernanceInstructions(), 'utf8');
+  const governanceBlock = buildGovernanceBlock();
+  for (const instructionPath of requiredInstructionFiles) {
+    const existingContent = existsSync(instructionPath)
+      ? readFileSync(instructionPath, 'utf8')
+      : '';
+    writeFileSync(
+      instructionPath,
+      replaceGovernanceBlock(existingContent, governanceBlock),
+      'utf8',
+    );
+  }
 
   return {
     rootDir,
@@ -526,6 +566,9 @@ export function writeBootstrapStarterKit({
       relative(rootDir, adapterPath).replaceAll('\\', '/'),
       relative(rootDir, policyPackPath).replaceAll('\\', '/'),
       relative(rootDir, teamProfilePath).replaceAll('\\', '/'),
+      ...requiredInstructionFiles.map((filePath) =>
+        relative(rootDir, filePath).replaceAll('\\', '/'),
+      ),
     ],
   };
 }
@@ -543,6 +586,7 @@ export function buildSuggestedPackageScripts({
     'veritas:report:diff': `npm exec -- veritas report --changed-from ${baseRef} --changed-to HEAD`,
     'veritas:status:runtime': 'npm exec -- veritas runtime status',
     'veritas:proof': proofLane,
+    'lint:governance': 'npm exec -- veritas shadow run --format feedback --working-tree',
     'veritas:eval': 'npm exec -- veritas shadow run',
   };
 }

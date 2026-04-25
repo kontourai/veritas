@@ -29,6 +29,25 @@
       }
     },
     "graph": { "$ref": "./veritas-graph.schema.json" },
+    "activation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "aiInstructionFiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path"],
+            "properties": {
+              "path": { "type": "string" },
+              "tool": { "type": "string" },
+              "required": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
     "evidence": {
       "type": "object",
       "additionalProperties": false,

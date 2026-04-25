@@ -15,22 +15,28 @@ import { fileURLToPath } from 'node:url';
 import {
   applyCiSnippet,
   applyCodexHook,
+  applyGovernanceBlocks,
   applyGitHook,
   inspectRuntimeAdapterStatus,
   applyRuntimeHook,
+  applyStopHook,
   applyPackageScripts,
+  buildFeedbackSummary,
   buildEvidenceRecord,
   buildEvalDraft,
   buildEvalRecord,
+  buildGovernanceBlock,
   buildSuggestedCodexHookConfig,
   buildSuggestedGitHook,
   buildSuggestedRuntimeHook,
+  buildSuggestedStopHook,
   buildSuggestedCiSnippet,
   buildSuggestedPackageScripts,
   compareMarkerBenchmarkRuns,
   classifyNodes,
   evaluatePolicyPack,
   generateEvalRecord,
+  generateEvalSummary,
   generateMarkerBenchmarkComparison,
   generateMarkerBenchmarkSuiteReport,
   inferBootstrapRepoInsights,
@@ -182,6 +188,56 @@ test('core classifies nodes and builds evidence from an adapter config', () => {
       (finding) => finding.artifact === '.github/dependabot.yml',
     ),
   );
+});
+
+test('policy pack evaluates governance blocks and diff-required rules', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-policy-rules-'));
+  writeFileSync(join(rootDir, 'AGENTS.md'), `# Agents\n\n${buildGovernanceBlock()}\n`);
+  writeFileSync(join(rootDir, 'CLAUDE.md'), '# Claude\n');
+
+  const policyPack = {
+    version: 1,
+    name: 'policy-rule-demo',
+    rules: [
+      {
+        id: 'ai-instruction-files-synced',
+        classification: 'hard-invariant',
+        stage: 'warn',
+        message: 'Instruction files must include the Veritas block.',
+        match: {
+          'governance-block': ['AGENTS.md', 'CLAUDE.md'],
+        },
+      },
+      {
+        id: 'api-changes-require-test-changes',
+        classification: 'promotable-policy',
+        stage: 'block',
+        message: 'API changes require API tests.',
+        match: {
+          'if-changed': 'src/api/',
+          'then-require': 'tests/api/',
+        },
+      },
+    ],
+  };
+
+  const failedResults = evaluatePolicyPack(policyPack, {
+    rootDir,
+    changedFiles: ['src/api/routes.ts'],
+  });
+  assert.equal(failedResults[0].implemented, true);
+  assert.equal(failedResults[0].passed, false);
+  assert.equal(failedResults[0].findings[0].artifact, 'CLAUDE.md');
+  assert.equal(failedResults[1].passed, false);
+  assert.equal(failedResults[1].findings[0].required, 'tests/api/');
+
+  writeFileSync(join(rootDir, 'CLAUDE.md'), `${buildGovernanceBlock()}\n`);
+  const passedResults = evaluatePolicyPack(policyPack, {
+    rootDir,
+    changedFiles: ['src/api/routes.ts', 'tests/api/routes.test.ts'],
+  });
+  assert.equal(passedResults[0].passed, true);
+  assert.equal(passedResults[1].passed, true);
 });
 
 test('surface-aware proof routing prefers surface routes, then default, then legacy', () => {
@@ -397,7 +453,14 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
 
   assert.equal(starterAdapter.name, 'demo-starter');
   assert.equal(starterAdapter.graph.nodes[0]['governance-locked'], true);
+  assert.deepEqual(starterAdapter.activation.aiInstructionFiles.slice(0, 2), [
+    { path: 'AGENTS.md', tool: 'codex', required: true },
+    { path: 'CLAUDE.md', tool: 'claude-code', required: true },
+  ]);
   assert.equal(starterPolicyPack.name, 'demo-starter-default');
+  assert.ok(
+    starterPolicyPack.rules.some((rule) => rule.match?.['governance-block']),
+  );
   assert.equal(starterTeamProfile.defaults.mode, 'shadow');
   assert.equal(initResult.repoInsights.repoKind, 'application');
   assert.equal(starterAdapter.evidence.defaultProofLanes, undefined);
@@ -406,6 +469,8 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
   assert.match(governanceInstructions, /\.veritas\/policy-packs\//);
   assert.match(governanceInstructions, /Zone 2 is additive policy growth/);
   assert.match(governanceInstructions, /Zone 3 is generated output/);
+  assert.match(readFileSync(join(rootDir, 'AGENTS.md'), 'utf8'), /veritas:governance-block:start/);
+  assert.match(readFileSync(join(rootDir, 'CLAUDE.md'), 'utf8'), /veritas:governance-block:start/);
 
   const reportStdout = execFileSync(
     'npm',
@@ -767,6 +832,8 @@ test('report CLI preserves branch-diff behavior', () => {
     '.veritas/policy-packs/default.policy-pack.json',
     '.veritas/repo.adapter.json',
     '.veritas/team/default.team-profile.json',
+    'AGENTS.md',
+    'CLAUDE.md',
   ]);
 });
 
@@ -1292,6 +1359,19 @@ test('eval record CLI supports explicit team-profile and output paths', () => {
   assert.deepEqual(evalResult.measurements.missed_issues, [
     'Return-package assembly still needed manual review.',
   ]);
+  assert.equal(evalResult.historyPath, '.veritas/evals/history.jsonl');
+  const historyLine = JSON.parse(
+    readFileSync(join(rootDir, '.veritas/evals/history.jsonl'), 'utf8').trim(),
+  );
+  assert.equal(historyLine.run_id, 'eval-cli-explicit-smoke');
+  assert.equal(historyLine.accepted, false);
+  assert.equal(historyLine.override_count, 2);
+
+  const summary = generateEvalSummary({ rootDir });
+  assert.equal(summary.total, 1);
+  assert.equal(summary.requiredRewrite, 1);
+  assert.equal(summary.mostFlaggedRule.rule_id, 'required-veritas-artifacts');
+  assert.match(summary.markdownSummary, /Last 1 evals: 0 accepted, 1 required rewrite/);
 });
 
 test('eval record CLI rejects evidence outside the repo-local evidence area', () => {
@@ -1418,7 +1498,7 @@ test('shadow run CLI stops at report and draft when judgment fields are missing'
 
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'veritas', 'shadow', 'run', '--root', rootDir],
+    ['exec', '--', 'veritas', 'shadow', 'run', '--format', 'json', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   const parsed = parseCliJson(stdout);
@@ -1427,6 +1507,39 @@ test('shadow run CLI stops at report and draft when judgment fields are missing'
   assert.equal(parsed.proofRan, true);
   assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
   assert.match(parsed.suggestedEvalCommand, /veritas eval record --draft/);
+});
+
+test('shadow run CLI defaults to agent-readable feedback output', () => {
+  const rootDir = initCommittedRepo('veritas-shadow-run-feedback-');
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'veritas',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Shadow Run Feedback Demo',
+      '--proof-lane',
+      'node -e "process.exit(0)"',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+
+  const stdout = execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'shadow', 'run', '--root', rootDir],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+
+  assert.match(stdout, /^veritas: /);
+  assert.match(stdout, /PASS\s+proof-command/);
+  assert.match(stdout, /report: \.veritas\/evidence\//);
+  assert.match(stdout, /eval draft: \.veritas\/eval-drafts\//);
 });
 
 test('shadow run CLI can complete the full draft-and-record path', () => {
@@ -1458,6 +1571,8 @@ test('shadow run CLI can complete the full draft-and-record path', () => {
       'veritas',
       'shadow',
       'run',
+      '--format',
+      'json',
       '--root',
       rootDir,
       '--accepted-without-major-rewrite',
@@ -1475,6 +1590,44 @@ test('shadow run CLI can complete the full draft-and-record path', () => {
   assert.equal(parsed.evalMode, 'shadow');
   assert.equal(parsed.proofRan, true);
   assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
+});
+
+test('shadow run JSON mode reports proof failures as run failures', () => {
+  const rootDir = initCommittedRepo('veritas-shadow-run-json-proof-failure-');
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'veritas',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Shadow Run JSON Proof Failure Demo',
+      '--proof-lane',
+      'node -e "process.exit(3)"',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+
+  assert.throws(
+    () =>
+      execFileSync(
+        'npm',
+        ['exec', '--', 'veritas', 'shadow', 'run', '--format', 'json', '--root', rootDir],
+        { cwd: frameworkRootDir, encoding: 'utf8' },
+      ),
+    (error) => {
+      assert.equal(error.status, 1);
+      const parsed = parseCliJson(error.stdout.toString());
+      assert.equal(parsed.proofFailure.command, 'node -e "process.exit(3)"');
+      assert.equal(parsed.proofRan, true);
+      return true;
+    },
+  );
 });
 
 test('marker benchmark comparison scores timely surfacing and false positives', () => {
@@ -2306,7 +2459,7 @@ test('shadow run CLI executes every required proof lane from the adapter', () =>
 
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'veritas', 'shadow', 'run', '--root', rootDir],
+    ['exec', '--', 'veritas', 'shadow', 'run', '--format', 'json', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   const parsed = parseCliJson(stdout);
@@ -2345,7 +2498,7 @@ test('shadow run CLI treats shell metacharacters as literal proof-command argume
 
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'veritas', 'shadow', 'run', '--root', rootDir],
+    ['exec', '--', 'veritas', 'shadow', 'run', '--format', 'json', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   const parsed = parseCliJson(stdout);
@@ -2388,6 +2541,10 @@ test('print package-scripts returns conservative suggestions from inferred proof
     'npm exec -- veritas report --working-tree',
   );
   assert.equal(parsed.scripts['veritas:eval'], 'npm exec -- veritas shadow run');
+  assert.equal(
+    parsed.scripts['lint:governance'],
+    'npm exec -- veritas shadow run --format feedback --working-tree',
+  );
   assert.equal(
     parsed.scripts['veritas:report:diff'],
     'npm exec -- veritas report --changed-from main --changed-to HEAD',
@@ -2438,7 +2595,7 @@ test('print git-hook returns a tracked post-commit adapter', () => {
 test('print runtime-hook returns a tracked agent-runtime adapter', () => {
   const hookBody = buildSuggestedRuntimeHook();
   assert.match(hookBody, /^#!\/bin\/sh/m);
-  assert.match(hookBody, /veritas shadow run --working-tree/);
+  assert.match(hookBody, /veritas shadow run --format json --working-tree/);
 
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-print-runtime-hook-'));
   const stdout = execFileSync(
@@ -2451,6 +2608,71 @@ test('print runtime-hook returns a tracked agent-runtime adapter', () => {
   assert.equal(parsed.outputPath, '.veritas/hooks/agent-runtime.sh');
   assert.equal(parsed.defaultInvocation, '.veritas/hooks/agent-runtime.sh');
   assert.match(parsed.hookBody, /VERITAS_HOOK_SKIP/);
+});
+
+test('print stop-hook returns generic and tool-specific stop hook suggestions', () => {
+  const genericHook = buildSuggestedStopHook({ tool: 'generic' });
+  assert.equal(genericHook.outputPath, '.veritas/hooks/stop.sh');
+  assert.match(genericHook.hookBody, /veritas shadow run --format feedback --working-tree/);
+
+  const claudeHook = buildSuggestedStopHook({ tool: 'claude-code' });
+  assert.equal(claudeHook.toolConfigPath, '.claude/settings.json');
+  assert.equal(claudeHook.toolConfig.hooks.Stop[0].hooks[0].command, '.veritas/hooks/stop.sh');
+
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-print-stop-hook-'));
+  const stdout = execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'print', 'stop-hook', '--root', rootDir, '--tool', 'cursor'],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const parsed = parseCliJson(stdout);
+  assert.equal(parsed.tool, 'cursor');
+  assert.equal(parsed.toolConfigPath, '.cursor/hooks.json');
+});
+
+test('print and apply governance-blocks use marker-bounded updates', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-governance-blocks-'));
+  mkdirp(join(rootDir, '.veritas'));
+  writeFileSync(
+    join(rootDir, '.veritas/repo.adapter.json'),
+    JSON.stringify(
+      {
+        activation: {
+          aiInstructionFiles: [
+            { path: 'AGENTS.md', tool: 'codex', required: true },
+            { path: 'CLAUDE.md', tool: 'claude-code', required: true },
+            { path: '.cursorrules', tool: 'cursor', required: false },
+          ],
+        },
+      },
+      null,
+      2,
+    ),
+  );
+  writeFileSync(join(rootDir, 'AGENTS.md'), '# Existing\n');
+
+  const blockStdout = execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'print', 'governance-block'],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  assert.match(blockStdout, /veritas:governance-block:start/);
+
+  const result = applyGovernanceBlocks({ rootDir });
+  assert.deepEqual(
+    result.applied.map((item) => item.path).sort(),
+    ['AGENTS.md', 'CLAUDE.md'],
+  );
+  assert.equal(result.skipped[0].path, '.cursorrules');
+  assert.match(readFileSync(join(rootDir, 'AGENTS.md'), 'utf8'), /^# Existing/);
+  assert.match(readFileSync(join(rootDir, 'AGENTS.md'), 'utf8'), /veritas:governance-block:start/);
+
+  const second = applyGovernanceBlocks({ rootDir });
+  assert.equal(
+    readFileSync(join(rootDir, 'AGENTS.md'), 'utf8').match(/veritas:governance-block:start/g).length,
+    1,
+  );
+  assert.equal(second.applied.length, 2);
 });
 
 test('print codex-hook returns a tracked codex hooks adapter', () => {
@@ -2657,7 +2879,73 @@ test('apply runtime-hook writes a tracked executable runtime hook file', () => {
   const contents = readFileSync(join(rootDir, '.veritas/hooks/agent-runtime.sh'), 'utf8');
 
   assert.equal(result.outputPath, '.veritas/hooks/agent-runtime.sh');
-  assert.match(contents, /veritas shadow run --working-tree/);
+  assert.match(contents, /veritas shadow run --format json --working-tree/);
+});
+
+test('apply stop-hook writes the generic script and requested tool config', () => {
+  const rootDir = initCommittedRepo('veritas-apply-stop-hook-');
+  mkdirp(join(rootDir, '.cursor'));
+  writeFileSync(
+    join(rootDir, '.cursor/hooks.json'),
+    JSON.stringify(
+      {
+        hooks: {
+          stop: [{ command: 'echo keep-me' }],
+        },
+      },
+      null,
+      2,
+    ),
+  );
+  const result = applyStopHook({
+    rootDir,
+    tool: 'cursor',
+  });
+  const contents = readFileSync(join(rootDir, '.veritas/hooks/stop.sh'), 'utf8');
+  const cursorConfig = readJsonFromAbsolute(join(rootDir, '.cursor/hooks.json'));
+
+  assert.equal(result.outputPath, '.veritas/hooks/stop.sh');
+  assert.equal(result.tool, 'cursor');
+  assert.equal(result.configuredToolConfigPath, '.cursor/hooks.json');
+  assert.match(contents, /veritas shadow run --format feedback --working-tree/);
+  assert.equal(cursorConfig.hooks.stop[0].command, 'echo keep-me');
+  assert.equal(cursorConfig.hooks.stop[1].command, '.veritas/hooks/stop.sh');
+});
+
+test('apply stop-hook preserves existing Claude stop hooks while deduping Veritas', () => {
+  const rootDir = initCommittedRepo('veritas-apply-claude-stop-hook-');
+  mkdirp(join(rootDir, '.claude'));
+  writeFileSync(
+    join(rootDir, '.claude/settings.json'),
+    JSON.stringify(
+      {
+        hooks: {
+          Stop: [
+            {
+              matcher: 'existing',
+              hooks: [{ type: 'command', command: 'echo keep-me' }],
+            },
+            {
+              matcher: '.*',
+              hooks: [{ type: 'command', command: '.veritas/hooks/stop.sh' }],
+            },
+          ],
+        },
+      },
+      null,
+      2,
+    ),
+  );
+
+  applyStopHook({ rootDir, tool: 'claude-code' });
+  const claudeConfig = readJsonFromAbsolute(join(rootDir, '.claude/settings.json'));
+
+  assert.equal(claudeConfig.hooks.Stop.length, 2);
+  assert.equal(claudeConfig.hooks.Stop[0].hooks[0].command, 'echo keep-me');
+  assert.equal(
+    claudeConfig.hooks.Stop[1].hooks[0].command,
+    '.veritas/hooks/stop.sh',
+  );
 });
 
 test('apply codex-hook writes a tracked codex hooks artifact and can merge it', () => {
@@ -3012,10 +3300,10 @@ test('generated post-commit hook runs successfully after the initial commit boun
     cwd: rootDir,
     encoding: 'utf8',
   });
-  const parsed = parseCliJson(stdout);
 
-  assert.equal(parsed.mode, 'report-and-draft');
-  assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
+  assert.match(stdout, /^veritas: /);
+  assert.match(stdout, /PASS\s+proof-command: node -e "process\.exit\(0\)"/);
+  assert.match(stdout, /report: \.veritas\/evidence\//);
 });
 
 test('generated post-commit hook runs successfully on a normal subsequent commit path', () => {
@@ -3050,10 +3338,10 @@ test('generated post-commit hook runs successfully on a normal subsequent commit
     cwd: rootDir,
     encoding: 'utf8',
   });
-  const parsed = parseCliJson(stdout);
 
-  assert.equal(parsed.mode, 'report-and-draft');
-  assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
+  assert.match(stdout, /^veritas: /);
+  assert.match(stdout, /1 file changed/);
+  assert.match(stdout, /PASS\s+proof-command: node -e "process\.exit\(0\)"/);
 });
 
 test('generated runtime hook runs successfully with the default working-tree path', () => {
@@ -3259,6 +3547,7 @@ test('script suggestion helper returns the expected keys', () => {
     'veritas:report:diff',
     'veritas:status:runtime',
     'veritas:proof',
+    'lint:governance',
     'veritas:eval',
   ]);
 });

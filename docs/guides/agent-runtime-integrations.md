@@ -5,13 +5,15 @@ Veritas is intentionally agent-agnostic. These integration notes show where the 
 ## Claude Code
 
 - keep the tracked repo-local config under `.veritas/`
-- use `npm exec -- veritas shadow run --working-tree` as the explicit orchestration command
+- use `npm exec -- veritas shadow run --working-tree` as the explicit orchestration command; it prints agent-readable feedback by default
+- use `npm exec -- veritas apply stop-hook --tool claude-code` when you want Stop-hook feedback at turn end
 - use the generated git/runtime hooks when you want post-change automation instead of manual invocation
 
 ## Cursor
 
 - keep adapter and policy files in the repo, not in editor-only settings
-- point Cursor rules or project instructions at the repo-local Veritas workflow
+- point Cursor rules or project instructions at the repo-local Veritas governance block
+- use `npm exec -- veritas apply stop-hook --tool cursor` to generate a thin wrapper around `.veritas/hooks/stop.sh`
 - prefer `veritas report` for review-only lanes and `veritas shadow run` for proof-plus-eval lanes
 
 ## GitHub Copilot Workspace
@@ -33,4 +35,6 @@ No matter which runtime you use, keep these pieces repo-local and reviewable:
 - adapter
 - policy pack
 - team profile
+- AI instruction governance block
+- stop hook shell contract
 - generated evidence and eval flow

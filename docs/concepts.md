@@ -1,182 +1,94 @@
 # Concepts
 
-This page walks through the core ideas behind Veritas. Each section builds on the last. By the end, you will understand how the pieces fit together and why the system is designed the way it is.
+Veritas is bespoke lint for AI agents. A normal linter tells a developer, "this line violates the repo's rules." Veritas tells an agent, "this change violated the repo's rules, and here is what to fix before you finish."
 
----
+The framework has three concepts: rules, feedback, and improvement.
 
-## The Core Idea
+## Rules
 
-AI agents can write code, refactor modules, and propose fixes — but they have no inherent knowledge of what your repo considers mandatory, what proof is required before a change ships, or whether their guidance actually helped your team. Veritas solves this by making the repo itself the source of truth. You define what matters (the adapter), what proof is required (policy pack), what happened (evidence), and whether it helped (evals). No centralized control plane. No tribal knowledge encoded in a Slack thread. The repo ships its own trust infrastructure, and every AI agent that reads it gets the same structured context.
+Rules are repo-local. They live in `.veritas/` and describe what your repository considers mandatory.
 
----
+The adapter at `.veritas/repo.adapter.json` maps the repo into surfaces: product code, shared contracts, tests, docs, workflows, and governance files. It also declares activation targets such as `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, or `.github/copilot-instructions.md` so every AI tool sees the same Veritas governance block.
 
-## Repo Map (The Adapter)
+The policy pack at `.veritas/policy-packs/default.policy-pack.json` defines the lint rules. The first supported rule families are:
 
-Your repo has different kinds of code. Product features, shared utilities, tests, CI configuration — they have different owners, different risk profiles, and different proof requirements. A change to a shared contract surface deserves stricter scrutiny than a change to an internal example.
+- `artifacts`: required files must exist.
+- `governance-block`: AI instruction files must contain the canonical Veritas governance block.
+- `if-changed` plus `then-require`: if one path appears in the diff, a companion path must also appear.
 
-The adapter is a JSON file at `.veritas/repo.adapter.json` that maps your repo into named nodes. Each node has a kind — `product-surface`, `shared-contract-surface`, `verification-surface`, `governance-surface`, `tooling-surface`, `delivery-surface`, `shared-package`, or `example-surface`. Pattern matching routes files to nodes, and each node specifies which proof lanes apply to it.
-
-Here is a real node definition from the Veritas repo's own adapter:
-
-```json
-{
-  "id": "governance.guidance",
-  "kind": "governance-surface",
-  "label": ".veritas/**",
-  "patterns": [".veritas/"]
-}
-```
-
-A change to any file under `.veritas/` routes to this node, which the adapter can assign its own proof lanes. A change to `examples/` routes to an `example-surface` node with lighter requirements. This routing is explicit and repo-local — no conventions inferred from directory names, no guessing.
-
-For deeper detail, see [Framework Core vs Adapter](design/framework-core-vs-adapter.md).
-
----
-
-## Rules (The Policy Pack)
-
-Some things in your repo must never break. Others are strong preferences that you hope to harden over time. Others are temporary guardrails holding a refactor in place while you migrate.
-
-The policy pack is a JSON file at `.veritas/policy-packs/default.policy-pack.json`. It holds rules with two properties that answer different questions:
-
-- **Classification** answers what kind of rule this is: `hard-invariant`, `promotable-policy`, `advisory-pattern`, or `brittle-implementation-check`.
-- **Stage** answers how hard to enforce it right now: `recommend`, `warn`, or `block`.
-
-Here is a real rule from the Veritas repo's own policy pack:
+Example:
 
 ```json
 {
-  "id": "required-veritas-operational-artifacts",
-  "classification": "hard-invariant",
+  "id": "api-changes-require-test-changes",
+  "classification": "promotable-policy",
   "stage": "block",
-  "message": "The tracked Veritas operational artifacts must stay present.",
-  "owner": "repo-core"
-}
-```
-
-This rule is a `hard-invariant` at `block` stage — it gates CI. An `advisory-pattern` at `recommend` stage would surface guidance without blocking anything. The distinction matters because it keeps hard invariants and transitional guardrails from collapsing into a single undifferentiated list.
-
-For deeper detail, see [Policy Packs](design/policy-packs.md).
-
----
-
-## Evidence (The Artifact)
-
-After an AI agent makes changes, someone has to review them. Without structure, that means scanning the entire diff and hoping nothing important was missed.
-
-Running `veritas report` generates a structured JSON evidence artifact. It captures which files changed, which nodes in the repo map were affected, which proof commands ran, and which policy rules passed or failed. The reviewer gets a bounded summary instead of a raw diff — a surface with edges rather than an open field.
-
-Here is the core of a real evidence artifact:
-
-```json
-{
-  "affected_nodes": ["delivery.github", "governance.root-manifests"],
-  "policy_results": [{
-    "rule_id": "required-repo-artifacts",
-    "classification": "hard-invariant",
-    "stage": "block",
-    "passed": true,
-    "summary": "All required repository artifacts are present."
-  }]
-}
-```
-
-Evidence artifacts live in `.veritas/evidence/`. The source for generating them can be explicit files, a branch diff, the working tree, or staged changes. The source kind is recorded in the artifact, so the reviewer always knows what was measured and how.
-
-For schema details, see [Artifacts and Schemas](reference/artifacts-and-schemas.md).
-
----
-
-## Feedback (Live Evals)
-
-How do you know if the framework is actually helping? Not theoretically — measurably.
-
-After reviewing an evidence artifact, an operator records an eval. Did they accept the output? How long did it take to reach a verified state? How many overrides did they need? How confident were they in the result? These questions have structured answers — eval records are JSON, not free-text retros. The framework tracks acceptance rate, time-to-green, override count, false positive rate, missed issues, and reviewer confidence.
-
-Here is a real eval record's outcome:
-
-```json
-{
-  "outcome": {
-    "accepted_without_major_rewrite": true,
-    "required_followup": false,
-    "reviewer_confidence": "high"
-  },
-  "measurements": {
-    "time_to_green_minutes": 18,
-    "override_count": 0,
-    "false_positive_rules": [],
-    "missed_issues": []
+  "message": "If src/api/ changed, tests/api/ must also appear in the diff.",
+  "match": {
+    "if-changed": "src/api/",
+    "then-require": "tests/api/"
   }
 }
 ```
 
-Evidence records capture what happened during the AI-guided run; eval records capture how that run turned out afterward. The second record is what lets you measure effectiveness instead of only intent.
+This is what makes Veritas different from a static checklist. The rule is about behavior in the actual change, not just whether a file exists somewhere in the repo.
 
-For deeper detail, see [Live Evals](design/live-evals.md).
+## Feedback
 
----
+`veritas shadow run` is the agent-facing path. It runs the configured proof lane, evaluates rules against the changed files, writes evidence, and prints lint-style feedback by default:
 
-## Governance Surface Integrity
+```text
+veritas: 3 files changed -> governance.guidance, tooling.scripts
+PASS  required-veritas-operational-artifacts: All required repository artifacts are present.
+FAIL  api-changes-require-test-changes: Changed files matched src/api/ but no companion changes matched tests/api/.
+      -> src/api/routes.ts
 
-Some rules describe product code. Other rules describe the trust surface itself. If an AI agent can silently weaken the adapter or policy pack that governs its own work, the framework loses its point.
+1 failure · 0 warnings · run `veritas report` for full evidence
+report: .veritas/evidence/veritas-123.json · eval draft: .veritas/eval-drafts/veritas-123.json · run: veritas-123
+```
 
-The `.veritas/` directory is that trust surface. It holds the repo map, policy pack, team profile, and generated artifacts. Veritas already models this as a `governance-surface`, which matters because governance changes should not look like ordinary config churn.
+The output is meant to be read by an agent during a session, the same way it reads a failing test or compiler error.
 
-Three categories matter:
+Exit codes are hook-friendly:
 
-- **Constitutional core**: surface definitions, `hard-invariant` rules at `block` stage, and team thresholds. These shape what the repo considers mandatory and should require explicit human accountability to loosen.
-- **Living policy**: additive rules, new nodes for new feature areas, and promotions backed by eval data. This is where the framework should be able to tighten safely over time.
-- **Generated evidence**: `evidence/`, `eval-drafts/`, `evals/`, and `checkins/`. These are outputs, not hand-authored governance.
+- `0`: no failures
+- `1`: proof or blocking policy failure
+- `2`: config or runtime error
 
-The design goal is a ratchet: automation may add guidance or tighten enforcement, but it should not silently demote existing hard rules or delete the surfaces they protect. That is what turns governance edits into a distinct review surface instead of just another JSON diff.
+`veritas report` remains the structured evidence path and keeps JSON as its default output. Use `--format feedback` when you want the same lint-style message in a PR comment or review surface.
 
-For the current design direction and open work, see [Roadmap](design/roadmap.md#governance-surface-integrity).
+## Improvement
 
----
+Evidence records capture what changed, which repo surfaces were touched, which proof commands applied, and which rules passed or failed. Eval records capture how the run turned out: accepted or rewritten, time to green, overrides, false positives, missed issues, and reviewer confidence.
 
-## Rollout: Shadow, Assist, Enforce
+For local use, `veritas eval record` appends compact JSONL entries to `.veritas/evals/history.jsonl`, and `veritas eval summary` reports the recent trend:
 
-Veritas moves through three rollout phases, and you control the pace.
+```text
+Last 10 evals: 8 accepted, 2 required rewrite
+Avg time to green: 14 min | Avg overrides: 0.3 | Confidence: high (7), medium (3)
+Most flagged rule: api-changes-require-test-changes (3)
+```
 
-- **Shadow**: the framework runs alongside normal work, generating evidence and collecting evals, with no enforcement. You learn what the rules would have caught before you give them any teeth.
-- **Assist**: rules begin influencing behavior. Operators can waive individual violations, but drift is visible and tracked.
-- **Enforce**: rules gate CI. Violations block merges until addressed or explicitly overridden with a recorded justification.
-
-Team profiles in `.veritas/` control which phase applies and how confidence thresholds and signoff expectations scale with it.
-
-Start with shadow. You never have to move to enforce until the eval data tells you it is safe to do so.
-
-For a step-by-step rollout approach, see [Tune the Framework for Your Team](guides/tune-for-your-team.md).
-
----
+That closes the loop without external infrastructure. Start in shadow mode, look at the local trend, then promote rules only when the data says they are useful.
 
 ## How It Activates
 
-Veritas has three activation modes, from lightest to most integrated.
+Veritas does not own your AI instruction files. It injects a small marker-bounded block:
 
-- **Ambient**: the AI agent reads `.veritas/` files as part of normal repo context. No explicit invocation needed. The adapter and policy pack are already there, and a capable agent will use them to shape its output.
-- **Explicit**: an operator runs CLI commands — `veritas report`, `veritas shadow run`, `veritas eval draft` — to generate artifacts and record evals on demand.
-- **CI**: evidence generation and policy evaluation run in GitHub Actions, gating pull requests against the policy pack automatically.
+```html
+<!-- veritas:governance-block:start -->
+This repo uses Veritas for AI governance. Read `.veritas/GOVERNANCE.md` before making changes.
+After changes, run `veritas shadow run` and address any FAIL lines before finishing.
+<!-- veritas:governance-block:end -->
+```
 
-The lightest integration is ambient. Just having the files in your repo gives AI agents structured context about what the repo considers important. The heavier integrations layer on top of that without replacing it.
+Use:
 
-For wiring details, see [Agent Activation](design/agent-activation.md).
+```bash
+npm exec -- veritas apply governance-blocks
+npm exec -- veritas apply stop-hook --tool generic
+```
 
----
-
-## Putting It Together
-
-The full loop is short:
-
-1. The adapter maps the repo into named nodes with proof requirements.
-2. An AI agent makes changes.
-3. `veritas report` generates an evidence artifact from those changes.
-4. The policy pack evaluates rules against the evidence.
-5. A reviewer inspects the bounded artifact instead of the raw diff.
-6. The operator records an eval against the artifact.
-7. Over time, eval data informs which rules to tighten, which to relax, and whether the evidence surface is actually reducing review effort.
-
-Each piece is a separate JSON file. Each file is repo-local and version-controlled. Nothing is inferred from conventions or hidden in a control plane.
+Tool-specific integrations are thin wrappers around the same generic contract. Claude Code, Cursor, Codex, Copilot, and any other tool can read the same repo-local rules and run the same shell command.
 
 For hands-on setup, start with the [Getting Started guide](guides/getting-started.md). For CLI details, see the [CLI Reference](reference/cli.md).

@@ -35,11 +35,36 @@
           "rollback_switch": { "type": ["string", "null"] },
           "match": {
             "type": "object",
-            "additionalProperties": true
+            "additionalProperties": false,
+            "properties": {
+              "artifacts": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "governance-block": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "if-changed": { "type": "string" },
+              "then-require": { "type": "string" },
+              "files": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "workflow": { "type": "string" },
+              "pattern": { "type": "string" }
+            },
+            "anyOf": [
+              { "required": ["artifacts"] },
+              { "required": ["governance-block"] },
+              { "required": ["if-changed", "then-require"] },
+              { "required": ["files"] },
+              { "required": ["workflow"] },
+              { "required": ["pattern"] }
+            ]
           }
         }
       }
     }
   }
 }
-

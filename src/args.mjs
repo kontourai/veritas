@@ -76,6 +76,7 @@ export function parseArgs(argv) {
     '--unstaged': { type: 'flag', key: 'unstaged' },
     '--untracked': { type: 'flag', key: 'untracked' },
     '--summary-path': { type: 'string', key: 'summaryPath' },
+    '--format': { type: 'string', key: 'format' },
   });
 
   return { options, files: rest };
@@ -102,6 +103,7 @@ export function parsePrintArgs(argv) {
       '--hook': { type: 'string', key: 'hook' },
       '--target-hooks-file': { type: 'string', key: 'targetHooksFile' },
       '--codex-home': { type: 'string', key: 'codexHome' },
+      '--tool': { type: 'string', key: 'tool' },
     },
   ).options;
 }
@@ -118,6 +120,7 @@ export function parseApplyArgs(argv) {
       '--configure-git': { type: 'flag', key: 'configureGit' },
       '--target-hooks-file': { type: 'string', key: 'targetHooksFile' },
       '--codex-home': { type: 'string', key: 'codexHome' },
+      '--tool': { type: 'string', key: 'tool' },
     },
   ).options;
 }
@@ -143,6 +146,7 @@ export function parseEvalArgs(argv) {
       '--missed-issue': { type: 'array', key: 'missedIssues' },
       '--note': { type: 'array', key: 'notes' },
       '--force': { type: 'flag', key: 'force' },
+      '--format': { type: 'string', key: 'format' },
     },
     {
       defaults: {
@@ -206,6 +210,7 @@ export function parseShadowArgs(argv) {
       '--missed-issue': { type: 'array', key: 'missedIssues' },
       '--note': { type: 'array', key: 'notes' },
       '--force': { type: 'flag', key: 'force' },
+      '--format': { type: 'string', key: 'format' },
     },
     {
       defaults: {

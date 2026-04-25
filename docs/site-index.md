@@ -12,11 +12,11 @@
 
 **AI doesn't know what matters in your repo.**
 Your codebase has load-bearing files, shared contracts, and surfaces that need different kinds of proof. AI agents treat them all the same.
-Veritas gives the repo a [typed map](concepts.md#repo-map-the-adapter) so agents know what they're touching and what evidence that area requires.
+Veritas gives the repo a [rule surface](concepts.md#rules) so agents know what they're touching and what evidence that area requires.
 
 **Rules live as tribal knowledge.**
 Your team's hard invariants, strong preferences, and temporary guardrails exist in someone's head — not in a reviewable, enforceable form.
-Veritas makes them explicit in a [staged policy pack](concepts.md#rules-the-policy-pack) with real classification and enforcement levels.
+Veritas makes them explicit as [repo-local rules](concepts.md#rules) with real classification and enforcement levels.
 
 **Governance rules have no protection.**
 Even when a team writes its rules down, the governance files themselves can still be edited like any other config unless that surface is treated separately.
@@ -24,11 +24,11 @@ Veritas models governance as its own surface and makes the integrity gap explici
 
 **Reviewers scan the whole diff.**
 When AI changes dozens of files, a human reconstructs intent from a raw diff with no structured summary of what was proven or what passed.
-Veritas generates a [bounded evidence artifact](concepts.md#evidence-the-artifact) — what changed, what was affected, what proof ran, and which policies held.
+Veritas generates [agent-readable feedback](concepts.md#feedback) plus a bounded evidence artifact — what changed, what was affected, what proof ran, and which policies held.
 
 **No way to know if guidance helped.**
 You can add context files and prompt instructions, but there is no feedback loop measuring whether they actually improved outcomes.
-Veritas captures [live eval records](concepts.md#feedback-live-evals) — acceptance rate, time-to-green, override count, reviewer confidence.
+Veritas captures [local improvement records](concepts.md#improvement) — acceptance rate, time-to-green, override count, reviewer confidence.
 
 <div class="pillars">
 
@@ -96,11 +96,11 @@ npx veritas init
 # Emit an evidence artifact for the current working tree
 npx veritas report --working-tree
 
-# Run proof, emit evidence, and draft an eval record in one pass
+# Run proof, emit lint-style feedback, and draft an eval record in one pass
 npx veritas shadow run --working-tree
 ```
 
-`init` writes the starter files to `.veritas/` — tracked in source control, owned by your team. `report` produces the evidence artifact your CI or PR workflow can post. `shadow run` adds proof execution and eval drafting on top of that, with no enforcement until you are ready.
+`init` writes the starter files to `.veritas/` and injects the governance block into AI instruction files. `report` produces the evidence artifact your CI or PR workflow can post. `shadow run` adds proof execution, lint-style feedback, and eval drafting on top of that, with no enforcement until you are ready.
 
 ## Start Safe
 

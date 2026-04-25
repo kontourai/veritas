@@ -27,3 +27,7 @@ Before considering a framework change complete:
 - `npm run verify`
 - `npm test`
 
+<!-- veritas:governance-block:start -->
+This repo uses Veritas for AI governance. Read `.veritas/GOVERNANCE.md` before making changes.
+After changes, run `veritas shadow run` and address any FAIL lines before finishing.
+<!-- veritas:governance-block:end -->

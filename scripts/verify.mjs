@@ -195,8 +195,8 @@ assert(
 const cliReference = readText('docs/reference/cli.md');
 assertMarkdownLinksResolve('docs/reference/cli.md');
 assert(
-  cliReference.includes('All commands print JSON to stdout'),
-  'CLI reference must explain the JSON stdout contract.',
+  cliReference.includes('Most commands print JSON to stdout'),
+  'CLI reference must explain the stdout contract.',
 );
 assert(
   cliReference.includes('npm exec -- veritas --help'),
