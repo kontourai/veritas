@@ -160,7 +160,8 @@ test('core classifies nodes and builds evidence from an adapter config', () => {
   assert.equal(record.source_kind, 'explicit-files');
   assert.deepEqual(record.source_scope, ['explicit']);
   assert.deepEqual(record.selected_proof_commands, ['npm run ci:fast']);
-  assert.equal(record.proof_resolution_source, 'legacy');
+  assert.deepEqual(record.selected_proof_lanes.map((lane) => lane.command), ['npm run ci:fast']);
+  assert.equal(record.proof_resolution_source, 'required');
   assert.equal(record.adapter.name, 'work-agent');
   assert.deepEqual(record.policy_pack, {
     name: 'work-agent-convergence',
@@ -240,7 +241,7 @@ test('policy pack evaluates governance blocks and diff-required rules', () => {
   assert.equal(passedResults[1].passed, true);
 });
 
-test('surface-aware proof routing prefers surface routes, then default, then legacy', () => {
+test('surface-aware proof routing prefers surface routes, then default, then required lanes', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-proof-plan-'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
   mkdirp(join(rootDir, 'scripts'));
@@ -273,10 +274,15 @@ test('surface-aware proof routing prefers surface routes, then default, then leg
     evidence: {
       artifactDir: '.veritas/evidence',
       reportTransport: 'local-json',
-      requiredProofLanes: ['npm run legacy-proof'],
-      defaultProofLanes: ['npm run default-proof'],
-      surfaceProofLanes: [
-        { nodeIds: ['tooling.scripts'], proofLanes: ['npm run viewer:build', 'npm run viewer:build'] },
+      proofLanes: [
+        { id: 'required-proof', command: 'npm run required-proof', method: 'validation' },
+        { id: 'default-proof', command: 'npm run default-proof', method: 'validation' },
+        { id: 'viewer-build', command: 'npm run viewer:build', method: 'validation' },
+      ],
+      requiredProofLaneIds: ['required-proof'],
+      defaultProofLaneIds: ['default-proof'],
+      surfaceProofRoutes: [
+        { nodeIds: ['tooling.scripts'], proofLaneIds: ['viewer-build', 'viewer-build'] },
       ],
       uncoveredPathPolicy: 'warn',
     },
@@ -306,14 +312,24 @@ test('surface-aware proof routing prefers surface routes, then default, then leg
   assert.deepEqual(mixedPlan.proofCommands, ['npm run viewer:build', 'npm run default-proof']);
   assert.equal(mixedPlan.resolutionSource, 'surface');
 
-  delete adapter.evidence.defaultProofLanes;
-  const legacyPlan = resolveProofCommands({
+  delete adapter.evidence.defaultProofLaneIds;
+  const requiredPlan = resolveProofCommands({
     adapterPath: writeTempAdapter(rootDir, adapter),
     files: ['docs/guide.md'],
     rootDir,
   });
-  assert.deepEqual(legacyPlan.proofCommands, ['npm run legacy-proof']);
-  assert.equal(legacyPlan.resolutionSource, 'legacy');
+  assert.deepEqual(requiredPlan.proofCommands, ['npm run required-proof']);
+  assert.equal(requiredPlan.resolutionSource, 'required');
+
+  adapter.evidence.requiredProofLanes = ['npm run legacy-proof'];
+  assert.throws(
+    () => resolveProofCommands({
+      adapterPath: writeTempAdapter(rootDir, adapter),
+      files: ['docs/guide.md'],
+      rootDir,
+    }),
+    /legacy field/,
+  );
 });
 
 test('guidance CLI can run with explicit adapter and policy-pack inputs', () => {
@@ -463,7 +479,7 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
   );
   assert.equal(starterTeamProfile.defaults.mode, 'shadow');
   assert.equal(initResult.repoInsights.repoKind, 'application');
-  assert.equal(starterAdapter.evidence.defaultProofLanes, undefined);
+  assert.equal(starterAdapter.evidence.defaultProofLaneIds, undefined);
   assert.equal(starterAdapter.evidence.uncoveredPathPolicy, undefined);
   assert.match(governanceInstructions, /Do not modify:/);
   assert.match(governanceInstructions, /\.veritas\/policy-packs\//);
@@ -493,6 +509,220 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
   assert.equal(reportResult.policy_pack.name, 'demo-starter-default');
   assert.equal(reportResult.source_kind, 'explicit-files');
   assert.deepEqual(reportResult.source_scope, ['explicit']);
+});
+
+test('init explore emits a read-only recommendation artifact', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-explore-'));
+  writeFileSync(
+    join(rootDir, 'package.json'),
+    JSON.stringify(
+      {
+        scripts: {
+          verify: 'node -e "process.exit(0)"',
+          test: 'node -e "process.exit(0)"',
+        },
+      },
+      null,
+      2,
+    ),
+  );
+  writeFileSync(join(rootDir, 'AGENTS.md'), '# Agents\n');
+
+  const stdout = execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'init', '--explore', '--root', rootDir],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const recommendation = parseCliJson(stdout);
+
+  assert.equal(recommendation.mode, 'explore');
+  assert.equal(recommendation.target_root, rootDir);
+  assert.equal(recommendation.proof_lane, 'npm run verify');
+  assert.equal(recommendation.recommended_proof_lanes[0].command, 'npm run verify');
+  assert.ok(recommendation.artifact_payloads['.veritas/repo.adapter.json']);
+  assert.ok(recommendation.artifact_hashes['.veritas/repo.adapter.json']);
+  assert.deepEqual(
+    recommendation.selected_instruction_targets.map((target) => target.path),
+    ['AGENTS.md', 'CLAUDE.md'],
+  );
+  assert.equal(existsSync(join(rootDir, '.veritas')), false);
+});
+
+test('init explore output is constrained to .veritas/init-plans', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-output-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  assert.throws(
+    () =>
+      execFileSync(
+        'npm',
+        ['exec', '--', 'veritas', 'init', '--explore', '--root', rootDir, '--output', 'plan.json'],
+        { cwd: frameworkRootDir, encoding: 'utf8', stdio: 'pipe' },
+      ),
+    /init --output must stay inside \.veritas\/init-plans\//,
+  );
+  assert.equal(existsSync(join(rootDir, '.veritas')), false);
+
+  const outputPath = join(rootDir, '.veritas/init-plans/explore.json');
+  const stdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'veritas',
+      'init',
+      '--explore',
+      '--root',
+      rootDir,
+      '--output',
+      '.veritas/init-plans/explore.json',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const recommendation = parseCliJson(stdout);
+
+  assert.equal(recommendation.output_path, '.veritas/init-plans/explore.json');
+  assert.equal(existsSync(outputPath), true);
+  assert.equal(existsSync(join(rootDir, '.veritas/repo.adapter.json')), false);
+  assert.equal(readJsonFromAbsolute(outputPath).artifact_hashes['.veritas/repo.adapter.json'], recommendation.artifact_hashes['.veritas/repo.adapter.json']);
+});
+
+test('init guided answers drive the reviewed apply artifact', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-guided-'));
+  writeFileSync(
+    join(rootDir, 'package.json'),
+    JSON.stringify(
+      {
+        scripts: {
+          lint: 'node -e "process.exit(0)"',
+        },
+      },
+      null,
+      2,
+    ),
+  );
+  writeFileSync(join(rootDir, 'AGENTS.md'), '# Agents\n');
+  writeFileSync(join(rootDir, 'CLAUDE.md'), '# Claude\n');
+  writeFileSync(
+    join(rootDir, 'answers.json'),
+    JSON.stringify(
+      {
+        proofLane: 'npm run lint',
+        selectedInstructionTargets: ['AGENTS.md'],
+        boundaries: ['Do not edit generated snapshots without approval.'],
+        codingStyle: 'Prefer small ESM modules.',
+      },
+      null,
+      2,
+    ),
+  );
+
+  const planPath = join(rootDir, '.veritas/init-plans/guided.json');
+  const guidedStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'veritas',
+      'init',
+      '--guided',
+      '--answers',
+      'answers.json',
+      '--root',
+      rootDir,
+      '--output',
+      '.veritas/init-plans/guided.json',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const recommendation = parseCliJson(guidedStdout);
+
+  assert.equal(recommendation.mode, 'guided');
+  assert.equal(recommendation.proof_lane, 'npm run lint');
+  assert.deepEqual(recommendation.selected_instruction_targets.map((target) => target.path), ['AGENTS.md']);
+  assert.deepEqual(recommendation.recommended_policy_pack.rules[1].match['governance-block'], ['AGENTS.md']);
+  assert.equal(existsSync(join(rootDir, '.veritas/repo.adapter.json')), false);
+
+  const applyStdout = execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'init', '--apply', '--plan', planPath, '--root', rootDir],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const applyResult = parseCliJson(applyStdout);
+  const adapter = readJsonFromAbsolute(join(rootDir, '.veritas/repo.adapter.json'));
+  const policyPack = readJsonFromAbsolute(join(rootDir, '.veritas/policy-packs/default.policy-pack.json'));
+  const readme = readFileSync(join(rootDir, '.veritas/README.md'), 'utf8');
+
+  assert.deepEqual(applyResult.generatedFiles.includes('AGENTS.md'), true);
+  assert.deepEqual(adapter.activation.aiInstructionFiles.map((target) => target.path), ['AGENTS.md']);
+  assert.deepEqual(policyPack.rules[1].match['governance-block'], ['AGENTS.md']);
+  assert.match(readFileSync(join(rootDir, 'AGENTS.md'), 'utf8'), /veritas:governance-block:start/);
+  assert.doesNotMatch(readFileSync(join(rootDir, 'CLAUDE.md'), 'utf8'), /veritas:governance-block:start/);
+  assert.match(readme, /Owner Answers/);
+  assert.match(readme, /Prefer small ESM modules/);
+});
+
+test('init apply requires an untampered plan artifact', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-apply-plan-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  assert.throws(
+    () =>
+      execFileSync(
+        'npm',
+        ['exec', '--', 'veritas', 'init', '--apply', '--root', rootDir],
+        { cwd: frameworkRootDir, encoding: 'utf8', stdio: 'pipe' },
+      ),
+    /--apply requires --plan/,
+  );
+
+  const planPath = join(rootDir, '.veritas/init-plans/plan.json');
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'veritas',
+      'init',
+      '--explore',
+      '--root',
+      rootDir,
+      '--output',
+      '.veritas/init-plans/plan.json',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const tampered = readJsonFromAbsolute(planPath);
+  tampered.artifact_payloads['.veritas/repo.adapter.json'] = `${tampered.artifact_payloads['.veritas/repo.adapter.json']}\n`;
+  const tamperedPath = join(rootDir, '.veritas/init-plans/tampered.json');
+  writeFileSync(tamperedPath, `${JSON.stringify(tampered, null, 2)}\n`, 'utf8');
+
+  assert.throws(
+    () =>
+      execFileSync(
+        'npm',
+        ['exec', '--', 'veritas', 'init', '--apply', '--plan', tamperedPath, '--root', rootDir],
+        { cwd: frameworkRootDir, encoding: 'utf8', stdio: 'pipe' },
+      ),
+    /payload hash mismatch/,
+  );
+  assert.equal(existsSync(join(rootDir, '.veritas/repo.adapter.json')), false);
+});
+
+test('init rejects unknown flags before writing', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-unknown-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  assert.throws(
+    () =>
+      execFileSync(
+        'npm',
+        ['exec', '--', 'veritas', 'init', '--expore', '--root', rootDir],
+        { cwd: frameworkRootDir, encoding: 'utf8', stdio: 'pipe' },
+      ),
+    /Unknown init argument/,
+  );
+  assert.equal(existsSync(join(rootDir, '.veritas')), false);
 });
 
 test('buildEvalRecord links a real evidence artifact to a team profile', () => {
@@ -2451,10 +2681,12 @@ test('shadow run CLI executes every required proof lane from the adapter', () =>
 
   const adapterPath = join(rootDir, '.veritas/repo.adapter.json');
   const adapter = readJsonFromAbsolute(adapterPath);
-  adapter.evidence.requiredProofLanes = [
-    'node -e "process.exit(0)"',
-    'node -e "process.exit(0)"',
+  adapter.evidence.proofLanes = [
+    { id: 'duplicate-proof', command: 'node -e "process.exit(0)"', method: 'validation' },
+    { id: 'duplicate-proof-2', command: 'node -e "process.exit(0)"', method: 'validation' },
   ];
+  adapter.evidence.requiredProofLaneIds = ['duplicate-proof', 'duplicate-proof-2'];
+  delete adapter.evidence.defaultProofLaneIds;
   writeFileSync(adapterPath, `${JSON.stringify(adapter, null, 2)}\n`, 'utf8');
 
   const stdout = execFileSync(
@@ -2465,7 +2697,7 @@ test('shadow run CLI executes every required proof lane from the adapter', () =>
   const parsed = parseCliJson(stdout);
 
   assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
-  assert.equal(parsed.proofResolutionSource, 'legacy');
+  assert.equal(parsed.proofResolutionSource, 'required');
 });
 
 test('shadow run CLI treats shell metacharacters as literal proof-command arguments', () => {
@@ -2491,9 +2723,15 @@ test('shadow run CLI treats shell metacharacters as literal proof-command argume
 
   const adapterPath = join(rootDir, '.veritas/repo.adapter.json');
   const adapter = readJsonFromAbsolute(adapterPath);
-  adapter.evidence.requiredProofLanes = [
-    `node -e "const { writeFileSync } = require('node:fs'); console.log('proof stdout'); writeFileSync('proof-output.txt', 'ok');" && node -e "require('node:fs').writeFileSync('proof-injected.txt', 'bad')"`,
+  adapter.evidence.proofLanes = [
+    {
+      id: 'literal-proof',
+      command: `node -e "const { writeFileSync } = require('node:fs'); console.log('proof stdout'); writeFileSync('proof-output.txt', 'ok');" && node -e "require('node:fs').writeFileSync('proof-injected.txt', 'bad')"`,
+      method: 'validation',
+    },
   ];
+  adapter.evidence.requiredProofLaneIds = ['literal-proof'];
+  delete adapter.evidence.defaultProofLaneIds;
   writeFileSync(adapterPath, `${JSON.stringify(adapter, null, 2)}\n`, 'utf8');
 
   const stdout = execFileSync(
@@ -2506,7 +2744,7 @@ test('shadow run CLI treats shell metacharacters as literal proof-command argume
   assert.match(stdout, /proof stdout/);
   assert.equal(readFileSync(join(rootDir, 'proof-output.txt'), 'utf8'), 'ok');
   assert.equal(existsSync(join(rootDir, 'proof-injected.txt')), false);
-  assert.deepEqual(parsed.proofCommands, [adapter.evidence.requiredProofLanes[0]]);
+  assert.deepEqual(parsed.proofCommands, [adapter.evidence.proofLanes[0].command]);
 });
 
 test('print package-scripts returns conservative suggestions from inferred proof lane', () => {
@@ -3410,7 +3648,7 @@ test('adaptive bootstrap detects a workspace-shaped repo', () => {
   assert.equal(result.repoInsights.repoKind, 'workspace');
   assert.equal(result.proofLane, 'npm run verify');
   assert.ok(adapter.graph.nodes.some((node) => node.patterns.includes('packages/')));
-  assert.deepEqual(adapter.evidence.defaultProofLanes, ['npm run verify']);
+  assert.deepEqual(adapter.evidence.defaultProofLaneIds, ['required-proof']);
   assert.equal(adapter.evidence.uncoveredPathPolicy, 'warn');
   assert.match(bootstrapReadme, /Repo kind: `workspace`/);
   assert.match(bootstrapReadme, /Surface-Aware Routing/);

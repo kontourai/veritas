@@ -37,18 +37,18 @@ The repo-level check-in commands live in `package.json`:
 ## Suggested Commands
 
 ```bash
-npm exec -- veritas print package-scripts
-npm exec -- veritas print ci-snippet
-npm exec -- veritas apply package-scripts
-npm exec -- veritas apply ci-snippet
-npm exec -- veritas runtime status
-npm exec -- veritas report package.json
+npx @kontourai/veritas print package-scripts
+npx @kontourai/veritas print ci-snippet
+npx @kontourai/veritas apply package-scripts
+npx @kontourai/veritas apply ci-snippet
+npx @kontourai/veritas runtime status
+npx @kontourai/veritas report package.json
 ```
 
 If you prefer explicit paths:
 
 ```bash
-npm exec -- veritas report \
+npx @kontourai/veritas report \
   --adapter ./.veritas/repo.adapter.json \
   --policy-pack ./.veritas/policy-packs/default.policy-pack.json \
   package.json
@@ -60,7 +60,7 @@ npm exec -- veritas report \
 
 ## Surface-Aware Routing
 
-This repo shape justifies surface-aware proof routing, so the starter adapter also includes `defaultProofLanes` and `uncoveredPathPolicy` alongside the legacy flat proof lane for compatibility.
+This repo shape justifies surface-aware proof routing, so the starter adapter includes explicit `proofLanes`, `defaultProofLaneIds`, and `uncoveredPathPolicy`.
 
 ## Why This Exists
 

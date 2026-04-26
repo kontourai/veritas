@@ -11,7 +11,9 @@
     "defaultResolution": {
       "phase": "Phase 0 (Bootstrap)",
       "workstream": "Docs Navigation Hardening",
-      "matchedArtifacts": ["docs/adr/0001-navigation.md"]
+      "matchedArtifacts": [
+        "docs/adr/0001-navigation.md"
+      ]
     },
     "nonSliceableInvariants": [
       "navigation/content parity",
@@ -28,12 +30,16 @@
       {
         "id": "adr-doc",
         "match": {
-          "patterns": ["docs/adr/"]
+          "patterns": [
+            "docs/adr/"
+          ]
         },
         "resolution": {
           "phase": "Phase 0 (Bootstrap)",
           "workstream": "Docs Navigation Hardening",
-          "matchedArtifacts": ["docs/adr/**"]
+          "matchedArtifacts": [
+            "docs/adr/**"
+          ]
         }
       }
     ],
@@ -42,31 +48,56 @@
         "id": "docs.content",
         "kind": "product-surface",
         "label": "docs/content",
-        "patterns": ["content/"]
+        "patterns": [
+          "content/"
+        ]
       },
       {
         "id": "docs.theme",
         "kind": "product-surface",
         "label": "docs/theme",
-        "patterns": ["src/theme/"]
+        "patterns": [
+          "src/theme/"
+        ]
       },
       {
         "id": "docs.nav",
         "kind": "product-surface",
         "label": "docs/navigation",
-        "patterns": ["src/navigation/"]
+        "patterns": [
+          "src/navigation/"
+        ]
       },
       {
         "id": "docs.governance",
         "kind": "governance-surface",
         "label": "docs/adr",
-        "patterns": ["docs/adr/"]
+        "patterns": [
+          "docs/adr/"
+        ]
       }
     ]
   },
   "evidence": {
     "artifactDir": ".omx/evidence/demo-docs-site",
-    "requiredProofLanes": ["npm run docs:build", "npm test"],
-    "reportTransport": "local-json"
+    "reportTransport": "local-json",
+    "proofLanes": [
+      {
+        "id": "required-proof",
+        "command": "npm run docs:build",
+        "method": "validation",
+        "summary": "Runs npm run docs:build."
+      },
+      {
+        "id": "proof-2",
+        "command": "npm test",
+        "method": "validation",
+        "summary": "Runs npm test."
+      }
+    ],
+    "requiredProofLaneIds": [
+      "required-proof",
+      "proof-2"
+    ]
   }
 }

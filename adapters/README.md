@@ -55,12 +55,16 @@ Each node defines:
 This controls where evidence is written and which proof commands must run.
 
 - `artifactDir`: repo-local directory for evidence artifacts
-- `requiredProofLanes`: mandatory proof commands for the repo or routed surface
+- `proofLanes`: explicit proof-lane objects with stable ids, commands, methods, and optional Surface claim mapping
+- `requiredProofLaneIds`: mandatory proof lane ids for the repo or routed surface
+- `defaultProofLaneIds`: fallback proof lane ids when no route-specific lane applies
+- `surfaceProofRoutes`: node-to-proof-lane routing by id
 - `reportTransport`: where the markdown summary is expected to land
 
 ## Authoring Guidance
 
 - Keep node ids stable once consumers rely on them.
+- Keep proof-lane ids stable once evidence consumers rely on them.
 - Prefer repo-generic surface names over runtime-specific language.
 - Start with a small number of proof lanes and only split when the repo shape demands it.
 - Treat adapters as reviewable contract files, not generated noise.

@@ -11,7 +11,8 @@ test('adapter example declares nodes and proof lanes', () => {
   const adapter = readJson('../adapters/work-agent.adapter.json');
   assert.equal(adapter.kind, 'repo-adapter');
   assert.ok(adapter.graph.nodes.length > 0);
-  assert.deepEqual(adapter.evidence.requiredProofLanes, ['npm run ci:fast']);
+  assert.deepEqual(adapter.evidence.proofLanes.map((lane) => lane.command), ['npm run ci:fast']);
+  assert.deepEqual(adapter.evidence.requiredProofLaneIds, ['required-proof']);
 });
 
 test('policy pack includes multiple rule classes', () => {
@@ -40,6 +41,7 @@ test('evidence schema requires framework and adapter sections', () => {
   assert.ok(evidenceSchema.required.includes('framework'));
   assert.ok(evidenceSchema.required.includes('adapter'));
   assert.ok(evidenceSchema.required.includes('selected_proof_commands'));
+  assert.ok(evidenceSchema.required.includes('selected_proof_lanes'));
   assert.ok(evidenceSchema.required.includes('proof_resolution_source'));
   assert.ok(evidenceSchema.required.includes('policy_results'));
 });
@@ -62,7 +64,7 @@ test('adapter and policy schemas declare activation and lint rule contracts', ()
 test('fixture adapters and evidence examples stay readable', () => {
   const docsAdapter = readJson('../adapters/demo-docs-site.adapter.json');
   assert.equal(docsAdapter.name, 'demo-docs-site');
-  assert.deepEqual(docsAdapter.evidence.requiredProofLanes, [
+  assert.deepEqual(docsAdapter.evidence.proofLanes.map((lane) => lane.command), [
     'npm run docs:build',
     'npm test',
   ]);
@@ -72,6 +74,7 @@ test('fixture adapters and evidence examples stay readable', () => {
   const policyGapExample = readJson('../examples/evidence/work-agent-policy-gap.json');
 
   assert.equal(passExample.baseline_ci_fast_passed, true);
+  assert.deepEqual(passExample.selected_proof_lanes.map((lane) => lane.command), ['npm run ci:fast']);
   assert.equal(failExample.baseline_ci_fast_passed, false);
   assert.equal(policyGapExample.recommendations[0].kind, 'policy-gap');
   assert.ok(Array.isArray(passExample.policy_results));

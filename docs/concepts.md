@@ -85,8 +85,8 @@ After changes, run `veritas shadow run` and address any FAIL lines before finish
 Use:
 
 ```bash
-npm exec -- veritas apply governance-blocks
-npm exec -- veritas apply stop-hook --tool generic
+npx @kontourai/veritas apply governance-blocks
+npx @kontourai/veritas apply stop-hook --tool generic
 ```
 
 Tool-specific integrations are thin wrappers around the same generic contract. Claude Code, Cursor, Codex, Copilot, and any other tool can read the same repo-local rules and run the same shell command.

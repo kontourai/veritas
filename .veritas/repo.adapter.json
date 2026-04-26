@@ -151,14 +151,22 @@
   },
   "evidence": {
     "artifactDir": ".veritas/evidence",
-    "requiredProofLanes": [
-      "npm run verify"
-    ],
     "reportTransport": "local-json",
-    "defaultProofLanes": [
-      "npm run verify"
+    "uncoveredPathPolicy": "warn",
+    "proofLanes": [
+      {
+        "id": "required-proof",
+        "command": "npm run verify",
+        "method": "validation",
+        "summary": "Runs npm run verify."
+      }
     ],
-    "uncoveredPathPolicy": "warn"
+    "requiredProofLaneIds": [
+      "required-proof"
+    ],
+    "defaultProofLaneIds": [
+      "required-proof"
+    ]
   },
   "activation": {
     "aiInstructionFiles": [

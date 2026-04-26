@@ -22,7 +22,7 @@ The framework now ships a first bootstrap command:
 
 ```bash
 npm install -D @kontourai/veritas
-npm exec -- veritas init
+npx @kontourai/veritas init
 ```
 
 That command writes the minimum starter kit:
@@ -33,6 +33,16 @@ That command writes the minimum starter kit:
 4. a short human-friendly README in the repo
 
 It also records the repo shape it inferred so the team can review the guessed source roots, test roots, and proof lane before moving on.
+
+For agent-guided setup, use the plan-first variant:
+
+```bash
+npx @kontourai/veritas init --explore --output .veritas/init-plans/first-pass.json
+npx @kontourai/veritas init --guided --answers answers.json --output .veritas/init-plans/guided.json
+npx @kontourai/veritas init --apply --plan .veritas/init-plans/guided.json
+```
+
+That keeps the initialization conversation flexible while making the reviewed JSON plan the source of truth. The agent can inspect the repo and ask richer questions about proof lanes, protected paths, release expectations, and instruction targets, but `--apply --plan` remains the only file-writing step.
 
 ## The Minimum Starter Kit
 
@@ -97,25 +107,26 @@ It needs the repo to expose guidance clearly and consistently.
 
 Use this sequence:
 
-1. run `npm exec -- veritas init`
-2. review the generated `.veritas/` files
-3. replace the default proof lane with the one that proves your repo is healthy
-4. run `npm exec -- veritas print package-scripts`
-5. run `npm exec -- veritas print ci-snippet`
-6. run `npm exec -- veritas apply package-scripts`
-7. run `npm exec -- veritas apply ci-snippet`
-8. run `npm exec -- veritas report --working-tree`
-9. or run `npm exec -- veritas shadow run --working-tree`
-10. run `npm exec -- veritas apply governance-blocks`
-11. optionally run `npm exec -- veritas apply git-hook --configure-git`
-12. or run `npm exec -- veritas apply stop-hook --tool generic`
-13. or run `npm exec -- veritas apply runtime-hook`
-14. or run `npm exec -- veritas print codex-hook --codex-home /path/to/.codex`
-15. then run `npm exec -- veritas apply codex-hook --codex-home /path/to/.codex`
-16. or run `npm exec -- veritas apply codex-hook --target-hooks-file /path/to/hooks.json`
-17. or run `npm exec -- veritas runtime status --codex-home /path/to/.codex`
-18. optionally run `npm exec -- veritas eval summary`
-19. wire the same paths into review and CI if you want them in your permanent workflow files
+1. run `npx @kontourai/veritas init`, or use `init --explore` then `init --guided --answers ...` when you want an agent-reviewed plan first
+2. if using the guided path, review `.veritas/init-plans/<name>.json` and run `npx @kontourai/veritas init --apply --plan .veritas/init-plans/<name>.json`
+3. review the generated `.veritas/` files
+4. replace the default proof lane with the one that proves your repo is healthy
+5. run `npx @kontourai/veritas print package-scripts`
+6. run `npx @kontourai/veritas print ci-snippet`
+7. run `npx @kontourai/veritas apply package-scripts`
+8. run `npx @kontourai/veritas apply ci-snippet`
+9. run `npx @kontourai/veritas report --working-tree`
+10. or run `npx @kontourai/veritas shadow run --working-tree`
+11. run `npx @kontourai/veritas apply governance-blocks`
+12. optionally run `npx @kontourai/veritas apply git-hook --configure-git`
+13. or run `npx @kontourai/veritas apply stop-hook --tool generic`
+14. or run `npx @kontourai/veritas apply runtime-hook`
+15. or run `npx @kontourai/veritas print codex-hook --codex-home /path/to/.codex`
+16. then run `npx @kontourai/veritas apply codex-hook --codex-home /path/to/.codex`
+17. or run `npx @kontourai/veritas apply codex-hook --target-hooks-file /path/to/hooks.json`
+18. or run `npx @kontourai/veritas runtime status --codex-home /path/to/.codex`
+19. optionally run `npx @kontourai/veritas eval summary`
+20. wire the same paths into review and CI if you want them in your permanent workflow files
 
 This slice is intentionally conservative. Install helpers exist, but the core usage should already be clear before you add extra wiring.
 

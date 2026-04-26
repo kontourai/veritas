@@ -87,14 +87,23 @@
       "repo-local guidance",
       "tracked policy artifacts"
     ],
-    "required_proof_lanes": [
-      "npm run verify"
-    ],
-    "default_proof_lanes": [
-      "npm run verify"
-    ],
     "surface_proof_lanes": [],
-    "uncovered_path_policy": "warn"
+    "uncovered_path_policy": "warn",
+    "proof_lanes": [
+      {
+        "id": "required-proof",
+        "command": "npm run verify",
+        "method": "validation",
+        "surface_claim_ids": [],
+        "summary": "Runs npm run verify."
+      }
+    ],
+    "required_proof_lane_ids": [
+      "required-proof"
+    ],
+    "default_proof_lane_ids": [
+      "required-proof"
+    ]
   },
   "policy_pack": {
     "name": "veritas-default",
@@ -161,6 +170,15 @@
       "passed": true,
       "summary": "All required repository artifacts are present.",
       "findings": []
+    }
+  ],
+  "selected_proof_lanes": [
+    {
+      "id": "required-proof",
+      "command": "npm run verify",
+      "method": "validation",
+      "surface_claim_ids": [],
+      "summary": "Runs npm run verify."
     }
   ]
 }

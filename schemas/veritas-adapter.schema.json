@@ -54,27 +54,48 @@
       "required": ["artifactDir", "reportTransport"],
       "properties": {
         "artifactDir": { "type": "string" },
-        "requiredProofLanes": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "defaultProofLanes": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "surfaceProofLanes": {
+        "proofLanes": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["nodeIds", "proofLanes"],
+            "required": ["id", "command", "method"],
+            "properties": {
+              "id": { "type": "string" },
+              "command": { "type": "string" },
+              "method": {
+                "enum": ["observation", "extraction", "validation", "corroboration", "attestation", "auditability", "anchoring", "monitoring"]
+              },
+              "surfaceClaimIds": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "summary": { "type": "string" }
+            }
+          },
+          "minItems": 1
+        },
+        "requiredProofLaneIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "defaultProofLaneIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "surfaceProofRoutes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["nodeIds", "proofLaneIds"],
             "properties": {
               "nodeIds": {
                 "type": "array",
                 "items": { "type": "string" },
                 "minItems": 1
               },
-              "proofLanes": {
+              "proofLaneIds": {
                 "type": "array",
                 "items": { "type": "string" },
                 "minItems": 1
@@ -89,9 +110,7 @@
         "reportTransport": { "type": "string" }
       },
       "anyOf": [
-        { "required": ["requiredProofLanes"] },
-        { "required": ["defaultProofLanes"] },
-        { "required": ["surfaceProofLanes"] }
+        { "required": ["proofLanes"] }
       ]
     }
   }

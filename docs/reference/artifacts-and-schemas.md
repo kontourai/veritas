@@ -74,7 +74,7 @@ An adapter owns:
 
 - graph nodes and path mapping
 - default and rule-based workstream resolution
-- proof-lane routing
+- explicit proof-lane objects and routing by lane id
 - uncovered-path policy
 - report transport
 - activation targets for AI instruction files
@@ -136,6 +136,7 @@ An evidence artifact records:
 - where the diff came from
 - which repo surfaces were matched
 - which proof commands were selected
+- which proof-lane objects were selected, including method and Surface claim mapping
 - uncovered-path status
 - evaluated policy results
 - adapter metadata
@@ -146,6 +147,35 @@ The framework currently distinguishes three evidence source kinds:
 - `explicit-files`
 - `branch-diff`
 - `working-tree`
+
+#### Adapter Proof-Lane Migration
+
+Current adapters use explicit proof-lane objects:
+
+```json
+{
+  "evidence": {
+    "proofLanes": [
+      {
+        "id": "required-proof",
+        "command": "npm run verify",
+        "method": "validation",
+        "summary": "Runs the repository verification suite."
+      }
+    ],
+    "requiredProofLaneIds": ["required-proof"],
+    "defaultProofLaneIds": ["required-proof"],
+    "surfaceProofRoutes": [
+      {
+        "nodeIds": ["verification.tests"],
+        "proofLaneIds": ["required-proof"]
+      }
+    ]
+  }
+}
+```
+
+Legacy `requiredProofLanes`, `defaultProofLanes`, and `surfaceProofLanes` command arrays are intentionally rejected by runtime validation. Migrate by assigning each command a stable `proofLanes[].id`, moving the command into `proofLanes[].command`, and replacing route command arrays with `proofLaneIds`.
 
 ### Team profile
 

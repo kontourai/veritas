@@ -1,5 +1,44 @@
 # Migrating Between Breaking Changes
 
+## Adapter Proof Lanes Are Explicit Objects
+
+Adapters now use explicit proof-lane objects. Legacy command arrays such as `requiredProofLanes`, `defaultProofLanes`, and `surfaceProofLanes[].proofLanes` fail runtime validation with a migration-oriented error.
+
+Before:
+
+```json
+{
+  "evidence": {
+    "requiredProofLanes": ["npm run ci:fast"],
+    "defaultProofLanes": ["npm test"],
+    "surfaceProofLanes": [
+      { "nodeIds": ["src/api"], "proofLanes": ["npm run api:test"] }
+    ]
+  }
+}
+```
+
+After:
+
+```json
+{
+  "evidence": {
+    "proofLanes": [
+      { "id": "ci-fast", "command": "npm run ci:fast", "method": "validation" },
+      { "id": "unit-tests", "command": "npm test", "method": "validation" },
+      { "id": "api-tests", "command": "npm run api:test", "method": "validation" }
+    ],
+    "requiredProofLaneIds": ["ci-fast"],
+    "defaultProofLaneIds": ["unit-tests"],
+    "surfaceProofRoutes": [
+      { "nodeIds": ["src/api"], "proofLaneIds": ["api-tests"] }
+    ]
+  }
+}
+```
+
+Owned repos can update `.veritas/repo.adapter.json` manually or rerun `veritas init --force` and reapply local policy edits.
+
 ## Proof Commands No Longer Run Through a Shell
 
 `veritas shadow run` now tokenizes proof commands and executes them directly instead of passing the full string through `SHELL -lc`.
@@ -14,14 +53,15 @@ This closes a config-level command-injection path, but it changes the proof-lane
 
 Recommended:
 
-1. Split compound proof flows into multiple `requiredProofLanes` entries.
+1. Split compound proof flows into multiple `proofLanes` entries.
 2. Keep each proof lane to one executable plus its argv.
 
 Before:
 
 ```json
 {
-  "requiredProofLanes": ["npm run ci:fast && npm test"]
+  "proofLanes": [{ "id": "ci", "command": "npm run ci:fast && npm test", "method": "validation" }],
+  "requiredProofLaneIds": ["ci"]
 }
 ```
 
@@ -29,7 +69,11 @@ After:
 
 ```json
 {
-  "requiredProofLanes": ["npm run ci:fast", "npm test"]
+  "proofLanes": [
+    { "id": "ci-fast", "command": "npm run ci:fast", "method": "validation" },
+    { "id": "unit-tests", "command": "npm test", "method": "validation" }
+  ],
+  "requiredProofLaneIds": ["ci-fast", "unit-tests"]
 }
 ```
 

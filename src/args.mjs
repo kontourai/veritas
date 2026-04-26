@@ -83,15 +83,25 @@ export function parseArgs(argv) {
 }
 
 export function parseInitArgs(argv) {
-  return parseTokens(
+  const { options, rest } = parseTokens(
     argv,
     {
       '--root': { type: 'string', key: 'rootDir' },
       '--project-name': { type: 'string', key: 'projectName' },
       '--proof-lane': { type: 'string', key: 'proofLane' },
       '--force': { type: 'flag', key: 'force' },
+      '--explore': { type: 'flag', key: 'explore' },
+      '--guided': { type: 'flag', key: 'guided' },
+      '--apply': { type: 'flag', key: 'apply' },
+      '--plan': { type: 'string', key: 'planPath' },
+      '--answers': { type: 'string', key: 'answersPath' },
+      '--output': { type: 'string', key: 'outputPath' },
     },
-  ).options;
+  );
+  if (rest.length > 0) {
+    throw new Error(`Unknown init argument(s): ${rest.join(', ')}`);
+  }
+  return options;
 }
 
 export function parsePrintArgs(argv) {

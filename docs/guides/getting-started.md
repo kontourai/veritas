@@ -61,12 +61,22 @@ The fastest way to start is:
 
 ```bash
 npm install -D @kontourai/veritas
-npm exec -- veritas init
+npx @kontourai/veritas init
 ```
 
 That gives you a starter adapter, policy pack, team profile, governance instruction file, local README under `.veritas/`, and marker-bounded governance blocks in AI instruction files.
 
 The bootstrap README also tells you what the framework inferred about the repo so you can confirm or correct it right away.
+
+For a repo where the first setup should be reviewed before anything is mutated, use the guided path:
+
+```bash
+npx @kontourai/veritas init --explore --output .veritas/init-plans/first-pass.json
+npx @kontourai/veritas init --guided --answers answers.json --output .veritas/init-plans/guided.json
+npx @kontourai/veritas init --apply --plan .veritas/init-plans/guided.json
+```
+
+The guided path is built for agent-led setup. Exploration and interview work can be rich, but the actual mutation still happens through `veritas init --apply --plan ...` after the plan artifact has been reviewed.
 
 ## Step 1: Create an Adapter
 
@@ -100,7 +110,7 @@ Start with executable rules that are easy to explain:
 Run the CLI with your adapter and policy pack:
 
 ```bash
-npm exec -- veritas report \
+npx @kontourai/veritas report \
   --root /path/to/repo \
   --adapter ./adapters/work-agent.adapter.json \
   --policy-pack ./policy-packs/work-agent-convergence.policy-pack.json \
@@ -119,17 +129,17 @@ The output gives you:
 If you want proof plus agent-readable feedback, run:
 
 ```bash
-npm exec -- veritas shadow run --working-tree
+npx @kontourai/veritas shadow run --working-tree
 ```
 
 Then record a local eval when you know the outcome:
 
 ```bash
 
-npm exec -- veritas eval draft \
+npx @kontourai/veritas eval draft \
   --evidence .veritas/evidence/local-smoke.json
 
-npm exec -- veritas eval record \
+npx @kontourai/veritas eval record \
   --draft .veritas/eval-drafts/local-smoke.json \
   --accepted-without-major-rewrite true \
   --required-followup false \
@@ -137,19 +147,19 @@ npm exec -- veritas eval record \
   --time-to-green-minutes 12 \
   --override-count 0
 
-npm exec -- veritas eval summary
+npx @kontourai/veritas eval summary
 ```
 
 Optional runtime installs still exist, but they are not required for the core product path:
 
 ```bash
-npm exec -- veritas apply git-hook --configure-git
-npm exec -- veritas apply stop-hook --tool generic
-npm exec -- veritas apply runtime-hook
-npm exec -- veritas print codex-hook --codex-home /path/to/.codex
-npm exec -- veritas runtime status --codex-home /path/to/.codex
-npm exec -- veritas apply codex-hook --codex-home /path/to/.codex
-npm exec -- veritas apply codex-hook --target-hooks-file /path/to/hooks.json
+npx @kontourai/veritas apply git-hook --configure-git
+npx @kontourai/veritas apply stop-hook --tool generic
+npx @kontourai/veritas apply runtime-hook
+npx @kontourai/veritas print codex-hook --codex-home /path/to/.codex
+npx @kontourai/veritas runtime status --codex-home /path/to/.codex
+npx @kontourai/veritas apply codex-hook --codex-home /path/to/.codex
+npx @kontourai/veritas apply codex-hook --target-hooks-file /path/to/hooks.json
 ```
 
 That keeps the workflow explicit:
@@ -175,15 +185,15 @@ The eval step stays conservative:
 If you want current-state truth instead of an explicit file list, use one of the working-tree modes:
 
 ```bash
-npm exec -- veritas report --working-tree
-npm exec -- veritas report --staged
-npm exec -- veritas report --unstaged --untracked
+npx @kontourai/veritas report --working-tree
+npx @kontourai/veritas report --staged
+npx @kontourai/veritas report --unstaged --untracked
 ```
 
 If you want branch-diff truth, keep using explicit refs:
 
 ```bash
-npm exec -- veritas report --changed-from main --changed-to HEAD
+npx @kontourai/veritas report --changed-from main --changed-to HEAD
 ```
 
 ## Step 4: Add Live Eval Later, Not First

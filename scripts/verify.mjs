@@ -199,16 +199,16 @@ assert(
   'CLI reference must explain the stdout contract.',
 );
 assert(
-  cliReference.includes('npm exec -- veritas --help'),
+  cliReference.includes('npx @kontourai/veritas --help'),
   'CLI reference must include the top-level help path.',
 );
 assert(
-  cliReference.includes('npm exec -- veritas report --help'),
+  cliReference.includes('npx @kontourai/veritas report --help'),
   'CLI reference must include subcommand help.',
 );
 assert(
-  cliReference.includes('npx') === false,
-  'CLI reference should stay aligned with npm exec usage in this repo.',
+  cliReference.includes('npx @kontourai/veritas'),
+  'CLI reference should use the scoped package invocation in public examples.',
 );
 assert(
   cliReference.includes('veritas shadow run'),

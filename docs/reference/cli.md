@@ -6,10 +6,10 @@ All examples here match the command shapes exercised in [tests/framework.test.mj
 
 ## Entry Points
 
-- `npm exec -- veritas ...`
-- `npm exec -- veritas --help`
-- `npm exec -- veritas report --help`
-- `npm exec -- veritas <subcommand> --help`
+- `npx @kontourai/veritas ...`
+- `npx @kontourai/veritas --help`
+- `npx @kontourai/veritas report --help`
+- `npx @kontourai/veritas <subcommand> --help`
 - `node bin/veritas-report.mjs ...`
 
 The convenience `veritas-report` binary defaults to repo-local starter paths:
@@ -23,8 +23,8 @@ The shortest end-user path is:
 
 ```bash
 npm install -D @kontourai/veritas
-npm exec -- veritas init
-npm exec -- veritas shadow run --working-tree
+npx @kontourai/veritas init
+npx @kontourai/veritas shadow run --working-tree
 ```
 
 Use `shadow run` when you want proof, evidence, eval-draft orchestration, and agent-readable feedback in one command. Use `report` when you want evidence only. Treat `print` and `apply` as optional installer helpers, not the main product path.
@@ -38,7 +38,10 @@ Breaking proof-command migration notes live in [../MIGRATING.md](../MIGRATING.md
 Bootstraps the starter kit for a target repo.
 
 ```bash
-npm exec -- veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--force]
+npx @kontourai/veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--force]
+npx @kontourai/veritas init --explore [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--output .veritas/init-plans/<name>.json]
+npx @kontourai/veritas init --guided --answers <answers.json> [--root <path>] [--project-name <name>] [--output .veritas/init-plans/<name>.json]
+npx @kontourai/veritas init --apply --plan <path> [--root <path>] [--force]
 ```
 
 Writes:
@@ -61,17 +64,39 @@ The bootstrap logic infers:
 - whether workflows exist
 - an initial proof lane from common npm scripts
 
+Guided initialization splits setup into a reviewed artifact flow:
+
+- `--explore` inspects the repo and emits a recommendation JSON without writing starter files.
+- `--guided --answers <answers.json>` folds owner-provided boundaries, style, proof-lane, and instruction-target choices into the recommendation.
+- `--output` is intentionally constrained to `.veritas/init-plans/` so reviewed setup plans stay repo-local and obvious.
+- `--apply --plan <path>` is the only guided write path. It validates the plan schema, target root, payload hashes, and overwrite rules before writing.
+- Unknown init flags fail before any files are written.
+
+Answers are JSON and may include:
+
+```json
+{
+  "proofLane": "npm run verify",
+  "selectedInstructionTargets": ["AGENTS.md", "CLAUDE.md"],
+  "boundaries": ["Do not edit generated snapshots without approval."],
+  "codingStyle": "Prefer small ESM modules.",
+  "releaseExpectations": "Run npm test and npm run verify before merge."
+}
+```
+
+`selectedInstructionTargets` controls the AI instruction files that `--apply` mutates and the governance-block rule that the starter policy pack enforces.
+
 ### `report`
 
 Generates an evidence artifact for a set of files or a repo state slice.
 
 ```bash
-npm exec -- veritas report [--root <path>] [--adapter <path>] [--policy-pack <path>] [--run-id <id>] [file ...]
-npm exec -- veritas report --format feedback --working-tree
-npm exec -- veritas report --working-tree
-npm exec -- veritas report --staged
-npm exec -- veritas report --unstaged --untracked
-npm exec -- veritas report --changed-from <ref> --changed-to <ref>
+npx @kontourai/veritas report [--root <path>] [--adapter <path>] [--policy-pack <path>] [--run-id <id>] [file ...]
+npx @kontourai/veritas report --format feedback --working-tree
+npx @kontourai/veritas report --working-tree
+npx @kontourai/veritas report --staged
+npx @kontourai/veritas report --unstaged --untracked
+npx @kontourai/veritas report --changed-from <ref> --changed-to <ref>
 ```
 
 Important behaviors:
@@ -79,7 +104,7 @@ Important behaviors:
 - explicit files produce `source_kind: "explicit-files"`
 - branch comparisons produce `source_kind: "branch-diff"`
 - working-tree modes produce `source_kind: "working-tree"`
-- the adapter selects proof commands through `requiredProofLanes`, `defaultProofLanes`, and optional `surfaceProofLanes`
+- the adapter selects proof commands through explicit `proofLanes`, `requiredProofLaneIds`, `defaultProofLaneIds`, and optional `surfaceProofRoutes`
 - the artifact is written to the adapter-defined `artifactDir`
 - JSON is the default output; `--format feedback` prints the same lint-style findings used by hooks
 
@@ -88,7 +113,7 @@ Important behaviors:
 Runs proof first, then creates a report, then creates an eval draft, and optionally finishes the eval record if the missing judgment fields are supplied.
 
 ```bash
-npm exec -- veritas shadow run [--root <path>] [--adapter <path>] [--policy-pack <path>] [--team-profile <path>]
+npx @kontourai/veritas shadow run [--root <path>] [--adapter <path>] [--policy-pack <path>] [--team-profile <path>]
   [--format feedback|json]
   [--proof-command <cmd>] [--skip-proof]
   [--working-tree | --changed-from <ref> --changed-to <ref>]
@@ -119,7 +144,7 @@ Exit codes:
 Builds a repo-local draft artifact from a repo-local evidence artifact.
 
 ```bash
-npm exec -- veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
+npx @kontourai/veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
   [--reviewer-confidence <scale-entry|unknown>]
   [--time-to-green-minutes <number>]
   [--override-count <number>]
@@ -138,14 +163,14 @@ Guardrail:
 Completes a live-eval record from either evidence directly or a previously created draft.
 
 ```bash
-npm exec -- veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force]
+npx @kontourai/veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force]
   --accepted-without-major-rewrite <true|false>
   --required-followup <true|false>
   --reviewer-confidence <scale-entry|unknown>
   --time-to-green-minutes <number>
   --override-count <number>
 
-npm exec -- veritas eval record --draft <path> [--team-profile <path>] [--output <path>] [--force]
+npx @kontourai/veritas eval record --draft <path> [--team-profile <path>] [--output <path>] [--force]
   --accepted-without-major-rewrite <true|false>
   --required-followup <true|false>
   --reviewer-confidence <scale-entry|unknown>
@@ -166,7 +191,7 @@ Guardrails:
 Scores a deterministic marker-surfacing benchmark by comparing one `without Veritas` transcript to one `with Veritas` transcript against the same benchmark scenario.
 
 ```bash
-npm exec -- veritas eval marker \
+npx @kontourai/veritas eval marker \
   --scenario examples/benchmarks/migration-marker-scenario.json \
   --without-veritas-transcript examples/benchmarks/migration-marker-without-veritas.json \
   --with-veritas-transcript examples/benchmarks/migration-marker-with-veritas.json
@@ -185,7 +210,7 @@ Important behaviors:
 Scores a suite of marker benchmarks and reports aggregate reliability metrics across multiple scenario groups and trials.
 
 ```bash
-npm exec -- veritas eval marker-suite \
+npx @kontourai/veritas eval marker-suite \
   --suite examples/benchmarks/marker-suite.json
 ```
 
@@ -205,7 +230,7 @@ Important behaviors:
 Reads `.veritas/evals/history.jsonl` and prints recent local outcome metrics.
 
 ```bash
-npm exec -- veritas eval summary [--root <path>]
+npx @kontourai/veritas eval summary [--root <path>]
 ```
 
 The summary includes acceptance count, required rewrites, average time to green, average overrides, confidence distribution, and the most flagged false-positive rule.
@@ -215,13 +240,13 @@ The summary includes acceptance count, required rewrites, average time to green,
 Print-only helpers return suggested content without changing the repo.
 
 ```bash
-npm exec -- veritas print package-scripts [--root <path>] [--proof-lane <cmd>]
-npm exec -- veritas print ci-snippet [--root <path>] [--proof-lane <cmd>]
-npm exec -- veritas print git-hook [--root <path>] [--hook post-commit]
-npm exec -- veritas print runtime-hook [--root <path>]
-npm exec -- veritas print stop-hook [--root <path>] [--tool generic|claude-code|cursor]
-npm exec -- veritas print governance-block
-npm exec -- veritas print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
+npx @kontourai/veritas print package-scripts [--root <path>] [--proof-lane <cmd>]
+npx @kontourai/veritas print ci-snippet [--root <path>] [--proof-lane <cmd>]
+npx @kontourai/veritas print git-hook [--root <path>] [--hook post-commit]
+npx @kontourai/veritas print runtime-hook [--root <path>]
+npx @kontourai/veritas print stop-hook [--root <path>] [--tool generic|claude-code|cursor]
+npx @kontourai/veritas print governance-block
+npx @kontourai/veritas print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
 ```
 
 Printed helper surfaces:
@@ -239,13 +264,13 @@ Printed helper surfaces:
 Write the suggested assets into the repo.
 
 ```bash
-npm exec -- veritas apply package-scripts [--root <path>] [--proof-lane <cmd>] [--force]
-npm exec -- veritas apply ci-snippet [--root <path>] [--output <path>] [--proof-lane <cmd>] [--force]
-npm exec -- veritas apply git-hook [--root <path>] [--hook post-commit] [--output <path>] [--configure-git] [--force]
-npm exec -- veritas apply runtime-hook [--root <path>] [--output <path>] [--force]
-npm exec -- veritas apply stop-hook [--root <path>] [--tool generic|claude-code|cursor] [--output <path>] [--force]
-npm exec -- veritas apply governance-blocks [--root <path>] [--force]
-npm exec -- veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]
+npx @kontourai/veritas apply package-scripts [--root <path>] [--proof-lane <cmd>] [--force]
+npx @kontourai/veritas apply ci-snippet [--root <path>] [--output <path>] [--proof-lane <cmd>] [--force]
+npx @kontourai/veritas apply git-hook [--root <path>] [--hook post-commit] [--output <path>] [--configure-git] [--force]
+npx @kontourai/veritas apply runtime-hook [--root <path>] [--output <path>] [--force]
+npx @kontourai/veritas apply stop-hook [--root <path>] [--tool generic|claude-code|cursor] [--output <path>] [--force]
+npx @kontourai/veritas apply governance-blocks [--root <path>] [--force]
+npx @kontourai/veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]
 ```
 
 Write restrictions are intentional:
@@ -262,7 +287,7 @@ Write restrictions are intentional:
 Inspects the installed state of the tracked adapter surfaces.
 
 ```bash
-npm exec -- veritas runtime status [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
+npx @kontourai/veritas runtime status [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
 ```
 
 It reports:

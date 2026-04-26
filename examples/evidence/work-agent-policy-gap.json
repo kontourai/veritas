@@ -4,14 +4,25 @@
   "timestamp": "2026-04-19T00:10:00.000Z",
   "source_ref": "refs/pull/415/head",
   "source_kind": "branch-diff",
-  "source_scope": ["changed-from:origin/main", "changed-to:HEAD"],
+  "source_scope": [
+    "changed-from:origin/main",
+    "changed-to:HEAD"
+  ],
   "resolved_phase": "Phase 1 (Harden & Onboard)",
   "resolved_workstream": "Entity Hierarchy & Navigation Restructure",
-  "matched_artifacts": [".omx/plans/**"],
-  "affected_nodes": ["tooling.scripts"],
-  "affected_lanes": ["scripts/**"],
-  "selected_proof_commands": ["npm run ci:fast"],
-  "proof_resolution_source": "legacy",
+  "matched_artifacts": [
+    ".omx/plans/**"
+  ],
+  "affected_nodes": [
+    "tooling.scripts"
+  ],
+  "affected_lanes": [
+    "scripts/**"
+  ],
+  "selected_proof_commands": [
+    "npm run ci:fast"
+  ],
+  "proof_resolution_source": "required",
   "uncovered_path_result": "clear",
   "baseline_ci_fast_passed": true,
   "recommendations": [
@@ -24,7 +35,9 @@
   "promotion_candidate": true,
   "override_or_bypass": false,
   "owner": "repo-architecture",
-  "files": ["scripts/verify-convergence.mjs"],
+  "files": [
+    "scripts/verify-convergence.mjs"
+  ],
   "unresolved_files": [],
   "promotion_allowed": true,
   "framework": {
@@ -49,7 +62,9 @@
     "default_resolution": {
       "phase": "Phase 1 (Harden & Onboard)",
       "workstream": "Entity Hierarchy & Navigation Restructure",
-      "matchedArtifacts": ["docs/strategy/roadmap.md"]
+      "matchedArtifacts": [
+        "docs/strategy/roadmap.md"
+      ]
     },
     "non_sliceable_invariants": [
       "CLI/API/UI parity",
@@ -57,10 +72,21 @@
       "plugin/core boundary protection",
       "mandatory CI coverage"
     ],
-    "required_proof_lanes": ["npm run ci:fast"],
-    "default_proof_lanes": [],
     "surface_proof_lanes": [],
-    "uncovered_path_policy": "warn"
+    "uncovered_path_policy": "warn",
+    "proof_lanes": [
+      {
+        "id": "required-proof",
+        "command": "npm run ci:fast",
+        "method": "validation",
+        "surface_claim_ids": [],
+        "summary": "Runs npm run ci:fast."
+      }
+    ],
+    "required_proof_lane_ids": [
+      "required-proof"
+    ],
+    "default_proof_lane_ids": []
   },
   "policy_pack": {
     "name": "work-agent-convergence",
@@ -115,6 +141,15 @@
       "passed": null,
       "summary": "Rule extracted-transport-helper-shape is metadata-only in the current framework.",
       "findings": []
+    }
+  ],
+  "selected_proof_lanes": [
+    {
+      "id": "required-proof",
+      "command": "npm run ci:fast",
+      "method": "validation",
+      "surface_claim_ids": [],
+      "summary": "Runs npm run ci:fast."
     }
   ]
 }
