@@ -28,55 +28,68 @@
     "files",
     "unresolved_files",
     "promotion_allowed",
+    "surface",
     "framework",
     "adapter",
     "policy_pack",
     "policy_results"
   ],
   "properties": {
-    "framework_version": { "type": "integer", "minimum": 1 },
-    "run_id": { "type": "string" },
-    "timestamp": { "type": "string" },
-    "source_ref": { "type": "string" },
+    "framework_version": { "type": "integer", "minimum": 1, "x_surface_mapping": "veritas-local" },
+    "run_id": { "type": "string", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata", "report-input"] },
+    "timestamp": { "type": "string", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence", "event"] },
+    "source_ref": { "type": "string", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence", "metadata"] },
     "source_kind": {
       "type": "string",
-      "enum": ["explicit-files", "branch-diff", "working-tree"]
+      "enum": ["explicit-files", "branch-diff", "working-tree"],
+      "x_surface_mapping": "mapped",
+      "x_surface_targets": ["evidence", "metadata"]
     },
-    "source_scope": { "$ref": "#/$defs/stringArray" },
-    "resolved_phase": { "type": "string" },
-    "resolved_workstream": { "type": "string" },
-    "matched_artifacts": { "$ref": "#/$defs/stringArray" },
-    "affected_nodes": { "$ref": "#/$defs/stringArray" },
-    "affected_lanes": { "$ref": "#/$defs/stringArray" },
-    "selected_proof_commands": { "$ref": "#/$defs/stringArray" },
+    "source_scope": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["evidence", "metadata"] },
+    "resolved_phase": { "type": "string", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "metadata"] },
+    "resolved_workstream": { "type": "string", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "metadata"] },
+    "matched_artifacts": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
+    "affected_nodes": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence", "event"] },
+    "affected_lanes": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
+    "selected_proof_commands": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence"] },
     "selected_proof_lanes": {
       "type": "array",
-      "items": { "$ref": "#/$defs/proofLane" }
+      "items": { "$ref": "#/$defs/proofLane" },
+      "x_surface_mapping": "mapped",
+      "x_surface_targets": ["claim", "evidence", "policy", "event"]
     },
-    "proof_resolution_source": { "type": "string" },
+    "proof_resolution_source": { "type": "string", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
     "proof_family_results": {
       "type": "array",
-      "items": { "$ref": "#/$defs/proofFamilyResult" }
+      "items": { "$ref": "#/$defs/proofFamilyResult" },
+      "x_surface_mapping": "mapped",
+      "x_surface_targets": ["claim", "evidence", "policy", "event", "metadata"]
     },
-    "verification_budget": { "$ref": "#/$defs/verificationBudget" },
+    "verification_budget": { "$ref": "#/$defs/verificationBudget", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence", "event", "metadata", "report-input"] },
     "uncovered_path_result": {
       "type": "string",
-      "enum": ["clear", "ignore", "warn", "fail"]
+      "enum": ["clear", "ignore", "warn", "fail"],
+      "x_surface_mapping": "mapped",
+      "x_surface_targets": ["metadata"]
     },
-    "baseline_ci_fast_passed": { "type": ["boolean", "null"] },
+    "baseline_ci_fast_passed": { "type": ["boolean", "null"], "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "event", "metadata"] },
     "recommendations": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": { "type": "object" },
+      "x_surface_mapping": "mapped",
+      "x_surface_targets": ["metadata"]
     },
-    "false_positive_review": { "$ref": "#/$defs/reviewState" },
-    "promotion_candidate": { "type": "boolean" },
-    "override_or_bypass": { "type": "boolean" },
-    "owner": { "type": ["string", "null"] },
-    "files": { "$ref": "#/$defs/stringArray" },
-    "unresolved_files": { "$ref": "#/$defs/stringArray" },
-    "promotion_allowed": { "type": "boolean" },
+    "false_positive_review": { "$ref": "#/$defs/reviewState", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
+    "promotion_candidate": { "type": "boolean", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
+    "override_or_bypass": { "type": "boolean", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
+    "owner": { "type": ["string", "null"], "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
+    "files": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["evidence", "metadata"] },
+    "unresolved_files": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["evidence", "metadata"] },
+    "promotion_allowed": { "type": "boolean", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
+    "surface": { "$ref": "#/$defs/surfaceBlock", "x_surface_mapping": "mapped", "x_surface_targets": ["report-input"] },
     "framework": {
       "type": "object",
+      "x_surface_mapping": "veritas-local",
       "additionalProperties": false,
       "required": ["version", "resolver_precedence", "policy_defaults"],
       "properties": {
@@ -100,6 +113,7 @@
     },
     "adapter": {
       "type": "object",
+      "x_surface_mapping": "veritas-local",
       "additionalProperties": false,
       "required": [
         "name",
@@ -145,6 +159,8 @@
     },
     "policy_pack": {
       "type": "object",
+      "x_surface_mapping": "mapped",
+      "x_surface_targets": ["claim", "metadata"],
       "additionalProperties": false,
       "required": ["name", "version", "rule_count"],
       "properties": {
@@ -155,13 +171,57 @@
     },
     "policy_results": {
       "type": "array",
-      "items": { "$ref": "#/$defs/policyResult" }
+      "items": { "$ref": "#/$defs/policyResult" },
+      "x_surface_mapping": "mapped",
+      "x_surface_targets": ["claim", "evidence", "event", "metadata", "report-input"]
     }
   },
   "$defs": {
     "stringArray": {
       "type": "array",
       "items": { "type": "string" }
+    },
+    "surfaceBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input"],
+      "properties": {
+        "input": { "$ref": "#/$defs/surfaceTrustInput" }
+      }
+    },
+    "surfaceTrustInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "source", "claims", "evidence", "policies", "events"],
+      "properties": {
+        "schemaVersion": { "const": 2 },
+        "source": { "type": "string" },
+        "claims": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "policies": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "events": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["id"] },
+          { "required": ["generatedAt"] },
+          { "required": ["summary"] },
+          { "required": ["faultLines"] },
+          { "required": ["proofRequirementsByClaimId"] }
+        ]
+      }
     },
     "reviewState": {
       "type": "string",

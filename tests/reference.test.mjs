@@ -45,6 +45,8 @@ test('evidence schema requires framework and adapter sections', () => {
   assert.ok(evidenceSchema.required.includes('selected_proof_lanes'));
   assert.ok(evidenceSchema.required.includes('proof_resolution_source'));
   assert.ok(evidenceSchema.required.includes('policy_results'));
+  assert.ok(evidenceSchema.required.includes('surface'));
+  assert.ok(evidenceSchema.properties.surface);
   assert.ok(evidenceSchema.properties.proof_family_results);
   assert.ok(evidenceSchema.properties.verification_budget);
   assert.ok(
@@ -54,6 +56,30 @@ test('evidence schema requires framework and adapter sections', () => {
   assert.ok(
     proofFamilySchema.$defs.proofFamily.properties.defaultDisposition.enum.includes('move-to-test'),
   );
+});
+
+test('evidence schema classifies top-level fields by Surface mapping', () => {
+  const evidenceSchema = readJson('../schemas/veritas-evidence.schema.json');
+  const docs = readFileSync(new URL('../docs/reference/artifacts-and-schemas.md', import.meta.url), 'utf8');
+  const allowedMappings = new Set(['mapped', 'veritas-local', 'transitional', 'deprecated']);
+  const allowedTargets = new Set(['claim', 'evidence', 'policy', 'event', 'metadata', 'report-input']);
+
+  for (const [field, schema] of Object.entries(evidenceSchema.properties)) {
+    assert.ok(
+      allowedMappings.has(schema.x_surface_mapping),
+      `${field} must declare x_surface_mapping`,
+    );
+    if (schema.x_surface_mapping === 'mapped') {
+      assert.ok(Array.isArray(schema.x_surface_targets), `${field} must declare x_surface_targets`);
+      for (const target of schema.x_surface_targets) {
+        assert.ok(allowedTargets.has(target), `${field} has unsupported Surface target ${target}`);
+      }
+      assert.ok(
+        docs.includes(`\`${field}\``),
+        `${field} must have a docs mapping row when marked Surface-mapped`,
+      );
+    }
+  }
 });
 
 test('adapter and policy schemas declare activation and lint rule contracts', () => {

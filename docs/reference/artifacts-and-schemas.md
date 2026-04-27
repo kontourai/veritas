@@ -208,6 +208,28 @@ Proof-family results include freshness fields:
 
 `veritas budget` is the shortest way to inspect the generated `verification_budget` without opening the full report artifact.
 
+#### Surface TrustInput block
+
+Every new evidence artifact also includes a `surface.input` block. That block is the portable Surface `TrustInput` projection of the Veritas run, not a generated Surface `TrustReport`.
+
+Veritas owns the repo-specific producer fields. Surface owns generated report fields such as `id`, `generatedAt`, `summary`, `faultLines`, and `proofRequirementsByClaimId`. Those report-only fields must not appear under `surface.input`.
+
+| Evidence field | Surface mapping | Classification |
+| --- | --- | --- |
+| `run_id`, `timestamp`, `source_ref`, `source_kind`, `source_scope` | Surface input source, claim/evidence/event timestamps, integrity refs, and evidence metadata | Surface-mapped |
+| `resolved_phase`, `resolved_workstream`, `matched_artifacts`, `affected_lanes`, `files`, `unresolved_files` | Claim and evidence metadata that explains why Veritas selected the surface | Surface-mapped |
+| `affected_nodes` | `Claim`, `Evidence`, and `VerificationEvent` records on `veritas.affected-surface` | Surface-mapped |
+| `selected_proof_commands`, `selected_proof_lanes`, `proof_resolution_source` | `Claim`, `Evidence`, `VerificationPolicy`, and `VerificationEvent` records on `veritas.proof-lanes` | Surface-mapped |
+| `uncovered_path_result`, `baseline_ci_fast_passed` | Proof-lane claim status, verification events, and metadata for proof confidence | Surface-mapped |
+| `proof_family_results` | `Claim`, `Evidence`, `VerificationEvent`, and metadata records on `veritas.proof-families` | Surface-mapped |
+| `verification_budget` | A budget claim/evidence pair plus metadata used by Surface report generation | Surface-mapped |
+| `policy_pack`, `policy_results` | Policy-result claims, evidence, events, and policy-violation fault-line hints | Surface-mapped |
+| `recommendations`, `false_positive_review`, `promotion_candidate`, `override_or_bypass`, `owner`, `promotion_allowed` | Surface metadata and confidence context | Surface-mapped |
+| `framework`, `adapter`, `framework_version` | Veritas-local producer/runtime metadata | Veritas-local |
+| `surface` | Embedded Surface `TrustInput` projection consumed by Surface adapters and tests | Surface-mapped |
+
+The schema enforces this boundary with `x_surface_mapping` metadata on top-level evidence properties. Allowed classifications are `mapped`, `veritas-local`, `transitional`, and `deprecated`. Fields marked `mapped` must also declare `x_surface_targets`, such as `claim`, `evidence`, `policy`, `event`, `metadata`, or `report-input`.
+
 ### Team profile
 
 Defined by [schemas/veritas-team-profile.schema.json](../../schemas/veritas-team-profile.schema.json).

@@ -172,6 +172,13 @@ test('core classifies nodes and builds evidence from an adapter config', () => {
   assert.equal(record.policy_results[0].rule_id, 'required-repo-artifacts');
   assert.equal(record.policy_results[0].implemented, true);
   assert.equal(record.policy_results[0].passed, false);
+  assert.equal(record.surface.input.schemaVersion, 2);
+  assert.equal(record.surface.input.source, `veritas:${record.run_id}`);
+  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.affected-surface'));
+  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.proof-lanes'));
+  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.policy-results'));
+  assert.equal(record.surface.input.faultLines, undefined);
+  assert.equal(record.surface.input.proofRequirementsByClaimId, undefined);
   assert.deepEqual(adapter.policy, {
     defaultFalsePositiveReview: 'unknown',
     defaultPromotionCandidate: false,
@@ -262,6 +269,9 @@ test('evidence records include native proof-family budget when configured', () =
   assert.equal(record.verification_budget.required_family_count, 1);
   assert.equal(record.verification_budget.advisory_family_count, 0);
   assert.equal(record.verification_budget.retire_family_count, 1);
+  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.proof-families'));
+  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.verification-budget'));
+  assert.ok(record.surface.input.events.some((event) => event.status === 'stale' || event.status === 'superseded'));
   assert.deepEqual(record.verification_budget.unknown_catch_evidence_family_ids, [
     'refactor-tombstones',
   ]);

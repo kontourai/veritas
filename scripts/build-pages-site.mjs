@@ -17,6 +17,7 @@ const markdownFiles = [
   'docs/MIGRATING.md',
   'docs/RELEASING.md',
   'docs/design/agent-activation.md',
+  'docs/architecture/surface-veritas-boundary.md',
   'docs/design/framework-core-vs-adapter.md',
   'docs/design/live-eval-roadmap.md',
   'docs/design/roadmap.md',

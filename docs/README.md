@@ -46,6 +46,7 @@ Find what you need by what you're trying to do.
 ### Contribute to the framework
 
 - [Framework Core vs Adapter](design/framework-core-vs-adapter.md) for architecture decisions
+- [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md) for the trust substrate/product-layer boundary
 - [Schema Evolution](design/schema-evolution.md) for schema change policy
 - [CONTRIBUTING.md](../CONTRIBUTING.md) for development workflow
 
@@ -71,6 +72,7 @@ Find what you need by what you're trying to do.
 ### Design
 
 - [Framework Core vs Adapter](design/framework-core-vs-adapter.md) — what stays generic and what lives in the repo adapter
+- [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md) — how Veritas maps repo proof into Surface trust input
 - [Agent Activation](design/agent-activation.md) — how the framework reaches whatever agent is touching the codebase
 - [Policy Packs](design/policy-packs.md) — classification and staging model for repo-specific rules
 - [Proof Family Results](design/proof-family-results.md) — native family-level evidence for decomposing broad proof lanes
