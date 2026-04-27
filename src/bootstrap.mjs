@@ -204,6 +204,51 @@ export function inferBootstrapRepoInsights(rootDir) {
     baseRef: inferBaseRef(rootDir),
     packageManager: packageJson ? 'npm' : 'unknown',
     matchedScripts: scriptPriority.filter((name) => typeof scripts[name] === 'string'),
+    legacyVerification: detectLegacyVerification(rootDir, scripts),
+  };
+}
+
+function detectLegacyVerification(rootDir, scripts = {}) {
+  const scriptEntries = Object.entries(scripts)
+    .filter(([name, command]) => {
+      if (typeof command !== 'string') return false;
+      return (
+        /convergence|guidance|guardrail|ai-guidance|verify:/.test(name) ||
+        /convergence|guidance|guardrail|ai-guidance|\.ai-guidance/.test(command)
+      );
+    })
+    .map(([name, command]) => ({
+      kind: 'package-script',
+      id: name,
+      command,
+      recommendedDisposition: name.includes('verify') ? 'candidate' : 'advisory',
+      reason: 'Legacy or custom verification-shaped package script detected during brownfield init.',
+    }));
+
+  const fileEntries = [
+    '.ai-guidance',
+    'vendor/ai-guidance-framework',
+    'scripts/verify-convergence.mjs',
+    'scripts/guidance-report.mjs',
+  ]
+    .filter((path) => existsSync(resolve(rootDir, path)))
+    .map((path) => ({
+      kind: 'legacy-path',
+      id: path,
+      path,
+      recommendedDisposition: path === '.ai-guidance' ? 'candidate' : 'advisory',
+      reason: 'Legacy guidance or convergence path detected; inventory before copying into Veritas.',
+    }));
+
+  return {
+    detected: scriptEntries.length + fileEntries.length > 0,
+    items: [...scriptEntries, ...fileEntries],
+    recommendedProofFamilyDefaults: {
+      unknownCatchEvidenceDefault: 'candidate',
+      requiredNeedsOwner: true,
+      requiredNeedsReviewTrigger: true,
+      productBehaviorNeedsReplacementTest: true,
+    },
   };
 }
 
@@ -757,7 +802,29 @@ function ownerQuestions(repoInsights) {
     });
   }
 
+  if (repoInsights.legacyVerification?.detected) {
+    questions.push({
+      id: 'legacy-verification-inventory',
+      group: 'brownfield',
+      question: 'Which legacy verification checks have recent catch evidence, and which should move to tests, stay candidate, or retire?',
+    });
+  }
+
   return questions;
+}
+
+function recommendedProofFamilyInventory(repoInsights) {
+  return (repoInsights.legacyVerification?.items ?? []).map((item) => ({
+    id: item.id.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'legacy-verification',
+    source_kind: item.kind,
+    source: item.command ?? item.path,
+    default_disposition: item.recommendedDisposition,
+    recent_catch_evidence: 'unknown',
+    owner: null,
+    replacement_test_available: null,
+    review_trigger: 'review before promoting this legacy check to required',
+    rationale: item.reason,
+  }));
 }
 
 function buildArtifactPayloads({ rootDir, projectName, proofLane, repoInsights, selectedInstructionTargets, ownerAnswers }) {
@@ -836,6 +903,8 @@ export function buildInitRecommendation({
     recommended_policy_pack: JSON.parse(artifactPayloads['.veritas/policy-packs/default.policy-pack.json']),
     recommended_team_profile: JSON.parse(artifactPayloads['.veritas/team/default.team-profile.json']),
     recommended_proof_lanes: recommendedProofLanes({ ...repoInsights, proofLane: resolvedProofLane }),
+    recommended_proof_family_inventory: recommendedProofFamilyInventory(repoInsights),
+    legacy_verification: repoInsights.legacyVerification,
     recommended_surfaces: recommendedSurfaces(repoInsights),
     recommended_instruction_targets: recommendedInstructionTargets(rootDir, selectedInstructionTargets),
     selected_instruction_targets: selectedInstructionTargets,

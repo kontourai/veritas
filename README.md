@@ -12,16 +12,19 @@ It works with any AI agent because the contract is repo-local: adapter, policy p
 ```bash
 npm install -D @kontourai/veritas
 npx veritas init
+npx veritas budget --working-tree
 npx veritas shadow run --working-tree
 ```
 
-That bootstraps your repo with an adapter, policy pack, team profile, and AI instruction governance blocks, then runs the first feedback check.
+That bootstraps your repo with an adapter, policy pack, team profile, and AI instruction governance blocks, shows the current verification budget, then runs the first feedback check.
 
 ## What You Get
 
 - **Rules** — repo-specific lint for agents: required artifacts, governance blocks, proof lanes, and diff-based companion changes
 - **Feedback** — terse `PASS` / `FAIL` / `WARN` output designed to go straight back into an agent's context window
-- **Improvement** — local evidence and eval history so you can measure whether the guidance is helping over time
+- **Evidence** — local reports with selected proof lanes, policy results, optional proof-family results, and verification budgets
+- **Budgeting** — `veritas budget` shows required, candidate, advisory, move-to-test, retiring, stale, and triggerless proof families
+- **Improvement** — eval history so you can measure whether the guidance is helping over time
 
 ## Caught In The Wild
 
@@ -38,6 +41,7 @@ That is the point: the agent sees the missing proof before it declares done.
 
 - [Full Documentation](https://kontourai.github.io/veritas/)
 - [Getting Started](docs/guides/getting-started.md)
+- [Brownfield Adoption](docs/guides/brownfield-adoption.md)
 - [Concepts Overview](docs/concepts.md)
 - [CLI Reference](docs/reference/cli.md)
 

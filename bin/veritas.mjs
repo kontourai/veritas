@@ -13,6 +13,7 @@ import {
   runEvalRecordCli,
   runEvalSummaryCli,
   runVeritasReportCli,
+  runVerificationBudgetCli,
   runInitCli,
   runPrintCiSnippetCli,
   runPrintCodexHookCli,
@@ -28,6 +29,7 @@ import {
 const MAIN_USAGE = `Usage:
   veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--force]
   veritas report [--format json|feedback] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
+  veritas budget [--format human|feedback|json] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
   veritas shadow run [--format feedback|json] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--team-profile <path>] [--proof-command <cmd>] [--skip-proof]
   veritas runtime status [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
   veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
@@ -54,6 +56,10 @@ const MAIN_USAGE = `Usage:
 
 const REPORT_USAGE = `Usage:
   veritas report [--format json|feedback] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
+`;
+
+const BUDGET_USAGE = `Usage:
+  veritas budget [--format human|feedback|json] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
 `;
 
 const PRINT_USAGE = `Usage:
@@ -159,6 +165,14 @@ if (!subcommand || isHelpToken(subcommand)) {
     writeStdout(REPORT_USAGE);
   } else {
     runVeritasReportCli(args, {
+      rootDir: cwd,
+    });
+  }
+} else if (subcommand === 'budget') {
+  if (args.some(isHelpToken)) {
+    writeStdout(BUDGET_USAGE);
+  } else {
+    runVerificationBudgetCli(args, {
       rootDir: cwd,
     });
   }

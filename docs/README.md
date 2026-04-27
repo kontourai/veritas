@@ -13,6 +13,7 @@ Find what you need by what you're trying to do.
 
 - [Getting Started](guides/getting-started.md) for installation and first run
 - [Start Your Next Project](guides/start-your-next-project.md) for greenfield repos
+- [Brownfield Adoption](guides/brownfield-adoption.md) for existing repos with custom guidance or verification
 - [CLI Reference](reference/cli.md) for exact commands and flags
 
 ### Wire Veritas into my AI agent
@@ -72,6 +73,7 @@ Find what you need by what you're trying to do.
 - [Framework Core vs Adapter](design/framework-core-vs-adapter.md) — what stays generic and what lives in the repo adapter
 - [Agent Activation](design/agent-activation.md) — how the framework reaches whatever agent is touching the codebase
 - [Policy Packs](design/policy-packs.md) — classification and staging model for repo-specific rules
+- [Proof Family Results](design/proof-family-results.md) — native family-level evidence for decomposing broad proof lanes
 - [Live Evals](design/live-evals.md) — how the framework measures whether its guidance is actually helping
 - [Live Eval Roadmap](design/live-eval-roadmap.md) — the build plan for live eval, phase by phase
 - [Schema Evolution](design/schema-evolution.md) — how framework contracts change without breaking consumers

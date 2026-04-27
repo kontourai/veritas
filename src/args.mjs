@@ -82,6 +82,10 @@ export function parseArgs(argv) {
   return { options, files: rest };
 }
 
+export function parseBudgetArgs(argv) {
+  return parseArgs(argv);
+}
+
 export function parseInitArgs(argv) {
   const { options, rest } = parseTokens(
     argv,

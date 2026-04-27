@@ -103,6 +103,10 @@
             }
           }
         },
+        "proofFamilyManifests": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
         "uncoveredPathPolicy": {
           "type": "string",
           "enum": ["ignore", "warn", "fail"]

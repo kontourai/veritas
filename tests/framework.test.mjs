@@ -191,6 +191,138 @@ test('core classifies nodes and builds evidence from an adapter config', () => {
   );
 });
 
+test('evidence records include native proof-family budget when configured', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-proof-family-'));
+  mkdirp(join(rootDir, '.veritas/proof-families'));
+  writeFileSync(join(rootDir, 'package.json'), '{}');
+  writeFileSync(
+    join(rootDir, '.veritas/proof-families/guardrails.json'),
+    JSON.stringify(
+      {
+        version: 1,
+        sourceProofLaneId: 'legacy-guardrails',
+        families: [
+          {
+            id: 'repo-governance',
+            laneId: 'required-proof',
+            destination: 'veritas-policy',
+            owner: 'repo-core',
+            defaultDisposition: 'required',
+            currentBlockingStatus: 'required',
+            recentCatchEvidence: 'active policy evaluation',
+            regressionSeverity: 'high',
+            falsePositiveRisk: 'low',
+            replacementTestAvailable: 'none',
+            expiryOrReviewTrigger: 'review when upstream policy fully covers this family',
+            lastReviewed: '2026-04-26',
+            evidenceBasis: 'migration proof',
+            rationale: 'Protects the repository trust contract.',
+          },
+          {
+            id: 'refactor-tombstones',
+            laneId: 'legacy-guardrails',
+            destination: 'retire-or-soften',
+            defaultDisposition: 'retire',
+            currentBlockingStatus: 'advisory',
+            recentCatchEvidence: 'unknown',
+            regressionSeverity: 'low',
+            falsePositiveRisk: 'high',
+            rationale: 'Preserves historical shape rather than behavior.',
+          },
+        ],
+      },
+      null,
+      2,
+    ),
+  );
+
+  const adapter = {
+    ...readJson('../adapters/work-agent.adapter.json'),
+    evidence: {
+      ...readJson('../adapters/work-agent.adapter.json').evidence,
+      proofFamilyManifests: ['.veritas/proof-families/guardrails.json'],
+    },
+  };
+  const policyPack = loadPolicyPack(
+    new URL('../policy-packs/work-agent-convergence.policy-pack.json', import.meta.url),
+  );
+  const record = buildEvidenceRecord({
+    files: ['package.json'],
+    config: adapter,
+    policyPack,
+    rootDir,
+  });
+
+  assert.equal(record.proof_family_results.length, 2);
+  assert.equal(record.proof_family_results[0].id, 'repo-governance');
+  assert.equal(record.proof_family_results[0].verification_weight, 'blocking');
+  assert.equal(record.proof_family_results[0].selected, true);
+  assert.equal(record.proof_family_results[0].freshness_status, 'current');
+  assert.equal(record.proof_family_results[0].last_reviewed, '2026-04-26');
+  assert.equal(record.verification_budget.required_family_count, 1);
+  assert.equal(record.verification_budget.advisory_family_count, 0);
+  assert.equal(record.verification_budget.retire_family_count, 1);
+  assert.deepEqual(record.verification_budget.unknown_catch_evidence_family_ids, [
+    'refactor-tombstones',
+  ]);
+  assert.deepEqual(record.verification_budget.stale_or_unknown_family_ids, [
+    'refactor-tombstones',
+  ]);
+  assert.match(
+    buildFeedbackSummary({ record }),
+    /proof-family:repo-governance: required \/ blocking/,
+  );
+});
+
+test('proof-family manifest validation rejects required families without review evidence', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-proof-family-invalid-'));
+  mkdirp(join(rootDir, '.veritas/proof-families'));
+  writeFileSync(join(rootDir, 'package.json'), '{}');
+  writeFileSync(
+    join(rootDir, '.veritas/proof-families/guardrails.json'),
+    JSON.stringify(
+      {
+        version: 1,
+        sourceProofLaneId: 'legacy-guardrails',
+        families: [
+          {
+            id: 'unsafe-required',
+            laneId: 'required-proof',
+            defaultDisposition: 'required',
+            currentBlockingStatus: 'required',
+            recentCatchEvidence: 'unknown',
+            rationale: 'This should not be promoted without evidence.',
+          },
+        ],
+      },
+      null,
+      2,
+    ),
+  );
+
+  const adapter = {
+    ...readJson('../adapters/work-agent.adapter.json'),
+    evidence: {
+      ...readJson('../adapters/work-agent.adapter.json').evidence,
+      proofFamilyManifests: ['.veritas/proof-families/guardrails.json'],
+    },
+  };
+  const policyPack = loadPolicyPack(
+    new URL('../policy-packs/work-agent-convergence.policy-pack.json', import.meta.url),
+  );
+
+  assert.throws(
+    () =>
+      buildEvidenceRecord({
+        files: ['package.json'],
+        config: adapter,
+        policyPack,
+        rootDir,
+      }),
+    /proof-family unsafe-required owner must be a non-empty string/,
+  );
+});
+
 test('policy pack evaluates governance blocks and diff-required rules', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-policy-rules-'));
   writeFileSync(join(rootDir, 'AGENTS.md'), `# Agents\n\n${buildGovernanceBlock()}\n`);
@@ -546,6 +678,109 @@ test('init explore emits a read-only recommendation artifact', () => {
     ['AGENTS.md', 'CLAUDE.md'],
   );
   assert.equal(existsSync(join(rootDir, '.veritas')), false);
+});
+
+test('init explore inventories legacy brownfield verification', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-legacy-'));
+  mkdirp(join(rootDir, 'scripts'));
+  mkdirp(join(rootDir, '.ai-guidance'));
+  writeFileSync(
+    join(rootDir, 'package.json'),
+    JSON.stringify(
+      {
+        scripts: {
+          'verify:convergence': 'node scripts/verify-convergence.mjs',
+          'guidance:report': 'node scripts/guidance-report.mjs',
+          test: 'node -e "process.exit(0)"',
+        },
+      },
+      null,
+      2,
+    ),
+  );
+  writeFileSync(join(rootDir, 'scripts/verify-convergence.mjs'), 'process.exit(0);\n');
+  writeFileSync(join(rootDir, 'scripts/guidance-report.mjs'), 'process.exit(0);\n');
+
+  const stdout = execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'init', '--explore', '--root', rootDir],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const recommendation = parseCliJson(stdout);
+
+  assert.equal(recommendation.legacy_verification.detected, true);
+  assert.ok(
+    recommendation.recommended_proof_family_inventory.some(
+      (family) => family.id === 'verify-convergence' && family.default_disposition === 'candidate',
+    ),
+  );
+  assert.ok(
+    recommendation.owner_questions.some(
+      (question) => question.id === 'legacy-verification-inventory',
+    ),
+  );
+});
+
+test('budget CLI prints verification budget without reading the full report', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-budget-cli-'));
+  writeFileSync(
+    join(rootDir, 'package.json'),
+    JSON.stringify({ scripts: { test: 'node -e "process.exit(0)"' } }, null, 2),
+  );
+  writeFileSync(join(rootDir, 'AGENTS.md'), '# Agents\n');
+  execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'init', '--root', rootDir, '--proof-lane', 'npm test'],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  mkdirp(join(rootDir, '.veritas/proof-families'));
+  writeFileSync(
+    join(rootDir, '.veritas/proof-families/guardrails.json'),
+    JSON.stringify(
+      {
+        version: 1,
+        sourceProofLaneId: 'required-proof',
+        families: [
+          {
+            id: 'repo-governance',
+            laneId: 'required-proof',
+            owner: 'repo-core',
+            defaultDisposition: 'required',
+            currentBlockingStatus: 'required',
+            recentCatchEvidence: 'init smoke test',
+            regressionSeverity: 'high',
+            falsePositiveRisk: 'low',
+            expiryOrReviewTrigger: 'review when init policy changes',
+            rationale: 'Protects generated Veritas artifacts.',
+          },
+        ],
+      },
+      null,
+      2,
+    ),
+  );
+  const adapterPath = join(rootDir, '.veritas/repo.adapter.json');
+  const adapter = readJsonFromAbsolute(adapterPath);
+  adapter.evidence.proofFamilyManifests = ['.veritas/proof-families/guardrails.json'];
+  writeFileSync(adapterPath, `${JSON.stringify(adapter, null, 2)}\n`);
+
+  const jsonStdout = execFileSync(
+    'node',
+    [
+      join(frameworkRootDir, 'bin/veritas.mjs'),
+      'budget',
+      '--root',
+      rootDir,
+      '--format',
+      'json',
+      'package.json',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const result = parseCliJson(jsonStdout);
+
+  assert.equal(result.verification_budget.required_family_count, 1);
+  assert.equal(result.proof_family_results[0].id, 'repo-governance');
 });
 
 test('init explore output is constrained to .veritas/init-plans', () => {

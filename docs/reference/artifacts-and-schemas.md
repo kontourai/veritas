@@ -137,6 +137,8 @@ An evidence artifact records:
 - which repo surfaces were matched
 - which proof commands were selected
 - which proof-lane objects were selected, including method and Surface claim mapping
+- proof-family results when the adapter declares proof-family manifests
+- a generated verification budget that shows required, candidate, advisory, move-to-test, and retiring check families
 - uncovered-path status
 - evaluated policy results
 - adapter metadata
@@ -176,6 +178,35 @@ Current adapters use explicit proof-lane objects:
 ```
 
 Legacy `requiredProofLanes`, `defaultProofLanes`, and `surfaceProofLanes` command arrays are intentionally rejected by runtime validation. Migrate by assigning each command a stable `proofLanes[].id`, moving the command into `proofLanes[].command`, and replacing route command arrays with `proofLaneIds`.
+
+Adapters can also declare family-level proof inventories:
+
+```json
+{
+  "evidence": {
+    "proofFamilyManifests": [
+      ".veritas/proof-families/repo-guardrails.families.json"
+    ]
+  }
+}
+```
+
+Those manifests are repo-local inventories. Veritas reports their portable summary as `proof_family_results` and `verification_budget` in the evidence artifact.
+
+The portable manifest contract is documented in [veritas-proof-family-manifest.schema.json](../../schemas/veritas-proof-family-manifest.schema.json). Runtime validation adds usefulness rules that JSON Schema alone cannot express:
+
+- required families need an owner,
+- required families need a review trigger,
+- required families cannot use unknown catch evidence,
+- every family needs a lane id, either directly or through the manifest `sourceProofLaneId`.
+
+Proof-family results include freshness fields:
+
+- `last_reviewed`
+- `evidence_basis`
+- `freshness_status`
+
+`veritas budget` is the shortest way to inspect the generated `verification_budget` without opening the full report artifact.
 
 ### Team profile
 

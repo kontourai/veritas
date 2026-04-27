@@ -121,9 +121,10 @@ Anything heavier than that should be justified by operator value, not by framewo
 
 `work-agent` is adapter `#1`, not the framework itself.
 
-Its current `verify:convergence` logic is best understood as:
+Its old `verify:convergence` logic has been replaced by Veritas-native proof lanes and proof-family reporting. The current migration shape is best understood as:
 
 - partly a mature repo-specific policy pack
-- partly a backlog of brittle source-shape checks that still need abstraction
+- partly a broad transitional `repo-guardrails` lane
+- partly a proof-family inventory that separates required, candidate, advisory, move-to-test, retiring, and upstream-abstraction checks
 
-That makes it the right proving ground, but the wrong long-term home for the framework core.
+That makes it the right proving ground, but the wrong long-term home for repo-specific assertions. Reusable shapes should move into Veritas; work-agent-specific facts should stay in the adapter, proof-family manifest, or normal product tests.

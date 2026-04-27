@@ -9,6 +9,7 @@ All examples here match the command shapes exercised in [tests/framework.test.mj
 - `npx @kontourai/veritas ...`
 - `npx @kontourai/veritas --help`
 - `npx @kontourai/veritas report --help`
+- `npx @kontourai/veritas budget --help`
 - `npx @kontourai/veritas <subcommand> --help`
 - `node bin/veritas-report.mjs ...`
 
@@ -24,10 +25,11 @@ The shortest end-user path is:
 ```bash
 npm install -D @kontourai/veritas
 npx @kontourai/veritas init
+npx @kontourai/veritas budget --working-tree
 npx @kontourai/veritas shadow run --working-tree
 ```
 
-Use `shadow run` when you want proof, evidence, eval-draft orchestration, and agent-readable feedback in one command. Use `report` when you want evidence only. Treat `print` and `apply` as optional installer helpers, not the main product path.
+Use `budget` when you want the concise "what are we checking and what should be reviewed?" view. Use `shadow run` when you want proof, evidence, eval-draft orchestration, and agent-readable feedback in one command. Use `report` when you want evidence only. Treat `print` and `apply` as optional installer helpers, not the main product path.
 
 Breaking proof-command migration notes live in [../MIGRATING.md](../MIGRATING.md).
 
@@ -70,6 +72,7 @@ Guided initialization splits setup into a reviewed artifact flow:
 - `--guided --answers <answers.json>` folds owner-provided boundaries, style, proof-lane, and instruction-target choices into the recommendation.
 - `--output` is intentionally constrained to `.veritas/init-plans/` so reviewed setup plans stay repo-local and obvious.
 - `--apply --plan <path>` is the only guided write path. It validates the plan schema, target root, payload hashes, and overwrite rules before writing.
+- Brownfield repos with legacy guidance or convergence scripts also receive a `legacy_verification` inventory and `recommended_proof_family_inventory`. Unknown catch evidence stays candidate/advisory until a maintainer supplies owner and review evidence.
 - Unknown init flags fail before any files are written.
 
 Answers are JSON and may include:
@@ -107,6 +110,25 @@ Important behaviors:
 - the adapter selects proof commands through explicit `proofLanes`, `requiredProofLaneIds`, `defaultProofLaneIds`, and optional `surfaceProofRoutes`
 - the artifact is written to the adapter-defined `artifactDir`
 - JSON is the default output; `--format feedback` prints the same lint-style findings used by hooks
+
+### `budget`
+
+Prints the verification budget without requiring operators to read the full report artifact.
+
+```bash
+npx @kontourai/veritas budget [--root <path>] [--adapter <path>] [--policy-pack <path>] [--run-id <id>] [file ...]
+npx @kontourai/veritas budget --working-tree
+npx @kontourai/veritas budget --format feedback --working-tree
+npx @kontourai/veritas budget --format json --working-tree
+```
+
+Important behaviors:
+
+- default output is a short human-readable budget summary
+- `--format json` returns `verification_budget` and `proof_family_results`
+- `--format feedback` reuses the same lint-style summary as `report --format feedback`
+- the command uses the same adapter, policy-pack, and source-scope flags as `report`
+- malformed declared proof-family manifests fail with the manifest path and family id
 
 ### `shadow run`
 

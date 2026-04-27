@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-26
+
+### Added
+
+- Native proof-family manifest validation and evidence fields for owners, freshness, review triggers, and evidence basis.
+- `veritas budget` for focused verification-budget output in human, feedback, and JSON formats.
+- Brownfield init inventory for legacy guidance, convergence, and guardrail checks.
+- Reference documentation for proof-family results, brownfield adoption, and verification-budget review.
+
+### Changed
+
+- Evidence artifacts now include a generated `verification_budget` that separates required, candidate, advisory, move-to-test, retire, and upstream-abstraction families.
+- Required proof families must have an owner, review trigger, lane id, and non-unknown recent catch evidence.
+- Package version is prepared for the `@kontourai/veritas@0.3.0` release.
+
 ## [0.1.3] - 2026-04-23
 
 ## [0.1.2] - 2026-04-23

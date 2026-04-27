@@ -1,6 +1,6 @@
 {
   "name": "@kontourai/veritas",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Repo-local framework and CLI for making AI-assisted development easier to trust through adapters, policy packs, evidence, and evals.",
   "private": false,
   "license": "Apache-2.0",
@@ -64,6 +64,7 @@
     "veritas:report": "npm exec -- veritas report --run-id local-smoke package.json",
     "veritas:report:working-tree": "npm exec -- veritas report --working-tree",
     "veritas:report:diff": "npm exec -- veritas report --changed-from main --changed-to HEAD",
+    "veritas:budget": "npm exec -- veritas budget --working-tree",
     "veritas:status:runtime": "npm exec -- veritas runtime status",
     "veritas:proof": "npm run verify",
     "lint:governance": "npm exec -- veritas shadow run --format feedback --working-tree",

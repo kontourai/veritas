@@ -38,12 +38,22 @@ test('classification artifact groups the current convergence rule surface', () =
 
 test('evidence schema requires framework and adapter sections', () => {
   const evidenceSchema = readJson('../schemas/veritas-evidence.schema.json');
+  const proofFamilySchema = readJson('../schemas/veritas-proof-family-manifest.schema.json');
   assert.ok(evidenceSchema.required.includes('framework'));
   assert.ok(evidenceSchema.required.includes('adapter'));
   assert.ok(evidenceSchema.required.includes('selected_proof_commands'));
   assert.ok(evidenceSchema.required.includes('selected_proof_lanes'));
   assert.ok(evidenceSchema.required.includes('proof_resolution_source'));
   assert.ok(evidenceSchema.required.includes('policy_results'));
+  assert.ok(evidenceSchema.properties.proof_family_results);
+  assert.ok(evidenceSchema.properties.verification_budget);
+  assert.ok(
+    evidenceSchema.properties.verification_budget.$ref.endsWith('verificationBudget'),
+  );
+  assert.ok(proofFamilySchema.properties.families);
+  assert.ok(
+    proofFamilySchema.$defs.proofFamily.properties.defaultDisposition.enum.includes('move-to-test'),
+  );
 });
 
 test('adapter and policy schemas declare activation and lint rule contracts', () => {
@@ -55,6 +65,7 @@ test('adapter and policy schemas declare activation and lint rule contracts', ()
   assert.ok(activation.required.includes('path'));
   assert.equal(activation.properties.tool.type, 'string');
   assert.equal(activation.properties.required.type, 'boolean');
+  assert.ok(adapterSchema.properties.evidence.properties.proofFamilyManifests);
   assert.ok(matchProperties.artifacts);
   assert.ok(matchProperties['governance-block']);
   assert.ok(matchProperties['if-changed']);

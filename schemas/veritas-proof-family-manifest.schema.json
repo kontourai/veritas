@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veritas.dev/schemas/veritas-proof-family-manifest.schema.json",
+  "title": "Veritas Proof Family Manifest",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["families"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "sourceProofLaneId": { "type": "string" },
+    "generatedFrom": { "type": "string" },
+    "migrationStage": { "type": "string" },
+    "reviewPolicy": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "families": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/proofFamily" }
+    }
+  },
+  "$defs": {
+    "proofFamily": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "laneId": { "type": "string", "minLength": 1 },
+        "proofLaneId": { "type": "string", "minLength": 1 },
+        "destination": { "type": "string" },
+        "owner": { "type": "string" },
+        "defaultDisposition": {
+          "type": "string",
+          "enum": ["required", "candidate", "advisory", "move-to-test", "retire", "upstream-abstraction"]
+        },
+        "disposition": {
+          "type": "string",
+          "enum": ["required", "candidate", "advisory", "move-to-test", "retire", "upstream-abstraction"]
+        },
+        "currentBlockingStatus": { "type": "string" },
+        "recentCatchEvidence": { "type": "string" },
+        "regressionSeverity": { "type": "string" },
+        "falsePositiveRisk": { "type": "string" },
+        "replacementTestAvailable": { "type": "string" },
+        "expiryOrReviewTrigger": { "type": "string" },
+        "lastReviewed": { "type": "string" },
+        "evidenceBasis": { "type": "string" },
+        "freshnessStatus": {
+          "type": "string",
+          "enum": ["current", "review-needed", "stale", "retiring"]
+        },
+        "rationale": { "type": "string" }
+      }
+    }
+  }
+}

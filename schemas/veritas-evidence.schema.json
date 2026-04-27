@@ -54,6 +54,11 @@
       "items": { "$ref": "#/$defs/proofLane" }
     },
     "proof_resolution_source": { "type": "string" },
+    "proof_family_results": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/proofFamilyResult" }
+    },
+    "verification_budget": { "$ref": "#/$defs/verificationBudget" },
     "uncovered_path_result": {
       "type": "string",
       "enum": ["clear", "ignore", "warn", "fail"]
@@ -174,6 +179,97 @@
         },
         "surface_claim_ids": { "$ref": "#/$defs/stringArray" },
         "summary": { "type": "string" }
+      }
+    },
+    "proofFamilyResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "lane_id",
+        "source_proof_lane_id",
+        "manifest_path",
+        "destination",
+        "owner",
+        "disposition",
+        "blocking_status",
+        "verification_weight",
+        "selected",
+        "recent_catch_evidence",
+        "regression_severity",
+        "false_positive_risk",
+        "replacement_test_available",
+        "review_trigger",
+        "last_reviewed",
+        "evidence_basis",
+        "freshness_status",
+        "rationale"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "lane_id": { "type": "string" },
+        "source_proof_lane_id": { "type": ["string", "null"] },
+        "manifest_path": { "type": "string" },
+        "destination": { "type": ["string", "null"] },
+        "owner": { "type": ["string", "null"] },
+        "disposition": {
+          "type": "string",
+          "enum": ["required", "candidate", "advisory", "move-to-test", "retire", "upstream-abstraction"]
+        },
+        "blocking_status": { "type": "string" },
+        "verification_weight": {
+          "type": "string",
+          "enum": ["blocking", "advisory", "informational"]
+        },
+        "selected": { "type": "boolean" },
+        "recent_catch_evidence": { "type": "string" },
+        "regression_severity": { "type": "string" },
+        "false_positive_risk": { "type": "string" },
+        "replacement_test_available": { "type": ["string", "null"] },
+        "review_trigger": { "type": ["string", "null"] },
+        "last_reviewed": { "type": ["string", "null"] },
+        "evidence_basis": { "type": "string" },
+        "freshness_status": {
+          "type": "string",
+          "enum": ["current", "review-needed", "stale", "retiring"]
+        },
+        "rationale": { "type": "string" }
+      }
+    },
+    "verificationBudget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proof_lane_count",
+        "selected_proof_lane_count",
+        "proof_family_count",
+        "required_family_count",
+        "candidate_family_count",
+        "advisory_family_count",
+        "move_to_test_family_count",
+        "retire_family_count",
+        "upstream_candidate_count",
+        "unknown_catch_evidence_family_ids",
+        "missing_review_trigger_family_ids",
+        "stale_family_ids",
+        "stale_or_unknown_family_ids",
+        "recommendation"
+      ],
+      "properties": {
+        "proof_lane_count": { "type": "integer", "minimum": 0 },
+        "selected_proof_lane_count": { "type": "integer", "minimum": 0 },
+        "proof_family_count": { "type": "integer", "minimum": 0 },
+        "required_family_count": { "type": "integer", "minimum": 0 },
+        "candidate_family_count": { "type": "integer", "minimum": 0 },
+        "advisory_family_count": { "type": "integer", "minimum": 0 },
+        "move_to_test_family_count": { "type": "integer", "minimum": 0 },
+        "retire_family_count": { "type": "integer", "minimum": 0 },
+        "upstream_candidate_count": { "type": "integer", "minimum": 0 },
+        "unknown_catch_evidence_family_ids": { "$ref": "#/$defs/stringArray" },
+        "missing_review_trigger_family_ids": { "$ref": "#/$defs/stringArray" },
+        "stale_family_ids": { "$ref": "#/$defs/stringArray" },
+        "stale_or_unknown_family_ids": { "$ref": "#/$defs/stringArray" },
+        "recommendation": { "type": "string" }
       }
     },
     "resolution": {

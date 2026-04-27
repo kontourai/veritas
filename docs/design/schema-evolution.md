@@ -43,3 +43,14 @@ When a new major schema version is introduced:
 - prefer explicit artifact versions over implicit interpretation
 - do not reuse an old version number for a new contract
 - update the relevant design/reference docs at the same time as the schema
+
+## Contract: Proof Family Results
+
+Brownfield repos may need family-level proof evidence before every individual check becomes a reusable Veritas policy. The evidence schema now supports this with additive `proof_family_results` and `verification_budget` fields, populated from adapter-declared `proofFamilyManifests`.
+
+When evolving these fields:
+
+- keep existing proof-lane command results valid,
+- document candidate/advisory/required disposition semantics,
+- keep repo-specific assertions inside repo-local manifests,
+- add fixtures that prove old evidence remains valid and new family-level evidence renders correctly.

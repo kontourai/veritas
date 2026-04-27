@@ -22,6 +22,7 @@ import {
 import {
   parseTokens,
   parseArgs,
+  parseBudgetArgs,
   parseInitArgs,
   parsePrintArgs,
   parseApplyArgs,
@@ -77,6 +78,7 @@ export {
   loadMarkerBenchmarkSuite,
   parseTokens,
   parseArgs,
+  parseBudgetArgs,
   parseInitArgs,
   parsePrintArgs,
   parseApplyArgs,
@@ -862,6 +864,228 @@ function proofLaneRecordsForCommands(config, commands) {
   });
 }
 
+function readProofFamilyManifestPaths(config) {
+  return uniqueStrings(config.evidence?.proofFamilyManifests ?? []);
+}
+
+const PROOF_FAMILY_DISPOSITIONS = [
+  'required',
+  'candidate',
+  'advisory',
+  'move-to-test',
+  'retire',
+  'upstream-abstraction',
+];
+
+function readProofFamilyField(family, camelKey, snakeKey, fallback = null) {
+  if (family[camelKey] !== undefined) return family[camelKey];
+  if (snakeKey && family[snakeKey] !== undefined) return family[snakeKey];
+  return fallback;
+}
+
+function assertProofFamilyString(value, label, { required = true } = {}) {
+  if (!required && (value === undefined || value === null)) return;
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`${label} must be a non-empty string`);
+  }
+}
+
+function normalizeProofFamilyDisposition(family) {
+  const disposition = family.defaultDisposition ?? family.disposition ?? 'candidate';
+  if (family.currentBlockingStatus === 'required' || disposition === 'required') return 'required';
+  if (disposition === 'retire') return 'retire';
+  if (disposition === 'move-to-test') return 'move-to-test';
+  if (disposition === 'upstream-abstraction') return 'upstream-abstraction';
+  if (family.currentBlockingStatus === 'advisory' || disposition === 'advisory') return 'advisory';
+  return 'candidate';
+}
+
+function validateProofFamilyManifest(manifest, manifestPath) {
+  if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+    throw new Error(`proof-family manifest must be an object: ${manifestPath}`);
+  }
+  if (!Array.isArray(manifest.families) || manifest.families.length === 0) {
+    throw new Error(`proof-family manifest requires a non-empty families array: ${manifestPath}`);
+  }
+
+  const ids = new Set();
+  for (const family of manifest.families) {
+    if (!family || typeof family !== 'object' || Array.isArray(family)) {
+      throw new Error(`proof-family manifest family must be an object: ${manifestPath}`);
+    }
+    assertProofFamilyString(family.id, `proof-family id in ${manifestPath}`);
+    if (ids.has(family.id)) {
+      throw new Error(`proof-family manifest contains duplicate family id: ${family.id}`);
+    }
+    ids.add(family.id);
+
+    const rawDisposition = family.defaultDisposition ?? family.disposition;
+    if (rawDisposition !== undefined && !PROOF_FAMILY_DISPOSITIONS.includes(rawDisposition)) {
+      throw new Error(`proof-family ${family.id} has unsupported defaultDisposition: ${rawDisposition}`);
+    }
+
+    const disposition = normalizeProofFamilyDisposition(family);
+    if (!PROOF_FAMILY_DISPOSITIONS.includes(disposition)) {
+      throw new Error(`proof-family ${family.id} has unsupported disposition: ${disposition}`);
+    }
+
+    const required = disposition === 'required' || family.currentBlockingStatus === 'required';
+    assertProofFamilyString(
+      readProofFamilyField(family, 'laneId', 'lane_id', manifest.sourceProofLaneId),
+      `proof-family ${family.id} laneId`,
+    );
+    assertProofFamilyString(family.owner, `proof-family ${family.id} owner`, { required });
+    assertProofFamilyString(
+      readProofFamilyField(family, 'expiryOrReviewTrigger', 'review_trigger'),
+      `proof-family ${family.id} review trigger`,
+      { required },
+    );
+    if (
+      required &&
+      readProofFamilyField(family, 'recentCatchEvidence', 'recent_catch_evidence', 'unknown') === 'unknown'
+    ) {
+      throw new Error(`proof-family ${family.id} cannot be required with unknown recent catch evidence`);
+    }
+  }
+}
+
+function verificationWeightForDisposition(disposition) {
+  if (disposition === 'required') return 'blocking';
+  if (disposition === 'candidate' || disposition === 'move-to-test' || disposition === 'upstream-abstraction') {
+    return 'advisory';
+  }
+  return 'informational';
+}
+
+function loadProofFamilyResults(config, rootDir, selectedProofLaneIds = []) {
+  const selectedIds = new Set(selectedProofLaneIds);
+  return readProofFamilyManifestPaths(config).flatMap((manifestPath) => {
+    const resolvedManifestPath = resolve(rootDir, manifestPath);
+    assertWithinDir(
+      resolvedManifestPath,
+      resolve(rootDir, '.veritas'),
+      'proof-family manifests must live inside .veritas/',
+    );
+    const manifest = loadJson(resolvedManifestPath, 'proof-family manifest');
+    const relativeManifestPath = relativeRepoPath(rootDir, resolvedManifestPath);
+    validateProofFamilyManifest(manifest, relativeManifestPath);
+    return (manifest.families ?? []).map((family) => {
+      const disposition = normalizeProofFamilyDisposition(family);
+      const laneId = family.laneId ?? family.proofLaneId ?? manifest.sourceProofLaneId ?? 'unknown';
+      const recentCatchEvidence = readProofFamilyField(
+        family,
+        'recentCatchEvidence',
+        'recent_catch_evidence',
+        'unknown',
+      );
+      const reviewTrigger = readProofFamilyField(
+        family,
+        'expiryOrReviewTrigger',
+        'review_trigger',
+        null,
+      );
+      const lastReviewed = readProofFamilyField(family, 'lastReviewed', 'last_reviewed', null);
+      const evidenceBasis = readProofFamilyField(
+        family,
+        'evidenceBasis',
+        'evidence_basis',
+        recentCatchEvidence === 'unknown' ? 'unknown' : 'recorded-catch-evidence',
+      );
+      const freshnessStatus =
+        readProofFamilyField(family, 'freshnessStatus', 'freshness_status') ??
+        (disposition === 'retire'
+          ? 'retiring'
+          : !reviewTrigger || recentCatchEvidence === 'unknown'
+            ? 'review-needed'
+            : 'current');
+      return {
+        id: family.id,
+        lane_id: laneId,
+        source_proof_lane_id: manifest.sourceProofLaneId ?? null,
+        manifest_path: relativeManifestPath,
+        destination: family.destination ?? null,
+        owner: family.owner ?? null,
+        disposition,
+        blocking_status: family.currentBlockingStatus ?? disposition,
+        verification_weight: verificationWeightForDisposition(disposition),
+        selected: selectedIds.has(laneId),
+        recent_catch_evidence: recentCatchEvidence,
+        regression_severity: family.regressionSeverity ?? 'unknown',
+        false_positive_risk: family.falsePositiveRisk ?? 'unknown',
+        replacement_test_available: family.replacementTestAvailable ?? null,
+        review_trigger: reviewTrigger,
+        last_reviewed: lastReviewed,
+        evidence_basis: evidenceBasis,
+        freshness_status: freshnessStatus,
+        rationale: family.rationale ?? '',
+      };
+    });
+  });
+}
+
+export function buildVerificationBudget({ proofLanes, proofFamilyResults }) {
+  const laneCount = proofLanes.length;
+  const selectedLaneCount = proofLanes.filter((lane) => lane.selected).length;
+  const requiredFamilyCount = proofFamilyResults.filter(
+    (family) => family.disposition === 'required',
+  ).length;
+  const candidateFamilyCount = proofFamilyResults.filter(
+    (family) => family.disposition === 'candidate',
+  ).length;
+  const advisoryFamilyCount = proofFamilyResults.filter(
+    (family) => family.disposition === 'advisory',
+  ).length;
+  const moveToTestFamilyCount = proofFamilyResults.filter(
+    (family) => family.disposition === 'move-to-test',
+  ).length;
+  const retireFamilyCount = proofFamilyResults.filter(
+    (family) => family.disposition === 'retire',
+  ).length;
+  const upstreamCandidateCount = proofFamilyResults.filter(
+    (family) => family.disposition === 'upstream-abstraction',
+  ).length;
+
+  const unknownCatchEvidenceFamilies = proofFamilyResults
+    .filter((family) => family.recent_catch_evidence === 'unknown')
+    .map((family) => family.id);
+  const missingReviewTriggerFamilies = proofFamilyResults
+    .filter((family) => !family.review_trigger)
+    .map((family) => family.id);
+  const staleFamilies = proofFamilyResults
+    .filter(
+      (family) =>
+        family.freshness_status === 'review-needed' ||
+        family.freshness_status === 'stale' ||
+        family.disposition === 'retire'
+    )
+    .map((family) => family.id);
+  const staleOrUnknownFamilies = uniqueStrings([
+    ...unknownCatchEvidenceFamilies,
+    ...missingReviewTriggerFamilies,
+    ...staleFamilies,
+  ]);
+
+  return {
+    proof_lane_count: laneCount,
+    selected_proof_lane_count: selectedLaneCount,
+    proof_family_count: proofFamilyResults.length,
+    required_family_count: requiredFamilyCount,
+    candidate_family_count: candidateFamilyCount,
+    advisory_family_count: advisoryFamilyCount,
+    move_to_test_family_count: moveToTestFamilyCount,
+    retire_family_count: retireFamilyCount,
+    upstream_candidate_count: upstreamCandidateCount,
+    unknown_catch_evidence_family_ids: unknownCatchEvidenceFamilies,
+    missing_review_trigger_family_ids: missingReviewTriggerFamilies,
+    stale_family_ids: staleFamilies,
+    stale_or_unknown_family_ids: staleOrUnknownFamilies,
+    recommendation:
+      staleOrUnknownFamilies.length > 0
+        ? 'Review unknown, retiring, or triggerless proof families before promoting more checks.'
+        : 'Verification budget has owners, review triggers, and no unknown catch-evidence families.',
+  };
+}
+
 function assertV2ProofLaneConfig(config) {
   const evidence = config.evidence ?? {};
   const legacyFields = ['requiredProofLanes', 'defaultProofLanes', 'surfaceProofLanes'].filter((field) => field in evidence);
@@ -894,6 +1118,15 @@ function assertV2ProofLaneConfig(config) {
     }
     for (const id of uniqueStrings(route.proofLaneIds)) {
       if (!laneIds.has(id)) throw new Error(`Veritas adapter surface proof route references unknown proof lane id: ${id}`);
+    }
+  }
+
+  for (const manifestPath of readProofFamilyManifestPaths(config)) {
+    if (manifestPath.startsWith('/') || manifestPath.includes('..')) {
+      throw new Error('Veritas adapter evidence.proofFamilyManifests must contain repo-local paths inside .veritas/.');
+    }
+    if (!manifestPath.startsWith('.veritas/')) {
+      throw new Error('Veritas adapter evidence.proofFamilyManifests paths must start with .veritas/.');
     }
   }
 }
@@ -1093,6 +1326,25 @@ export function buildEvidenceRecord({
       rootDir,
       changedFiles: normalizedFiles,
     });
+  const selectedProofLanes = (
+    proofPlan.proofLanes ?? proofLaneRecordsForCommands(config, proofPlan.proofCommands)
+  ).map((lane) => ({
+    id: lane.id,
+    command: lane.command,
+    method: lane.method,
+    surface_claim_ids: uniqueStrings(lane.surfaceClaimIds ?? []),
+    summary: lane.summary ?? `Proof lane ${lane.id}: ${lane.command}`,
+  }));
+  const selectedProofLaneIds = selectedProofLanes.map((lane) => lane.id);
+  const proofFamilyResults = loadProofFamilyResults(config, rootDir, selectedProofLaneIds);
+  const allProofLanes = readProofLanes(config).map((lane) => ({
+    id: lane.id,
+    command: lane.command,
+    method: lane.method,
+    surface_claim_ids: uniqueStrings(lane.surfaceClaimIds ?? []),
+    summary: lane.summary ?? '',
+    selected: selectedProofLaneIds.includes(lane.id),
+  }));
 
   return {
     framework_version: frameworkVersion,
@@ -1107,14 +1359,13 @@ export function buildEvidenceRecord({
     affected_nodes: affectedNodes,
     affected_lanes: affectedLanes,
     selected_proof_commands: proofPlan.proofCommands,
-    selected_proof_lanes: (proofPlan.proofLanes ?? proofLaneRecordsForCommands(config, proofPlan.proofCommands)).map((lane) => ({
-      id: lane.id,
-      command: lane.command,
-      method: lane.method,
-      surface_claim_ids: uniqueStrings(lane.surfaceClaimIds ?? []),
-      summary: lane.summary ?? `Proof lane ${lane.id}: ${lane.command}`,
-    })),
+    selected_proof_lanes: selectedProofLanes,
     proof_resolution_source: proofPlan.resolutionSource,
+    proof_family_results: proofFamilyResults,
+    verification_budget: buildVerificationBudget({
+      proofLanes: allProofLanes,
+      proofFamilyResults,
+    }),
     uncovered_path_result: proofPlan.uncoveredPathResult,
     baseline_ci_fast_passed: baselineCiFastPassed,
     recommendations,
@@ -1136,13 +1387,7 @@ export function buildEvidenceRecord({
       report_transport: config.evidence.reportTransport,
       default_resolution: config.graph.defaultResolution,
       non_sliceable_invariants: config.graph.nonSliceableInvariants,
-      proof_lanes: readProofLanes(config).map((lane) => ({
-        id: lane.id,
-        command: lane.command,
-        method: lane.method,
-        surface_claim_ids: uniqueStrings(lane.surfaceClaimIds ?? []),
-        summary: lane.summary ?? '',
-      })),
+      proof_lanes: allProofLanes.map(({ selected, ...lane }) => lane),
       required_proof_lane_ids: readRequiredProofLaneIds(config),
       default_proof_lane_ids: readDefaultProofLaneIds(config),
       surface_proof_lanes: serializeSurfaceProofRoutes(config),
@@ -1805,6 +2050,7 @@ export function buildMarkdownSummary(record, artifactPath) {
     }`,
     `- **Selected proof commands:** \`${record.selected_proof_commands.join(', ') || 'none'}\``,
     `- **Proof resolution source:** ${record.proof_resolution_source}`,
+    `- **Proof families:** ${record.verification_budget?.proof_family_count ?? 0} total, ${record.verification_budget?.required_family_count ?? 0} required, ${record.verification_budget?.candidate_family_count ?? 0} candidate, ${record.verification_budget?.move_to_test_family_count ?? 0} move-to-test, ${record.verification_budget?.retire_family_count ?? 0} retiring`,
     `- **Uncovered path result:** ${record.uncovered_path_result}`,
     `- **Baseline \`ci:fast\` passed:** ${formatTriState(record.baseline_ci_fast_passed)}`,
     `- **Report transport:** ${record.adapter.report_transport}`,
@@ -1823,6 +2069,29 @@ export function buildMarkdownSummary(record, artifactPath) {
           lines.push(`  - Artifact: ${finding.artifact}`);
         }
       }
+    }
+  }
+
+  if (record.proof_family_results?.length > 0) {
+    lines.push('', '### Proof Families');
+    for (const family of record.proof_family_results) {
+      const selected = family.selected ? 'selected' : 'not selected';
+      lines.push(
+        `- ${family.id}: ${family.disposition} / ${family.verification_weight} (${selected}) — ${family.rationale || 'No rationale recorded.'}`,
+      );
+      if (family.review_trigger) {
+        lines.push(`  - Review trigger: ${family.review_trigger}`);
+      }
+    }
+  }
+
+  if (record.verification_budget) {
+    lines.push('', '### Verification Budget');
+    lines.push(`- ${record.verification_budget.recommendation}`);
+    if (record.verification_budget.stale_or_unknown_family_ids.length > 0) {
+      lines.push(
+        `- Review candidates: ${record.verification_budget.stale_or_unknown_family_ids.join(', ')}`,
+      );
     }
   }
 
@@ -1858,6 +2127,12 @@ function summarizeFeedbackCounts(record, proofFailure = null) {
     if (status === 'FAIL') failures += 1;
     if (status === 'WARN') warnings += 1;
     if (status === 'PASS') passes += 1;
+  }
+
+  for (const family of record?.proof_family_results ?? []) {
+    if (family.verification_weight === 'blocking' && family.blocking_status === 'failed') {
+      failures += 1;
+    }
   }
 
   return { failures, warnings, passes };
@@ -1900,6 +2175,17 @@ export function buildFeedbackSummary({
       if (target) {
         lines.push(`      -> ${target}`);
       }
+    }
+  }
+
+  for (const family of record?.proof_family_results ?? []) {
+    if (!family.selected) continue;
+    const status = family.verification_weight === 'blocking' ? 'PASS' : 'INFO';
+    lines.push(
+      `${status.padEnd(5)} proof-family:${family.id}: ${family.disposition} / ${family.verification_weight}`,
+    );
+    if (family.review_trigger) {
+      lines.push(`      -> review: ${family.review_trigger}`);
     }
   }
 
@@ -2376,6 +2662,82 @@ export function runVeritasReportCli(argv = process.argv.slice(2), defaults = {})
       2,
     )}\n`,
   );
+}
+
+function formatVerificationBudgetHuman(record) {
+  const budget = record.verification_budget ?? buildVerificationBudget({
+    proofLanes: [],
+    proofFamilyResults: [],
+  });
+  const lines = [
+    'Veritas Verification Budget',
+    '',
+    `Proof lanes: ${budget.selected_proof_lane_count}/${budget.proof_lane_count} selected`,
+    `Proof families: ${budget.proof_family_count} total`,
+    `Required: ${budget.required_family_count}`,
+    `Candidate: ${budget.candidate_family_count}`,
+    `Advisory: ${budget.advisory_family_count}`,
+    `Move to test: ${budget.move_to_test_family_count}`,
+    `Retiring: ${budget.retire_family_count}`,
+    `Upstream candidates: ${budget.upstream_candidate_count}`,
+    '',
+    budget.recommendation,
+  ];
+
+  if (budget.unknown_catch_evidence_family_ids?.length > 0) {
+    lines.push(`Unknown catch evidence: ${budget.unknown_catch_evidence_family_ids.join(', ')}`);
+  }
+  if (budget.missing_review_trigger_family_ids?.length > 0) {
+    lines.push(`Missing review triggers: ${budget.missing_review_trigger_family_ids.join(', ')}`);
+  }
+  if (budget.stale_family_ids?.length > 0) {
+    lines.push(`Stale or retiring families: ${budget.stale_family_ids.join(', ')}`);
+  }
+
+  return `${lines.join('\n')}\n`;
+}
+
+export function runVerificationBudgetCli(argv = process.argv.slice(2), defaults = {}) {
+  const { options, files: explicitFiles } = parseBudgetArgs(argv);
+  const format = options.format ?? 'human';
+  if (!['human', 'feedback', 'json'].includes(format)) {
+    throw new Error('--format must be human, feedback, or json');
+  }
+  const result = generateVeritasReport(
+    {
+      ...options,
+      runId: options.runId ?? `budget-${Date.now()}`,
+    },
+    defaults,
+    explicitFiles,
+  );
+
+  if (format === 'json') {
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          artifactPath: result.artifactPath,
+          verification_budget: result.record.verification_budget,
+          proof_family_results: result.record.proof_family_results,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    return;
+  }
+
+  if (format === 'feedback') {
+    process.stdout.write(
+      buildFeedbackSummary({
+        record: result.record,
+        reportArtifactPath: result.artifactPath,
+      }),
+    );
+    return;
+  }
+
+  process.stdout.write(formatVerificationBudgetHuman(result.record));
 }
 
 export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
