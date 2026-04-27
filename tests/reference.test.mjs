@@ -82,6 +82,28 @@ test('evidence schema classifies top-level fields by Surface mapping', () => {
   }
 });
 
+test('first-contact docs preserve the Surface foundation boundary', () => {
+  const readDoc = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
+  const readme = readDoc('../README.md');
+  const concepts = readDoc('../docs/concepts.md');
+  const siteIndex = readDoc('../docs/site-index.md');
+  const cliReference = readDoc('../docs/reference/cli.md');
+  const boundary = readDoc('../docs/architecture/surface-veritas-boundary.md');
+
+  assert.match(readme, /built on the Kontour Surface trust substrate/);
+  assert.match(readme, /surface\.input/);
+  assert.match(concepts, /## Surface Foundation/);
+  assert.match(concepts, /TrustInput/);
+  assert.match(concepts, /must not contain Surface report-only fields/);
+  assert.match(siteIndex, /on top of Kontour Surface/);
+  assert.match(siteIndex, /Surface-Veritas Boundary/);
+  assert.match(cliReference, /surface report --adapter veritas/);
+  assert.match(cliReference, /Surface owns the report/);
+  assert.match(boundary, /## Foundation Contract/);
+  assert.match(boundary, /Veritas owns the developer-governance product layer/);
+  assert.match(boundary, /Map to existing Surface primitives/);
+});
+
 test('adapter and policy schemas declare activation and lint rule contracts', () => {
   const adapterSchema = readJson('../schemas/veritas-adapter.schema.json');
   const policySchema = readJson('../schemas/veritas-policy-pack.schema.json');

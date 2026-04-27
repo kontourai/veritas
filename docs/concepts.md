@@ -1,8 +1,18 @@
 # Concepts
 
-Veritas is bespoke lint for AI agents. A normal linter tells a developer, "this line violates the repo's rules." Veritas tells an agent, "this change violated the repo's rules, and here is what to fix before you finish."
+Veritas is bespoke lint for AI agents, built on the Kontour Surface trust substrate. A normal linter tells a developer, "this line violates the repo's rules." Veritas tells an agent, "this change violated the repo's rules, and here is what to fix before you finish."
 
-The framework has three concepts: rules, feedback, and improvement.
+The framework has four concepts: Surface foundation, rules, feedback, and improvement.
+
+## Surface Foundation
+
+Surface owns portable trust primitives: claims, evidence, verification policies, verification events, freshness/status, fault lines, proof requirements, and generated trust reports.
+
+Veritas owns repo and AI-agent workflow mechanics: adapters, policy packs, proof lanes, proof families, verification budgets, shadow runs, and lint-style feedback. These are useful to coding agents, but they are not a second trust model.
+
+Every Veritas evidence artifact includes `surface.input`, a Surface `TrustInput` projection of the run. That block contains claims, evidence, policies, and events. It must not contain Surface report-only fields such as `id`, `generatedAt`, `summary`, `faultLines`, or `proofRequirementsByClaimId`; Surface generates those when it builds a report.
+
+For the full boundary rule, see [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md).
 
 ## Rules
 
@@ -59,7 +69,7 @@ Exit codes are hook-friendly:
 
 ## Improvement
 
-Evidence records capture what changed, which repo surfaces were touched, which proof commands applied, and which rules passed or failed. Eval records capture how the run turned out: accepted or rewritten, time to green, overrides, false positives, missed issues, and reviewer confidence.
+Evidence records capture what changed, which repo surfaces were touched, which proof commands applied, which rules passed or failed, and the embedded `surface.input` that lets Surface produce the portable trust report. Eval records capture how the run turned out: accepted or rewritten, time to green, overrides, false positives, missed issues, and reviewer confidence.
 
 For local use, `veritas eval record` appends compact JSONL entries to `.veritas/evals/history.jsonl`, and `veritas eval summary` reports the recent trend:
 

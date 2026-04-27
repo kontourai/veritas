@@ -109,7 +109,17 @@ Important behaviors:
 - working-tree modes produce `source_kind: "working-tree"`
 - the adapter selects proof commands through explicit `proofLanes`, `requiredProofLaneIds`, `defaultProofLaneIds`, and optional `surfaceProofRoutes`
 - the artifact is written to the adapter-defined `artifactDir`
+- every artifact includes `surface.input`, a Surface `TrustInput` projection with claims, evidence, policies, and events
 - JSON is the default output; `--format feedback` prints the same lint-style findings used by hooks
+
+To turn a Veritas artifact into a Surface trust report:
+
+```bash
+artifact_path="$(npx @kontourai/veritas report --working-tree --format json | node -e 'let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", () => { const parsed = JSON.parse(data); if (!parsed.artifactPath) throw new Error("missing artifactPath"); console.log(parsed.artifactPath); });')"
+surface report --adapter veritas --input "$artifact_path" --format summary
+```
+
+Surface generates report-only fields such as `id`, `generatedAt`, `summary`, `faultLines`, and `proofRequirementsByClaimId`. Veritas emits the input evidence; Surface owns the report.
 
 ### `budget`
 

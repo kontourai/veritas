@@ -1,7 +1,7 @@
 <div class="hero">
 <h1 class="hero-tagline">The repo ships the rules. Veritas proves they held.</h1>
 
-<p class="hero-subtitle">AI agents edit code faster than reviewers can track intent. Veritas gives your repo its own map, policy, and evidence layer — so AI-assisted changes produce a bounded artifact a human can actually trust, not just a diff to scroll through.</p>
+<p class="hero-subtitle">AI agents edit code faster than reviewers can track intent. Veritas gives your repo its own map, policy, and evidence layer on top of Kontour Surface — so AI-assisted changes produce a bounded artifact Surface can turn into claims, evidence, freshness, fault lines, and trust reports.</p>
 
 <pre class="install-cmd"><code>npm install -D @kontourai/veritas</code></pre>
 
@@ -24,7 +24,7 @@ Veritas models governance as its own surface and makes the integrity gap explici
 
 **Reviewers scan the whole diff.**
 When AI changes dozens of files, a human reconstructs intent from a raw diff with no structured summary of what was proven or what passed.
-Veritas generates [agent-readable feedback](concepts.md#feedback) plus a bounded evidence artifact — what changed, what was affected, what proof ran, and which policies held.
+Veritas generates [agent-readable feedback](concepts.md#feedback) plus a bounded evidence artifact — what changed, what was affected, what proof ran, which policies held, and the `surface.input` Surface uses for trust reporting.
 
 **No way to know if guidance helped.**
 You can add context files and prompt instructions, but there is no feedback loop measuring whether they actually improved outcomes.
@@ -46,8 +46,8 @@ Veritas captures [local improvement records](concepts.md#improvement) — accept
 
 <div class="pillar">
 <h3>Evidence <span class="pillar-term">Artifacts</span></h3>
-<p class="pillar-what">A bounded JSON record of what changed, which repo surfaces were affected, what proof ran, and which policies passed or failed.</p>
-<p class="pillar-why">A reviewer inspects a focused summary instead of reconstructing intent from a 500-line diff.</p>
+<p class="pillar-what">A bounded JSON record of what changed, which repo surfaces were affected, what proof ran, which policies passed or failed, and the Surface TrustInput projection.</p>
+<p class="pillar-why">A reviewer inspects a focused summary, while Surface receives portable claims, evidence, policies, and events.</p>
 </div>
 
 <div class="pillar">
@@ -125,5 +125,6 @@ If self-hosting feels awkward, that is a signal to fix the product surface, not 
 - [Getting Started](guides/getting-started.md) — install, init, and first evidence artifact
 - [Concepts Overview](concepts.md) — adapter, policy pack, evidence, and eval in depth
 - [CLI Reference](reference/cli.md) — all commands and options
+- [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md) — why Veritas is a product layer on the Surface foundation
 - [npm package](https://www.npmjs.com/package/@kontourai/veritas) — `@kontourai/veritas`
 - [GitHub](https://github.com/kontourai/veritas) — source, issues, and contributing

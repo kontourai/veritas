@@ -3,9 +3,11 @@
 [![npm version](https://img.shields.io/npm/v/%40kontourai%2Fveritas)](https://www.npmjs.com/package/@kontourai/veritas)
 [![CI](https://github.com/kontourai/veritas/actions/workflows/ci.yml/badge.svg)](https://github.com/kontourai/veritas/actions/workflows/ci.yml)
 
-Veritas is bespoke lint for AI agents. You define what your repo considers mandatory: which files must exist, which tests must pass when a contract changes, which AI instruction files must stay synchronized, and which governance files may never be weakened. When an agent finishes work, Veritas runs your rules and tells it exactly what it got wrong, like a linter would.
+Veritas is bespoke lint for AI agents, built on the Kontour Surface trust substrate. You define what your repo considers mandatory: which files must exist, which tests must pass when a contract changes, which AI instruction files must stay synchronized, and which governance files may never be weakened. When an agent finishes work, Veritas runs your rules and tells it exactly what it got wrong, like a linter would.
 
-It works with any AI agent because the contract is repo-local: adapter, policy pack, proof lanes, hooks, and eval history live in your repository. No runtime dependencies beyond Node.
+Veritas keeps repo-native workflow language such as adapters, policy packs, proof lanes, and shadow runs because those terms help coding agents act. Each evidence artifact also projects the portable trust shape into `surface.input`, so Surface can generate claims, evidence, freshness/status, fault lines, proof requirements, and trust reports without Veritas becoming a second trust model.
+
+It works with any AI agent because the operational contract is repo-local: adapter, policy pack, proof lanes, hooks, and eval history live in your repository. No runtime dependencies beyond Node.
 
 ## Quickstart
 
@@ -44,6 +46,7 @@ That is the point: the agent sees the missing proof before it declares done.
 - [Brownfield Adoption](docs/guides/brownfield-adoption.md)
 - [Concepts Overview](docs/concepts.md)
 - [CLI Reference](docs/reference/cli.md)
+- [Surface-Veritas Boundary](docs/architecture/surface-veritas-boundary.md)
 
 ## Repository Layout
 
