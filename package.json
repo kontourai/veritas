@@ -8,7 +8,7 @@
   "author": "kontourai",
   "homepage": "https://kontourai.github.io/veritas/",
   "engines": {
-    "node": ">=18.17"
+    "node": ">=20"
   },
   "repository": {
     "type": "git",
@@ -79,6 +79,7 @@
     "veritas:ci:checkin": "npm run veritas:checkin:prove"
   },
   "dependencies": {
+    "@kontourai/surface": "file:../surface",
     "picomatch": "^4.0.4"
   }
 }

@@ -146,6 +146,7 @@ export function parseEvalArgs(argv) {
     {
       '--root': { type: 'string', key: 'rootDir' },
       '--evidence': { type: 'string', key: 'evidencePath' },
+      '--transcript': { type: 'string', key: 'transcriptPath' },
       '--team-profile': { type: 'string', key: 'teamProfilePath' },
       '--draft': { type: 'string', key: 'draftPath' },
       '--output': { type: 'string', key: 'outputPath' },
@@ -157,6 +158,7 @@ export function parseEvalArgs(argv) {
       '--reviewer-confidence': { type: 'string', key: 'reviewerConfidence' },
       '--time-to-green-minutes': { type: 'number', key: 'timeToGreenMinutes' },
       '--override-count': { type: 'number', key: 'overrideCount' },
+      '--rewrite-threshold': { type: 'number', key: 'rewriteThreshold' },
       '--false-positive-rule': { type: 'array', key: 'falsePositiveRules' },
       '--missed-issue': { type: 'array', key: 'missedIssues' },
       '--note': { type: 'array', key: 'notes' },

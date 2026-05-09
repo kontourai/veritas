@@ -93,7 +93,7 @@ assert(
   'package.json must declare the GitHub issues URL.',
 );
 assert(
-  packageJson.engines?.node === '>=18.17',
+  packageJson.engines?.node === '>=20',
   'package.json must declare the supported Node version range.',
 );
 assert(

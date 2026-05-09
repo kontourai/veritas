@@ -9,6 +9,7 @@ import {
   runApplyStopHookCli,
   runApplyPackageScriptsCli,
   runEvalDraftCli,
+  runEvalObserveCli,
   runEvalMarkerCli,
   runEvalMarkerSuiteCli,
   runEvalRecordCli,
@@ -40,6 +41,7 @@ const MAIN_USAGE = `Usage:
   veritas hooks claude-code print|apply [--root <path>] [--force]
   veritas runtime status [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
   veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
+  veritas eval observe --transcript <path> [--evidence <path>] [--output <path>]
   veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false> --reviewer-confidence <scale-entry|unknown> --time-to-green-minutes <number> --override-count <number>
   veritas eval record --draft <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false>
   veritas eval marker --scenario <path> --without-veritas-transcript <path> --with-veritas-transcript <path>
@@ -95,6 +97,7 @@ const APPLY_USAGE = `Usage:
 
 const EVAL_USAGE = `Usage:
   veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
+  veritas eval observe --transcript <path> [--evidence <path>] [--output <path>]
     [--reviewer-confidence <scale-entry|unknown>]
     [--time-to-green-minutes <number>]
     [--override-count <number>]
@@ -280,6 +283,8 @@ if (!subcommand || isHelpToken(subcommand)) {
       selectScopedUsage(kind, EVAL_USAGE, {
         draft:
           'Usage:\n  veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]\n    [--reviewer-confidence <scale-entry|unknown>]\n    [--time-to-green-minutes <number>]\n    [--override-count <number>]\n    [--false-positive-rule <rule-id>]\n    [--missed-issue <text>]\n    [--note <text>]\n',
+        observe:
+          'Usage:\n  veritas eval observe --transcript <path> [--evidence <path>] [--output <path>] [--rewrite-threshold <ratio>]\n',
         record:
           'Usage:\n  veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force]\n  veritas eval record --draft <path> [--team-profile <path>] [--output <path>] [--force]\n    --accepted-without-major-rewrite <true|false>\n    --required-followup <true|false>\n    --reviewer-confidence <scale-entry|unknown>\n    --time-to-green-minutes <number>\n    --override-count <number>\n    [--false-positive-rule <rule-id>]\n    [--missed-issue <text>]\n    [--note <text>]\n',
         marker:
@@ -294,6 +299,8 @@ if (!subcommand || isHelpToken(subcommand)) {
     runEvalRecordCli(evalArgs, { rootDir: cwd });
   } else if (kind === 'draft') {
     runEvalDraftCli(evalArgs, { rootDir: cwd });
+  } else if (kind === 'observe') {
+    runEvalObserveCli(evalArgs, { rootDir: cwd });
   } else if (kind === 'marker') {
     runEvalMarkerCli(evalArgs, { rootDir: cwd });
   } else if (kind === 'marker-suite') {

@@ -1,0 +1,110 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { execFileSync } from 'node:child_process';
+import { buildCodexEvalDraft } from '../src/index.mjs';
+import { frameworkRootDir, readJson } from './helpers.mjs';
+
+function tempRoot() {
+  return mkdtempSync(join(tmpdir(), 'veritas-codex-eval-'));
+}
+
+test('Codex eval capture derives time to green and accepted result', () => {
+  const rootDir = tempRoot();
+  const transcriptPath = join(rootDir, 'session.json');
+  const transcript = {
+    session_id: 'codex-green',
+    events: [
+      {
+        timestamp: '2026-05-09T10:00:00.000Z',
+        command: 'npm exec -- veritas shadow run',
+        exit_code: 1,
+        files: ['src/index.mjs'],
+        reported_lines: 100,
+      },
+      {
+        timestamp: '2026-05-09T10:06:00.000Z',
+        command: 'npm exec -- veritas shadow run',
+        exit_code: 0,
+        files: ['src/index.mjs'],
+        reported_lines: 100,
+      },
+      {
+        timestamp: '2026-05-09T10:07:00.000Z',
+        command: 'edit',
+        files: ['src/index.mjs'],
+        line_churn: 10,
+      },
+    ],
+  };
+  writeFileSync(transcriptPath, `${JSON.stringify(transcript, null, 2)}\n`, 'utf8');
+
+  const draft = buildCodexEvalDraft({
+    transcript,
+    transcriptPath,
+    rootDir,
+  });
+
+  assert.equal(draft.run_id, 'codex-green');
+  assert.equal(draft.prefilled_measurements.time_to_green_minutes, 6);
+  assert.equal(draft.prefilled_outcome.accepted_without_major_rewrite, true);
+  assert.equal(draft.prefilled_measurements.override_count, 0);
+});
+
+test('Codex eval capture marks major rewrites and CLI writes a draft', () => {
+  const rootDir = tempRoot();
+  const transcriptPath = join(rootDir, 'session.json');
+  const transcript = {
+    session_id: 'codex-rewrite',
+    events: [
+      {
+        timestamp: '2026-05-09T10:00:00.000Z',
+        command: 'veritas shadow run',
+        exit_code: 1,
+        files: ['src/index.mjs'],
+        reported_lines: 100,
+      },
+      {
+        timestamp: '2026-05-09T10:03:00.000Z',
+        command: 'VERITAS_SKIP_SURFACE_VALIDATION=1 veritas shadow run --skip-proof',
+        exit_code: 0,
+        files: ['src/index.mjs'],
+        reported_lines: 100,
+      },
+      {
+        timestamp: '2026-05-09T10:05:00.000Z',
+        command: 'edit',
+        files: ['src/index.mjs'],
+        line_churn: 45,
+      },
+    ],
+  };
+  writeFileSync(transcriptPath, `${JSON.stringify(transcript, null, 2)}\n`, 'utf8');
+
+  const output = execFileSync(
+    process.execPath,
+    [
+      'bin/veritas.mjs',
+      'eval',
+      'observe',
+      '--root',
+      rootDir,
+      '--transcript',
+      transcriptPath,
+    ],
+    {
+      cwd: frameworkRootDir,
+      encoding: 'utf8',
+    },
+  );
+  const result = JSON.parse(output);
+  const artifactPath = join(rootDir, result.artifactPath);
+
+  assert.equal(result.prefilled_outcome.accepted_without_major_rewrite, false);
+  assert.equal(result.prefilled_measurements.time_to_green_minutes, 3);
+  assert.equal(result.prefilled_measurements.override_count, 1);
+  assert.equal(existsSync(artifactPath), true);
+  assert.equal(readJson(artifactPath).run_id, 'codex-rewrite');
+});

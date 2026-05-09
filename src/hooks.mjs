@@ -141,6 +141,20 @@ export function buildSuggestedCodexHookConfig() {
           ],
         },
       ],
+      PostSession: [
+        {
+          matcher: '.*',
+          hooks: [
+            {
+              type: 'command',
+              command:
+                'if [ -n "$CODEX_TRANSCRIPT_PATH" ]; then npm exec -- veritas eval observe --transcript "$CODEX_TRANSCRIPT_PATH"; elif [ -n "$CODEX_SESSION_ID" ]; then npm exec -- veritas eval observe --transcript "$HOME/.codex/sessions/$CODEX_SESSION_ID.json"; fi',
+              statusMessage: 'Capturing Veritas eval draft from Codex transcript',
+              timeout: 60,
+            },
+          ],
+        },
+      ],
     },
   };
 }
