@@ -37,6 +37,8 @@ For each check family, record:
 Unknown catch evidence defaults to candidate/advisory status. Required checks need an owner and a review trigger.
 Required checks also need non-unknown catch evidence. If the evidence is unknown, keep the family candidate/advisory while you add tests or gather real catches.
 
+For external codebase-intelligence tools such as Fallow, start with advisory evidence. Commit any intentional migration baselines under a reviewable path such as `fallow-baselines/`, not under `.fallow/`; `.fallow/` is cache/local data. Promote the lane only after cleanup or baseline review gives it an owner, review trigger, and useful catch evidence.
+
 ## 3. Keep Required Gates Small
 
 Start with a required governance lane that proves:

@@ -5,11 +5,20 @@
   "rules": [
     {
       "id": "required-veritas-operational-artifacts",
+      "kind": "required-artifacts",
       "classification": "hard-invariant",
       "stage": "block",
       "message": "The tracked Veritas operational artifacts must stay present so agents and reviewers share the same baseline.",
       "owner": "repo-core",
       "rollback_switch": null,
+      "explain": {
+        "summary": "Keep the repo-local Veritas governance baseline present.",
+        "mustDo": ["Restore missing .veritas operational files before finishing."],
+        "mustNotDo": ["Do not delete or weaken governance files to make a run pass."],
+        "exampleGood": "Update the schema and default policy pack together.",
+        "exampleBad": "Remove .veritas/policy-packs/default.policy-pack.json.",
+        "contextLinks": [".veritas/GOVERNANCE.md", "CLAUDE.md"]
+      },
       "match": {
         "artifacts": [
           ".veritas/GOVERNANCE.md",
@@ -22,11 +31,20 @@
     },
     {
       "id": "required-veritas-cli-artifacts",
+      "kind": "required-artifacts",
       "classification": "hard-invariant",
       "stage": "block",
       "message": "The shipped Veritas CLI entrypoints and package manifest must stay present.",
       "owner": "repo-core",
       "rollback_switch": null,
+      "explain": {
+        "summary": "Keep the CLI and package entrypoints available.",
+        "mustDo": ["Preserve package metadata and shipped bin files."],
+        "mustNotDo": ["Do not move CLI entrypoints without updating package.json."],
+        "exampleGood": "Add a new subcommand in bin/veritas.mjs and export its runner.",
+        "exampleBad": "Delete bin/veritas-report.mjs while leaving it in package.json.",
+        "contextLinks": ["docs/reference/cli.md"]
+      },
       "match": {
         "artifacts": [
           "package-lock.json",
@@ -38,11 +56,20 @@
     },
     {
       "id": "required-veritas-reference-artifacts",
+      "kind": "required-artifacts",
       "classification": "hard-invariant",
       "stage": "block",
       "message": "The repo must keep the docs that explain the shipped Veritas surface.",
       "owner": "repo-core",
       "rollback_switch": null,
+      "explain": {
+        "summary": "Keep reference docs aligned with framework behavior.",
+        "mustDo": ["Update docs when schemas, commands, or artifact shapes change."],
+        "mustNotDo": ["Do not document behavior that is not wired."],
+        "exampleGood": "Document a new rule kind in artifacts-and-schemas.md.",
+        "exampleBad": "Claim a command exists before bin/veritas.mjs dispatches it.",
+        "contextLinks": ["README.md", "docs/reference/artifacts-and-schemas.md"]
+      },
       "match": {
         "artifacts": [
           "README.md",
@@ -55,11 +82,20 @@
     },
     {
       "id": "required-veritas-schema-artifacts",
+      "kind": "required-artifacts",
       "classification": "hard-invariant",
       "stage": "block",
       "message": "The shipped Veritas schema set must stay present and reviewable.",
       "owner": "repo-core",
       "rollback_switch": null,
+      "explain": {
+        "summary": "Schemas are the contract for adapters, policy packs, evidence, and evals.",
+        "mustDo": ["Update the relevant schema with any new persisted field."],
+        "mustNotDo": ["Do not add artifact fields that schemas reject."],
+        "exampleGood": "Add a rule kind to schema and evaluator registry together.",
+        "exampleBad": "Allow additionalProperties for unknown rule match shapes.",
+        "contextLinks": ["schemas/veritas-policy-pack.schema.json"]
+      },
       "match": {
         "artifacts": [
           "schemas/veritas-adapter.schema.json",
@@ -74,11 +110,20 @@
     },
     {
       "id": "ai-instruction-files-synced",
+      "kind": "governance-block",
       "classification": "hard-invariant",
       "stage": "warn",
       "message": "All required AI tool instruction files must contain the Veritas governance block.",
       "owner": "repo-maintainers",
       "rollback_switch": null,
+      "explain": {
+        "summary": "AI instruction files must carry the canonical governance block.",
+        "mustDo": ["Regenerate or reapply the governance block after edits."],
+        "mustNotDo": ["Do not hand-edit the marker-bounded block into a different meaning."],
+        "exampleGood": "Run veritas apply governance-blocks after changing instructions.",
+        "exampleBad": "Remove the governance block from CLAUDE.md.",
+        "contextLinks": [".veritas/GOVERNANCE.md", "CLAUDE.md"]
+      },
       "match": {
         "governance-block": [
           "AGENTS.md",
@@ -88,11 +133,20 @@
     },
     {
       "id": "prefer-veritas-routed-delivery",
+      "kind": "required-artifacts",
       "classification": "promotable-policy",
       "stage": "recommend",
       "message": "Prefer keeping the tracked Veritas proof and check-in integration surfaces present so changes flow through the documented operational path before review.",
       "owner": "repo-maintainers",
       "rollback_switch": "soften-veritas-route",
+      "explain": {
+        "summary": "Keep hook and check-in integration artifacts in place.",
+        "mustDo": ["Preserve the local hook and workflow paths or update this rule deliberately."],
+        "mustNotDo": ["Do not bypass check-in integration by deleting hook artifacts."],
+        "exampleGood": "Update both hook builder and default policy when adding a hook.",
+        "exampleBad": "Delete .veritas/hooks/agent-runtime.sh without replacement.",
+        "contextLinks": ["docs/guides/operational-checkins.md"]
+      },
       "match": {
         "artifacts": [
           ".githooks/post-commit",
@@ -101,6 +155,29 @@
           ".veritas/runtime/codex-hooks.json",
           ".github/workflows/veritas-checkins.yml"
         ]
+      }
+    },
+    {
+      "id": "no-console-log-in-src",
+      "kind": "forbidden-pattern",
+      "classification": "advisory-pattern",
+      "stage": "warn",
+      "message": "Source files should not leave console.log diagnostics behind.",
+      "owner": "repo-maintainers",
+      "rollback_switch": "allow-console-log",
+      "explain": {
+        "summary": "Remove ad hoc console.log calls from source files.",
+        "mustDo": ["Use structured reporting or tests instead of committed console.log calls."],
+        "mustNotDo": ["Do not leave temporary debugging output in src/**."],
+        "exampleGood": "Return explicit feedback from a CLI command.",
+        "exampleBad": "console.log(debugPayload)",
+        "contextLinks": ["src/"]
+      },
+      "match": {
+        "files": [
+          "src/**/*.mjs"
+        ],
+        "pattern": "console\\.log"
       }
     }
   ]

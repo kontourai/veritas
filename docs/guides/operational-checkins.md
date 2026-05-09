@@ -16,10 +16,12 @@ These are the repo-local instructions and policy artifacts that make self-hostin
 ## What Is Not Tracked
 
 - `.veritas/evidence/`
+- `.veritas/claims/`
 - `.veritas/eval-drafts/`
 - `.veritas/evals/`
 
 Those outputs are local and disposable. They should inform product work, not create distribution churn.
+Files under `.veritas/claims/` are trimmed per-claim Surface input slices (`*.input.json`), not generated Surface `TrustReport` artifacts.
 
 ## Main Commands
 
@@ -55,6 +57,7 @@ The workflow also elevates the result:
 7. pull requests get a sticky Veritas check-in comment with the latest check-in summary
 8. non-PR runs update a standing `Veritas Health` issue when health is not green, and close it again when health recovers
 9. governance runs now include both a per-run `Governance surface` classification and a short governance trend summary when prior local check-in history exists
+10. optional external tool proof lanes, such as advisory Fallow audits, can be captured in evidence without becoming required gates before the repo is ready
 
 The trend summary is derived from local `.veritas/checkins/*.json` history. If no history is present yet, the summary falls back cleanly instead of inventing a baseline.
 

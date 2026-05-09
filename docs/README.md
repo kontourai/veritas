@@ -14,6 +14,7 @@ Find what you need by what you're trying to do.
 - [Getting Started](guides/getting-started.md) for installation and first run
 - [Start Your Next Project](guides/start-your-next-project.md) for greenfield repos
 - [Brownfield Adoption](guides/brownfield-adoption.md) for existing repos with custom guidance or verification
+- [Fallow Integration](guides/fallow-integration.md) for optional JS/TS codebase-intelligence proof lanes
 - [CLI Reference](reference/cli.md) for exact commands and flags
 
 ### Wire Veritas into my AI agent
@@ -59,6 +60,7 @@ Find what you need by what you're trying to do.
 - [Start Your Next Project](guides/start-your-next-project.md) — bootstrap a greenfield repo with Veritas from day one
 - [Tune For Your Team](guides/tune-for-your-team.md) — adapt policy and rollout without forking the framework
 - [Operational Check-ins](guides/operational-checkins.md) — run the check-in flow in CI and interpret the output
+- [Fallow Integration](guides/fallow-integration.md) — record Fallow results as advisory Veritas evidence
 - [Publish And Release](guides/publish-and-release.md) — what gets published, versioned, and how
 
 ### Reference

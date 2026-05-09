@@ -2,6 +2,7 @@
 import {
   runApplyCiSnippetCli,
   runApplyCodexHookCli,
+  runApplyClaudeCodePreToolUseHookCli,
   runApplyGovernanceBlocksCli,
   runApplyGitHookCli,
   runApplyRuntimeHookCli,
@@ -17,6 +18,7 @@ import {
   runInitCli,
   runPrintCiSnippetCli,
   runPrintCodexHookCli,
+  runPrintClaudeCodePreToolUseHookCli,
   runPrintGovernanceBlockCli,
   runPrintGitHookCli,
   runPrintRuntimeHookCli,
@@ -24,6 +26,8 @@ import {
   runPrintPackageScriptsCli,
   runRuntimeStatusCli,
   runShadowRunCli,
+  runExplainCli,
+  runBoundariesCheckCli,
 } from '../src/index.mjs';
 
 const MAIN_USAGE = `Usage:
@@ -31,6 +35,9 @@ const MAIN_USAGE = `Usage:
   veritas report [--format json|feedback] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
   veritas budget [--format human|feedback|json] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
   veritas shadow run [--format feedback|json] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--team-profile <path>] [--proof-command <cmd>] [--skip-proof]
+  veritas explain <ruleId|surfaceNode|filePath> [--file <path>] [--surface-node <id>] [--root <path>] [--adapter <path>] [--policy-pack <path>]
+  veritas boundaries check --actor <id> [--diff <ref>] [--root <path>] [--adapter <path>]
+  veritas hooks claude-code print|apply [--root <path>] [--force]
   veritas runtime status [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
   veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
   veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false> --reviewer-confidence <scale-entry|unknown> --time-to-green-minutes <number> --override-count <number>
@@ -45,6 +52,7 @@ const MAIN_USAGE = `Usage:
   veritas print stop-hook [--root <path>] [--tool generic|claude-code|cursor]
   veritas print governance-block
   veritas print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
+  veritas print claude-code-pre-tool-use-hook [--root <path>]
   veritas apply package-scripts [--root <path>] [--proof-lane <cmd>] [--force]
   veritas apply ci-snippet [--root <path>] [--output <path>] [--proof-lane <cmd>] [--force]
   veritas apply git-hook [--root <path>] [--hook post-commit] [--output <path>] [--configure-git] [--force]
@@ -52,6 +60,7 @@ const MAIN_USAGE = `Usage:
   veritas apply stop-hook [--root <path>] [--tool generic|claude-code|cursor] [--output <path>] [--force]
   veritas apply governance-blocks [--root <path>] [--force]
   veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]
+  veritas apply claude-code-pre-tool-use-hook [--root <path>] [--output <path>] [--force]
 `;
 
 const REPORT_USAGE = `Usage:
@@ -70,6 +79,7 @@ const PRINT_USAGE = `Usage:
   veritas print stop-hook [--root <path>] [--tool generic|claude-code|cursor]
   veritas print governance-block
   veritas print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
+  veritas print claude-code-pre-tool-use-hook [--root <path>]
 `;
 
 const APPLY_USAGE = `Usage:
@@ -80,6 +90,7 @@ const APPLY_USAGE = `Usage:
   veritas apply stop-hook [--root <path>] [--tool generic|claude-code|cursor] [--output <path>] [--force]
   veritas apply governance-blocks [--root <path>] [--force]
   veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]
+  veritas apply claude-code-pre-tool-use-hook [--root <path>] [--output <path>] [--force]
 `;
 
 const EVAL_USAGE = `Usage:
@@ -195,6 +206,8 @@ if (!subcommand || isHelpToken(subcommand)) {
           'Usage:\n  veritas print governance-block\n',
         'codex-hook':
           'Usage:\n  veritas print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]\n',
+        'claude-code-pre-tool-use-hook':
+          'Usage:\n  veritas print claude-code-pre-tool-use-hook [--root <path>]\n',
       }),
     );
   } else if (kind === 'package-scripts') {
@@ -211,6 +224,8 @@ if (!subcommand || isHelpToken(subcommand)) {
     runPrintGovernanceBlockCli(printArgs, { rootDir: cwd });
   } else if (kind === 'codex-hook') {
     runPrintCodexHookCli(printArgs, { rootDir: cwd });
+  } else if (kind === 'claude-code-pre-tool-use-hook') {
+    runPrintClaudeCodePreToolUseHookCli(printArgs, { rootDir: cwd });
   } else {
     writeStderr(PRINT_USAGE);
     process.exitCode = 1;
@@ -234,6 +249,8 @@ if (!subcommand || isHelpToken(subcommand)) {
           'Usage:\n  veritas apply governance-blocks [--root <path>] [--force]\n',
         'codex-hook':
           'Usage:\n  veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]\n',
+        'claude-code-pre-tool-use-hook':
+          'Usage:\n  veritas apply claude-code-pre-tool-use-hook [--root <path>] [--output <path>] [--force]\n',
       }),
     );
   } else if (kind === 'package-scripts') {
@@ -250,6 +267,8 @@ if (!subcommand || isHelpToken(subcommand)) {
     runApplyGovernanceBlocksCli(applyArgs, { rootDir: cwd });
   } else if (kind === 'codex-hook') {
     runApplyCodexHookCli(applyArgs, { rootDir: cwd });
+  } else if (kind === 'claude-code-pre-tool-use-hook') {
+    runApplyClaudeCodePreToolUseHookCli(applyArgs, { rootDir: cwd });
   } else {
     writeStderr(APPLY_USAGE);
     process.exitCode = 1;
@@ -298,6 +317,28 @@ if (!subcommand || isHelpToken(subcommand)) {
   } else {
     writeStderr(SHADOW_USAGE);
     process.exitCode = 1;
+  }
+} else if (subcommand === 'explain') {
+  if (args.some(isHelpToken)) {
+    writeStdout('Usage:\n  veritas explain <ruleId|surfaceNode|filePath> [--file <path>] [--surface-node <id>] [--root <path>] [--adapter <path>] [--policy-pack <path>]\n');
+  } else {
+    runExplainCli(args, { rootDir: cwd });
+  }
+} else if (subcommand === 'boundaries') {
+  const [kind, ...boundaryArgs] = args;
+  if (kind !== 'check' || boundaryArgs.some(isHelpToken)) {
+    writeStdout('Usage:\n  veritas boundaries check --actor <id> [--diff <ref>] [--root <path>] [--adapter <path>]\n');
+  } else {
+    runBoundariesCheckCli(boundaryArgs, { rootDir: cwd });
+  }
+} else if (subcommand === 'hooks') {
+  const [tool, action, ...hookArgs] = args;
+  if (tool !== 'claude-code' || !['print', 'apply'].includes(action) || hookArgs.some(isHelpToken)) {
+    writeStdout('Usage:\n  veritas hooks claude-code print|apply [--root <path>] [--force]\n');
+  } else if (action === 'print') {
+    runPrintClaudeCodePreToolUseHookCli(hookArgs, { rootDir: cwd });
+  } else {
+    runApplyClaudeCodePreToolUseHookCli(hookArgs, { rootDir: cwd });
   }
 } else if (subcommand === 'runtime') {
   const [kind, ...runtimeArgs] = args;

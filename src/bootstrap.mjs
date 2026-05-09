@@ -434,6 +434,7 @@ export function buildStarterPolicyPack({ projectName, instructionTargets = DEFAU
     rules: [
       {
         id: 'required-veritas-artifacts',
+        kind: 'required-artifacts',
         classification: 'hard-invariant',
         stage: 'block',
         message:
@@ -452,6 +453,7 @@ export function buildStarterPolicyPack({ projectName, instructionTargets = DEFAU
       },
       {
         id: 'ai-instruction-files-synced',
+        kind: 'governance-block',
         classification: 'hard-invariant',
         stage: 'warn',
         message:
@@ -464,6 +466,7 @@ export function buildStarterPolicyPack({ projectName, instructionTargets = DEFAU
       },
       {
         id: 'prefer-veritas-routed-delivery',
+        kind: 'required-artifacts',
         classification: 'promotable-policy',
         stage: 'recommend',
         message:
@@ -471,7 +474,7 @@ export function buildStarterPolicyPack({ projectName, instructionTargets = DEFAU
         owner: 'repo-maintainers',
         rollback_switch: 'soften-veritas-route',
         match: {
-          files: ['.veritas/README.md'],
+          artifacts: ['.veritas/README.md'],
         },
       },
     ],
@@ -610,7 +613,7 @@ The goal is to give any compatible agent just-in-time repo guidance from day one
 `;
 }
 
-export function buildGovernanceInstructions() {
+function buildGovernanceInstructions() {
   return `# Governance Surface
 
 Zone 1 is human-owned. Do not modify:
@@ -632,7 +635,7 @@ Zone 3 is generated output:
 `;
 }
 
-export function buildSuggestedCodeownersBlock() {
+function buildSuggestedCodeownersBlock() {
   return `# Veritas constitutional core - changes require human governance approval
 .veritas/repo.adapter.json  @your-team/governance
 .veritas/policy-packs/      @your-team/governance

@@ -139,6 +139,7 @@ An evidence artifact records:
 - which proof-lane objects were selected, including method and Surface claim mapping
 - proof-family results when the adapter declares proof-family manifests
 - a generated verification budget that shows required, candidate, advisory, move-to-test, and retiring check families
+- optional external tool results from proof lanes, such as Fallow audit JSON
 - uncovered-path status
 - evaluated policy results
 - adapter metadata
@@ -178,6 +179,25 @@ Current adapters use explicit proof-lane objects:
 ```
 
 Legacy `requiredProofLanes`, `defaultProofLanes`, and `surfaceProofLanes` command arrays are intentionally rejected by runtime validation. Migrate by assigning each command a stable `proofLanes[].id`, moving the command into `proofLanes[].command`, and replacing route command arrays with `proofLaneIds`.
+
+Proof lanes may optionally declare an external tool artifact. Veritas reads the artifact after the proof lane has run, records a normalized `external_tool_results` entry, and maps the verdict into `surface.input`.
+
+```json
+{
+  "id": "fallow-advisory",
+  "command": "npm run veritas:fallow:advisory",
+  "method": "auditability",
+  "summary": "Runs Fallow audit as advisory codebase-intelligence evidence.",
+  "externalTool": {
+    "tool": "fallow",
+    "format": "fallow-audit-json",
+    "blocking": false,
+    "artifactPath": ".veritas/external/fallow-audit.json"
+  }
+}
+```
+
+External tool artifacts must stay under `.veritas/`. Use advisory mode for existing repos until findings are cleaned up or baselined.
 
 Adapters can also declare family-level proof inventories:
 
@@ -219,10 +239,12 @@ Veritas owns the repo-specific producer fields. Surface owns generated report fi
 | `run_id`, `timestamp`, `source_ref`, `source_kind`, `source_scope` | Surface input source, claim/evidence/event timestamps, integrity refs, and evidence metadata | Surface-mapped |
 | `resolved_phase`, `resolved_workstream`, `matched_artifacts`, `affected_lanes`, `files`, `unresolved_files` | Claim and evidence metadata that explains why Veritas selected the surface | Surface-mapped |
 | `affected_nodes` | `Claim`, `Evidence`, and `VerificationEvent` records on `veritas.affected-surface` | Surface-mapped |
+| `affected_node_details`, `file_nodes` | Surface ownership and boundary metadata for matched files | Surface-mapped |
 | `selected_proof_commands`, `selected_proof_lanes`, `proof_resolution_source` | `Claim`, `Evidence`, `VerificationPolicy`, and `VerificationEvent` records on `veritas.proof-lanes` | Surface-mapped |
 | `uncovered_path_result`, `baseline_ci_fast_passed` | Proof-lane claim status, verification events, and metadata for proof confidence | Surface-mapped |
 | `proof_family_results` | `Claim`, `Evidence`, `VerificationEvent`, and metadata records on `veritas.proof-families` | Surface-mapped |
 | `verification_budget` | A budget claim/evidence pair plus metadata used by Surface report generation | Surface-mapped |
+| `external_tool_results` | External tool verdict claims, evidence, events, and metadata for advisory/blocking proof lanes | Surface-mapped |
 | `policy_pack`, `policy_results` | Policy-result claims, evidence, events, and policy-violation fault-line hints | Surface-mapped |
 | `recommendations`, `false_positive_review`, `promotion_candidate`, `override_or_bypass`, `owner`, `promotion_allowed` | Surface metadata and confidence context | Surface-mapped |
 | `framework`, `adapter`, `framework_version` | Veritas-local producer/runtime metadata | Veritas-local |
@@ -250,6 +272,8 @@ Defined by:
 - [schemas/veritas-eval-record.schema.json](../../schemas/veritas-eval-record.schema.json)
 
 The draft captures prefilled context without inventing missing judgment. The record captures the completed operator judgment.
+
+Policy results may include optional machine-readable `actions`. These actions are remediation hints for agents and reviewers. They are not auto-fixes unless a future tool explicitly implements them.
 
 ### Marker benchmark scenario, transcript, and comparison
 
@@ -308,6 +332,7 @@ Use these when you want concrete, current examples instead of abstract schema de
 - adapters: [adapters/work-agent.adapter.json](../../adapters/work-agent.adapter.json), [adapters/demo-docs-site.adapter.json](../../adapters/demo-docs-site.adapter.json)
 - policy pack: [policy-packs/work-agent-convergence.policy-pack.json](../../policy-packs/work-agent-convergence.policy-pack.json)
 - evidence fixtures: [examples/evidence/work-agent-pass.json](../../examples/evidence/work-agent-pass.json), [examples/evidence/work-agent-fail.json](../../examples/evidence/work-agent-fail.json), [examples/evidence/work-agent-policy-gap.json](../../examples/evidence/work-agent-policy-gap.json)
+- external tool fixture: [examples/evidence/fallow-advisory.json](../../examples/evidence/fallow-advisory.json)
 - eval fixtures: [examples/evals/work-agent-team-profile.json](../../examples/evals/work-agent-team-profile.json), [examples/evals/work-agent-shadow-eval-draft.json](../../examples/evals/work-agent-shadow-eval-draft.json), [examples/evals/work-agent-shadow-eval.json](../../examples/evals/work-agent-shadow-eval.json)
 - benchmark fixtures: [examples/benchmarks/migration-marker-scenario.json](../../examples/benchmarks/migration-marker-scenario.json), [examples/benchmarks/migration-marker-without-veritas.json](../../examples/benchmarks/migration-marker-without-veritas.json), [examples/benchmarks/migration-marker-with-veritas.json](../../examples/benchmarks/migration-marker-with-veritas.json), [examples/benchmarks/migration-marker-comparison.json](../../examples/benchmarks/migration-marker-comparison.json)
 - suite fixtures: [examples/benchmarks/marker-suite.json](../../examples/benchmarks/marker-suite.json), [examples/benchmarks/marker-suite-report.json](../../examples/benchmarks/marker-suite-report.json)

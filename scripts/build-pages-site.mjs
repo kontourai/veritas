@@ -25,6 +25,7 @@ const markdownFiles = [
   'docs/design/policy-packs.md',
   'docs/design/schema-evolution.md',
   'docs/guides/agent-runtime-integrations.md',
+  'docs/guides/fallow-integration.md',
   'docs/guides/getting-started.md',
   'docs/guides/operational-checkins.md',
   'docs/guides/publish-and-release.md',

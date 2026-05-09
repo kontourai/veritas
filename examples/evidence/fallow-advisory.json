@@ -1,0 +1,149 @@
+{
+  "framework_version": 1,
+  "run_id": "fallow-advisory-example",
+  "timestamp": "2026-04-30T00:00:00.000Z",
+  "source_ref": "example",
+  "source_kind": "explicit-files",
+  "source_scope": ["explicit"],
+  "resolved_phase": "Phase 0",
+  "resolved_workstream": "Fallow advisory demo",
+  "matched_artifacts": ["docs/guides/fallow-integration.md"],
+  "affected_nodes": ["root.manifest"],
+  "affected_lanes": ["package.json"],
+  "selected_proof_commands": ["node scripts/run-fallow-audit.mjs"],
+  "selected_proof_lanes": [
+    {
+      "id": "fallow-advisory",
+      "command": "node scripts/run-fallow-audit.mjs",
+      "method": "auditability",
+      "surface_claim_ids": [],
+      "summary": "Runs Fallow audit as advisory codebase-intelligence evidence."
+    }
+  ],
+  "proof_resolution_source": "required",
+  "proof_family_results": [],
+  "verification_budget": {
+    "proof_lane_count": 1,
+    "selected_proof_lane_count": 1,
+    "proof_family_count": 0,
+    "required_family_count": 0,
+    "candidate_family_count": 0,
+    "advisory_family_count": 0,
+    "move_to_test_family_count": 0,
+    "retire_family_count": 0,
+    "upstream_candidate_count": 0,
+    "unknown_catch_evidence_family_ids": [],
+    "missing_review_trigger_family_ids": [],
+    "stale_family_ids": [],
+    "stale_or_unknown_family_ids": [],
+    "recommendation": "Verification budget has owners, review triggers, and no unknown catch-evidence families."
+  },
+  "external_tool_results": [
+    {
+      "tool": "fallow",
+      "format": "fallow-audit-json",
+      "command": "node scripts/run-fallow-audit.mjs",
+      "proof_lane_id": "fallow-advisory",
+      "verdict": "warn",
+      "blocking": false,
+      "summary": {
+        "dead_code_issues": 8,
+        "duplication_clone_groups": 19,
+        "complexity_findings": 100
+      },
+      "artifact_path": ".veritas/external/fallow-audit.json",
+      "actions": []
+    }
+  ],
+  "uncovered_path_result": "clear",
+  "baseline_ci_fast_passed": null,
+  "recommendations": [],
+  "false_positive_review": "unknown",
+  "promotion_candidate": false,
+  "override_or_bypass": false,
+  "owner": null,
+  "files": ["package.json"],
+  "unresolved_files": [],
+  "promotion_allowed": true,
+  "framework": {
+    "version": 1,
+    "resolver_precedence": ["explicit"],
+    "policy_defaults": {
+      "false_positive_review": "unknown",
+      "promotion_candidate": false,
+      "override_or_bypass": false
+    }
+  },
+  "adapter": {
+    "name": "fallow-advisory-demo",
+    "kind": "repo-adapter",
+    "report_transport": "local-json",
+    "default_resolution": {
+      "phase": "Phase 0",
+      "workstream": "Fallow advisory demo",
+      "matchedArtifacts": ["docs/guides/fallow-integration.md"]
+    },
+    "non_sliceable_invariants": [],
+    "proof_lanes": [
+      {
+        "id": "fallow-advisory",
+        "command": "node scripts/run-fallow-audit.mjs",
+        "method": "auditability",
+        "surface_claim_ids": [],
+        "summary": "Runs Fallow audit as advisory codebase-intelligence evidence."
+      }
+    ],
+    "required_proof_lane_ids": ["fallow-advisory"],
+    "default_proof_lane_ids": [],
+    "surface_proof_lanes": [],
+    "uncovered_path_policy": "warn"
+  },
+  "policy_pack": {
+    "name": "fallow-advisory-policy",
+    "version": 1,
+    "rule_count": 0
+  },
+  "policy_results": [],
+  "surface": {
+    "input": {
+      "schemaVersion": 2,
+      "source": "veritas:fallow-advisory-example",
+      "claims": [
+        {
+          "id": "veritas.fallow-advisory-example.external-tool.fallow-fallow-advisory",
+          "surface": "veritas.external-tool-results",
+          "claimType": "veritas-external-tool-result",
+          "value": {
+            "tool": "fallow",
+            "format": "fallow-audit-json",
+            "verdict": "warn",
+            "blocking": false
+          }
+        }
+      ],
+      "evidence": [
+        {
+          "id": "veritas.fallow-advisory-example.external-tool.fallow-fallow-advisory.evidence",
+          "claimId": "veritas.fallow-advisory-example.external-tool.fallow-fallow-advisory",
+          "evidenceType": "test_output",
+          "method": "auditability",
+          "sourceLocator": ".veritas/external/fallow-audit.json"
+        }
+      ],
+      "policies": [
+        {
+          "id": "veritas.external-tool-result",
+          "claimType": "veritas-external-tool-result"
+        }
+      ],
+      "events": [
+        {
+          "id": "veritas.fallow-advisory-example.external-tool.fallow-fallow-advisory.disputed",
+          "claimId": "veritas.fallow-advisory-example.external-tool.fallow-fallow-advisory",
+          "status": "disputed",
+          "notes": "fallow fallow-audit-json verdict: warn"
+        }
+      ]
+    }
+  }
+}

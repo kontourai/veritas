@@ -8,6 +8,7 @@ import {
 import { createHash } from 'node:crypto';
 import { basename, dirname, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import picomatch from 'picomatch';
 import {
   loadJson,
   loadAdapterConfig,
@@ -45,12 +46,13 @@ import {
   buildSuggestedPackageScripts,
   buildSuggestedCiSnippet,
 } from './bootstrap.mjs';
-import { shellQuote, runProofCommand } from './shell.mjs';
+import { shellQuote, runProofCommand, resolveGitHead, stagedDiffSha256 } from './shell.mjs';
 import {
   buildSuggestedGitHook,
   buildSuggestedRuntimeHook,
   buildSuggestedStopHook,
   buildSuggestedCodexHookConfig,
+  buildSuggestedClaudeCodePreToolUseHook,
   inspectCodexHookTarget,
   applyPackageScripts,
   applyCiSnippet,
@@ -59,6 +61,7 @@ import {
   applyStopHook,
   inspectRuntimeAdapterStatus,
   applyCodexHook,
+  applyClaudeCodePreToolUseHook,
 } from './hooks.mjs';
 import {
   applyGovernanceBlocks,
@@ -102,6 +105,7 @@ export {
   buildSuggestedRuntimeHook,
   buildSuggestedStopHook,
   buildSuggestedCodexHookConfig,
+  buildSuggestedClaudeCodePreToolUseHook,
   buildGovernanceBlock,
   applyGovernanceBlocks,
   applyPackageScripts,
@@ -111,6 +115,7 @@ export {
   applyStopHook,
   inspectRuntimeAdapterStatus,
   applyCodexHook,
+  applyClaudeCodePreToolUseHook,
 };
 
 function sha256Hex(value) {
@@ -118,13 +123,56 @@ function sha256Hex(value) {
 }
 
 export function matchesPatterns(filePath, patterns) {
-  return patterns.some((pattern) =>
-    pattern.endsWith('/') ? filePath.startsWith(pattern) : filePath === pattern,
-  );
+  let matched = false;
+
+  for (const rawPattern of patterns) {
+    if (typeof rawPattern !== 'string' || rawPattern.length === 0) {
+      continue;
+    }
+
+    const negated = rawPattern.startsWith('!');
+    const pattern = negated ? rawPattern.slice(1) : rawPattern;
+    const patternMatched = pattern.endsWith('/')
+      ? filePath.startsWith(pattern)
+      : picomatch.scan(pattern).isGlob
+        ? picomatch.isMatch(filePath, pattern, { dot: true })
+        : filePath === pattern;
+
+    if (patternMatched) {
+      matched = !negated;
+    }
+  }
+
+  return matched;
 }
 
 export function matchesPatternsForAnyFile(files, patterns) {
   return files.some((file) => matchesPatterns(file, patterns));
+}
+
+function resolveSourceRef({ explicitSourceRef, rootDir, sourceKind = 'explicit-files' } = {}) {
+  if (explicitSourceRef) return explicitSourceRef;
+  const head = rootDir ? resolveGitHead(rootDir) : null;
+  if (head && sourceKind !== 'working-tree') return head;
+  const hash = rootDir ? stagedDiffSha256(rootDir) : sha256Hex('');
+  return `working-tree:${hash}`;
+}
+
+function readAllTrackedFiles(rootDir) {
+  try {
+    return listGitFiles(['ls-files'], rootDir);
+  } catch {
+    return [];
+  }
+}
+
+function matchedFilesForRule(rule, { rootDir, changedFiles = [] }) {
+  const patterns = rule.match?.files;
+  if (!Array.isArray(patterns)) return [];
+  const candidates = changedFiles.length > 0 ? changedFiles : readAllTrackedFiles(rootDir);
+  return candidates
+    .map((file) => normalizeRepoPath(file, rootDir))
+    .filter((file) => matchesPatterns(file, patterns));
 }
 
 function uniqueStrings(items = []) {
@@ -796,6 +844,8 @@ export function generateMarkerBenchmarkSuiteReport(options = {}, defaults = {}) 
 export function classifyNodes(files, config, rootDir) {
   const matchedNodeIds = new Set();
   const matchedLaneLabels = new Set();
+  const matchedNodes = [];
+  const fileNodes = {};
   const unmatchedFiles = [];
 
   for (const file of files) {
@@ -805,6 +855,25 @@ export function classifyNodes(files, config, rootDir) {
       if (matchesPatterns(normalized, node.patterns)) {
         matchedNodeIds.add(node.id);
         matchedLaneLabels.add(node.label);
+        if (!matchedNodes.some((item) => item.id === node.id)) {
+          matchedNodes.push({
+            id: node.id,
+            label: node.label,
+            kind: node.kind,
+            owners: uniqueStrings(node.owners ?? []),
+            boundary: node.boundary ?? 'advisory',
+            crossSurfaceAllow: uniqueStrings(node.crossSurfaceAllow ?? []),
+          });
+        }
+        fileNodes[normalized] = fileNodes[normalized] ?? [];
+        fileNodes[normalized].push({
+          id: node.id,
+          label: node.label,
+          kind: node.kind,
+          owners: uniqueStrings(node.owners ?? []),
+          boundary: node.boundary ?? 'advisory',
+          crossSurfaceAllow: uniqueStrings(node.crossSurfaceAllow ?? []),
+        });
         matched = true;
       }
     }
@@ -816,6 +885,8 @@ export function classifyNodes(files, config, rootDir) {
   return {
     affectedNodes: [...matchedNodeIds].sort(),
     affectedLanes: [...matchedLaneLabels].sort(),
+    matchedNodes,
+    fileNodes,
     unmatchedFiles,
   };
 }
@@ -862,6 +933,122 @@ function proofLaneRecordsForCommands(config, commands) {
       summary: `Explicit proof command: ${command}`,
     };
   });
+}
+
+function assertExternalToolConfig(externalTool) {
+  if (!externalTool || typeof externalTool !== 'object' || Array.isArray(externalTool)) {
+    throw new Error('Veritas adapter evidence.proofLanes[].externalTool must be an object.');
+  }
+  for (const field of ['tool', 'format', 'artifactPath']) {
+    if (typeof externalTool[field] !== 'string' || externalTool[field].length === 0) {
+      throw new Error(`Veritas adapter evidence.proofLanes[].externalTool.${field} must be a non-empty string.`);
+    }
+  }
+  if (typeof externalTool.blocking !== 'boolean') {
+    throw new Error('Veritas adapter evidence.proofLanes[].externalTool.blocking must be a boolean.');
+  }
+  const artifactPath = externalTool.artifactPath;
+  if (artifactPath.startsWith('/') || artifactPath.includes('..') || !artifactPath.startsWith('.veritas/')) {
+    throw new Error('Veritas adapter evidence.proofLanes[].externalTool.artifactPath must be a repo-local path inside .veritas/.');
+  }
+}
+
+function readExternalToolPayload(rootDir, artifactPath) {
+  const resolvedPath = resolve(rootDir, artifactPath);
+  assertWithinDir(
+    resolvedPath,
+    resolve(rootDir, '.veritas'),
+    'external tool artifacts may only be read from .veritas/',
+  );
+  if (!existsSync(resolvedPath)) return null;
+  try {
+    return JSON.parse(readFileSync(resolvedPath, 'utf8'));
+  } catch (error) {
+    throw new Error(`Unable to read external tool artifact ${artifactPath}: ${error.message}`);
+  }
+}
+
+function normalizeExternalToolVerdict(payload) {
+  if (payload?.verdict === 'pass' || payload?.verdict === 'warn' || payload?.verdict === 'fail') {
+    return payload.verdict;
+  }
+  if (typeof payload?.total_issues === 'number') {
+    return payload.total_issues > 0 ? 'warn' : 'pass';
+  }
+  if (payload?.summary && typeof payload.summary === 'object' && !Array.isArray(payload.summary)) {
+    const numericCounts = Object.values(payload.summary).filter((value) => typeof value === 'number');
+    if (numericCounts.length > 0) {
+      return numericCounts.some((value) => value > 0) ? 'warn' : 'pass';
+    }
+  }
+  return 'unknown';
+}
+
+function externalToolSummary(payload) {
+  const summary = {};
+  if (payload?.summary && typeof payload.summary === 'object' && !Array.isArray(payload.summary)) {
+    Object.assign(summary, payload.summary);
+  }
+  if (typeof payload?.total_issues === 'number') summary.total_issues = payload.total_issues;
+  if (Array.isArray(payload?.unused_exports)) summary.unused_exports = payload.unused_exports.length;
+  if (Array.isArray(payload?.unused_files)) summary.unused_files = payload.unused_files.length;
+  if (Array.isArray(payload?.unused_dependencies)) summary.unused_dependencies = payload.unused_dependencies.length;
+  if (Array.isArray(payload?.boundary_violations)) summary.boundary_violations = payload.boundary_violations.length;
+  if (Array.isArray(payload?.circular_dependencies)) summary.circular_dependencies = payload.circular_dependencies.length;
+  if (Array.isArray(payload?.duplication?.clone_groups)) summary.duplication_clone_groups = payload.duplication.clone_groups.length;
+  if (Array.isArray(payload?.dupes?.clone_groups)) summary.duplication_clone_groups = payload.dupes.clone_groups.length;
+  if (typeof payload?.health?.summary?.functions_above_threshold === 'number') {
+    summary.functions_above_threshold = payload.health.summary.functions_above_threshold;
+  }
+  return summary;
+}
+
+function externalToolActions(payload) {
+  if (!Array.isArray(payload?.actions)) return [];
+  return payload.actions
+    .filter((action) => action && typeof action === 'object')
+    .slice(0, 20)
+    .map((action) => ({
+      type: String(action.type ?? 'external-tool-action'),
+      description: String(action.description ?? action.message ?? 'External tool action'),
+      auto_fixable: Boolean(action.auto_fixable),
+      ...(Array.isArray(action.paths) ? { paths: action.paths.filter((path) => typeof path === 'string') } : {}),
+    }));
+}
+
+function buildExternalToolResults({ proofLanes, rootDir }) {
+  return proofLanes
+    .filter((lane) => lane.externalTool)
+    .map((lane) => {
+      const externalTool = lane.externalTool;
+      const payload = readExternalToolPayload(rootDir, externalTool.artifactPath);
+      if (!payload) {
+        return {
+          tool: externalTool.tool,
+          format: externalTool.format,
+          command: lane.command,
+          proof_lane_id: lane.id,
+          verdict: 'missing',
+          blocking: externalTool.blocking,
+          summary: {
+            message: `External tool artifact ${externalTool.artifactPath} was not found.`,
+          },
+          artifact_path: externalTool.artifactPath,
+          actions: [],
+        };
+      }
+      return {
+        tool: externalTool.tool,
+        format: externalTool.format,
+        command: lane.command,
+        proof_lane_id: lane.id,
+        verdict: normalizeExternalToolVerdict(payload),
+        blocking: externalTool.blocking,
+        summary: externalToolSummary(payload),
+        artifact_path: externalTool.artifactPath,
+        actions: externalToolActions(payload),
+      };
+    });
 }
 
 function readProofFamilyManifestPaths(config) {
@@ -1152,6 +1339,19 @@ const SURFACE_TRUST_POLICIES = {
     conflictRules: ['unknown or stale proof families dispute budget readiness'],
     impactLevel: 'medium',
   },
+  externalToolResult: {
+    id: 'veritas.external-tool-result',
+    claimType: 'veritas-external-tool-result',
+    requiredEvidence: ['test_output'],
+    requiredMethods: ['auditability'],
+    requiresCorroboration: false,
+    requiredProof: ['external tool artifact'],
+    reviewAuthority: 'external tool plus veritas adapter',
+    validityRule: { kind: 'commit' },
+    stalenessTriggers: ['source_ref changes', 'external tool artifact changes'],
+    conflictRules: ['blocking external tool failures reject the affected tool claim'],
+    impactLevel: 'medium',
+  },
 };
 
 function buildSurfaceTrustInput(record) {
@@ -1159,6 +1359,9 @@ function buildSurfaceTrustInput(record) {
   const evidence = [];
   const events = [];
   const adapterName = record.adapter?.name ?? 'veritas';
+  const proofLaneClaimIds = [];
+  const policyClaimIds = [];
+  const proofFamilyClaimIds = [];
 
   for (const node of record.affected_nodes) {
     const id = surfaceClaimId(record.run_id, 'surface', node);
@@ -1209,6 +1412,7 @@ function buildSurfaceTrustInput(record) {
 
   for (const lane of record.selected_proof_lanes) {
     const id = surfaceClaimId(record.run_id, 'proof', lane.id);
+    proofLaneClaimIds.push(id);
     const evidenceId = `${id}.evidence`;
     claims.push({
       id,
@@ -1259,6 +1463,7 @@ function buildSurfaceTrustInput(record) {
 
   for (const result of record.policy_results) {
     const id = surfaceClaimId(record.run_id, 'policy', result.rule_id);
+    policyClaimIds.push(id);
     const evidenceId = `${id}.evidence`;
     const status = surfacePolicyResultStatus(result);
     const impactLevel = surfacePolicyImpact(result);
@@ -1330,6 +1535,7 @@ function buildSurfaceTrustInput(record) {
 
   for (const family of record.proof_family_results ?? []) {
     const id = surfaceClaimId(record.run_id, 'proof-family', family.id);
+    proofFamilyClaimIds.push(id);
     const evidenceId = `${id}.evidence`;
     const status = surfaceProofFamilyStatus(family);
     const impactLevel = surfaceProofFamilyImpact(family);
@@ -1350,6 +1556,7 @@ function buildSurfaceTrustInput(record) {
       updatedAt: record.timestamp,
       impactLevel,
       currentIntegrityRef: record.source_ref,
+      derivedFrom: proofLaneClaimIds.length > 0 ? [...proofLaneClaimIds] : undefined,
       verificationPolicyId: SURFACE_TRUST_POLICIES.proofFamily.id,
       confidenceBasis: {
         sourceQuality: family.recent_catch_evidence === 'unknown' || family.evidence_basis === 'unknown' ? 'weak' : 'moderate',
@@ -1406,6 +1613,74 @@ function buildSurfaceTrustInput(record) {
     }));
   }
 
+  for (const result of record.external_tool_results ?? []) {
+    const id = surfaceClaimId(record.run_id, 'external-tool', `${result.tool}-${result.proof_lane_id}`);
+    const evidenceId = `${id}.evidence`;
+    const status = surfaceExternalToolStatus(result);
+    const impactLevel = result.blocking && status !== 'verified' ? 'high' : 'medium';
+    claims.push({
+      id,
+      subjectType: 'external-tool-result',
+      subjectId: `${adapterName}:${result.tool}:${result.proof_lane_id}`,
+      surface: 'veritas.external-tool-results',
+      claimType: 'veritas-external-tool-result',
+      fieldOrBehavior: 'externalToolVerdict',
+      value: {
+        tool: result.tool,
+        format: result.format,
+        verdict: result.verdict,
+        blocking: result.blocking,
+      },
+      status,
+      createdAt: record.timestamp,
+      updatedAt: record.timestamp,
+      impactLevel,
+      currentIntegrityRef: record.source_ref,
+      derivedFrom: proofLaneClaimIds.length > 0 ? [...proofLaneClaimIds] : undefined,
+      verificationPolicyId: SURFACE_TRUST_POLICIES.externalToolResult.id,
+      confidenceBasis: {
+        sourceQuality: result.verdict === 'missing' || result.verdict === 'unknown' ? 'weak' : 'moderate',
+        reviewerAuthority: 'tool',
+        proofStrength: result.verdict === 'pass' ? 'strong' : 'weak',
+        conflictCount: status === 'verified' ? 0 : 1,
+        impactLevel,
+      },
+      metadata: {
+        proofLaneId: result.proof_lane_id,
+        command: result.command,
+        artifactPath: result.artifact_path,
+        summary: result.summary,
+        actions: result.actions,
+      },
+    });
+    evidence.push(surfaceEvidence({
+      id: evidenceId,
+      claimId: id,
+      type: 'test_output',
+      method: 'auditability',
+      record,
+      locator: result.artifact_path,
+      summary: `${result.tool} reported ${result.verdict} for proof lane ${result.proof_lane_id}.`,
+      metadata: {
+        externalToolResult: result,
+        faultLineHints: status === 'verified' ? [] : [{
+          type: result.blocking ? 'policy_violation' : 'provenance_gap',
+          severity: impactLevel,
+          message: `${result.tool} verdict is ${result.verdict}.`,
+        }],
+      },
+    }));
+    events.push(surfaceEvent({
+      id: `${id}.${status}`,
+      claimId: id,
+      status,
+      method: result.command,
+      evidenceIds: [evidenceId],
+      record,
+      notes: `${result.tool} ${result.format} verdict: ${result.verdict}`,
+    }));
+  }
+
   if (record.verification_budget) {
     const id = surfaceClaimId(record.run_id, 'budget', 'verification');
     const evidenceId = `${id}.evidence`;
@@ -1429,6 +1704,7 @@ function buildSurfaceTrustInput(record) {
       impactLevel,
       currentIntegrityRef: record.source_ref,
       verificationPolicyId: SURFACE_TRUST_POLICIES.verificationBudget.id,
+      derivedFrom: proofFamilyClaimIds.length > 0 ? proofFamilyClaimIds : policyClaimIds,
       confidenceBasis: {
         sourceQuality: 'strong',
         reviewerAuthority: 'system',
@@ -1554,6 +1830,13 @@ function surfaceProofFamilySummary(family) {
   return `Proof family ${family.id} is ${family.disposition} / ${family.blocking_status}; freshness ${family.freshness_status}; evidence ${family.evidence_basis}.${rationale}`;
 }
 
+function surfaceExternalToolStatus(result) {
+  if (result.verdict === 'pass') return 'verified';
+  if (result.blocking && (result.verdict === 'fail' || result.verdict === 'missing')) return 'rejected';
+  if (result.verdict === 'fail' || result.verdict === 'warn' || result.verdict === 'missing') return 'disputed';
+  return 'proposed';
+}
+
 function surfaceProofFamilyFaultLineHints(family) {
   const hints = [];
   if (family.freshness_status === 'stale' || family.freshness_status === 'review-needed' || family.freshness_status === 'retiring') {
@@ -1647,6 +1930,9 @@ function assertProofLaneObject(lane) {
   if (lane.surfaceClaimIds !== undefined && !Array.isArray(lane.surfaceClaimIds)) {
     throw new Error('Veritas adapter evidence.proofLanes[].surfaceClaimIds must be an array of strings.');
   }
+  if (lane.externalTool !== undefined) {
+    assertExternalToolConfig(lane.externalTool);
+  }
 }
 
 function readUncoveredPathPolicy(config) {
@@ -1674,7 +1960,13 @@ export function resolveProofPlan({
   rootDir,
   explicitProofCommand,
 }) {
-  const { affectedNodes, affectedLanes, unmatchedFiles } = classifyNodes(files, config, rootDir);
+  const {
+    affectedNodes,
+    affectedLanes,
+    unmatchedFiles,
+    matchedNodes,
+    fileNodes,
+  } = classifyNodes(files, config, rootDir);
   const uncoveredPathPolicy = readUncoveredPathPolicy(config);
   const surfaceRoutes = readSurfaceProofRoutes(config);
   const matchedRoutes = surfaceRoutes.filter((route) => routeMatchesAnyNode(route, affectedNodes));
@@ -1714,6 +2006,8 @@ export function resolveProofPlan({
   return {
     affectedNodes,
     affectedLanes,
+    matchedNodes,
+    fileNodes,
     unmatchedFiles,
     uncoveredPathPolicy,
     uncoveredPathResult: unmatchedFiles.length > 0 ? uncoveredPathPolicy : 'clear',
@@ -1788,7 +2082,7 @@ export function buildEvidenceRecord({
       rootDir,
       explicitProofCommand: options.explicitProofCommand,
     });
-  const { affectedNodes, affectedLanes, unmatchedFiles } = proofPlan;
+  const { affectedNodes, affectedLanes, unmatchedFiles, matchedNodes, fileNodes } = proofPlan;
   const unresolvedMessage =
     proofPlan.uncoveredPathResult === 'fail'
       ? 'Some files do not match a configured surface and fail the uncovered-path policy.'
@@ -1826,10 +2120,12 @@ export function buildEvidenceRecord({
     evaluatePolicyPack(resolvedPolicyPack, {
       rootDir,
       changedFiles: normalizedFiles,
+      config,
+      actor: options.actor,
     });
-  const selectedProofLanes = (
-    proofPlan.proofLanes ?? proofLaneRecordsForCommands(config, proofPlan.proofCommands)
-  ).map((lane) => ({
+  const selectedProofLaneSources =
+    proofPlan.proofLanes ?? proofLaneRecordsForCommands(config, proofPlan.proofCommands);
+  const selectedProofLanes = selectedProofLaneSources.map((lane) => ({
     id: lane.id,
     command: lane.command,
     method: lane.method,
@@ -1851,13 +2147,19 @@ export function buildEvidenceRecord({
     framework_version: frameworkVersion,
     run_id: runId,
     timestamp,
-    source_ref: options.sourceRef ?? 'local-dry-run',
+    source_ref: resolveSourceRef({
+      explicitSourceRef: options.sourceRef,
+      rootDir,
+      sourceKind: options.sourceKind,
+    }),
     source_kind: options.sourceKind ?? 'explicit-files',
     source_scope: options.sourceScope ?? ['explicit'],
     resolved_phase: resolution.resolvedPhase,
     resolved_workstream: resolution.resolvedWorkstream,
     matched_artifacts: resolution.matchedArtifacts,
     affected_nodes: affectedNodes,
+    affected_node_details: matchedNodes ?? [],
+    file_nodes: fileNodes ?? {},
     affected_lanes: affectedLanes,
     selected_proof_commands: proofPlan.proofCommands,
     selected_proof_lanes: selectedProofLanes,
@@ -1866,6 +2168,10 @@ export function buildEvidenceRecord({
     verification_budget: buildVerificationBudget({
       proofLanes: allProofLanes,
       proofFamilyResults,
+    }),
+    external_tool_results: buildExternalToolResults({
+      proofLanes: selectedProofLaneSources,
+      rootDir,
     }),
     uncovered_path_result: proofPlan.uncoveredPathResult,
     baseline_ci_fast_passed: baselineCiFastPassed,
@@ -2016,6 +2322,7 @@ function buildEvalEvidenceContext({ evidenceRecord, evidenceRaw, evidencePath, r
     source_scope: evidenceRecord.source_scope ?? [],
     affected_nodes: evidenceRecord.affected_nodes ?? [],
     affected_lanes: evidenceRecord.affected_lanes ?? [],
+    policy_results: evidenceRecord.policy_results ?? [],
   };
 }
 
@@ -2223,6 +2530,14 @@ function validateEvalDraftContext({ draftPath, draftRecord, rootDir, teamProfile
   }
 }
 
+/**
+ * @typedef {Object} RuleContext
+ * @property {string} rootDir
+ * @property {string[]} [changedFiles]
+ * @property {object} [config] Adapter config; required for cross-surface-write.
+ * @property {string|null} [actor] Resolved actor for boundary rules.
+ */
+
 function buildRuleResult(rule, overrides = {}) {
   return {
     rule_id: rule.id,
@@ -2233,12 +2548,14 @@ function buildRuleResult(rule, overrides = {}) {
     rollback_switch: rule.rollback_switch ?? null,
     implemented: false,
     passed: null,
+    status: 'info',
     summary: `Rule ${rule.id} is metadata-only in the current framework.`,
     findings: [],
     ...overrides,
   };
 }
 
+/** @param {RuleContext} context */
 export function evaluateRequiredArtifactsRule(rule, { rootDir }) {
   const missingArtifacts = (rule.match?.artifacts ?? []).filter(
     (artifact) => !existsSync(resolve(rootDir, artifact)),
@@ -2258,6 +2575,7 @@ export function evaluateRequiredArtifactsRule(rule, { rootDir }) {
   });
 }
 
+/** @param {RuleContext} context */
 export function evaluateGovernanceBlockRule(rule, { rootDir }) {
   const targets = rule.match?.['governance-block'] ?? [];
   const findings = targets
@@ -2283,6 +2601,7 @@ export function evaluateGovernanceBlockRule(rule, { rootDir }) {
   });
 }
 
+/** @param {RuleContext} context */
 export function evaluateDiffRequiredRule(rule, { changedFiles = [] }) {
   const ifChanged = rule.match?.['if-changed'];
   const thenRequire = rule.match?.['then-require'];
@@ -2315,21 +2634,190 @@ export function evaluateDiffRequiredRule(rule, { changedFiles = [] }) {
   });
 }
 
-export function evaluatePolicyRule(rule, context) {
-  if (Array.isArray(rule.match?.artifacts)) {
-    return evaluateRequiredArtifactsRule(rule, context);
-  }
-  if (Array.isArray(rule.match?.['governance-block'])) {
-    return evaluateGovernanceBlockRule(rule, context);
-  }
-  if (
-    typeof rule.match?.['if-changed'] === 'string' &&
-    typeof rule.match?.['then-require'] === 'string'
-  ) {
-    return evaluateDiffRequiredRule(rule, context);
+function readRepoTextFile(rootDir, filePath) {
+  const resolvedPath = resolve(rootDir, filePath);
+  assertWithinDir(resolvedPath, rootDir, 'policy rule file reads must stay inside the repository');
+  return readFileSync(resolvedPath, 'utf8');
+}
+
+function lineForMatch(content, index) {
+  return content.slice(0, index).split('\n').length;
+}
+
+/** @param {RuleContext} context */
+export function evaluateForbiddenPatternRule(rule, context) {
+  const files = matchedFilesForRule(rule, context);
+  const pattern = rule.match?.pattern;
+  const regex = new RegExp(pattern, 'm');
+  const findings = [];
+  for (const file of files) {
+    const content = readRepoTextFile(context.rootDir, file);
+    const match = regex.exec(content);
+    if (match) {
+      findings.push({
+        kind: 'forbidden-pattern',
+        artifact: file,
+        line: lineForMatch(content, match.index),
+        pattern,
+      });
+    }
   }
 
-  return buildRuleResult(rule);
+  return buildRuleResult(rule, {
+    implemented: true,
+    passed: findings.length === 0,
+    summary:
+      findings.length === 0
+        ? `No matched files contain forbidden pattern ${pattern}.`
+        : `Forbidden pattern ${pattern} appeared in matched files.`,
+    findings,
+  });
+}
+
+/** @param {RuleContext} context */
+export function evaluateRequiredPatternRule(rule, context) {
+  const files = matchedFilesForRule(rule, context);
+  const pattern = rule.match?.pattern;
+  const regex = new RegExp(pattern, 'm');
+  const findings = [];
+  for (const file of files) {
+    const content = readRepoTextFile(context.rootDir, file);
+    if (!regex.test(content)) {
+      findings.push({
+        kind: 'missing-required-pattern',
+        artifact: file,
+        pattern,
+      });
+    }
+  }
+
+  return buildRuleResult(rule, {
+    implemented: true,
+    passed: findings.length === 0,
+    summary:
+      findings.length === 0
+        ? `All matched files contain required pattern ${pattern}.`
+        : `Some matched files are missing required pattern ${pattern}.`,
+    findings,
+  });
+}
+
+/** @param {RuleContext} context */
+export function evaluateHeaderRequiredRule(rule, context) {
+  const files = matchedFilesForRule(rule, context);
+  const pattern = rule.match?.pattern;
+  const regex = new RegExp(pattern);
+  const findings = [];
+  for (const file of files) {
+    const content = readRepoTextFile(context.rootDir, file);
+    if (!regex.test(content.slice(0, 4096))) {
+      findings.push({
+        kind: 'missing-required-header',
+        artifact: file,
+        pattern,
+      });
+    }
+  }
+
+  return buildRuleResult(rule, {
+    implemented: true,
+    passed: findings.length === 0,
+    summary:
+      findings.length === 0
+        ? `All matched files contain required header pattern ${pattern}.`
+        : `Some matched files are missing required header pattern ${pattern}.`,
+    findings,
+  });
+}
+
+function actorOwnsNode(actor, node) {
+  const owners = uniqueStrings(node.owners ?? []);
+  if (owners.includes('shared') || owners.includes('*')) return true;
+  if (!actor) return false;
+  return owners.includes(actor);
+}
+
+function actorAllowedCrossSurface(actor, node) {
+  const allow = uniqueStrings(node.crossSurfaceAllow ?? []);
+  return allow.includes('*') || allow.includes(actor) || allow.includes(node.id);
+}
+
+/** @param {RuleContext} context */
+export function evaluateCrossSurfaceWriteRule(rule, { changedFiles = [], config, rootDir, actor }) {
+  const effectiveActor = actor ?? process.env.VERITAS_ACTOR ?? null;
+  if (!effectiveActor) {
+    return buildRuleResult(rule, {
+      implemented: true,
+      passed: null,
+      status: 'error',
+      summary: 'cross-surface-write requires --actor or VERITAS_ACTOR; refusing to silently pass.',
+      findings: [{
+        kind: 'missing-actor',
+        artifact: rule.id,
+        remediation: 'Pass --actor <id> or set VERITAS_ACTOR.',
+      }],
+    });
+  }
+  const classification = classifyNodes(changedFiles, config, rootDir);
+  const findings = [];
+
+  for (const [file, nodes] of Object.entries(classification.fileNodes ?? {})) {
+    for (const node of nodes) {
+      if (node.boundary !== 'strict') continue;
+      if (actorOwnsNode(effectiveActor, node) || actorAllowedCrossSurface(effectiveActor, node)) continue;
+      findings.push({
+        kind: 'cross-surface-write',
+        artifact: file,
+        node: node.id,
+        actor: effectiveActor,
+        owners: node.owners,
+        remediation: `Route this change through ${node.owners.join(', ') || 'the owning surface'} or add an explicit crossSurfaceAllow entry.`,
+      });
+    }
+  }
+
+  return buildRuleResult(rule, {
+    implemented: true,
+    passed: findings.length === 0,
+    summary:
+      findings.length === 0
+        ? `Actor ${effectiveActor ?? 'unknown'} stayed within owned or allowed surfaces.`
+        : `Actor ${effectiveActor ?? 'unknown'} touched a strict surface they do not own.`,
+    findings,
+  });
+}
+
+const RULE_EVALUATORS = {
+  'required-artifacts': evaluateRequiredArtifactsRule,
+  'governance-block': evaluateGovernanceBlockRule,
+  'diff-required': evaluateDiffRequiredRule,
+  'cross-surface-write': evaluateCrossSurfaceWriteRule,
+  'forbidden-pattern': evaluateForbiddenPatternRule,
+  'required-pattern': evaluateRequiredPatternRule,
+  'header-required': evaluateHeaderRequiredRule,
+};
+
+/** @param {RuleContext} context */
+export function evaluatePolicyRule(rule, context) {
+  const evaluator = RULE_EVALUATORS[rule.kind];
+  if (!evaluator) {
+    return buildRuleResult(rule, {
+      implemented: false,
+      passed: null,
+      status: 'error',
+      summary: `Unknown rule kind: ${rule.kind ?? 'undefined'}.`,
+      reason: 'unknown rule kind',
+      findings: [
+        {
+          kind: 'unknown-rule-kind',
+          artifact: rule.id,
+          rule_kind: rule.kind ?? null,
+        },
+      ],
+    });
+  }
+
+  return evaluator(rule, context);
 }
 
 export function evaluatePolicyPack(policyPack, context, options = {}) {
@@ -2349,6 +2837,38 @@ export function writeEvidenceArtifact(record, config, rootDir) {
   const artifactPath = resolve(artifactDir, `${record.run_id}.json`);
   writeFileSync(artifactPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
   return artifactPath;
+}
+
+function safeClaimFilename(claimId) {
+  return `${claimId.replace(/[^A-Za-z0-9._-]+/g, '-')}.input.json`;
+}
+
+function buildSingleClaimInput(input, claim) {
+  const evidenceForClaim = input.evidence.filter((item) => item.claimId === claim.id);
+  const eventsForClaim = input.events.filter((item) => item.claimId === claim.id);
+  return {
+    schemaVersion: input.schemaVersion,
+    source: input.source,
+    generatedAt: new Date().toISOString(),
+    claim,
+    evidence: evidenceForClaim,
+    events: eventsForClaim,
+    policy: input.policies.find((policy) => policy.id === claim.verificationPolicyId) ?? null,
+  };
+}
+
+function writeSurfaceClaimInputs(record, rootDir) {
+  const input = record.surface?.input;
+  if (!input?.claims?.length) return [];
+  const claimsDir = resolve(rootDir, '.veritas/claims');
+  mkdirSync(claimsDir, { recursive: true });
+  const written = [];
+  for (const claim of input.claims) {
+    const path = resolve(claimsDir, safeClaimFilename(claim.id));
+    writeFileSync(path, `${JSON.stringify(buildSingleClaimInput(input, claim), null, 2)}\n`, 'utf8');
+    written.push(relativeRepoPath(rootDir, path));
+  }
+  return written;
 }
 
 export function writeEvalArtifact(
@@ -2386,6 +2906,11 @@ export function appendEvalHistory(record, rootDir) {
     confidence: record.outcome.reviewer_confidence,
     false_positive_rules: record.measurements.false_positive_rules,
     required_followup: record.outcome.required_followup,
+    policy_results: (record.evidence.policy_results ?? []).map((result) => ({
+      rule_id: result.rule_id,
+      passed: result.passed,
+      stage: result.stage,
+    })),
   };
   appendFileSync(historyPath, `${JSON.stringify(historyRecord)}\n`, 'utf8');
   return historyPath;
@@ -2480,7 +3005,11 @@ export function resolveReportInputs(explicitFiles, options, rootDir) {
       files: explicitFiles,
       sourceKind: 'explicit-files',
       sourceScope: ['explicit'],
-      sourceRef: options.sourceRef ?? 'local-dry-run',
+      sourceRef: resolveSourceRef({
+        explicitSourceRef: options.sourceRef,
+        rootDir,
+        sourceKind: 'explicit-files',
+      }),
     };
   }
 
@@ -2490,9 +3019,7 @@ export function resolveReportInputs(explicitFiles, options, rootDir) {
         'branch-diff reporting requires both --changed-from and --changed-to',
       );
     }
-    const sourceRef =
-      options.sourceRef ??
-      `${options.changedFrom}..${options.changedTo}`;
+    const sourceRef = options.sourceRef ?? `${options.changedFrom}..${options.changedTo}`;
     return {
       files: listChangedFiles(options.changedFrom, options.changedTo, rootDir),
       sourceKind: 'branch-diff',
@@ -2524,7 +3051,11 @@ export function resolveReportInputs(explicitFiles, options, rootDir) {
       ),
       sourceKind: 'working-tree',
       sourceScope: uniqueScopes,
-      sourceRef: options.sourceRef ?? 'working-tree',
+      sourceRef: resolveSourceRef({
+        explicitSourceRef: options.sourceRef,
+        rootDir,
+        sourceKind: 'working-tree',
+      }),
     };
   }
 
@@ -2532,7 +3063,11 @@ export function resolveReportInputs(explicitFiles, options, rootDir) {
     files: [],
     sourceKind: 'explicit-files',
     sourceScope: ['explicit'],
-    sourceRef: options.sourceRef ?? 'local-dry-run',
+    sourceRef: resolveSourceRef({
+      explicitSourceRef: options.sourceRef,
+      rootDir,
+      sourceKind: 'explicit-files',
+    }),
   };
 }
 
@@ -2558,6 +3093,7 @@ export function buildMarkdownSummary(record, artifactPath) {
     `- **Selected proof commands:** \`${record.selected_proof_commands.join(', ') || 'none'}\``,
     `- **Proof resolution source:** ${record.proof_resolution_source}`,
     `- **Proof families:** ${record.verification_budget?.proof_family_count ?? 0} total, ${record.verification_budget?.required_family_count ?? 0} required, ${record.verification_budget?.candidate_family_count ?? 0} candidate, ${record.verification_budget?.move_to_test_family_count ?? 0} move-to-test, ${record.verification_budget?.retire_family_count ?? 0} retiring`,
+    `- **External tool results:** ${record.external_tool_results?.length ?? 0}`,
     `- **Uncovered path result:** ${record.uncovered_path_result}`,
     `- **Baseline \`ci:fast\` passed:** ${formatTriState(record.baseline_ci_fast_passed)}`,
     `- **Report transport:** ${record.adapter.report_transport}`,
@@ -2592,6 +3128,16 @@ export function buildMarkdownSummary(record, artifactPath) {
     }
   }
 
+  if (record.external_tool_results?.length > 0) {
+    lines.push('', '### External Tool Results');
+    for (const result of record.external_tool_results) {
+      const weight = result.blocking ? 'blocking' : 'advisory';
+      lines.push(
+        `- ${result.tool}:${result.proof_lane_id}: ${result.verdict} / ${weight} — ${result.artifact_path}`,
+      );
+    }
+  }
+
   if (record.verification_budget) {
     lines.push('', '### Verification Budget');
     lines.push(`- ${record.verification_budget.recommendation}`);
@@ -2617,7 +3163,8 @@ export function buildMarkdownSummary(record, artifactPath) {
   return `${lines.join('\n')}\n`;
 }
 
-function feedbackStatusForPolicyResult(result) {
+export function feedbackStatusForPolicyResult(result) {
+  if (result.status === 'error') return 'FAIL';
   if (result.passed === true) return 'PASS';
   if (result.passed === false && result.stage === 'block') return 'FAIL';
   if (result.passed === false) return 'WARN';
@@ -2639,6 +3186,16 @@ function summarizeFeedbackCounts(record, proofFailure = null) {
   for (const family of record?.proof_family_results ?? []) {
     if (family.verification_weight === 'blocking' && family.blocking_status === 'failed') {
       failures += 1;
+    }
+  }
+
+  for (const result of record?.external_tool_results ?? []) {
+    if (result.verdict === 'pass') {
+      passes += 1;
+    } else if (result.blocking) {
+      failures += 1;
+    } else {
+      warnings += 1;
     }
   }
 
@@ -2694,6 +3251,15 @@ export function buildFeedbackSummary({
     if (family.review_trigger) {
       lines.push(`      -> review: ${family.review_trigger}`);
     }
+  }
+
+  for (const result of record?.external_tool_results ?? []) {
+    const status =
+      result.verdict === 'pass' ? 'PASS' : result.blocking ? 'FAIL' : 'WARN';
+    lines.push(
+      `${status.padEnd(5)} external-tool:${result.tool}: ${result.verdict} / ${result.blocking ? 'blocking' : 'advisory'}`,
+    );
+    lines.push(`      -> ${result.artifact_path}`);
   }
 
   const counts = summarizeFeedbackCounts(record, proofFailure);
@@ -2852,6 +3418,7 @@ export function generateVeritasReport(options = {}, defaults = {}, explicitFiles
     rootDir,
   });
   const artifactPath = writeEvidenceArtifact(record, config, rootDir);
+  const claimInputPaths = writeSurfaceClaimInputs(record, rootDir);
   const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
   const markdownSummary = buildMarkdownSummary(record, relativeArtifactPath);
   const resolvedSummaryPath =
@@ -2869,8 +3436,144 @@ export function generateVeritasReport(options = {}, defaults = {}, explicitFiles
     config,
     record,
     artifactPath: relativeArtifactPath,
+    claimInputPaths,
     markdownSummary,
   };
+}
+
+function ruleMatchesFile(rule, filePath) {
+  if (!filePath) return false;
+  const match = rule.match ?? {};
+  if (Array.isArray(match.artifacts)) return matchesPatterns(filePath, match.artifacts);
+  if (Array.isArray(match['governance-block'])) return matchesPatterns(filePath, match['governance-block']);
+  if (typeof match['if-changed'] === 'string' || typeof match['then-require'] === 'string') {
+    return matchesPatterns(filePath, [match['if-changed'], match['then-require']].filter(Boolean));
+  }
+  if (Array.isArray(match.files)) return matchesPatterns(filePath, match.files);
+  return false;
+}
+
+function ruleMatchesSurfaceNode(rule, node, config) {
+  if (!node) return false;
+  const surfaceNode = (config.graph?.nodes ?? []).find((item) => item.id === node);
+  if (!surfaceNode) return rule.id === node;
+  return (surfaceNode.patterns ?? []).some((pattern) => ruleMatchesFile(rule, pattern));
+}
+
+function governanceExcerpt(rootDir) {
+  const governancePath = resolve(rootDir, '.veritas/GOVERNANCE.md');
+  if (!existsSync(governancePath)) return [];
+  return readFileSync(governancePath, 'utf8')
+    .split('\n')
+    .slice(0, 12)
+    .filter(Boolean);
+}
+
+function explainRuleBlock(rule) {
+  const explain = rule.explain ?? {};
+  const lines = [
+    `Rule: ${rule.id}`,
+    `Kind: ${rule.kind}`,
+    `Stage: ${rule.stage}`,
+    `Summary: ${explain.summary ?? rule.message}`,
+  ];
+  for (const item of explain.mustDo ?? []) lines.push(`Do: ${item}`);
+  for (const item of explain.mustNotDo ?? []) lines.push(`Do not: ${item}`);
+  if (explain.exampleGood) lines.push(`Good: ${explain.exampleGood}`);
+  if (explain.exampleBad) lines.push(`Bad: ${explain.exampleBad}`);
+  for (const link of explain.contextLinks ?? []) lines.push(`Context: ${link}`);
+  return lines;
+}
+
+export function buildExplainText({ rootDir, adapter, policyPack, ruleId, filePath, surfaceNode }) {
+  const normalizedFile = filePath ? normalizeRepoPath(filePath, rootDir) : null;
+  const selectedRules = policyPack.rules.filter((rule) => {
+    if (ruleId) return rule.id === ruleId;
+    if (normalizedFile) return ruleMatchesFile(rule, normalizedFile);
+    if (surfaceNode) return ruleMatchesSurfaceNode(rule, surfaceNode, adapter);
+    return false;
+  });
+  const lines = [
+    'Veritas JIT Context',
+    '',
+    ...governanceExcerpt(rootDir).map((line) => `Governance: ${line}`),
+  ];
+  if (selectedRules.length === 0) {
+    lines.push('', 'No matching policy rule found.');
+  }
+  for (const rule of selectedRules) {
+    lines.push('', ...explainRuleBlock(rule));
+  }
+  return `${lines.slice(0, 80).join('\n')}\n`;
+}
+
+export function runExplainCli(argv = process.argv.slice(2), defaults = {}) {
+  const { options, rest } = parseTokens(argv, {
+    '--root': { type: 'string', key: 'rootDir' },
+    '--adapter': { type: 'string', key: 'adapterPath' },
+    '--policy-pack': { type: 'string', key: 'policyPackPath' },
+    '--file': { type: 'string', key: 'filePath' },
+    '--surface-node': { type: 'string', key: 'surfaceNode' },
+  });
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const { adapterPath, policyPackPath } = resolveVeritasPaths({ ...options, rootDir }, { ...defaults, rootDir });
+  const selector = rest[0];
+  const adapter = loadAdapterConfig(adapterPath);
+  const policyPack = loadPolicyPack(policyPackPath);
+  const selectorIsRule = policyPack.rules.some((rule) => rule.id === selector);
+  const text = buildExplainText({
+    rootDir,
+    adapter,
+    policyPack,
+    ruleId: options.filePath || options.surfaceNode ? null : selectorIsRule ? selector : null,
+    filePath: options.filePath ?? (!options.surfaceNode && !selectorIsRule && selector?.includes('/') ? selector : null),
+    surfaceNode: options.surfaceNode ?? (!options.filePath && !selectorIsRule && selector && !selector.includes('/') ? selector : null),
+  });
+  process.stdout.write(text);
+}
+
+export function checkBoundaries({ rootDir, adapter, actor, files }) {
+  const rule = {
+    id: 'cross-surface-write',
+    kind: 'cross-surface-write',
+    classification: 'hard-invariant',
+    stage: 'block',
+    message: 'Actors may only edit strict surfaces they own or are explicitly allowed to cross.',
+    match: {},
+  };
+  return evaluateCrossSurfaceWriteRule(rule, {
+    rootDir,
+    config: adapter,
+    actor,
+    changedFiles: files,
+  });
+}
+
+export function runBoundariesCheckCli(argv = process.argv.slice(2), defaults = {}) {
+  const { options } = parseTokens(argv, {
+    '--root': { type: 'string', key: 'rootDir' },
+    '--adapter': { type: 'string', key: 'adapterPath' },
+    '--actor': { type: 'string', key: 'actor' },
+    '--diff': { type: 'string', key: 'diffRef' },
+  });
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const { adapterPath } = resolveVeritasPaths({ ...options, rootDir }, { ...defaults, rootDir });
+  const adapter = loadAdapterConfig(adapterPath);
+  const files = options.diffRef
+    ? listChangedFiles(options.diffRef, 'HEAD', rootDir)
+    : listWorkingTreeFiles({ staged: true, unstaged: true, untracked: true }, rootDir);
+  const result = checkBoundaries({
+    rootDir,
+    adapter,
+    actor: options.actor ?? process.env.VERITAS_ACTOR ?? null,
+    files,
+  });
+  const status = result.passed ? 'PASS' : 'FAIL';
+  process.stdout.write(`${status} ${result.rule_id}: ${result.summary}\n`);
+  for (const finding of result.findings) {
+    process.stdout.write(`      -> ${finding.artifact} (${finding.node}): ${finding.remediation}\n`);
+  }
+  if (!result.passed) process.exitCode = 1;
 }
 
 export function generateEvalDraft(options = {}, defaults = {}) {
@@ -3026,6 +3729,56 @@ function formatAverage(value, suffix = '') {
   return value === null ? 'n/a' : `${Number(value.toFixed(1))}${suffix}`;
 }
 
+function sparkline(values) {
+  const ticks = '._:-=+*#';
+  if (values.length === 0) return '';
+  return values
+    .map((value) => ticks[Math.max(0, Math.min(ticks.length - 1, Math.round(value * (ticks.length - 1))))])
+    .join('');
+}
+
+function buildRuleTrend(records) {
+  const lastThirty = records.slice(-30);
+  const byRule = new Map();
+  for (let index = 0; index < lastThirty.length; index += 1) {
+    for (const result of lastThirty[index].policy_results ?? []) {
+      const entry = byRule.get(result.rule_id) ?? {
+        rule_id: result.rule_id,
+        runs: 0,
+        passes: 0,
+        failures: 0,
+        openFailureAt: null,
+        mttr_runs: null,
+        series: [],
+      };
+      entry.runs += 1;
+      if (result.passed === true) {
+        entry.passes += 1;
+        entry.series.push(1);
+        if (entry.openFailureAt !== null) {
+          const mttr = index - entry.openFailureAt;
+          entry.mttr_runs = entry.mttr_runs === null ? mttr : Math.round((entry.mttr_runs + mttr) / 2);
+          entry.openFailureAt = null;
+        }
+      } else if (result.passed === false) {
+        entry.failures += 1;
+        entry.series.push(0);
+        if (entry.openFailureAt === null) entry.openFailureAt = index;
+      } else {
+        entry.series.push(0.5);
+      }
+      byRule.set(result.rule_id, entry);
+    }
+  }
+  return [...byRule.values()]
+    .map((entry) => ({
+      ...entry,
+      pass_rate: entry.runs === 0 ? null : entry.passes / entry.runs,
+      sparkline: sparkline(entry.series),
+    }))
+    .sort((left, right) => (left.pass_rate ?? 1) - (right.pass_rate ?? 1) || right.failures - left.failures);
+}
+
 export function generateEvalSummary(options = {}, defaults = {}) {
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const historyPath = resolve(rootDir, '.veritas/evals/history.jsonl');
@@ -3087,6 +3840,15 @@ export function generateEvalSummary(options = {}, defaults = {}) {
     `Avg time to green: ${formatAverage(averageTimeToGreenMinutes, ' min')} | Avg overrides: ${formatAverage(averageOverrideCount)} | Confidence: ${confidenceSummary || 'n/a'}`,
     `Most flagged rule: ${mostFlaggedRule ? `${mostFlaggedRule.rule_id} (${mostFlaggedRule.count})` : 'n/a'}`,
   ];
+  const ruleTrend = buildRuleTrend(records);
+  if (ruleTrend.length > 0) {
+    lines.push(
+      `Worst rule trend: ${ruleTrend
+        .slice(0, 3)
+        .map((rule) => `${rule.rule_id} ${Math.round((rule.pass_rate ?? 0) * 100)}% ${rule.sparkline}`)
+        .join(' | ')}`,
+    );
+  }
 
   return {
     rootDir,
@@ -3098,6 +3860,7 @@ export function generateEvalSummary(options = {}, defaults = {}) {
     averageOverrideCount,
     confidenceCounts: Object.fromEntries(confidenceCounts),
     mostFlaggedRule,
+    ruleTrend,
     markdownSummary: `${lines.join('\n')}\n`,
   };
 }
@@ -3142,6 +3905,19 @@ function normalizeOutputFormat(format, defaultFormat) {
 
 export function runVeritasReportCli(argv = process.argv.slice(2), defaults = {}) {
   const { options, files: explicitFiles } = parseArgs(argv);
+  if (options.trend) {
+    const summary = generateEvalSummary(options, defaults);
+    const worst = (summary.ruleTrend ?? []).slice(0, 3);
+    process.stdout.write(summary.markdownSummary);
+    if (worst.length > 0) {
+      process.stdout.write(
+        `Worst 3 rules:\n${worst
+          .map((rule) => `- ${rule.rule_id}: ${Math.round((rule.pass_rate ?? 0) * 100)}% ${rule.sparkline}, MTTR ${rule.mttr_runs ?? 'n/a'} run(s)`)
+          .join('\n')}\n`,
+      );
+    }
+    return;
+  }
   const format = normalizeOutputFormat(options.format, 'json');
   const result = generateVeritasReport(options, defaults, explicitFiles);
 
@@ -3411,6 +4187,21 @@ export function runPrintStopHookCli(argv = process.argv.slice(2), defaults = {})
   );
 }
 
+export function runPrintClaudeCodePreToolUseHookCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parsePrintArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  process.stdout.write(
+    `${JSON.stringify(
+      {
+        rootDir,
+        ...buildSuggestedClaudeCodePreToolUseHook(),
+      },
+      null,
+      2,
+    )}\n`,
+  );
+}
+
 export function runPrintGovernanceBlockCli() {
   process.stdout.write(`${buildGovernanceBlock()}\n`);
 }
@@ -3548,6 +4339,18 @@ export function runApplyStopHookCli(argv = process.argv.slice(2), defaults = {})
     rootDir,
     tool: options.tool ?? 'generic',
     outputPath: options.outputPath ?? '.veritas/hooks/stop.sh',
+    force: options.force ?? false,
+  });
+
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+}
+
+export function runApplyClaudeCodePreToolUseHookCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseApplyArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const result = applyClaudeCodePreToolUseHook({
+    rootDir,
+    outputPath: options.outputPath ?? '.veritas/hooks/pre-tool-use.sh',
     force: options.force ?? false,
   });
 
@@ -3765,7 +4568,7 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
         2,
       )}\n`,
     );
-    if (proofFailure) {
+    if (feedbackHasFailures(reportResult.record, proofFailure)) {
       process.exitCode = 1;
     }
     return;
@@ -3818,7 +4621,7 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
       2,
     )}\n`,
   );
-  if (proofFailure) {
+  if (feedbackHasFailures(reportResult.record, proofFailure)) {
     process.exitCode = 1;
   }
 }

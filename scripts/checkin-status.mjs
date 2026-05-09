@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import {
   generateEvalDraft,
+  generateEvalSummary,
   generateVeritasReport,
   inspectRuntimeAdapterStatus,
 } from '../src/index.mjs';
@@ -458,6 +459,7 @@ function buildMarkdown({
   policySummary,
   governanceSurface,
   governanceTrend,
+  evalTrend,
 }) {
   const alertSummary = summarizeAlertCounts(alerts);
   const markdown = [
@@ -469,6 +471,7 @@ function buildMarkdown({
     `- **Policy results:** ${policySummary.passed} passed, ${policySummary.failed} failed, ${policySummary.metadata_only} metadata-only`,
     renderGovernanceSurfaceLine(governanceSurface),
     `- **Governance trend:** ${governanceTrend.summary}`,
+    `- **Eval trend:** ${evalTrend.markdownSummary.split('\n')[0]}`,
     `- **Proof command:** \`${report.record.selected_proof_commands.join(', ') || 'none'}\``,
     `- **Run ID:** ${runId}`,
     '',
@@ -579,6 +582,7 @@ export function buildCheckinStatus({
     currentRunId: runId,
     currentGovernanceSurface: governanceSurface,
   });
+  const evalTrend = generateEvalSummary({ rootDir: rootDirOverride }, { rootDir: rootDirOverride });
 
   const checkin = {
     version: 1,
@@ -597,6 +601,7 @@ export function buildCheckinStatus({
     policy_results_summary: policySummary,
     governance_surface: governanceSurface,
     governance_trend: governanceTrend,
+    eval_trend: evalTrend,
     health_status: healthStatus,
     alerts,
     runtime_status: runtimeStatus,
@@ -610,6 +615,7 @@ export function buildCheckinStatus({
     policySummary,
     governanceSurface,
     governanceTrend,
+    evalTrend,
     alerts,
     healthStatus,
     checkin,
@@ -624,6 +630,7 @@ export function buildCheckinStatus({
       policySummary,
       governanceSurface,
       governanceTrend,
+      evalTrend,
     }),
   };
 }

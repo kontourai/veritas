@@ -28,7 +28,36 @@
         "defaultOverrideOrBypass": { "type": "boolean" }
       }
     },
-    "graph": { "$ref": "./veritas-graph.schema.json" },
+    "graph": {
+      "allOf": [
+        { "$ref": "./veritas-graph.schema.json" },
+        {
+          "type": "object",
+          "properties": {
+            "nodes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "owners": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "boundary": {
+                    "type": "string",
+                    "enum": ["strict", "advisory"]
+                  },
+                  "crossSurfaceAllow": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
     "activation": {
       "type": "object",
       "additionalProperties": false,
@@ -70,7 +99,22 @@
                 "type": "array",
                 "items": { "type": "string" }
               },
-              "summary": { "type": "string" }
+              "summary": { "type": "string" },
+              "externalTool": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["tool", "format", "blocking", "artifactPath"],
+                "properties": {
+                  "tool": { "type": "string", "minLength": 1 },
+                  "format": { "type": "string", "minLength": 1 },
+                  "blocking": { "type": "boolean" },
+                  "artifactPath": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^\\.veritas/"
+                  }
+                }
+              }
             }
           },
           "minItems": 1

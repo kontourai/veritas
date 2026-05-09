@@ -90,7 +90,7 @@ test('first-contact docs preserve the Surface foundation boundary', () => {
   const cliReference = readDoc('../docs/reference/cli.md');
   const boundary = readDoc('../docs/architecture/surface-veritas-boundary.md');
 
-  assert.match(readme, /built on the Kontour Surface trust substrate/);
+  assert.match(readme, /Surface evidence projection/);
   assert.match(readme, /surface\.input/);
   assert.match(concepts, /## Surface Foundation/);
   assert.match(concepts, /TrustInput/);
@@ -108,20 +108,47 @@ test('adapter and policy schemas declare activation and lint rule contracts', ()
   const adapterSchema = readJson('../schemas/veritas-adapter.schema.json');
   const policySchema = readJson('../schemas/veritas-policy-pack.schema.json');
   const activation = adapterSchema.properties.activation.properties.aiInstructionFiles.items;
-  const matchProperties = policySchema.properties.rules.items.properties.match.properties;
+  const ruleProperties = policySchema.properties.rules.items.properties;
+  const matchDefs = policySchema.$defs;
 
   assert.ok(activation.required.includes('path'));
   assert.equal(activation.properties.tool.type, 'string');
   assert.equal(activation.properties.required.type, 'boolean');
   assert.ok(adapterSchema.properties.evidence.properties.proofFamilyManifests);
-  assert.ok(matchProperties.artifacts);
-  assert.ok(matchProperties['governance-block']);
-  assert.ok(matchProperties['if-changed']);
-  assert.ok(matchProperties['then-require']);
+  assert.ok(
+    adapterSchema.properties.evidence.properties.proofLanes.items.properties.externalTool,
+  );
+  const externalTool =
+    adapterSchema.properties.evidence.properties.proofLanes.items.properties.externalTool;
+  assert.equal(externalTool.properties.tool.minLength, 1);
+  assert.equal(externalTool.properties.format.minLength, 1);
+  assert.equal(externalTool.properties.artifactPath.minLength, 1);
+  assert.equal(externalTool.properties.artifactPath.pattern, '^\\.veritas/');
+  assert.deepEqual(ruleProperties.kind.enum, [
+    'required-artifacts',
+    'governance-block',
+    'diff-required',
+    'cross-surface-write',
+    'forbidden-pattern',
+    'required-pattern',
+    'header-required',
+  ]);
+  assert.ok(matchDefs.requiredArtifactsMatch.properties.artifacts);
+  assert.ok(matchDefs.governanceBlockMatch.properties['governance-block']);
+  assert.ok(matchDefs.diffRequiredMatch.properties['if-changed']);
+  assert.ok(matchDefs.diffRequiredMatch.properties['then-require']);
+  assert.ok(matchDefs.filesPatternMatch.properties.files);
+  assert.ok(matchDefs.filesPatternMatch.properties.pattern);
 });
 
 test('fixture adapters and evidence examples stay readable', () => {
+  const repoAdapter = readJson('../.veritas/repo.adapter.json');
   const docsAdapter = readJson('../adapters/demo-docs-site.adapter.json');
+  const fallowLane = repoAdapter.evidence.proofLanes.find((lane) => lane.id === 'fallow-advisory');
+  assert.ok(fallowLane);
+  assert.equal(fallowLane.externalTool.blocking, false);
+  assert.equal(fallowLane.externalTool.artifactPath, '.veritas/external/fallow-audit.json');
+  assert.ok(repoAdapter.evidence.defaultProofLaneIds.includes('fallow-advisory'));
   assert.equal(docsAdapter.name, 'demo-docs-site');
   assert.deepEqual(docsAdapter.evidence.proofLanes.map((lane) => lane.command), [
     'npm run docs:build',
@@ -131,6 +158,7 @@ test('fixture adapters and evidence examples stay readable', () => {
   const passExample = readJson('../examples/evidence/work-agent-pass.json');
   const failExample = readJson('../examples/evidence/work-agent-fail.json');
   const policyGapExample = readJson('../examples/evidence/work-agent-policy-gap.json');
+  const fallowAdvisoryExample = readJson('../examples/evidence/fallow-advisory.json');
 
   assert.equal(passExample.baseline_ci_fast_passed, true);
   assert.deepEqual(passExample.selected_proof_lanes.map((lane) => lane.command), ['npm run ci:fast']);
@@ -139,6 +167,13 @@ test('fixture adapters and evidence examples stay readable', () => {
   assert.ok(Array.isArray(passExample.policy_results));
   assert.equal(passExample.policy_results[0].rule_id, 'required-repo-artifacts');
   assert.equal(failExample.policy_results[0].passed, false);
+  assert.equal(fallowAdvisoryExample.external_tool_results[0].tool, 'fallow');
+  assert.equal(fallowAdvisoryExample.external_tool_results[0].blocking, false);
+  assert.ok(
+    fallowAdvisoryExample.surface.input.claims.some(
+      (claim) => claim.surface === 'veritas.external-tool-results',
+    ),
+  );
 });
 
 test('live-eval fixtures explain outcome measurement and team tuning', () => {

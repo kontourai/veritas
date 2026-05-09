@@ -145,6 +145,51 @@ export function buildSuggestedCodexHookConfig() {
   };
 }
 
+export function buildSuggestedClaudeCodePreToolUseHook() {
+  const hookBody = `#!/bin/sh
+# .veritas/hooks/pre-tool-use.sh -- Claude Code PreToolUse JIT Veritas context.
+
+if [ "\${VERITAS_HOOK_SKIP:-\${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
+  exit 0
+fi
+
+PAYLOAD=$(cat)
+FILE=$(printf '%s' "$PAYLOAD" | sed -n 's/.*"file_path"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' | head -n 1)
+if [ -z "$FILE" ]; then
+  FILE=$(printf '%s' "$PAYLOAD" | sed -n 's/.*"path"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' | head -n 1)
+fi
+
+if [ -n "$FILE" ]; then
+  npm exec -- veritas explain --file "$FILE" 2>/dev/null || true
+fi
+
+exit 0
+`;
+
+  return {
+    tool: 'claude-code',
+    outputPath: '.veritas/hooks/pre-tool-use.sh',
+    hookBody,
+    toolConfigPath: '.claude/settings.json',
+    toolConfig: {
+      hooks: {
+        PreToolUse: [
+          {
+            matcher: 'Edit|MultiEdit|Write',
+            hooks: [
+              {
+                type: 'command',
+                command: '.veritas/hooks/pre-tool-use.sh',
+                timeout: 20,
+              },
+            ],
+          },
+        ],
+      },
+    },
+  };
+}
+
 export function applyPackageScripts({
   rootDir,
   proofLane = 'npm test',
@@ -390,6 +435,50 @@ export function applyStopHook({
     outputPath: relativeOutputPath,
     toolConfigPath: suggestion.toolConfigPath ?? null,
     configuredToolConfigPath,
+  };
+}
+
+export function applyClaudeCodePreToolUseHook({
+  rootDir,
+  outputPath = '.veritas/hooks/pre-tool-use.sh',
+  force = false,
+}) {
+  const suggestion = buildSuggestedClaudeCodePreToolUseHook();
+  const resolvedOutputPath = resolve(rootDir, outputPath);
+  assertWithinDir(
+    resolvedOutputPath,
+    resolve(rootDir, '.veritas/hooks'),
+    'apply claude-code-pre-tool-use-hook only supports writing inside .veritas/hooks/',
+  );
+  const relativeOutputPath = relativeRepoPath(rootDir, resolvedOutputPath);
+
+  if (existsSync(resolvedOutputPath) && !force) {
+    throw new Error(
+      `Refusing to overwrite existing file: ${relativeOutputPath} (use --force to replace it)`,
+    );
+  }
+
+  mkdirSync(dirname(resolvedOutputPath), { recursive: true });
+  writeFileSync(resolvedOutputPath, suggestion.hookBody, 'utf8');
+  chmodSync(resolvedOutputPath, 0o755);
+
+  const resolvedToolConfigPath = resolve(rootDir, suggestion.toolConfigPath);
+  assertWithinDir(
+    resolvedToolConfigPath,
+    rootDir,
+    'apply claude-code pre-tool-use hook config must stay inside the repository',
+  );
+  const existingConfig = existsSync(resolvedToolConfigPath)
+    ? loadJson(resolvedToolConfigPath, 'claude-code pre-tool-use hook config')
+    : {};
+  const mergedConfig = mergeStopHookConfig(existingConfig, suggestion.toolConfig);
+  mkdirSync(dirname(resolvedToolConfigPath), { recursive: true });
+  writeFileSync(resolvedToolConfigPath, `${JSON.stringify(mergedConfig, null, 2)}\n`, 'utf8');
+
+  return {
+    rootDir,
+    outputPath: relativeOutputPath,
+    configuredToolConfigPath: relativeRepoPath(rootDir, resolvedToolConfigPath),
   };
 }
 

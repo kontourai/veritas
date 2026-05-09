@@ -14,9 +14,21 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "classification", "stage", "message"],
+        "required": ["id", "kind", "classification", "stage", "message", "match"],
         "properties": {
           "id": { "type": "string" },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "required-artifacts",
+              "governance-block",
+              "diff-required",
+              "cross-surface-write",
+              "forbidden-pattern",
+              "required-pattern",
+              "header-required"
+            ]
+          },
           "classification": {
             "type": "string",
             "enum": [
@@ -33,38 +45,147 @@
           "message": { "type": "string" },
           "owner": { "type": ["string", "null"] },
           "rollback_switch": { "type": ["string", "null"] },
+          "explain": { "$ref": "#/$defs/explain" },
           "match": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "artifacts": {
-                "type": "array",
-                "items": { "type": "string" }
-              },
-              "governance-block": {
-                "type": "array",
-                "items": { "type": "string" }
-              },
-              "if-changed": { "type": "string" },
-              "then-require": { "type": "string" },
-              "files": {
-                "type": "array",
-                "items": { "type": "string" }
-              },
-              "workflow": { "type": "string" },
-              "pattern": { "type": "string" }
-            },
-            "anyOf": [
-              { "required": ["artifacts"] },
-              { "required": ["governance-block"] },
-              { "required": ["if-changed", "then-require"] },
-              { "required": ["files"] },
-              { "required": ["workflow"] },
-              { "required": ["pattern"] }
+            "oneOf": [
+              { "$ref": "#/$defs/requiredArtifactsMatch" },
+              { "$ref": "#/$defs/governanceBlockMatch" },
+              { "$ref": "#/$defs/diffRequiredMatch" },
+              { "$ref": "#/$defs/filesPatternMatch" },
+              { "$ref": "#/$defs/emptyMatch" }
             ]
           }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": { "kind": { "const": "required-artifacts" } },
+              "required": ["kind"]
+            },
+            "then": {
+              "properties": {
+                "match": { "$ref": "#/$defs/requiredArtifactsMatch" }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": { "kind": { "const": "governance-block" } },
+              "required": ["kind"]
+            },
+            "then": {
+              "properties": {
+                "match": { "$ref": "#/$defs/governanceBlockMatch" }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": { "kind": { "const": "diff-required" } },
+              "required": ["kind"]
+            },
+            "then": {
+              "properties": {
+                "match": { "$ref": "#/$defs/diffRequiredMatch" }
+              }
+            }
+          }
+        ,
+          {
+            "if": {
+              "properties": { "kind": { "const": "cross-surface-write" } },
+              "required": ["kind"]
+            },
+            "then": {
+              "properties": {
+                "match": { "$ref": "#/$defs/emptyMatch" }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": { "kind": { "enum": ["forbidden-pattern", "required-pattern", "header-required"] } },
+              "required": ["kind"]
+            },
+            "then": {
+              "properties": {
+                "match": { "$ref": "#/$defs/filesPatternMatch" }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "explain": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "summary": { "type": "string" },
+        "mustDo": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "mustNotDo": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "exampleGood": { "type": "string" },
+        "exampleBad": { "type": "string" },
+        "contextLinks": {
+          "type": "array",
+          "items": { "type": "string" }
         }
       }
+    },
+    "requiredArtifactsMatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifacts"],
+      "properties": {
+        "artifacts": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "governanceBlockMatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["governance-block"],
+      "properties": {
+        "governance-block": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "diffRequiredMatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["if-changed", "then-require"],
+      "properties": {
+        "if-changed": { "type": "string" },
+        "then-require": { "type": "string" }
+      }
+    },
+    "filesPatternMatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["files", "pattern"],
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "pattern": { "type": "string" }
+      }
+    },
+    "emptyMatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "maxProperties": 0
     }
   }
 }

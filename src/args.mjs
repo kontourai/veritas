@@ -77,6 +77,7 @@ export function parseArgs(argv) {
     '--untracked': { type: 'flag', key: 'untracked' },
     '--summary-path': { type: 'string', key: 'summaryPath' },
     '--format': { type: 'string', key: 'format' },
+    '--trend': { type: 'flag', key: 'trend' },
   });
 
   return { options, files: rest };

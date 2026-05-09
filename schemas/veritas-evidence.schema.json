@@ -50,6 +50,21 @@
     "resolved_workstream": { "type": "string", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "metadata"] },
     "matched_artifacts": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
     "affected_nodes": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence", "event"] },
+    "affected_node_details": {
+      "type": "array",
+      "items": { "type": "object" },
+      "x_surface_mapping": "mapped",
+      "x_surface_targets": ["metadata"]
+    },
+    "file_nodes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "object" }
+      },
+      "x_surface_mapping": "mapped",
+      "x_surface_targets": ["metadata"]
+    },
     "affected_lanes": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
     "selected_proof_commands": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence"] },
     "selected_proof_lanes": {
@@ -66,6 +81,12 @@
       "x_surface_targets": ["claim", "evidence", "policy", "event", "metadata"]
     },
     "verification_budget": { "$ref": "#/$defs/verificationBudget", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence", "event", "metadata", "report-input"] },
+    "external_tool_results": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/externalToolResult" },
+      "x_surface_mapping": "mapped",
+      "x_surface_targets": ["claim", "evidence", "event", "metadata", "report-input"]
+    },
     "uncovered_path_result": {
       "type": "string",
       "enum": ["clear", "ignore", "warn", "fail"],
@@ -332,6 +353,52 @@
         "recommendation": { "type": "string" }
       }
     },
+    "externalToolAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "description", "auto_fixable"],
+      "properties": {
+        "type": { "type": "string" },
+        "description": { "type": "string" },
+        "auto_fixable": { "type": "boolean" },
+        "paths": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "externalToolResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tool",
+        "format",
+        "command",
+        "proof_lane_id",
+        "verdict",
+        "blocking",
+        "summary",
+        "artifact_path",
+        "actions"
+      ],
+      "properties": {
+        "tool": { "type": "string" },
+        "format": { "type": "string" },
+        "command": { "type": "string" },
+        "proof_lane_id": { "type": "string" },
+        "verdict": {
+          "type": "string",
+          "enum": ["pass", "warn", "fail", "missing", "unknown"]
+        },
+        "blocking": { "type": "boolean" },
+        "summary": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "artifact_path": { "type": "string" },
+        "actions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/externalToolAction" }
+        }
+      }
+    },
     "resolution": {
       "type": "object",
       "additionalProperties": false,
@@ -366,10 +433,16 @@
         "rollback_switch": { "type": ["string", "null"] },
         "implemented": { "type": "boolean" },
         "passed": { "type": ["boolean", "null"] },
+        "status": { "type": "string" },
+        "reason": { "type": "string" },
         "summary": { "type": "string" },
         "findings": {
           "type": "array",
           "items": { "type": "object" }
+        },
+        "actions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/externalToolAction" }
         }
       }
     }

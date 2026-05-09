@@ -9,7 +9,7 @@ const argv = process.argv.slice(2);
 if (argv.some((token) => token === '--help' || token === '-h' || token === 'help')) {
   process.stdout.write(
     `Usage:
-  veritas-report [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
+  veritas-report [--trend] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
 `,
   );
   process.exit(0);

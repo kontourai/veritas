@@ -51,7 +51,10 @@
         "governance-locked": true,
         "patterns": [
           ".veritas/"
-        ]
+        ],
+        "owners": ["governance-team"],
+        "boundary": "strict",
+        "crossSurfaceAllow": ["repo-core"]
       },
       {
         "id": "governance.root-manifests",
@@ -65,7 +68,10 @@
           "CONTRIBUTING.md",
           ".gitignore",
           "AGENTS.md"
-        ]
+        ],
+        "owners": ["repo-core"],
+        "boundary": "strict",
+        "crossSurfaceAllow": ["docs-team"]
       },
       {
         "id": "tooling.bin",
@@ -73,7 +79,10 @@
         "label": "bin/**",
         "patterns": [
           "bin/"
-        ]
+        ],
+        "owners": ["cli-team"],
+        "boundary": "strict",
+        "crossSurfaceAllow": ["repo-core"]
       },
       {
         "id": "delivery.github",
@@ -81,7 +90,10 @@
         "label": ".github/**",
         "patterns": [
           ".github/"
-        ]
+        ],
+        "owners": ["delivery-team"],
+        "boundary": "strict",
+        "crossSurfaceAllow": ["repo-core"]
       },
       {
         "id": "tooling.scripts",
@@ -89,7 +101,10 @@
         "label": "scripts/**",
         "patterns": [
           "scripts/"
-        ]
+        ],
+        "owners": ["tooling-team"],
+        "boundary": "advisory",
+        "crossSurfaceAllow": ["repo-core"]
       },
       {
         "id": "governance.schemas",
@@ -97,7 +112,10 @@
         "label": "schemas/**",
         "patterns": [
           "schemas/"
-        ]
+        ],
+        "owners": ["schema-team"],
+        "boundary": "strict",
+        "crossSurfaceAllow": ["repo-core"]
       },
       {
         "id": "governance.adapters",
@@ -105,7 +123,10 @@
         "label": "adapters/**",
         "patterns": [
           "adapters/"
-        ]
+        ],
+        "owners": ["adapter-team"],
+        "boundary": "strict",
+        "crossSurfaceAllow": ["repo-core"]
       },
       {
         "id": "governance.policy-packs",
@@ -113,7 +134,10 @@
         "label": "policy-packs/**",
         "patterns": [
           "policy-packs/"
-        ]
+        ],
+        "owners": ["governance-team"],
+        "boundary": "strict",
+        "crossSurfaceAllow": ["repo-core"]
       },
       {
         "id": "examples.fixtures",
@@ -121,7 +145,10 @@
         "label": "examples/**",
         "patterns": [
           "examples/"
-        ]
+        ],
+        "owners": ["shared"],
+        "boundary": "advisory",
+        "crossSurfaceAllow": []
       },
       {
         "id": "app.src",
@@ -129,7 +156,10 @@
         "label": "src/**",
         "patterns": [
           "src/"
-        ]
+        ],
+        "owners": ["framework-team"],
+        "boundary": "strict",
+        "crossSurfaceAllow": ["repo-core", "cli-team"]
       },
       {
         "id": "docs.docs",
@@ -137,7 +167,10 @@
         "label": "docs/**",
         "patterns": [
           "docs/"
-        ]
+        ],
+        "owners": ["docs-team"],
+        "boundary": "advisory",
+        "crossSurfaceAllow": ["repo-core"]
       },
       {
         "id": "verification.tests",
@@ -145,7 +178,10 @@
         "label": "tests/**",
         "patterns": [
           "tests/"
-        ]
+        ],
+        "owners": ["shared"],
+        "boundary": "advisory",
+        "crossSurfaceAllow": []
       }
     ]
   },
@@ -159,13 +195,26 @@
         "command": "npm run verify",
         "method": "validation",
         "summary": "Runs npm run verify."
+      },
+      {
+        "id": "fallow-advisory",
+        "command": "npm run veritas:fallow:advisory",
+        "method": "auditability",
+        "summary": "Runs Fallow as advisory codebase-intelligence evidence.",
+        "externalTool": {
+          "tool": "fallow",
+          "format": "veritas-fallow-advisory-v1",
+          "blocking": false,
+          "artifactPath": ".veritas/external/fallow-audit.json"
+        }
       }
     ],
     "requiredProofLaneIds": [
       "required-proof"
     ],
     "defaultProofLaneIds": [
-      "required-proof"
+      "required-proof",
+      "fallow-advisory"
     ]
   },
   "activation": {

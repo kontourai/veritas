@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/%40kontourai%2Fveritas)](https://www.npmjs.com/package/@kontourai/veritas)
 [![CI](https://github.com/kontourai/veritas/actions/workflows/ci.yml/badge.svg)](https://github.com/kontourai/veritas/actions/workflows/ci.yml)
 
-Veritas is bespoke lint for AI agents, built on the Kontour Surface trust substrate. You define what your repo considers mandatory: which files must exist, which tests must pass when a contract changes, which AI instruction files must stay synchronized, and which governance files may never be weakened. When an agent finishes work, Veritas runs your rules and tells it exactly what it got wrong, like a linter would.
+Veritas is repo-local policy-pack lint for AI agents, with Surface evidence projection. You define what your repo considers mandatory: which files must exist, which tests must pass when a contract changes, which AI instruction files must stay synchronized, what content patterns are forbidden or required, and which governance files may never be weakened. When an agent finishes work, Veritas runs your rules and tells it exactly what it got wrong, like a linter would.
 
 Veritas keeps repo-native workflow language such as adapters, policy packs, proof lanes, and shadow runs because those terms help coding agents act. Each evidence artifact also projects the portable trust shape into `surface.input`, so Surface can generate claims, evidence, freshness/status, fault lines, proof requirements, and trust reports without Veritas becoming a second trust model.
 
@@ -22,9 +22,10 @@ That bootstraps your repo with an adapter, policy pack, team profile, and AI ins
 
 ## What You Get
 
-- **Rules** — repo-specific lint for agents: required artifacts, governance blocks, proof lanes, and diff-based companion changes
+- **Rules** — repo-specific lint for agents: required artifacts, governance blocks, diff-based companion changes, surface ownership boundaries, and content pattern checks
 - **Feedback** — terse `PASS` / `FAIL` / `WARN` output designed to go straight back into an agent's context window
-- **Evidence** — local reports with selected proof lanes, policy results, optional proof-family results, and verification budgets
+- **JIT context** — `veritas explain` and Claude Code PreToolUse hook output scoped to the rule or file being edited
+- **Evidence** — local reports with selected proof lanes, policy results, optional proof-family results, verification budgets, and embedded `surface.input`
 - **Budgeting** — `veritas budget` shows required, candidate, advisory, move-to-test, retiring, stale, and triggerless proof families
 - **Improvement** — eval history so you can measure whether the guidance is helping over time
 

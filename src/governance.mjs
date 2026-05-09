@@ -3,8 +3,8 @@ import { dirname, resolve } from 'node:path';
 import { loadJson } from './load.mjs';
 import { assertWithinDir, relativeRepoPath } from './paths.mjs';
 
-export const GOVERNANCE_BLOCK_START = '<!-- veritas:governance-block:start -->';
-export const GOVERNANCE_BLOCK_END = '<!-- veritas:governance-block:end -->';
+const GOVERNANCE_BLOCK_START = '<!-- veritas:governance-block:start -->';
+const GOVERNANCE_BLOCK_END = '<!-- veritas:governance-block:end -->';
 
 export function buildGovernanceBlock() {
   return `${GOVERNANCE_BLOCK_START}
@@ -26,7 +26,7 @@ function defaultInstructionTargets(rootDir) {
   return targets;
 }
 
-export function normalizeGovernanceTargets(config = {}, rootDir = process.cwd()) {
+function normalizeGovernanceTargets(config = {}, rootDir = process.cwd()) {
   const configuredTargets = config.activation?.aiInstructionFiles;
   const rawTargets =
     Array.isArray(configuredTargets) && configuredTargets.length > 0
@@ -45,7 +45,7 @@ export function normalizeGovernanceTargets(config = {}, rootDir = process.cwd())
   });
 }
 
-export function loadGovernanceTargetConfig({ rootDir, adapterPath } = {}) {
+function loadGovernanceTargetConfig({ rootDir, adapterPath } = {}) {
   const resolvedAdapterPath = adapterPath ?? resolve(rootDir, '.veritas/repo.adapter.json');
   if (!existsSync(resolvedAdapterPath)) {
     return {};
@@ -75,7 +75,7 @@ export function replaceGovernanceBlock(content, block = buildGovernanceBlock()) 
   return trimmedContent.length > 0 ? `${trimmedContent}\n\n${block}\n` : `${block}\n`;
 }
 
-export function fileContainsCanonicalGovernanceBlock(content, block = buildGovernanceBlock()) {
+function fileContainsCanonicalGovernanceBlock(content, block = buildGovernanceBlock()) {
   return content.includes(block);
 }
 

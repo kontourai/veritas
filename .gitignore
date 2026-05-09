@@ -3,6 +3,8 @@ dist/
 .DS_Store
 .omx/
 .veritas/evidence/
+.veritas/claims/
+.veritas/external/
 .veritas/eval-drafts/
 .veritas/evals/
 .veritas/checkins/

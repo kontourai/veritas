@@ -123,6 +123,7 @@ If self-hosting feels awkward, that is a signal to fix the product surface, not 
 ## Learn More
 
 - [Getting Started](guides/getting-started.md) — install, init, and first evidence artifact
+- [Fallow Integration](guides/fallow-integration.md) — optional JS/TS codebase-intelligence evidence as an advisory proof lane
 - [Concepts Overview](concepts.md) — adapter, policy pack, evidence, and eval in depth
 - [CLI Reference](reference/cli.md) — all commands and options
 - [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md) — why Veritas is a product layer on the Surface foundation

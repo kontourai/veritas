@@ -100,6 +100,7 @@ npx @kontourai/veritas report --working-tree
 npx @kontourai/veritas report --staged
 npx @kontourai/veritas report --unstaged --untracked
 npx @kontourai/veritas report --changed-from <ref> --changed-to <ref>
+npx @kontourai/veritas report --trend
 ```
 
 Important behaviors:
@@ -111,6 +112,30 @@ Important behaviors:
 - the artifact is written to the adapter-defined `artifactDir`
 - every artifact includes `surface.input`, a Surface `TrustInput` projection with claims, evidence, policies, and events
 - JSON is the default output; `--format feedback` prints the same lint-style findings used by hooks
+- `--trend` prints the eval-history rule trend instead of generating a new report
+
+### `explain`
+
+Prints only the policy explanation relevant to a rule, surface node, or file.
+
+```bash
+npx @kontourai/veritas explain required-veritas-schema-artifacts
+npx @kontourai/veritas explain --file src/index.mjs
+npx @kontourai/veritas explain --surface-node app.src
+```
+
+Output is capped to fit an agent context window and includes the local governance excerpt plus matching rule `explain` blocks.
+
+### `boundaries check`
+
+Checks strict surface ownership for a working tree or diff.
+
+```bash
+npx @kontourai/veritas boundaries check --actor cli-team --diff main
+npx @kontourai/veritas boundaries check --actor framework-team
+```
+
+Strict nodes fail when the actor is neither an owner nor listed in `crossSurfaceAllow`.
 
 To turn a Veritas artifact into a Surface trust report:
 
@@ -164,6 +189,8 @@ npx @kontourai/veritas shadow run [--root <path>] [--adapter <path>] [--policy-p
 If `accepted_without_major_rewrite`, `required_followup`, and `time_to_green_minutes` are not all present, the command stops after report plus draft. Feedback mode prints the report path, eval-draft path, and run id in the footer. JSON mode returns the previous orchestration object with the suggested `eval record` command.
 
 Proof commands are executed as tokenized argv, not through an implicit shell. Keep each proof lane to one executable plus arguments, or move compound shell logic into a real script.
+
+External tool proof lanes follow the same rule. For tools such as Fallow, put shell-sensitive behavior like `2>/dev/null || true` inside a script, have that script write a JSON artifact under `.veritas/`, and point the proof lane's `externalTool.artifactPath` at that file. Advisory external tool findings appear as warnings in feedback; blocking external tool findings fail the run.
 
 Exit codes:
 

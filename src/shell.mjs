@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 
 export function shellQuote(value) {
   if (/^[A-Za-z0-9_./:-]+$/.test(value)) {
@@ -7,7 +8,7 @@ export function shellQuote(value) {
   return `'${value.replaceAll("'", `'\\''`)}'`;
 }
 
-export function tokenizeCommand(command) {
+function tokenizeCommand(command) {
   if (typeof command !== 'string' || command.trim().length === 0) {
     throw new Error('Proof command must be a non-empty string');
   }
@@ -91,4 +92,48 @@ export function runProofCommand(command, rootDir, options = {}) {
     encoding: options.encoding,
     windowsHide: true,
   });
+}
+
+export function gitOutput(args, rootDir, options = {}) {
+  return execFileSync('git', args, {
+    cwd: rootDir,
+    encoding: 'utf8',
+    windowsHide: true,
+    stdio: options.stdio ?? ['ignore', 'pipe', 'ignore'],
+  }).trim();
+}
+
+export function resolveGitHead(rootDir) {
+  try {
+    return gitOutput(['rev-parse', 'HEAD'], rootDir);
+  } catch {
+    return null;
+  }
+}
+
+export function stagedDiffSha256(rootDir) {
+  let diff = '';
+  try {
+    diff = execFileSync('git', ['diff', '--cached', '--binary'], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      windowsHide: true,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+  } catch {
+    diff = '';
+  }
+  if (!diff) {
+    try {
+      diff = execFileSync('git', ['diff', '--binary'], {
+        cwd: rootDir,
+        encoding: 'utf8',
+        windowsHide: true,
+        stdio: ['ignore', 'pipe', 'ignore'],
+      });
+    } catch {
+      diff = '';
+    }
+  }
+  return createHash('sha256').update(diff).digest('hex');
 }

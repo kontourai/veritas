@@ -5,6 +5,7 @@
   "rules": [
     {
       "id": "required-repo-artifacts",
+      "kind": "required-artifacts",
       "classification": "hard-invariant",
       "stage": "block",
       "message": "Required repository governance and CI artifacts must exist.",
@@ -31,35 +32,46 @@
     },
     {
       "id": "baseline-proof-lane",
+      "kind": "required-artifacts",
       "classification": "hard-invariant",
       "stage": "block",
-      "message": "The primary PR workflow must execute the baseline proof lane and the connected-agents suite.",
+      "message": "The primary PR workflow file must exist; deeper step-level checks live in CI itself.",
       "owner": "repo-core",
       "rollback_switch": null,
       "match": {
-        "workflow": ".github/workflows/ci.yml"
+        "artifacts": [
+          ".github/workflows/ci.yml"
+        ]
       }
     },
     {
       "id": "forbid-shared-root-imports",
+      "kind": "forbidden-pattern",
       "classification": "promotable-policy",
       "stage": "block",
       "message": "New code should not import from the @stallion-ai/shared root; use contracts or explicit helper subpaths.",
       "owner": "repo-architecture",
       "rollback_switch": "disable-shared-root-import-check",
       "match": {
-        "pattern": "@stallion-ai/shared"
+        "files": [
+          "packages/**/*.ts",
+          "packages/**/*.tsx",
+          "packages/**/*.mjs",
+          "packages/**/*.js"
+        ],
+        "pattern": "@stallion-ai/shared(?!/)"
       }
     },
     {
       "id": "extracted-transport-helper-shape",
+      "kind": "required-artifacts",
       "classification": "brittle-implementation-check",
       "stage": "recommend",
       "message": "Certain files currently assert exact extracted-helper source shapes; these should be reviewed for eventual replacement with stronger semantic checks.",
       "owner": "repo-architecture",
       "rollback_switch": "soften-source-shape-checks",
       "match": {
-        "files": [
+        "artifacts": [
           "packages/sdk/src/query-domains/systemRuntime.ts",
           "packages/sdk/src/query-domains/catalog.ts"
         ]

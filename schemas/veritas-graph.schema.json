@@ -58,7 +58,13 @@
             ]
           },
           "label": { "type": "string" },
-          "patterns": { "$ref": "#/$defs/stringArray" }
+          "patterns": { "$ref": "#/$defs/stringArray" },
+          "owners": { "$ref": "#/$defs/stringArray" },
+          "boundary": {
+            "type": "string",
+            "enum": ["strict", "advisory"]
+          },
+          "crossSurfaceAllow": { "$ref": "#/$defs/stringArray" }
         }
       }
     }
@@ -80,4 +86,3 @@
     }
   }
 }
-
