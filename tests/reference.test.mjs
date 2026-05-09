@@ -100,7 +100,8 @@ test('first-contact docs preserve the Surface foundation boundary', () => {
   assert.match(cliReference, /surface report --adapter veritas/);
   assert.match(cliReference, /Surface owns the report/);
   assert.match(boundary, /## Foundation Contract/);
-  assert.match(boundary, /Veritas owns the developer-governance product layer/);
+  assert.match(boundary, /Surface does not depend on Veritas runtime code/);
+  assert.match(boundary, /separate product built on it/);
   assert.match(boundary, /Map to existing Surface primitives/);
 });
 

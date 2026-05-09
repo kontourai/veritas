@@ -1,7 +1,7 @@
 <div class="hero">
-<h1 class="hero-tagline">The repo ships the rules. Veritas proves they held.</h1>
+<h1 class="hero-tagline">Govern AI code changes with evidence, not vibes.</h1>
 
-<p class="hero-subtitle">AI agents edit code faster than reviewers can track intent. Veritas gives your repo its own map, policy, and evidence layer on top of Kontour Surface — so AI-assisted changes produce a bounded artifact Surface can turn into claims, evidence, freshness, fault lines, and trust reports.</p>
+<p class="hero-subtitle">Veritas turns repo-specific expectations into live feedback for agents and reviewable evidence for humans, on top of Kontour Surface. Every AI-assisted change can show what surface it touched, what proof ran, which rules held, and what Surface can report.</p>
 
 <pre class="install-cmd"><code>npm install -D @kontourai/veritas</code></pre>
 
@@ -11,20 +11,18 @@
 ## The Problem
 
 **AI doesn't know what matters in your repo.**
-Your codebase has load-bearing files, shared contracts, and surfaces that need different kinds of proof. AI agents treat them all the same.
-Veritas gives the repo a [rule surface](concepts.md#rules) so agents know what they're touching and what evidence that area requires.
+Your codebase has load-bearing files, shared contracts, and surfaces that need different kinds of proof. Veritas gives the repo a [rule surface](concepts.md#rules) so agents know what they are touching and what evidence that area requires.
 
 **Rules live as tribal knowledge.**
 Your team's hard invariants, strong preferences, and temporary guardrails exist in someone's head — not in a reviewable, enforceable form.
 Veritas makes them explicit as [repo-local rules](concepts.md#rules) with real classification and enforcement levels.
 
-**Governance rules have no protection.**
-Even when a team writes its rules down, the governance files themselves can still be edited like any other config unless that surface is treated separately.
-Veritas models governance as its own surface and makes the integrity gap explicit in the [roadmap](design/roadmap.md#governance-surface-integrity) instead of leaving it as hidden repo folklore.
+**Boundaries disappear in big AI diffs.**
+Agents can touch source, tests, schemas, docs, and governance in one pass. Veritas names those surfaces, assigns owners, and can fail closed when an actor crosses a strict boundary without permission.
 
 **Reviewers scan the whole diff.**
 When AI changes dozens of files, a human reconstructs intent from a raw diff with no structured summary of what was proven or what passed.
-Veritas generates [agent-readable feedback](concepts.md#feedback) plus a bounded evidence artifact — what changed, what was affected, what proof ran, which policies held, and the `surface.input` Surface uses for trust reporting.
+Veritas generates [agent-readable feedback](concepts.md#feedback) plus a bounded evidence artifact: what changed, what was affected, what proof ran, which policies held, and the `surface.input` Surface uses for trust reporting.
 
 **No way to know if guidance helped.**
 You can add context files and prompt instructions, but there is no feedback loop measuring whether they actually improved outcomes.
@@ -40,8 +38,8 @@ Veritas captures [local improvement records](concepts.md#improvement) — accept
 
 <div class="pillar">
 <h3>Rules <span class="pillar-term">Policy Pack</span></h3>
-<p class="pillar-what">Staged rules classified as must-hold invariants, strong preferences, or temporary safety rails — not a flat checklist that ages badly.</p>
-<p class="pillar-why">Reviewers see which rules applied, which passed, and which were waived — in writing, not memory.</p>
+<p class="pillar-what">Staged rules for required artifacts, content patterns, governance blocks, companion diffs, and strict surface ownership.</p>
+<p class="pillar-why">Agents get just-in-time guidance, and reviewers see which rules applied, passed, failed, or need ownership review.</p>
 </div>
 
 <div class="pillar">
@@ -79,6 +77,7 @@ Veritas captures [local improvement records](concepts.md#improvement) — accept
 <li>Repo ships its own map and rules; the agent knows what surfaces it is entering</li>
 <li>Reviewer inspects a bounded evidence artifact — what changed, what proof ran, what passed</li>
 <li>Policy results and governance surfaces are explicit in source control, not reconstructed after the fact</li>
+<li>Strict surface ownership catches cross-team edits before they become review surprises</li>
 <li>Live eval record says whether the guidance helped, with numbers</li>
 </ul>
 </div>
@@ -126,6 +125,6 @@ If self-hosting feels awkward, that is a signal to fix the product surface, not 
 - [Fallow Integration](guides/fallow-integration.md) — optional JS/TS codebase-intelligence evidence as an advisory proof lane
 - [Concepts Overview](concepts.md) — adapter, policy pack, evidence, and eval in depth
 - [CLI Reference](reference/cli.md) — all commands and options
-- [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md) — why Veritas is a product layer on the Surface foundation
+- [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md) — how Veritas builds on Surface without reversing the dependency direction
 - [npm package](https://www.npmjs.com/package/@kontourai/veritas) — `@kontourai/veritas`
 - [GitHub](https://github.com/kontourai/veritas) — source, issues, and contributing

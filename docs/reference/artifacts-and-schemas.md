@@ -144,6 +144,25 @@ Reference file:
 
 - [policy-packs/work-agent-convergence.policy-pack.json](../../policy-packs/work-agent-convergence.policy-pack.json)
 
+#### Rule Match Examples
+
+`forbidden-pattern`, `required-pattern`, and `header-required` combine file glob selection with content regex checks:
+
+```json
+{
+  "id": "no-console-log-in-src",
+  "kind": "forbidden-pattern",
+  "match": {
+    "files": ["src/**/*.mjs", "!src/vendor/**"],
+    "pattern": "console\\.log"
+  }
+}
+```
+
+`match.files` uses Veritas path matching. `match.pattern` is passed to JavaScript `RegExp`, so regex features belong there, not in the glob list. For example, `@stallion-ai/shared(?!/)` rejects the package root import while allowing subpaths such as `@stallion-ai/shared/contracts`.
+
+`cross-surface-write` has no path payload of its own; it reads changed files, the adapter graph, and an explicit actor. If `--actor` or `VERITAS_ACTOR` is missing, the rule returns an error result and fails closed.
+
 ### Evidence record
 
 Defined by [schemas/veritas-evidence.schema.json](../../schemas/veritas-evidence.schema.json).
@@ -271,6 +290,26 @@ Veritas owns the repo-specific producer fields. Surface owns generated report fi
 | `surface` | Embedded Surface `TrustInput` projection consumed by Surface adapters and tests | Surface-mapped |
 
 The schema enforces this boundary with `x_surface_mapping` metadata on top-level evidence properties. Allowed classifications are `mapped`, `veritas-local`, `transitional`, and `deprecated`. Fields marked `mapped` must also declare `x_surface_targets`, such as `claim`, `evidence`, `policy`, `event`, `metadata`, or `report-input`.
+
+#### Per-Claim Surface Input Slices
+
+When `surface.input` is present, Veritas also writes one local slice per claim under `.veritas/claims/*.input.json`. These files are derived and gitignored. They are intentionally not Surface `TrustReport` files.
+
+Each slice has this shape:
+
+```json
+{
+  "schemaVersion": 2,
+  "source": "veritas:<run-id>",
+  "generatedAt": "2026-05-09T00:00:00.000Z",
+  "claim": {},
+  "evidence": [],
+  "events": [],
+  "policy": {}
+}
+```
+
+The `evidence` and `events` arrays are filtered to the single `claim.id`, and `policy` is the matching `verificationPolicyId` policy or `null`. Use these files for local inspection, per-claim validation, and focused debugging. Use Surface itself to generate full `TrustReport` artifacts.
 
 ### Team profile
 

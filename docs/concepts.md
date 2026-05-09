@@ -64,6 +64,33 @@ Example:
 
 This is what makes Veritas different from a static checklist. The rule is about behavior in the actual change, not just whether a file exists somewhere in the repo.
 
+### Content Rules
+
+Content rules have two match layers:
+
+- `match.files` is a file glob list. It uses Veritas path matching, including `**` globs and ordered `!` negation.
+- `match.pattern` is a JavaScript `RegExp` string that runs against matched file contents.
+
+For example, this blocks imports from a package root while allowing legitimate subpath imports:
+
+```json
+{
+  "id": "forbid-shared-root-imports",
+  "kind": "forbidden-pattern",
+  "classification": "promotable-policy",
+  "stage": "block",
+  "message": "New code should not import from the @stallion-ai/shared root; use contracts or explicit helper subpaths.",
+  "match": {
+    "files": ["packages/**/*.ts", "packages/**/*.tsx", "packages/**/*.mjs", "packages/**/*.js"],
+    "pattern": "@stallion-ai/shared(?!/)"
+  }
+}
+```
+
+The `(?!/)` part is regex, not glob syntax. It means `@stallion-ai/shared/contracts` is allowed, but `@stallion-ai/shared` is not.
+
+Use `required-pattern` for required content and `header-required` when the pattern must appear at the start of a file, such as a license or governance header.
+
 ## Boundaries
 
 The adapter's graph defines repo surfaces with owners and boundary types. A surface can be `strict` (changes require owner approval) or `advisory` (visible but not enforced). The `cross-surface-write` rule checks whether an actor (an agent, developer, or team) has permission to touch a strict surface.
@@ -76,11 +103,14 @@ Graph nodes declare:
 
 The `cross-surface-write` rule fails when:
 
+- No actor was supplied. Pass `--actor <id>` or set `VERITAS_ACTOR`.
 - A diff touches a `strict` boundary surface
 - The actor is not an owner of that surface
 - The actor is not in `crossSurfaceAllow`
 
-This is how Veritas prevents parallel workstreams from accidentally colliding — by making surface ownership explicit and checking it before changes land.
+There is intentionally no fallback to the operating-system username. CI users and local shell users are not governance actors. Missing actor identity is a configuration error, and Veritas reports it as a failure instead of silently passing.
+
+This is how Veritas prevents parallel workstreams from accidentally colliding: surface ownership is explicit, actor identity is explicit, and the check fails closed before changes land.
 
 ## Just-In-Time Context
 
@@ -119,6 +149,8 @@ Exit codes are hook-friendly:
 ## Improvement
 
 Evidence records capture what changed, which repo surfaces were touched, which proof commands applied, which rules passed or failed, and the embedded `surface.input` that lets Surface produce the portable trust report. Eval records capture how the run turned out: accepted or rewritten, time to green, overrides, false positives, missed issues, and reviewer confidence.
+
+Veritas also writes `.veritas/claims/*.input.json` when a report includes Surface input. Those files are per-claim slices of `surface.input`, not Surface `TrustReport` files. They exist so local tooling can inspect one claim and its matching evidence/events without copying the full evidence artifact.
 
 For local use, `veritas eval record` appends compact JSONL entries to `.veritas/evals/history.jsonl`, and `veritas eval summary` reports the recent trend:
 

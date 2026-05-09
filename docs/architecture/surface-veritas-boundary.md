@@ -1,12 +1,14 @@
 # Surface-Veritas Boundary
 
-Veritas is the repo and AI-agent governance product. Surface is the portable trust/evidence substrate underneath it.
+Veritas is the repo and AI-agent governance product. Surface is the portable trust/evidence substrate underneath it. They are separate products: Veritas builds on Surface, and Surface does not depend on Veritas runtime code.
 
 ## Boundary Rule
 
 Portable truth concepts go to Surface; repo and agent workflow mechanics stay in Veritas.
 
 Veritas keeps developer-native concepts when they help agents decide what to run, inspect, or fix. Those concepts must either map to Surface primitives or be explicitly marked Veritas-local.
+
+Dependency direction is one-way. Veritas docs may link to Surface docs and Veritas code may use Surface contracts, but Surface should remain the base product and should not import Veritas as a runtime dependency.
 
 ## Foundation Contract
 
@@ -22,7 +24,7 @@ Surface owns portable trust primitives:
 - owner and confidence basis
 - generated trust reports
 
-Veritas owns the developer-governance product layer:
+Veritas owns its repo-governance product mechanics:
 
 - repo adapters and graph surfaces
 - policy packs
@@ -86,4 +88,4 @@ Mapped fields also declare `x_surface_targets`, such as `claim`, `evidence`, `po
 
 Reference tests fail when new top-level evidence fields lack this classification.
 
-The same rule applies to docs: first-contact Veritas docs must describe Surface as the foundation and Veritas as the product layer. That keeps future contributors from accidentally presenting Veritas as an independent trust substrate.
+The same rule applies to docs: first-contact Veritas docs must describe Surface as the foundation and Veritas as a separate product built on it. That keeps future contributors from presenting Veritas as an independent trust substrate or presenting Surface and Veritas as one combined product.

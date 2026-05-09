@@ -135,7 +135,9 @@ npx @kontourai/veritas boundaries check --actor cli-team --diff main
 npx @kontourai/veritas boundaries check --actor framework-team
 ```
 
-Strict nodes fail when the actor is neither an owner nor listed in `crossSurfaceAllow`.
+`--actor` is required unless `VERITAS_ACTOR` is set. Veritas intentionally does not fall back to the operating-system user, because CI runner names and shell usernames are not governance actors. If no actor is supplied, the command exits non-zero with a missing-actor failure.
+
+Strict nodes fail when the actor is neither an owner nor listed in `crossSurfaceAllow`. This means a working tree that spans several strict surfaces may legitimately fail for one actor while passing for another owner or allowlisted actor.
 
 To turn a Veritas artifact into a Surface trust report:
 

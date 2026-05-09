@@ -40,6 +40,8 @@ npm run veritas:checkin:examples
 npm run veritas:checkin:prove
 ```
 
+`npm run veritas:checkin:report` writes the full evidence artifact at `.veritas/evidence/check-in-local.json` and refreshes `.veritas/claims/*.input.json` slices for the claims inside that evidence artifact.
+
 Tracked automation also exists in [.github/workflows/veritas-checkins.yml](../../.github/workflows/veritas-checkins.yml). It runs on pull requests, pushes to `main`, manual dispatch, and a weekly schedule.
 
 ## What This Repo Proves
