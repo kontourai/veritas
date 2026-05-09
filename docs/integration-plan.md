@@ -1,6 +1,6 @@
 # Integration Plan: Veritas Alongside Surface in Real Applications
 
-This plan defines how Veritas integrates into real applications alongside Surface — using `briananderson1222/campfit` and `briananderson1222/taxes` as the two reference integrations. It is the Veritas-side counterpart to [Surface's integration plan](../../surface/docs/integration-plan.md). Where they overlap, that document is canonical for Surface concerns; this one is canonical for Veritas concerns.
+This plan defines how Veritas integrates into real applications alongside Surface — using `briananderson1222/campfit` and `briananderson1222/taxes` as the two reference integrations. It is the Veritas-side counterpart to [Surface's integration plan](https://github.com/kontourai/surface/blob/main/docs/integration-plan.md). Where they overlap, that document is canonical for Surface concerns; this one is canonical for Veritas concerns.
 
 This plan extends [concepts.md](./concepts.md) and [architecture/surface-veritas-boundary.md](./architecture/surface-veritas-boundary.md). It does not change the Surface-Veritas boundary; it makes the boundary actively useful in real apps.
 
@@ -174,7 +174,7 @@ Extend the existing budget record:
 
 **Status:** Partially shipped. `validateTrustInput` exists. SHACL validation will be added once Surface ships SHACL (Phase 2 of Surface's linked-data roadmap).
 
-The boundary doc claims Veritas evidence includes a `surface.input` projection. Once Surface ships SHACL (Phase 2 of Surface's [linked-data-roadmap.md](../../surface/docs/linked-data-roadmap.md)), validate that claim automatically.
+The boundary doc claims Veritas evidence includes a `surface.input` projection. Once Surface ships SHACL (Phase 2 of Surface's [linked-data-roadmap.md](https://github.com/kontourai/surface/blob/main/docs/linked-data-roadmap.md)), validate that claim automatically.
 
 #### V-D1. Reference test in Veritas itself
 
@@ -432,5 +432,5 @@ This plan succeeds when:
 - [architecture/surface-veritas-boundary.md](./architecture/surface-veritas-boundary.md) — boundary contract
 - [design/policy-packs.md](./design/policy-packs.md) — policy pack format
 - [design/proof-family-results.md](./design/proof-family-results.md) — proof family results
-- [../../surface/docs/integration-plan.md](../../surface/docs/integration-plan.md) — corresponding Surface plan
-- [../../surface/docs/grounding-audit.md](../../surface/docs/grounding-audit.md) — audit findings
+- [Surface integration plan](https://github.com/kontourai/surface/blob/main/docs/integration-plan.md) — corresponding Surface plan
+- [Surface grounding audit](https://github.com/kontourai/surface/blob/main/docs/grounding-audit.md) — audit findings
