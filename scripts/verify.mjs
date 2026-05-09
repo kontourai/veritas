@@ -375,8 +375,8 @@ assert(
   'CI workflow must use the current setup-node action.',
 );
 assert(
-  ciWorkflow.includes("node-version: ['18', '22']"),
-  'CI workflow must validate on Node 18 and Node 22.',
+  ciWorkflow.includes("node-version: ['20', '22']"),
+  'CI workflow must validate on Node 20 and Node 22.',
 );
 assert(
   ciWorkflow.includes('npm run verify'),
@@ -423,8 +423,8 @@ assert(
   'Publish workflow must run the coverage gate.',
 );
 assert(
-  publishWorkflow.includes("node-version: ['18', '22']"),
-  'Publish workflow must verify on Node 18 and Node 22 before publishing.',
+  publishWorkflow.includes("node-version: ['20', '22']"),
+  'Publish workflow must verify on Node 20 and Node 22 before publishing.',
 );
 assert(
   publishWorkflow.includes('npm publish --access public'),

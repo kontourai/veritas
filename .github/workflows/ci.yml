@@ -16,10 +16,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: ['18', '22']
+        node-version: ['20', '22']
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Checkout Surface Dependency
+        run: git clone --depth=1 https://github.com/kontourai/surface ../surface
 
       - name: Setup Node
         uses: actions/setup-node@v6
