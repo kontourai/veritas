@@ -21,6 +21,7 @@ Find what you need by what you're trying to do.
 
 - [Agent Runtime Integrations](guides/agent-runtime-integrations.md) for Claude Code, Cursor, Codex hooks
 - [Agent Activation](design/agent-activation.md) for how the framework reaches agents
+- [CLI Reference](reference/cli.md) for `explain`, `boundaries check`, and Claude Code PreToolUse hook setup
 
 ### Write rules for my repo
 

@@ -2,7 +2,13 @@
 
 Veritas is bespoke lint for AI agents, built on the Kontour Surface trust substrate. A normal linter tells a developer, "this line violates the repo's rules." Veritas tells an agent, "this change violated the repo's rules, and here is what to fix before you finish."
 
-The framework has four concepts: Surface foundation, rules, feedback, and improvement.
+Veritas has three jobs:
+
+1. **Enforce boundaries** so parallel workstreams don't collide or duplicate (strict surface ownership, cross-surface-write rules).
+2. **Deliver just-in-time context** to fight agent focus drift in long sessions (the `explain` command and Claude Code PreToolUse hooks).
+3. **Enforce standards via self-correction** — lint-style feedback agents act on immediately, not at code review time.
+
+The framework has four core concepts: Surface foundation, rules, feedback, and improvement.
 
 ## Surface Foundation
 
@@ -20,28 +26,71 @@ Rules are repo-local. They live in `.veritas/` and describe what your repository
 
 The adapter at `.veritas/repo.adapter.json` maps the repo into surfaces: product code, shared contracts, tests, docs, workflows, and governance files. It also declares activation targets such as `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, or `.github/copilot-instructions.md` so every AI tool sees the same Veritas governance block.
 
-The policy pack at `.veritas/policy-packs/default.policy-pack.json` defines the lint rules. The first supported rule families are:
+The policy pack at `.veritas/policy-packs/default.policy-pack.json` defines the lint rules. Rules are classified by type via a required `kind` field. Supported rule kinds are:
 
-- `artifacts`: required files must exist.
+- `required-artifacts`: required files must exist.
 - `governance-block`: AI instruction files must contain the canonical Veritas governance block.
-- `if-changed` plus `then-require`: if one path appears in the diff, a companion path must also appear.
+- `diff-required`: if one path appears in the diff (`if-changed`), a companion path must also appear (`then-require`).
+- `forbidden-pattern`: specific patterns or strings are not allowed in matched files.
+- `required-pattern`: specific patterns or strings are required to exist in matched files.
+- `header-required`: specific headers or comments are required at the start of matched files.
+- `cross-surface-write`: strict surface ownership rules; changes must be approved by surface owners or allowlisted.
+
+Every rule includes an `explain` block with `summary`, `mustDo`, `mustNotDo`, `exampleGood`, `exampleBad`, and `contextLinks` to help agents understand the rule.
 
 Example:
 
 ```json
 {
   "id": "api-changes-require-test-changes",
+  "kind": "diff-required",
   "classification": "promotable-policy",
   "stage": "block",
   "message": "If src/api/ changed, tests/api/ must also appear in the diff.",
   "match": {
     "if-changed": "src/api/",
     "then-require": "tests/api/"
+  },
+  "explain": {
+    "summary": "API changes must have accompanying test changes.",
+    "mustDo": "Add or modify tests for any API changes.",
+    "mustNotDo": "Change src/api/ without touching tests/api/.",
+    "exampleGood": "PR adds src/api/routes.ts and tests/api/routes.test.ts",
+    "exampleBad": "PR adds src/api/routes.ts but no test changes",
+    "contextLinks": ["docs/testing.md"]
   }
 }
 ```
 
 This is what makes Veritas different from a static checklist. The rule is about behavior in the actual change, not just whether a file exists somewhere in the repo.
+
+## Boundaries
+
+The adapter's graph defines repo surfaces with owners and boundary types. A surface can be `strict` (changes require owner approval) or `advisory` (visible but not enforced). The `cross-surface-write` rule checks whether an actor (an agent, developer, or team) has permission to touch a strict surface.
+
+Graph nodes declare:
+
+- `owners`: array of owner ids for the surface
+- `boundary`: `strict` or `advisory`
+- `crossSurfaceAllow`: optional allowlist of actor ids or patterns allowed to write to strict surfaces
+
+The `cross-surface-write` rule fails when:
+
+- A diff touches a `strict` boundary surface
+- The actor is not an owner of that surface
+- The actor is not in `crossSurfaceAllow`
+
+This is how Veritas prevents parallel workstreams from accidentally colliding — by making surface ownership explicit and checking it before changes land.
+
+## Just-In-Time Context
+
+Long AI agent sessions drift toward high-level goals and lose sight of repo-specific constraints. Veritas delivers context just before an agent edits:
+
+- `veritas explain --file <path>` — prints the rules and governance for a specific file
+- `veritas explain --surface-node <node-id>` — prints rules for a surface
+- `veritas explain <rule-id>` — prints full context for a rule
+
+The `veritas hooks claude-code print|apply` command generates a Claude Code PreToolUse hook that calls `veritas explain --file <path>` before each edit. This keeps repo rules visible in the agent's context without clogging the main prompt.
 
 ## Feedback
 

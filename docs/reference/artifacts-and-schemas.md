@@ -112,6 +112,12 @@ Supported node kinds currently include:
 - `shared-package`
 - `example-surface`
 
+Each node may declare:
+
+- `owners`: array of owner ids who control the surface
+- `boundary`: `strict` (requires owner approval for changes) or `advisory` (visible but not enforced)
+- `crossSurfaceAllow`: optional allowlist of actor ids or patterns allowed to modify strict surfaces
+
 ### Policy pack
 
 Defined by [schemas/veritas-policy-pack.schema.json](../../schemas/veritas-policy-pack.schema.json).
@@ -119,9 +125,20 @@ Defined by [schemas/veritas-policy-pack.schema.json](../../schemas/veritas-polic
 A policy pack provides:
 
 - staged rule metadata
-- rule classification
+- rule classification (via required `kind` discriminator)
 - match payloads used by the current evaluator
+- per-rule `explain` blocks (`summary`, `mustDo`, `mustNotDo`, `exampleGood`, `exampleBad`, `contextLinks`)
 - ownership and rollback metadata
+
+Supported rule kinds:
+
+- `required-artifacts`
+- `governance-block`
+- `diff-required`
+- `forbidden-pattern`
+- `required-pattern`
+- `header-required`
+- `cross-surface-write`
 
 Reference file:
 
@@ -139,9 +156,12 @@ An evidence artifact records:
 - which proof-lane objects were selected, including method and Surface claim mapping
 - proof-family results when the adapter declares proof-family manifests
 - a generated verification budget that shows required, candidate, advisory, move-to-test, and retiring check families
-- optional external tool results from proof lanes, such as Fallow audit JSON
+- optional external tool results from proof lanes, such as Fallow audit JSON (advisory or blocking)
+- affected-node details (ownership, boundary type, surface classification)
+- file-node details (which graph nodes each changed file belongs to)
 - uncovered-path status
 - evaluated policy results
+- `derivedFrom` chains on proof-family claims, external-tool claims, and verification-budget claims for Surface derivation ceilings
 - adapter metadata
 - policy-pack provenance
 

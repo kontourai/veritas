@@ -1,11 +1,12 @@
 # Fallow Integration
 
-Use this guide when a JavaScript or TypeScript repo wants Veritas to record Fallow codebase-intelligence results as proof evidence.
+Use this guide when a JavaScript or TypeScript repo wants Veritas to record Fallow codebase-intelligence results as external-tool proof evidence.
 
 Fallow and Veritas should stay separate:
 
 - Fallow finds codebase facts: unused code, duplicate logic, circular dependencies, complexity hotspots, architecture boundary violations, and optional runtime hot/cold-path evidence.
 - Veritas governs whether those facts were checked, baselined, promoted, and shown to agents before they finish work.
+- Veritas records Fallow results as an external-tool proof lane (advisory or blocking).
 - Surface receives the normalized `surface.input` projection from Veritas evidence; Veritas does not become a second trust report generator.
 
 ## Start Advisory
@@ -21,7 +22,9 @@ For example, a one-off Fallow smoke on this Veritas checkout reported:
 
 That is useful evidence, but it is not a reason to fail every Veritas run before the repo has either cleaned up the issues or committed an intentional baseline.
 
-## Proof Lane Shape
+## External-Tool Proof Lanes
+
+Veritas proof lanes can declare an external tool via the `externalTool` field. The external tool produces a JSON artifact that Veritas reads and normalizes into evidence.
 
 Keep compound shell behavior in a script because Veritas proof commands are tokenized argv, not implicit shell snippets.
 

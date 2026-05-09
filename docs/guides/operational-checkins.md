@@ -17,11 +17,15 @@ These are the repo-local instructions and policy artifacts that make self-hostin
 
 - `.veritas/evidence/`
 - `.veritas/claims/`
+- `.veritas/external/`
 - `.veritas/eval-drafts/`
 - `.veritas/evals/`
 
 Those outputs are local and disposable. They should inform product work, not create distribution churn.
-Files under `.veritas/claims/` are trimmed per-claim Surface input slices (`*.input.json`), not generated Surface `TrustReport` artifacts.
+
+Files under `.veritas/claims/` are trimmed per-claim Surface input slices (`*.input.json`), not generated Surface `TrustReport` artifacts. They are gitignored to avoid committing partial projections.
+
+Files under `.veritas/external/` are external-tool proof-lane artifacts (e.g., Fallow audit JSON), gitignored for the same reason.
 
 ## Main Commands
 

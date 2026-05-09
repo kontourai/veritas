@@ -51,9 +51,11 @@ The audit identified gaps and the Surface plan introduced new primitives (`Revie
 
 ### Track V-A — Cross-layer rule type
 
+**Status:** Partially shipped. The new rule kinds (`forbidden-pattern`, `required-pattern`, `header-required`) are shipped. The cross-surface-write boundary enforcement is shipped. However, the `surface-fixture-required` rule (V-A1) and `surface-projection-required` rule (V-A2) require Surface integration and are still planned.
+
 Today Veritas rules operate on file paths and presence checks. Real cross-layer governance needs rules that read Surface fixtures.
 
-#### V-A1. `surface-fixture-required` rule
+#### V-A1. `surface-fixture-required` rule (planned)
 
 A new rule type: when a code path matches the `if-changed` pattern, require a Surface fixture file in `tests/` whose `surface.input` validates against a referenced policy.
 
@@ -77,7 +79,7 @@ Veritas reads the matched fixtures, runs `validateTrustInput` on each `surface.i
 
 This is the first rule type that requires Veritas to actually execute Surface code (currently Surface is just shape-validated by JSON Schema). Wire this through `@kontourai/surface` as a peerDependency.
 
-#### V-A2. `surface-projection-required` rule
+#### V-A2. `surface-projection-required` rule (planned)
 
 When a Surface-projecting module changes, require an updated example projection.
 
@@ -99,6 +101,8 @@ When a Surface-projecting module changes, require an updated example projection.
 Veritas runs the projection function against the input and asserts the output matches (byte-equal or semantic-equal, configurable). Catches drift between projection logic and committed examples.
 
 ### Track V-B — Adapter packs
+
+**Status:** Planned. Reference adapters and the contract are not yet shipped.
 
 Today Veritas's adapter is generic JSON. Real apps need stack-specific scaffolding.
 
@@ -141,6 +145,8 @@ export interface VeritasAdapterPack {
 
 ### Track V-C — Per-feature verification budget
 
+**Status:** Planned. The infrastructure for feature-scoped budgets is not yet shipped.
+
 Today verification budget is repo-wide. For Campfit, the crawl pipeline has its own cost profile (LLM tokens × passes); for Taxes, the rule-pack update has its own. Per-feature budget is needed.
 
 #### V-C1. Feature-scoped budget records
@@ -166,6 +172,8 @@ Extend the existing budget record:
 
 ### Track V-D — `surface.input` parity test
 
+**Status:** Partially shipped. `validateTrustInput` exists. SHACL validation will be added once Surface ships SHACL (Phase 2 of Surface's linked-data roadmap).
+
 The boundary doc claims Veritas evidence includes a `surface.input` projection. Once Surface ships SHACL (Phase 2 of Surface's [linked-data-roadmap.md](../../surface/docs/linked-data-roadmap.md)), validate that claim automatically.
 
 #### V-D1. Reference test in Veritas itself
@@ -184,6 +192,8 @@ Catches drift between Veritas's evidence shape and Surface's contract.
 Each adapter pack ships a parity test of its own — so consumers (Taxes, Campfit, future apps) detect drift in their own evidence outputs without running it manually.
 
 ### Track V-E — Governance block expansion
+
+**Status:** Planned. Templating is not yet shipped.
 
 Today governance blocks are static text. Real integrations need parameterized blocks (project name, key paths, policy pack ID).
 

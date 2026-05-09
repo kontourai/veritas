@@ -112,7 +112,7 @@ Important behaviors:
 - the artifact is written to the adapter-defined `artifactDir`
 - every artifact includes `surface.input`, a Surface `TrustInput` projection with claims, evidence, policies, and events
 - JSON is the default output; `--format feedback` prints the same lint-style findings used by hooks
-- `--trend` prints the eval-history rule trend instead of generating a new report
+- `--trend` prints the eval-history rule trend with sparklines and MTTR instead of generating a new report
 
 ### `explain`
 
@@ -306,6 +306,7 @@ npx @kontourai/veritas print runtime-hook [--root <path>]
 npx @kontourai/veritas print stop-hook [--root <path>] [--tool generic|claude-code|cursor]
 npx @kontourai/veritas print governance-block
 npx @kontourai/veritas print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
+npx @kontourai/veritas print claude-code-pre-tool-use-hook [--root <path>]
 ```
 
 Printed helper surfaces:
@@ -317,6 +318,7 @@ Printed helper surfaces:
 - a generic stop-hook body and thin tool-specific wrapper configs
 - the canonical Veritas governance block
 - a tracked Codex hooks config plus optional target inspection status
+- a Claude Code PreToolUse hook that injects `veritas explain` context before file edits
 
 ### `apply`
 
@@ -330,6 +332,7 @@ npx @kontourai/veritas apply runtime-hook [--root <path>] [--output <path>] [--f
 npx @kontourai/veritas apply stop-hook [--root <path>] [--tool generic|claude-code|cursor] [--output <path>] [--force]
 npx @kontourai/veritas apply governance-blocks [--root <path>] [--force]
 npx @kontourai/veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]
+npx @kontourai/veritas apply claude-code-pre-tool-use-hook [--root <path>] [--output <path>] [--force]
 ```
 
 Write restrictions are intentional:

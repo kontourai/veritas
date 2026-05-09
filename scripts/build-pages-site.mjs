@@ -23,6 +23,7 @@ const markdownFiles = [
   'docs/design/roadmap.md',
   'docs/design/live-evals.md',
   'docs/design/policy-packs.md',
+  'docs/design/proof-family-results.md',
   'docs/design/schema-evolution.md',
   'docs/guides/agent-runtime-integrations.md',
   'docs/guides/fallow-integration.md',
