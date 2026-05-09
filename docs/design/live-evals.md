@@ -24,7 +24,7 @@ Live eval adds the missing layer:
 - **which rules created friction**
 - **which misses still slipped through**
 
-## The Simple Idea
+## [partial] The Simple Idea
 
 For every AI-guided run, keep two records:
 
@@ -60,7 +60,7 @@ That capture path should enforce provenance, not merely suggest it:
 - team-profile-aware reviewer confidence
 - explicit overwrite only with `--force`
 
-## What Should Be Measured
+## [partial] What Should Be Measured
 
 The first live-eval version should stay practical.
 
@@ -75,7 +75,7 @@ Measure:
 
 This is enough to tell whether the framework is reducing work or only moving it around.
 
-## Why This Matters
+## [partial] Why This Matters
 
 Without live eval, teams tend to argue from anecdotes:
 
@@ -107,7 +107,7 @@ That is why a marker benchmark belongs next to live eval rather than inside it:
 
 That is the bridge from framework intuition to framework proof.
 
-## Team Tuning
+## [partial] Team Tuning
 
 The goal is not to make every team behave the same way.
 
@@ -126,11 +126,11 @@ Examples of team-level tuning:
 - when human signoff is required
 - which proof lanes are mandatory before promotion
 
-## Recommended Rollout
+## [partial] Recommended Rollout
 
 Keep the rollout staged.
 
-### Phase 1: Shadow Mode
+### [partial] Phase 1: Shadow Mode
 
 Collect eval records without changing enforcement.
 
@@ -146,7 +146,7 @@ The first shipped capture path should stay lightweight and manual enough that te
 - one eval artifact out
 - no hidden blocking behavior
 
-### Phase 2: Assist Mode
+### [partial] Phase 2: Assist Mode
 
 Use the eval data to calibrate warnings and recommendations.
 
@@ -156,13 +156,13 @@ This phase should help teams:
 - promote reliable rules
 - improve evidence summaries
 
-### Phase 3: Gate Mode
+### [partial] Phase 3: Gate Mode
 
 Only after a rule has proven useful in practice should it become a stronger gate.
 
 That keeps the framework from hardening around assumptions that were never validated.
 
-## Differentiator
+## [partial] Differentiator
 
 Most AI tooling stops at generation, orchestration, or pass/fail checks.
 

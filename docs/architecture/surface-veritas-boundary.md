@@ -10,6 +10,8 @@ Veritas keeps developer-native concepts when they help agents decide what to run
 
 Dependency direction is one-way. Veritas docs may link to Surface docs and Veritas code may use Surface contracts, but Surface should remain the base product and should not import Veritas as a runtime dependency.
 
+Veritas owns the Veritas-to-Surface adapter. Surface exposes generic adapter and policy helpers, schema validation, and report generation; it does not ship first-class Veritas mapping code.
+
 ## Foundation Contract
 
 Surface owns portable trust primitives:
@@ -72,6 +74,8 @@ Veritas evidence artifacts include `surface.input`, which is a Surface `TrustInp
 ```
 
 `surface.input` must not contain generated Surface report fields such as `id`, `generatedAt`, `summary`, `faultLines`, or `proofRequirementsByClaimId`. Surface generates those fields when it builds the trust report.
+
+At emission time, Veritas validates this projection with Surface's `validateTrustInput`. Validation failures are runtime/configuration errors: Veritas writes the rejected input under `.veritas/external/surface-validation-failures/` and exits with code 2. `VERITAS_SKIP_SURFACE_VALIDATION=1` exists only as an emergency bypass.
 
 ## Drift Prevention
 

@@ -90,18 +90,18 @@ test('first-contact docs preserve the Surface foundation boundary', () => {
   const cliReference = readDoc('../docs/reference/cli.md');
   const boundary = readDoc('../docs/architecture/surface-veritas-boundary.md');
 
-  assert.match(readme, /Surface evidence projection/);
+  assert.match(readme, /repo-local policy-pack lint/);
   assert.match(readme, /surface\.input/);
   assert.match(concepts, /## Surface Foundation/);
   assert.match(concepts, /TrustInput/);
   assert.match(concepts, /must not contain Surface report-only fields/);
-  assert.match(siteIndex, /on top of Kontour Surface/);
   assert.match(siteIndex, /Surface-Veritas Boundary/);
-  assert.match(cliReference, /surface report --adapter veritas/);
-  assert.match(cliReference, /Surface owns the report/);
+  assert.match(siteIndex, /Surface-Veritas Boundary/);
+  assert.match(cliReference, /surface\.input/);
+  assert.match(cliReference, /Veritas owns repo-native collection/);
   assert.match(boundary, /## Foundation Contract/);
   assert.match(boundary, /Surface does not depend on Veritas runtime code/);
-  assert.match(boundary, /separate product built on it/);
+  assert.match(boundary, /Veritas-to-Surface adapter/);
   assert.match(boundary, /Map to existing Surface primitives/);
 });
 

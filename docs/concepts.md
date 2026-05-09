@@ -1,6 +1,6 @@
 # Concepts
 
-Veritas is bespoke lint for AI agents, built on the Kontour Surface trust substrate. A normal linter tells a developer, "this line violates the repo's rules." Veritas tells an agent, "this change violated the repo's rules, and here is what to fix before you finish."
+Veritas is bespoke lint for AI agents. A normal linter tells a developer, "this line violates the repo's rules." Veritas tells an agent, "this change violated the repo's rules, and here is what to fix before you finish."
 
 Veritas has three jobs:
 
@@ -8,11 +8,11 @@ Veritas has three jobs:
 2. **Deliver just-in-time context** to fight agent focus drift in long sessions (the `explain` command and Claude Code PreToolUse hooks).
 3. **Enforce standards via self-correction** — lint-style feedback agents act on immediately, not at code review time.
 
-The framework has four core concepts: Surface foundation, rules, feedback, and improvement.
+The framework has four core concepts: rules, feedback, just-in-time context, and improvement.
 
 ## Surface Foundation
 
-Surface owns portable trust primitives: claims, evidence, verification policies, verification events, freshness/status, fault lines, proof requirements, and generated trust reports.
+Surface is the portable trust substrate underneath Veritas. Surface owns claims, evidence, verification policies, events, status, fault lines, proof requirements, and generated trust reports.
 
 Veritas owns repo and AI-agent workflow mechanics: adapters, policy packs, proof lanes, proof families, verification budgets, shadow runs, and lint-style feedback. These are useful to coding agents, but they are not a second trust model.
 

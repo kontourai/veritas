@@ -4,7 +4,7 @@ Proof lanes can hide too much behind one pass/fail bit. Brownfield repos often s
 
 Veritas should support the reusable shape of that evidence without absorbing one repo's local assertions.
 
-## Design Goal
+## [shipped] Design Goal
 
 Expose family-level proof evidence so operators can see:
 
@@ -14,13 +14,13 @@ Expose family-level proof evidence so operators can see:
 - what changed file or trust boundary it protects,
 - when it should be promoted, softened, moved to tests, or retired.
 
-## Non-Goals
+## [shipped] Non-Goals
 
 - Do not add repo-specific modules, helper names, or product file paths to Veritas core.
 - Do not make every custom verification check a framework policy.
 - Do not bypass normal product tests. Veritas should select and report tests, not replace them.
 
-## Artifact Shape
+## [shipped] Artifact Shape
 
 Evidence artifacts include `proof_family_results` when the adapter declares proof-family manifests:
 
@@ -68,7 +68,7 @@ The manifest stays repo-local because it describes a migration inventory. Verita
 
 Repos may still write sidecar artifacts under `.veritas/evidence/proof-families/` when they want command-level findings. The report-level `proof_family_results` field is the durable summary that other tools should consume.
 
-## Dispositions
+## [shipped] Dispositions
 
 - `required`: blocks promotion or check-in.
 - `candidate`: reported and trended, but not blocking by default.
@@ -81,7 +81,7 @@ Unknown catch evidence should default to `candidate` or `advisory`, not `require
 
 Runtime validation enforces the promotion rule for declared manifests: required families need an owner, review trigger, lane id, and non-unknown catch evidence. This keeps broad brownfield inventories from becoming permanent blockers by accident.
 
-## Brownfield Use
+## [shipped] Brownfield Use
 
 During brownfield adoption:
 
@@ -95,7 +95,7 @@ During brownfield adoption:
 
 This lets Veritas preserve safety while avoiding a permanent wrapper around bespoke lint scripts.
 
-## Verification Budget
+## [shipped] Verification Budget
 
 Reports also include `verification_budget`, a generated summary of:
 

@@ -111,6 +111,7 @@ Important behaviors:
 - the adapter selects proof commands through explicit `proofLanes`, `requiredProofLaneIds`, `defaultProofLaneIds`, and optional `surfaceProofRoutes`
 - the artifact is written to the adapter-defined `artifactDir`
 - every artifact includes `surface.input`, a Surface `TrustInput` projection with claims, evidence, policies, and events
+- Veritas owns repo-native collection and Surface owns generic validation and report generation
 - JSON is the default output; `--format feedback` prints the same lint-style findings used by hooks
 - `--trend` prints the eval-history rule trend with sparklines and MTTR instead of generating a new report
 
@@ -143,10 +144,11 @@ To turn a Veritas artifact into a Surface trust report:
 
 ```bash
 artifact_path="$(npx @kontourai/veritas report --working-tree --format json | node -e 'let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", () => { const parsed = JSON.parse(data); if (!parsed.artifactPath) throw new Error("missing artifactPath"); console.log(parsed.artifactPath); });')"
-surface report --adapter veritas --input "$artifact_path" --format summary
+node -e 'const fs = require("node:fs"); const artifact = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write(JSON.stringify(artifact.surface.input, null, 2));' "$artifact_path" > .veritas/external/surface-input.json
+surface report --adapter surface --input .veritas/external/surface-input.json --format summary
 ```
 
-Surface generates report-only fields such as `id`, `generatedAt`, `summary`, `faultLines`, and `proofRequirementsByClaimId`. Veritas emits the input evidence; Surface owns the report.
+Surface generates report-only fields such as `id`, `generatedAt`, `summary`, `faultLines`, and `proofRequirementsByClaimId`. Veritas owns repo-native collection and projection; Surface owns generic validation and report generation.
 
 ### `budget`
 

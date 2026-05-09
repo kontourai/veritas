@@ -4,7 +4,7 @@ This roadmap is the practical build plan for adding live eval to the framework.
 
 It is written for people deciding what to build next, not only for framework maintainers.
 
-## Phase 1: Shadow Mode
+## [planned] Phase 1: Shadow Mode
 
 Goal:
 
@@ -25,7 +25,7 @@ Questions answered:
 - which evidence fields help reviewers most?
 - where is the framework still missing coverage?
 
-## Phase 2: Assist Mode
+## [planned] Phase 2: Assist Mode
 
 Goal:
 
@@ -43,7 +43,7 @@ Questions answered:
 - which policies are reliable enough to harden?
 - which rules should be split or rewritten?
 
-## Phase 3: Gate Mode
+## [planned] Phase 3: Gate Mode
 
 Goal:
 
@@ -61,7 +61,7 @@ Questions answered:
 - which proof lanes should be mandatory before promotion?
 - when should warnings block in CI for this team?
 
-## What Comes Last
+## [planned] What Comes Last
 
 These can wait until the framework has real live-eval history:
 

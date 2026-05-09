@@ -1,10 +1,10 @@
 # Framework Core vs Adapter
 
-## Purpose
+## [shipped] Purpose
 
 Define a reusable AI-guidance system that stays generic enough to travel across repos while still being concrete enough to guide real development work.
 
-## Core Thesis
+## [shipped] Core Thesis
 
 The framework is not a bag of repo-specific CI assertions.
 
@@ -16,7 +16,7 @@ It is a contract with three layers:
 
 That separation matters because it preserves both portability and auditability.
 
-## Why This Helps AI Focus
+## [shipped] Why This Helps AI Focus
 
 AI systems lose focus when they cannot tell:
 
@@ -32,7 +32,7 @@ The framework fixes that by making those concepts explicit.
 - The **policy pack** distinguishes hard rails from softer guidance.
 - The **evidence record** captures what happened in a form humans can audit quickly.
 
-## Framework Core
+## [shipped] Framework Core
 
 The core owns:
 
@@ -54,7 +54,7 @@ The core should reason about abstract node kinds such as:
 
 The core should not hardcode local repo paths or product-specific workflows.
 
-## Repo Adapter
+## [shipped] Repo Adapter
 
 A repo adapter binds the framework to a specific codebase.
 
@@ -76,7 +76,7 @@ An adapter does not own:
 
 When an adapter uses surface-aware proof routing, it should route by existing node IDs rather than introducing a second path-matching surface. The graph continues to own path-to-node mapping; proof selection becomes a consequence of matched nodes.
 
-## Policy Packs
+## [shipped] Policy Packs
 
 Policy packs encode what a repo considers acceptable.
 
@@ -92,7 +92,7 @@ This is one of the framework's biggest differentiators.
 Most systems only ask "did the check pass?"
 This framework also asks "what kind of rule is this and how much trust should we place in it?"
 
-## Human Signoff
+## [shipped] Human Signoff
 
 Humans should sign off on:
 
@@ -104,7 +104,7 @@ Humans should sign off on:
 
 Humans should not need to re-audit every routine implementation detail when the change stays inside established policy and the evidence is strong.
 
-## Onboarding Bias
+## [shipped] Onboarding Bias
 
 The framework should stay easy to adopt.
 
@@ -117,7 +117,7 @@ The intended onboarding shape is:
 
 Anything heavier than that should be justified by operator value, not by framework purity.
 
-## `work-agent`
+## [shipped] `work-agent`
 
 `work-agent` is adapter `#1`, not the framework itself.
 
