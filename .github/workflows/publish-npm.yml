@@ -21,9 +21,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Checkout Surface Dependency
-        run: git clone --depth=1 https://github.com/kontourai/surface ../surface
-
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
@@ -53,9 +50,6 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
-      - name: Checkout Surface Dependency
-        run: git clone --depth=1 https://github.com/kontourai/surface ../surface
 
       - name: Setup Node
         uses: actions/setup-node@v6

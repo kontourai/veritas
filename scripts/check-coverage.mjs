@@ -9,7 +9,7 @@ const testFiles = readdirSync('tests')
 
 const result = spawnSync(
   process.execPath,
-  ['--experimental-test-coverage', '--test-coverage-exclude=../surface/**', '--test', ...testFiles],
+  ['--experimental-test-coverage', '--test', ...testFiles],
   {
     encoding: 'utf8',
   },

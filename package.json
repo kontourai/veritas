@@ -79,7 +79,7 @@
     "veritas:ci:checkin": "npm run veritas:checkin:prove"
   },
   "dependencies": {
-    "@kontourai/surface": "file:../surface",
+    "@kontourai/surface": "^0.2.0",
     "picomatch": "^4.0.4"
   }
 }

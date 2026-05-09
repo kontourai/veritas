@@ -21,9 +21,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Checkout Surface Dependency
-        run: git clone --depth=1 https://github.com/kontourai/surface ../surface
-
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
