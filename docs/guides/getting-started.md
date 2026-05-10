@@ -110,7 +110,7 @@ Start with executable rules that are easy to explain:
 Run the CLI with your adapter and policy pack:
 
 ```bash
-npx @kontourai/veritas report \
+npx @kontourai/veritas run --check shadow \
   --root /path/to/repo \
   --adapter ./adapters/work-agent.adapter.json \
   --policy-pack ./policy-packs/work-agent-convergence.policy-pack.json \
@@ -129,7 +129,7 @@ The output gives you:
 If you want proof plus agent-readable feedback, run:
 
 ```bash
-npx @kontourai/veritas shadow run --working-tree
+npx @kontourai/veritas run --working-tree
 ```
 
 Then record a local eval when you know the outcome:
@@ -157,7 +157,7 @@ npx @kontourai/veritas apply git-hook --configure-git
 npx @kontourai/veritas apply stop-hook --tool generic
 npx @kontourai/veritas apply runtime-hook
 npx @kontourai/veritas print codex-hook --codex-home /path/to/.codex
-npx @kontourai/veritas runtime status --codex-home /path/to/.codex
+npx @kontourai/veritas integrations codex status --codex-home /path/to/.codex
 npx @kontourai/veritas apply codex-hook --codex-home /path/to/.codex
 npx @kontourai/veritas apply codex-hook --target-hooks-file /path/to/hooks.json
 ```
@@ -185,15 +185,15 @@ The eval step stays conservative:
 If you want current-state truth instead of an explicit file list, use one of the working-tree modes:
 
 ```bash
-npx @kontourai/veritas report --working-tree
-npx @kontourai/veritas report --staged
-npx @kontourai/veritas report --unstaged --untracked
+npx @kontourai/veritas run --check shadow --working-tree
+npx @kontourai/veritas run --check shadow --staged
+npx @kontourai/veritas run --check shadow --unstaged --untracked
 ```
 
 If you want branch-diff truth, keep using explicit refs:
 
 ```bash
-npx @kontourai/veritas report --changed-from main --changed-to HEAD
+npx @kontourai/veritas run --check shadow --changed-from main --changed-to HEAD
 ```
 
 ## Step 4: Add Live Eval Later, Not First

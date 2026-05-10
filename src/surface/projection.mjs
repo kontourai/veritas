@@ -1,13 +1,15 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { validateTrustInput } from '@kontourai/surface';
+import * as Surface from '@kontourai/surface';
 import { relativeRepoPath } from '../paths.mjs';
 import { SURFACE_TRUST_POLICIES } from './policies.mjs';
 
-export function buildSurfaceTrustInput(record) {
-  const claims = [];
-  const evidence = [];
-  const events = [];
+export function buildSurfaceTrustInput(record, { rootDir = process.cwd() } = {}) {
+  const assembler = createSurfaceTrustInputAssembler({
+    source: `veritas:${record.run_id}`,
+    schemaVersion: 2,
+  });
+  const { claims, evidence, events } = assembler;
   const adapterName = record.adapter?.name ?? 'veritas';
   const proofLaneClaimIds = [];
   const policyClaimIds = [];
@@ -394,14 +396,61 @@ export function buildSurfaceTrustInput(record) {
     }));
   }
 
-  return {
-    schemaVersion: 2,
-    source: `veritas:${record.run_id}`,
-    claims,
-    evidence,
-    policies: Object.values(SURFACE_TRUST_POLICIES),
-    events,
-  };
+  for (const proposal of readOpenProposalSummaries(rootDir)) {
+    const id = proposal.surface?.claimId ?? surfaceClaimId(record.run_id, 'proposal', proposal.id);
+    const evidenceId = `${id}.evidence`;
+    claims.push({
+      id,
+      subjectType: 'veritas-proposal',
+      subjectId: proposal.id,
+      surface: 'veritas.proposals',
+      claimType: 'veritas-proposal',
+      fieldOrBehavior: proposal.type,
+      value: {
+        target: proposal.target,
+        rationale: proposal.rationale,
+      },
+      status: 'proposed',
+      createdAt: proposal.createdAt,
+      updatedAt: proposal.updatedAt,
+      impactLevel: 'medium',
+      verificationPolicyId: SURFACE_TRUST_POLICIES.proposal.id,
+      confidenceBasis: {
+        sourceQuality: 'moderate',
+        reviewerAuthority: 'system',
+        proofStrength: 'weak',
+        impactLevel: 'medium',
+      },
+      metadata: {
+        proposalId: proposal.id,
+        evidenceRunIds: proposal.evidenceRunIds,
+      },
+    });
+    evidence.push(surfaceEvidence({
+      id: evidenceId,
+      claimId: id,
+      type: 'policy_rule',
+      method: 'auditability',
+      record,
+      locator: `.veritas/proposals/${proposal.id}.proposal.json`,
+      summary: proposal.rationale,
+      metadata: {
+        proposalType: proposal.type,
+        proposalTarget: proposal.target,
+      },
+    }));
+  }
+
+  try {
+    return assembler.build(Object.values(SURFACE_TRUST_POLICIES));
+  } catch (error) {
+    return throwSurfaceTrustInputValidationError({
+      error,
+      input: error.trustInputDraft,
+      record,
+      rootDir,
+    });
+  }
 }
 
 export function validateSurfaceTrustInputAtBoundary({ input, record, rootDir }) {
@@ -410,18 +459,156 @@ export function validateSurfaceTrustInputAtBoundary({ input, record, rootDir }) 
     return input;
   }
   try {
-    return validateTrustInput(input);
+    return Surface.validateTrustInput(input);
   } catch (error) {
-    const failureDir = resolve(rootDir, '.veritas/external/surface-validation-failures');
-    mkdirSync(failureDir, { recursive: true });
-    const failurePath = resolve(failureDir, `${surfaceSafeId(record.run_id)}.json`);
-    writeFileSync(failurePath, `${JSON.stringify(input, null, 2)}\n`, 'utf8');
-    const validationError = new Error(
-      `Surface TrustInput validation failed: ${error.message}. Rejected input: ${relativeRepoPath(rootDir, failurePath)}`,
-    );
-    validationError.exitCode = 2;
-    throw validationError;
+    return throwSurfaceTrustInputValidationError({ error, input, record, rootDir });
   }
+}
+
+export function throwSurfaceTrustInputValidationError({ error, input, record, rootDir }) {
+  const failureDir = resolve(rootDir, '.veritas/external/surface-validation-failures');
+  mkdirSync(failureDir, { recursive: true });
+  const failurePath = resolve(failureDir, `${surfaceSafeId(record.run_id)}.json`);
+  writeFileSync(failurePath, `${JSON.stringify(input ?? {}, null, 2)}\n`, 'utf8');
+  const validationError = new Error(
+    `Surface TrustInput validation failed: ${error.message}. Rejected input: ${relativeRepoPath(rootDir, failurePath)}`,
+  );
+  validationError.exitCode = 2;
+  throw validationError;
+}
+
+export function buildSurfaceTrustReportSummary({ input, record }) {
+  const report = Surface.buildTrustReport(input, {
+    id: `veritas.${surfaceSafeId(record.run_id)}.surface-report`,
+    now: new Date(record.timestamp),
+  });
+  return summarizeSurfaceTrustReport(report);
+}
+
+export function buildSurfaceTrustInputWithPublicApi(input) {
+  if (typeof Surface.TrustInputBuilder !== 'function') {
+    throw new Error('Surface TrustInputBuilder public API is required by Veritas projection.');
+  }
+  const builder = new Surface.TrustInputBuilder({
+    source: input.source,
+    schemaVersion: input.schemaVersion,
+  });
+  for (const claim of input.claims) builder.addClaim(claim);
+  for (const policy of input.policies) builder.addPolicy(policy);
+  for (const item of input.evidence) builder.addEvidence(item).linkTo(item.claimId);
+  for (const event of input.events) builder.addEvent(event);
+  for (const link of input.identityLinks ?? []) builder.addIdentityLink(link);
+  return builder.build();
+}
+
+export function createSurfaceTrustInputAssembler({ source, schemaVersion }) {
+  if (typeof Surface.TrustInputBuilder !== 'function') {
+    throw new Error('Surface TrustInputBuilder public API is required by Veritas projection.');
+  }
+  const builder = new Surface.TrustInputBuilder({ source, schemaVersion });
+  const draft = {
+    schemaVersion,
+    source,
+    claims: [],
+    evidence: [],
+    policies: [],
+    events: [],
+  };
+  return {
+    claims: {
+      push: (...items) => {
+        for (const item of items) {
+          draft.claims.push(item);
+          builder.addClaim(item);
+        }
+        return items.length;
+      },
+    },
+    evidence: {
+      push: (...items) => {
+        for (const item of items) {
+          const index = draft.evidence.findIndex((existing) => existing.id === item.id);
+          if (index >= 0) draft.evidence[index] = item;
+          else draft.evidence.push(item);
+          builder.addEvidence(item).linkTo(item.claimId);
+        }
+        return items.length;
+      },
+    },
+    events: {
+      push: (...items) => {
+        for (const item of items) {
+          draft.events.push(item);
+          builder.addEvent(item);
+        }
+        return items.length;
+      },
+    },
+    build: (policies) => {
+      for (const policy of policies) {
+        draft.policies.push(policy);
+        builder.addPolicy(policy);
+      }
+      try {
+        return builder.build();
+      } catch (error) {
+        error.trustInputDraft = {
+          ...draft,
+          claims: [...draft.claims],
+          evidence: [...draft.evidence],
+          policies: [...draft.policies],
+          events: [...draft.events],
+        };
+        throw error;
+      }
+    },
+  };
+}
+
+export function summarizeSurfaceTrustReport(report) {
+  const faultLinesByClaimId = new Map();
+  for (const faultLine of report.faultLines ?? []) {
+    const entries = faultLinesByClaimId.get(faultLine.claimId) ?? [];
+    entries.push({
+      id: faultLine.id,
+      type: faultLine.type,
+      severity: faultLine.severity,
+      message: faultLine.message,
+      policyId: faultLine.policyId,
+    });
+    faultLinesByClaimId.set(faultLine.claimId, entries);
+  }
+  return {
+    id: report.id,
+    generatedAt: report.generatedAt,
+    source: report.source,
+    summary: report.summary,
+    claims: report.claims.map((claim) => ({
+      id: claim.id,
+      status: claim.status,
+      subjectType: claim.subjectType,
+      subjectId: claim.subjectId,
+      surface: claim.surface,
+      claimType: claim.claimType,
+      fieldOrBehavior: claim.fieldOrBehavior,
+      value: claim.value,
+      verificationPolicyId: claim.verificationPolicyId,
+      createdAt: claim.createdAt,
+      updatedAt: claim.updatedAt,
+      currentIntegrityRef: claim.currentIntegrityRef,
+    })),
+    faultLines: report.faultLines.map((faultLine) => ({
+      id: faultLine.id,
+      claimId: faultLine.claimId,
+      type: faultLine.type,
+      severity: faultLine.severity,
+      message: faultLine.message,
+      policyId: faultLine.policyId,
+      createdAt: faultLine.createdAt,
+      evidenceIds: faultLine.evidenceIds,
+    })),
+    faultLinesByClaimId: Object.fromEntries(faultLinesByClaimId.entries()),
+  };
 }
 
 export function surfaceEvidence({ id, claimId, type, method, record, locator, summary, metadata = {} }) {
@@ -538,4 +725,19 @@ export function surfaceClaimId(runId, group, value) {
 
 export function surfaceSafeId(value) {
   return String(value).replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'unknown';
+}
+
+function readOpenProposalSummaries(rootDir) {
+  const dir = resolve(rootDir, '.veritas/proposals');
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((file) => file.endsWith('.proposal.json'))
+    .map((file) => {
+      try {
+        return JSON.parse(readFileSync(resolve(dir, file), 'utf8'));
+      } catch {
+        return null;
+      }
+    })
+    .filter((proposal) => proposal?.status === 'proposed');
 }

@@ -203,7 +203,7 @@ assert(
   'CLI reference must include the top-level help path.',
 );
 assert(
-  cliReference.includes('npx @kontourai/veritas report --help'),
+  cliReference.includes('npx @kontourai/veritas run --help'),
   'CLI reference must include subcommand help.',
 );
 assert(
@@ -211,12 +211,12 @@ assert(
   'CLI reference should use the scoped package invocation in public examples.',
 );
 assert(
-  cliReference.includes('veritas shadow run'),
-  'CLI reference must document shadow run.',
+  cliReference.includes('veritas run'),
+  'CLI reference must document run.',
 );
 assert(
-  cliReference.includes('veritas runtime status'),
-  'CLI reference must document runtime status.',
+  cliReference.includes('veritas integrations'),
+  'CLI reference must document integrations.',
 );
 assert(
   cliReference.includes('veritas eval marker'),

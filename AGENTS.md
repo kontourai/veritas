@@ -29,5 +29,5 @@ Before considering a framework change complete:
 
 <!-- veritas:governance-block:start -->
 This repo uses Veritas for AI governance. Read `.veritas/GOVERNANCE.md` before making changes.
-After changes, run `veritas shadow run` and address any FAIL lines before finishing.
+After changes, run `veritas run` and address any FAIL lines before finishing.
 <!-- veritas:governance-block:end -->

@@ -22,7 +22,7 @@ Agents can touch source, tests, schemas, docs, and governance in one pass. Verit
 
 **Reviewers scan the whole diff.**
 When AI changes dozens of files, a human reconstructs intent from a raw diff with no structured summary of what was proven or what passed.
-Veritas generates [agent-readable feedback](concepts.md#feedback) plus a bounded evidence artifact: what changed, what was affected, what proof ran, which policies held, and the `surface.input` Surface uses for trust reporting.
+Veritas generates [agent-readable feedback](concepts.md#feedback) plus a bounded evidence artifact: what changed, what was affected, what proof ran, which policies held, the `surface.input` projection, and the compact Surface-generated `surface.report`.
 
 **No way to know if guidance helped.**
 You can add context files and prompt instructions, but there is no feedback loop measuring whether they actually improved outcomes.
@@ -38,20 +38,38 @@ Veritas captures [local improvement records](concepts.md#improvement) — accept
 
 <div class="pillar">
 <h3>Rules <span class="pillar-term">Policy Pack</span></h3>
-<p class="pillar-what">Staged rules for required artifacts, content patterns, governance blocks, companion diffs, and strict surface ownership.</p>
-<p class="pillar-why">Agents get just-in-time guidance, and reviewers see which rules applied, passed, failed, or need ownership review.</p>
+<p class="pillar-what">Staged rules for required artifacts, content patterns, governance blocks, companion diffs, and strict surface ownership, with deny or lint enforcement.</p>
+<p class="pillar-why">Supported runtime hooks can block hard-invariant edits before they land, while reviewers still see which rules applied, passed, failed, or need ownership review.</p>
+</div>
+
+<div class="pillar">
+<h3>Human Gate <span class="pillar-term">Attestation</span></h3>
+<p class="pillar-what">Immutable human attestations bind the active adapter, policy pack, and team profile to reviewed content hashes.</p>
+<p class="pillar-why">Governance changes become tamper-evident, and shadow runs fail when Zone 1 policy changes have not been freshly attested.</p>
+</div>
+
+<div class="pillar">
+<h3>Runtime Adapters <span class="pillar-term">Integrations</span></h3>
+<p class="pillar-what">Codex and Claude Code get deep runtime hooks and transcript readers through one integration contract; Cursor and Copilot use generic stop-hook wiring today.</p>
+<p class="pillar-why">Eval drafts can derive time-to-green, rewrite, and override signals from supported transcripts without making every tool look the same.</p>
 </div>
 
 <div class="pillar">
 <h3>Evidence <span class="pillar-term">Artifacts</span></h3>
-<p class="pillar-what">A bounded JSON record of what changed, which repo surfaces were affected, what proof ran, which policies passed or failed, and the Surface TrustInput projection.</p>
-<p class="pillar-why">A reviewer inspects a focused summary, while Surface receives portable claims, evidence, policies, and events.</p>
+<p class="pillar-what">A bounded JSON record of what changed, which repo surfaces were affected, what proof ran, which policies passed or failed, and the Surface TrustInput and report summary.</p>
+<p class="pillar-why">A reviewer inspects a focused summary, while Surface derives portable status, freshness, and fault-line signals from claims, evidence, policies, and events.</p>
 </div>
 
 <div class="pillar">
 <h3>Feedback <span class="pillar-term">Live Evals</span></h3>
 <p class="pillar-what">Structured records of whether guidance actually helped: acceptance rate, time-to-green, override frequency, reviewer confidence.</p>
-<p class="pillar-why">You can tell whether the rules are useful, stale, or actively in the way — before the next sprint, not at the next retrospective.</p>
+<p class="pillar-why">You can tell whether the rules are useful, stale, or actively in the way, and turn recurring signals into human-reviewed proposals.</p>
+</div>
+
+<div class="pillar">
+<h3>Rule Evolution <span class="pillar-term">Proposals</span></h3>
+<p class="pillar-what">Eval history can propose policy relaxations, retirements, and missing surface nodes as `.veritas/proposals/*.proposal.json` artifacts.</p>
+<p class="pillar-why">Rules evolve from observed outcomes, but policy files only change after explicit human accept/reject review and attestation.</p>
 </div>
 
 </div>
@@ -93,10 +111,10 @@ Three commands cover the core workflow:
 npx veritas init
 
 # Emit an evidence artifact for the current working tree
-npx veritas report --working-tree
+npx veritas run --check shadow --working-tree
 
 # Run proof, emit lint-style feedback, and draft an eval record in one pass
-npx veritas shadow run --working-tree
+npx veritas run --working-tree
 ```
 
 `init` writes the starter files to `.veritas/` and injects the governance block into AI instruction files. `report` produces the evidence artifact your CI or PR workflow can post. `shadow run` adds proof execution, lint-style feedback, and eval drafting on top of that, with no enforcement until you are ready.

@@ -9,7 +9,7 @@ const GOVERNANCE_BLOCK_END = '<!-- veritas:governance-block:end -->';
 export function buildGovernanceBlock() {
   return `${GOVERNANCE_BLOCK_START}
 This repo uses Veritas for AI governance. Read \`.veritas/GOVERNANCE.md\` before making changes.
-After changes, run \`veritas shadow run\` and address any FAIL lines before finishing.
+After changes, run \`veritas run\` and address any FAIL lines before finishing.
 ${GOVERNANCE_BLOCK_END}`;
 }
 

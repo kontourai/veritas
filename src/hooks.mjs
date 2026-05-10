@@ -1,4 +1,5 @@
 import {
+  appendFileSync,
   chmodSync,
   existsSync,
   mkdirSync,
@@ -9,9 +10,12 @@ import {
 import { basename, dirname, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { loadJson } from './load.mjs';
+import { loadAdapterConfig, loadPolicyPack } from './load.mjs';
 import { assertWithinDir, relativeRepoPath } from './paths.mjs';
 import { buildSuggestedCiSnippet, buildSuggestedPackageScripts } from './bootstrap.mjs';
 import { shellQuote } from './shell.mjs';
+import { evaluateCrossSurfaceWriteRule, evaluatePolicyPack } from './rules/evaluate.mjs';
+import { readCurrentAttestation } from './attestations.mjs';
 
 export function buildSuggestedGitHook({ hook = 'post-commit' } = {}) {
   if (hook !== 'post-commit') {
@@ -26,10 +30,10 @@ if [ "\${VERITAS_HOOK_SKIP:-\${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
 fi
 
 if git rev-parse --verify --quiet HEAD~1 >/dev/null; then
-  npm exec -- veritas shadow run --changed-from HEAD~1 --changed-to HEAD
+  npm exec -- veritas run --changed-from HEAD~1 --changed-to HEAD
 else
   EMPTY_TREE="$(git hash-object -t tree /dev/null)"
-  npm exec -- veritas shadow run --changed-from "$EMPTY_TREE" --changed-to HEAD
+  npm exec -- veritas run --changed-from "$EMPTY_TREE" --changed-to HEAD
 fi
 `;
 }
@@ -43,10 +47,10 @@ if [ "\${VERITAS_HOOK_SKIP:-\${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
 fi
 
 if [ "$#" -eq 0 ]; then
-  exec npm exec -- veritas shadow run --format json --working-tree
+  exec npm exec -- veritas run --format json --working-tree
 fi
 
-exec npm exec -- veritas shadow run --format json "$@"
+exec npm exec -- veritas run --format json "$@"
 `;
 }
 
@@ -63,7 +67,7 @@ if [ "\${VERITAS_HOOK_SKIP:-\${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
   exit 0
 fi
 
-RESULT=$(npm exec -- veritas shadow run --format feedback --working-tree 2>&1)
+RESULT=$(npm exec -- veritas run --format feedback --working-tree 2>&1)
 EXIT=$?
 if [ "$EXIT" -ne 0 ]; then
   echo "$RESULT"
@@ -161,23 +165,13 @@ export function buildSuggestedCodexHookConfig() {
 
 export function buildSuggestedClaudeCodePreToolUseHook() {
   const hookBody = `#!/bin/sh
-# .veritas/hooks/pre-tool-use.sh -- Claude Code PreToolUse JIT Veritas context.
+# .veritas/hooks/pre-tool-use.sh -- Claude Code PreToolUse Veritas gate.
 
 if [ "\${VERITAS_HOOK_SKIP:-\${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
   exit 0
 fi
 
-PAYLOAD=$(cat)
-FILE=$(printf '%s' "$PAYLOAD" | sed -n 's/.*"file_path"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' | head -n 1)
-if [ -z "$FILE" ]; then
-  FILE=$(printf '%s' "$PAYLOAD" | sed -n 's/.*"path"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' | head -n 1)
-fi
-
-if [ -n "$FILE" ]; then
-  npm exec -- veritas explain --file "$FILE" 2>/dev/null || true
-fi
-
-exit 0
+exec npm exec -- veritas hooks claude-code pre-tool-use "$@"
 `;
 
   return {
@@ -201,6 +195,174 @@ exit 0
         ],
       },
     },
+  };
+}
+
+export function buildSuggestedClaudeCodePostSessionHook() {
+  return {
+    tool: 'claude-code',
+    toolConfigPath: '.claude/settings.json',
+    toolConfig: {
+      hooks: {
+        PostSession: [
+          {
+            matcher: '.*',
+            hooks: [
+              {
+                type: 'command',
+                command:
+                  'if [ -n "$CLAUDE_TRANSCRIPT_PATH" ]; then npm exec -- veritas eval observe --tool claude-code --transcript "$CLAUDE_TRANSCRIPT_PATH"; fi',
+                timeout: 60,
+              },
+            ],
+          },
+        ],
+      },
+    },
+  };
+}
+
+function normalizeHookFilePath(rootDir, filePath) {
+  if (!filePath) return null;
+  const resolvedPath = resolve(rootDir, filePath);
+  return relativeRepoPath(rootDir, resolvedPath);
+}
+
+function findFilePathInHookPayload(payload) {
+  const candidates = [
+    payload?.tool_input?.file_path,
+    payload?.tool_input?.path,
+    payload?.file_path,
+    payload?.path,
+  ];
+  return candidates.find((candidate) => typeof candidate === 'string' && candidate.length > 0) ?? null;
+}
+
+function readHookPayload(stdinText) {
+  if (!stdinText.trim()) return {};
+  try {
+    return JSON.parse(stdinText);
+  } catch {
+    return {};
+  }
+}
+
+function resolveHookActor(rootDir, explicitActor) {
+  if (explicitActor) return explicitActor;
+  if (process.env.VERITAS_ACTOR) return process.env.VERITAS_ACTOR;
+  return readCurrentAttestation(rootDir)?.actor?.id ?? null;
+}
+
+function buildBuiltinCrossSurfaceRule() {
+  return {
+    id: 'cross-surface-write',
+    kind: 'cross-surface-write',
+    classification: 'hard-invariant',
+    stage: 'block',
+    enforcement: 'deny',
+    message: 'Strict repo surfaces cannot be edited by actors without ownership or explicit allowlist access.',
+    owner: 'repo-core',
+    rollback_switch: null,
+    match: {},
+  };
+}
+
+function deniedResults(results) {
+  return results.filter((result) => result.enforcement === 'deny' && result.passed === false);
+}
+
+function formatDenyReason(results) {
+  return results
+    .map((result) => {
+      const findings = (result.findings ?? [])
+        .map((finding) => finding.artifact ?? finding.path ?? finding.required ?? finding.kind)
+        .filter(Boolean)
+        .join(', ');
+      return findings ? `${result.rule_id}: ${result.summary} (${findings})` : `${result.rule_id}: ${result.summary}`;
+    })
+    .join('\n');
+}
+
+function writeOverrideRecord(rootDir, override) {
+  const overridesDir = resolve(rootDir, '.veritas/evals');
+  mkdirSync(overridesDir, { recursive: true });
+  const path = resolve(overridesDir, 'overrides.jsonl');
+  appendFileSync(path, `${JSON.stringify(override)}\n`, 'utf8');
+  return relativeRepoPath(rootDir, path);
+}
+
+export function evaluatePreToolUse({
+  rootDir,
+  filePath,
+  stdinText = '',
+  actor,
+} = {}) {
+  const payload = readHookPayload(stdinText);
+  const relativeFile = normalizeHookFilePath(rootDir, filePath ?? findFilePathInHookPayload(payload));
+  if (!relativeFile) {
+    return {
+      decision: 'approve',
+      reason: 'No file path found in PreToolUse payload.',
+      file: null,
+      actor: resolveHookActor(rootDir, actor),
+      results: [],
+    };
+  }
+  const config = loadAdapterConfig(resolve(rootDir, '.veritas/repo.adapter.json'));
+  const policyPack = loadPolicyPack(resolve(rootDir, '.veritas/policy-packs/default.policy-pack.json'));
+  const effectiveActor = resolveHookActor(rootDir, actor);
+  const policyResults = evaluatePolicyPack(policyPack, {
+    rootDir,
+    changedFiles: [relativeFile],
+    config,
+    actor: effectiveActor,
+  });
+  const crossSurfaceResult = evaluateCrossSurfaceWriteRule(buildBuiltinCrossSurfaceRule(), {
+    rootDir,
+    changedFiles: [relativeFile],
+    config,
+    actor: effectiveActor,
+  });
+  const results = [crossSurfaceResult, ...policyResults];
+  const blocked = deniedResults(results);
+  const overrideRule = process.env.VERITAS_OVERRIDE_RULE;
+  const overrideReason = process.env.VERITAS_OVERRIDE_REASON;
+  if (blocked.length > 0 && overrideRule && overrideReason) {
+    const matching = blocked.find((result) => result.rule_id === overrideRule);
+    if (matching) {
+      const override = {
+        ruleId: overrideRule,
+        reason: overrideReason,
+        actor: effectiveActor,
+        timestamp: new Date().toISOString(),
+        file: relativeFile,
+      };
+      return {
+        decision: 'approve',
+        reason: `Override accepted for ${overrideRule}: ${overrideReason}`,
+        file: relativeFile,
+        actor: effectiveActor,
+        results,
+        overrides: [override],
+        overridePath: writeOverrideRecord(rootDir, override),
+      };
+    }
+  }
+  if (blocked.length > 0) {
+    return {
+      decision: 'block',
+      reason: formatDenyReason(blocked),
+      file: relativeFile,
+      actor: effectiveActor,
+      results,
+    };
+  }
+  return {
+    decision: 'approve',
+    reason: `Veritas PreToolUse checks passed for ${relativeFile}.`,
+    file: relativeFile,
+    actor: effectiveActor,
+    results,
   };
 }
 
@@ -496,6 +658,26 @@ export function applyClaudeCodePreToolUseHook({
   };
 }
 
+export function applyClaudeCodePostSessionHook({ rootDir } = {}) {
+  const suggestion = buildSuggestedClaudeCodePostSessionHook();
+  const resolvedToolConfigPath = resolve(rootDir, suggestion.toolConfigPath);
+  assertWithinDir(
+    resolvedToolConfigPath,
+    rootDir,
+    'apply claude-code post-session hook config must stay inside the repository',
+  );
+  const existingConfig = existsSync(resolvedToolConfigPath)
+    ? loadJson(resolvedToolConfigPath, 'claude-code post-session hook config')
+    : {};
+  const mergedConfig = mergeStopHookConfig(existingConfig, suggestion.toolConfig);
+  mkdirSync(dirname(resolvedToolConfigPath), { recursive: true });
+  writeFileSync(resolvedToolConfigPath, `${JSON.stringify(mergedConfig, null, 2)}\n`, 'utf8');
+  return {
+    rootDir,
+    configuredToolConfigPath: relativeRepoPath(rootDir, resolvedToolConfigPath),
+  };
+}
+
 function mergeCodexHooksConfig(existingConfig, adapterConfig) {
   const merged = {
     ...existingConfig,
@@ -637,30 +819,30 @@ export function inspectRuntimeAdapterStatus(rootDir, options = {}) {
 
   if (!status.gitHook.exists || !status.gitHook.configured) {
     status.nextCommands.push(
-      `npm exec -- veritas apply git-hook --configure-git${status.gitHook.exists ? ' --force' : ''}`,
+      `npm exec -- veritas integrations codex install${status.gitHook.exists ? ' --force' : ''}`,
     );
   } else if (!status.gitHook.executable) {
-    status.nextCommands.push('npm exec -- veritas apply git-hook --configure-git --force');
+    status.nextCommands.push('npm exec -- veritas integrations codex install --force');
   }
   if (!status.runtimeHook.exists) {
-    status.nextCommands.push('npm exec -- veritas apply runtime-hook');
+    status.nextCommands.push('npm exec -- veritas integrations codex install');
   } else if (!status.runtimeHook.executable) {
-    status.nextCommands.push('npm exec -- veritas apply runtime-hook --force');
+    status.nextCommands.push('npm exec -- veritas integrations codex install --force');
   }
   if (!status.codexArtifact.exists) {
-    status.nextCommands.push('npm exec -- veritas print codex-hook');
+    status.nextCommands.push('npm exec -- veritas integrations codex install');
   }
   if (!codexTarget.checked) {
     status.nextCommands.push(
-      'npm exec -- veritas print codex-hook --codex-home /path/to/.codex',
+      'npm exec -- veritas integrations codex status --codex-home /path/to/.codex',
     );
   } else if (options.codexHome && !codexTarget.adapterInstalled) {
     status.nextCommands.push(
-      `npm exec -- veritas apply codex-hook --codex-home ${shellQuote(options.codexHome)}${status.codexArtifact.exists ? ' --force' : ''}`,
+      `npm exec -- veritas integrations codex install --codex-home ${shellQuote(options.codexHome)}${status.codexArtifact.exists ? ' --force' : ''}`,
     );
   } else if (options.targetHooksFile && !codexTarget.adapterInstalled) {
     status.nextCommands.push(
-      `npm exec -- veritas apply codex-hook --target-hooks-file ${shellQuote(options.targetHooksFile)}${status.codexArtifact.exists ? ' --force' : ''}`,
+      `npm exec -- veritas integrations codex install --target-hooks-file ${shellQuote(options.targetHooksFile)}${status.codexArtifact.exists ? ' --force' : ''}`,
     );
   }
 

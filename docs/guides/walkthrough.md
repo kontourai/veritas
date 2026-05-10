@@ -40,7 +40,7 @@ EOF
 Run Veritas:
 
 ```bash
-npx veritas shadow run --working-tree --skip-proof
+npx veritas run --working-tree --skip-proof
 ```
 
 The `nextjs-typescript` pack reports the missing companion test:
@@ -49,7 +49,7 @@ The `nextjs-typescript` pack reports the missing companion test:
 FAIL  api-routes-require-api-tests: Changed files matched app/api/** but no companion changes matched tests/api/**.
       -> app/api/projects/route.ts
 
-1 failure · 0 warnings · run `veritas report` for full evidence
+1 failure · 0 warnings · run `veritas run --check shadow` for full evidence
 ```
 
 ## 3. Add the companion test
@@ -69,7 +69,7 @@ EOF
 Rerun:
 
 ```bash
-npx veritas shadow run --working-tree --skip-proof
+npx veritas run --working-tree --skip-proof
 ```
 
 Now the companion rule passes:
@@ -77,7 +77,7 @@ Now the companion rule passes:
 ```text
 PASS  api-routes-require-api-tests: Changed files matched app/api/** and included required companion changes under tests/api/**.
 
-0 failures · 0 warnings · run `veritas report` for full evidence
+0 failures · 0 warnings · run `veritas run --check shadow` for full evidence
 ```
 
 In a real repo, remove `--skip-proof` and let the adapter proof lane run the project test or verify command.

@@ -96,6 +96,7 @@ export function parseInitArgs(argv) {
       '--proof-lane': { type: 'string', key: 'proofLane' },
       '--pack': { type: 'string', key: 'pack' },
       '--force': { type: 'flag', key: 'force' },
+      '--non-interactive': { type: 'flag', key: 'nonInteractive' },
       '--explore': { type: 'flag', key: 'explore' },
       '--guided': { type: 'flag', key: 'guided' },
       '--apply': { type: 'flag', key: 'apply' },
@@ -108,6 +109,20 @@ export function parseInitArgs(argv) {
     throw new Error(`Unknown init argument(s): ${rest.join(', ')}`);
   }
   return options;
+}
+
+export function parseAttestArgs(argv) {
+  return parseTokens(
+    argv,
+    {
+      '--root': { type: 'string', key: 'rootDir' },
+      '--actor': { type: 'string', key: 'actor' },
+      '--display-name': { type: 'string', key: 'displayName' },
+      '--message': { type: 'string', key: 'message' },
+      '--valid-until-days': { type: 'number', key: 'validUntilDays' },
+      '--non-interactive': { type: 'flag', key: 'nonInteractive' },
+    },
+  ).options;
 }
 
 export function parsePrintArgs(argv) {
@@ -141,6 +156,17 @@ export function parseApplyArgs(argv) {
   ).options;
 }
 
+export function parsePreToolUseArgs(argv) {
+  return parseTokens(
+    argv,
+    {
+      '--root': { type: 'string', key: 'rootDir' },
+      '--file': { type: 'string', key: 'filePath' },
+      '--actor': { type: 'string', key: 'actor' },
+    },
+  ).options;
+}
+
 export function parseEvalArgs(argv) {
   return parseTokens(
     argv,
@@ -148,6 +174,7 @@ export function parseEvalArgs(argv) {
       '--root': { type: 'string', key: 'rootDir' },
       '--evidence': { type: 'string', key: 'evidencePath' },
       '--transcript': { type: 'string', key: 'transcriptPath' },
+      '--tool': { type: 'string', key: 'tool' },
       '--team-profile': { type: 'string', key: 'teamProfilePath' },
       '--draft': { type: 'string', key: 'draftPath' },
       '--output': { type: 'string', key: 'outputPath' },

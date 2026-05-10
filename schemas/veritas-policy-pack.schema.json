@@ -42,6 +42,10 @@
             "type": "string",
             "enum": ["recommend", "warn", "block"]
           },
+          "enforcement": {
+            "type": "string",
+            "enum": ["deny", "lint"]
+          },
           "message": { "type": "string" },
           "owner": { "type": ["string", "null"] },
           "rollback_switch": { "type": ["string", "null"] },

@@ -64,7 +64,7 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
   const proofCommands = proofPlan.proofCommands;
   if (!options.skipProof && proofCommands.length === 0) {
     throw new Error(
-      'veritas shadow run requires a proof command or an adapter required proof lane',
+      'veritas run requires a proof command or an adapter required proof lane',
     );
   }
 
@@ -98,6 +98,7 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
           options.baselineCiFastStatus ??
           (options.skipProof ? undefined : proofFailure ? 'failed' : 'success'),
         explicitProofCommand: options.proofCommand,
+        includeAttestationGate: true,
       },
       { ...defaults, rootDir },
     );
@@ -107,7 +108,7 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
   if (!reportResult) return;
   if (reportResult.record.uncovered_path_result === 'fail') {
     throw new Error(
-      'veritas shadow run encountered changed files outside configured surfaces and the uncovered-path policy is fail',
+      'veritas run encountered changed files outside configured surfaces and the uncovered-path policy is fail',
     );
   }
   const currentStatus = feedbackHasFailures(reportResult.record, proofFailure) ? 'fail' : 'pass';

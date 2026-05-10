@@ -56,6 +56,10 @@
         "affected_lanes": {
           "type": "array",
           "items": { "type": "string" }
+        },
+        "unresolved_files": {
+          "type": "array",
+          "items": { "type": "string" }
         }
       }
     },
@@ -115,6 +119,21 @@
         "missed_issues": {
           "type": "array",
           "items": { "type": "string" }
+        }
+      }
+    },
+    "overrides": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ruleId", "reason", "actor", "timestamp"],
+        "properties": {
+          "ruleId": { "type": "string" },
+          "reason": { "type": "string" },
+          "actor": { "type": ["string", "null"] },
+          "timestamp": { "type": "string" },
+          "file": { "type": "string" }
         }
       }
     },

@@ -215,11 +215,15 @@ export function generateEvalSummary(options = {}, defaults = {}) {
   const requiredRewrite = lastRecords.length - accepted;
   const confidenceCounts = new Map();
   const flaggedRuleCounts = new Map();
+  const overrideRuleCounts = new Map();
 
   for (const record of lastRecords) {
     incrementCount(confidenceCounts, record.confidence ?? 'unknown');
     for (const ruleId of record.false_positive_rules ?? []) {
       incrementCount(flaggedRuleCounts, ruleId);
+    }
+    for (const override of record.overrides ?? []) {
+      incrementCount(overrideRuleCounts, override.ruleId);
     }
   }
 
@@ -243,10 +247,14 @@ export function generateEvalSummary(options = {}, defaults = {}) {
   const mostFlaggedRule = sortedRules.length > 0
     ? { rule_id: sortedRules[0][0], count: sortedRules[0][1] }
     : null;
+  const overrideFrequency = [...overrideRuleCounts.entries()]
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .map(([rule_id, count]) => ({ rule_id, count }));
   const lines = [
     `Last ${lastRecords.length} evals: ${accepted} accepted, ${requiredRewrite} required rewrite`,
     `Avg time to green: ${formatAverage(averageTimeToGreenMinutes, ' min')} | Avg overrides: ${formatAverage(averageOverrideCount)} | Confidence: ${confidenceSummary || 'n/a'}`,
     `Most flagged rule: ${mostFlaggedRule ? `${mostFlaggedRule.rule_id} (${mostFlaggedRule.count})` : 'n/a'}`,
+    `Override frequency: ${overrideFrequency.length > 0 ? overrideFrequency.map((entry) => `${entry.rule_id} (${entry.count})`).join(', ') : 'n/a'}`,
   ];
   const ruleTrend = buildRuleTrend(records);
   if (ruleTrend.length > 0) {
@@ -268,6 +276,7 @@ export function generateEvalSummary(options = {}, defaults = {}) {
     averageOverrideCount,
     confidenceCounts: Object.fromEntries(confidenceCounts),
     mostFlaggedRule,
+    overrideFrequency,
     ruleTrend,
     markdownSummary: `${lines.join('\n')}\n`,
   };

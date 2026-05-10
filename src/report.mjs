@@ -17,8 +17,13 @@ import { uniqueStrings } from './util/strings.mjs';
 import { evaluatePolicyPack } from './rules/evaluate.mjs';
 import {
   buildSurfaceTrustInput,
+  buildSurfaceTrustReportSummary,
   validateSurfaceTrustInputAtBoundary,
 } from './surface/projection.mjs';
+import {
+  buildAttestationPolicyResult,
+  inspectAttestationStatus,
+} from './attestations.mjs';
 import {
   readSurfaceProofRoutes,
   readProofLanes,
@@ -307,11 +312,13 @@ export function buildEvidenceRecord({
     },
     policy_results: policyResults,
   };
-  const surfaceInput = buildSurfaceTrustInput(record);
+  const surfaceInput = buildSurfaceTrustInput(record, { rootDir });
+  const validatedSurfaceInput = validateSurfaceTrustInputAtBoundary({ input: surfaceInput, record, rootDir });
   return {
     ...record,
     surface: {
-      input: validateSurfaceTrustInputAtBoundary({ input: surfaceInput, record, rootDir }),
+      input: validatedSurfaceInput,
+      report: buildSurfaceTrustReportSummary({ input: validatedSurfaceInput, record }),
     },
   };
 }
@@ -550,7 +557,7 @@ export function resolveVeritasPaths(options, defaults = {}) {
 }
 
 export function generateVeritasReport(options = {}, defaults = {}, explicitFiles = []) {
-  const { rootDir, adapterPath, policyPackPath } = resolveVeritasPaths(options, defaults);
+  const { rootDir, adapterPath, policyPackPath, teamProfilePath } = resolveVeritasPaths(options, defaults);
 
   if (!rootDir || !adapterPath || !policyPackPath) {
     throw new Error(
@@ -586,6 +593,18 @@ export function generateVeritasReport(options = {}, defaults = {}, explicitFiles
     policyPack,
     rootDir,
   });
+  if (options.includeAttestationGate) {
+    const attestationStatus = inspectAttestationStatus(rootDir, {
+      policyPackPath,
+      adapterPath,
+      teamProfilePath,
+    });
+    record.attestation = attestationStatus;
+    record.policy_results = [
+      buildAttestationPolicyResult(attestationStatus),
+      ...record.policy_results,
+    ];
+  }
   const artifactPath = writeEvidenceArtifact(record, config, rootDir);
   const claimInputPaths = writeSurfaceClaimInputs(record, rootDir);
   const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');

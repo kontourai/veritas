@@ -19,14 +19,14 @@ test('Codex eval capture derives time to green and accepted result', () => {
     events: [
       {
         timestamp: '2026-05-09T10:00:00.000Z',
-        command: 'npm exec -- veritas shadow run',
+        command: 'npm exec -- veritas run',
         exit_code: 1,
         files: ['src/index.mjs'],
         reported_lines: 100,
       },
       {
         timestamp: '2026-05-09T10:06:00.000Z',
-        command: 'npm exec -- veritas shadow run',
+        command: 'npm exec -- veritas run',
         exit_code: 0,
         files: ['src/index.mjs'],
         reported_lines: 100,
@@ -61,14 +61,14 @@ test('Codex eval capture marks major rewrites and CLI writes a draft', () => {
     events: [
       {
         timestamp: '2026-05-09T10:00:00.000Z',
-        command: 'veritas shadow run',
+        command: 'veritas run',
         exit_code: 1,
         files: ['src/index.mjs'],
         reported_lines: 100,
       },
       {
         timestamp: '2026-05-09T10:03:00.000Z',
-        command: 'VERITAS_SKIP_SURFACE_VALIDATION=1 veritas shadow run --skip-proof',
+        command: 'VERITAS_SKIP_SURFACE_VALIDATION=1 veritas run --skip-proof',
         exit_code: 0,
         files: ['src/index.mjs'],
         reported_lines: 100,
@@ -134,7 +134,7 @@ test('Codex eval capture records reason when no failing run is observed', () => 
     events: [
       {
         timestamp: '2026-05-09T10:00:00.000Z',
-        command: 'veritas shadow run',
+        command: 'veritas run',
         exit_code: 0,
         files: ['src/index.mjs'],
       },
@@ -157,7 +157,7 @@ test('Codex eval capture records reason when no passing run is observed', () => 
     events: [
       {
         timestamp: '2026-05-09T10:00:00.000Z',
-        command: 'veritas shadow run',
+        command: 'veritas run',
         exit_code: 1,
         files: ['src/index.mjs'],
       },
@@ -180,12 +180,12 @@ test('Codex eval capture records reason when churn threshold cannot apply', () =
     events: [
       {
         timestamp: '2026-05-09T10:00:00.000Z',
-        command: 'veritas shadow run',
+        command: 'veritas run',
         exit_code: 1,
       },
       {
         timestamp: '2026-05-09T10:01:00.000Z',
-        command: 'veritas shadow run',
+        command: 'veritas run',
         exit_code: 0,
       },
     ],

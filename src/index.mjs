@@ -24,8 +24,10 @@ import {
   parseArgs,
   parseBudgetArgs,
   parseInitArgs,
+  parseAttestArgs,
   parsePrintArgs,
   parseApplyArgs,
+  parsePreToolUseArgs,
   parseEvalArgs,
   parseMarkerEvalArgs,
   parseMarkerSuiteEvalArgs,
@@ -54,6 +56,7 @@ import {
   buildSuggestedStopHook,
   buildSuggestedCodexHookConfig,
   buildSuggestedClaudeCodePreToolUseHook,
+  buildSuggestedClaudeCodePostSessionHook,
   inspectCodexHookTarget,
   applyPackageScripts,
   applyCiSnippet,
@@ -63,6 +66,8 @@ import {
   inspectRuntimeAdapterStatus,
   applyCodexHook,
   applyClaudeCodePreToolUseHook,
+  applyClaudeCodePostSessionHook,
+  evaluatePreToolUse,
 } from './hooks.mjs';
 import {
   applyGovernanceBlocks,
@@ -155,6 +160,13 @@ import {
   generateEvalSummary,
 } from './eval/records.mjs';
 import {
+  generateRuleProposals,
+  generateAndWriteProposals,
+  listProposals,
+  loadProposal,
+  applyProposal,
+} from './proposals.mjs';
+import {
   runVeritasReportCli,
   runVerificationBudgetCli,
   runInitCli,
@@ -179,8 +191,13 @@ import {
   runEvalSummaryCli,
   runEvalMarkerCli,
   runEvalMarkerSuiteCli,
+  runEvalProposeCli,
   runEvalDraftCli,
   runEvalObserveCli,
+  runProposalCli,
+  runAttestCli,
+  runClaudeCodePreToolUseCli,
+  runIntegrationsCli,
   runShadowRunCli,
 } from './cli/index.mjs';
 export * from './surface/projection.mjs';
@@ -199,8 +216,10 @@ export {
   parseArgs,
   parseBudgetArgs,
   parseInitArgs,
+  parseAttestArgs,
   parsePrintArgs,
   parseApplyArgs,
+  parsePreToolUseArgs,
   parseEvalArgs,
   parseMarkerEvalArgs,
   parseMarkerSuiteEvalArgs,
@@ -222,6 +241,8 @@ export {
   buildSuggestedStopHook,
   buildSuggestedCodexHookConfig,
   buildSuggestedClaudeCodePreToolUseHook,
+  buildSuggestedClaudeCodePostSessionHook,
+  inspectCodexHookTarget,
   buildGovernanceBlock,
   applyGovernanceBlocks,
   applyPackageScripts,
@@ -232,6 +253,8 @@ export {
   inspectRuntimeAdapterStatus,
   applyCodexHook,
   applyClaudeCodePreToolUseHook,
+  applyClaudeCodePostSessionHook,
+  evaluatePreToolUse,
   classifyNodes,
   matchesPatterns,
   matchesPatternsForAnyFile,
@@ -299,6 +322,11 @@ export {
   generateEvalDraft,
   generateEvalRecord,
   generateEvalSummary,
+  generateRuleProposals,
+  generateAndWriteProposals,
+  listProposals,
+  loadProposal,
+  applyProposal,
   runVeritasReportCli,
   runVerificationBudgetCli,
   runInitCli,
@@ -323,7 +351,19 @@ export {
   runEvalSummaryCli,
   runEvalMarkerCli,
   runEvalMarkerSuiteCli,
+  runEvalProposeCli,
   runEvalDraftCli,
   runEvalObserveCli,
+  runProposalCli,
+  runAttestCli,
+  runClaudeCodePreToolUseCli,
+  runIntegrationsCli,
   runShadowRunCli,
 };
+export * from './attestations.mjs';
+export * from './integrations/contract.mjs';
+export * from './integrations/transcripts.mjs';
+export * from './integrations/runtime-adapters.mjs';
+export * from './eval/filesystem-observer.mjs';
+export * from './eval/run-history.mjs';
+export * from './proposals.mjs';

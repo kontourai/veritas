@@ -1,16 +1,19 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, dirname, relative, resolve } from 'node:path';
 import { loadJson } from '../load.mjs';
 import {
   parseArgs,
   parseBudgetArgs,
   parseInitArgs,
+  parseAttestArgs,
   parsePrintArgs,
   parseApplyArgs,
+  parsePreToolUseArgs,
   parseEvalArgs,
   parseMarkerEvalArgs,
   parseMarkerSuiteEvalArgs,
   parseShadowArgs,
+  parseTokens,
 } from '../args.mjs';
 import { assertWithinDir } from '../paths.mjs';
 import {
@@ -39,6 +42,7 @@ import {
   inspectRuntimeAdapterStatus,
   applyCodexHook,
   applyClaudeCodePreToolUseHook,
+  evaluatePreToolUse,
 } from '../hooks.mjs';
 import { applyGovernanceBlocks, buildGovernanceBlock } from '../governance.mjs';
 import { buildVerificationBudget } from '../proof/index.mjs';
@@ -59,8 +63,21 @@ import {
   generateMarkerBenchmarkComparison,
   generateMarkerBenchmarkSuiteReport,
 } from '../eval/marker-benchmark.mjs';
-import { observeCodexEval } from '../integrations/codex/eval-capture.mjs';
+import { observeTranscriptEval } from '../integrations/transcripts.mjs';
+import { runtimeAdapterFor } from '../integrations/runtime-adapters.mjs';
+import { observeFilesystemEval } from '../eval/filesystem-observer.mjs';
 import { runShadowRunCli } from './shadow-run.mjs';
+import {
+  createAttestation,
+  inspectAttestationStatus,
+  writePendingAttestationMarker,
+} from '../attestations.mjs';
+import {
+  applyProposal,
+  generateAndWriteProposals,
+  listProposals,
+  loadProposal,
+} from '../proposals.mjs';
 
 function hasShadowOutcomeInputs(options) {
   return (
@@ -272,10 +289,41 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
     pack: options.pack,
     force: options.force ?? false,
   });
+  if (options.nonInteractive) {
+    result.attestation = writePendingAttestationMarker(rootDir, {
+      reason: 'veritas init ran in non-interactive mode.',
+    });
+  } else {
+    result.attestation = {
+      status: 'not-recorded',
+      suggestedCommand: `veritas attest bootstrap --actor <human-id> --non-interactive --root ${rootDir}`,
+    };
+  }
 
   process.stderr.write(
     `Next Steps\n\nSuggested CODEOWNERS block (not written automatically):\n\n${result.codeownersBlock}\n\n`,
   );
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+}
+
+export function runAttestCli(kind, argv = process.argv.slice(2), defaults = {}) {
+  const options = parseAttestArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  if (kind === 'status') {
+    process.stdout.write(`${JSON.stringify(inspectAttestationStatus(rootDir), null, 2)}\n`);
+    return;
+  }
+  if (!['bootstrap', 'policy-change'].includes(kind)) {
+    throw new Error(`Unsupported attest command: ${kind}`);
+  }
+  const result = createAttestation({
+    rootDir,
+    kind,
+    actor: options.actor,
+    displayName: options.displayName,
+    notes: options.message ?? '',
+    validUntilDays: options.validUntilDays,
+  });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
@@ -550,6 +598,22 @@ export function runApplyClaudeCodePreToolUseHookCli(argv = process.argv.slice(2)
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
+export function runClaudeCodePreToolUseCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parsePreToolUseArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const stdinText = readFileSync(0, 'utf8');
+  const result = evaluatePreToolUse({
+    rootDir,
+    filePath: options.filePath,
+    actor: options.actor,
+    stdinText,
+  });
+  process.stdout.write(`${JSON.stringify({ decision: result.decision, reason: result.reason }, null, 2)}\n`);
+  if (result.decision === 'block') {
+    process.exitCode = 2;
+  }
+}
+
 export function runApplyGovernanceBlocksCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseApplyArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
@@ -606,6 +670,62 @@ export function runEvalSummaryCli(argv = process.argv.slice(2), defaults = {}) {
   process.stdout.write(result.markdownSummary);
 }
 
+export function runEvalProposeCli(argv = process.argv.slice(2), defaults = {}) {
+  const { options } = parseTokens(argv, {
+    '--root': { type: 'string', key: 'rootDir' },
+    '--policy-pack': { type: 'string', key: 'policyPackPath' },
+    '--adapter': { type: 'string', key: 'adapterPath' },
+    '--force': { type: 'flag', key: 'force' },
+    '--dry-run': { type: 'flag', key: 'dryRun' },
+  });
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const result = generateAndWriteProposals({
+    ...options,
+    rootDir,
+    write: !options.dryRun,
+  });
+  process.stdout.write(`${JSON.stringify({
+    proposals: result.proposals,
+    written: result.written,
+  }, null, 2)}\n`);
+}
+
+export function runProposalCli(kind, argv = process.argv.slice(2), defaults = {}) {
+  const { options, rest } = parseTokens(argv, {
+    '--root': { type: 'string', key: 'rootDir' },
+    '--status': { type: 'string', key: 'status' },
+    '--actor': { type: 'string', key: 'actor' },
+    '--accept': { type: 'flag', key: 'accept' },
+    '--reject': { type: 'flag', key: 'reject' },
+    '--message': { type: 'string', key: 'message' },
+  });
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  if (kind === 'list') {
+    process.stdout.write(`${JSON.stringify({
+      proposals: listProposals({ rootDir, status: options.status ?? 'proposed' }),
+    }, null, 2)}\n`);
+    return;
+  }
+  const id = rest[0];
+  if (!id) throw new Error(`veritas proposal ${kind} requires <id>`);
+  if (kind === 'show') {
+    process.stdout.write(`${JSON.stringify(loadProposal(rootDir, id), null, 2)}\n`);
+    return;
+  }
+  if (kind === 'decide') {
+    process.stdout.write(`${JSON.stringify(applyProposal({
+      rootDir,
+      id,
+      actor: options.actor,
+      accept: options.accept ?? false,
+      reject: options.reject ?? false,
+      message: options.message ?? '',
+    }), null, 2)}\n`);
+    return;
+  }
+  throw new Error(`Unsupported proposal command: ${kind}`);
+}
+
 export function runEvalMarkerCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseMarkerEvalArgs(argv);
   const result = generateMarkerBenchmarkComparison(options, {
@@ -650,22 +770,29 @@ export function runEvalDraftCli(argv = process.argv.slice(2), defaults = {}) {
 export function runEvalObserveCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseEvalArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  if (!options.transcriptPath) {
-    throw new Error('veritas eval observe requires --transcript <path>');
-  }
-  const result = observeCodexEval({
-    transcriptPath: options.transcriptPath,
-    evidencePath: options.evidencePath,
-    rootDir,
-    outputPath: options.outputPath,
-    churnThreshold: options.rewriteThreshold ?? 0.3,
-    verbose: options.verbose ?? false,
-  });
+  const result =
+    options.tool === 'none' || !options.transcriptPath
+      ? observeFilesystemEval({
+          evidencePath: options.evidencePath,
+          rootDir,
+          outputPath: options.outputPath,
+          churnThreshold: options.rewriteThreshold ?? 0.3,
+        })
+      : observeTranscriptEval({
+          transcriptPath: options.transcriptPath,
+          evidencePath: options.evidencePath,
+          rootDir,
+          outputPath: options.outputPath,
+          tool: options.tool ?? 'auto',
+          churnThreshold: options.rewriteThreshold ?? 0.3,
+          verbose: options.verbose ?? false,
+        });
 
   process.stdout.write(
     `${JSON.stringify(
       {
         artifactPath: result.artifactPath,
+        ...(result.reader ? { reader: result.reader } : {}),
         ...(result.heuristics ? { heuristics: result.heuristics } : {}),
         ...result.draft,
       },
@@ -673,6 +800,27 @@ export function runEvalObserveCli(argv = process.argv.slice(2), defaults = {}) {
       2,
     )}\n`,
   );
+}
+
+export function runIntegrationsCli(tool, action, argv = process.argv.slice(2), defaults = {}) {
+  const options = parseApplyArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const adapter = runtimeAdapterFor(tool, rootDir, options);
+  let result;
+  if (action === 'status') {
+    result = adapter.status();
+  } else if (action === 'install') {
+    result = {
+      preToolUse: adapter.installPreToolUseHook(options),
+      stop: adapter.installStopHook(options),
+      postSession: adapter.installPostSessionHook(options),
+    };
+  } else if (action === 'uninstall') {
+    result = adapter.uninstall(options);
+  } else {
+    throw new Error(`Unsupported integrations action: ${action}`);
+  }
+  process.stdout.write(`${JSON.stringify({ tool, action, rootDir, ...result }, null, 2)}\n`);
 }
 
 

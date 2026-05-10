@@ -12,6 +12,8 @@ Find what you need by what you're trying to do.
 ### Set up Veritas in a new repo
 
 - [Getting Started](guides/getting-started.md) for installation and first run
+- [Human Attestation](guides/attestation.md) for the Zone 1 human-review gate
+- [Proposal Flow](guides/proposal-flow.md) for eval-driven policy changes
 - [Start Your Next Project](guides/start-your-next-project.md) for greenfield repos
 - [Brownfield Adoption](guides/brownfield-adoption.md) for existing repos with custom guidance or verification
 - [Fallow Integration](guides/fallow-integration.md) for optional JS/TS codebase-intelligence proof lanes
@@ -59,6 +61,8 @@ Find what you need by what you're trying to do.
 
 - [Getting Started](guides/getting-started.md) — install the framework and run your first evidence report
 - [Walkthrough](guides/walkthrough.md) — initialize a Next.js-style repo and see a fail/pass feedback loop
+- [Human Attestation](guides/attestation.md) — record and renew the Zone 1 human-review gate
+- [Proposal Flow](guides/proposal-flow.md) — turn eval signal into accepted or rejected policy changes
 - [Agent Runtime Integrations](guides/agent-runtime-integrations.md) — connect Veritas to Claude Code, Cursor, and Codex
 - [Start Your Next Project](guides/start-your-next-project.md) — bootstrap a greenfield repo with Veritas from day one
 - [Tune For Your Team](guides/tune-for-your-team.md) — adapt policy and rollout without forking the framework

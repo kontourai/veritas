@@ -12,8 +12,16 @@ Veritas adds repo-workflow vocabulary on top of Surface's trust vocabulary. They
 | **surface** | A named region of the repo (e.g. `product.code`, `tests`, `governance.guidance`). Has owners and a `strict` or `advisory` boundary. |
 | **proof lane** | The shell command Veritas runs to gather proof (e.g. `npm run verify`). Configured per repo. |
 | **proof family** | A grouping of proof lanes by lifecycle status (`required`, `candidate`, `advisory`, `move-to-test`, `retiring`, `stale`, `triggerless`). |
-| **verification budget** | The classification of proof families relative to current repo state. Output of `veritas budget`. |
-| **shadow run** | An evaluation pass that doesn't block. Output of `veritas shadow run`. The agent-facing path. |
+| **verification budget** | The classification of proof families relative to current repo state. Output of `veritas run --check budget`. |
+| **shadow run** | An evaluation pass that doesn't block. Output of `veritas run`. The agent-facing path. |
+| **attestation** | A human approval record for the current Zone 1 governance hashes. Bootstrap attestations start the chain; policy-change and proposal-acceptance attestations renew it. |
+| **proposal** | A reviewable governance change drafted from eval history, such as relaxing, retiring, or adding policy/surface coverage. |
+| **enforcement** | The runtime behavior for a rule. `deny` can block supported PreToolUse edits; `lint` reports through feedback without blocking the edit boundary. |
+| **override** | A human-recorded exception for a deny rule, including actor, reason, and timestamp. Overrides are evidence, not permanent policy changes. |
+| **priorAttestationId** | The attestation-chain pointer from a newer attestation to the human approval it supersedes. |
+| **Zone 1** | Human-owned governance: adapter, policy packs, and team profile. Drift requires attestation. |
+| **Zone 2** | Additive governance growth that agents may propose, such as new surface nodes or advisory rules. |
+| **Zone 3** | Generated Veritas output such as evidence, eval drafts, check-ins, and reports. |
 | **evidence artifact** | The JSON record at `.veritas/evidence/<run-id>.json` capturing what was checked, what passed, what failed, and the embedded `surface.input`. |
 | **eval draft** | Per-run observation about acceptance, time-to-green, overrides — under `.veritas/eval-drafts/<run-id>.json`. |
 | **governance block** | The marker-bounded paragraph Veritas injects into AI instruction files (`AGENTS.md`, `CLAUDE.md`, etc.). |

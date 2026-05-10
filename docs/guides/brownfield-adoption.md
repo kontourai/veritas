@@ -84,9 +84,9 @@ Before considering a brownfield migration complete:
 ```bash
 npm run verify
 npm test
-npm exec -- veritas report --working-tree
-npm exec -- veritas budget --working-tree
-npm exec -- veritas shadow run --working-tree --format feedback
+npm exec -- veritas run --check shadow --working-tree
+npm exec -- veritas run --check budget --working-tree
+npm exec -- veritas run --working-tree --format feedback
 ```
 
 Repo-specific proof lanes may add stricter commands, but the migration should stay clear about which checks are required, candidate, advisory, or retiring.
@@ -103,4 +103,4 @@ When using proof families, add the manifest to the adapter:
 }
 ```
 
-Then confirm the report includes `proof_family_results` and `verification_budget`. The budget should be reviewed before promoting more checks to required; `veritas budget` gives the same promotion/retirement signal without requiring the full report.
+Then confirm the report includes `proof_family_results` and `verification_budget`. The budget should be reviewed before promoting more checks to required; `veritas run --check budget` gives the same promotion/retirement signal without requiring the full report.

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kontour.ai/schemas/veritas-attestation.schema.json",
+  "title": "Veritas Attestation",
+  "type": "object",
+  "required": [
+    "id",
+    "kind",
+    "actor",
+    "attestedAt",
+    "policyPackHash",
+    "adapterHash",
+    "teamProfileHash",
+    "priorAttestationId",
+    "validUntilDays",
+    "notes"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "id": { "type": "string" },
+    "kind": { "enum": ["bootstrap", "policy-change", "proposal-acceptance"] },
+    "actor": {
+      "type": "object",
+      "required": ["id", "displayName", "identityProof"],
+      "properties": {
+        "id": { "type": "string" },
+        "displayName": { "type": "string" },
+        "identityProof": {
+          "type": "object",
+          "required": ["gitEmail", "signingKeyFingerprint"],
+          "properties": {
+            "gitEmail": { "type": ["string", "null"] },
+            "signingKeyFingerprint": { "type": ["string", "null"] }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "attestedAt": { "type": "string", "format": "date-time" },
+    "policyPackHash": { "type": "string" },
+    "adapterHash": { "type": "string" },
+    "teamProfileHash": { "type": "string" },
+    "priorAttestationId": { "type": ["string", "null"] },
+    "validUntilDays": { "type": "integer", "minimum": 1 },
+    "notes": { "type": "string" },
+    "metadata": { "type": "object" }
+  },
+  "additionalProperties": false
+}

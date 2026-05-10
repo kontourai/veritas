@@ -109,4 +109,4 @@ Reports also include `verification_budget`, a generated summary of:
 
 This keeps the default question concrete: "what are we checking, why, what can block, and what should be deleted?"
 
-Use `veritas budget --working-tree` for the short operator view, or `veritas budget --format json --working-tree` for CI or UI consumption.
+Use `veritas run --check budget --working-tree` for the short operator view, or `veritas run --check budget --format json --working-tree` for CI or UI consumption.

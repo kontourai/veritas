@@ -2,14 +2,14 @@
 
 This page documents the CLI surface that currently ships in this repo.
 
-All examples here match the command shapes exercised in [tests/framework.test.mjs](../../tests/framework.test.mjs). Most commands print JSON to stdout. The agent-facing exception is `veritas shadow run`, which defaults to lint-style feedback; use `--format json` when you need the previous machine-readable orchestration object.
+The primary CLI surface is seven verbs: `init`, `run`, `explain`, `attest`, `proposal`, `eval`, and `integrations`. Most commands print JSON to stdout. The agent-facing `run` feedback path prints lint-style text by default; use `--format json` when you need machine-readable orchestration output.
 
 ## Entry Points
 
 - `npx @kontourai/veritas ...`
 - `npx @kontourai/veritas --help`
-- `npx @kontourai/veritas report --help`
-- `npx @kontourai/veritas budget --help`
+- `npx @kontourai/veritas run --help`
+- `npx @kontourai/veritas run --check shadow --help`
 - `npx @kontourai/veritas <subcommand> --help`
 - `node bin/veritas-report.mjs ...`
 
@@ -25,22 +25,34 @@ The shortest end-user path is:
 ```bash
 npm install -D @kontourai/veritas
 npx @kontourai/veritas init
-npx @kontourai/veritas budget --working-tree
-npx @kontourai/veritas shadow run --working-tree
+npx @kontourai/veritas attest bootstrap --actor <human-id> --non-interactive
+npx @kontourai/veritas run --check budget --working-tree
+npx @kontourai/veritas run --working-tree
 ```
 
-Use `budget` when you want the concise "what are we checking and what should be reviewed?" view. Use `shadow run` when you want proof, evidence, eval-draft orchestration, and agent-readable feedback in one command. Use `report` when you want evidence only. Treat `print` and `apply` as optional installer helpers, not the main product path.
+Use `run --check budget` when you want the concise "what are we checking and what should be reviewed?" view. Use `run` when you want proof, evidence, eval-draft orchestration, and agent-readable feedback in one command.
 
 Breaking proof-command migration notes live in [../MIGRATING.md](../MIGRATING.md).
 
 ## Commands
+
+### `run`
+
+Runs the requested check. Without `--check`, this is the shadow feedback path.
+
+```bash
+npx @kontourai/veritas run [--check shadow|boundaries|budget] [--root <path>] [--working-tree]
+npx @kontourai/veritas run --check boundaries --actor cli-team [--diff main]
+```
+
+`run --check shadow` is the new front door for the former `shadow run` command. `run --check boundaries` replaces `boundaries check`. `run --check budget` replaces the top-level `budget` command.
 
 ### `init`
 
 Bootstraps the starter kit for a target repo.
 
 ```bash
-npx @kontourai/veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--pack <name>] [--force]
+npx @kontourai/veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--pack <name>] [--force] [--non-interactive]
 npx @kontourai/veritas init --explore [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--output .veritas/init-plans/<name>.json]
 npx @kontourai/veritas init --guided --answers <answers.json> [--root <path>] [--project-name <name>] [--output .veritas/init-plans/<name>.json]
 npx @kontourai/veritas init --apply --plan <path> [--root <path>] [--force]
@@ -60,6 +72,8 @@ Writes:
 
 `init` keeps stdout machine-readable JSON and prints the suggested CODEOWNERS block to stderr as informational text.
 
+In `--non-interactive` mode, `init` writes `.veritas/attestations/PENDING` instead of recording a human attestation. Run `attest bootstrap` after a human reviews the generated Zone 1 files.
+
 The bootstrap logic infers:
 
 - repo kind: `application`, `workspace`, or `docs`
@@ -76,6 +90,45 @@ Guided initialization splits setup into a reviewed artifact flow:
 - `--apply --plan <path>` is the only guided write path. It validates the plan schema, target root, payload hashes, and overwrite rules before writing.
 - Brownfield repos with legacy guidance or convergence scripts also receive a `legacy_verification` inventory and `recommended_proof_family_inventory`. Unknown catch evidence stays candidate/advisory until a maintainer supplies owner and review evidence.
 - Unknown init flags fail before any files are written.
+
+### `attest`
+
+Records or inspects human attestations for Zone 1 governance files.
+
+```bash
+npx @kontourai/veritas attest bootstrap --actor <id> [--root <path>] [--non-interactive] [--valid-until-days <days>]
+npx @kontourai/veritas attest policy-change --actor <id> --message <text> [--root <path>] [--valid-until-days <days>]
+npx @kontourai/veritas attest status [--root <path>]
+```
+
+`bootstrap` records the first reviewed hashes for `.veritas/repo.adapter.json`, `.veritas/policy-packs/default.policy-pack.json`, and `.veritas/team/default.team-profile.json`. `policy-change` records a reviewed successor and requires an explanation in `--message`. `status` reports the current attestation, age, expiry, and hash drift.
+
+The shadow-run built-in rule `policy-changes-require-attestation` fails when the active attestation no longer matches those Zone 1 files.
+
+### `hooks claude-code`
+
+Prints, installs, or runs the Claude Code PreToolUse hook.
+
+```bash
+npx @kontourai/veritas hooks claude-code print [--root <path>]
+npx @kontourai/veritas hooks claude-code apply [--root <path>] [--force]
+npx @kontourai/veritas hooks claude-code pre-tool-use [--root <path>] [--file <path>] [--actor <id>]
+```
+
+`pre-tool-use` reads the Claude hook JSON payload from stdin, extracts `tool_input.file_path` or `tool_input.path`, resolves the actor from `--actor`, `VERITAS_ACTOR`, or the current attestation, and returns hook protocol JSON. Deny-enforced failures return `decision: "block"` and exit non-zero. Set `VERITAS_OVERRIDE_RULE` and `VERITAS_OVERRIDE_REASON` to allow a specific denied rule and append an override record.
+
+### `integrations`
+
+Installs or inspects runtime adapters through the tool-agnostic integration namespace.
+
+```bash
+npx @kontourai/veritas integrations codex status
+npx @kontourai/veritas integrations claude-code install [--root <path>] [--force]
+npx @kontourai/veritas integrations cursor install [--root <path>] [--force]
+npx @kontourai/veritas integrations copilot status [--root <path>]
+```
+
+Codex and Claude Code have transcript readers. Claude Code install wires PreToolUse, Stop, and PostSession hooks. Cursor and Copilot currently install generic stop-hook wiring and report `transcriptReader: null`.
 
 Answers are JSON and may include:
 
@@ -96,13 +149,13 @@ Answers are JSON and may include:
 Generates an evidence artifact for a set of files or a repo state slice.
 
 ```bash
-npx @kontourai/veritas report [--root <path>] [--adapter <path>] [--policy-pack <path>] [--run-id <id>] [file ...]
-npx @kontourai/veritas report --format feedback --working-tree
-npx @kontourai/veritas report --working-tree
-npx @kontourai/veritas report --staged
-npx @kontourai/veritas report --unstaged --untracked
-npx @kontourai/veritas report --changed-from <ref> --changed-to <ref>
-npx @kontourai/veritas report --trend
+npx @kontourai/veritas run --check shadow [--root <path>] [--adapter <path>] [--policy-pack <path>] [--run-id <id>] [file ...]
+npx @kontourai/veritas run --check shadow --format feedback --working-tree
+npx @kontourai/veritas run --check shadow --working-tree
+npx @kontourai/veritas run --check shadow --staged
+npx @kontourai/veritas run --check shadow --unstaged --untracked
+npx @kontourai/veritas run --check shadow --changed-from <ref> --changed-to <ref>
+npx @kontourai/veritas run --check shadow --trend
 ```
 
 Important behaviors:
@@ -145,22 +198,24 @@ Strict nodes fail when the actor is neither an owner nor listed in `crossSurface
 To turn a Veritas artifact into a Surface trust report:
 
 ```bash
-artifact_path="$(npx @kontourai/veritas report --working-tree --format json | node -e 'let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", () => { const parsed = JSON.parse(data); if (!parsed.artifactPath) throw new Error("missing artifactPath"); console.log(parsed.artifactPath); });')"
+artifact_path="$(npx @kontourai/veritas run --check shadow --working-tree --format json | node -e 'let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", () => { const parsed = JSON.parse(data); if (!parsed.artifactPath) throw new Error("missing artifactPath"); console.log(parsed.artifactPath); });')"
 node -e 'const fs = require("node:fs"); const artifact = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write(JSON.stringify(artifact.surface.input, null, 2));' "$artifact_path" > .veritas/external/surface-input.json
 surface report --adapter surface --input .veritas/external/surface-input.json --format summary
 ```
 
 Surface generates report-only fields such as `id`, `generatedAt`, `summary`, `faultLines`, and `proofRequirementsByClaimId`. Veritas owns repo-native collection and projection; Surface owns generic validation and report generation.
 
+Current evidence artifacts also include `surface.report`, a compact summary generated by Surface's `buildTrustReport`. `shadow run` emits WARN lines for Surface-derived stale or disputed claims, and `veritas explain <rule-id>` includes the latest Surface claim status and fault lines for the matching policy claim.
+
 ### `budget`
 
 Prints the verification budget without requiring operators to read the full report artifact.
 
 ```bash
-npx @kontourai/veritas budget [--root <path>] [--adapter <path>] [--policy-pack <path>] [--run-id <id>] [file ...]
-npx @kontourai/veritas budget --working-tree
-npx @kontourai/veritas budget --format feedback --working-tree
-npx @kontourai/veritas budget --format json --working-tree
+npx @kontourai/veritas run --check budget [--root <path>] [--adapter <path>] [--policy-pack <path>] [--run-id <id>] [file ...]
+npx @kontourai/veritas run --check budget --working-tree
+npx @kontourai/veritas run --check budget --format feedback --working-tree
+npx @kontourai/veritas run --check budget --format json --working-tree
 ```
 
 Important behaviors:
@@ -176,7 +231,7 @@ Important behaviors:
 Runs proof first, then creates a report, then creates an eval draft, and optionally finishes the eval record if the missing judgment fields are supplied.
 
 ```bash
-npx @kontourai/veritas shadow run [--root <path>] [--adapter <path>] [--policy-pack <path>] [--team-profile <path>]
+npx @kontourai/veritas run [--root <path>] [--adapter <path>] [--policy-pack <path>] [--team-profile <path>]
   [--format feedback|json]
   [--proof-command <cmd>] [--skip-proof]
   [--working-tree | --changed-from <ref> --changed-to <ref>]
@@ -220,13 +275,15 @@ npx @kontourai/veritas eval draft --evidence <path> [--team-profile <path>] [--o
 
 ### `eval observe`
 
-Builds an eval draft from a Codex transcript.
+Builds an eval draft from a Codex or Claude Code transcript. With `--tool none`, it uses filesystem artifacts instead of a transcript.
 
 ```bash
-npx @kontourai/veritas eval observe --transcript <path> [--evidence <path>] [--output <path>] [--rewrite-threshold <ratio>] [--verbose]
+npx @kontourai/veritas eval observe [--transcript <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>] [--rewrite-threshold <ratio>] [--verbose]
 ```
 
 When a heuristic cannot compute a value, the draft stores a reason object such as `{ "value": null, "reason": "no_passing_run_observed" }` instead of a bare null. The command validates the draft shape before writing unless `VERITAS_SKIP_EVAL_VALIDATION=1` is set.
+
+Filesystem fallback fields include `source: "filesystem-inferred"` so transcript-derived and artifact-derived values stay distinguishable.
 
 Guardrail:
 
@@ -310,6 +367,28 @@ npx @kontourai/veritas eval summary [--root <path>]
 
 The summary includes acceptance count, required rewrites, average time to green, average overrides, confidence distribution, and the most flagged false-positive rule.
 
+### `eval propose`
+
+Reads `.veritas/evals/history.jsonl` and writes non-blocking proposal artifacts under `.veritas/proposals/`.
+
+```bash
+npx @kontourai/veritas eval propose [--root <path>] [--force] [--dry-run]
+```
+
+The generator looks for frequently overridden failures, warning rules that did not cause follow-up, inactive rules, and paths that repeatedly matched no surface node.
+
+### `proposal`
+
+Review proposal artifacts.
+
+```bash
+npx @kontourai/veritas proposal list [--root <path>] [--status proposed|accepted|rejected|all]
+npx @kontourai/veritas proposal show <id> [--root <path>]
+npx @kontourai/veritas proposal decide <id> --accept|--reject --actor <id> [--message <text>] [--root <path>]
+```
+
+`veritas attest proposal <id> --accept|--reject --actor <id>` is the human-loop alias. Accepting a rule proposal applies the recorded policy-pack diff and creates a proposal-acceptance attestation. Rejecting records the decision without changing policy files.
+
 ### `print`
 
 Print-only helpers return suggested content without changing the repo.
@@ -365,7 +444,7 @@ Write restrictions are intentional:
 Inspects the installed state of the tracked adapter surfaces.
 
 ```bash
-npx @kontourai/veritas runtime status [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
+npx @kontourai/veritas integrations codex status [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
 ```
 
 It reports:
@@ -385,19 +464,19 @@ It reports:
 - also honors legacy `AI_GUIDANCE_HOOK_SKIP=1`
 - compares `HEAD~1..HEAD` on normal commits
 - uses the empty tree for the first commit
-- calls `veritas shadow run`
+- calls `veritas run`
 
 `print runtime-hook` and `apply runtime-hook` produce a shell wrapper that:
 
 - skips itself when `VERITAS_HOOK_SKIP=1`
 - also honors legacy `AI_GUIDANCE_HOOK_SKIP=1`
-- defaults to `veritas shadow run --format json --working-tree`
+- defaults to `veritas run --format json --working-tree`
 - forwards any explicit arguments through to `shadow run --format json`
 
 `print stop-hook` and `apply stop-hook` produce `.veritas/hooks/stop.sh`, which:
 
 - skips itself when `VERITAS_HOOK_SKIP=1`
-- runs `veritas shadow run --format feedback --working-tree`
+- runs `veritas run --format feedback --working-tree`
 - prints failures back to the agent
 - exits `0` so the AI session can continue and repair the findings
 

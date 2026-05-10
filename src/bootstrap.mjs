@@ -601,18 +601,16 @@ ${
 ## Suggested Commands
 
 \`\`\`bash
-npx @kontourai/veritas print package-scripts
-npx @kontourai/veritas print ci-snippet
-npx @kontourai/veritas apply package-scripts
-npx @kontourai/veritas apply ci-snippet
-npx @kontourai/veritas runtime status
-npx @kontourai/veritas report package.json
+npx @kontourai/veritas run --check shadow package.json
+npx @kontourai/veritas run --check budget --working-tree
+npx @kontourai/veritas integrations codex status
+npx @kontourai/veritas attest bootstrap --actor <human-id> --non-interactive
 \`\`\`
 
 If you prefer explicit paths:
 
 \`\`\`bash
-npx @kontourai/veritas report \\
+npx @kontourai/veritas run --check shadow \\
   --adapter ./.veritas/repo.adapter.json \\
   --policy-pack ./.veritas/policy-packs/default.policy-pack.json \\
   package.json
@@ -759,15 +757,14 @@ export function buildSuggestedPackageScripts({
 }) {
   return {
     'veritas:init': 'npm exec -- veritas init',
-    'veritas:print:scripts': 'npm exec -- veritas print package-scripts',
-    'veritas:print:ci': 'npm exec -- veritas print ci-snippet',
-    'veritas:report': 'npm exec -- veritas report --run-id local-smoke package.json',
-    'veritas:report:working-tree': 'npm exec -- veritas report --working-tree',
-    'veritas:report:diff': `npm exec -- veritas report --changed-from ${baseRef} --changed-to HEAD`,
-    'veritas:status:runtime': 'npm exec -- veritas runtime status',
+    'veritas:status:codex': 'npm exec -- veritas integrations codex status',
+    'veritas:check': 'npm exec -- veritas run --run-id local-smoke package.json',
+    'veritas:check:working-tree': 'npm exec -- veritas run --working-tree',
+    'veritas:check:diff': `npm exec -- veritas run --changed-from ${baseRef} --changed-to HEAD`,
+    'veritas:budget': 'npm exec -- veritas run --check budget --working-tree',
     'veritas:proof': proofLane,
-    'lint:governance': 'npm exec -- veritas shadow run --format feedback --working-tree',
-    'veritas:eval': 'npm exec -- veritas shadow run',
+    'lint:governance': 'npm exec -- veritas run --format feedback --working-tree',
+    'veritas:eval': 'npm exec -- veritas run',
   };
 }
 
@@ -780,6 +777,6 @@ export function buildSuggestedCiSnippet({
   run: ${proofLane}
 
 - name: Generate Veritas report
-  run: npm exec -- veritas report --changed-from ${baseRef} --changed-to HEAD
+  run: npm exec -- veritas run --changed-from ${baseRef} --changed-to HEAD
 `;
 }

@@ -41,7 +41,7 @@ Owned repos can update `.veritas/repo.adapter.json` manually or rerun `veritas i
 
 ## Proof Commands No Longer Run Through a Shell
 
-`veritas shadow run` now tokenizes proof commands and executes them directly instead of passing the full string through `SHELL -lc`.
+`veritas run` now tokenizes proof commands and executes them directly instead of passing the full string through `SHELL -lc`.
 
 This closes a config-level command-injection path, but it changes the proof-lane contract:
 

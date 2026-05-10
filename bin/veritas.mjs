@@ -1,98 +1,46 @@
 #!/usr/bin/env node
 import {
-  runApplyCiSnippetCli,
-  runApplyCodexHookCli,
-  runApplyClaudeCodePreToolUseHookCli,
-  runApplyGovernanceBlocksCli,
-  runApplyGitHookCli,
-  runApplyRuntimeHookCli,
-  runApplyStopHookCli,
-  runApplyPackageScriptsCli,
   runEvalDraftCli,
   runEvalObserveCli,
   runEvalMarkerCli,
   runEvalMarkerSuiteCli,
+  runEvalProposeCli,
   runEvalRecordCli,
   runEvalSummaryCli,
+  runProposalCli,
   runVeritasReportCli,
   runVerificationBudgetCli,
   runInitCli,
-  runPrintCiSnippetCli,
-  runPrintCodexHookCli,
-  runPrintClaudeCodePreToolUseHookCli,
-  runPrintGovernanceBlockCli,
-  runPrintGitHookCli,
-  runPrintRuntimeHookCli,
-  runPrintStopHookCli,
-  runPrintPackageScriptsCli,
-  runRuntimeStatusCli,
   runShadowRunCli,
   runExplainCli,
   runBoundariesCheckCli,
+  runAttestCli,
+  runIntegrationsCli,
 } from '../src/index.mjs';
 
 const MAIN_USAGE = `Usage:
   veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--pack <name>] [--force]
-  veritas report [--format json|feedback] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
-  veritas budget [--format human|feedback|json] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
-  veritas shadow run [--format feedback|json] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--team-profile <path>] [--proof-command <cmd>] [--skip-proof]
-  veritas explain <ruleId|surfaceNode|filePath> [--file <path>] [--surface-node <id>] [--root <path>] [--adapter <path>] [--policy-pack <path>]
-  veritas boundaries check --actor <id> [--diff <ref>] [--root <path>] [--adapter <path>]
-  veritas hooks claude-code print|apply [--root <path>] [--force]
-  veritas runtime status [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
+  veritas run [--check shadow|boundaries|budget] [--root <path>] [--working-tree] [--actor <id>]
+  veritas explain <ruleId|surfaceNode|filePath> [--file <path>] [--surface-node <id>] [--root <path>]
+  veritas attest bootstrap --actor <id> [--root <path>] [--non-interactive] [--valid-until-days <days>]
+  veritas attest policy-change --actor <id> --message <text> [--root <path>] [--valid-until-days <days>]
+  veritas attest proposal <id> --accept|--reject --actor <id> [--message <text>] [--root <path>]
+  veritas attest status [--root <path>]
   veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
-  veritas eval observe --transcript <path> [--evidence <path>] [--output <path>]
+  veritas eval observe [--transcript <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>]
   veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false> --reviewer-confidence <scale-entry|unknown> --time-to-green-minutes <number> --override-count <number>
   veritas eval record --draft <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false>
   veritas eval marker --scenario <path> --without-veritas-transcript <path> --with-veritas-transcript <path>
   veritas eval marker-suite --suite <path>
+  veritas eval propose [--root <path>] [--force] [--dry-run]
   veritas eval summary [--root <path>]
-  veritas print package-scripts [--root <path>] [--proof-lane <cmd>]
-  veritas print ci-snippet [--root <path>] [--proof-lane <cmd>]
-  veritas print git-hook [--root <path>] [--hook post-commit]
-  veritas print runtime-hook [--root <path>]
-  veritas print stop-hook [--root <path>] [--tool generic|claude-code|cursor]
-  veritas print governance-block
-  veritas print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
-  veritas print claude-code-pre-tool-use-hook [--root <path>]
-  veritas apply package-scripts [--root <path>] [--proof-lane <cmd>] [--force]
-  veritas apply ci-snippet [--root <path>] [--output <path>] [--proof-lane <cmd>] [--force]
-  veritas apply git-hook [--root <path>] [--hook post-commit] [--output <path>] [--configure-git] [--force]
-  veritas apply runtime-hook [--root <path>] [--output <path>] [--force]
-  veritas apply stop-hook [--root <path>] [--tool generic|claude-code|cursor] [--output <path>] [--force]
-  veritas apply governance-blocks [--root <path>] [--force]
-  veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]
-  veritas apply claude-code-pre-tool-use-hook [--root <path>] [--output <path>] [--force]
+  veritas proposal list|show <id>|decide <id> [--accept|--reject] [--actor <id>] [--message <text>]
+  veritas integrations codex|claude-code|cursor|copilot install|status|uninstall [--root <path>] [--force]
 `;
 
-const REPORT_USAGE = `Usage:
-  veritas report [--format json|feedback] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
-`;
-
-const BUDGET_USAGE = `Usage:
-  veritas budget [--format human|feedback|json] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
-`;
-
-const PRINT_USAGE = `Usage:
-  veritas print package-scripts [--root <path>] [--proof-lane <cmd>]
-  veritas print ci-snippet [--root <path>] [--proof-lane <cmd>]
-  veritas print git-hook [--root <path>] [--hook post-commit]
-  veritas print runtime-hook [--root <path>]
-  veritas print stop-hook [--root <path>] [--tool generic|claude-code|cursor]
-  veritas print governance-block
-  veritas print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
-  veritas print claude-code-pre-tool-use-hook [--root <path>]
-`;
-
-const APPLY_USAGE = `Usage:
-  veritas apply package-scripts [--root <path>] [--proof-lane <cmd>] [--force]
-  veritas apply ci-snippet [--root <path>] [--output <path>] [--proof-lane <cmd>] [--force]
-  veritas apply git-hook [--root <path>] [--hook post-commit] [--output <path>] [--configure-git] [--force]
-  veritas apply runtime-hook [--root <path>] [--output <path>] [--force]
-  veritas apply stop-hook [--root <path>] [--tool generic|claude-code|cursor] [--output <path>] [--force]
-  veritas apply governance-blocks [--root <path>] [--force]
-  veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]
-  veritas apply claude-code-pre-tool-use-hook [--root <path>] [--output <path>] [--force]
+const RUN_USAGE = `Usage:
+  veritas run [--check shadow|boundaries|budget] [--root <path>] [--working-tree]
+  veritas run --check boundaries --actor <id> [--diff <ref>] [--root <path>] [--adapter <path>]
 `;
 
 const EVAL_USAGE = `Usage:
@@ -118,28 +66,21 @@ const EVAL_USAGE = `Usage:
     --without-veritas-transcript <path>
     --with-veritas-transcript <path>
   veritas eval marker-suite --suite <path>
+  veritas eval propose [--root <path>] [--force] [--dry-run]
   veritas eval summary [--root <path>]
 `;
 
-const SHADOW_USAGE = `Usage:
-  veritas shadow run [--root <path>] [--adapter <path>] [--policy-pack <path>] [--team-profile <path>]
-    [--format feedback|json]
-    [--proof-command <cmd>] [--skip-proof]
-    [--working-tree | --changed-from <ref> --changed-to <ref>]
-    [--run-id <id>]
-    [--reviewer-confidence <scale-entry|unknown>]
-    [--time-to-green-minutes <number>]
-    [--override-count <number>]
-    [--false-positive-rule <rule-id>]
-    [--missed-issue <text>]
-    [--note <text>]
-    [--accepted-without-major-rewrite <true|false>]
-    [--required-followup <true|false>]
-    [--force]
+const PROPOSAL_USAGE = `Usage:
+  veritas proposal list [--root <path>] [--status proposed|accepted|rejected|all]
+  veritas proposal show <id> [--root <path>]
+  veritas proposal decide <id> --accept|--reject --actor <id> [--message <text>] [--root <path>]
 `;
 
-const RUNTIME_USAGE = `Usage:
-  veritas runtime status [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
+const ATTEST_USAGE = `Usage:
+  veritas attest bootstrap --actor <id> [--root <path>] [--non-interactive] [--valid-until-days <days>]
+  veritas attest policy-change --actor <id> --message <text> [--root <path>] [--valid-until-days <days>]
+  veritas attest proposal <id> --accept|--reject --actor <id> [--message <text>] [--root <path>]
+  veritas attest status [--root <path>]
 `;
 
 function isHelpToken(token) {
@@ -170,111 +111,41 @@ if (!subcommand || isHelpToken(subcommand)) {
   writeStdout(MAIN_USAGE);
 } else if (subcommand === 'init') {
   if (args.some(isHelpToken)) {
-    writeStdout('Usage:\n  veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--pack <name>] [--force]\n');
+    writeStdout('Usage:\n  veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--pack <name>] [--force] [--non-interactive]\n');
   } else {
     runInitCli(args, { rootDir: cwd });
   }
-} else if (subcommand === 'report') {
-  if (args.some(isHelpToken)) {
-    writeStdout(REPORT_USAGE);
+} else if (subcommand === 'attest') {
+  const [kind, ...attestArgs] = args;
+  if (!kind || isHelpToken(kind) || attestArgs.some(isHelpToken)) {
+    writeStdout(ATTEST_USAGE);
+  } else if (kind === 'proposal') {
+    runProposalCli('decide', attestArgs, { rootDir: cwd });
+  } else if (['bootstrap', 'policy-change', 'status'].includes(kind)) {
+    runAttestCli(kind, attestArgs, { rootDir: cwd });
   } else {
-    runVeritasReportCli(args, {
-      rootDir: cwd,
-    });
-  }
-} else if (subcommand === 'budget') {
-  if (args.some(isHelpToken)) {
-    writeStdout(BUDGET_USAGE);
-  } else {
-    runVerificationBudgetCli(args, {
-      rootDir: cwd,
-    });
-  }
-} else if (subcommand === 'print') {
-  const [kind, ...printArgs] = args;
-  if (!kind || isHelpToken(kind) || printArgs.some(isHelpToken)) {
-    writeStdout(
-      selectScopedUsage(kind, PRINT_USAGE, {
-        'package-scripts':
-          'Usage:\n  veritas print package-scripts [--root <path>] [--proof-lane <cmd>]\n',
-        'ci-snippet':
-          'Usage:\n  veritas print ci-snippet [--root <path>] [--proof-lane <cmd>]\n',
-        'git-hook':
-          'Usage:\n  veritas print git-hook [--root <path>] [--hook post-commit]\n',
-        'runtime-hook':
-          'Usage:\n  veritas print runtime-hook [--root <path>]\n',
-        'stop-hook':
-          'Usage:\n  veritas print stop-hook [--root <path>] [--tool generic|claude-code|cursor]\n',
-        'governance-block':
-          'Usage:\n  veritas print governance-block\n',
-        'codex-hook':
-          'Usage:\n  veritas print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]\n',
-        'claude-code-pre-tool-use-hook':
-          'Usage:\n  veritas print claude-code-pre-tool-use-hook [--root <path>]\n',
-      }),
-    );
-  } else if (kind === 'package-scripts') {
-    runPrintPackageScriptsCli(printArgs, { rootDir: cwd });
-  } else if (kind === 'ci-snippet') {
-    runPrintCiSnippetCli(printArgs, { rootDir: cwd });
-  } else if (kind === 'git-hook') {
-    runPrintGitHookCli(printArgs, { rootDir: cwd });
-  } else if (kind === 'runtime-hook') {
-    runPrintRuntimeHookCli(printArgs, { rootDir: cwd });
-  } else if (kind === 'stop-hook') {
-    runPrintStopHookCli(printArgs, { rootDir: cwd });
-  } else if (kind === 'governance-block') {
-    runPrintGovernanceBlockCli(printArgs, { rootDir: cwd });
-  } else if (kind === 'codex-hook') {
-    runPrintCodexHookCli(printArgs, { rootDir: cwd });
-  } else if (kind === 'claude-code-pre-tool-use-hook') {
-    runPrintClaudeCodePreToolUseHookCli(printArgs, { rootDir: cwd });
-  } else {
-    writeStderr(PRINT_USAGE);
+    writeStderr(ATTEST_USAGE);
     process.exitCode = 1;
   }
-} else if (subcommand === 'apply') {
-  const [kind, ...applyArgs] = args;
-  if (!kind || isHelpToken(kind) || applyArgs.some(isHelpToken)) {
-    writeStdout(
-      selectScopedUsage(kind, APPLY_USAGE, {
-        'package-scripts':
-          'Usage:\n  veritas apply package-scripts [--root <path>] [--proof-lane <cmd>] [--force]\n',
-        'ci-snippet':
-          'Usage:\n  veritas apply ci-snippet [--root <path>] [--output <path>] [--proof-lane <cmd>] [--force]\n',
-        'git-hook':
-          'Usage:\n  veritas apply git-hook [--root <path>] [--hook post-commit] [--output <path>] [--configure-git] [--force]\n',
-        'runtime-hook':
-          'Usage:\n  veritas apply runtime-hook [--root <path>] [--output <path>] [--force]\n',
-        'stop-hook':
-          'Usage:\n  veritas apply stop-hook [--root <path>] [--tool generic|claude-code|cursor] [--output <path>] [--force]\n',
-        'governance-blocks':
-          'Usage:\n  veritas apply governance-blocks [--root <path>] [--force]\n',
-        'codex-hook':
-          'Usage:\n  veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]\n',
-        'claude-code-pre-tool-use-hook':
-          'Usage:\n  veritas apply claude-code-pre-tool-use-hook [--root <path>] [--output <path>] [--force]\n',
-      }),
-    );
-  } else if (kind === 'package-scripts') {
-    runApplyPackageScriptsCli(applyArgs, { rootDir: cwd });
-  } else if (kind === 'ci-snippet') {
-    runApplyCiSnippetCli(applyArgs, { rootDir: cwd });
-  } else if (kind === 'git-hook') {
-    runApplyGitHookCli(applyArgs, { rootDir: cwd });
-  } else if (kind === 'runtime-hook') {
-    runApplyRuntimeHookCli(applyArgs, { rootDir: cwd });
-  } else if (kind === 'stop-hook') {
-    runApplyStopHookCli(applyArgs, { rootDir: cwd });
-  } else if (kind === 'governance-blocks') {
-    runApplyGovernanceBlocksCli(applyArgs, { rootDir: cwd });
-  } else if (kind === 'codex-hook') {
-    runApplyCodexHookCli(applyArgs, { rootDir: cwd });
-  } else if (kind === 'claude-code-pre-tool-use-hook') {
-    runApplyClaudeCodePreToolUseHookCli(applyArgs, { rootDir: cwd });
+} else if (subcommand === 'run') {
+  if (args.some(isHelpToken)) {
+    writeStdout(RUN_USAGE);
   } else {
-    writeStderr(APPLY_USAGE);
-    process.exitCode = 1;
+    const checkIndex = args.indexOf('--check');
+    const check = checkIndex >= 0 ? args[checkIndex + 1] : 'shadow';
+    const forwarded = checkIndex >= 0
+      ? args.filter((_, index) => index !== checkIndex && index !== checkIndex + 1)
+      : args;
+    if (check === 'boundaries') {
+      runBoundariesCheckCli(forwarded, { rootDir: cwd });
+    } else if (check === 'budget') {
+      runVerificationBudgetCli(forwarded, { rootDir: cwd });
+    } else if (check === 'shadow') {
+      runShadowRunCli(forwarded, { rootDir: cwd });
+    } else {
+      writeStderr(RUN_USAGE);
+      process.exitCode = 1;
+    }
   }
 } else if (subcommand === 'eval') {
   const [kind, ...evalArgs] = args;
@@ -284,13 +155,15 @@ if (!subcommand || isHelpToken(subcommand)) {
         draft:
           'Usage:\n  veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]\n    [--reviewer-confidence <scale-entry|unknown>]\n    [--time-to-green-minutes <number>]\n    [--override-count <number>]\n    [--false-positive-rule <rule-id>]\n    [--missed-issue <text>]\n    [--note <text>]\n',
         observe:
-          'Usage:\n  veritas eval observe --transcript <path> [--evidence <path>] [--output <path>] [--rewrite-threshold <ratio>] [--verbose]\n',
+          'Usage:\n  veritas eval observe [--transcript <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>] [--rewrite-threshold <ratio>] [--verbose]\n',
         record:
           'Usage:\n  veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force]\n  veritas eval record --draft <path> [--team-profile <path>] [--output <path>] [--force]\n    --accepted-without-major-rewrite <true|false>\n    --required-followup <true|false>\n    --reviewer-confidence <scale-entry|unknown>\n    --time-to-green-minutes <number>\n    --override-count <number>\n    [--false-positive-rule <rule-id>]\n    [--missed-issue <text>]\n    [--note <text>]\n',
         marker:
           'Usage:\n  veritas eval marker --scenario <path>\n    --without-veritas-transcript <path>\n    --with-veritas-transcript <path>\n',
         'marker-suite':
           'Usage:\n  veritas eval marker-suite --suite <path>\n',
+        propose:
+          'Usage:\n  veritas eval propose [--root <path>] [--force] [--dry-run]\n',
         summary:
           'Usage:\n  veritas eval summary [--root <path>]\n',
       }),
@@ -305,25 +178,20 @@ if (!subcommand || isHelpToken(subcommand)) {
     runEvalMarkerCli(evalArgs, { rootDir: cwd });
   } else if (kind === 'marker-suite') {
     runEvalMarkerSuiteCli(evalArgs, { rootDir: cwd });
+  } else if (kind === 'propose') {
+    runEvalProposeCli(evalArgs, { rootDir: cwd });
   } else if (kind === 'summary') {
     runEvalSummaryCli(evalArgs, { rootDir: cwd });
   } else {
     writeStderr(EVAL_USAGE);
     process.exitCode = 1;
   }
-} else if (subcommand === 'shadow') {
-  const [kind, ...shadowArgs] = args;
-  if (!kind || isHelpToken(kind) || shadowArgs.some(isHelpToken)) {
-    writeStdout(
-      selectScopedUsage(kind, SHADOW_USAGE, {
-        run: SHADOW_USAGE,
-      }),
-    );
-  } else if (kind === 'run') {
-    runShadowRunCli(shadowArgs, { rootDir: cwd });
+} else if (subcommand === 'proposal') {
+  const [kind, ...proposalArgs] = args;
+  if (!kind || isHelpToken(kind) || proposalArgs.some(isHelpToken) || !['list', 'show', 'decide'].includes(kind)) {
+    writeStdout(PROPOSAL_USAGE);
   } else {
-    writeStderr(SHADOW_USAGE);
-    process.exitCode = 1;
+    runProposalCli(kind, proposalArgs, { rootDir: cwd });
   }
 } else if (subcommand === 'explain') {
   if (args.some(isHelpToken)) {
@@ -331,35 +199,12 @@ if (!subcommand || isHelpToken(subcommand)) {
   } else {
     runExplainCli(args, { rootDir: cwd });
   }
-} else if (subcommand === 'boundaries') {
-  const [kind, ...boundaryArgs] = args;
-  if (kind !== 'check' || boundaryArgs.some(isHelpToken)) {
-    writeStdout('Usage:\n  veritas boundaries check --actor <id> [--diff <ref>] [--root <path>] [--adapter <path>]\n');
+} else if (subcommand === 'integrations') {
+  const [tool, action, ...integrationArgs] = args;
+  if (!tool || !action || integrationArgs.some(isHelpToken) || !['codex', 'claude-code', 'cursor', 'copilot'].includes(tool) || !['install', 'status', 'uninstall'].includes(action)) {
+    writeStdout('Usage:\n  veritas integrations codex|claude-code|cursor|copilot install|status|uninstall [--root <path>] [--force]\n');
   } else {
-    runBoundariesCheckCli(boundaryArgs, { rootDir: cwd });
-  }
-} else if (subcommand === 'hooks') {
-  const [tool, action, ...hookArgs] = args;
-  if (tool !== 'claude-code' || !['print', 'apply'].includes(action) || hookArgs.some(isHelpToken)) {
-    writeStdout('Usage:\n  veritas hooks claude-code print|apply [--root <path>] [--force]\n');
-  } else if (action === 'print') {
-    runPrintClaudeCodePreToolUseHookCli(hookArgs, { rootDir: cwd });
-  } else {
-    runApplyClaudeCodePreToolUseHookCli(hookArgs, { rootDir: cwd });
-  }
-} else if (subcommand === 'runtime') {
-  const [kind, ...runtimeArgs] = args;
-  if (!kind || isHelpToken(kind) || runtimeArgs.some(isHelpToken)) {
-    writeStdout(
-      selectScopedUsage(kind, RUNTIME_USAGE, {
-        status: RUNTIME_USAGE,
-      }),
-    );
-  } else if (kind === 'status') {
-    runRuntimeStatusCli(runtimeArgs, { rootDir: cwd });
-  } else {
-    writeStderr(RUNTIME_USAGE);
-    process.exitCode = 1;
+    runIntegrationsCli(tool, action, integrationArgs, { rootDir: cwd });
   }
 } else {
   writeStderr(MAIN_USAGE);

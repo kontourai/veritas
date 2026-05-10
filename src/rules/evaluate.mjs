@@ -14,10 +14,13 @@ import { uniqueStrings } from '../util/strings.mjs';
  */
 
 export function buildRuleResult(rule, overrides = {}) {
+  const enforcement =
+    rule.enforcement ?? (rule.classification === 'hard-invariant' ? 'deny' : 'lint');
   return {
     rule_id: rule.id,
     classification: rule.classification,
     stage: rule.stage,
+    enforcement,
     message: rule.message,
     owner: rule.owner ?? null,
     rollback_switch: rule.rollback_switch ?? null,
@@ -292,4 +295,3 @@ export function evaluatePolicyPack(policyPack, context, options = {}) {
     .filter((rule) => selectedRuleIds.size === 0 || selectedRuleIds.has(rule.id))
     .map((rule) => evaluatePolicyRule(rule, context));
 }
-

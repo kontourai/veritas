@@ -40,7 +40,7 @@ function eventFiles(event) {
 }
 
 function isShadowRun(event) {
-  return /\bveritas\s+shadow\s+run\b/.test(eventText(event));
+  return /\bveritas\s+(?:shadow\s+run|run)\b/.test(eventText(event));
 }
 
 function isPassing(event) {

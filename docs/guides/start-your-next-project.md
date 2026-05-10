@@ -115,8 +115,8 @@ Use this sequence:
 6. run `npx @kontourai/veritas print ci-snippet`
 7. run `npx @kontourai/veritas apply package-scripts`
 8. run `npx @kontourai/veritas apply ci-snippet`
-9. run `npx @kontourai/veritas report --working-tree`
-10. or run `npx @kontourai/veritas shadow run --working-tree`
+9. run `npx @kontourai/veritas run --check shadow --working-tree`
+10. or run `npx @kontourai/veritas run --working-tree`
 11. run `npx @kontourai/veritas apply governance-blocks`
 12. optionally run `npx @kontourai/veritas apply git-hook --configure-git`
 13. or run `npx @kontourai/veritas apply stop-hook --tool generic`
@@ -124,7 +124,7 @@ Use this sequence:
 15. or run `npx @kontourai/veritas print codex-hook --codex-home /path/to/.codex`
 16. then run `npx @kontourai/veritas apply codex-hook --codex-home /path/to/.codex`
 17. or run `npx @kontourai/veritas apply codex-hook --target-hooks-file /path/to/hooks.json`
-18. or run `npx @kontourai/veritas runtime status --codex-home /path/to/.codex`
+18. or run `npx @kontourai/veritas integrations codex status --codex-home /path/to/.codex`
 19. optionally run `npx @kontourai/veritas eval summary`
 20. wire the same paths into review and CI if you want them in your permanent workflow files
 

@@ -132,6 +132,10 @@ function summarizeFeedbackCounts(record, proofFailure = null) {
     }
   }
 
+  for (const claim of record?.surface?.report?.claims ?? []) {
+    if (claim.status === 'stale' || claim.status === 'disputed') warnings += 1;
+  }
+
   return { failures, warnings, passes };
 }
 
@@ -195,12 +199,27 @@ export function buildFeedbackSummary({
     lines.push(`      -> ${result.artifact_path}`);
   }
 
+  for (const claim of record?.surface?.report?.claims ?? []) {
+    if (claim.status !== 'stale' && claim.status !== 'disputed') continue;
+    const faultLines = record.surface.report.faultLinesByClaimId?.[claim.id] ?? [];
+    const reason = faultLines[0]?.message ?? `Surface derived status is ${claim.status}.`;
+    lines.push(
+      `WARN  surface-status: claim "${claim.id}" is ${claim.status.toUpperCase()} (${reason})`,
+    );
+  }
+
   const counts = summarizeFeedbackCounts(record, proofFailure);
   const nouns = [
     `${counts.failures} ${counts.failures === 1 ? 'failure' : 'failures'}`,
     `${counts.warnings} ${counts.warnings === 1 ? 'warning' : 'warnings'}`,
   ];
-  lines.push('', `${nouns.join(' · ')} · run \`veritas report\` for full evidence`);
+  lines.push('', `${nouns.join(' · ')} · run \`veritas run --check shadow\` for full evidence`);
+  const openProposalCount = (record?.surface?.report?.claims ?? [])
+    .filter((claim) => claim.claimType === 'veritas-proposal' && claim.status === 'proposed')
+    .length;
+  if (openProposalCount > 0) {
+    lines.push(`proposals: ${openProposalCount} open · run \`veritas proposal list\` to review`);
+  }
 
   const footer = [];
   if (reportArtifactPath) footer.push(`report: ${reportArtifactPath}`);
@@ -284,4 +303,3 @@ export function buildEvalDraftMarkdownSummary(record, artifactPath, suggestedRec
 
   return `${lines.join('\n')}\n`;
 }
-

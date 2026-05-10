@@ -1,10 +1,11 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadAdapterConfig, loadPolicyPack } from './load.mjs';
 import { normalizeRepoPath } from './paths.mjs';
 import { matchesPatterns } from './util/patterns.mjs';
 import { evaluateCrossSurfaceWriteRule } from './rules/evaluate.mjs';
 import { resolveVeritasPaths, listChangedFiles, listWorkingTreeFiles } from './report.mjs';
+import { parseTokens } from './args.mjs';
 
 function ruleMatchesFile(rule, filePath) {
   if (!filePath) return false;
@@ -50,9 +51,67 @@ function explainRuleBlock(rule) {
   return lines;
 }
 
+function syntheticPolicyRules() {
+  return [{
+    id: 'policy-changes-require-attestation',
+    kind: 'human-attestation',
+    classification: 'hard-invariant',
+    stage: 'block',
+    enforcement: 'deny',
+    message: 'Zone 1 governance changes require a current human attestation.',
+    explain: {
+      summary: 'Veritas hashes the adapter, policy pack, and team profile as Zone 1. Shadow runs fail on drift until a human records a fresh attestation.',
+      mustDo: [
+        'Run `veritas attest bootstrap --actor <human-id>` after first installing Veritas governance.',
+        'Run `veritas attest policy-change --actor <human-id> --message <reason>` after changing Zone 1 files.',
+      ],
+      mustNotDo: [
+        'Do not treat generated evidence or agent edits as a substitute for human governance review.',
+      ],
+      contextLinks: [
+        'docs/guides/attestation.md',
+        'docs/concepts.md#human-attestation',
+      ],
+    },
+  }];
+}
+
+function latestSurfaceReportForRule(rootDir, ruleId) {
+  const evidenceDir = resolve(rootDir, '.veritas/evidence');
+  if (!ruleId || !existsSync(evidenceDir)) return null;
+  const candidates = readdirSync(evidenceDir)
+    .filter((file) => file.endsWith('.json'))
+    .map((file) => {
+      const path = resolve(evidenceDir, file);
+      return { path, mtimeMs: statSync(path).mtimeMs };
+    })
+    .sort((a, b) => b.mtimeMs - a.mtimeMs);
+  for (const candidate of candidates) {
+    try {
+      const record = JSON.parse(readFileSync(candidate.path, 'utf8'));
+      const report = record.surface?.report;
+      const claim = report?.claims?.find((item) => {
+        return item.value?.ruleId === ruleId || item.subjectId?.endsWith(`:${ruleId}`);
+      });
+      if (claim) {
+        return {
+          claim,
+          faultLines: report.faultLinesByClaimId?.[claim.id] ?? [],
+          reportId: report.id,
+          generatedAt: report.generatedAt,
+        };
+      }
+    } catch {
+      // Ignore malformed or partial evidence records while explaining current context.
+    }
+  }
+  return null;
+}
+
 export function buildExplainText({ rootDir, adapter, policyPack, ruleId, filePath, surfaceNode }) {
   const normalizedFile = filePath ? normalizeRepoPath(filePath, rootDir) : null;
-  const selectedRules = policyPack.rules.filter((rule) => {
+  const allRules = [...(policyPack.rules ?? []), ...syntheticPolicyRules()];
+  const selectedRules = allRules.filter((rule) => {
     if (ruleId) return rule.id === ruleId;
     if (normalizedFile) return ruleMatchesFile(rule, normalizedFile);
     if (surfaceNode) return ruleMatchesSurfaceNode(rule, surfaceNode, adapter);
@@ -68,6 +127,13 @@ export function buildExplainText({ rootDir, adapter, policyPack, ruleId, filePat
   }
   for (const rule of selectedRules) {
     lines.push('', ...explainRuleBlock(rule));
+    const surfaceContext = latestSurfaceReportForRule(rootDir, rule.id);
+    if (surfaceContext) {
+      lines.push(`Surface status: ${surfaceContext.claim.status} (${surfaceContext.reportId})`);
+      for (const faultLine of surfaceContext.faultLines.slice(0, 3)) {
+        lines.push(`Surface fault: ${faultLine.type} — ${faultLine.message}`);
+      }
+    }
   }
   return `${lines.slice(0, 80).join('\n')}\n`;
 }
@@ -85,7 +151,7 @@ export function runExplainCli(argv = process.argv.slice(2), defaults = {}) {
   const selector = rest[0];
   const adapter = loadAdapterConfig(adapterPath);
   const policyPack = loadPolicyPack(policyPackPath);
-  const selectorIsRule = policyPack.rules.some((rule) => rule.id === selector);
+  const selectorIsRule = [...(policyPack.rules ?? []), ...syntheticPolicyRules()].some((rule) => rule.id === selector);
   const text = buildExplainText({
     rootDir,
     adapter,
@@ -140,4 +206,3 @@ export function runBoundariesCheckCli(argv = process.argv.slice(2), defaults = {
   }
   if (!result.passed) process.exitCode = 1;
 }
-

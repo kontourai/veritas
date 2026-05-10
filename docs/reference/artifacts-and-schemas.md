@@ -25,11 +25,15 @@ These are the paths the framework writes into a target repo.
 - `.veritas/repo.adapter.json`
 - `.veritas/policy-packs/default.policy-pack.json`
 - `.veritas/team/default.team-profile.json`
+- `.veritas/attestations/`
 - `.veritas/evidence/`
 - `AGENTS.md` and `CLAUDE.md` governance blocks
 
 ### Evidence and eval capture
 
+- `.veritas/attestations/<id>.attestation.json`
+- `.veritas/attestations/HEAD`
+- `.veritas/attestations/PENDING`
 - `.veritas/evidence/<run-id>.json`
 - `.veritas/eval-drafts/<run-id>.json`
 - `.veritas/evals/<run-id>.json`
@@ -88,6 +92,24 @@ Important distinction:
 
 - files under `adapters/` are reference examples for other repo shapes
 - the `veritas` repo dogfoods through its tracked repo-local adapter at `.veritas/repo.adapter.json`
+
+### Attestation
+
+Defined by [schemas/veritas-attestation.schema.json](../../schemas/veritas-attestation.schema.json).
+
+Attestations are immutable human approval records for Zone 1 governance hashes:
+
+- `.veritas/repo.adapter.json`
+- `.veritas/policy-packs/default.policy-pack.json`
+- `.veritas/team/default.team-profile.json`
+
+The active pointer lives at `.veritas/attestations/HEAD` as JSON with `currentAttestationId`. New `policy-change` attestations supersede older records by setting `priorAttestationId`; old records stay tracked for auditability.
+
+### Policy Pack
+
+Defined by [schemas/veritas-policy-pack.schema.json](../../schemas/veritas-policy-pack.schema.json).
+
+Rules may include `enforcement: "deny"` or `enforcement: "lint"`. If omitted, `hard-invariant` rules default to deny and all other classifications default to lint. Deny rules are eligible for PreToolUse blocking in supported runtime adapters; lint rules remain shadow-run feedback.
 
 ### Graph
 
@@ -265,13 +287,15 @@ Proof-family results include freshness fields:
 - `evidence_basis`
 - `freshness_status`
 
-`veritas budget` is the shortest way to inspect the generated `verification_budget` without opening the full report artifact.
+`veritas run --check budget` is the shortest way to inspect the generated `verification_budget` without opening the full report artifact.
 
-#### Surface TrustInput block
+#### Surface TrustInput and report blocks
 
 Every new evidence artifact also includes a `surface.input` block. That block is the portable Surface `TrustInput` projection of the Veritas run, not a generated Surface `TrustReport`.
 
 Veritas owns the repo-specific producer fields. Surface owns generated report fields such as `id`, `generatedAt`, `summary`, `faultLines`, and `proofRequirementsByClaimId`. Those report-only fields must not appear under `surface.input`.
+
+After validation, Veritas calls Surface's public `buildTrustReport` API and persists a compact `surface.report` summary beside the input. The report summary includes per-claim derived status, summary counts, and fault lines. `shadow run` prints WARN feedback for Surface-derived `stale` and `disputed` claims, and `veritas explain <rule>` includes the latest Surface status and fault lines for that rule when an evidence record is available.
 
 | Evidence field | Surface mapping | Classification |
 | --- | --- | --- |
@@ -287,7 +311,9 @@ Veritas owns the repo-specific producer fields. Surface owns generated report fi
 | `policy_pack`, `policy_results` | Policy-result claims, evidence, events, and policy-violation fault-line hints | Surface-mapped |
 | `recommendations`, `false_positive_review`, `promotion_candidate`, `override_or_bypass`, `owner`, `promotion_allowed` | Surface metadata and confidence context | Surface-mapped |
 | `framework`, `adapter`, `framework_version` | Veritas-local producer/runtime metadata | Veritas-local |
-| `surface` | Embedded Surface `TrustInput` projection consumed by Surface adapters and tests | Surface-mapped |
+| `surface` | Embedded Surface projection and generated compact report summary | Surface-mapped |
+| `surface.input` | Embedded Surface `TrustInput` projection consumed by Surface adapters and tests | Surface-mapped |
+| `surface.report` | Compact Surface `TrustReport` summary generated from `surface.input` | Surface-generated |
 
 The schema enforces this boundary with `x_surface_mapping` metadata on top-level evidence properties. Allowed classifications are `mapped`, `veritas-local`, `transitional`, and `deprecated`. Fields marked `mapped` must also declare `x_surface_targets`, such as `claim`, `evidence`, `policy`, `event`, `metadata`, or `report-input`.
 
@@ -329,8 +355,10 @@ Defined by:
 
 - [schemas/veritas-eval-draft.schema.json](../../schemas/veritas-eval-draft.schema.json)
 - [schemas/veritas-eval-record.schema.json](../../schemas/veritas-eval-record.schema.json)
+- [schemas/veritas-proposal.schema.json](../../schemas/veritas-proposal.schema.json)
 
 The draft captures prefilled context without inventing missing judgment. The record captures the completed operator judgment.
+Proposal artifacts capture eval-derived rule and surface-node recommendations awaiting human review.
 
 Policy results may include optional machine-readable `actions`. These actions are remediation hints for agents and reviewers. They are not auto-fixes unless a future tool explicitly implements them.
 

@@ -77,6 +77,7 @@ export function buildEvalRecord({
       false_positive_rules: options.falsePositiveRules ?? [],
       missed_issues: options.missedIssues ?? [],
     },
+    overrides: evidenceRecord.overrides ?? options.overrides ?? [],
     notes: options.notes ?? [],
   };
 }
@@ -116,6 +117,7 @@ function buildEvalEvidenceContext({ evidenceRecord, evidenceRaw, evidencePath, r
     source_scope: evidenceRecord.source_scope ?? [],
     affected_nodes: evidenceRecord.affected_nodes ?? [],
     affected_lanes: evidenceRecord.affected_lanes ?? [],
+    unresolved_files: evidenceRecord.unresolved_files ?? [],
     policy_results: evidenceRecord.policy_results ?? [],
   };
 }
@@ -334,7 +336,9 @@ export function appendEvalHistory(record, rootDir) {
     override_count: record.measurements.override_count,
     confidence: record.outcome.reviewer_confidence,
     false_positive_rules: record.measurements.false_positive_rules,
+    overrides: record.overrides ?? [],
     required_followup: record.outcome.required_followup,
+    unresolved_files: record.evidence.unresolved_files ?? [],
     policy_results: (record.evidence.policy_results ?? []).map((result) => ({
       rule_id: result.rule_id,
       passed: result.passed,

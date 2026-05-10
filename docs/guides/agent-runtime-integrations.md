@@ -5,7 +5,7 @@ Veritas is intentionally agent-agnostic. These integration notes show where the 
 ## Claude Code
 
 - keep the tracked repo-local config under `.veritas/`
-- use `npx @kontourai/veritas shadow run --working-tree` as the explicit orchestration command; it prints agent-readable feedback by default
+- use `npx @kontourai/veritas run --working-tree` as the explicit orchestration command; it prints agent-readable feedback by default
 - use `npx @kontourai/veritas apply stop-hook --tool claude-code` when you want Stop-hook feedback at turn end
 - use the generated git/runtime hooks when you want post-change automation instead of manual invocation
 
@@ -14,7 +14,7 @@ Veritas is intentionally agent-agnostic. These integration notes show where the 
 - keep adapter and policy files in the repo, not in editor-only settings
 - point Cursor rules or project instructions at the repo-local Veritas governance block
 - use `npx @kontourai/veritas apply stop-hook --tool cursor` to generate a thin wrapper around `.veritas/hooks/stop.sh`
-- prefer `veritas report` for review-only lanes and `veritas shadow run` for proof-plus-eval lanes
+- prefer `veritas run --check shadow` for review-only lanes and `veritas run` for proof-plus-eval lanes
 
 ## GitHub Copilot Workspace
 

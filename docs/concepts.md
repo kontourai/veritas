@@ -16,7 +16,9 @@ Surface is the portable trust substrate underneath Veritas. Surface owns claims,
 
 Veritas owns repo and AI-agent workflow mechanics: adapters, policy packs, proof lanes, proof families, verification budgets, shadow runs, and lint-style feedback. These are useful to coding agents, but they are not a second trust model.
 
-Every Veritas evidence artifact includes `surface.input`, a Surface `TrustInput` projection of the run. That block contains claims, evidence, policies, and events. It must not contain Surface report-only fields such as `id`, `generatedAt`, `summary`, `faultLines`, or `proofRequirementsByClaimId`; Surface generates those when it builds a report.
+Every Veritas evidence artifact includes `surface.input`, a Surface `TrustInput` projection of the run. That block contains claims, evidence, policies, and events. Veritas validates it at the boundary and then calls Surface's public `buildTrustReport` API. The compact result is persisted under `surface.report` with derived claim statuses, summary counts, and fault lines.
+
+`surface.input` must not contain Surface report-only fields such as `id`, `generatedAt`, `summary`, `faultLines`, or `proofRequirementsByClaimId`. Veritas only consumes the generated report and surfaces stale or disputed statuses as lint feedback.
 
 For the full boundary rule, see [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md).
 
@@ -91,6 +93,8 @@ The `(?!/)` part is regex, not glob syntax. It means `@stallion-ai/shared/contra
 
 Use `required-pattern` for required content and `header-required` when the pattern must appear at the start of a file, such as a license or governance header.
 
+Rules may set `enforcement: "deny"` or `enforcement: "lint"`. When omitted, hard invariants default to `deny`; other classifications default to `lint`. Deny rules can block edits at the PreToolUse boundary when the runtime supports it, while lint rules continue to appear in `shadow run` feedback.
+
 ## Boundaries
 
 The adapter's graph defines repo surfaces with owners and boundary types. A surface can be `strict` (changes require owner approval) or `advisory` (visible but not enforced). The `cross-surface-write` rule checks whether an actor (an agent, developer, or team) has permission to touch a strict surface.
@@ -112,6 +116,14 @@ There is intentionally no fallback to the operating-system username. CI users an
 
 This is how Veritas prevents parallel workstreams from accidentally colliding: surface ownership is explicit, actor identity is explicit, and the check fails closed before changes land.
 
+## Attestations
+
+Zone 1 governance files encode the repo's constitutional core: the repo adapter, the active policy pack, and the team profile. Veritas stores human attestations for those files in `.veritas/attestations/*.attestation.json` and keeps `.veritas/attestations/HEAD` as the current pointer.
+
+Use `veritas attest bootstrap --actor <human-id> --non-interactive` after initial setup. Use `veritas attest policy-change --actor <human-id> --message <text>` after a reviewed Zone 1 change. Attestations are immutable; each new record supersedes the previous one through `priorAttestationId`.
+
+`veritas run` includes the built-in `policy-changes-require-attestation` rule. If the active attestation's policy-pack, adapter, or team-profile hash no longer matches disk, the run emits a hard `FAIL` until a fresh human attestation is recorded. Missing or expired attestations warn so new repos can bootstrap without pretending the human review step happened.
+
 ## Just-In-Time Context
 
 Long AI agent sessions drift toward high-level goals and lose sight of repo-specific constraints. Veritas delivers context just before an agent edits:
@@ -120,11 +132,13 @@ Long AI agent sessions drift toward high-level goals and lose sight of repo-spec
 - `veritas explain --surface-node <node-id>` — prints rules for a surface
 - `veritas explain <rule-id>` — prints full context for a rule
 
-The `veritas hooks claude-code print|apply` command generates a Claude Code PreToolUse hook that calls `veritas explain --file <path>` before each edit. This keeps repo rules visible in the agent's context without clogging the main prompt.
+The `veritas hooks claude-code print|apply` command generates a Claude Code PreToolUse hook that calls `veritas hooks claude-code pre-tool-use` before each edit. That path evaluates deny-enforced rules for the target file. It returns a Claude hook `decision: "block"` when a hard invariant would fail, or `decision: "approve"` when the edit is allowed.
+
+Emergency overrides require both `VERITAS_OVERRIDE_RULE=<rule-id>` and `VERITAS_OVERRIDE_REASON=<text>`. Overrides are recorded under `.veritas/evals/overrides.jsonl` and carried into eval records through the `overrides[]` field when present.
 
 ## Feedback
 
-`veritas shadow run` is the agent-facing path. It runs the configured proof lane, evaluates rules against the changed files, writes evidence, and prints lint-style feedback by default:
+`veritas run` is the agent-facing path. It runs the configured proof lane, evaluates rules against the changed files, writes evidence, and prints lint-style feedback by default:
 
 ```text
 veritas: 3 files changed -> governance.guidance, tooling.scripts
@@ -132,7 +146,7 @@ PASS  required-veritas-operational-artifacts: All required repository artifacts 
 FAIL  api-changes-require-test-changes: Changed files matched src/api/ but no companion changes matched tests/api/.
       -> src/api/routes.ts
 
-1 failure · 0 warnings · run `veritas report` for full evidence
+1 failure · 0 warnings · run `veritas run --check shadow` for full evidence
 report: .veritas/evidence/veritas-123.json · eval draft: .veritas/eval-drafts/veritas-123.json · run: veritas-123
 ```
 
@@ -144,7 +158,7 @@ Exit codes are hook-friendly:
 - `1`: proof or blocking policy failure
 - `2`: config or runtime error
 
-`veritas report` remains the structured evidence path and keeps JSON as its default output. Use `--format feedback` when you want the same lint-style message in a PR comment or review surface.
+`veritas run --check shadow` remains the structured evidence path and keeps JSON as its default output. Use `--format feedback` when you want the same lint-style message in a PR comment or review surface.
 
 ## Improvement
 
@@ -152,7 +166,9 @@ Evidence records capture what changed, which repo surfaces were touched, which p
 
 Veritas also writes `.veritas/claims/*.input.json` when a report includes Surface input. Those files are per-claim slices of `surface.input`, not Surface `TrustReport` files. They exist so local tooling can inspect one claim and its matching evidence/events without copying the full evidence artifact.
 
-Not every field auto-populates everywhere. Without a transcript, `time_to_green_minutes` is derived from `.veritas/runs/history.jsonl` (most recent FAIL → next PASS for the same actor). `accepted_without_major_rewrite` and `override_count` require a transcript today, so they read as `{ value: null, reason: <code> }` for non-Codex sessions. Reviewer confidence and false-positive flags are always human-supplied via `veritas eval record`.
+Not every field comes from the same source. With Codex or Claude Code transcripts, `eval observe` derives measurements from normalized runtime events. Without a transcript, `veritas eval observe --tool none --evidence <path>` infers `time_to_green_minutes` from `.veritas/runs/history.jsonl`, `override_count` from override artifacts, and `accepted_without_major_rewrite` from git churn. Filesystem-derived values carry `source: "filesystem-inferred"` so reviewers can tell they were inferred rather than transcript-observed.
+
+`veritas eval propose` scans eval history for rules that are frequently overridden, warning rules that do not cause follow-up, inactive rules, and files that repeatedly match no surface node. It writes non-blocking `.veritas/proposals/*.proposal.json` artifacts. Humans review them with `veritas proposal list`, `veritas proposal show <id>`, and `veritas attest proposal <id> --accept|--reject`; accepting a rule proposal applies the recorded policy diff and records a proposal attestation.
 
 For local use, `veritas eval record` appends compact JSONL entries to `.veritas/evals/history.jsonl`, and `veritas eval summary` reports the recent trend:
 
@@ -171,7 +187,7 @@ Veritas does not own your AI instruction files. It injects a small marker-bounde
 ```html
 <!-- veritas:governance-block:start -->
 This repo uses Veritas for AI governance. Read `.veritas/GOVERNANCE.md` before making changes.
-After changes, run `veritas shadow run` and address any FAIL lines before finishing.
+After changes, run `veritas run` and address any FAIL lines before finishing.
 <!-- veritas:governance-block:end -->
 ```
 
@@ -184,6 +200,6 @@ npx @kontourai/veritas apply stop-hook --tool generic
 
 Tool-specific integrations are thin wrappers around the same generic contract. Claude Code, Cursor, Codex, Copilot, and any other tool can read the same repo-local rules and run the same shell command.
 
-Today, Codex is the only agent with deep eval/transcript capture. Every other agent integrates through the generic governance-block + stop-hook contract. See [Deep Integration Template](guides/deep-integration-template.md) for what "deep" means and what is not yet implemented for Claude Code, Cursor, and Copilot.
+Codex and Claude Code have deep eval/transcript capture through the integration registry. Cursor and Copilot currently use the generic governance-block plus stop-hook contract, with no transcript reader yet. See [Deep Integration Template](guides/deep-integration-template.md) for the contract and parity matrix.
 
 For hands-on setup, start with the [Getting Started guide](guides/getting-started.md). For CLI details, see the [CLI Reference](reference/cli.md).
