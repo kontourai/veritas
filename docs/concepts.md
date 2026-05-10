@@ -152,6 +152,8 @@ Evidence records capture what changed, which repo surfaces were touched, which p
 
 Veritas also writes `.veritas/claims/*.input.json` when a report includes Surface input. Those files are per-claim slices of `surface.input`, not Surface `TrustReport` files. They exist so local tooling can inspect one claim and its matching evidence/events without copying the full evidence artifact.
 
+Not every field auto-populates everywhere. Without a transcript, `time_to_green_minutes` is derived from `.veritas/runs/history.jsonl` (most recent FAIL → next PASS for the same actor). `accepted_without_major_rewrite` and `override_count` require a transcript today, so they read as `{ value: null, reason: <code> }` for non-Codex sessions. Reviewer confidence and false-positive flags are always human-supplied via `veritas eval record`.
+
 For local use, `veritas eval record` appends compact JSONL entries to `.veritas/evals/history.jsonl`, and `veritas eval summary` reports the recent trend:
 
 ```text
@@ -181,5 +183,7 @@ npx @kontourai/veritas apply stop-hook --tool generic
 ```
 
 Tool-specific integrations are thin wrappers around the same generic contract. Claude Code, Cursor, Codex, Copilot, and any other tool can read the same repo-local rules and run the same shell command.
+
+Today, Codex is the only agent with deep eval/transcript capture. Every other agent integrates through the generic governance-block + stop-hook contract. See [Deep Integration Template](guides/deep-integration-template.md) for what "deep" means and what is not yet implemented for Claude Code, Cursor, and Copilot.
 
 For hands-on setup, start with the [Getting Started guide](guides/getting-started.md). For CLI details, see the [CLI Reference](reference/cli.md).

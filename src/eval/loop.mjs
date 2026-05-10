@@ -239,7 +239,7 @@ export function buildEvalRecordCommand(draftPath, draft) {
     '--reviewer-confidence',
     draft.prefilled_outcome.reviewer_confidence,
     '--time-to-green-minutes',
-    draft.prefilled_measurements.time_to_green_minutes === null
+    typeof draft.prefilled_measurements.time_to_green_minutes !== 'number'
       ? '<minutes>'
       : String(draft.prefilled_measurements.time_to_green_minutes),
     '--override-count',
@@ -271,6 +271,7 @@ export function validateEvalDraftContext({ draftPath, draftRecord, rootDir, team
     'team_profile_id',
     'mode',
     'evidence',
+    'governance',
     'reviewer_confidence_scale',
     'prefilled_outcome',
     'prefilled_measurements',
@@ -366,4 +367,3 @@ export function writeEvalDraftArtifact(
   writeFileSync(artifactPath, `${JSON.stringify(record, null, 2)}\n`, 'utf8');
   return artifactPath;
 }
-

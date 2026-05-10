@@ -225,6 +225,9 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
   if (options.answersPath && !options.guided) {
     throw new Error('veritas init --answers requires --guided');
   }
+  if (options.pack && (options.explore || options.guided || options.apply)) {
+    throw new Error('veritas init --pack is only supported on the direct init path');
+  }
 
   if (options.explore || options.guided) {
     const answers = options.answersPath ? loadJson(resolve(rootDir, options.answersPath), 'init answers') : undefined;
@@ -266,6 +269,7 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
     rootDir,
     projectName,
     proofLane: options.proofLane ?? defaults.proofLane,
+    pack: options.pack,
     force: options.force ?? false,
   });
 
@@ -655,12 +659,14 @@ export function runEvalObserveCli(argv = process.argv.slice(2), defaults = {}) {
     rootDir,
     outputPath: options.outputPath,
     churnThreshold: options.rewriteThreshold ?? 0.3,
+    verbose: options.verbose ?? false,
   });
 
   process.stdout.write(
     `${JSON.stringify(
       {
         artifactPath: result.artifactPath,
+        ...(result.heuristics ? { heuristics: result.heuristics } : {}),
         ...result.draft,
       },
       null,

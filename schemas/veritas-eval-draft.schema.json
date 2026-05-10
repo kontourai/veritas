@@ -36,6 +36,12 @@
       "additionalProperties": false,
       "required": ["reviewer_confidence"],
       "properties": {
+        "accepted_without_major_rewrite": {
+          "oneOf": [
+            { "type": "boolean" },
+            { "$ref": "#/$defs/missingHeuristic" }
+          ]
+        },
         "reviewer_confidence": { "type": "string" }
       }
     },
@@ -49,7 +55,13 @@
         "missed_issues"
       ],
       "properties": {
-        "time_to_green_minutes": { "type": ["number", "null"], "minimum": 0 },
+        "time_to_green_minutes": {
+          "oneOf": [
+            { "type": "number", "minimum": 0 },
+            { "$ref": "#/$defs/missingHeuristic" },
+            { "type": "null" }
+          ]
+        },
         "override_count": { "type": "integer", "minimum": 0 },
         "false_positive_rules": {
           "type": "array",
@@ -68,6 +80,25 @@
     "missing_confirmation_fields": {
       "type": "array",
       "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "missingHeuristic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "reason"],
+      "properties": {
+        "value": { "type": "null" },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "transcript_schema_unrecognized",
+            "no_failing_run_observed",
+            "no_passing_run_observed",
+            "churn_threshold_not_applicable"
+          ]
+        }
+      }
     }
   }
 }

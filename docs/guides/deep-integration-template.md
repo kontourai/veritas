@@ -1,8 +1,15 @@
-# Deep Integration Template
+# Deep Integration
 
-The generic Veritas contract stays a shell command: run `veritas shadow run`, read the feedback, fix the issue, and rerun. A deeper agent integration adds transcript capture around that same contract.
+The generic Veritas contract stays a shell command: run `veritas shadow run`, read the feedback, fix the issue, and rerun. A deep integration adds runtime hooks and transcript capture around that same contract.
 
-## Reference Depth: Codex
+Deep means:
+
+- repo instruction files carry the Veritas governance block,
+- a stop or post-action hook runs `veritas shadow run`,
+- optional just-in-time hooks run `veritas explain` before edits,
+- a transcript observer can draft eval data without inventing human judgment.
+
+## Worked Example: Codex
 
 Codex is the reference deep integration because it can run a stop hook and an end-of-session hook without product-specific code in Surface.
 
@@ -18,20 +25,12 @@ The generated Codex hook config now wires:
 - `accepted_without_major_rewrite`: based on post-Veritas churn against files Veritas reported on.
 - `override_count`: `VERITAS_*` bypasses and `--skip-proof` after the run.
 
-Unknown fields stay unset instead of being guessed.
+Unknown fields are reported as missing instead of being guessed.
 
-## Porting The Pattern
+## Other Agents
 
-For another agent runtime, keep the shell feedback command unchanged and add the same three pieces:
+Claude Code and Cursor are supported today through the generic governance-block and stop-hook contract. Claude Code also has a PreToolUse hook for just-in-time `veritas explain` context. Deep transcript capture for Claude Code and Cursor is not implemented yet.
 
-1. A stop or post-action hook that runs `veritas shadow run`.
-2. A session transcript reader that can identify tool commands, timestamps, touched files, and exit status.
-3. An eval observer that writes a draft, leaving human judgment fields for final review.
-
-Claude Code can follow the same shape with its existing Stop and PreToolUse hooks plus a transcript reader once a stable session path is available.
-
-Cursor should stay on the shallow Stop hook until it exposes durable session transcripts.
-
-Copilot and generic agents can integrate deeply through any durable command log that includes timestamps, tool calls, file paths, and command outcomes.
+Copilot and generic agents can integrate deeply through any durable command log that includes timestamps, tool calls, file paths, and command outcomes, but Veritas does not ship those readers today.
 
 Surface is not involved in agent-runtime depth. Veritas owns these integrations because they are repo and agent workflow behavior built on top of Surface's trust primitives.

@@ -32,7 +32,7 @@ import {
 } from '../src/index.mjs';
 
 const MAIN_USAGE = `Usage:
-  veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--force]
+  veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--pack <name>] [--force]
   veritas report [--format json|feedback] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
   veritas budget [--format human|feedback|json] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
   veritas shadow run [--format feedback|json] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--team-profile <path>] [--proof-command <cmd>] [--skip-proof]
@@ -170,7 +170,7 @@ if (!subcommand || isHelpToken(subcommand)) {
   writeStdout(MAIN_USAGE);
 } else if (subcommand === 'init') {
   if (args.some(isHelpToken)) {
-    writeStdout('Usage:\n  veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--force]\n');
+    writeStdout('Usage:\n  veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--pack <name>] [--force]\n');
   } else {
     runInitCli(args, { rootDir: cwd });
   }
@@ -284,7 +284,7 @@ if (!subcommand || isHelpToken(subcommand)) {
         draft:
           'Usage:\n  veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]\n    [--reviewer-confidence <scale-entry|unknown>]\n    [--time-to-green-minutes <number>]\n    [--override-count <number>]\n    [--false-positive-rule <rule-id>]\n    [--missed-issue <text>]\n    [--note <text>]\n',
         observe:
-          'Usage:\n  veritas eval observe --transcript <path> [--evidence <path>] [--output <path>] [--rewrite-threshold <ratio>]\n',
+          'Usage:\n  veritas eval observe --transcript <path> [--evidence <path>] [--output <path>] [--rewrite-threshold <ratio>] [--verbose]\n',
         record:
           'Usage:\n  veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force]\n  veritas eval record --draft <path> [--team-profile <path>] [--output <path>] [--force]\n    --accepted-without-major-rewrite <true|false>\n    --required-followup <true|false>\n    --reviewer-confidence <scale-entry|unknown>\n    --time-to-green-minutes <number>\n    --override-count <number>\n    [--false-positive-rule <rule-id>]\n    [--missed-issue <text>]\n    [--note <text>]\n',
         marker:

@@ -1083,6 +1083,27 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
   assert.deepEqual(reportResult.source_scope, ['explicit']);
 });
 
+test('init CLI can install a named starter policy pack', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-pack-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  const initStdout = runLocalVeritas([
+    'init',
+    '--root',
+    rootDir,
+    '--project-name',
+    'Next Starter',
+    '--pack',
+    'nextjs-typescript',
+  ]);
+  const initResult = parseCliJson(initStdout);
+  const policyPack = readJsonFromAbsolute(join(rootDir, '.veritas/policy-packs/default.policy-pack.json'));
+
+  assert.equal(initResult.pack, 'nextjs-typescript');
+  assert.equal(policyPack.name, 'nextjs-typescript');
+  assert.ok(policyPack.rules.some((rule) => rule.id === 'api-routes-require-api-tests'));
+});
+
 test('init explore emits a read-only recommendation artifact', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-explore-'));
   writeFileSync(
@@ -2618,6 +2639,79 @@ test('shadow run CLI can complete the full draft-and-record path', () => {
   assert.equal(parsed.evalMode, 'shadow');
   assert.equal(parsed.proofRan, true);
   assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
+});
+
+test('shadow run records run history and reuses fail-to-pass time to green', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-run-history-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  writeBootstrapStarterKit({ rootDir, projectName: 'Run History Demo', proofLane: 'node -e process.exit(0)' });
+  execFileSync('git', ['init'], { cwd: rootDir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.email', 'veritas@example.com'], { cwd: rootDir });
+  execFileSync('git', ['config', 'user.name', 'Veritas Test'], { cwd: rootDir });
+  execFileSync('git', ['add', '.'], { cwd: rootDir });
+  execFileSync('git', ['commit', '-m', 'initial'], { cwd: rootDir, stdio: 'ignore' });
+  const policyPath = join(rootDir, '.veritas/policy-packs/default.policy-pack.json');
+  const policyPack = readJsonFromAbsolute(policyPath);
+  policyPack.rules.push({
+    id: 'requires-fix-marker',
+    kind: 'required-artifacts',
+    classification: 'promotable-policy',
+    stage: 'block',
+    message: 'A fix marker must exist for the run-history smoke test.',
+    owner: 'test',
+    rollback_switch: null,
+    match: { artifacts: ['fix-marker.txt'] },
+  });
+  writeFileSync(policyPath, `${JSON.stringify(policyPack, null, 2)}\n`);
+
+  assert.throws(() =>
+    execFileSync(
+      'npm',
+      [
+        'exec',
+        '--',
+        'veritas',
+        'shadow',
+        'run',
+        '--root',
+        rootDir,
+        '--skip-proof',
+        '--working-tree',
+        '--run-id',
+        'run-history-fail',
+      ],
+      { cwd: frameworkRootDir, encoding: 'utf8', stdio: 'pipe' },
+    ),
+  );
+  const historyPath = join(rootDir, '.veritas/runs/history.jsonl');
+  const firstHistory = readFileSync(historyPath, 'utf8');
+  assert.match(firstHistory, /run-history-fail/);
+  writeFileSync(join(rootDir, 'fix-marker.txt'), 'fixed\n');
+
+  const passStdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'veritas',
+      'shadow',
+      'run',
+      '--root',
+      rootDir,
+      '--skip-proof',
+      '--working-tree',
+      '--run-id',
+      'run-history-pass',
+      '--skip-proof',
+      '--format',
+      'json',
+    ],
+    { cwd: frameworkRootDir, encoding: 'utf8' },
+  );
+  const passResult = parseCliJson(passStdout);
+  const draft = readJsonFromAbsolute(join(rootDir, passResult.draftArtifactPath));
+
+  assert.equal(typeof draft.prefilled_measurements.time_to_green_minutes, 'number');
 });
 
 test('shadow run JSON mode reports proof failures as run failures', () => {

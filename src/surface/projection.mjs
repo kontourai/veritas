@@ -405,7 +405,10 @@ export function buildSurfaceTrustInput(record) {
 }
 
 export function validateSurfaceTrustInputAtBoundary({ input, record, rootDir }) {
-  if (process.env.VERITAS_SKIP_SURFACE_VALIDATION === '1') return input;
+  if (process.env.VERITAS_SKIP_SURFACE_VALIDATION === '1') {
+    process.stderr.write('WARN: VERITAS_SKIP_SURFACE_VALIDATION=1 — this is intended as a short-lived escape hatch; remove once the underlying fixture is fixed.\n');
+    return input;
+  }
   try {
     return validateTrustInput(input);
   } catch (error) {

@@ -40,7 +40,7 @@ Breaking proof-command migration notes live in [../MIGRATING.md](../MIGRATING.md
 Bootstraps the starter kit for a target repo.
 
 ```bash
-npx @kontourai/veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--force]
+npx @kontourai/veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--pack <name>] [--force]
 npx @kontourai/veritas init --explore [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--output .veritas/init-plans/<name>.json]
 npx @kontourai/veritas init --guided --answers <answers.json> [--root <path>] [--project-name <name>] [--output .veritas/init-plans/<name>.json]
 npx @kontourai/veritas init --apply --plan <path> [--root <path>] [--force]
@@ -55,6 +55,8 @@ Writes:
 - `.veritas/team/default.team-profile.json`
 - `.veritas/evidence/`
 - `AGENTS.md` and `CLAUDE.md` governance blocks
+
+`--pack` replaces the generated starter policy pack with a named example pack. Shipped packs are `nextjs-typescript`, `python-fastapi`, and `monorepo-pnpm`.
 
 `init` keeps stdout machine-readable JSON and prints the suggested CODEOWNERS block to stderr as informational text.
 
@@ -215,6 +217,16 @@ npx @kontourai/veritas eval draft --evidence <path> [--team-profile <path>] [--o
   [--missed-issue <text>]
   [--note <text>]
 ```
+
+### `eval observe`
+
+Builds an eval draft from a Codex transcript.
+
+```bash
+npx @kontourai/veritas eval observe --transcript <path> [--evidence <path>] [--output <path>] [--rewrite-threshold <ratio>] [--verbose]
+```
+
+When a heuristic cannot compute a value, the draft stores a reason object such as `{ "value": null, "reason": "no_passing_run_observed" }` instead of a bare null. The command validates the draft shape before writing unless `VERITAS_SKIP_EVAL_VALIDATION=1` is set.
 
 Guardrail:
 

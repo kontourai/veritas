@@ -29,9 +29,9 @@ That means the npm package is not only the CLI binary. It also publishes the sch
 
 This repo now ships three core automation lanes:
 
-- [CI](../../.github/workflows/ci.yml) runs `npm run verify`, `npm test`, and the line-coverage gate on Node 18 and Node 22
+- [CI](../../.github/workflows/ci.yml) runs `npm run verify`, `npm test`, and the line-coverage gate on Node 20 and Node 22
 - [Docs Pages](../../.github/workflows/pages.yml) builds the Markdown docs into a GitHub Pages site
-- [Publish NPM](../../.github/workflows/publish-npm.yml) verifies on Node 18 and Node 22, then publishes `@kontourai/veritas` on tag pushes like `v0.1.0`
+- [Publish NPM](../../.github/workflows/publish-npm.yml) verifies on Node 20 and Node 22, then publishes `@kontourai/veritas` on tag pushes like `v0.3.0`
 
 ## What We Need From You
 
@@ -76,7 +76,7 @@ So the normal release path is:
 1. bump `package.json` version
 2. commit the release
 3. merge that commit to `main`
-4. create and push a tag like `v0.1.0` that points at the `main` commit you intend to release
+4. create and push a tag like `v0.3.0` that points at the `main` commit you intend to release
 
 ## Suggested First Publish Checklist
 

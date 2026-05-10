@@ -33,6 +33,7 @@ Find what you need by what you're trying to do.
 - [Artifacts and Schemas](reference/artifacts-and-schemas.md) for the JSON contract surface
 - [Example Fixtures](reference/examples.md) for sample evidence and eval payloads
 - [Telemetry and Read Models](reference/telemetry-and-read-models.md) for derived artifacts
+- [Environment Variables](reference/env-vars.md) for hook controls and temporary validation escape hatches
 
 ### Measure if Veritas is helping
 
@@ -57,6 +58,7 @@ Find what you need by what you're trying to do.
 ### Guides
 
 - [Getting Started](guides/getting-started.md) — install the framework and run your first evidence report
+- [Walkthrough](guides/walkthrough.md) — initialize a Next.js-style repo and see a fail/pass feedback loop
 - [Agent Runtime Integrations](guides/agent-runtime-integrations.md) — connect Veritas to Claude Code, Cursor, and Codex
 - [Start Your Next Project](guides/start-your-next-project.md) — bootstrap a greenfield repo with Veritas from day one
 - [Tune For Your Team](guides/tune-for-your-team.md) — adapt policy and rollout without forking the framework
@@ -71,6 +73,7 @@ Find what you need by what you're trying to do.
 - [Example Fixtures](reference/examples.md) — canonical sample evidence and eval payloads used by tests
 - [Telemetry and Read Models](reference/telemetry-and-read-models.md) — derived artifacts and how to read trends over time
 - [Benchmarking](reference/benchmarking.md) — deterministic scoring against marker fixtures
+- [Environment Variables](reference/env-vars.md) — hook controls and validation escape hatches
 
 ### Design
 
@@ -86,5 +89,6 @@ Find what you need by what you're trying to do.
 ### Project
 
 - [Roadmap](design/roadmap.md) — open design questions and planned work
+- [Implementation Backlog](design/implementation-backlog.md) — ordered execution backlog
 - [Migrating](MIGRATING.md) — breaking changes and upgrade notes
 - [Releasing](RELEASING.md) — publish and release checklist

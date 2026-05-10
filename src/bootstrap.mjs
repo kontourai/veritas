@@ -1,4 +1,5 @@
 import { basename, dirname, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -20,6 +21,14 @@ const OPTIONAL_INSTRUCTION_TARGETS = [
 ];
 
 const INIT_RECOMMENDATION_SCHEMA_VERSION = 1;
+
+const STARTER_POLICY_PACKS = new Map([
+  ['nextjs-typescript', 'nextjs-typescript.policy-pack.json'],
+  ['python-fastapi', 'python-fastapi.policy-pack.json'],
+  ['monorepo-pnpm', 'monorepo-pnpm.policy-pack.json'],
+]);
+
+const FRAMEWORK_ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 export function slugifyProjectName(name) {
   return name
@@ -481,6 +490,20 @@ export function buildStarterPolicyPack({ projectName, instructionTargets = DEFAU
   };
 }
 
+export function listStarterPolicyPacks() {
+  return [...STARTER_POLICY_PACKS.keys()];
+}
+
+export function loadStarterPolicyPack(pack) {
+  if (!pack) return null;
+  const fileName = STARTER_POLICY_PACKS.get(pack);
+  if (!fileName) {
+    throw new Error(`Unknown Veritas starter policy pack: ${pack}. Available packs: ${listStarterPolicyPacks().join(', ')}`);
+  }
+  const packPath = resolve(FRAMEWORK_ROOT_DIR, 'examples/policy-packs', fileName);
+  return loadJson(packPath, `starter policy pack ${pack}`);
+}
+
 export function buildStarterTeamProfile({ projectName, proofLane = 'npm test' }) {
   const projectSlug = slugifyProjectName(projectName);
 
@@ -647,6 +670,7 @@ export function writeBootstrapStarterKit({
   projectName = basename(resolve(rootDir)),
   proofLane,
   instructionTargets,
+  pack,
   force = false,
 }) {
   const repoInsights = inferBootstrapRepoInsights(rootDir);
@@ -661,7 +685,7 @@ export function writeBootstrapStarterKit({
 
   const files = [
     [adapterPath, buildStarterAdapter({ projectName, proofLane: resolvedProofLane, repoInsights, instructionTargets: selectedInstructionTargets })],
-    [policyPackPath, buildStarterPolicyPack({ projectName, instructionTargets: selectedInstructionTargets })],
+    [policyPackPath, loadStarterPolicyPack(pack) ?? buildStarterPolicyPack({ projectName, instructionTargets: selectedInstructionTargets })],
     [teamProfilePath, buildStarterTeamProfile({ projectName, proofLane: resolvedProofLane })],
   ];
 
@@ -712,6 +736,7 @@ export function writeBootstrapStarterKit({
   return {
     rootDir,
     projectName,
+    pack: pack ?? null,
     proofLane: resolvedProofLane,
     repoInsights,
     codeownersBlock: buildSuggestedCodeownersBlock(),

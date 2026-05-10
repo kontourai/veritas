@@ -10,6 +10,7 @@ import {
   resolveProofCommands,
 } from '../report.mjs';
 import { generateEvalDraft, generateEvalRecord } from '../eval/records.mjs';
+import { appendRunHistory, deriveTimeToGreenFromRunHistory } from '../eval/run-history.mjs';
 
 function hasShadowOutcomeInputs(options) {
   return (
@@ -39,6 +40,8 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseShadowArgs(argv);
   const format = normalizeOutputFormat(options.format, 'feedback');
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const startedAt = new Date().toISOString();
+  const actor = process.env.VERITAS_ACTOR ?? 'unknown';
   const { adapterPath } = resolveVeritasPaths(
     { ...options, rootDir },
     { ...defaults, rootDir },
@@ -107,17 +110,35 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
       'veritas shadow run encountered changed files outside configured surfaces and the uncovered-path policy is fail',
     );
   }
+  const currentStatus = feedbackHasFailures(reportResult.record, proofFailure) ? 'fail' : 'pass';
+  const finishedAt = new Date().toISOString();
+  const historyTimeToGreen = deriveTimeToGreenFromRunHistory(rootDir, {
+    actor,
+    currentStatus,
+    finishedAt,
+  });
+  appendRunHistory(rootDir, {
+    run_id: reportResult.record.run_id,
+    started_at: startedAt,
+    finished_at: finishedAt,
+    status: currentStatus,
+    actor,
+  });
+  const evalOptions = {
+    ...options,
+    timeToGreenMinutes: options.timeToGreenMinutes ?? historyTimeToGreen ?? undefined,
+  };
   const draftResult = generateEvalDraft(
     {
-      ...options,
+      ...evalOptions,
       rootDir,
       evidencePath: reportResult.artifactPath,
-      force: options.force ?? false,
+      force: evalOptions.force ?? false,
     },
     { ...defaults, rootDir },
   );
 
-  if (!hasShadowOutcomeInputs(options)) {
+  if (!hasShadowOutcomeInputs(evalOptions)) {
     if (format === 'feedback') {
       process.stdout.write(
         buildFeedbackSummary({
@@ -164,9 +185,10 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
   const evalResult = generateEvalRecord(
     {
       ...options,
+      ...evalOptions,
       rootDir,
       draftPath: draftResult.artifactPath,
-      force: options.force ?? false,
+      force: evalOptions.force ?? false,
     },
     { ...defaults, rootDir },
   );

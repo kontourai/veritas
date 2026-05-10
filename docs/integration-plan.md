@@ -51,7 +51,7 @@ The audit identified gaps and the Surface plan introduced new primitives (`Revie
 
 ### Track V-A — Cross-layer rule type
 
-**Status:** Partially shipped. The new rule kinds (`forbidden-pattern`, `required-pattern`, `header-required`) are shipped. The cross-surface-write boundary enforcement is shipped. However, the `surface-fixture-required` rule (V-A1) and `surface-projection-required` rule (V-A2) require Surface integration and are still planned.
+**Status:** Partially shipped. The new rule kinds (`forbidden-pattern`, `required-pattern`, `header-required`) are shipped. The cross-surface-write boundary enforcement is shipped. Veritas also depends on `@kontourai/surface` for portable trust validation. The `surface-fixture-required` rule (V-A1) and `surface-projection-required` rule (V-A2) themselves are still planned.
 
 Today Veritas rules operate on file paths and presence checks. Real cross-layer governance needs rules that read Surface fixtures.
 
@@ -77,7 +77,7 @@ A new rule type: when a code path matches the `if-changed` pattern, require a Su
 
 Veritas reads the matched fixtures, runs `validateTrustInput` on each `surface.input` block, and confirms claims of the relevant `claimType` exist with valid evidence. If validation fails or the fixture is missing, the rule fails.
 
-This is the first rule type that requires Veritas to actually execute Surface code (currently Surface is just shape-validated by JSON Schema). Wire this through `@kontourai/surface` as a peerDependency.
+This rule type requires Veritas to validate the projected Surface `TrustInput` with Surface code, not only with Veritas-local shape checks. Veritas now depends on `@kontourai/surface`; future cross-layer rules should keep that dependency one-way by validating portable `surface.input` instead of importing product-specific workflow code.
 
 #### V-A2. `surface-projection-required` rule (planned)
 
@@ -102,7 +102,7 @@ Veritas runs the projection function against the input and asserts the output ma
 
 ### Track V-B — Adapter packs
 
-**Status:** Planned. Reference adapters and the contract are not yet shipped.
+**Status:** Planned. The generic adapter contract is shipped; stack-specific adapter packs are not.
 
 Today Veritas's adapter is generic JSON. Real apps need stack-specific scaffolding.
 
@@ -141,7 +141,7 @@ export interface VeritasAdapterPack {
 }
 ```
 
-`npx veritas init --pack next-prisma` installs the pack into `.veritas/`.
+The current CLI ships `init`, `init --explore`, `init --guided`, and `init --apply --plan`. Pack-specific initialization is still a design target; until it ships, adapter-pack work should be represented as reviewed init plans that write `.veritas/` starter artifacts.
 
 ### Track V-C — Per-feature verification budget
 
@@ -245,7 +245,7 @@ Taxes already has a starting point. Goal: turn the existing minimal integration 
 
 ### TV1 — Switch to the MCP-monorepo adapter pack
 
-`npx veritas init --pack mcp-monorepo` re-bootstraps `.veritas/` with surface map, default rules, default proof lanes. Existing `.veritas/evidence/` carries over.
+When pack-specific initialization ships, the MCP monorepo pack should re-bootstrap `.veritas/` with a surface map, default rules, and default proof lanes while preserving existing `.veritas/evidence/`. Until then, use `veritas init --guided --answers <answers.json>` followed by `veritas init --apply --plan <path>`.
 
 ### TV2 — Author a Taxes-specific policy pack
 
@@ -314,7 +314,8 @@ Campfit is greenfield. Goal: prove the `next-prisma` adapter pack covers a real 
 
 ```bash
 npm install -D @kontourai/veritas
-npx veritas init --pack next-prisma
+npx veritas init --guided --answers answers.json --output .veritas/init-plans/next-prisma.json
+npx veritas init --apply --plan .veritas/init-plans/next-prisma.json
 ```
 
 Pack installs:
@@ -413,7 +414,7 @@ Both validate against Surface SHACL, but they're different graphs. Veritas's `su
 This plan succeeds when:
 
 1. Taxes runs `veritas shadow run` in PR checks and the policy pack fires on real, useful violations (rule-pack edits without migration, MCP server changes without integration test, projection edits without fixture update).
-2. Campfit installs Veritas via `npx veritas init --pack next-prisma` and the default rules + a small set of Campfit-specific additions cover the trust-bearing seams (crawl, review, schema, projection).
+2. Campfit installs Veritas through a reviewed init plan and the default rules plus a small set of Campfit-specific additions cover the trust-bearing seams (crawl, review, schema, projection).
 3. Both apps emit Veritas evidence whose `surface.input` blocks validate against Surface SHACL (once Surface SHACL ships).
 4. The cross-layer rules in V-A catch at least one real regression in each app within the first month of integration.
 5. Per-feature budgets are reporting useful trends for both Campfit's crawl pipeline and Taxes' rule-pack updates.

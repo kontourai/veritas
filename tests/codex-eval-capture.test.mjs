@@ -108,3 +108,93 @@ test('Codex eval capture marks major rewrites and CLI writes a draft', () => {
   assert.equal(existsSync(artifactPath), true);
   assert.equal(readJson(artifactPath).run_id, 'codex-rewrite');
 });
+
+test('Codex eval capture records reason when transcript schema is unrecognized', () => {
+  const rootDir = tempRoot();
+  const transcriptPath = join(rootDir, 'session.json');
+  const transcript = { session_id: 'codex-empty', unexpected: true };
+
+  const draft = buildCodexEvalDraft({ transcript, transcriptPath, rootDir });
+
+  assert.deepEqual(draft.prefilled_measurements.time_to_green_minutes, {
+    value: null,
+    reason: 'transcript_schema_unrecognized',
+  });
+  assert.deepEqual(draft.prefilled_outcome.accepted_without_major_rewrite, {
+    value: null,
+    reason: 'transcript_schema_unrecognized',
+  });
+});
+
+test('Codex eval capture records reason when no failing run is observed', () => {
+  const rootDir = tempRoot();
+  const transcriptPath = join(rootDir, 'session.json');
+  const transcript = {
+    session_id: 'codex-no-fail',
+    events: [
+      {
+        timestamp: '2026-05-09T10:00:00.000Z',
+        command: 'veritas shadow run',
+        exit_code: 0,
+        files: ['src/index.mjs'],
+      },
+    ],
+  };
+
+  const draft = buildCodexEvalDraft({ transcript, transcriptPath, rootDir });
+
+  assert.deepEqual(draft.prefilled_measurements.time_to_green_minutes, {
+    value: null,
+    reason: 'no_failing_run_observed',
+  });
+});
+
+test('Codex eval capture records reason when no passing run is observed', () => {
+  const rootDir = tempRoot();
+  const transcriptPath = join(rootDir, 'session.json');
+  const transcript = {
+    session_id: 'codex-no-pass',
+    events: [
+      {
+        timestamp: '2026-05-09T10:00:00.000Z',
+        command: 'veritas shadow run',
+        exit_code: 1,
+        files: ['src/index.mjs'],
+      },
+    ],
+  };
+
+  const draft = buildCodexEvalDraft({ transcript, transcriptPath, rootDir });
+
+  assert.deepEqual(draft.prefilled_measurements.time_to_green_minutes, {
+    value: null,
+    reason: 'no_passing_run_observed',
+  });
+});
+
+test('Codex eval capture records reason when churn threshold cannot apply', () => {
+  const rootDir = tempRoot();
+  const transcriptPath = join(rootDir, 'session.json');
+  const transcript = {
+    session_id: 'codex-no-files',
+    events: [
+      {
+        timestamp: '2026-05-09T10:00:00.000Z',
+        command: 'veritas shadow run',
+        exit_code: 1,
+      },
+      {
+        timestamp: '2026-05-09T10:01:00.000Z',
+        command: 'veritas shadow run',
+        exit_code: 0,
+      },
+    ],
+  };
+
+  const draft = buildCodexEvalDraft({ transcript, transcriptPath, rootDir });
+
+  assert.deepEqual(draft.prefilled_outcome.accepted_without_major_rewrite, {
+    value: null,
+    reason: 'churn_threshold_not_applicable',
+  });
+});

@@ -328,7 +328,9 @@ export function mergeEvalRecordOptions(options, draft) {
       options.reviewerConfidence ?? draft?.prefilled_outcome?.reviewer_confidence,
     timeToGreenMinutes:
       options.timeToGreenMinutes ??
-      draft?.prefilled_measurements?.time_to_green_minutes,
+      (typeof draft?.prefilled_measurements?.time_to_green_minutes === 'number'
+        ? draft.prefilled_measurements.time_to_green_minutes
+        : undefined),
     overrideCount:
       options.overrideCount ?? draft?.prefilled_measurements?.override_count,
     falsePositiveRules:
