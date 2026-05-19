@@ -532,7 +532,7 @@ function buildMarkdown({
   return `${markdown.join('\n')}\n`;
 }
 
-export function buildCheckinStatus({
+export async function buildCheckinStatus({
   rootDir: rootDirOverride = rootDir,
   timestamp = new Date().toISOString(),
   runId = process.env.VERITAS_RUN_ID ??
@@ -541,7 +541,7 @@ export function buildCheckinStatus({
   changedTo = process.env.VERITAS_CHANGED_TO,
   isCi = process.env.CI === 'true',
 } = {}) {
-  const report = generateVeritasReport(
+  const report = await generateVeritasReport(
     {
       rootDir: rootDirOverride,
       workingTree: !changedFrom && !changedTo,
@@ -635,13 +635,13 @@ export function buildCheckinStatus({
   };
 }
 
-export function runCheckinStatus({
+export async function runCheckinStatus({
   rootDir: rootDirOverride = rootDir,
   summaryPath = process.env.GITHUB_STEP_SUMMARY,
   failOnAlerts = process.env.VERITAS_FAIL_ON_ALERTS === '1',
   ...options
 } = {}) {
-  const result = buildCheckinStatus({
+  const result = await buildCheckinStatus({
     rootDir: rootDirOverride,
     ...options,
   });
@@ -673,7 +673,7 @@ export function runCheckinStatus({
 const isMainModule = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (isMainModule) {
-  const result = runCheckinStatus();
+  const result = await runCheckinStatus();
   process.stdout.write(
     `${JSON.stringify(
       {

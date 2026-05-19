@@ -8,6 +8,8 @@ import { generateVeritasReport, initClaimStore } from '../src/index.mjs';
 import { frameworkRootDir } from './helpers.mjs';
 
 test('Veritas surface.input validates against Surface and has policy coverage', async () => {
+  const claimsPath = join(frameworkRootDir, 'veritas.claims.json');
+  const originalClaims = existsSync(claimsPath) ? readFileSync(claimsPath, 'utf8') : null;
   await initClaimStore({ rootDir: frameworkRootDir, repoName: 'veritas-framework', force: true });
   let result;
   try {
@@ -20,7 +22,11 @@ test('Veritas surface.input validates against Surface and has policy coverage', 
       { rootDir: frameworkRootDir },
     );
   } finally {
-    rmSync(join(frameworkRootDir, 'veritas.claims.json'), { force: true });
+    if (originalClaims !== null) {
+      writeFileSync(claimsPath, originalClaims, 'utf8');
+    } else {
+      rmSync(claimsPath, { force: true });
+    }
   }
 
   const input = validateTrustInput(result.record.surface.input);
