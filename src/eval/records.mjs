@@ -11,6 +11,7 @@ import {
   appendEvalHistory,
   writeEvalDraftArtifact,
 } from './loop.mjs';
+import { updateRunEvalSummary } from '../surface/dashboard.mjs';
 import {
   buildEvalMarkdownSummary,
   buildEvalDraftMarkdownSummary,
@@ -109,6 +110,10 @@ export function generateEvalRecord(options = {}, defaults = {}) {
     options.force ?? false,
   );
   const historyPath = appendEvalHistory(record, rootDir);
+
+  // Patch the run snapshot with a generic eval summary so Surface can display it
+  updateRunEvalSummary(rootDir, record.run_id, buildEvalSummary(record));
+
   const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
   const relativeHistoryPath = relative(rootDir, historyPath).replaceAll('\\', '/');
   const markdownSummary = buildEvalMarkdownSummary(record, relativeArtifactPath);
@@ -120,6 +125,40 @@ export function generateEvalRecord(options = {}, defaults = {}) {
     artifactPath: relativeArtifactPath,
     historyPath: relativeHistoryPath,
     markdownSummary,
+  };
+}
+
+/**
+ * Maps a Veritas eval record to the generic Surface EvalSummary schema.
+ * Veritas-specific fields that don't fit the standard shape go into metadata.
+ */
+function buildEvalSummary(record) {
+  const outcome = record.outcome ?? {};
+  const measurements = record.measurements ?? {};
+  const confidence = outcome.reviewer_confidence === 'unknown'
+    ? undefined
+    : outcome.reviewer_confidence;
+  const genericOutcome = outcome.accepted_without_major_rewrite === true
+    ? 'accepted'
+    : (outcome.required_followup === true ? 'rejected' : 'accepted-with-changes');
+  const falsePositiveCount = (measurements.false_positive_rules ?? []).length || undefined;
+  const missedIssueCount = (measurements.missed_issues ?? []).length || undefined;
+  const timeToResolutionMinutes = typeof measurements.time_to_green_minutes === 'number'
+    ? measurements.time_to_green_minutes
+    : undefined;
+  return {
+    reviewed: true,
+    reviewedAt: record.reviewed_at ?? record.created_at ?? new Date().toISOString(),
+    ...(confidence !== undefined ? { confidence } : {}),
+    outcome: genericOutcome,
+    ...(falsePositiveCount !== undefined ? { falsePositiveCount } : {}),
+    ...(missedIssueCount !== undefined ? { missedIssueCount } : {}),
+    ...(timeToResolutionMinutes !== undefined ? { timeToResolutionMinutes } : {}),
+    ...(record.notes?.length ? { notes: record.notes } : {}),
+    metadata: {
+      requiredFollowup: outcome.required_followup,
+      overrideCount: measurements.override_count,
+    },
   };
 }
 

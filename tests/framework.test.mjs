@@ -1934,7 +1934,7 @@ test('report writes one trimmed Surface claim input per claim', async () => {
   }, {}, ['package.json']);
 
   assert.equal(result.claimInputPaths.length, result.record.surface.input.claims.length);
-  assert.match(result.dashboardReadModelPath, /^\.veritas\/surface-dashboard\/claim-input-smoke\.dashboard\.json$/);
+  assert.match(result.dashboardReadModelPath, /^\.surface\/runs\/claim-input-smoke\.dashboard\.json$/);
   const dashboard = readJsonFromAbsolute(join(rootDir, result.dashboardReadModelPath));
   assert.equal(dashboard.kind, 'surface-dashboard-read-model');
   assert.equal(dashboard.source, 'veritas:claim-input-smoke');
@@ -1951,7 +1951,7 @@ test('report writes one trimmed Surface claim input per claim', async () => {
   assert.ok(dashboard.policies.some((policy) => policy.id === 'veritas.policy-result'));
   assert.ok(dashboard.graph.nodes.some((node) => node.kind === 'claim'));
   assert.ok(dashboard.graph.edges.some((edge) => edge.kind === 'supports'));
-  const dashboardIndex = readJsonFromAbsolute(join(rootDir, '.veritas/surface-dashboard/latest.json'));
+  const dashboardIndex = readJsonFromAbsolute(join(rootDir, '.surface/runs/latest.json'));
   assert.equal(dashboardIndex.latestRunId, 'claim-input-smoke');
   assert.equal(dashboardIndex.readModelPath, result.dashboardReadModelPath);
   for (const relativePath of result.claimInputPaths) {

@@ -1,8 +1,8 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { relativeRepoPath } from '../paths.mjs';
 
-const DASHBOARD_DIR = '.veritas/surface-dashboard';
+const DASHBOARD_DIR = '.surface/runs';
 
 export function buildSurfaceDashboardReadModel(record, {
   evidenceArtifactPath,
@@ -114,6 +114,7 @@ export function buildSurfaceDashboardReadModel(record, {
       report,
       claims,
     }),
+    evalSummary: null,
     claims,
     policies: policySummaries,
     evidence: input.evidence,
@@ -393,6 +394,23 @@ export function writeSurfaceDashboardReadModel(record, rootDir, options = {}) {
     updatedAt: record.timestamp,
   }, null, 2)}\n`, 'utf8');
   return relativeRepoPath(rootDir, path);
+}
+
+/**
+ * Patches the evalSummary field in an existing run snapshot.
+ * Called by generateEvalRecord after the eval record is written.
+ */
+export function updateRunEvalSummary(rootDir, runId, evalSummary) {
+  const runPath = resolve(rootDir, DASHBOARD_DIR, `${runId}.dashboard.json`);
+  if (!existsSync(runPath)) return false;
+  try {
+    const data = JSON.parse(readFileSync(runPath, 'utf8'));
+    data.evalSummary = evalSummary;
+    writeFileSync(runPath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function buildDashboardGraph({ claims, evidence, events, policiesById, faultLines }) {
