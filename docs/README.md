@@ -17,6 +17,7 @@ Find what you need by what you're trying to do.
 - [Start Your Next Project](guides/start-your-next-project.md) for greenfield repos
 - [Brownfield Adoption](guides/brownfield-adoption.md) for existing repos with custom guidance or verification
 - [Fallow Integration](guides/fallow-integration.md) for optional JS/TS codebase-intelligence proof lanes
+- [Plugin Authoring](plugin-authoring.md) for importing tool-owned evidence into authored claims
 - [CLI Reference](reference/cli.md) for exact commands and flags
 
 ### Wire Veritas into my AI agent
@@ -78,6 +79,7 @@ Find what you need by what you're trying to do.
 - [Telemetry and Read Models](reference/telemetry-and-read-models.md) — derived artifacts and how to read trends over time
 - [Benchmarking](reference/benchmarking.md) — deterministic scoring against marker fixtures
 - [Environment Variables](reference/env-vars.md) — hook controls and validation escape hatches
+- [Plugin Authoring](plugin-authoring.md) — plugin interface, attribution, and claim scaffolding
 
 ### Design
 

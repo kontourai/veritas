@@ -16,6 +16,7 @@ import {
   runBoundariesCheckCli,
   runAttestCli,
   runIntegrationsCli,
+  runClaimCli,
 } from '../src/index.mjs';
 
 const MAIN_USAGE = `Usage:
@@ -26,6 +27,8 @@ const MAIN_USAGE = `Usage:
   veritas attest policy-change --actor <id> --message <text> [--root <path>] [--valid-until-days <days>]
   veritas attest proposal <id> --accept|--reject --actor <id> [--message <text>] [--root <path>]
   veritas attest status [--root <path>]
+  veritas claim init|list|add|edit|remove|scaffold|validate [--root <path>]
+  veritas plugin list [--root <path>]
   veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
   veritas eval observe [--transcript <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>]
   veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false> --reviewer-confidence <scale-entry|unknown> --time-to-green-minutes <number> --override-count <number>
@@ -83,6 +86,16 @@ const ATTEST_USAGE = `Usage:
   veritas attest status [--root <path>]
 `;
 
+const CLAIM_USAGE = `Usage:
+  veritas claim init [--repo-name <name>] [--dry-run] [--force]
+  veritas claim list
+  veritas claim add --type <type> --surface <surface> --subject-type <type> --subject-id <id> --field <field> [--id <id>] [--impact low|medium|high|critical] [--policy-id <id>] [--metadata '{"key":"value"}']
+  veritas claim edit --claim-id <id> [--type <type>] [--surface <surface>] [--subject-type <type>] [--subject-id <id>] [--field <field>] [--impact low|medium|high|critical] [--policy-id <id>] [--metadata '{"key":"value"}']
+  veritas claim remove --claim-id <id>
+  veritas claim scaffold --plugin <name>
+  veritas claim validate
+`;
+
 function isHelpToken(token) {
   return token === '--help' || token === '-h' || token === 'help';
 }
@@ -127,6 +140,19 @@ if (!subcommand || isHelpToken(subcommand)) {
     writeStderr(ATTEST_USAGE);
     process.exitCode = 1;
   }
+} else if (subcommand === 'claim') {
+  if (args.some(isHelpToken)) {
+    writeStdout(CLAIM_USAGE);
+  } else {
+    await runClaimCli(args, { rootDir: cwd });
+  }
+} else if (subcommand === 'plugin') {
+  if (args.some(isHelpToken)) {
+    writeStdout('Usage:\n  veritas plugin list [--root <path>]\n');
+  } else {
+    const { runPluginCli } = await import('../src/cli/plugins.mjs');
+    await runPluginCli(args, { rootDir: cwd });
+  }
 } else if (subcommand === 'run') {
   if (args.some(isHelpToken)) {
     writeStdout(RUN_USAGE);
@@ -139,9 +165,9 @@ if (!subcommand || isHelpToken(subcommand)) {
     if (check === 'boundaries') {
       runBoundariesCheckCli(forwarded, { rootDir: cwd });
     } else if (check === 'budget') {
-      runVerificationBudgetCli(forwarded, { rootDir: cwd });
+      await runVerificationBudgetCli(forwarded, { rootDir: cwd });
     } else if (check === 'shadow') {
-      runShadowRunCli(forwarded, { rootDir: cwd });
+      await runShadowRunCli(forwarded, { rootDir: cwd });
     } else {
       writeStderr(RUN_USAGE);
       process.exitCode = 1;

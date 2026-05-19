@@ -190,6 +190,11 @@
         "rule_count": { "type": "integer", "minimum": 0 }
       }
     },
+    "governance_state": {
+      "$ref": "#/$defs/governanceState",
+      "x_surface_mapping": "mapped",
+      "x_surface_targets": ["claim", "evidence", "event", "metadata", "report-input"]
+    },
     "policy_results": {
       "type": "array",
       "items": { "$ref": "#/$defs/policyResult" },
@@ -259,7 +264,22 @@
           "enum": ["observation", "extraction", "validation", "corroboration", "attestation", "auditability", "anchoring", "monitoring"]
         },
         "surface_claim_ids": { "$ref": "#/$defs/stringArray" },
-        "summary": { "type": "string" }
+        "summary": { "type": "string" },
+        "proof_result": { "$ref": "#/$defs/proofResult" }
+      }
+    },
+    "proofResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "passed", "stdout", "stderr", "output"],
+      "properties": {
+        "command": { "type": "string" },
+        "passed": { "type": "boolean" },
+        "exitCode": { "type": ["integer", "null"] },
+        "signal": { "type": ["string", "null"] },
+        "stdout": { "type": "string" },
+        "stderr": { "type": "string" },
+        "output": { "type": "string" }
       }
     },
     "proofFamilyResult": {
@@ -396,6 +416,77 @@
         "actions": {
           "type": "array",
           "items": { "$ref": "#/$defs/externalToolAction" }
+        }
+      }
+    },
+    "governanceState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "currentAttestationId",
+        "pending",
+        "drift",
+        "expired",
+        "ageDays",
+        "validUntil"
+      ],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": ["current", "drifted", "missing", "pending", "broken-head"]
+        },
+        "currentAttestationId": { "type": ["string", "null"] },
+        "attestation": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "pending": { "type": "boolean" },
+        "drift": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["field", "attested", "current"],
+            "properties": {
+              "field": {
+                "type": "string",
+                "enum": ["policyPackHash", "adapterHash", "teamProfileHash", "currentAttestationId"]
+              },
+              "attested": { "type": ["string", "null"] },
+              "current": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "expired": { "type": "boolean" },
+        "ageDays": { "type": ["integer", "null"] },
+        "validUntil": { "type": ["string", "null"] },
+        "zone1": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hashes": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["policyPackHash", "adapterHash", "teamProfileHash"],
+              "properties": {
+                "policyPackHash": { "type": "string" },
+                "adapterHash": { "type": "string" },
+                "teamProfileHash": { "type": "string" }
+              }
+            },
+            "paths": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["policyPackPath", "adapterPath", "teamProfilePath"],
+              "properties": {
+                "policyPackPath": { "type": "string" },
+                "adapterPath": { "type": "string" },
+                "teamProfilePath": { "type": "string" }
+              }
+            },
+            "error": { "type": "string" }
+          }
         }
       }
     },

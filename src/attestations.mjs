@@ -275,6 +275,23 @@ export function createAttestation({
 export function inspectAttestationStatus(rootDir, options = {}) {
   const current = readCurrentAttestation(rootDir);
   const pending = existsSync(pendingPath(rootDir));
+  const zone1 = (() => {
+    try {
+      const hashes = hashZone1(rootDir, options);
+      return {
+        hashes: {
+          policyPackHash: hashes.policyPackHash,
+          adapterHash: hashes.adapterHash,
+          teamProfileHash: hashes.teamProfileHash,
+        },
+        paths: hashes.paths,
+      };
+    } catch (error) {
+      return {
+        error: error.message,
+      };
+    }
+  })();
   if (!current) {
     return {
       state: pending ? 'pending' : 'missing',
@@ -284,6 +301,7 @@ export function inspectAttestationStatus(rootDir, options = {}) {
       expired: false,
       ageDays: null,
       validUntil: null,
+      zone1,
     };
   }
   if (current.missing) {
@@ -295,9 +313,10 @@ export function inspectAttestationStatus(rootDir, options = {}) {
       expired: false,
       ageDays: null,
       validUntil: null,
+      zone1,
     };
   }
-  const hashes = hashZone1(rootDir, options);
+  const hashes = zone1.hashes ?? hashZone1(rootDir, options);
   const drift = ['policyPackHash', 'adapterHash', 'teamProfileHash']
     .filter((field) => current[field] !== hashes[field])
     .map((field) => ({
@@ -318,6 +337,7 @@ export function inspectAttestationStatus(rootDir, options = {}) {
     expired: now.getTime() > validUntil.getTime(),
     ageDays,
     validUntil: validUntil.toISOString(),
+    zone1,
   };
 }
 

@@ -20,6 +20,8 @@ Every Veritas evidence artifact includes `surface.input`, a Surface `TrustInput`
 
 `surface.input` must not contain Surface report-only fields such as `id`, `generatedAt`, `summary`, `faultLines`, or `proofRequirementsByClaimId`. Veritas only consumes the generated report and surfaces stale or disputed statuses as lint feedback.
 
+Policy packs, repo adapters, and team profiles remain Veritas artifacts. They are sources of governance claims, not claims themselves. When attestation is enabled, Veritas projects claims about their content hashes, adapter applicability, attestation currency, and drift into `surface.input` so the same trust report can show both operational proof outcomes and governance-state problems.
+
 For the full boundary rule, see [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md).
 
 ## Rules
@@ -123,6 +125,8 @@ Zone 1 governance files encode the repo's constitutional core: the repo adapter,
 Use `veritas attest bootstrap --actor <human-id> --non-interactive` after initial setup. Use `veritas attest policy-change --actor <human-id> --message <text>` after a reviewed Zone 1 change. Attestations are immutable; each new record supersedes the previous one through `priorAttestationId`.
 
 `veritas run` includes the built-in `policy-changes-require-attestation` rule. If the active attestation's policy-pack, adapter, or team-profile hash no longer matches disk, the run emits a hard `FAIL` until a fresh human attestation is recorded. Missing or expired attestations warn so new repos can bootstrap without pretending the human review step happened.
+
+The evidence record also carries `governance_state` when the attestation gate runs. That state is projected as Surface claims about governance artifact integrity and human attestation currency. Expired attestations make the attestation-currency claim stale without implying hash drift; changed Zone 1 hashes make the affected artifact claims disputed.
 
 ## Just-In-Time Context
 

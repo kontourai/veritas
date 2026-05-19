@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { buildTrustReport } from '@kontourai/surface';
 import {
   createAttestation,
   buildExplainText,
+  generateVeritasReport,
   inspectAttestationStatus,
   writeBootstrapStarterKit,
 } from '../src/index.mjs';
@@ -30,6 +32,32 @@ function bootstrapVeritasRepo(prefix = 'veritas-attest-') {
   });
   commitAll(rootDir, 'Bootstrap Veritas');
   return rootDir;
+}
+
+async function attestationSurfaceClaims(rootDir, options = {}) {
+  const result = await generateVeritasReport({
+    rootDir,
+    includeAttestationGate: true,
+    skipProof: true,
+    runId: options.runId ?? `attestation-surface-${Date.now()}`,
+    timestamp: options.timestamp ?? '2026-05-11T00:00:00.000Z',
+    attestationNow: options.attestationNow,
+  }, { rootDir }, ['package.json']);
+  return buildTrustReport(result.record.surface.input, {
+    id: options.runId ?? 'attestation-surface-report',
+    now: new Date(result.record.timestamp),
+  }).claims;
+}
+
+function claimFor(claims, fieldOrBehavior, artifact) {
+  return claims.find((claim) =>
+    claim.fieldOrBehavior === fieldOrBehavior &&
+    (artifact ? claim.value?.artifact === artifact : true)
+  );
+}
+
+function governanceClaim(claims) {
+  return claims.find((claim) => claim.claimType === 'veritas-governance-artifact');
 }
 
 test('bootstrap attestation records Zone 1 hashes and status detects drift', () => {
@@ -95,6 +123,65 @@ test('expired attestation is warned but not drifted', () => {
   const status = inspectAttestationStatus(rootDir, { now: '2026-05-12T00:00:00.000Z' });
   assert.equal(status.state, 'current');
   assert.equal(status.expired, true);
+});
+
+test('surface input projects current governance artifact claims distinctly from policy results', async () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-surface-current-');
+  createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Initial human approval.',
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+
+  const claims = await attestationSurfaceClaims(rootDir, { runId: 'current-governance-claims' });
+  const policyResult = claims.find((claim) =>
+    claim.claimType === 'veritas-policy-result' &&
+    claim.value?.ruleId === 'policy-changes-require-attestation'
+  );
+  const authoredGovernance = governanceClaim(claims);
+
+  assert.equal(policyResult?.status, undefined);
+  assert.equal(authoredGovernance.claimType, 'veritas-governance-artifact');
+  assert.equal(authoredGovernance.status, 'verified');
+  assert.equal(authoredGovernance.surface, 'veritas.governance');
+});
+
+test('surface input projects missing, drifted, and expired governance attestation states', async () => {
+  const missingRoot = bootstrapVeritasRepo('veritas-attest-surface-missing-');
+  const missingClaims = await attestationSurfaceClaims(missingRoot, { runId: 'missing-governance-claims' });
+  assert.equal(governanceClaim(missingClaims).status, 'disputed');
+
+  const driftRoot = bootstrapVeritasRepo('veritas-attest-surface-drift-');
+  createAttestation({
+    rootDir: driftRoot,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Initial human approval.',
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+  const policyPath = join(driftRoot, '.veritas/policy-packs/default.policy-pack.json');
+  const policy = JSON.parse(readFileSync(policyPath, 'utf8'));
+  policy.description = `${policy.description} Drift for surface claims.`;
+  writeFileSync(policyPath, `${JSON.stringify(policy, null, 2)}\n`);
+  const driftClaims = await attestationSurfaceClaims(driftRoot, { runId: 'drift-governance-claims' });
+  assert.equal(governanceClaim(driftClaims).status, 'disputed');
+
+  const expiredRoot = bootstrapVeritasRepo('veritas-attest-surface-expired-');
+  createAttestation({
+    rootDir: expiredRoot,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Short validity.',
+    validUntilDays: 1,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+  const expiredClaims = await attestationSurfaceClaims(expiredRoot, {
+    runId: 'expired-governance-claims',
+    attestationNow: '2026-05-12T00:00:00.000Z',
+  });
+  assert.equal(governanceClaim(expiredClaims).status, 'stale');
 });
 
 test('shadow run prints a warning for expired attestation', () => {

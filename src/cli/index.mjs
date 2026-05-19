@@ -67,6 +67,7 @@ import { observeTranscriptEval } from '../integrations/transcripts.mjs';
 import { runtimeAdapterFor } from '../integrations/runtime-adapters.mjs';
 import { observeFilesystemEval } from '../eval/filesystem-observer.mjs';
 import { runShadowRunCli } from './shadow-run.mjs';
+import { runClaimCli } from './claims.mjs';
 import {
   createAttestation,
   inspectAttestationStatus,
@@ -103,7 +104,7 @@ function handleSurfaceValidationCliError(error) {
   return null;
 }
 
-export function runVeritasReportCli(argv = process.argv.slice(2), defaults = {}) {
+export async function runVeritasReportCli(argv = process.argv.slice(2), defaults = {}) {
   const { options, files: explicitFiles } = parseArgs(argv);
   if (options.trend) {
     const summary = generateEvalSummary(options, defaults);
@@ -121,7 +122,7 @@ export function runVeritasReportCli(argv = process.argv.slice(2), defaults = {})
   const format = normalizeOutputFormat(options.format, 'json');
   let result;
   try {
-    result = generateVeritasReport(options, defaults, explicitFiles);
+    result = await generateVeritasReport(options, defaults, explicitFiles);
   } catch (error) {
     result = handleSurfaceValidationCliError(error);
   }
@@ -186,13 +187,13 @@ function formatVerificationBudgetHuman(record) {
   return `${lines.join('\n')}\n`;
 }
 
-export function runVerificationBudgetCli(argv = process.argv.slice(2), defaults = {}) {
+export async function runVerificationBudgetCli(argv = process.argv.slice(2), defaults = {}) {
   const { options, files: explicitFiles } = parseBudgetArgs(argv);
   const format = options.format ?? 'human';
   if (!['human', 'feedback', 'json'].includes(format)) {
     throw new Error('--format must be human, feedback, or json');
   }
-  const result = generateVeritasReport(
+  const result = await generateVeritasReport(
     {
       ...options,
       runId: options.runId ?? `budget-${Date.now()}`,
@@ -825,3 +826,4 @@ export function runIntegrationsCli(tool, action, argv = process.argv.slice(2), d
 
 
 export { runShadowRunCli };
+export { runClaimCli };

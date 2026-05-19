@@ -28,6 +28,7 @@ import {
   buildEvalRecord,
   buildExplainText,
   buildGovernanceBlock,
+  buildBaselineClaims,
   buildSuggestedCodexHookConfig,
   buildSuggestedGitHook,
   buildSuggestedRuntimeHook,
@@ -58,6 +59,7 @@ import {
   resolveWorkstream,
   writeBootstrapStarterKit,
 } from '../src/index.mjs';
+import { SURFACE_TRUST_POLICIES } from '../src/surface/policies.mjs';
 import {
   frameworkRootDir,
   initCommittedRepo,
@@ -87,6 +89,87 @@ exec ${JSON.stringify(realNpmPath)} "$@"
 chmodSync(join(testBinDir, 'npm'), 0o755);
 process.env.PATH = `${testBinDir}:${process.env.PATH}`;
 
+function writeClaimStoreForAdapter(rootDir, adapter, policyPack, options = {}) {
+  const repoName = adapter.name ?? 'repo';
+  const proofLaneCommands = (adapter.evidence?.proofLanes ?? []).map((lane) => lane.command).filter(Boolean);
+  const { claims, policies } = buildBaselineClaims(repoName, {
+    hasGovernance: options.hasGovernance ?? false,
+    proofLaneCommands,
+    surfaceNodes: adapter.graph?.nodes ?? [],
+  });
+  const policyById = new Map(policies.map((policy) => [policy.id, policy]));
+  for (const rule of policyPack?.rules ?? []) {
+    claims.push({
+      id: `${repoName}.policy.${rule.id}`,
+      surface: 'veritas.policy-results',
+      claimType: 'veritas-policy-result',
+      fieldOrBehavior: rule.id,
+      subjectType: 'veritas-policy-rule',
+      subjectId: `${policyPack.name}:${rule.id}`,
+      impactLevel: rule.stage === 'block' ? 'high' : 'medium',
+      verificationPolicyId: SURFACE_TRUST_POLICIES.policyResult.id,
+      metadata: { ruleId: rule.id },
+      createdAt: '2026-05-19T00:00:00.000Z',
+      updatedAt: '2026-05-19T00:00:00.000Z',
+    });
+    policyById.set(SURFACE_TRUST_POLICIES.policyResult.id, SURFACE_TRUST_POLICIES.policyResult);
+  }
+  for (const lane of adapter.evidence?.proofLanes ?? []) {
+    if (!lane.externalTool) continue;
+    claims.push({
+      id: `${repoName}.external-tool.${lane.externalTool.tool}.${lane.id}`,
+      surface: 'veritas.external-tools',
+      claimType: 'veritas-external-tool-result',
+      fieldOrBehavior: lane.externalTool.tool,
+      subjectType: 'external-tool-result',
+      subjectId: `${repoName}:${lane.externalTool.tool}:${lane.id}`,
+      impactLevel: lane.externalTool.blocking ? 'high' : 'medium',
+      verificationPolicyId: SURFACE_TRUST_POLICIES.externalToolResult.id,
+      metadata: { tool: lane.externalTool.tool, proofLaneId: lane.id },
+      createdAt: '2026-05-19T00:00:00.000Z',
+      updatedAt: '2026-05-19T00:00:00.000Z',
+    });
+    policyById.set(SURFACE_TRUST_POLICIES.externalToolResult.id, SURFACE_TRUST_POLICIES.externalToolResult);
+  }
+  for (const familyId of options.proofFamilyIds ?? []) {
+    claims.push({
+      id: `${repoName}.proof-family.${familyId}`,
+      surface: 'veritas.proof-families',
+      claimType: 'veritas-proof-family',
+      fieldOrBehavior: familyId,
+      subjectType: 'repo-proof-family',
+      subjectId: `${repoName}:${familyId}`,
+      impactLevel: 'medium',
+      verificationPolicyId: SURFACE_TRUST_POLICIES.proofFamily.id,
+      metadata: { familyId },
+      createdAt: '2026-05-19T00:00:00.000Z',
+      updatedAt: '2026-05-19T00:00:00.000Z',
+    });
+    policyById.set(SURFACE_TRUST_POLICIES.proofFamily.id, SURFACE_TRUST_POLICIES.proofFamily);
+  }
+  if (options.verificationBudget) {
+    claims.push({
+      id: `${repoName}.verification-budget`,
+      surface: 'veritas.verification-budget',
+      claimType: 'veritas-verification-budget',
+      fieldOrBehavior: 'verification budget',
+      subjectType: 'repo-verification-budget',
+      subjectId: `${repoName}:verification-budget`,
+      impactLevel: 'medium',
+      verificationPolicyId: SURFACE_TRUST_POLICIES.verificationBudget.id,
+      createdAt: '2026-05-19T00:00:00.000Z',
+      updatedAt: '2026-05-19T00:00:00.000Z',
+    });
+    policyById.set(SURFACE_TRUST_POLICIES.verificationBudget.id, SURFACE_TRUST_POLICIES.verificationBudget);
+  }
+  writeFileSync(join(rootDir, 'veritas.claims.json'), `${JSON.stringify({
+    schemaVersion: 1,
+    producer: 'veritas',
+    claims,
+    policies: [...policyById.values()],
+  }, null, 2)}\n`);
+}
+
 function runLocalVeritas(args, options = {}) {
   return execFileSync(
     'node',
@@ -95,8 +178,8 @@ function runLocalVeritas(args, options = {}) {
   );
 }
 
-function generateReportCliResult(rootDir, runId, files = ['package.json']) {
-  const result = generateVeritasReport({ rootDir, runId, sourceRef: runId }, { rootDir }, files);
+async function generateReportCliResult(rootDir, runId, files = ['package.json']) {
+  const result = await generateVeritasReport({ rootDir, runId, sourceRef: runId }, { rootDir }, files);
   return {
     artifactPath: result.artifactPath,
     markdownSummary: result.markdownSummary,
@@ -158,13 +241,14 @@ test('parseTokens supports the shared CLI token types', () => {
   assert.deepEqual(rest, ['leftover.txt']);
 });
 
-test('core classifies nodes and builds evidence from an adapter config', () => {
+test('core classifies nodes and builds evidence from an adapter config', async () => {
   const adapter = readJson('../adapters/work-agent.adapter.json');
   const policyPack = loadPolicyPack(
     new URL('../policy-packs/work-agent-convergence.policy-pack.json', import.meta.url),
   );
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
+  writeClaimStoreForAdapter(rootDir, adapter, policyPack);
 
   const classification = classifyNodes(
     ['package.json', '.github/workflows/ci.yml'],
@@ -189,7 +273,7 @@ test('core classifies nodes and builds evidence from an adapter config', () => {
   assert.equal(explicitResolution.resolvedPhase, 'Phase 1 (Harden & Onboard)');
   assert.equal(explicitResolution.resolvedWorkstream, 'explicit-demo');
 
-  const record = buildEvidenceRecord({
+  const record = await buildEvidenceRecord({
     files: ['package.json'],
     options: { baselineCiFastStatus: 'failed' },
     config: adapter,
@@ -217,7 +301,7 @@ test('core classifies nodes and builds evidence from an adapter config', () => {
   assert.equal(record.surface.input.schemaVersion, 2);
   assert.equal(record.surface.input.source, `veritas:${record.run_id}`);
   assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.affected-surface'));
-  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.proof-lanes'));
+  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.proof-lane'));
   assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.policy-results'));
   assert.equal(record.surface.input.faultLines, undefined);
   assert.equal(record.surface.input.proofRequirementsByClaimId, undefined);
@@ -240,7 +324,7 @@ test('core classifies nodes and builds evidence from an adapter config', () => {
   );
 });
 
-test('evidence records include native proof-family budget when configured', () => {
+test('evidence records include native proof-family budget when configured', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-proof-family-'));
   mkdirp(join(rootDir, '.veritas/proof-families'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
@@ -295,7 +379,11 @@ test('evidence records include native proof-family budget when configured', () =
   const policyPack = loadPolicyPack(
     new URL('../policy-packs/work-agent-convergence.policy-pack.json', import.meta.url),
   );
-  const record = buildEvidenceRecord({
+  writeClaimStoreForAdapter(rootDir, adapter, policyPack, {
+    proofFamilyIds: ['repo-governance', 'refactor-tombstones'],
+    verificationBudget: true,
+  });
+  const record = await buildEvidenceRecord({
     files: ['package.json'],
     config: adapter,
     policyPack,
@@ -326,7 +414,7 @@ test('evidence records include native proof-family budget when configured', () =
   );
 });
 
-test('evidence records include advisory external tool results in Surface input', () => {
+test('evidence records include advisory external tool results in Surface input', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-external-tool-'));
   mkdirp(join(rootDir, '.veritas/external'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
@@ -390,8 +478,9 @@ test('evidence records include advisory external tool results in Surface input',
     },
   };
   const policyPack = { name: 'external-tool-policy', version: 1, rules: [] };
+  writeClaimStoreForAdapter(rootDir, adapter, policyPack);
 
-  const record = buildEvidenceRecord({
+  const record = await buildEvidenceRecord({
     files: ['package.json'],
     config: adapter,
     policyPack,
@@ -405,20 +494,18 @@ test('evidence records include advisory external tool results in Surface input',
   assert.equal(record.external_tool_results[0].summary.dead_code_issues, 0);
   assert.ok(
     record.surface.input.claims.some(
-      (claim) => claim.surface === 'veritas.external-tool-results',
+      (claim) => claim.surface === 'veritas.external-tools',
     ),
   );
   const proofClaim = record.surface.input.claims.find(
-    (claim) => claim.surface === 'veritas.proof-lanes' && claim.metadata.proofLaneId === 'fallow-advisory',
+    (claim) => claim.surface === 'veritas.proof-lane' && claim.metadata.command === 'node scripts/run-fallow-audit.mjs',
   );
   const externalToolClaim = record.surface.input.claims.find(
-    (claim) => claim.surface === 'veritas.external-tool-results',
+    (claim) => claim.surface === 'veritas.external-tools',
   );
   assert.ok(proofClaim);
   assert.ok(externalToolClaim);
-  assert.ok(Array.isArray(externalToolClaim.derivedFrom));
-  assert.ok(externalToolClaim.derivedFrom.every((id) => typeof id === 'string'));
-  assert.ok(externalToolClaim.derivedFrom.includes(proofClaim.id));
+  assert.equal(externalToolClaim.derivedFrom, undefined);
   assert.ok(
     record.surface.input.events.some(
       (event) => event.notes === 'fallow fallow-audit-json verdict: warn',
@@ -430,7 +517,7 @@ test('evidence records include advisory external tool results in Surface input',
   );
 });
 
-test('blocking external tool results count as feedback failures', () => {
+test('blocking external tool results count as feedback failures', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-external-tool-block-'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
   const adapter = {
@@ -469,7 +556,8 @@ test('blocking external tool results count as feedback failures', () => {
       uncoveredPathPolicy: 'warn',
     },
   };
-  const record = buildEvidenceRecord({
+  writeClaimStoreForAdapter(rootDir, adapter, { name: 'external-tool-policy', version: 1, rules: [] });
+  const record = await buildEvidenceRecord({
     files: ['package.json'],
     config: adapter,
     policyPack: { name: 'external-tool-policy', version: 1, rules: [] },
@@ -484,7 +572,7 @@ test('blocking external tool results count as feedback failures', () => {
   );
 });
 
-test('proof-family manifest validation rejects required families without review evidence', () => {
+test('proof-family manifest validation rejects required families without review evidence', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-proof-family-invalid-'));
   mkdirp(join(rootDir, '.veritas/proof-families'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
@@ -521,7 +609,7 @@ test('proof-family manifest validation rejects required families without review 
     new URL('../policy-packs/work-agent-convergence.policy-pack.json', import.meta.url),
   );
 
-  assert.throws(
+  await assert.rejects(
     () =>
       buildEvidenceRecord({
         files: ['package.json'],
@@ -924,6 +1012,11 @@ test('surface-aware proof routing prefers surface routes, then default, then req
 test('guidance CLI can run with explicit adapter and policy-pack inputs', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-cli-'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
+  writeClaimStoreForAdapter(
+    rootDir,
+    readJson('../adapters/work-agent.adapter.json'),
+    loadPolicyPack(new URL('../policy-packs/work-agent-convergence.policy-pack.json', import.meta.url)),
+  );
 
   const stdout = execFileSync(
     'node',
@@ -1011,7 +1104,7 @@ test('CLI entrypoints expose help text for publishable operator surfaces', () =>
   assert.match(reportBinaryHelp, /veritas-report/);
 });
 
-test('init CLI writes a conservative starter kit and report CLI can use it', () => {
+test('init CLI writes a conservative starter kit and report CLI can use it', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
 
@@ -1070,10 +1163,10 @@ test('init CLI writes a conservative starter kit and report CLI can use it', () 
   assert.match(readFileSync(join(rootDir, 'AGENTS.md'), 'utf8'), /veritas:governance-block:start/);
   assert.match(readFileSync(join(rootDir, 'CLAUDE.md'), 'utf8'), /veritas:governance-block:start/);
 
-  const reportResult = generateVeritasReport({
+  const reportResult = (await generateVeritasReport({
     rootDir,
     runId: 'bootstrap-smoke',
-  }, { rootDir }, ['package.json']).record;
+  }, { rootDir }, ['package.json'])).record;
   assert.equal(reportResult.run_id, 'bootstrap-smoke');
   assert.equal(reportResult.adapter.name, 'demo-starter');
   assert.equal(reportResult.policy_pack.name, 'demo-starter-default');
@@ -1774,10 +1867,11 @@ test('report CLI preserves branch-diff behavior', () => {
     '.veritas/team/default.team-profile.json',
     'AGENTS.md',
     'CLAUDE.md',
+    'veritas.claims.json',
   ]);
 });
 
-test('report writes one trimmed Surface claim input per claim', () => {
+test('report writes one trimmed Surface claim input per claim', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-claim-inputs-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   const adapterPath = writeTempAdapter(rootDir, {
@@ -1825,8 +1919,13 @@ test('report writes one trimmed Surface claim input per claim', () => {
       },
     ],
   });
+  writeClaimStoreForAdapter(
+    rootDir,
+    readJsonFromAbsolute(adapterPath),
+    readJsonFromAbsolute(policyPackPath),
+  );
 
-  const result = generateVeritasReport({
+  const result = await generateVeritasReport({
     rootDir,
     adapterPath,
     policyPackPath,
@@ -1835,6 +1934,26 @@ test('report writes one trimmed Surface claim input per claim', () => {
   }, {}, ['package.json']);
 
   assert.equal(result.claimInputPaths.length, result.record.surface.input.claims.length);
+  assert.match(result.dashboardReadModelPath, /^\.veritas\/surface-dashboard\/claim-input-smoke\.dashboard\.json$/);
+  const dashboard = readJsonFromAbsolute(join(rootDir, result.dashboardReadModelPath));
+  assert.equal(dashboard.kind, 'surface-dashboard-read-model');
+  assert.equal(dashboard.source, 'veritas:claim-input-smoke');
+  assert.equal(dashboard.producer.evidenceArtifactPath, result.artifactPath);
+  assert.deepEqual(dashboard.producer.claimInputPaths, result.claimInputPaths);
+  assert.equal(dashboard.summary.claimCount, result.record.surface.input.claims.length);
+  assert.equal(dashboard.contract, 'surface.analytics-compatible');
+  assert.equal(dashboard.analytics.reportId, result.record.surface.report.id);
+  assert.equal(dashboard.analytics.totals.claims, result.record.surface.input.claims.length);
+  assert.ok(Array.isArray(dashboard.analytics.coverageBySurface));
+  assert.ok(Array.isArray(dashboard.analytics.actionQueues.reviewNow));
+  assert.equal(dashboard.claims.length, result.record.surface.input.claims.length);
+  assert.ok(dashboard.claims.every((claim) => claim.status));
+  assert.ok(dashboard.policies.some((policy) => policy.id === 'veritas.policy-result'));
+  assert.ok(dashboard.graph.nodes.some((node) => node.kind === 'claim'));
+  assert.ok(dashboard.graph.edges.some((edge) => edge.kind === 'supports'));
+  const dashboardIndex = readJsonFromAbsolute(join(rootDir, '.veritas/surface-dashboard/latest.json'));
+  assert.equal(dashboardIndex.latestRunId, 'claim-input-smoke');
+  assert.equal(dashboardIndex.readModelPath, result.dashboardReadModelPath);
   for (const relativePath of result.claimInputPaths) {
     const claimInput = readJsonFromAbsolute(join(rootDir, relativePath));
     const fileName = relativePath.split('/').at(-1);
@@ -1846,7 +1965,7 @@ test('report writes one trimmed Surface claim input per claim', () => {
   }
 });
 
-test('eval record CLI writes a repo-local shadow eval artifact from report output', () => {
+test('eval record CLI writes a repo-local shadow eval artifact from report output', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-cli-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
@@ -1865,7 +1984,7 @@ test('eval record CLI writes a repo-local shadow eval artifact from report outpu
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
 
-  const reportResult = generateReportCliResult(rootDir, 'eval-cli-smoke');
+  const reportResult = await generateReportCliResult(rootDir, 'eval-cli-smoke');
 
   const evalStdout = execFileSync(
     'npm',
@@ -1909,7 +2028,7 @@ test('eval record CLI writes a repo-local shadow eval artifact from report outpu
   ]);
 });
 
-test('eval draft CLI writes a repo-local draft artifact and suggested next step', () => {
+test('eval draft CLI writes a repo-local draft artifact and suggested next step', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-draft-cli-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
@@ -1928,7 +2047,7 @@ test('eval draft CLI writes a repo-local draft artifact and suggested next step'
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
 
-  const reportResult = generateReportCliResult(rootDir, 'eval-draft-cli-smoke');
+  const reportResult = await generateReportCliResult(rootDir, 'eval-draft-cli-smoke');
 
   const draftStdout = execFileSync(
     'npm',
@@ -1957,7 +2076,7 @@ test('eval draft CLI writes a repo-local draft artifact and suggested next step'
   ]);
 });
 
-test('eval record CLI can consume a draft artifact', () => {
+test('eval record CLI can consume a draft artifact', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-record-from-draft-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
@@ -1976,7 +2095,7 @@ test('eval record CLI can consume a draft artifact', () => {
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
 
-  const reportResult = generateReportCliResult(rootDir, 'eval-record-draft-smoke');
+  const reportResult = await generateReportCliResult(rootDir, 'eval-record-draft-smoke');
 
   const draftStdout = execFileSync(
     'npm',
@@ -2029,7 +2148,7 @@ test('eval record CLI can consume a draft artifact', () => {
   assert.equal(evalResult.measurements.time_to_green_minutes, 9);
 });
 
-test('eval record CLI rejects draft artifacts outside the repo-local draft area', () => {
+test('eval record CLI rejects draft artifacts outside the repo-local draft area', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-record-external-draft-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
@@ -2048,7 +2167,7 @@ test('eval record CLI rejects draft artifacts outside the repo-local draft area'
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
 
-  const reportResult = generateReportCliResult(rootDir, 'eval-record-external-draft-smoke');
+  const reportResult = await generateReportCliResult(rootDir, 'eval-record-external-draft-smoke');
   const draftStdout = execFileSync(
     'npm',
     [
@@ -2135,7 +2254,7 @@ test('eval draft CLI rejects symlinked external evidence under a repo-local path
   );
 });
 
-test('eval record CLI rejects draft/team-profile rebinding', () => {
+test('eval record CLI rejects draft/team-profile rebinding', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-record-draft-profile-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
@@ -2179,7 +2298,7 @@ test('eval record CLI rejects draft/team-profile rebinding', () => {
     ),
   );
 
-  const reportResult = generateReportCliResult(rootDir, 'eval-record-draft-profile-smoke');
+  const reportResult = await generateReportCliResult(rootDir, 'eval-record-draft-profile-smoke');
   const draftStdout = execFileSync(
     'npm',
     [
@@ -2226,12 +2345,12 @@ test('eval record CLI rejects draft/team-profile rebinding', () => {
   );
 });
 
-test('eval record CLI supports explicit team-profile and output paths', () => {
+test('eval record CLI supports explicit team-profile and output paths', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-cli-explicit-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   const initResult = writeBootstrapStarterKit({ rootDir, projectName: 'Eval Explicit Demo' });
 
-  const reportResult = generateReportCliResult(rootDir, 'eval-cli-explicit-smoke');
+  const reportResult = await generateReportCliResult(rootDir, 'eval-cli-explicit-smoke');
 
   const evalStdout = execFileSync(
     'npm',
@@ -2398,12 +2517,12 @@ test('eval record CLI rejects evidence outside the repo-local evidence area', ()
   );
 });
 
-test('eval record CLI refuses to overwrite an existing eval artifact without force', () => {
+test('eval record CLI refuses to overwrite an existing eval artifact without force', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-cli-overwrite-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   writeBootstrapStarterKit({ rootDir, projectName: 'Eval Overwrite Demo' });
 
-  const reportResult = generateReportCliResult(rootDir, 'eval-cli-overwrite-smoke');
+  const reportResult = await generateReportCliResult(rootDir, 'eval-cli-overwrite-smoke');
   const baseArgs = [
     'exec',
     '--',

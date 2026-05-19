@@ -18,8 +18,12 @@ import { evaluatePolicyPack } from './rules/evaluate.mjs';
 import {
   buildSurfaceTrustInput,
   buildSurfaceTrustReportSummary,
+  throwSurfaceTrustInputValidationError,
   validateSurfaceTrustInputAtBoundary,
 } from './surface/projection.mjs';
+import {
+  writeSurfaceDashboardReadModel,
+} from './surface/dashboard.mjs';
 import {
   buildAttestationPolicyResult,
   inspectAttestationStatus,
@@ -168,7 +172,26 @@ export function formatTriState(value) {
   return 'unknown';
 }
 
-export function buildEvidenceRecord({
+function proofResultForCommand(proofResults, command) {
+  return (proofResults ?? []).find((result) => result.command === command) ?? null;
+}
+
+function proofResultSummary(result) {
+  if (!result) return null;
+  if (result.passed) return 'All proof checks passed.';
+  const status = result.exitCode !== null && result.exitCode !== undefined
+    ? `exit code ${result.exitCode}`
+    : `signal ${result.signal ?? 'unknown'}`;
+  const firstOutputLine = String(result.stderr || result.stdout || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .find(Boolean);
+  return firstOutputLine
+    ? `Proof checks failed with ${status}: ${firstOutputLine}`
+    : `Proof checks failed with ${status}.`;
+}
+
+export async function buildEvidenceRecord({
   files,
   options = {},
   config,
@@ -228,15 +251,26 @@ export function buildEvidenceRecord({
       config,
       actor: options.actor,
     });
+  const governanceState = options.governanceState ?? options.attestationStatus;
+  const resolvedPolicyResults = governanceState
+    ? [
+        buildAttestationPolicyResult(governanceState),
+        ...policyResults,
+      ]
+    : policyResults;
   const selectedProofLaneSources =
     proofPlan.proofLanes ?? proofLaneRecordsForCommands(config, proofPlan.proofCommands);
-  const selectedProofLanes = selectedProofLaneSources.map((lane) => ({
-    id: lane.id,
-    command: lane.command,
-    method: lane.method,
-    surface_claim_ids: uniqueStrings(lane.surfaceClaimIds ?? []),
-    summary: lane.summary ?? `Proof lane ${lane.id}: ${lane.command}`,
-  }));
+  const selectedProofLanes = selectedProofLaneSources.map((lane) => {
+    const proofResult = proofResultForCommand(options.proofResults, lane.command);
+    return {
+      id: lane.id,
+      command: lane.command,
+      method: lane.method,
+      surface_claim_ids: uniqueStrings(lane.surfaceClaimIds ?? []),
+      summary: proofResultSummary(proofResult) ?? lane.summary ?? `Proof lane ${lane.id}: ${lane.command}`,
+      ...(proofResult ? { proof_result: proofResult } : {}),
+    };
+  });
   const selectedProofLaneIds = selectedProofLanes.map((lane) => lane.id);
   const proofFamilyResults = loadProofFamilyResults(config, rootDir, selectedProofLaneIds);
   const allProofLanes = readProofLanes(config).map((lane) => ({
@@ -310,15 +344,22 @@ export function buildEvidenceRecord({
       version: resolvedPolicyPack.version,
       rule_count: resolvedPolicyPack.rules.length,
     },
-    policy_results: policyResults,
+    policy_results: resolvedPolicyResults,
+    ...(governanceState ? { governance_state: governanceState } : {}),
   };
-  const surfaceInput = buildSurfaceTrustInput(record, { rootDir });
+  const surfaceInput = await buildSurfaceTrustInput(record, { rootDir, adapterConfig: config });
   const validatedSurfaceInput = validateSurfaceTrustInputAtBoundary({ input: surfaceInput, record, rootDir });
+  let surfaceReport;
+  try {
+    surfaceReport = buildSurfaceTrustReportSummary({ input: validatedSurfaceInput, record });
+  } catch (error) {
+    throwSurfaceTrustInputValidationError({ error, input: validatedSurfaceInput, record, rootDir });
+  }
   return {
     ...record,
     surface: {
       input: validatedSurfaceInput,
-      report: buildSurfaceTrustReportSummary({ input: validatedSurfaceInput, record }),
+      report: surfaceReport,
     },
   };
 }
@@ -556,7 +597,7 @@ export function resolveVeritasPaths(options, defaults = {}) {
   };
 }
 
-export function generateVeritasReport(options = {}, defaults = {}, explicitFiles = []) {
+export async function generateVeritasReport(options = {}, defaults = {}, explicitFiles = []) {
   const { rootDir, adapterPath, policyPackPath, teamProfilePath } = resolveVeritasPaths(options, defaults);
 
   if (!rootDir || !adapterPath || !policyPackPath) {
@@ -580,7 +621,15 @@ export function generateVeritasReport(options = {}, defaults = {}, explicitFiles
     rootDir,
     explicitProofCommand: options.explicitProofCommand,
   });
-  const record = buildEvidenceRecord({
+  const attestationStatus = options.includeAttestationGate
+    ? inspectAttestationStatus(rootDir, {
+        policyPackPath,
+        adapterPath,
+        teamProfilePath,
+        now: options.attestationNow ?? options.timestamp,
+      })
+    : null;
+  const record = await buildEvidenceRecord({
     files,
     options: {
       ...options,
@@ -588,26 +637,19 @@ export function generateVeritasReport(options = {}, defaults = {}, explicitFiles
       sourceKind: reportInputs.sourceKind,
       sourceScope: reportInputs.sourceScope,
       proofPlan,
+      ...(attestationStatus ? { governanceState: attestationStatus } : {}),
     },
     config,
     policyPack,
     rootDir,
   });
-  if (options.includeAttestationGate) {
-    const attestationStatus = inspectAttestationStatus(rootDir, {
-      policyPackPath,
-      adapterPath,
-      teamProfilePath,
-    });
-    record.attestation = attestationStatus;
-    record.policy_results = [
-      buildAttestationPolicyResult(attestationStatus),
-      ...record.policy_results,
-    ];
-  }
   const artifactPath = writeEvidenceArtifact(record, config, rootDir);
-  const claimInputPaths = writeSurfaceClaimInputs(record, rootDir);
   const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
+  const claimInputPaths = writeSurfaceClaimInputs(record, rootDir);
+  const dashboardReadModelPath = writeSurfaceDashboardReadModel(record, rootDir, {
+    evidenceArtifactPath: relativeArtifactPath,
+    claimInputPaths,
+  });
   const markdownSummary = buildMarkdownSummary(record, relativeArtifactPath);
   const resolvedSummaryPath =
     options.summaryPath ??
@@ -625,6 +667,7 @@ export function generateVeritasReport(options = {}, defaults = {}, explicitFiles
     record,
     artifactPath: relativeArtifactPath,
     claimInputPaths,
+    dashboardReadModelPath,
     markdownSummary,
   };
 }

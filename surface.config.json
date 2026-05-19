@@ -1,0 +1,11 @@
+{
+  "port": 4242,
+  "readModelPath": ".veritas/surface-dashboard/latest.json",
+  "vocab": {
+    "projectName": "Veritas repo governance",
+    "projectKind": "repo governance"
+  },
+  "theme": {
+    "brandName": "Veritas"
+  }
+}

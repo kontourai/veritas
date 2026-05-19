@@ -17,6 +17,7 @@ These are the repo-local instructions and policy artifacts that make self-hostin
 
 - `.veritas/evidence/`
 - `.veritas/claims/`
+- `.veritas/surface-dashboard/`
 - `.veritas/external/`
 - `.veritas/eval-drafts/`
 - `.veritas/evals/`
@@ -24,6 +25,8 @@ These are the repo-local instructions and policy artifacts that make self-hostin
 Those outputs are local and disposable. They should inform product work, not create distribution churn.
 
 Files under `.veritas/claims/` are trimmed per-claim Surface input slices (`*.input.json`), not generated Surface `TrustReport` artifacts. They are gitignored to avoid committing partial projections.
+
+Files under `.veritas/surface-dashboard/` are derived read models for the Surface dashboard and analytics layer. They flatten `surface.input` plus `surface.report` into claim rows, policy summaries, aggregate counts, and graph edges so dashboard code can load Veritas output without importing Veritas internals.
 
 Files under `.veritas/external/` are external-tool proof-lane artifacts (e.g., Fallow audit JSON), gitignored for the same reason.
 
@@ -40,7 +43,7 @@ npm run veritas:checkin:examples
 npm run veritas:checkin:prove
 ```
 
-`npm run veritas:checkin:report` writes the full evidence artifact at `.veritas/evidence/check-in-local.json` and refreshes `.veritas/claims/*.input.json` slices for the claims inside that evidence artifact.
+`npm run veritas:checkin:report` writes the full evidence artifact at `.veritas/evidence/check-in-local.json`, refreshes `.veritas/claims/*.input.json` slices for the claims inside that evidence artifact, and writes `.veritas/surface-dashboard/check-in-local.dashboard.json` for dashboard inspection.
 
 Tracked automation also exists in [.github/workflows/veritas-checkins.yml](../../.github/workflows/veritas-checkins.yml). It runs on pull requests, pushes to `main`, manual dispatch, and a weekly schedule.
 

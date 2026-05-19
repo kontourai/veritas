@@ -1,10 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import {
   buildSurfaceTrustInput,
   buildSurfaceTrustReportSummary,
 } from '../../src/surface/projection.mjs';
 import { buildFeedbackSummary } from '../../src/report/format.mjs';
+import { SURFACE_TRUST_POLICIES } from '../../src/surface/policies.mjs';
 
 function baseRecord(overrides = {}) {
   return {
@@ -44,7 +48,8 @@ function baseRecord(overrides = {}) {
   };
 }
 
-test('Surface trust report summary is persisted with stale and disputed statuses', () => {
+test('Surface trust report summary is persisted with stale and disputed statuses', async () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-surface-report-consumption-'));
   const record = baseRecord({
     policy_results: [{
       rule_id: 'warn-rule',
@@ -77,8 +82,38 @@ test('Surface trust report summary is persisted with stale and disputed statuses
       rationale: 'Old review should be stale under Surface freshness policy.',
     }],
   });
+  writeFileSync(join(rootDir, 'veritas.claims.json'), `${JSON.stringify({
+    schemaVersion: 1,
+    producer: 'veritas',
+    claims: [{
+      id: 'veritas.surface-report-consumption-test.policy.warn-rule',
+      surface: 'veritas.policy-results',
+      claimType: 'veritas-policy-result',
+      fieldOrBehavior: 'warn-rule',
+      subjectType: 'veritas-policy-rule',
+      subjectId: 'test-policy-pack:warn-rule',
+      impactLevel: 'medium',
+      verificationPolicyId: 'veritas.policy-result',
+      metadata: { ruleId: 'warn-rule' },
+      createdAt: '2026-05-10T12:00:00.000Z',
+      updatedAt: '2026-05-10T12:00:00.000Z',
+    }, {
+      id: 'veritas.surface-report-consumption-test.proof-family.stale-family',
+      surface: 'veritas.proof-families',
+      claimType: 'veritas-proof-family',
+      fieldOrBehavior: 'stale-family',
+      subjectType: 'repo-proof-family',
+      subjectId: 'veritas:stale-family',
+      impactLevel: 'high',
+      verificationPolicyId: 'veritas.proof-family',
+      metadata: { familyId: 'stale-family' },
+      createdAt: '2026-05-10T12:00:00.000Z',
+      updatedAt: '2026-05-10T12:00:00.000Z',
+    }],
+    policies: [SURFACE_TRUST_POLICIES.policyResult, SURFACE_TRUST_POLICIES.proofFamily],
+  }, null, 2)}\n`);
 
-  const input = buildSurfaceTrustInput(record);
+  const input = await buildSurfaceTrustInput(record, { rootDir });
   const report = buildSurfaceTrustReportSummary({ input, record });
   const statuses = Object.fromEntries(report.claims.map((claim) => [claim.id, claim.status]));
 
@@ -94,4 +129,5 @@ test('Surface trust report summary is persisted with stale and disputed statuses
   });
   assert.match(feedback, /WARN  surface-status: claim "veritas\.surface-report-consumption-test\.policy\.warn-rule" is DISPUTED/);
   assert.match(feedback, /WARN  surface-status: claim "veritas\.surface-report-consumption-test\.proof-family\.stale-family" is STALE/);
+  rmSync(rootDir, { recursive: true, force: true });
 });

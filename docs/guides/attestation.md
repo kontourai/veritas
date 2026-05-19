@@ -33,3 +33,9 @@ npx @kontourai/veritas attest status
 ```
 
 Expired attestations warn without implying drift. Drifted attestations fail shadow runs because the current Zone 1 hashes no longer match the human-approved hashes.
+
+## Surface claims
+
+Policy packs, repo adapters, and team profiles are sources of governance claims, not literal Surface claims. During `veritas run`, Veritas projects their evaluated state into `surface.input`: policy-pack integrity/currentness, adapter integrity/applicability, team-profile integrity/currentness, and human attestation currency.
+
+That means operational proof can pass while governance claims are stale or disputed. If tests pass but Veritas fails, the governance artifact deciding what counts as trusted changed and needs human review plus a fresh attestation.

@@ -8,7 +8,7 @@ You almost never have to choose between them. The right question is "which one a
 
 Use Veritas. The Quickstart in the [README](../README.md) is the entry point. You will not need to think about Surface to get value from Veritas.
 
-Surface is doing real work underneath — every Veritas evidence artifact projects into a `surface.input` block that Surface can turn into a portable trust report — but that is a downstream capability you opt into when you need it (e.g. piping evidence into a dashboard or another consumer). For the handoff, see [`examples/surface-handoff.mjs`](../examples/surface-handoff.mjs).
+Surface is doing real work underneath — every Veritas evidence artifact projects into a `surface.input` block that Surface can turn into a portable trust report — but that is a downstream capability you opt into when you need it (e.g. piping evidence into a dashboard or another consumer). Veritas also writes a dashboard-friendly read model under `.veritas/surface-dashboard/` so Surface analytics can load claim rows, policy summaries, aggregate counts, and graph edges without importing Veritas runtime code. For the handoff, see [`examples/surface-handoff.mjs`](../examples/surface-handoff.mjs).
 
 ## You're building a different product that needs to show provenance
 
@@ -21,6 +21,6 @@ You do not need Veritas to use Surface.
 Veritas and Surface enforce a strict boundary:
 
 - **Surface** owns: the schema for `claims`, `evidence`, `policies`, `events`; the derivation of trust status; the shape of a `TrustReport`. It does not know what a "repo" or an "AI agent" is.
-- **Veritas** owns: rules, policy packs, proof lanes, shadow runs, governance blocks, eval drafts. It knows everything about repos and agents. At the boundary, it emits a `surface.input` block — and never anything else from Surface's report-only surface.
+- **Veritas** owns: rules, policy packs, proof lanes, shadow runs, governance blocks, eval drafts. It knows everything about repos and agents. At the boundary, it emits a `surface.input` block and a derived dashboard read model — and never anything else from Surface's report-only surface.
 
 The full rule lives in [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md). The pattern (separate workflow vocabulary, project to a common trust shape) is the same pattern any Surface consumer should follow.

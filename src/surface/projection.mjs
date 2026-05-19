@@ -3,49 +3,83 @@ import { resolve } from 'node:path';
 import * as Surface from '@kontourai/surface';
 import { relativeRepoPath } from '../paths.mjs';
 import { SURFACE_TRUST_POLICIES } from './policies.mjs';
+import { loadVeritasClaimStore } from '../claims/store.mjs';
+import { registerVeritasExtension } from './extension.mjs';
+import { loadPluginsFromConfig, collectPluginEvidence } from '../plugins/loader.mjs';
 
-export function buildSurfaceTrustInput(record, { rootDir = process.cwd() } = {}) {
+const SURFACE_SUPPORTS_EVIDENCE_EVALUATION = typeof Surface.loadClaimStore === 'function';
+
+export async function buildSurfaceTrustInput(record, { rootDir = process.cwd(), adapterConfig = null } = {}) {
+  registerVeritasExtension();
+  if (adapterConfig) await loadPluginsFromConfig(adapterConfig, rootDir);
+  const claimStore = loadVeritasClaimStore(rootDir);
   const assembler = createSurfaceTrustInputAssembler({
     source: `veritas:${record.run_id}`,
     schemaVersion: 2,
   });
   const { claims, evidence, events } = assembler;
-  const adapterName = record.adapter?.name ?? 'veritas';
-  const proofLaneClaimIds = [];
-  const policyClaimIds = [];
-  const proofFamilyClaimIds = [];
 
-  for (const node of record.affected_nodes) {
-    const id = surfaceClaimId(record.run_id, 'surface', node);
-    const evidenceId = `${id}.evidence`;
-    claims.push({
-      id,
-      subjectType: 'repo-surface',
-      subjectId: `${adapterName}:${node}`,
-      surface: 'veritas.affected-surface',
-      claimType: 'veritas-affected-surface',
-      fieldOrBehavior: 'affectedNode',
-      value: node,
-      createdAt: record.timestamp,
-      updatedAt: record.timestamp,
-      impactLevel: 'medium',
-      currentIntegrityRef: record.source_ref,
-      verificationPolicyId: SURFACE_TRUST_POLICIES.affectedSurface.id,
-      confidenceBasis: {
-        sourceQuality: 'strong',
-        reviewerAuthority: 'system',
-        proofStrength: record.selected_proof_lanes.length > 0 ? 'moderate' : 'weak',
-        impactLevel: 'medium',
-      },
-      metadata: {
-        resolvedPhase: record.resolved_phase,
-        resolvedWorkstream: record.resolved_workstream,
-        affectedLanes: record.affected_lanes,
-      },
+  for (const definition of claimStore.claims) {
+    claims.push(claimDefToClaim(definition, record));
+  }
+
+  collectAffectedSurfaceEvidence(record, claimStore, evidence, events);
+  collectProofLaneEvidence(record, claimStore, evidence, events);
+  collectPolicyResultEvidence(record, claimStore, evidence, events);
+  collectProofFamilyEvidence(record, claimStore, evidence, events);
+  collectExternalToolEvidence(record, claimStore, evidence, events);
+  collectVerificationBudgetEvidence(record, claimStore, evidence, events);
+  collectGovernanceEvidence(record, claimStore, evidence, events);
+  collectProposalEvidence(record, claimStore, evidence, rootDir);
+  const pluginContext = {
+    runId: record.run_id,
+    sourceRef: record.source_ref,
+    timestamp: record.timestamp,
+    rootDir,
+  };
+  for (const item of collectPluginEvidence(claimStore, pluginContext)) {
+    evidence.push(item);
+  }
+
+  try {
+    return assembler.build(claimStore.policies);
+  } catch (error) {
+    return throwSurfaceTrustInputValidationError({
+      error,
+      input: error.trustInputDraft,
+      record,
+      rootDir,
     });
+  }
+}
+
+function claimDefToClaim(definition, record) {
+  return {
+    ...definition,
+    value: definition.metadata?.value ?? defaultClaimValue(definition),
+    currentIntegrityRef: record.source_ref,
+    updatedAt: record.timestamp ?? definition.updatedAt,
+  };
+}
+
+function defaultClaimValue(definition) {
+  if (definition.claimType === 'software-proof') return 'all checks pass';
+  return definition.fieldOrBehavior;
+}
+
+function claimsByType(claimStore, claimType) {
+  return claimStore.claims.filter((claim) => claim.claimType === claimType);
+}
+
+function collectAffectedSurfaceEvidence(record, claimStore, evidence, events) {
+  const candidates = claimsByType(claimStore, 'veritas-affected-surface');
+  for (const node of record.affected_nodes ?? []) {
+    const claim = candidates.find((item) => item.metadata?.nodeId === node || item.fieldOrBehavior === node || item.subjectId.endsWith(`:${node}`));
+    if (!claim) continue;
+    const evidenceId = `${record.run_id}.surface.${surfaceSafeId(node)}.evidence`;
     evidence.push(surfaceEvidence({
       id: evidenceId,
-      claimId: id,
+      claimId: claim.id,
       type: 'policy_rule',
       method: 'auditability',
       record,
@@ -53,113 +87,111 @@ export function buildSurfaceTrustInput(record, { rootDir = process.cwd() } = {})
       summary: `Veritas marked ${node} as an affected repo surface for ${record.resolved_workstream}.`,
     }));
     events.push(surfaceEvent({
-      id: `${id}.verified`,
-      claimId: id,
+      id: `${record.run_id}.surface.${surfaceSafeId(node)}.verified`,
+      claimId: claim.id,
       status: 'verified',
       method: 'affected surface resolution',
       evidenceIds: [evidenceId],
       record,
     }));
   }
+}
 
-  for (const lane of record.selected_proof_lanes) {
-    const id = surfaceClaimId(record.run_id, 'proof', lane.id);
-    proofLaneClaimIds.push(id);
-    const evidenceId = `${id}.evidence`;
-    claims.push({
-      id,
-      subjectType: 'repo-proof-lane',
-      subjectId: `${adapterName}:${lane.command}`,
-      surface: 'veritas.proof-lanes',
-      claimType: 'software-proof',
-      fieldOrBehavior: 'selectedProofCommand',
-      value: lane.command,
-      createdAt: record.timestamp,
-      updatedAt: record.timestamp,
-      impactLevel: 'high',
-      currentIntegrityRef: record.source_ref,
-      verificationPolicyId: SURFACE_TRUST_POLICIES.proofLane.id,
-      confidenceBasis: {
-        sourceQuality: 'strong',
-        reviewerAuthority: 'system',
-        proofStrength: record.baseline_ci_fast_passed === true ? 'strong' : 'weak',
-        impactLevel: 'high',
-      },
+function collectProofLaneEvidence(record, claimStore, evidence, events) {
+  const candidates = claimsByType(claimStore, 'software-proof');
+  for (const lane of record.selected_proof_lanes ?? []) {
+    const claim = candidates.find((item) => item.metadata?.command === lane.command || item.fieldOrBehavior === lane.command);
+    if (!claim) continue;
+    const proofResult = lane.proof_result ?? null;
+    const passing = typeof proofResult?.passed === 'boolean'
+      ? proofResult.passed
+      : record.baseline_ci_fast_passed === null ? undefined : record.baseline_ci_fast_passed;
+    const observedStatus = typeof passing === 'boolean' ? (passing ? 'passed' : 'failed') : 'not captured';
+    const observedSummary = proofResultSummary(proofResult)
+      ?? (typeof passing === 'boolean'
+        ? (passing ? 'All proof checks passed.' : 'Proof checks failed.')
+        : `Proof command selected but output was not captured: ${lane.command}`);
+    const evidenceId = `${record.run_id}.proof.${surfaceSafeId(lane.id)}.evidence`;
+    evidence.push(surfaceEvidence({
+      id: evidenceId,
+      claimId: claim.id,
+      type: 'test_output',
+      method: lane.method ?? 'validation',
+      record,
+      locator: 'selected_proof_lanes',
+      summary: observedSummary,
+      passing,
+      blocking: true,
       metadata: {
+        command: lane.command,
+        expectedResult: 'all checks pass',
+        observedResult: {
+          expected: 'all checks pass',
+          status: observedStatus,
+          summary: observedSummary,
+        },
+        ...(proofResult ? {
+          commandOutput: {
+            command: lane.command,
+            exitCode: proofResult.exitCode,
+            signal: proofResult.signal,
+            stdout: proofResult.stdout ?? '',
+            stderr: proofResult.stderr ?? '',
+            combined: proofResult.output ?? `${proofResult.stdout ?? ''}${proofResult.stderr ?? ''}`,
+          },
+        } : {}),
         proofResolutionSource: record.proof_resolution_source,
-        baselineCiFastPassed: record.baseline_ci_fast_passed,
+        baselineCiFastPassed: typeof passing === 'boolean' ? passing : record.baseline_ci_fast_passed,
         proofLaneId: lane.id,
         surfaceClaimIds: lane.surface_claim_ids ?? [],
       },
-    });
-    evidence.push(surfaceEvidence({
-      id: evidenceId,
-      claimId: id,
-      type: 'test_output',
-      method: lane.method,
-      record,
-      locator: 'selected_proof_lanes',
-      summary: lane.summary ?? `Selected proof lane ${lane.id}: ${lane.command}`,
     }));
-    if (record.baseline_ci_fast_passed !== null) {
+    if (typeof passing === 'boolean') {
       events.push(surfaceEvent({
-        id: `${id}.${record.baseline_ci_fast_passed ? 'verified' : 'rejected'}`,
-        claimId: id,
-        status: record.baseline_ci_fast_passed ? 'verified' : 'rejected',
+        id: `${record.run_id}.proof.${surfaceSafeId(lane.id)}.${passing ? 'verified' : 'rejected'}`,
+        claimId: claim.id,
+        status: passing ? 'verified' : 'rejected',
         method: lane.command,
         evidenceIds: [evidenceId],
         record,
       }));
     }
   }
+}
 
-  for (const result of record.policy_results) {
-    const id = surfaceClaimId(record.run_id, 'policy', result.rule_id);
-    policyClaimIds.push(id);
-    const evidenceId = `${id}.evidence`;
+function proofResultSummary(result) {
+  if (!result) return null;
+  if (result.passed) return 'All proof checks passed.';
+  const status = result.exitCode !== null && result.exitCode !== undefined
+    ? `exit code ${result.exitCode}`
+    : `signal ${result.signal ?? 'unknown'}`;
+  const firstOutputLine = String(result.stderr || result.stdout || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .find(Boolean);
+  return firstOutputLine
+    ? `Proof checks failed with ${status}: ${firstOutputLine}`
+    : `Proof checks failed with ${status}.`;
+}
+
+function collectPolicyResultEvidence(record, claimStore, evidence, events) {
+  const candidates = claimsByType(claimStore, 'veritas-policy-result');
+  for (const result of record.policy_results ?? []) {
+    const claim = candidates.find((item) => item.metadata?.ruleId === result.rule_id || item.fieldOrBehavior === result.rule_id || item.subjectId.endsWith(`:${result.rule_id}`));
+    if (!claim) continue;
     const status = surfacePolicyResultStatus(result);
     const impactLevel = surfacePolicyImpact(result);
-    claims.push({
-      id,
-      subjectType: 'veritas-policy-rule',
-      subjectId: `${record.policy_pack?.name ?? 'policy-pack'}:${result.rule_id}`,
-      surface: 'veritas.policy-results',
-      claimType: 'veritas-policy-result',
-      fieldOrBehavior: 'policyResult',
-      value: {
-        ruleId: result.rule_id,
-        classification: result.classification,
-        stage: result.stage,
-        implemented: result.implemented,
-        passed: result.passed,
-      },
-      createdAt: record.timestamp,
-      updatedAt: record.timestamp,
-      impactLevel,
-      currentIntegrityRef: record.source_ref,
-      verificationPolicyId: SURFACE_TRUST_POLICIES.policyResult.id,
-      confidenceBasis: {
-        sourceQuality: 'strong',
-        reviewerAuthority: 'system',
-        proofStrength: result.passed === true ? 'strong' : 'weak',
-        impactLevel,
-        conflictCount: result.passed === false ? 1 : 0,
-      },
-      metadata: {
-        message: result.message,
-        owner: result.owner,
-        findings: result.findings,
-        policyPack: record.policy_pack,
-      },
-    });
+    const evidenceId = `${record.run_id}.policy.${surfaceSafeId(result.rule_id)}.evidence`;
     evidence.push(surfaceEvidence({
       id: evidenceId,
-      claimId: id,
+      claimId: claim.id,
       type: 'policy_rule',
       method: 'validation',
       record,
       locator: `policy_results.${result.rule_id}`,
-      summary: result.summary,
+      summary: result.summary ?? result.message ?? `Policy ${result.rule_id} evaluated.`,
+      passing: result.passed,
+      blocking: result.stage === 'block',
       metadata: {
         stage: result.stage,
         classification: result.classification,
@@ -169,13 +201,14 @@ export function buildSurfaceTrustInput(record, { rootDir = process.cwd() } = {})
           type: 'policy_violation',
           severity: impactLevel,
           message: result.message,
+          blocking: result.stage === 'block',
         }] : [],
       },
     }));
     if (status !== 'proposed') {
       events.push(surfaceEvent({
-        id: `${id}.${status}`,
-        claimId: id,
+        id: `${record.run_id}.policy.${surfaceSafeId(result.rule_id)}.${status}`,
+        claimId: claim.id,
         status,
         method: 'policy pack evaluation',
         evidenceIds: [evidenceId],
@@ -184,59 +217,57 @@ export function buildSurfaceTrustInput(record, { rootDir = process.cwd() } = {})
       }));
     }
   }
+}
 
-  for (const family of record.proof_family_results ?? []) {
-    const id = surfaceClaimId(record.run_id, 'proof-family', family.id);
-    proofFamilyClaimIds.push(id);
-    const evidenceId = `${id}.evidence`;
-    const status = surfaceProofFamilyStatus(family);
-    const impactLevel = surfaceProofFamilyImpact(family);
-    claims.push({
-      id,
-      subjectType: 'repo-proof-family',
-      subjectId: `${adapterName}:${family.lane_id}:${family.id}`,
-      surface: 'veritas.proof-families',
-      claimType: 'veritas-proof-family',
-      fieldOrBehavior: 'proofFamilyDisposition',
-      value: {
-        id: family.id,
-        destination: family.destination,
-        disposition: family.disposition,
-      },
-      status: status === 'verified' ? undefined : status,
-      createdAt: record.timestamp,
-      updatedAt: record.timestamp,
-      impactLevel,
-      currentIntegrityRef: record.source_ref,
-      derivedFrom: proofLaneClaimIds.length > 0 ? [...proofLaneClaimIds] : undefined,
-      verificationPolicyId: SURFACE_TRUST_POLICIES.proofFamily.id,
-      confidenceBasis: {
-        sourceQuality: family.recent_catch_evidence === 'unknown' || family.evidence_basis === 'unknown' ? 'weak' : 'moderate',
-        reviewerAuthority: family.owner ? 'operator' : 'none',
-        proofStrength: surfaceProofFamilyStrength(family),
-        conflictCount: family.false_positive_risk === 'high' || family.false_positive_risk === 'unknown' ? 1 : 0,
-        impactLevel,
-      },
-      metadata: {
-        laneId: family.lane_id,
-        sourceProofLaneId: family.source_proof_lane_id,
-        manifestPath: family.manifest_path,
-        owner: family.owner,
-        blockingStatus: family.blocking_status,
-        verificationWeight: family.verification_weight,
-        selected: family.selected,
-        regressionSeverity: family.regression_severity,
-        falsePositiveRisk: family.false_positive_risk,
-        replacementTestAvailable: family.replacement_test_available,
-        reviewTrigger: family.review_trigger,
-        lastReviewed: family.last_reviewed,
-        evidenceBasis: family.evidence_basis,
-        freshnessStatus: family.freshness_status,
-      },
-    });
+function collectExternalToolEvidence(record, claimStore, evidence, events) {
+  const candidates = claimsByType(claimStore, 'veritas-external-tool-result');
+  for (const result of record.external_tool_results ?? []) {
+    const claim = candidates.find((item) => item.metadata?.tool === result.tool || item.metadata?.proofLaneId === result.proof_lane_id);
+    if (!claim) continue;
+    const status = surfaceExternalToolStatus(result);
+    const evidenceId = `${record.run_id}.external-tool.${surfaceSafeId(`${result.tool}-${result.proof_lane_id}`)}.evidence`;
     evidence.push(surfaceEvidence({
       id: evidenceId,
-      claimId: id,
+      claimId: claim.id,
+      type: 'test_output',
+      method: 'auditability',
+      record,
+      locator: result.artifact_path,
+      summary: `${result.tool} reported ${result.verdict} for proof lane ${result.proof_lane_id}.`,
+      passing: result.verdict === 'pass',
+      blocking: result.blocking !== false,
+      metadata: {
+        externalToolResult: result,
+        faultLineHints: status === 'verified' ? [] : [{
+          type: result.blocking ? 'policy_violation' : 'provenance_gap',
+          severity: result.blocking ? 'high' : 'medium',
+          message: `${result.tool} verdict is ${result.verdict}.`,
+          blocking: result.blocking !== false,
+        }],
+      },
+    }));
+    events.push(surfaceEvent({
+      id: `${record.run_id}.external-tool.${surfaceSafeId(`${result.tool}-${result.proof_lane_id}`)}.${status}`,
+      claimId: claim.id,
+      status,
+      method: result.command,
+      evidenceIds: [evidenceId],
+      record,
+      notes: `${result.tool} ${result.format} verdict: ${result.verdict}`,
+    }));
+  }
+}
+
+function collectProofFamilyEvidence(record, claimStore, evidence, events) {
+  const candidates = claimsByType(claimStore, 'veritas-proof-family');
+  for (const family of record.proof_family_results ?? []) {
+    const claim = candidates.find((item) => item.metadata?.familyId === family.id || item.fieldOrBehavior === family.id);
+    if (!claim) continue;
+    const status = surfaceProofFamilyStatus(family);
+    const evidenceId = `${record.run_id}.proof-family.${surfaceSafeId(family.id)}.evidence`;
+    evidence.push(surfaceEvidence({
+      id: evidenceId,
+      claimId: claim.id,
       type: 'policy_rule',
       method: 'validation',
       record,
@@ -254,8 +285,8 @@ export function buildSurfaceTrustInput(record, { rootDir = process.cwd() } = {})
       },
     }));
     events.push(surfaceEvent({
-      id: `${id}.${status}`,
-      claimId: id,
+      id: `${record.run_id}.proof-family.${surfaceSafeId(family.id)}.${status}`,
+      claimId: claim.id,
       status,
       method: 'proof family inventory',
       evidenceIds: [evidenceId],
@@ -264,171 +295,84 @@ export function buildSurfaceTrustInput(record, { rootDir = process.cwd() } = {})
       notes: family.rationale,
     }));
   }
+}
 
-  for (const result of record.external_tool_results ?? []) {
-    const id = surfaceClaimId(record.run_id, 'external-tool', `${result.tool}-${result.proof_lane_id}`);
-    const evidenceId = `${id}.evidence`;
-    const status = surfaceExternalToolStatus(result);
-    const impactLevel = result.blocking && status !== 'verified' ? 'high' : 'medium';
-    claims.push({
-      id,
-      subjectType: 'external-tool-result',
-      subjectId: `${adapterName}:${result.tool}:${result.proof_lane_id}`,
-      surface: 'veritas.external-tool-results',
-      claimType: 'veritas-external-tool-result',
-      fieldOrBehavior: 'externalToolVerdict',
-      value: {
-        tool: result.tool,
-        format: result.format,
-        verdict: result.verdict,
-        blocking: result.blocking,
-      },
-      status,
-      createdAt: record.timestamp,
-      updatedAt: record.timestamp,
-      impactLevel,
-      currentIntegrityRef: record.source_ref,
-      derivedFrom: proofLaneClaimIds.length > 0 ? [...proofLaneClaimIds] : undefined,
-      verificationPolicyId: SURFACE_TRUST_POLICIES.externalToolResult.id,
-      confidenceBasis: {
-        sourceQuality: result.verdict === 'missing' || result.verdict === 'unknown' ? 'weak' : 'moderate',
-        reviewerAuthority: 'tool',
-        proofStrength: result.verdict === 'pass' ? 'strong' : 'weak',
-        conflictCount: status === 'verified' ? 0 : 1,
-        impactLevel,
-      },
-      metadata: {
-        proofLaneId: result.proof_lane_id,
-        command: result.command,
-        artifactPath: result.artifact_path,
-        summary: result.summary,
-        actions: result.actions,
-      },
-    });
+function collectVerificationBudgetEvidence(record, claimStore, evidence, events) {
+  if (!record.verification_budget) return;
+  const claim = claimsByType(claimStore, 'veritas-verification-budget')[0];
+  if (!claim) return;
+  const staleCount = record.verification_budget.stale_or_unknown_family_ids?.length ?? 0;
+  const status = staleCount > 0 ? 'disputed' : 'verified';
+  const evidenceId = `${record.run_id}.budget.verification.evidence`;
+  evidence.push(surfaceEvidence({
+    id: evidenceId,
+    claimId: claim.id,
+    type: 'policy_rule',
+    method: 'auditability',
+    record,
+    locator: 'verification_budget',
+    summary: record.verification_budget.recommendation,
+    passing: staleCount === 0,
+    blocking: staleCount > 0,
+    metadata: {
+      verificationBudget: record.verification_budget,
+      faultLineHints: staleCount > 0 ? [{
+        type: 'freshness_breach',
+        severity: 'high',
+        message: record.verification_budget.recommendation,
+      }] : [],
+    },
+  }));
+  events.push(surfaceEvent({
+    id: `${record.run_id}.budget.verification.${status}`,
+    claimId: claim.id,
+    status,
+    method: 'verification budget',
+    evidenceIds: [evidenceId],
+    record,
+    notes: record.verification_budget.recommendation,
+  }));
+}
+
+function collectGovernanceEvidence(record, claimStore, evidence, events) {
+  const claims = claimsByType(claimStore, 'veritas-governance-artifact');
+  if (!record.governance_state || claims.length === 0) return;
+  const status = governanceAttestationStatus(record.governance_state);
+  for (const claim of claims) {
+    const evidenceId = `${record.run_id}.governance.${surfaceSafeId(claim.id)}.evidence`;
     evidence.push(surfaceEvidence({
       id: evidenceId,
-      claimId: id,
-      type: 'test_output',
-      method: 'auditability',
+      claimId: claim.id,
+      type: 'attestation',
+      method: 'attestation',
       record,
-      locator: result.artifact_path,
-      summary: `${result.tool} reported ${result.verdict} for proof lane ${result.proof_lane_id}.`,
-      metadata: {
-        externalToolResult: result,
-        faultLineHints: status === 'verified' ? [] : [{
-          type: result.blocking ? 'policy_violation' : 'provenance_gap',
-          severity: impactLevel,
-          message: `${result.tool} verdict is ${result.verdict}.`,
-        }],
-      },
+      locator: '.veritas/attestations',
+      summary: `Human attestation currency is ${status} for Zone 1 governance state ${record.governance_state.state}.`,
+      passing: status === 'verified',
+      blocking: status !== 'verified',
     }));
     events.push(surfaceEvent({
-      id: `${id}.${status}`,
-      claimId: id,
+      id: `${record.run_id}.governance.${surfaceSafeId(claim.id)}.${status}`,
+      claimId: claim.id,
       status,
-      method: result.command,
+      method: 'human attestation status',
       evidenceIds: [evidenceId],
       record,
-      notes: `${result.tool} ${result.format} verdict: ${result.verdict}`,
+      notes: `Human attestation currency is ${status}.`,
+      verifiedAt: status === 'verified' ? record.timestamp : undefined,
     }));
   }
+}
 
-  if (record.verification_budget) {
-    const id = surfaceClaimId(record.run_id, 'budget', 'verification');
-    const evidenceId = `${id}.evidence`;
-    const status = record.verification_budget.stale_or_unknown_family_ids.length > 0 ? 'disputed' : 'verified';
-    const impactLevel = record.verification_budget.stale_or_unknown_family_ids.length > 0 ? 'high' : 'medium';
-    claims.push({
-      id,
-      subjectType: 'repo-verification-budget',
-      subjectId: `${adapterName}:verification-budget`,
-      surface: 'veritas.verification-budget',
-      claimType: 'veritas-verification-budget',
-      fieldOrBehavior: 'verificationBudget',
-      value: {
-        proofFamilyCount: record.verification_budget.proof_family_count,
-        selectedProofLaneCount: record.verification_budget.selected_proof_lane_count,
-        staleOrUnknownFamilyIds: record.verification_budget.stale_or_unknown_family_ids,
-      },
-      status,
-      createdAt: record.timestamp,
-      updatedAt: record.timestamp,
-      impactLevel,
-      currentIntegrityRef: record.source_ref,
-      verificationPolicyId: SURFACE_TRUST_POLICIES.verificationBudget.id,
-      derivedFrom: proofFamilyClaimIds.length > 0 ? proofFamilyClaimIds : policyClaimIds,
-      confidenceBasis: {
-        sourceQuality: 'strong',
-        reviewerAuthority: 'system',
-        proofStrength: record.verification_budget.stale_or_unknown_family_ids.length > 0 ? 'weak' : 'moderate',
-        conflictCount: record.verification_budget.stale_or_unknown_family_ids.length,
-        impactLevel,
-      },
-      metadata: {
-        verificationBudget: record.verification_budget,
-      },
-    });
-    evidence.push(surfaceEvidence({
-      id: evidenceId,
-      claimId: id,
-      type: 'policy_rule',
-      method: 'auditability',
-      record,
-      locator: 'verification_budget',
-      summary: record.verification_budget.recommendation,
-      metadata: {
-        verificationBudget: record.verification_budget,
-        faultLineHints: record.verification_budget.stale_or_unknown_family_ids.length > 0 ? [{
-          type: 'freshness_breach',
-          severity: 'high',
-          message: record.verification_budget.recommendation,
-        }] : [],
-      },
-    }));
-    events.push(surfaceEvent({
-      id: `${id}.${status}`,
-      claimId: id,
-      status,
-      method: 'verification budget',
-      evidenceIds: [evidenceId],
-      record,
-      notes: record.verification_budget.recommendation,
-    }));
-  }
-
+function collectProposalEvidence(record, claimStore, evidence, rootDir) {
+  const candidates = claimsByType(claimStore, 'veritas-proposal');
   for (const proposal of readOpenProposalSummaries(rootDir)) {
-    const id = proposal.surface?.claimId ?? surfaceClaimId(record.run_id, 'proposal', proposal.id);
-    const evidenceId = `${id}.evidence`;
-    claims.push({
-      id,
-      subjectType: 'veritas-proposal',
-      subjectId: proposal.id,
-      surface: 'veritas.proposals',
-      claimType: 'veritas-proposal',
-      fieldOrBehavior: proposal.type,
-      value: {
-        target: proposal.target,
-        rationale: proposal.rationale,
-      },
-      status: 'proposed',
-      createdAt: proposal.createdAt,
-      updatedAt: proposal.updatedAt,
-      impactLevel: 'medium',
-      verificationPolicyId: SURFACE_TRUST_POLICIES.proposal.id,
-      confidenceBasis: {
-        sourceQuality: 'moderate',
-        reviewerAuthority: 'system',
-        proofStrength: 'weak',
-        impactLevel: 'medium',
-      },
-      metadata: {
-        proposalId: proposal.id,
-        evidenceRunIds: proposal.evidenceRunIds,
-      },
-    });
+    const claim = candidates.find((item) => item.metadata?.proposalId === proposal.id || item.subjectId === proposal.id);
+    if (!claim) continue;
+    const evidenceId = `${record.run_id}.proposal.${surfaceSafeId(proposal.id)}.evidence`;
     evidence.push(surfaceEvidence({
       id: evidenceId,
-      claimId: id,
+      claimId: claim.id,
       type: 'policy_rule',
       method: 'auditability',
       record,
@@ -440,17 +384,198 @@ export function buildSurfaceTrustInput(record, { rootDir = process.cwd() } = {})
       },
     }));
   }
+}
 
-  try {
-    return assembler.build(Object.values(SURFACE_TRUST_POLICIES));
-  } catch (error) {
-    return throwSurfaceTrustInputValidationError({
-      error,
-      input: error.trustInputDraft,
-      record,
-      rootDir,
+export function buildGovernanceArtifactClaims({
+  record,
+  claims,
+  evidence,
+  events,
+  attestationPolicyClaimId,
+}) {
+  const governanceState = record.governance_state;
+  if (!governanceState) return;
+
+  const artifacts = [
+    {
+      key: 'policy-pack',
+      hashField: 'policyPackHash',
+      subjectId: record.policy_pack?.name ?? 'policy-pack',
+      path: governanceState.zone1?.paths?.policyPackPath,
+      currentHash: governanceState.zone1?.hashes?.policyPackHash,
+      attestedHash: governanceState.attestation?.policyPackHash,
+      applicability: 'policy-results',
+    },
+    {
+      key: 'adapter',
+      hashField: 'adapterHash',
+      subjectId: record.adapter?.name ?? 'adapter',
+      path: governanceState.zone1?.paths?.adapterPath,
+      currentHash: governanceState.zone1?.hashes?.adapterHash,
+      attestedHash: governanceState.attestation?.adapterHash,
+      applicability: record.uncovered_path_result === 'clear' ? 'covered' : record.uncovered_path_result,
+    },
+    {
+      key: 'team-profile',
+      hashField: 'teamProfileHash',
+      subjectId: record.owner ?? 'team-profile',
+      path: governanceState.zone1?.paths?.teamProfilePath,
+      currentHash: governanceState.zone1?.hashes?.teamProfileHash,
+      attestedHash: governanceState.attestation?.teamProfileHash,
+      applicability: 'governance-actor-context',
+    },
+  ];
+
+  for (const artifact of artifacts) {
+    const drift = governanceState.drift?.find((item) => item.field === artifact.hashField);
+    const status = governanceArtifactStatus(governanceState, drift);
+    const id = surfaceClaimId(record.run_id, 'governance-artifact', artifact.key);
+    const evidenceId = `${id}.evidence`;
+    claims.push({
+      id,
+      subjectType: 'veritas-governance-artifact',
+      subjectId: `${artifact.key}:${artifact.subjectId}`,
+      surface: 'veritas.governance-artifacts',
+      claimType: 'veritas-governance-artifact',
+      fieldOrBehavior: artifact.key === 'adapter' ? 'integrityAndApplicability' : 'integrityAndCurrentness',
+      value: {
+        artifact: artifact.key,
+        path: artifact.path,
+        currentHash: drift?.current ?? artifact.currentHash,
+        attestedHash: drift?.attested ?? artifact.attestedHash ?? null,
+        attestationState: governanceState.state,
+        expired: governanceState.expired,
+        applicability: artifact.applicability,
+      },
+      status,
+      createdAt: record.timestamp,
+      updatedAt: record.timestamp,
+      impactLevel: 'high',
+      currentIntegrityRef: drift?.current ?? artifact.currentHash ?? record.source_ref,
+      derivedFrom: attestationPolicyClaimId ? [attestationPolicyClaimId] : undefined,
+      verificationPolicyId: SURFACE_TRUST_POLICIES.governanceArtifact.id,
+      confidenceBasis: {
+        sourceQuality: status === 'verified' ? 'strong' : 'moderate',
+        reviewerAuthority: governanceState.attestation?.actor ? 'human' : 'none',
+        proofStrength: status === 'verified' ? 'strong' : 'weak',
+        conflictCount: status === 'verified' ? 0 : 1,
+        impactLevel: 'high',
+      },
+      metadata: {
+        source: 'Zone 1 governance hash inspection',
+        currentAttestationId: governanceState.currentAttestationId,
+        drift: drift ?? null,
+        zone1Error: governanceState.zone1?.error,
+      },
     });
+    evidence.push(surfaceEvidence({
+      id: evidenceId,
+      claimId: id,
+      type: 'attestation',
+      method: 'auditability',
+      record,
+      locator: artifact.path ?? 'governance_state',
+      summary: governanceArtifactSummary(artifact.key, status, governanceState),
+      metadata: {
+        governanceArtifact: artifact.key,
+        attestationState: governanceState.state,
+        faultLineHints: status === 'verified' ? [] : [{
+          type: status === 'stale' ? 'freshness_breach' : 'provenance_gap',
+          severity: 'high',
+          message: governanceArtifactSummary(artifact.key, status, governanceState),
+        }],
+      },
+    }));
+    events.push(surfaceEvent({
+      id: `${id}.${status}`,
+      claimId: id,
+      status,
+      method: 'Zone 1 governance hash inspection',
+      evidenceIds: [evidenceId],
+      record,
+      notes: governanceArtifactSummary(artifact.key, status, governanceState),
+    }));
   }
+
+  const status = governanceAttestationStatus(governanceState);
+  const id = surfaceClaimId(record.run_id, 'governance-attestation', governanceState.currentAttestationId ?? governanceState.state);
+  const evidenceId = `${id}.evidence`;
+  claims.push({
+    id,
+    subjectType: 'veritas-human-attestation',
+    subjectId: governanceState.currentAttestationId ?? 'missing',
+    surface: 'veritas.attestations',
+    claimType: 'veritas-governance-artifact',
+    fieldOrBehavior: 'attestationCurrency',
+    value: {
+      state: governanceState.state,
+      currentAttestationId: governanceState.currentAttestationId,
+      ageDays: governanceState.ageDays,
+      validUntil: governanceState.validUntil,
+      expired: governanceState.expired,
+    },
+    status,
+    createdAt: record.timestamp,
+    updatedAt: record.timestamp,
+    impactLevel: 'high',
+    currentIntegrityRef: governanceState.currentAttestationId ?? record.source_ref,
+    derivedFrom: attestationPolicyClaimId ? [attestationPolicyClaimId] : undefined,
+    verificationPolicyId: SURFACE_TRUST_POLICIES.governanceArtifact.id,
+    confidenceBasis: {
+      sourceQuality: governanceState.attestation ? 'strong' : 'weak',
+      reviewerAuthority: governanceState.attestation?.actor ? 'human' : 'none',
+      proofStrength: status === 'verified' ? 'strong' : 'weak',
+      conflictCount: status === 'verified' ? 0 : 1,
+      impactLevel: 'high',
+    },
+    metadata: {
+      pending: governanceState.pending,
+      drift: governanceState.drift,
+    },
+  });
+  evidence.push(surfaceEvidence({
+    id: evidenceId,
+    claimId: id,
+    type: 'attestation',
+    method: 'attestation',
+    record,
+    locator: '.veritas/attestations',
+    summary: `Human attestation currency is ${status} for Zone 1 governance state ${governanceState.state}.`,
+  }));
+  events.push(surfaceEvent({
+    id: `${id}.${status}`,
+    claimId: id,
+    status,
+    method: 'human attestation status',
+    evidenceIds: [evidenceId],
+    record,
+    notes: `Human attestation currency is ${status}.`,
+    verifiedAt: status === 'verified' ? record.timestamp : undefined,
+  }));
+}
+
+function governanceArtifactStatus(governanceState, drift) {
+  if (drift) return 'disputed';
+  if (governanceState.state === 'drifted' || governanceState.state === 'broken-head') return 'verified';
+  if (governanceState.state === 'missing' || governanceState.state === 'pending') return 'disputed';
+  return 'verified';
+}
+
+function governanceAttestationStatus(governanceState) {
+  if (governanceState.state === 'drifted' || governanceState.state === 'broken-head') return 'disputed';
+  if (governanceState.state === 'missing' || governanceState.state === 'pending') return 'disputed';
+  if (governanceState.expired) return 'stale';
+  return 'verified';
+}
+
+function governanceArtifactSummary(artifact, status, governanceState) {
+  if (status === 'disputed') {
+    return `${artifact} governance state is disputed because attestation state is ${governanceState.state}.`;
+  }
+  if (status === 'stale') {
+    return `${artifact} governance state is stale because the active attestation expired.`;
+  }
+  return `${artifact} governance state matches the active Zone 1 attestation.`;
 }
 
 export function validateSurfaceTrustInputAtBoundary({ input, record, rootDir }) {
@@ -611,7 +736,7 @@ export function summarizeSurfaceTrustReport(report) {
   };
 }
 
-export function surfaceEvidence({ id, claimId, type, method, record, locator, summary, metadata = {} }) {
+export function surfaceEvidence({ id, claimId, type, method, record, locator, summary, passing, blocking, metadata = {} }) {
   return {
     id,
     claimId,
@@ -623,6 +748,8 @@ export function surfaceEvidence({ id, claimId, type, method, record, locator, su
     observedAt: record.timestamp,
     collectedBy: 'veritas',
     integrityRef: record.source_ref,
+    ...(SURFACE_SUPPORTS_EVIDENCE_EVALUATION && typeof passing === 'boolean' ? { passing } : {}),
+    ...(SURFACE_SUPPORTS_EVIDENCE_EVALUATION && typeof blocking === 'boolean' ? { blocking } : {}),
     metadata: {
       sourceKind: record.source_kind,
       sourceScope: record.source_scope,

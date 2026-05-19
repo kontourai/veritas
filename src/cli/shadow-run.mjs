@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { parseShadowArgs } from '../args.mjs';
-import { runProofCommand } from '../shell.mjs';
+import { runProofCommandDetailed } from '../shell.mjs';
 import {
   generateVeritasReport,
   buildFeedbackSummary,
@@ -36,7 +36,7 @@ function handleSurfaceValidationCliError(error) {
   return null;
 }
 
-export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
+export async function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseShadowArgs(argv);
   const format = normalizeOutputFormat(options.format, 'feedback');
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
@@ -69,13 +69,26 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
   }
 
   let proofFailure = null;
+  const proofResults = [];
   if (!options.skipProof) {
     for (const proofCommand of proofCommands) {
       try {
-        runProofCommand(proofCommand, rootDir, {
-          stdio: format === 'feedback' ? 'pipe' : 'inherit',
-          encoding: format === 'feedback' ? 'utf8' : undefined,
-        });
+        const proofResult = runProofCommandDetailed(proofCommand, rootDir);
+        proofResults.push(proofResult);
+        if (format !== 'feedback') {
+          if (proofResult.stdout) process.stdout.write(proofResult.stdout);
+          if (proofResult.stderr) process.stderr.write(proofResult.stderr);
+        }
+        if (!proofResult.passed) {
+          proofFailure = {
+            command: proofCommand,
+            message: `Proof command exited with ${proofResult.exitCode ?? proofResult.signal ?? 'unknown status'}`,
+            stdout: proofResult.stdout,
+            stderr: proofResult.stderr,
+            exitCode: proofResult.exitCode,
+          };
+          break;
+        }
       } catch (error) {
         proofFailure = {
           command: proofCommand,
@@ -88,10 +101,11 @@ export function runShadowRunCli(argv = process.argv.slice(2), defaults = {}) {
 
   let reportResult;
   try {
-    reportResult = generateVeritasReport(
+    reportResult = await generateVeritasReport(
       {
         ...options,
         rootDir,
+        proofResults,
         workingTree:
           options.workingTree || (!options.changedFrom && !options.changedTo),
         baselineCiFastStatus:

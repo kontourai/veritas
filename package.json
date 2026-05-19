@@ -74,7 +74,8 @@
     "veritas:checkin": "node scripts/checkin-status.mjs",
     "veritas:checkin:examples": "node scripts/build-checkin-examples.mjs",
     "veritas:checkin:prove": "npm run veritas:proof && npm run veritas:checkin:examples && npm run veritas:checkin",
-    "veritas:ci:checkin": "npm run veritas:checkin:prove"
+    "veritas:ci:checkin": "npm run veritas:checkin:prove",
+    "veritas:dashboard": "surface dashboard --config surface.config.json"
   },
   "dependencies": {
     "@kontourai/surface": "git+https://github.com/kontourai/surface.git#53a9dec6504ab9f721a21887726b23ea6a9815c0",

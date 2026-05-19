@@ -87,4 +87,17 @@ export const SURFACE_TRUST_POLICIES = {
     conflictRules: ['rejected proposals supersede proposed claims'],
     impactLevel: 'medium',
   },
+  governanceArtifact: {
+    id: 'veritas.governance-artifact',
+    claimType: 'veritas-governance-artifact',
+    requiredEvidence: ['attestation', 'policy_rule'],
+    requiredMethods: ['auditability', 'attestation'],
+    requiresCorroboration: false,
+    requiredProof: ['Zone 1 hash inspection', 'human attestation status'],
+    reviewAuthority: 'veritas plus human attestation',
+    validityRule: { kind: 'manual' },
+    stalenessTriggers: ['policy pack hash changes', 'adapter hash changes', 'team profile hash changes', 'attestation expiry'],
+    conflictRules: ['hash drift disputes governance artifact currency'],
+    impactLevel: 'high',
+  },
 };

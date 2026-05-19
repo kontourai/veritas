@@ -8,6 +8,7 @@ import {
   buildSurfaceTrustInput,
   createAttestation,
   generateRuleProposals,
+  initClaimStore,
   writeGeneratedProposals,
 } from '../../src/index.mjs';
 
@@ -22,7 +23,10 @@ function setupRepo() {
     schemaVersion: 1,
     name: 'proposal-test',
     graph: { nodes: [], defaultResolution: 'manual-review', resolverPrecedence: [], nonSliceableInvariants: [] },
-    evidence: { reportTransport: 'local-json' },
+    evidence: {
+      reportTransport: 'local-json',
+      proofLanes: [{ id: 'unit', command: 'npm test', method: 'validation' }],
+    },
   });
   writeJson(join(rootDir, '.veritas/policy-packs/default.policy-pack.json'), {
     name: 'proposal-policy',
@@ -87,7 +91,7 @@ test('eval proposal generator covers override and missing surface heuristics', (
   assert.ok(proposals.some((proposal) => proposal.type === 'surface-node-addition' && proposal.target === 'unknown/path.ts'));
 });
 
-test('proposal artifacts can be accepted and surface as proposed claims before decision', () => {
+test('proposal artifacts can be accepted and surface as proposed claims before decision', async () => {
   const rootDir = setupRepo();
   createAttestation({
     rootDir,
@@ -98,8 +102,39 @@ test('proposal artifacts can be accepted and surface as proposed claims before d
   const proposal = generateRuleProposals({ rootDir }).find((item) => item.type === 'rule-enforcement-relaxation');
   const [path] = writeGeneratedProposals({ rootDir, proposals: [proposal] });
   assert.equal(existsSync(join(rootDir, path)), true);
+  await initClaimStore({ rootDir, repoName: 'proposal-test', force: true });
+  const storePath = join(rootDir, 'veritas.claims.json');
+  const store = JSON.parse(readFileSync(storePath, 'utf8'));
+  store.claims.push({
+    id: `proposal.${proposal.id}`,
+    surface: 'veritas.proposals',
+    claimType: 'veritas-proposal',
+    status: 'proposed',
+    fieldOrBehavior: proposal.type,
+    subjectType: 'veritas-proposal',
+    subjectId: proposal.id,
+    impactLevel: 'medium',
+    verificationPolicyId: 'veritas.proposal',
+    metadata: { proposalId: proposal.id },
+    createdAt: '2026-05-10T00:00:00.000Z',
+    updatedAt: '2026-05-10T00:00:00.000Z',
+  });
+  store.policies.push({
+    id: 'veritas.proposal',
+    claimType: 'veritas-proposal',
+    requiredEvidence: ['policy_rule'],
+    requiredMethods: ['auditability'],
+    requiresCorroboration: false,
+    requiredProof: ['eval proposal artifact'],
+    reviewAuthority: 'human reviewer',
+    validityRule: { kind: 'manual' },
+    stalenessTriggers: [],
+    conflictRules: [],
+    impactLevel: 'medium',
+  });
+  writeJson(storePath, store);
 
-  const input = buildSurfaceTrustInput({
+  const input = await buildSurfaceTrustInput({
     run_id: 'proposal-surface-test',
     timestamp: '2026-05-10T00:00:00.000Z',
     source_ref: 'test-ref',

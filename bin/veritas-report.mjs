@@ -15,7 +15,7 @@ if (argv.some((token) => token === '--help' || token === '-h' || token === 'help
   process.exit(0);
 }
 
-runVeritasReportCli(argv, {
+await runVeritasReportCli(argv, {
   rootDir: process.cwd(),
   adapterPath: resolve(process.cwd(), '.veritas/repo.adapter.json'),
   policyPackPath: resolve(

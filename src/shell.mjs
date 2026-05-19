@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 
 export function shellQuote(value) {
@@ -92,6 +92,26 @@ export function runProofCommand(command, rootDir, options = {}) {
     encoding: options.encoding,
     windowsHide: true,
   });
+}
+
+export function runProofCommandDetailed(command, rootDir) {
+  const [executable, ...args] = tokenizeCommand(command);
+  const result = spawnSync(executable, args, {
+    cwd: rootDir,
+    encoding: 'utf8',
+    windowsHide: true,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  if (result.error) throw result.error;
+  return {
+    command,
+    passed: result.status === 0,
+    exitCode: result.status,
+    signal: result.signal,
+    stdout: result.stdout ?? '',
+    stderr: result.stderr ?? '',
+    output: `${result.stdout ?? ''}${result.stderr ?? ''}`,
+  };
 }
 
 export function gitOutput(args, rootDir, options = {}) {

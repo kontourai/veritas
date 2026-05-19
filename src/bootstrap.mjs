@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { loadJson } from './load.mjs';
 import { buildGovernanceBlock, replaceGovernanceBlock } from './governance.mjs';
+import { buildBaselineClaims } from './claims/templates.mjs';
 
 const DEFAULT_SELECTED_INSTRUCTION_TARGETS = [
   { path: 'AGENTS.md', tool: 'codex', required: true },
@@ -679,12 +680,23 @@ export function writeBootstrapStarterKit({
   const teamProfilePath = resolve(rootDir, '.veritas/team/default.team-profile.json');
   const readmePath = resolve(rootDir, '.veritas/README.md');
   const governancePath = resolve(rootDir, '.veritas/GOVERNANCE.md');
+  const claimStorePath = resolve(rootDir, 'veritas.claims.json');
   const requiredInstructionFiles = selectedInstructionTargets.map((target) => resolve(rootDir, target.path));
+  const starterAdapter = buildStarterAdapter({ projectName, proofLane: resolvedProofLane, repoInsights, instructionTargets: selectedInstructionTargets });
 
   const files = [
-    [adapterPath, buildStarterAdapter({ projectName, proofLane: resolvedProofLane, repoInsights, instructionTargets: selectedInstructionTargets })],
+    [adapterPath, starterAdapter],
     [policyPackPath, loadStarterPolicyPack(pack) ?? buildStarterPolicyPack({ projectName, instructionTargets: selectedInstructionTargets })],
     [teamProfilePath, buildStarterTeamProfile({ projectName, proofLane: resolvedProofLane })],
+    [claimStorePath, {
+      schemaVersion: 1,
+      producer: 'veritas',
+      ...buildBaselineClaims(projectName, {
+        hasGovernance: true,
+        proofLaneCommands: [resolvedProofLane],
+        surfaceNodes: starterAdapter.graph?.nodes ?? [],
+      }),
+    }],
   ];
 
   for (const [filePath] of files) {
@@ -744,6 +756,7 @@ export function writeBootstrapStarterKit({
       relative(rootDir, adapterPath).replaceAll('\\', '/'),
       relative(rootDir, policyPackPath).replaceAll('\\', '/'),
       relative(rootDir, teamProfilePath).replaceAll('\\', '/'),
+      relative(rootDir, claimStorePath).replaceAll('\\', '/'),
       ...requiredInstructionFiles.map((filePath) =>
         relative(rootDir, filePath).replaceAll('\\', '/'),
       ),

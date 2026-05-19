@@ -4,6 +4,7 @@ dist/
 .omx/
 .veritas/evidence/
 .veritas/claims/
+.veritas/surface-dashboard/
 .veritas/external/
 .veritas/eval-drafts/
 .veritas/evals/

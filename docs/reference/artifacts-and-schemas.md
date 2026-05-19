@@ -35,6 +35,9 @@ These are the paths the framework writes into a target repo.
 - `.veritas/attestations/HEAD`
 - `.veritas/attestations/PENDING`
 - `.veritas/evidence/<run-id>.json`
+- `.veritas/claims/<claim-id>.input.json`
+- `.veritas/surface-dashboard/<run-id>.dashboard.json`
+- `.veritas/surface-dashboard/latest.json`
 - `.veritas/eval-drafts/<run-id>.json`
 - `.veritas/evals/<run-id>.json`
 - `.veritas/evals/history.jsonl`
@@ -295,6 +298,8 @@ Every new evidence artifact also includes a `surface.input` block. That block is
 
 Veritas owns the repo-specific producer fields. Surface owns generated report fields such as `id`, `generatedAt`, `summary`, `faultLines`, and `proofRequirementsByClaimId`. Those report-only fields must not appear under `surface.input`.
 
+When the attestation gate runs, the evidence record includes `governance_state`. This is the additive compatibility point for policy-pack, adapter, team-profile, and human-attestation state. The raw adapter object remains Veritas-local producer metadata; `governance_state` is mapped because it describes evaluated artifact integrity, adapter applicability, attestation currency, and drift.
+
 After validation, Veritas calls Surface's public `buildTrustReport` API and persists a compact `surface.report` summary beside the input. The report summary includes per-claim derived status, summary counts, and fault lines. `shadow run` prints WARN feedback for Surface-derived `stale` and `disputed` claims, and `veritas explain <rule>` includes the latest Surface status and fault lines for that rule when an evidence record is available.
 
 | Evidence field | Surface mapping | Classification |
@@ -309,6 +314,7 @@ After validation, Veritas calls Surface's public `buildTrustReport` API and pers
 | `verification_budget` | A budget claim/evidence pair plus metadata used by Surface report generation | Surface-mapped |
 | `external_tool_results` | External tool verdict claims, evidence, events, and metadata for advisory/blocking proof lanes | Surface-mapped |
 | `policy_pack`, `policy_results` | Policy-result claims, evidence, events, and policy-violation fault-line hints | Surface-mapped |
+| `governance_state` | Governance artifact and attestation-currency claims, evidence, and events | Surface-mapped |
 | `recommendations`, `false_positive_review`, `promotion_candidate`, `override_or_bypass`, `owner`, `promotion_allowed` | Surface metadata and confidence context | Surface-mapped |
 | `framework`, `adapter`, `framework_version` | Veritas-local producer/runtime metadata | Veritas-local |
 | `surface` | Embedded Surface projection and generated compact report summary | Surface-mapped |
@@ -336,6 +342,21 @@ Each slice has this shape:
 ```
 
 The `evidence` and `events` arrays are filtered to the single `claim.id`, and `policy` is the matching `verificationPolicyId` policy or `null`. Use these files for local inspection, per-claim validation, and focused debugging. Use Surface itself to generate full `TrustReport` artifacts.
+
+#### Surface Dashboard Read Model
+
+When `surface.input` and `surface.report` are present, Veritas writes `.veritas/surface-dashboard/<run-id>.dashboard.json` plus `.veritas/surface-dashboard/latest.json`. These files are derived and gitignored. They are the Veritas-side integration contract for the Surface dashboard and analytics layer.
+
+The read model has `kind: "surface-dashboard-read-model"` and `contract: "surface.analytics-compatible"`. It includes:
+
+- `producer`: Veritas run id, source ref, evidence artifact path, and per-claim input slice paths
+- `summary`: claim/evidence/policy/event/fault-line counts and dashboard aggregates by status, claim type, surface, domain, policy, evidence type, method, reviewer authority, impact level, and fault-line type
+- `analytics`: a Surface-compatible analytics projection shaped like Surface's `buildTrustAnalyticsProjection(report)` output, including coverage, stale/disputed queues, proof gaps, action queues, and attestation validity
+- `claims`: one dashboard row per Surface claim with derived status from `surface.report`, provenance ids, confidence fields, fault-line ids, evidence methods, and metadata
+- `policies`: policy summaries with claim counts, status counts, required evidence/methods, review authority, and fault-line counts
+- `graph`: normalized nodes and edges for subjects, claims, policies, evidence, events, derived-from links, and fault lines
+
+The dashboard read model is intentionally derived from portable Surface input/report data. It may include Veritas producer metadata, but Surface dashboards should not need to import Veritas rules, policy-pack mechanics, repo adapters, or proof-lane routing logic.
 
 ### Team profile
 

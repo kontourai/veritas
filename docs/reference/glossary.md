@@ -25,6 +25,9 @@ Veritas adds repo-workflow vocabulary on top of Surface's trust vocabulary. They
 | **evidence artifact** | The JSON record at `.veritas/evidence/<run-id>.json` capturing what was checked, what passed, what failed, and the embedded `surface.input`. |
 | **eval draft** | Per-run observation about acceptance, time-to-green, overrides — under `.veritas/eval-drafts/<run-id>.json`. |
 | **governance block** | The marker-bounded paragraph Veritas injects into AI instruction files (`AGENTS.md`, `CLAUDE.md`, etc.). |
+| **governance artifact claim** | A Surface claim Veritas emits about a Zone 1 artifact's evaluated state, such as content hash, drift, applicability, or attestation currency. The artifact remains Veritas-owned. |
+| **policy result claim** | A Surface claim for one evaluated Veritas rule result. It says what the rule evaluation found, not that the policy pack is itself a Surface claim. |
+| **adapter applicability claim** | A governance artifact claim about whether the repo adapter applied to the current changed paths, including uncovered-path policy status. |
 
 ## Surface terms (trust)
 
@@ -47,6 +50,7 @@ Veritas terms project into Surface terms when an evidence artifact embeds `surfa
 |------------------|--------------------|
 | Selected proof lane (`npm run verify`) | Claim about subject `repo-proof-lane`, surface `veritas.proof-lanes` |
 | Policy result (one rule's pass/fail) | Claim about subject `repo-policy`, surface `veritas.policy-results` |
+| Zone 1 governance state | Claims about policy-pack, adapter, team-profile, and attestation state under `veritas.governance-artifacts` and `veritas.attestations` |
 | Affected surface (which repo region was touched) | Claim about subject `repo-surface`, surface `veritas.surface` |
 | Proof family classification | Claim about subject `proof-family`, surface `veritas.proof-family` |
 | Verification budget | Claim about subject `verification-budget`, surface `veritas.verification-budget` |

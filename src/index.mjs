@@ -199,8 +199,14 @@ import {
   runClaudeCodePreToolUseCli,
   runIntegrationsCli,
   runShadowRunCli,
+  runClaimCli,
 } from './cli/index.mjs';
 export * from './surface/projection.mjs';
+export * from './surface/dashboard.mjs';
+export * from './surface/extension.mjs';
+export * from './claims/store.mjs';
+export * from './claims/templates.mjs';
+export * from './claims/init.mjs';
 
 export {
   loadJson,
@@ -359,6 +365,7 @@ export {
   runClaudeCodePreToolUseCli,
   runIntegrationsCli,
   runShadowRunCli,
+  runClaimCli,
 };
 export * from './attestations.mjs';
 export * from './integrations/contract.mjs';
@@ -367,3 +374,6 @@ export * from './integrations/runtime-adapters.mjs';
 export * from './eval/filesystem-observer.mjs';
 export * from './eval/run-history.mjs';
 export * from './proposals.mjs';
+export * from './cli/plugins.mjs';
+export * from './plugins/registry.mjs';
+export * from './plugins/loader.mjs';
