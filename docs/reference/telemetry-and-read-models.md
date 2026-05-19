@@ -33,6 +33,17 @@ The intended path for human interpretation is:
 
 This keeps Veritas lightweight while still supporting trend analysis and operator insight.
 
+Run snapshots for the Surface dashboard live at:
+
+```
+.surface/runs/<run-id>.dashboard.json
+.surface/runs/latest.json
+```
+
+These are derived from `surface.input` and `surface.report` inside the evidence artifact. They are gitignored and regenerated on each run.
+
+After `veritas eval record` completes, it patches the matching run snapshot with a generic `EvalSummary` field. The dashboard can then show post-hoc review context alongside the live trust state without any extra commands.
+
 Questions a read-model layer should answer:
 
 - which rules are noisy over time

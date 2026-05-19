@@ -1,5 +1,24 @@
 # Migration Guide
 
+## Run Snapshots Move to `.surface/runs/`
+
+Veritas now writes run snapshots to `.surface/runs/` instead of `.veritas/surface-dashboard/`.
+
+New paths:
+
+```
+.surface/runs/<run-id>.dashboard.json
+.surface/runs/latest.json
+```
+
+The Surface dashboard detects the old path automatically as a fallback, so existing setups keep working without any change. When you are ready to migrate:
+
+1. Add `.surface/` to your `.gitignore` if it is not already there (run snapshots are derived and should not be committed).
+2. The next `veritas run` or `veritas shadow run` writes to the new path automatically.
+3. Remove `.veritas/surface-dashboard/` from your `.gitignore` once the old directory is gone.
+
+If you pass `--read-model .veritas/surface-dashboard/latest.json` explicitly to the Surface dashboard, update that flag to `--read-model .surface/runs/latest.json` (or omit it entirely, since `.surface/runs/latest.json` is now the default).
+
 ## Claims Are Now Authored, Not Generated Per Run
 
 Veritas requires a committed claim store at `veritas.claims.json`. Per-run claim generation is no longer supported.

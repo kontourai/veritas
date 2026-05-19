@@ -36,8 +36,8 @@ These are the paths the framework writes into a target repo.
 - `.veritas/attestations/PENDING`
 - `.veritas/evidence/<run-id>.json`
 - `.veritas/claims/<claim-id>.input.json`
-- `.veritas/surface-dashboard/<run-id>.dashboard.json`
-- `.veritas/surface-dashboard/latest.json`
+- `.surface/runs/<run-id>.dashboard.json`
+- `.surface/runs/latest.json`
 - `.veritas/eval-drafts/<run-id>.json`
 - `.veritas/evals/<run-id>.json`
 - `.veritas/evals/history.jsonl`
@@ -345,13 +345,14 @@ The `evidence` and `events` arrays are filtered to the single `claim.id`, and `p
 
 #### Surface Dashboard Read Model
 
-When `surface.input` and `surface.report` are present, Veritas writes `.veritas/surface-dashboard/<run-id>.dashboard.json` plus `.veritas/surface-dashboard/latest.json`. These files are derived and gitignored. They are the Veritas-side integration contract for the Surface dashboard and analytics layer.
+When `surface.input` and `surface.report` are present, Veritas writes `.surface/runs/<run-id>.dashboard.json` plus `.surface/runs/latest.json`. These files are derived and gitignored. They are the Veritas-side integration contract for the Surface dashboard and analytics layer.
 
 The read model has `kind: "surface-dashboard-read-model"` and `contract: "surface.analytics-compatible"`. It includes:
 
 - `producer`: Veritas run id, source ref, evidence artifact path, and per-claim input slice paths
 - `summary`: claim/evidence/policy/event/fault-line counts and dashboard aggregates by status, claim type, surface, domain, policy, evidence type, method, reviewer authority, impact level, and fault-line type
 - `analytics`: a Surface-compatible analytics projection shaped like Surface's `buildTrustAnalyticsProjection(report)` output, including coverage, stale/disputed queues, proof gaps, action queues, and attestation validity
+- `evalSummary`: populated by `veritas eval record`; carries the generic Surface `EvalSummary` shape (`reviewed`, `outcome`, `confidence`, `falsePositiveCount`, `missedIssueCount`, `timeToResolutionMinutes`, `notes`, `metadata`). `null` until an eval record is written for the run.
 - `claims`: one dashboard row per Surface claim with derived status from `surface.report`, provenance ids, confidence fields, fault-line ids, evidence methods, and metadata
 - `policies`: policy summaries with claim counts, status counts, required evidence/methods, review authority, and fault-line counts
 - `graph`: normalized nodes and edges for subjects, claims, policies, evidence, events, derived-from links, and fault lines
