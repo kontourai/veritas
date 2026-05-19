@@ -38,7 +38,7 @@ function copyJsonArtifact(sourceRelativePath, destinationRelativePath) {
   writeText(destinationRelativePath, `${JSON.stringify(parsed, null, 2)}\n`);
 }
 
-const report = generateVeritasReport(
+const report = await generateVeritasReport(
   {
     rootDir,
     runId,
