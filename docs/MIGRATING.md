@@ -1,4 +1,17 @@
-# Migrating Between Breaking Changes
+# Migration Guide
+
+## Claims Are Now Authored, Not Generated Per Run
+
+Veritas requires a committed claim store at `veritas.claims.json`. Per-run claim generation is no longer supported.
+
+To migrate:
+
+1. Run `veritas claim init` in the repo root.
+2. Review the generated claim IDs, surfaces, policies, and metadata.
+3. Commit `veritas.claims.json`.
+4. Update any automation that referenced run-scoped claim IDs to use the stable authored claim IDs.
+
+See [claim-authoring.md](./claim-authoring.md) for the full authoring workflow.
 
 ## Adapter Proof Lanes Are Explicit Objects
 

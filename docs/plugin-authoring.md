@@ -81,4 +81,4 @@ The scaffold command adds missing claims and policy templates to `veritas.claims
 
 ## Reference
 
-See `surface/examples/veritas-plugins/npm-audit.mjs` for a minimal npm audit evidence importer. It maps `npm audit --json` output to evidence for authored `package-version-safety` claims.
+See `examples/veritas-plugins/npm-audit.mjs` for a minimal npm audit evidence importer. It maps `npm audit --json` output to evidence for authored `package-version-safety` claims.

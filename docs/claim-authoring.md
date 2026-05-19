@@ -1,13 +1,17 @@
 # Claim Authoring
 
-Veritas now requires an authored claim store at `veritas.claims.json` before it can emit `surface.input`.
+Claims are authored once in `veritas.claims.json`, committed to the repository, and stable across runs. Veritas loads them at run time and collects evidence against those stable claim IDs. Surface derives trust status from the evidence and policies.
 
-This is a version break. Previous per-run claim generation is not supported as an alternate mode. Migrate by creating and committing a claim store:
+## Getting Started
+
+Scaffold a claim store from your repo configuration:
 
 ```bash
 veritas claim init
 git add veritas.claims.json
 ```
+
+## Managing Claims
 
 Use `veritas claim` to maintain the store:
 
@@ -19,15 +23,6 @@ veritas claim remove --claim-id my-repo.veritas-proof-lane.npm-test
 veritas claim validate
 ```
 
-Per run, Veritas loads authored claims from `veritas.claims.json` and collects evidence against those claim IDs. Surface then derives status from the evidence and policies.
+Claims without evidence collected in a given run retain their previous status through the staleness model rather than disappearing. Run artifacts are dynamic; claims are stable declarations owned by the repository.
 
-## Migration Notes
-
-For repos upgrading from a version that emitted claims from each run:
-
-1. Run `veritas claim init`.
-2. Review generated claim IDs, surfaces, policies, and metadata.
-3. Commit `veritas.claims.json`.
-4. Update any automation that expected run-scoped claim IDs to use stable authored claim IDs.
-
-Run artifacts remain dynamic. Claims are stable declarations owned by the repository.
+If you are upgrading from an older version that generated claims per run, see [MIGRATING.md](./MIGRATING.md).
