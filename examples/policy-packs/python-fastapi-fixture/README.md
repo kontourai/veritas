@@ -7,4 +7,4 @@ app/routers/projects.py changed
 tests/routers/ unchanged
 ```
 
-With `python-fastapi.policy-pack.json`, `veritas shadow run --working-tree` warns because router changes require router test changes.
+With `python-fastapi.policy-pack.json`, `veritas run --working-tree` warns because router changes require router test changes.

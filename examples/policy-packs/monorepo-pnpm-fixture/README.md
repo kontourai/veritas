@@ -7,4 +7,4 @@ packages/catalog/src/index.ts changed
 CHANGELOG.md unchanged
 ```
 
-With `monorepo-pnpm.policy-pack.json`, `veritas shadow run --working-tree` warns because package changes should include a release-visible changelog update.
+With `monorepo-pnpm.policy-pack.json`, `veritas run --working-tree` warns because package changes should include a release-visible changelog update.

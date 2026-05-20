@@ -14,7 +14,7 @@ The framework has four core concepts: rules, feedback, just-in-time context, and
 
 Surface is the portable trust substrate underneath Veritas. Surface owns claims, evidence, verification policies, events, status, fault lines, proof requirements, and generated trust reports.
 
-Veritas owns repo and AI-agent workflow mechanics: adapters, policy packs, proof lanes, proof families, verification budgets, shadow runs, and lint-style feedback. These are useful to coding agents, but they are not a second trust model.
+Veritas owns repo and AI-agent workflow mechanics: adapters, policy packs, proof lanes, proof families, verification budgets, veritas runs, and lint-style feedback. These are useful to coding agents, but they are not a second trust model.
 
 Every Veritas evidence artifact includes `surface.input`, a Surface `TrustInput` projection of the run. That block contains claims, evidence, policies, and events. Veritas validates it at the boundary and then calls Surface's public `buildTrustReport` API. The compact result is persisted under `surface.report` with derived claim statuses, summary counts, and fault lines.
 
@@ -95,7 +95,7 @@ The `(?!/)` part is regex, not glob syntax. It means `@stallion-ai/shared/contra
 
 Use `required-pattern` for required content and `header-required` when the pattern must appear at the start of a file, such as a license or governance header.
 
-Rules may set `enforcement: "deny"` or `enforcement: "lint"`. When omitted, hard invariants default to `deny`; other classifications default to `lint`. Deny rules can block edits at the PreToolUse boundary when the runtime supports it, while lint rules continue to appear in `shadow run` feedback.
+Rules may set `enforcement: "deny"` or `enforcement: "lint"`. When omitted, hard invariants default to `deny`; other classifications default to `lint`. Deny rules can block edits at the PreToolUse boundary when the runtime supports it, while lint rules continue to appear in `veritas run` feedback.
 
 ## Boundaries
 

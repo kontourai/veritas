@@ -215,14 +215,14 @@ The framework currently distinguishes three evidence source kinds:
 - `branch-diff`
 - `working-tree`
 
-#### Adapter Proof-Lane Migration
+#### Adapter Proof Configuration
 
 Current adapters use explicit proof-lane objects:
 
 ```json
 {
   "evidence": {
-    "proofLanes": [
+    "proofs": [
       {
         "id": "required-proof",
         "command": "npm run verify",
@@ -230,19 +230,19 @@ Current adapters use explicit proof-lane objects:
         "summary": "Runs the repository verification suite."
       }
     ],
-    "requiredProofLaneIds": ["required-proof"],
-    "defaultProofLaneIds": ["required-proof"],
-    "surfaceProofRoutes": [
+    "requiredProofIds": ["required-proof"],
+    "defaultProofIds": ["required-proof"],
+    "proofRoutes": [
       {
-        "nodeIds": ["verification.tests"],
-        "proofLaneIds": ["required-proof"]
+        "componentIds": ["verification.tests"],
+        "proofIds": ["required-proof"]
       }
     ]
   }
 }
 ```
 
-Removed proof command array fields such as `requiredProofLanes`, `defaultProofLanes`, and `surfaceProofLanes` are intentionally rejected by runtime validation. Migrate by assigning each command a stable `proofLanes[].id`, moving the command into `proofLanes[].command`, and replacing route command arrays with `proofLaneIds`.
+Removed proof command array fields such as `requiredProofLanes`, `defaultProofLanes`, and `surfaceProofLanes` are intentionally rejected by runtime validation. Migrate by assigning each command a stable `proofs[].id`, moving the command into `proofs[].command`, and replacing route command arrays with `proofIds`.
 
 Proof lanes may optionally declare an external tool artifact. Veritas reads the artifact after the proof lane has run, records a normalized `external_tool_results` entry, and maps the verdict into `surface.input`.
 
@@ -300,7 +300,7 @@ Veritas owns the repo-specific producer fields. Surface owns generated report fi
 
 When the attestation gate runs, the evidence record includes `governance_state`. This is the additive compatibility point for policy-pack, adapter, team-profile, and human-attestation state. The raw adapter object remains Veritas-local producer metadata; `governance_state` is mapped because it describes evaluated artifact integrity, adapter applicability, attestation currency, and drift.
 
-After validation, Veritas calls Surface's public `buildTrustReport` API and persists a compact `surface.report` summary beside the input. The report summary includes per-claim derived status, summary counts, and fault lines. `shadow run` prints WARN feedback for Surface-derived `stale` and `disputed` claims, and `veritas explain <rule>` includes the latest Surface status and fault lines for that rule when an evidence record is available.
+After validation, Veritas calls Surface's public `buildTrustReport` API and persists a compact `surface.report` summary beside the input. The report summary includes per-claim derived status, summary counts, and fault lines. `veritas run` prints WARN feedback for Surface-derived `stale` and `disputed` claims, and `veritas explain <rule>` includes the latest Surface status and fault lines for that rule when an evidence record is available.
 
 | Evidence field | Surface mapping | Classification |
 | --- | --- | --- |
@@ -420,7 +420,7 @@ The framework flow in this repo is:
 2. `report` resolves files through the adapter and writes an evidence artifact.
 3. `eval draft` turns that evidence into a repo-local draft artifact.
 4. `eval record` turns the evidence or draft into a completed live-eval record.
-5. `shadow run` orchestrates the report plus eval path and can also run proof first.
+5. `run` orchestrates the report plus eval path and can also run proof first.
 
 The starter guidance surface also includes `.veritas/GOVERNANCE.md`, which is a committed governance artifact rather than a disposable generated output.
 

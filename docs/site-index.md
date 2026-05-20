@@ -45,7 +45,7 @@ Veritas captures [local improvement records](concepts.md#improvement) — accept
 <div class="pillar">
 <h3>Human Gate <span class="pillar-term">Attestation</span></h3>
 <p class="pillar-what">Immutable human attestations bind the active adapter, policy pack, and team profile to reviewed content hashes.</p>
-<p class="pillar-why">Governance changes become tamper-evident, and shadow runs fail when Zone 1 policy changes have not been freshly attested.</p>
+<p class="pillar-why">Governance changes become tamper-evident, and veritas runs fail when Zone 1 policy changes have not been freshly attested.</p>
 </div>
 
 <div class="pillar">
@@ -117,7 +117,7 @@ npx veritas run --check shadow --working-tree
 npx veritas run --working-tree
 ```
 
-`init` writes the starter files to `.veritas/` and injects the governance block into AI instruction files. `report` produces the evidence artifact your CI or PR workflow can post. `shadow run` adds proof execution, lint-style feedback, and eval drafting on top of that, with no enforcement until you are ready.
+`init` writes the starter files to `.veritas/` and injects the governance block into AI instruction files. `report` produces the evidence artifact your CI or PR workflow can post. `veritas run` adds proof execution, lint-style feedback, and eval drafting on top of that, with no enforcement until you are ready.
 
 ## Start Safe
 
@@ -133,7 +133,7 @@ The `.veritas/` directory in your repo is the audit trail for all three phases.
 
 ## Proven on Itself
 
-Veritas runs on its own repository using the same workflow a consumer repo would use. CI runs `shadow run` on check-ins, posts evidence artifacts to PRs, and tracks health against the live eval records. The `.veritas/` directory in this repo is not a demo configuration — it is the actual development workflow.
+Veritas runs on its own repository using the same workflow a consumer repo would use. CI runs `veritas run` on check-ins, posts evidence artifacts to PRs, and tracks health against the live eval records. The `.veritas/` directory in this repo is not a demo configuration — it is the actual development workflow.
 
 If self-hosting feels awkward, that is a signal to fix the product surface, not to carve out special behavior for the framework repo.
 

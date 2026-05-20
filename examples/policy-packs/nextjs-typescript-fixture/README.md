@@ -7,4 +7,4 @@ app/api/projects/route.ts changed
 tests/api/ unchanged
 ```
 
-With `nextjs-typescript.policy-pack.json`, `veritas shadow run --working-tree` warns because `app/api/**` changes require `tests/api/**` changes.
+With `nextjs-typescript.policy-pack.json`, `veritas run --working-tree` warns because `app/api/**` changes require `tests/api/**` changes.

@@ -30,7 +30,7 @@ The generated Codex hook config now wires:
 
 `veritas eval observe` defensively reads transcript events and fills an eval draft under `.veritas/eval-drafts/`:
 
-- `time_to_green_minutes`: first failing `veritas run` to first later passing shadow run.
+- `time_to_green_minutes`: first failing `veritas run` to first later passing veritas run.
 - `accepted_without_major_rewrite`: based on post-Veritas churn against files Veritas reported on.
 - `override_count`: `VERITAS_*` bypasses and `--skip-proof` after the run.
 

@@ -13,7 +13,7 @@ Veritas adds repo-workflow vocabulary on top of Surface's trust vocabulary. They
 | **proof lane** | The shell command Veritas runs to gather proof (e.g. `npm run verify`). Configured per repo. |
 | **proof family** | A grouping of proof lanes by lifecycle status (`required`, `candidate`, `advisory`, `move-to-test`, `retiring`, `stale`, `triggerless`). |
 | **verification budget** | The classification of proof families relative to current repo state. Output of `veritas run --check budget`. |
-| **shadow run** | An evaluation pass that doesn't block. Output of `veritas run`. The agent-facing path. |
+| **run** | The agent-facing evaluation path. It gathers evidence, runs configured proof, writes Surface input/report data, and returns feedback. |
 | **attestation** | A human approval record for the current Zone 1 governance hashes. Bootstrap attestations start the chain; policy-change and proposal-acceptance attestations renew it. |
 | **proposal** | A reviewable governance change drafted from eval history, such as relaxing, retiring, or adding policy/surface coverage. |
 | **enforcement** | The runtime behavior for a rule. `deny` can block supported PreToolUse edits; `lint` reports through feedback without blocking the edit boundary. |

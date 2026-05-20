@@ -30,7 +30,7 @@ Those are the things an agent can encounter at the moment it starts interacting 
 Tracked runtime-hook adapters make that more concrete for post-task integration:
 
 - `.veritas/hooks/agent-runtime.sh`
-- repo-local invocation of `shadow run`
+- repo-local invocation of `veritas run`
 - no requirement that the framework know one runtime vendor's config format
 
 When a runtime-specific layer is worth adding, keep it outside the generic hook:

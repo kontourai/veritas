@@ -42,7 +42,7 @@ The first operational workflow should stay explicit:
 
 The first passive automation layer should still use the same primitives:
 
-1. run `shadow run`
+1. run `veritas run`
 2. let it handle proof, report, and draft creation
 3. only confirm the remaining judgment fields if you want to finish the eval immediately
 

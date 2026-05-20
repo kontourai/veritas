@@ -33,7 +33,7 @@ Veritas owns its repo-governance product mechanics:
 - policy packs
 - proof lanes and proof-family manifests
 - verification budgets
-- shadow runs and lint-style agent feedback
+- veritas runs and lint-style agent feedback
 - eval drafts, eval records, and local improvement history
 
 Any new Veritas abstraction must choose one of three paths:
@@ -51,7 +51,7 @@ Any new Veritas abstraction must choose one of three paths:
 | proof-family result | claim, evidence, event, metadata | Surface-mapped |
 | verification budget | budget claim/evidence and report metadata | Surface-mapped |
 | policy result | claim, evidence, event, fault-line hint | Surface-mapped |
-| shadow run | evidence-producing eval run | Veritas producer, Surface input |
+| veritas run | evidence-producing eval run | Veritas producer, Surface input |
 | policy pack | Surface collection/framework plus source of governance claims about integrity, freshness, drift, and attestation | Surface-mapped state |
 | repo adapter | source of governance claims about integrity and applicability | Surface-mapped state |
 | team profile | source of governance claims about integrity and attestation | Surface-mapped state |

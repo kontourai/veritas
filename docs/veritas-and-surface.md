@@ -21,6 +21,6 @@ You do not need Veritas to use Surface.
 Veritas and Surface enforce a strict boundary:
 
 - **Surface** owns: the schema for `claims`, `evidence`, `policies`, `events`; the derivation of trust status; the shape of a `TrustReport`. It does not know what a "repo" or an "AI agent" is.
-- **Veritas** owns: rules, policy packs, proof lanes, shadow runs, governance blocks, eval drafts. It knows everything about repos and agents. At the boundary, it emits a `surface.input` block and a derived dashboard read model — and never anything else from Surface's report-only surface.
+- **Veritas** owns: rules, policy packs, proof execution, repo runs, governance blocks, eval drafts. It knows everything about repos and agents. At the boundary, it emits a `surface.input` block and a derived dashboard read model — and never anything else from Surface's report-only surface.
 
 The full rule lives in [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md). The pattern (separate workflow vocabulary, project to a common trust shape) is the same pattern any Surface consumer should follow.

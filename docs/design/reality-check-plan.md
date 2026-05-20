@@ -30,11 +30,11 @@ The plan is ordered. Earlier phases unblock later ones. Each phase has a deliver
    - `veritas attest bootstrap` — interactive (or `--non-interactive --actor <id>`), records hashes of current Zone 1 files, writes attestation, updates `.veritas/attestations/HEAD` symlink-style pointer (a JSON file with `currentAttestationId`).
    - `veritas attest policy-change [--message <text>]` — used after editing a policy pack. Diffs old vs new hashes, requires explanation.
    - `veritas attest status` — prints current attestation, age, expiry, drift between attested hashes and on-disk hashes.
-4. **Init flow:** `veritas init` ends with an attestation prompt. In `--non-interactive` mode it writes a "no attestation yet" marker (`.veritas/attestations/PENDING`) and exits 0; subsequent `shadow run` warns until attested.
-5. **Shadow run gate:** if `attestations/HEAD` points to an attestation whose hashes do not match current Zone 1 file hashes, `shadow run` emits a hard FAIL on a new built-in rule `policy-changes-require-attestation`. The agent cannot pass without a fresh attestation.
+4. **Init flow:** `veritas init` ends with an attestation prompt. In `--non-interactive` mode it writes a "no attestation yet" marker (`.veritas/attestations/PENDING`) and exits 0; subsequent `veritas run` warns until attested.
+5. **Veritas run gate:** if `attestations/HEAD` points to an attestation whose hashes do not match current Zone 1 file hashes, `veritas run` emits a hard FAIL on a new built-in rule `policy-changes-require-attestation`. The agent cannot pass without a fresh attestation.
 6. **Tests:** add tests under `tests/attestation.test.mjs` covering bootstrap, drift detection, expiry warning, hash chaining, and refusal-to-attest-as-non-human (block when actor matches CI bot identity).
 
-**Acceptance:** `npm test` passes. `veritas init` then `veritas attest bootstrap --actor brian --non-interactive` produces a tracked attestation; modifying a policy pack rule and running `veritas shadow run` returns FAIL on `policy-changes-require-attestation` until `veritas attest policy-change` is run.
+**Acceptance:** `npm test` passes. `veritas init` then `veritas attest bootstrap --actor reviewer --non-interactive` produces a tracked attestation; modifying a policy pack rule and running `veritas run` returns FAIL on `policy-changes-require-attestation` until `veritas attest policy-change` is run.
 
 ---
 
@@ -85,7 +85,7 @@ The plan is ordered. Earlier phases unblock later ones. Each phase has a deliver
 1. **New module `src/eval/filesystem-observer.mjs`:** synthesize a `NormalizedEvent` stream from durable artifacts:
    - `time_to_green_minutes`: read `.veritas/runs/history.jsonl` (already exists), find first FAIL → next PASS for the active run-id chain.
    - `override_count`: scan shell history for `VERITAS_HOOK_SKIP=1` / `VERITAS_OVERRIDE_RULE=` invocations within the run window, plus parse the `overrides[]` array on the evidence record (Phase 2).
-   - `accepted_without_major_rewrite`: compute churn ratio of touched files in `git log --since=<run-start>` against the file list reported by the shadow run.
+   - `accepted_without_major_rewrite`: compute churn ratio of touched files in `git log --since=<run-start>` against the file list reported by the veritas run.
 2. **Wire into `eval observe`:** when no transcript reader is present (or `--tool none`), use the filesystem observer. Annotate fields with `source: "filesystem-inferred"` so they're distinguishable from transcript-derived values.
 3. **Tests:** `tests/eval/filesystem-observer.test.mjs` with synthetic `runs/history.jsonl` and a temp git repo.
 
@@ -104,7 +104,7 @@ The plan is ordered. Earlier phases unblock later ones. Each phase has a deliver
 ### Veritas
 
 1. **`src/surface/projection.mjs`:** after `validateTrustInput`, also call `buildTrustReport` and persist the result alongside `surface.input` under `evidence.surface.report` (omit on-disk if too large; keep summary fields).
-2. **`shadow run` output:** for any claim whose Surface status is `stale` or `disputed`, emit an additional WARN line:
+2. **`veritas run` output:** for any claim whose Surface status is `stale` or `disputed`, emit an additional WARN line:
    ```
    WARN  surface-status: claim "veritas.proof-lane.required-proof" is STALE (last verified 14d ago, freshness policy 7d)
    ```
@@ -156,7 +156,7 @@ The plan is ordered. Earlier phases unblock later ones. Each phase has a deliver
    - `veritas proposal list` — show all open proposals with their evidence summaries.
    - `veritas proposal show <id>` — full detail including the diff to the policy pack the proposal would apply.
    - `veritas attest proposal <id> --accept | --reject [--message <text>]` — on accept, applies the diff and creates a `policy-change` attestation in one step. On reject, marks the proposal `rejected` with the reason and stops the proposal from being regenerated for N days.
-4. **Shadow run nudge:** when open proposals exist, `shadow run` prints a one-line nudge (not a FAIL) at the bottom: `proposals: 3 open · run \`veritas proposal list\` to review`.
+4. **Veritas run nudge:** when open proposals exist, `veritas run` prints a one-line nudge (not a FAIL) at the bottom: `proposals: 3 open · run \`veritas proposal list\` to review`.
 5. **Tests:** `tests/eval/proposal-generator.test.mjs` covering each heuristic; `tests/proposals/lifecycle.test.mjs` covering propose → accept → policy diff applied → attestation chain updated.
 
 **Acceptance:** a synthetic eval history with 5 overrides on rule X causes `eval propose` to emit a proposal; `veritas attest proposal <id> --accept` applies the rule diff and updates `attestations/HEAD`. The proposal surfaces in `surface.input` as a `proposed`-status claim and graduates to `verified` after attestation.
@@ -169,7 +169,7 @@ The plan is ordered. Earlier phases unblock later ones. Each phase has a deliver
 
 1. Front door becomes 7 verbs: `init`, `run`, `explain`, `attest`, `proposal`, `eval`, `integrations`.
 2. Existing `apply <thing>` / `print <thing>` become `integrations <tool> install|print` and `runtime <kind> install|print`. Old commands stay as deprecated shims that print a one-line `# deprecated; use \`...\`` notice and continue to work.
-3. `boundaries check` becomes `run --check boundaries` (a single `run` verb with `--check <kind>` covers shadow run, boundaries check, budget check).
+3. `boundaries check` becomes `run --check boundaries` (a single `run` verb with `--check <kind>` covers veritas run, boundaries check, budget check).
 4. Update `docs/reference/cli.md` and the README quickstart to use the new verbs.
 5. **Tests:** existing CLI tests stay green via the shims; new tests under `tests/cli/new-surface.test.mjs` cover the verb-noun structure.
 
@@ -182,7 +182,7 @@ The plan is ordered. Earlier phases unblock later ones. Each phase has a deliver
 - **Backwards compatibility:** every renamed CLI keeps a working shim for one minor version. Every renamed schema field gets a migration in `src/schema-migration.mjs` (create if absent).
 - **Documentation parity:** every phase that lands code also updates `docs/concepts.md`, `docs/reference/`, and the kontourai.io marketing pages where the claim has changed. The marketing site must not say "works with any agent" until Phase 3 lands; it must not say "human-in-the-loop" until Phase 1 lands. Mark not-yet-landed claims with a roadmap pointer until then.
 - **Test coverage:** every phase ships with new tests; `npm test` must remain green at every commit.
-- **`veritas shadow run` on Veritas itself must pass** at the end of every phase; if a new rule is added, it must pass on this repo before merge.
+- **`veritas run` on Veritas itself must pass** at the end of every phase; if a new rule is added, it must pass on this repo before merge.
 - **Surface coupling:** any new Veritas dependency on Surface must be an exported public API, not an internal import. If Surface needs a new export, do that in the matching Surface phase first.
 
 ## Suggested phasing for the worker agent

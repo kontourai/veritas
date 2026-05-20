@@ -14,7 +14,7 @@ New paths:
 The Surface dashboard detects the old path automatically as a fallback, so existing setups keep working without any change. When you are ready to migrate:
 
 1. Add `.surface/` to your `.gitignore` if it is not already there (run snapshots are derived and should not be committed).
-2. The next `veritas run` or `veritas shadow run` writes to the new path automatically.
+2. The next `veritas run` writes to the new path automatically.
 3. Remove `.veritas/surface-dashboard/` from your `.gitignore` once the old directory is gone.
 
 If you pass `--read-model .veritas/surface-dashboard/latest.json` explicitly to the Surface dashboard, update that flag to `--read-model .surface/runs/latest.json` (or omit it entirely, since `.surface/runs/latest.json` is now the default).
@@ -55,15 +55,15 @@ After:
 ```json
 {
   "evidence": {
-    "proofLanes": [
+    "proofs": [
       { "id": "ci-fast", "command": "npm run ci:fast", "method": "validation" },
       { "id": "unit-tests", "command": "npm test", "method": "validation" },
       { "id": "api-tests", "command": "npm run api:test", "method": "validation" }
     ],
-    "requiredProofLaneIds": ["ci-fast"],
-    "defaultProofLaneIds": ["unit-tests"],
-    "surfaceProofRoutes": [
-      { "nodeIds": ["src/api"], "proofLaneIds": ["api-tests"] }
+    "requiredProofIds": ["ci-fast"],
+    "defaultProofIds": ["unit-tests"],
+    "proofRoutes": [
+      { "componentIds": ["src/api"], "proofIds": ["api-tests"] }
     ]
   }
 }
@@ -85,15 +85,15 @@ This closes a config-level command-injection path, but it changes the proof-lane
 
 Recommended:
 
-1. Split compound proof flows into multiple `proofLanes` entries.
+1. Split compound proof flows into multiple `proofs` entries.
 2. Keep each proof lane to one executable plus its argv.
 
 Before:
 
 ```json
 {
-  "proofLanes": [{ "id": "ci", "command": "npm run ci:fast && npm test", "method": "validation" }],
-  "requiredProofLaneIds": ["ci"]
+  "proofs": [{ "id": "ci", "command": "npm run ci:fast && npm test", "method": "validation" }],
+  "requiredProofIds": ["ci"]
 }
 ```
 
@@ -101,11 +101,11 @@ After:
 
 ```json
 {
-  "proofLanes": [
+  "proofs": [
     { "id": "ci-fast", "command": "npm run ci:fast", "method": "validation" },
     { "id": "unit-tests", "command": "npm test", "method": "validation" }
   ],
-  "requiredProofLaneIds": ["ci-fast", "unit-tests"]
+  "requiredProofIds": ["ci-fast", "unit-tests"]
 }
 ```
 
@@ -119,6 +119,6 @@ Operational effect:
 
 - proof stdout stays on stdout
 - proof stderr stays on stderr
-- CLI consumers that assumed `shadow run` emitted only JSON on stdout must now parse the trailing JSON payload instead of the entire stream
+- CLI consumers that assumed `veritas run` emitted only JSON on stdout must now parse the trailing JSON payload instead of the entire stream
 
 This is intentional. The command no longer rewrites proof-lane output streams behind the operator's back.

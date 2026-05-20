@@ -58,7 +58,7 @@
       "path": ".githooks/post-commit",
       "exists": true,
       "executable": true,
-      "configuredHooksPath": "/Users/brian/.codex/git-hooks",
+      "configuredHooksPath": "/home/user/.codex/git-hooks",
       "configured": false
     },
     "runtimeHook": {

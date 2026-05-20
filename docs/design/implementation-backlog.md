@@ -13,7 +13,7 @@ This backlog turns the current roadmap and integration plans into executable wor
 ### Deep integration documentation
 
 - Keep Codex as the only worked deep-capture example.
-- Mark Claude Code and Cursor as supported through governance blocks, PreToolUse/Stop hooks, and explicit `shadow run`; transcript capture is not implemented yet.
+- Mark Claude Code and Cursor as supported through governance blocks, PreToolUse/Stop hooks, and explicit `veritas run`; transcript capture is not implemented yet.
 
 ### Runtime escape hatches
 

@@ -1,6 +1,6 @@
 # Human Attestation
 
-Veritas treats `.veritas/repo.adapter.json`, `.veritas/policy-packs/`, and `.veritas/team/` as Zone 1 governance. These files can be edited like normal code, but a human has to attest the resulting governance state before shadow runs consider it current.
+Veritas treats `.veritas/repo.adapter.json`, `.veritas/policy-packs/`, and `.veritas/team/` as Zone 1 governance. These files can be edited like normal code, but a human has to attest the resulting governance state before veritas runs consider it current.
 
 ## First attestation
 
@@ -32,7 +32,7 @@ Use status when a run warns about missing, drifted, or expired governance:
 npx @kontourai/veritas attest status
 ```
 
-Expired attestations warn without implying drift. Drifted attestations fail shadow runs because the current Zone 1 hashes no longer match the human-approved hashes.
+Expired attestations warn without implying drift. Drifted attestations fail veritas runs because the current Zone 1 hashes no longer match the human-approved hashes.
 
 ## Surface claims
 
