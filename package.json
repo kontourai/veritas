@@ -78,7 +78,7 @@
     "veritas:dashboard": "surface dashboard --config surface.config.json"
   },
   "dependencies": {
-    "@kontourai/surface": "git+https://github.com/kontourai/surface.git#53a9dec6504ab9f721a21887726b23ea6a9815c0",
+    "@kontourai/surface": "git+https://github.com/kontourai/surface.git#8c56f764b61095851b1ea250d138f232431f272f",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "picomatch": "^4.0.4"
   }
