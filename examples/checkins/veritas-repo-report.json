@@ -284,24 +284,24 @@
     "src/**",
     "tests/**"
   ],
-  "selected_proof_commands": [
-    "npm run verify",
-    "npm run veritas:fallow:advisory"
-  ],
   "selected_proofs": [
     {
       "id": "required-proof",
       "command": "npm run verify",
       "method": "validation",
       "surface_claim_ids": [],
-      "summary": "Runs npm run verify."
+      "summary": "Runs npm run verify.",
+      "runner": "bash",
+      "label": "npm run verify"
     },
     {
       "id": "fallow-advisory",
       "command": "npm run veritas:fallow:advisory",
       "method": "auditability",
       "surface_claim_ids": [],
-      "summary": "Runs Fallow as advisory codebase-intelligence evidence."
+      "summary": "Runs Fallow as advisory codebase-intelligence evidence.",
+      "runner": "bash",
+      "label": "npm run veritas:fallow:advisory"
     }
   ],
   "proof_resolution_source": "default",
@@ -562,14 +562,18 @@
         "command": "npm run verify",
         "method": "validation",
         "surface_claim_ids": [],
-        "summary": "Runs npm run verify."
+        "summary": "Runs npm run verify.",
+        "runner": "bash",
+        "label": "npm run verify"
       },
       {
         "id": "fallow-advisory",
         "command": "npm run veritas:fallow:advisory",
         "method": "auditability",
         "surface_claim_ids": [],
-        "summary": "Runs Fallow as advisory codebase-intelligence evidence."
+        "summary": "Runs Fallow as advisory codebase-intelligence evidence.",
+        "runner": "bash",
+        "label": "npm run veritas:fallow:advisory"
       }
     ],
     "required_proof_ids": [
@@ -1954,5 +1958,13 @@
         ]
       }
     }
-  }
+  },
+  "selected_proof_ids": [
+    "required-proof",
+    "fallow-advisory"
+  ],
+  "selected_proof_labels": [
+    "npm run verify",
+    "npm run veritas:fallow:advisory"
+  ]
 }

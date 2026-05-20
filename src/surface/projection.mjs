@@ -8,6 +8,42 @@ import { registerVeritasExtension } from './extension.mjs';
 import { loadPluginsFromConfig, collectPluginEvidence } from '../plugins/loader.mjs';
 
 const SURFACE_SUPPORTS_EVIDENCE_EVALUATION = typeof Surface.loadClaimStore === 'function';
+const SURFACE_SUPPORTS_EVIDENCE_EXECUTION = (() => {
+  if (typeof Surface.validateTrustInput !== 'function') return false;
+  try {
+    Surface.validateTrustInput({
+      schemaVersion: 3,
+      source: 'veritas-capability-detect',
+      claims: [{
+        id: 'claim.execution-capability',
+        subjectType: 'repository',
+        subjectId: 'repo',
+        surface: 'veritas.proofs',
+        claimType: 'software-proof',
+        fieldOrBehavior: 'proof',
+        value: true,
+        createdAt: '2026-05-20T00:00:00.000Z',
+        updatedAt: '2026-05-20T00:00:00.000Z',
+      }],
+      evidence: [{
+        id: 'evidence.execution-capability',
+        claimId: 'claim.execution-capability',
+        evidenceType: 'test_output',
+        method: 'validation',
+        sourceRef: 'capability-detect',
+        excerptOrSummary: 'capability detection',
+        observedAt: '2026-05-20T00:00:00.000Z',
+        collectedBy: 'veritas',
+        execution: { runner: 'bash', label: 'true', exitCode: 0, durationMs: 0 },
+      }],
+      policies: [],
+      events: [],
+    });
+    return true;
+  } catch {
+    return false;
+  }
+})();
 
 export async function buildSurfaceTrustInput(record, { rootDir = process.cwd(), adapterConfig = null } = {}) {
   registerVeritasExtension();
@@ -216,7 +252,13 @@ function collectAffectedSurfaceEvidence(record, claimStore, evidence, events) {
 function collectProofEvidence(record, claimStore, evidence, events) {
   const candidates = claimsByType(claimStore, 'software-proof');
   for (const proof of record.selected_proofs ?? []) {
-    const claim = candidates.find((item) => item.metadata?.command === proof.command || item.fieldOrBehavior === proof.command);
+    const label = proof.label ?? proof.command ?? proof.id;
+    const claim = candidates.find((item) =>
+      item.metadata?.proofId === proof.id ||
+      item.metadata?.command === proof.command ||
+      item.metadata?.label === label ||
+      item.fieldOrBehavior === (proof.command ?? label)
+    );
     if (!claim) continue;
     const proofResult = proof.proof_result ?? null;
     const passing = typeof proofResult?.passed === 'boolean'
@@ -226,7 +268,7 @@ function collectProofEvidence(record, claimStore, evidence, events) {
     const observedSummary = proofResultSummary(proofResult)
       ?? (typeof passing === 'boolean'
         ? (passing ? 'All proof checks passed.' : 'Proof checks failed.')
-        : `Proof command selected but output was not captured: ${proof.command}`);
+        : `Proof selected but output was not captured: ${label}`);
     const evidenceId = `${record.run_id}.proof.${surfaceSafeId(proof.id)}.evidence`;
     evidence.push(surfaceEvidence({
       id: evidenceId,
@@ -239,7 +281,8 @@ function collectProofEvidence(record, claimStore, evidence, events) {
       passing,
       blocking: true,
       metadata: {
-        command: proof.command,
+        proofLabel: label,
+        ...(proof.command ? { command: proof.command } : {}),
         expectedResult: 'all checks pass',
         observedResult: {
           expected: 'all checks pass',
@@ -248,26 +291,34 @@ function collectProofEvidence(record, claimStore, evidence, events) {
         },
         ...(proofResult ? {
           commandOutput: {
-            command: proof.command,
+            command: proof.command ?? label,
             exitCode: proofResult.exitCode,
             signal: proofResult.signal,
             stdout: proofResult.stdout ?? '',
             stderr: proofResult.stderr ?? '',
-            combined: proofResult.output ?? `${proofResult.stdout ?? ''}${proofResult.stderr ?? ''}`,
+            combined: `${proofResult.stdout ?? ''}${proofResult.stderr ?? ''}`,
           },
         } : {}),
         proofResolutionSource: record.proof_resolution_source,
         baselineCiFastPassed: typeof passing === 'boolean' ? passing : record.baseline_ci_fast_passed,
         proofId: proof.id,
+        proofRunner: proof.runner ?? 'bash',
         surfaceClaimIds: proof.surface_claim_ids ?? [],
       },
+      execution: proofResult ? {
+        runner: proofResult.runner ?? proof.runner ?? 'bash',
+        label,
+        ...(proofResult.exitCode !== null && proofResult.exitCode !== undefined ? { exitCode: proofResult.exitCode } : {}),
+        ...(proofResult.runner === 'mcp' ? { isError: proofResult.isError ?? false } : {}),
+        durationMs: proofResult.durationMs,
+      } : undefined,
     }));
     if (typeof passing === 'boolean') {
       events.push(surfaceEvent({
         id: `${record.run_id}.proof.${surfaceSafeId(proof.id)}.${passing ? 'verified' : 'rejected'}`,
         claimId: claim.id,
         status: passing ? 'verified' : 'rejected',
-        method: proof.command,
+        method: label,
         evidenceIds: [evidenceId],
         record,
       }));
@@ -278,6 +329,12 @@ function collectProofEvidence(record, claimStore, evidence, events) {
 function proofResultSummary(result) {
   if (!result) return null;
   if (result.passed) return 'All proof checks passed.';
+  if (result.runner === 'mcp') {
+    const text = result.content?.find((content) => content.type === 'text')?.text;
+    return text
+      ? `MCP tool error: ${text.split('\n')[0]}`
+      : 'MCP tool returned an error.';
+  }
   const status = result.exitCode !== null && result.exitCode !== undefined
     ? `exit code ${result.exitCode}`
     : `signal ${result.signal ?? 'unknown'}`;
@@ -879,7 +936,7 @@ export function summarizeSurfaceTrustReport(report) {
   };
 }
 
-export function surfaceEvidence({ id, claimId, type, method, record, locator, summary, passing, blocking, metadata = {} }) {
+export function surfaceEvidence({ id, claimId, type, method, record, locator, summary, passing, blocking, metadata = {}, execution }) {
   const evidenceIntegrity = metadata.fileIntegrity
     ? { ...(record.integrity ?? {}), fileRefs: metadata.fileIntegrity }
     : record.integrity;
@@ -896,6 +953,7 @@ export function surfaceEvidence({ id, claimId, type, method, record, locator, su
     integrityRef: record.integrity?.sourceRef ?? record.source_ref,
     ...(SURFACE_SUPPORTS_EVIDENCE_EVALUATION && typeof passing === 'boolean' ? { passing } : {}),
     ...(SURFACE_SUPPORTS_EVIDENCE_EVALUATION && typeof blocking === 'boolean' ? { blocking } : {}),
+    ...(SURFACE_SUPPORTS_EVIDENCE_EXECUTION && execution ? { execution } : {}),
     metadata: {
       sourceKind: record.source_kind,
       sourceScope: record.source_scope,

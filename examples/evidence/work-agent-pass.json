@@ -21,9 +21,6 @@
     ".github/**",
     "root manifests"
   ],
-  "selected_proof_commands": [
-    "npm run ci:fast"
-  ],
   "proof_resolution_source": "required",
   "uncovered_path_result": "clear",
   "baseline_ci_fast_passed": true,
@@ -78,7 +75,9 @@
         "command": "npm run ci:fast",
         "method": "validation",
         "surface_claim_ids": [],
-        "summary": "Runs npm run ci:fast."
+        "summary": "Runs npm run ci:fast.",
+        "runner": "bash",
+        "label": "npm run ci:fast"
       }
     ],
     "required_proof_ids": [
@@ -147,7 +146,15 @@
       "command": "npm run ci:fast",
       "method": "validation",
       "surface_claim_ids": [],
-      "summary": "Runs npm run ci:fast."
+      "summary": "Runs npm run ci:fast.",
+      "runner": "bash",
+      "label": "npm run ci:fast"
     }
+  ],
+  "selected_proof_ids": [
+    "required-proof"
+  ],
+  "selected_proof_labels": [
+    "npm run ci:fast"
   ]
 }

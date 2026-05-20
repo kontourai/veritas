@@ -30,20 +30,38 @@ export function proofById(config) {
 
 export function commandsForProofIds(config, proofIds) {
   const proofs = proofById(config);
-  return uniqueStrings(proofIds.map((id) => proofs.get(id)?.command).filter(Boolean));
+  return uniqueStrings(proofIds.map((id) => {
+    const proof = proofs.get(id);
+    return (proof?.runner ?? 'bash') === 'bash' ? proof.command : null;
+  }).filter(Boolean));
+}
+
+export function proofsByIds(config, proofIds) {
+  const proofs = proofById(config);
+  return uniqueStrings(proofIds)
+    .map((id) => proofs.get(id))
+    .filter(Boolean);
 }
 
 export function proofRecordsForCommands(config, commands) {
   const proofs = readProofs(config);
   return commands.map((command) => {
-    const proof = proofs.find((item) => item.command === command);
+    const proof = proofs.find((item) => (item.runner ?? 'bash') === 'bash' && item.command === command);
     return proof ?? {
       id: command.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'explicit-proof',
+      runner: 'bash',
       command,
       method: 'validation',
       summary: `Explicit proof command: ${command}`,
     };
   });
+}
+
+export function proofLabel(proof) {
+  if ((proof.runner ?? 'bash') === 'mcp') {
+    return `${proof.tool}@${proof.server?.command ?? 'mcp'}`;
+  }
+  return proof.command;
 }
 
 export function assertProofConfig(config) {
@@ -63,7 +81,7 @@ export function assertProofConfig(config) {
   }
 
   if (!Array.isArray(evidence.proofs) || evidence.proofs.length === 0) {
-    throw new Error('Veritas adapter evidence.proofs must contain proof objects with id, command, and method.');
+    throw new Error('Veritas adapter evidence.proofs must contain proof objects with id, runner-specific execution fields, and method.');
   }
 
   const proofIds = new Set();
@@ -102,9 +120,40 @@ export function assertProofObject(proof) {
   if (!proof || typeof proof !== 'object' || Array.isArray(proof)) {
     throw new Error('Veritas adapter evidence.proofs entries must be objects.');
   }
-  for (const field of ['id', 'command', 'method']) {
+  for (const field of ['id', 'method']) {
     if (typeof proof[field] !== 'string' || proof[field].length === 0) {
       throw new Error(`Veritas adapter evidence.proofs[].${field} must be a non-empty string.`);
+    }
+  }
+  const runner = proof.runner ?? 'bash';
+  if (!['bash', 'mcp'].includes(runner)) {
+    throw new Error(`Veritas adapter evidence.proofs[].runner contains unsupported value: ${proof.runner}`);
+  }
+  if (runner === 'bash') {
+    if (typeof proof.command !== 'string' || proof.command.length === 0) {
+      throw new Error('Veritas adapter evidence.proofs[].command must be a non-empty string for bash proofs.');
+    }
+  } else {
+    if (!proof.server || typeof proof.server !== 'object' || Array.isArray(proof.server)) {
+      throw new Error('Veritas adapter evidence.proofs[].server must be an object for MCP proofs.');
+    }
+    if (typeof proof.server.command !== 'string' || proof.server.command.length === 0) {
+      throw new Error('Veritas adapter evidence.proofs[].server.command must be a non-empty string for MCP proofs.');
+    }
+    if (!Array.isArray(proof.server.args)) {
+      throw new Error('Veritas adapter evidence.proofs[].server.args must be an array for MCP proofs.');
+    }
+    if (proof.server.args.some((arg) => typeof arg !== 'string')) {
+      throw new Error('Veritas adapter evidence.proofs[].server.args must contain only strings.');
+    }
+    if (proof.server.env !== undefined && (!proof.server.env || typeof proof.server.env !== 'object' || Array.isArray(proof.server.env))) {
+      throw new Error('Veritas adapter evidence.proofs[].server.env must be an object when provided.');
+    }
+    if (typeof proof.tool !== 'string' || proof.tool.length === 0) {
+      throw new Error('Veritas adapter evidence.proofs[].tool must be a non-empty string for MCP proofs.');
+    }
+    if (proof.input !== undefined && (!proof.input || typeof proof.input !== 'object' || Array.isArray(proof.input))) {
+      throw new Error('Veritas adapter evidence.proofs[].input must be an object when provided.');
     }
   }
   if (!['observation', 'extraction', 'validation', 'corroboration', 'attestation', 'auditability', 'anchoring', 'monitoring'].includes(proof.method)) {

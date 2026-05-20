@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { parseShadowArgs } from '../args.mjs';
-import { runProofCommandDetailed } from '../shell.mjs';
+import { runBash, createMcpServerPool } from '../runner/index.mjs';
+import { proofLabel } from '../proof/index.mjs';
 import {
   generateVeritasReport,
   buildFeedbackSummary,
@@ -61,8 +62,9 @@ export async function runShadowRunCli(argv = process.argv.slice(2), defaults = {
     rootDir,
     explicitProofCommand: options.proofCommand,
   });
-  const proofCommands = proofPlan.proofCommands;
-  if (!options.skipProof && proofCommands.length === 0) {
+  const proofs = proofPlan.proofs ?? [];
+  const proofLabels = proofs.map((proof) => proofLabel(proof));
+  if (!options.skipProof && proofs.length === 0) {
     throw new Error(
       'veritas run requires a proof command or an adapter required proof lane',
     );
@@ -71,31 +73,71 @@ export async function runShadowRunCli(argv = process.argv.slice(2), defaults = {
   let proofFailure = null;
   const proofResults = [];
   if (!options.skipProof) {
-    for (const proofCommand of proofCommands) {
-      try {
-        const proofResult = runProofCommandDetailed(proofCommand, rootDir);
-        proofResults.push(proofResult);
-        if (format !== 'feedback') {
-          if (proofResult.stdout) process.stdout.write(proofResult.stdout);
-          if (proofResult.stderr) process.stderr.write(proofResult.stderr);
-        }
-        if (!proofResult.passed) {
+    const controller = new AbortController();
+    const onSignal = () => controller.abort();
+    process.once('SIGINT', onSignal);
+    process.once('SIGTERM', onSignal);
+    const pool = createMcpServerPool({ signal: controller.signal });
+    try {
+      for (const proof of proofs) {
+        const runner = proof.runner ?? 'bash';
+        const label = proofLabel(proof);
+        try {
+          const result = runner === 'mcp'
+            ? await pool.call(proof.server, proof.tool, proof.input ?? {}, { signal: controller.signal })
+            : await runBash(proof.command, { cwd: rootDir, signal: controller.signal });
+          const proofResult = {
+            id: proof.id,
+            runner,
+            label,
+            passed: runner === 'mcp' ? !result.isError : result.passed,
+            exitCode: runner === 'bash' ? result.exitCode ?? null : null,
+            signal: runner === 'bash' ? result.signal ?? null : null,
+            stdout: runner === 'bash' ? result.stdout ?? '' : '',
+            stderr: runner === 'bash' ? result.stderr ?? '' : '',
+            content: runner === 'mcp' ? result.content ?? [] : [],
+            isError: runner === 'mcp' ? result.isError ?? false : false,
+            durationMs: result.durationMs ?? 0,
+          };
+          proofResults.push(proofResult);
+          if (format !== 'feedback' && runner === 'bash') {
+            if (proofResult.stdout) process.stdout.write(proofResult.stdout);
+            if (proofResult.stderr) process.stderr.write(proofResult.stderr);
+          }
+          if (!proofResult.passed) {
+            const status = runner === 'mcp'
+              ? 'MCP tool returned an error'
+              : (proofResult.exitCode ?? proofResult.signal ?? 'unknown status');
+            proofFailure = {
+              id: proof.id,
+              runner,
+              label,
+              message: runner === 'mcp' ? status : `Proof command exited with ${status}`,
+              ...(runner === 'bash' ? {
+                stdout: proofResult.stdout,
+                stderr: proofResult.stderr,
+                exitCode: proofResult.exitCode,
+              } : {
+                content: proofResult.content,
+                isError: proofResult.isError,
+              }),
+            };
+            break;
+          }
+        } catch (error) {
           proofFailure = {
-            command: proofCommand,
-            message: `Proof command exited with ${proofResult.exitCode ?? proofResult.signal ?? 'unknown status'}`,
-            stdout: proofResult.stdout,
-            stderr: proofResult.stderr,
-            exitCode: proofResult.exitCode,
+            id: proof.id,
+            runner,
+            label,
+            message: error.message,
           };
           break;
         }
-      } catch (error) {
-        proofFailure = {
-          command: proofCommand,
-          message: error.message,
-        };
-        break;
       }
+    } finally {
+      await pool.close();
+      process.off('SIGINT', onSignal);
+      process.off('SIGTERM', onSignal);
     }
   }
 
@@ -160,7 +202,7 @@ export async function runShadowRunCli(argv = process.argv.slice(2), defaults = {
           record: reportResult.record,
           reportArtifactPath: reportResult.artifactPath,
           draftArtifactPath: draftResult.artifactPath,
-          proofCommands: options.skipProof ? [] : proofCommands,
+          proofLabels: options.skipProof ? [] : proofLabels,
           proofRan: !options.skipProof,
           proofFailure,
         }),
@@ -175,7 +217,7 @@ export async function runShadowRunCli(argv = process.argv.slice(2), defaults = {
       `${JSON.stringify(
         {
           mode: 'report-and-draft',
-          proofCommands: options.skipProof ? [] : proofCommands,
+          proofLabels: options.skipProof ? [] : proofLabels,
           proofResolutionSource: proofPlan.resolutionSource,
           proofRan: !options.skipProof,
           proofFailure,
@@ -215,7 +257,7 @@ export async function runShadowRunCli(argv = process.argv.slice(2), defaults = {
         reportArtifactPath: reportResult.artifactPath,
         draftArtifactPath: draftResult.artifactPath,
         evalArtifactPath: evalResult.artifactPath,
-        proofCommands: options.skipProof ? [] : proofCommands,
+        proofLabels: options.skipProof ? [] : proofLabels,
         proofRan: !options.skipProof,
         proofFailure,
       }),
@@ -230,7 +272,7 @@ export async function runShadowRunCli(argv = process.argv.slice(2), defaults = {
     `${JSON.stringify(
         {
           mode: 'report-draft-and-eval',
-          proofCommands: options.skipProof ? [] : proofCommands,
+          proofLabels: options.skipProof ? [] : proofLabels,
           proofResolutionSource: proofPlan.resolutionSource,
           proofRan: !options.skipProof,
           proofFailure,

@@ -88,10 +88,29 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "command", "method"],
+            "required": ["id", "method"],
             "properties": {
               "id": { "type": "string" },
+              "runner": { "enum": ["bash", "mcp"] },
               "command": { "type": "string" },
+              "server": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["command", "args"],
+                "properties": {
+                  "command": { "type": "string", "minLength": 1 },
+                  "args": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "env": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string" }
+                  }
+                }
+              },
+              "tool": { "type": "string", "minLength": 1 },
+              "input": { "type": "object" },
               "method": {
                 "enum": ["observation", "extraction", "validation", "corroboration", "attestation", "auditability", "anchoring", "monitoring"]
               },

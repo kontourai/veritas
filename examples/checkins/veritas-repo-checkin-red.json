@@ -14,9 +14,6 @@
   "unresolved_files_count": 1,
   "components": [],
   "triggered_proofs": [],
-  "selected_proof_commands": [
-    "npm run verify"
-  ],
   "uncovered_path_result": "warn",
   "policy_results_summary": {
     "passed": 5,

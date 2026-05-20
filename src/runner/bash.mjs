@@ -54,8 +54,15 @@ export function runBash(command, { cwd, env, timeoutMs, signal } = {}) {
 
       const stdout = Buffer.concat(stdoutChunks).toString('utf8');
       const stderr = Buffer.concat(stderrChunks).toString('utf8');
-      const exitCode = code ?? (sig ? 1 : 1);
-      resolve({ exitCode, passed: exitCode === 0, stdout, stderr, durationMs: Date.now() - startedAt });
+      const exitCode = code ?? null;
+      resolve({
+        exitCode,
+        signal: sig ?? null,
+        passed: exitCode === 0,
+        stdout,
+        stderr,
+        durationMs: Date.now() - startedAt,
+      });
     });
   });
 }

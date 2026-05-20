@@ -217,15 +217,15 @@ The framework currently distinguishes three evidence source kinds:
 
 #### Adapter Proof Configuration
 
-Current adapters use explicit proof-lane objects:
+Current adapters use explicit proof objects. `runner` defaults to `bash`; bash proofs require `command`.
 
 ```json
 {
   "evidence": {
-    "proofs": [
-      {
-        "id": "required-proof",
-        "command": "npm run verify",
+	    "proofs": [
+	      {
+	        "id": "required-proof",
+	        "command": "npm run verify",
         "method": "validation",
         "summary": "Runs the repository verification suite."
       }
@@ -242,7 +242,20 @@ Current adapters use explicit proof-lane objects:
 }
 ```
 
-Removed proof command array fields such as `requiredProofLanes`, `defaultProofLanes`, and `surfaceProofLanes` are intentionally rejected by runtime validation. Migrate by assigning each command a stable `proofs[].id`, moving the command into `proofs[].command`, and replacing route command arrays with `proofIds`.
+MCP proofs use `runner: "mcp"` with a stdio server definition, tool name, and optional JSON input. Proof routing still refers to `proofs[].id`, so bash and MCP proofs can be mixed in `requiredProofIds`, `defaultProofIds`, and `proofRoutes`.
+
+```json
+{
+  "id": "dep-scan",
+  "runner": "mcp",
+  "server": { "command": "npx", "args": ["-y", "@acme/dep-scanner"] },
+  "tool": "scan",
+  "input": { "depth": 2 },
+  "method": "auditability"
+}
+```
+
+Removed proof command array fields such as `requiredProofLanes`, `defaultProofLanes`, and `surfaceProofLanes` are intentionally rejected by runtime validation. Migrate by assigning each proof a stable `proofs[].id`, moving bash commands into `proofs[].command`, and replacing route command arrays with `proofIds`.
 
 Proof lanes may optionally declare an external tool artifact. Veritas reads the artifact after the proof lane has run, records a normalized `external_tool_results` entry, and maps the verdict into `surface.input`.
 
@@ -262,6 +275,8 @@ Proof lanes may optionally declare an external tool artifact. Veritas reads the 
 ```
 
 External tool artifacts must stay under `.veritas/`. Use advisory mode for existing repos until findings are cleaned up or baselined.
+
+Selected proof records include `runner`, `label`, and an optional `proof_result`. Bash results carry `exitCode`, `signal`, `stdout`, and `stderr`; MCP results carry `content` and `isError`. Both runners include `id`, `passed`, and `durationMs`.
 
 Adapters can also declare family-level proof inventories:
 
@@ -309,7 +324,7 @@ After validation, Veritas calls Surface's public `buildTrustReport` API and pers
 | `resolved_phase`, `resolved_workstream`, `matched_artifacts`, `triggered_proofs`, `files`, `unresolved_files` | Claim and evidence metadata that explains why Veritas selected the surface | Surface-mapped |
 | `components` | `Claim`, `Evidence`, and `VerificationEvent` records on `veritas.affected-surface` | Surface-mapped |
 | `component_details`, `file_nodes` | Surface ownership and boundary metadata for matched files | Surface-mapped |
-| `selected_proof_commands`, `selected_proofs`, `proof_resolution_source` | `Claim`, `Evidence`, `VerificationPolicy`, and `VerificationEvent` records on `veritas.proofs` | Surface-mapped |
+| `selected_proof_ids`, `selected_proof_labels`, `selected_proofs`, `proof_resolution_source` | `Claim`, `Evidence`, `VerificationPolicy`, and `VerificationEvent` records on `veritas.proofs` | Surface-mapped |
 | `uncovered_path_result`, `baseline_ci_fast_passed` | Proof claim status, verification events, and metadata for proof confidence | Surface-mapped |
 | `proof_suite_results` | `Claim`, `Evidence`, `VerificationEvent`, and metadata records on `veritas.proof-suites` | Surface-mapped |
 | `verification_budget` | A budget claim/evidence pair plus metadata used by Surface report generation | Surface-mapped |

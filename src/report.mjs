@@ -34,7 +34,8 @@ import {
   readProofs,
   readDefaultProofIds,
   readRequiredProofIds,
-  commandsForProofIds,
+  proofsByIds,
+  proofLabel,
   proofRecordsForCommands,
   loadProofSuiteResults,
   buildVerificationBudget,
@@ -173,24 +174,23 @@ export function resolveProofPlan({
   const uncoveredPathPolicy = readUncoveredPathPolicy(config);
   const proofRoutes = readProofRoutes(config);
   const matchedRoutes = proofRoutes.filter((route) => routeMatchesAnyComponent(route, affectedNodes));
-  let proofCommands = [];
+  let proofs = [];
   let resolutionSource = 'none';
 
   if (explicitProofCommand) {
-    proofCommands = [explicitProofCommand];
+    proofs = proofRecordsForCommands(config, [explicitProofCommand]);
     resolutionSource = 'explicit';
   } else if (matchedRoutes.length > 0) {
     const routedComponentIds = new Set(
       matchedRoutes.flatMap((route) => (route.componentIds ?? []).filter((componentId) => affectedNodes.includes(componentId))),
     );
-    proofCommands = commandsForProofIds(config, uniqueStrings(matchedRoutes.flatMap((route) => route.proofIds ?? [])));
+    proofs = proofsByIds(config, uniqueStrings(matchedRoutes.flatMap((route) => route.proofIds ?? [])));
     if (affectedNodes.some((nodeId) => !routedComponentIds.has(nodeId))) {
       const defaultProofIds = readDefaultProofIds(config);
       const requiredProofIds = readRequiredProofIds(config);
-      proofCommands = uniqueStrings([
-        ...proofCommands,
-        ...commandsForProofIds(config, defaultProofIds.length > 0 ? defaultProofIds : requiredProofIds),
-      ]);
+      const fallbackProofs = proofsByIds(config, defaultProofIds.length > 0 ? defaultProofIds : requiredProofIds);
+      const seenProofIds = new Set(proofs.map((proof) => proof.id));
+      proofs = [...proofs, ...fallbackProofs.filter((proof) => !seenProofIds.has(proof.id))];
     }
     resolutionSource = 'surface';
   } else {
@@ -198,13 +198,14 @@ export function resolveProofPlan({
     const requiredProofIds = readRequiredProofIds(config);
 
     if (defaultProofIds.length > 0) {
-      proofCommands = commandsForProofIds(config, defaultProofIds);
+      proofs = proofsByIds(config, defaultProofIds);
       resolutionSource = 'default';
     } else if (requiredProofIds.length > 0) {
-      proofCommands = commandsForProofIds(config, requiredProofIds);
+      proofs = proofsByIds(config, requiredProofIds);
       resolutionSource = 'required';
     }
   }
+  const proofCommands = proofs.flatMap((proof) => (proof.runner ?? 'bash') === 'mcp' ? [] : [proof.command]);
 
   return {
     affectedNodes,
@@ -215,7 +216,7 @@ export function resolveProofPlan({
     uncoveredPathPolicy,
     uncoveredPathResult: unmatchedFiles.length > 0 ? uncoveredPathPolicy : 'clear',
     proofCommands,
-    proofs: proofRecordsForCommands(config, proofCommands),
+    proofs,
     resolutionSource,
   };
 }
@@ -266,13 +267,19 @@ export function formatTriState(value) {
   return 'unknown';
 }
 
-function proofResultForCommand(proofResults, command) {
-  return (proofResults ?? []).find((result) => result.command === command) ?? null;
+function proofResultById(proofResults, id) {
+  return (proofResults ?? []).find((result) => result.id === id) ?? null;
 }
 
 function proofResultSummary(result) {
   if (!result) return null;
   if (result.passed) return 'All proof checks passed.';
+  if (result.runner === 'mcp') {
+    const text = result.content?.find((content) => content.type === 'text')?.text;
+    return text
+      ? `MCP tool error: ${text.split('\n')[0]}`
+      : 'MCP tool returned an error.';
+  }
   const status = result.exitCode !== null && result.exitCode !== undefined
     ? `exit code ${result.exitCode}`
     : `signal ${result.signal ?? 'unknown'}`;
@@ -355,13 +362,17 @@ export async function buildEvidenceRecord({
   const selectedProofSources =
     proofPlan.proofs ?? proofRecordsForCommands(config, proofPlan.proofCommands);
   const selectedProofs = selectedProofSources.map((proof) => {
-    const proofResult = proofResultForCommand(options.proofResults, proof.command);
+    const label = proofLabel(proof);
+    const runner = proof.runner ?? 'bash';
+    const proofResult = proofResultById(options.proofResults, proof.id);
     return {
       id: proof.id,
-      command: proof.command,
+      runner,
+      label,
+      ...(proof.command ? { command: proof.command } : {}),
       method: proof.method,
       surface_claim_ids: uniqueStrings(proof.surfaceClaimIds ?? []),
-      summary: proofResultSummary(proofResult) ?? proof.summary ?? `Proof ${proof.id}: ${proof.command}`,
+      summary: proofResultSummary(proofResult) ?? proof.summary ?? `Proof ${proof.id}: ${label}`,
       ...(proofResult ? { proof_result: proofResult } : {}),
     };
   });
@@ -369,7 +380,9 @@ export async function buildEvidenceRecord({
   const proofSuiteResults = loadProofSuiteResults(config, rootDir, selectedProofIds);
   const allProofs = readProofs(config).map((proof) => ({
     id: proof.id,
-    command: proof.command,
+    runner: proof.runner ?? 'bash',
+    label: proofLabel(proof),
+    ...(proof.command ? { command: proof.command } : {}),
     method: proof.method,
     surface_claim_ids: uniqueStrings(proof.surfaceClaimIds ?? []),
     summary: proof.summary ?? '',
@@ -408,7 +421,8 @@ export async function buildEvidenceRecord({
     component_details: matchedNodes ?? [],
     file_nodes: fileNodes ?? {},
     triggered_proofs: affectedLanes,
-    selected_proof_commands: proofPlan.proofCommands,
+    selected_proof_ids: selectedProofIds,
+    selected_proof_labels: selectedProofs.map((proof) => proof.label),
     selected_proofs: selectedProofs,
     proof_resolution_source: proofPlan.resolutionSource,
     proof_suite_results: proofSuiteResults,
@@ -789,6 +803,7 @@ export function resolveProofCommands({ adapterPath, files = [], rootDir, explici
   if (!adapterPath || !rootDir) {
     return {
       proofCommands: explicitProofCommand ? [explicitProofCommand] : [],
+      proofs: explicitProofCommand ? proofRecordsForCommands({ evidence: { proofs: [{ id: 'explicit-proof', runner: 'bash', command: explicitProofCommand, method: 'validation' }] } }, [explicitProofCommand]) : [],
       resolutionSource: explicitProofCommand ? 'explicit' : 'none',
       affectedNodes: [],
       affectedLanes: [],

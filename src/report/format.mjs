@@ -23,7 +23,7 @@ export function buildMarkdownSummary(record, artifactPath) {
     `- **Triggered proofs:** ${
       record.triggered_proofs.length ? record.triggered_proofs.join(', ') : 'none'
     }`,
-    `- **Selected proof commands:** \`${record.selected_proof_commands.join(', ') || 'none'}\``,
+    `- **Selected proof labels:** \`${record.selected_proof_labels.join(', ') || 'none'}\``,
     `- **Proof resolution source:** ${record.proof_resolution_source}`,
     `- **Proof suites:** ${record.verification_budget?.proof_suite_count ?? 0} total, ${record.verification_budget?.required_family_count ?? 0} required, ${record.verification_budget?.candidate_family_count ?? 0} candidate, ${record.verification_budget?.move_to_test_family_count ?? 0} move-to-test, ${record.verification_budget?.retire_family_count ?? 0} retiring`,
     `- **External tool results:** ${record.external_tool_results?.length ?? 0}`,
@@ -116,7 +116,7 @@ function summarizeFeedbackCounts(record, proofFailure = null) {
     if (status === 'PASS') passes += 1;
   }
 
-  for (const family of record?.proof_family_results ?? []) {
+  for (const family of record?.proof_suite_results ?? []) {
     if (family.verification_weight === 'blocking' && family.blocking_status === 'failed') {
       failures += 1;
     }
@@ -144,12 +144,14 @@ export function buildFeedbackSummary({
   reportArtifactPath = null,
   draftArtifactPath = null,
   evalArtifactPath = null,
+  proofLabels = [],
   proofCommands = [],
   proofRan = false,
   proofFailure = null,
 } = {}) {
-  const affectedNodes = record?.affected_nodes?.length
-    ? record.affected_nodes.join(', ')
+  const resolvedProofLabels = proofLabels.length > 0 ? proofLabels : proofCommands;
+  const affectedNodes = record?.components?.length
+    ? record.components.join(', ')
     : 'no matched nodes';
   const files = record?.files ?? [];
   const lines = [
@@ -158,11 +160,11 @@ export function buildFeedbackSummary({
 
   if (proofRan) {
     if (proofFailure) {
-      lines.push(`FAIL  proof-command: ${proofFailure.command}`);
+      lines.push(`FAIL  proof-command: ${proofFailure.label}`);
       lines.push(`      -> ${proofFailure.message}`);
     } else {
-      for (const command of proofCommands) {
-        lines.push(`PASS  proof-command: ${command}`);
+      for (const label of resolvedProofLabels) {
+        lines.push(`PASS  proof-command: ${label}`);
       }
     }
   }

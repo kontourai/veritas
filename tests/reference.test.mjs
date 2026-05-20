@@ -41,7 +41,8 @@ test('evidence schema requires framework and adapter sections', () => {
   const proofFamilySchema = readJson('../schemas/veritas-proof-suite-manifest.schema.json');
   assert.ok(evidenceSchema.required.includes('framework'));
   assert.ok(evidenceSchema.required.includes('adapter'));
-  assert.ok(evidenceSchema.required.includes('selected_proof_commands'));
+  assert.ok(evidenceSchema.required.includes('selected_proof_ids'));
+  assert.ok(evidenceSchema.required.includes('selected_proof_labels'));
   assert.ok(evidenceSchema.required.includes('selected_proofs'));
   assert.ok(evidenceSchema.required.includes('proof_resolution_source'));
   assert.ok(evidenceSchema.required.includes('policy_results'));

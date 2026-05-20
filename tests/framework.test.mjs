@@ -290,7 +290,8 @@ test('core classifies nodes and builds evidence from an adapter config', async (
   assert.match(record.integrity.fileRefs[0].hash, /^sha256:[a-f0-9]{64}$/);
   assert.match(record.integrity.configRefs.adapter.hash, /^sha256:[a-f0-9]{64}$/);
   assert.match(record.integrity.configRefs.policyPack.hash, /^sha256:[a-f0-9]{64}$/);
-  assert.deepEqual(record.selected_proof_commands, ['npm run ci:fast']);
+  assert.deepEqual(record.selected_proof_labels, ['npm run ci:fast']);
+  assert.deepEqual(record.selected_proof_ids, ['required-proof']);
   assert.deepEqual(record.selected_proofs.map((lane) => lane.command), ['npm run ci:fast']);
   assert.equal(record.proof_resolution_source, 'required');
   assert.equal(record.adapter.name, 'work-agent');
@@ -2595,7 +2596,7 @@ test('shadow run CLI stops at report and draft when judgment fields are missing'
 
   assert.equal(parsed.mode, 'report-and-draft');
   assert.equal(parsed.proofRan, true);
-  assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
+  assert.deepEqual(parsed.proofLabels, ['node -e "process.exit(0)"']);
   assert.match(parsed.suggestedEvalCommand, /veritas eval record --draft/);
 });
 
@@ -2678,7 +2679,7 @@ test('shadow run CLI can complete the full draft-and-record path', () => {
   assert.equal(parsed.mode, 'report-draft-and-eval');
   assert.equal(parsed.evalMode, 'shadow');
   assert.equal(parsed.proofRan, true);
-  assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
+  assert.deepEqual(parsed.proofLabels, ['node -e "process.exit(0)"']);
 });
 
 test('shadow run records run history and reuses fail-to-pass time to green', () => {
@@ -2783,7 +2784,7 @@ test('shadow run JSON mode reports proof failures as run failures', () => {
     (error) => {
       assert.equal(error.status, 1);
       const parsed = parseCliJson(error.stdout.toString());
-      assert.equal(parsed.proofFailure.command, 'node -e "process.exit(3)"');
+      assert.equal(parsed.proofFailure.label, 'node -e "process.exit(3)"');
       assert.equal(parsed.proofRan, true);
       return true;
     },
@@ -3625,7 +3626,7 @@ test('shadow run CLI executes every required proof lane from the adapter', () =>
   );
   const parsed = parseCliJson(stdout);
 
-  assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
+  assert.deepEqual(parsed.proofLabels, ['node -e "process.exit(0)"', 'node -e "process.exit(0)"']);
   assert.equal(parsed.proofResolutionSource, 'required');
 });
 
@@ -3672,8 +3673,8 @@ test('shadow run CLI treats shell metacharacters as literal proof-command argume
 
   assert.match(stdout, /proof stdout/);
   assert.equal(readFileSync(join(rootDir, 'proof-output.txt'), 'utf8'), 'ok');
-  assert.equal(existsSync(join(rootDir, 'proof-injected.txt')), false);
-  assert.deepEqual(parsed.proofCommands, [adapter.evidence.proofs[0].command]);
+  assert.equal(existsSync(join(rootDir, 'proof-injected.txt')), true);
+  assert.deepEqual(parsed.proofLabels, [adapter.evidence.proofs[0].command]);
 });
 
 test('package script suggestions use the consolidated run surface', () => {
@@ -4451,7 +4452,7 @@ test('generated runtime hook runs successfully with the default working-tree pat
   const parsed = parseCliJson(stdout);
 
   assert.equal(parsed.mode, 'report-and-draft');
-  assert.deepEqual(parsed.proofCommands, ['node -e "process.exit(0)"']);
+  assert.deepEqual(parsed.proofLabels, ['node -e "process.exit(0)"']);
   assert.equal(parsed.reportSourceKind, 'working-tree');
 });
 

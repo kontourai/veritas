@@ -17,7 +17,8 @@
     "matched_artifacts",
     "components",
     "triggered_proofs",
-    "selected_proof_commands",
+    "selected_proof_ids",
+    "selected_proof_labels",
     "selected_proofs",
     "proof_resolution_source",
     "uncovered_path_result",
@@ -68,7 +69,8 @@
       "x_surface_targets": ["metadata"]
     },
     "triggered_proofs": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
-    "selected_proof_commands": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence"] },
+    "selected_proof_ids": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence"] },
+    "selected_proof_labels": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence"] },
     "selected_proofs": {
       "type": "array",
       "items": { "$ref": "#/$defs/proofLane" },
@@ -300,9 +302,11 @@
     "proof": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "command", "method", "surface_claim_ids", "summary"],
+      "required": ["id", "runner", "label", "method", "surface_claim_ids", "summary"],
       "properties": {
         "id": { "type": "string" },
+        "runner": { "enum": ["bash", "mcp"] },
+        "label": { "type": "string" },
         "command": { "type": "string" },
         "method": {
           "enum": ["observation", "extraction", "validation", "corroboration", "attestation", "auditability", "anchoring", "monitoring"]
@@ -315,15 +319,29 @@
     "proofResult": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["command", "passed", "stdout", "stderr", "output"],
+      "required": ["id", "runner", "label", "passed", "durationMs"],
       "properties": {
-        "command": { "type": "string" },
+        "id": { "type": "string" },
+        "runner": { "enum": ["bash", "mcp"] },
+        "label": { "type": "string" },
         "passed": { "type": "boolean" },
         "exitCode": { "type": ["integer", "null"] },
         "signal": { "type": ["string", "null"] },
         "stdout": { "type": "string" },
         "stderr": { "type": "string" },
-        "output": { "type": "string" }
+        "content": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "type": { "type": "string" },
+              "text": { "type": "string" }
+            }
+          }
+        },
+        "isError": { "type": "boolean" },
+        "durationMs": { "type": "number", "minimum": 0 }
       }
     },
     "proofSuiteResult": {
