@@ -79,6 +79,7 @@
   },
   "dependencies": {
     "@kontourai/surface": "git+https://github.com/kontourai/surface.git#53a9dec6504ab9f721a21887726b23ea6a9815c0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "picomatch": "^4.0.4"
   }
 }
