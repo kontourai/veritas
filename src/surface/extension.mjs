@@ -8,14 +8,14 @@ export const VERITAS_EXTENSION = {
     projectKind: 'repository',
     surfaceLabels: {
       'veritas.affected-surface': 'Affected Surface',
-      'veritas.proof-lane': 'Proof Lanes',
+      'veritas.proof': 'Proofs',
       'veritas.governance': 'Governance',
       'veritas.external-tools': 'External Tools',
       'veritas.proposals': 'Proposals',
     },
     claimTypeLabels: {
       'veritas-affected-surface': 'Affected surface node',
-      'software-proof': 'Proof lane',
+      'software-proof': 'Proof',
       'veritas-governance-artifact': 'Governance artifact',
       'veritas-policy-result': 'Policy result',
       'veritas-external-tool-result': 'External tool result',
@@ -44,11 +44,11 @@ export const VERITAS_EXTENSION = {
   claimTypes: [
     {
       id: 'software-proof',
-      displayName: 'Proof Lane',
+      displayName: 'Proof',
       description: 'An automated test suite or proof command that verifies code correctness.',
       defaultImpact: 'high',
-      defaultSurface: 'veritas.proof-lane',
-      policyTemplateId: 'veritas.proof-lane',
+      defaultSurface: 'veritas.proof',
+      policyTemplateId: 'veritas.proof',
       metadataFields: [
         { key: 'command', label: 'Proof command', type: 'string', required: true },
         { key: 'scope', label: 'Scope', type: 'string' },

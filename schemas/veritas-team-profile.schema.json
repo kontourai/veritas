@@ -52,9 +52,9 @@
     "promotion_preferences": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["proof_lanes_required_before_block"],
+      "required": ["proofs_required_before_block"],
       "properties": {
-        "proof_lanes_required_before_block": {
+        "proofs_required_before_block": {
           "type": "array",
           "items": { "type": "string" }
         },

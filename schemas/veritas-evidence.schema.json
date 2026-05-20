@@ -11,13 +11,14 @@
     "source_ref",
     "source_kind",
     "source_scope",
+    "integrity",
     "resolved_phase",
     "resolved_workstream",
     "matched_artifacts",
-    "affected_nodes",
-    "affected_lanes",
+    "components",
+    "triggered_proofs",
     "selected_proof_commands",
-    "selected_proof_lanes",
+    "selected_proofs",
     "proof_resolution_source",
     "uncovered_path_result",
     "baseline_ci_fast_passed",
@@ -46,11 +47,12 @@
       "x_surface_targets": ["evidence", "metadata"]
     },
     "source_scope": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["evidence", "metadata"] },
+    "integrity": { "$ref": "#/$defs/integrity", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence", "metadata"] },
     "resolved_phase": { "type": "string", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "metadata"] },
     "resolved_workstream": { "type": "string", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "metadata"] },
     "matched_artifacts": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
-    "affected_nodes": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence", "event"] },
-    "affected_node_details": {
+    "components": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence", "event"] },
+    "component_details": {
       "type": "array",
       "items": { "type": "object" },
       "x_surface_mapping": "mapped",
@@ -65,18 +67,18 @@
       "x_surface_mapping": "mapped",
       "x_surface_targets": ["metadata"]
     },
-    "affected_lanes": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
+    "triggered_proofs": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
     "selected_proof_commands": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence"] },
-    "selected_proof_lanes": {
+    "selected_proofs": {
       "type": "array",
       "items": { "$ref": "#/$defs/proofLane" },
       "x_surface_mapping": "mapped",
       "x_surface_targets": ["claim", "evidence", "policy", "event"]
     },
     "proof_resolution_source": { "type": "string", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
-    "proof_family_results": {
+    "proof_suite_results": {
       "type": "array",
-      "items": { "$ref": "#/$defs/proofFamilyResult" },
+      "items": { "$ref": "#/$defs/proofSuiteResult" },
       "x_surface_mapping": "mapped",
       "x_surface_targets": ["claim", "evidence", "policy", "event", "metadata"]
     },
@@ -142,10 +144,10 @@
         "report_transport",
         "default_resolution",
         "non_sliceable_invariants",
-        "proof_lanes",
-        "required_proof_lane_ids",
-        "default_proof_lane_ids",
-        "surface_proof_lanes",
+        "proofs",
+        "required_proof_ids",
+        "default_proof_ids",
+        "proof_routes",
         "uncovered_path_policy"
       ],
       "properties": {
@@ -154,21 +156,21 @@
         "report_transport": { "type": "string" },
         "default_resolution": { "$ref": "#/$defs/resolution" },
         "non_sliceable_invariants": { "$ref": "#/$defs/stringArray" },
-        "proof_lanes": {
+        "proofs": {
           "type": "array",
           "items": { "$ref": "#/$defs/proofLane" }
         },
-        "required_proof_lane_ids": { "$ref": "#/$defs/stringArray" },
-        "default_proof_lane_ids": { "$ref": "#/$defs/stringArray" },
-        "surface_proof_lanes": {
+        "required_proof_ids": { "$ref": "#/$defs/stringArray" },
+        "default_proof_ids": { "$ref": "#/$defs/stringArray" },
+        "proof_routes": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["node_ids", "proof_lane_ids"],
+            "required": ["component_ids", "proof_ids"],
             "properties": {
-              "node_ids": { "$ref": "#/$defs/stringArray" },
-              "proof_lane_ids": { "$ref": "#/$defs/stringArray" }
+              "component_ids": { "$ref": "#/$defs/stringArray" },
+              "proof_ids": { "$ref": "#/$defs/stringArray" }
             }
           }
         },
@@ -253,7 +255,49 @@
       "type": "string",
       "enum": ["unknown", "accepted", "rejected"]
     },
-    "proofLane": {
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRef", "sourceKind", "sourceScope", "fileRefs", "configRefs"],
+      "properties": {
+        "sourceRef": { "type": "string" },
+        "sourceKind": { "type": "string" },
+        "sourceScope": { "$ref": "#/$defs/stringArray" },
+        "fileRefs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/fileIntegrityRef" }
+        },
+        "configRefs": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/configIntegrityRef" }
+        }
+      }
+    },
+    "fileIntegrityRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string" },
+        "hash": { "type": "string" },
+        "sizeBytes": { "type": "integer", "minimum": 0 },
+        "status": { "type": "string" },
+        "error": { "type": "string" }
+      }
+    },
+    "configIntegrityRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "hash"],
+      "properties": {
+        "name": { "type": "string" },
+        "path": { "type": "string" },
+        "hash": { "type": "string" },
+        "status": { "type": "string" },
+        "error": { "type": "string" }
+      }
+    },
+    "proof": {
       "type": "object",
       "additionalProperties": false,
       "required": ["id", "command", "method", "surface_claim_ids", "summary"],
@@ -282,13 +326,13 @@
         "output": { "type": "string" }
       }
     },
-    "proofFamilyResult": {
+    "proofSuiteResult": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "id",
-        "lane_id",
-        "source_proof_lane_id",
+        "proof_id",
+        "source_proof_id",
         "manifest_path",
         "destination",
         "owner",
@@ -308,8 +352,8 @@
       ],
       "properties": {
         "id": { "type": "string" },
-        "lane_id": { "type": "string" },
-        "source_proof_lane_id": { "type": ["string", "null"] },
+        "proof_id": { "type": "string" },
+        "source_proof_id": { "type": ["string", "null"] },
         "manifest_path": { "type": "string" },
         "destination": { "type": ["string", "null"] },
         "owner": { "type": ["string", "null"] },
@@ -341,9 +385,9 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "proof_lane_count",
-        "selected_proof_lane_count",
-        "proof_family_count",
+        "proof_count",
+        "selected_proof_count",
+        "proof_suite_count",
         "required_family_count",
         "candidate_family_count",
         "advisory_family_count",
@@ -357,9 +401,9 @@
         "recommendation"
       ],
       "properties": {
-        "proof_lane_count": { "type": "integer", "minimum": 0 },
-        "selected_proof_lane_count": { "type": "integer", "minimum": 0 },
-        "proof_family_count": { "type": "integer", "minimum": 0 },
+        "proof_count": { "type": "integer", "minimum": 0 },
+        "selected_proof_count": { "type": "integer", "minimum": 0 },
+        "proof_suite_count": { "type": "integer", "minimum": 0 },
         "required_family_count": { "type": "integer", "minimum": 0 },
         "candidate_family_count": { "type": "integer", "minimum": 0 },
         "advisory_family_count": { "type": "integer", "minimum": 0 },
@@ -391,7 +435,7 @@
         "tool",
         "format",
         "command",
-        "proof_lane_id",
+        "proof_id",
         "verdict",
         "blocking",
         "summary",
@@ -402,7 +446,7 @@
         "tool": { "type": "string" },
         "format": { "type": "string" },
         "command": { "type": "string" },
-        "proof_lane_id": { "type": "string" },
+        "proof_id": { "type": "string" },
         "verdict": {
           "type": "string",
           "enum": ["pass", "warn", "fail", "missing", "unknown"]

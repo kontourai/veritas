@@ -27,7 +27,7 @@ function bootstrapVeritasRepo(prefix = 'veritas-attest-') {
   writeBootstrapStarterKit({
     rootDir,
     projectName: 'attestation-fixture',
-    proofLane: 'npm test',
+    proof: 'npm test',
     force: true,
   });
   commitAll(rootDir, 'Bootstrap Veritas');

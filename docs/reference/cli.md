@@ -88,7 +88,7 @@ Guided initialization splits setup into a reviewed artifact flow:
 - `--guided --answers <answers.json>` folds owner-provided boundaries, style, proof-lane, and instruction-target choices into the recommendation.
 - `--output` is intentionally constrained to `.veritas/init-plans/` so reviewed setup plans stay repo-local and obvious.
 - `--apply --plan <path>` is the only guided write path. It validates the plan schema, target root, payload hashes, and overwrite rules before writing.
-- Brownfield repos with legacy guidance or convergence scripts also receive a `legacy_verification` inventory and `recommended_proof_family_inventory`. Unknown catch evidence stays candidate/advisory until a maintainer supplies owner and review evidence.
+- Brownfield repos with existing guidance or convergence scripts also receive an `existing_verification` inventory and `recommended_proof_family_inventory`. Unknown catch evidence stays candidate/advisory until a maintainer supplies owner and review evidence.
 - Unknown init flags fail before any files are written.
 
 ### `attest`
@@ -163,6 +163,8 @@ Important behaviors:
 - explicit files produce `source_kind: "explicit-files"`
 - branch comparisons produce `source_kind: "branch-diff"`
 - working-tree modes produce `source_kind: "working-tree"`
+
+Every report also includes an `integrity` block. `integrity.sourceRef` mirrors the source anchor used for staleness decisions, `integrity.fileRefs` records readable changed-file fingerprints, and `integrity.configRefs` records hashes for the adapter, policy pack, and team profile when those paths are available. Surface dashboards use this to explain what a verified claim was actually verified against.
 - the adapter selects proof commands through explicit `proofLanes`, `requiredProofLaneIds`, `defaultProofLaneIds`, and optional `surfaceProofRoutes`
 - the artifact is written to the adapter-defined `artifactDir`
 - every artifact includes `surface.input`, a Surface `TrustInput` projection with claims, evidence, policies, and events

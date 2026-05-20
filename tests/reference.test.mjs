@@ -11,8 +11,8 @@ test('adapter example declares nodes and proof lanes', () => {
   const adapter = readJson('../adapters/work-agent.adapter.json');
   assert.equal(adapter.kind, 'repo-adapter');
   assert.ok(adapter.graph.nodes.length > 0);
-  assert.deepEqual(adapter.evidence.proofLanes.map((lane) => lane.command), ['npm run ci:fast']);
-  assert.deepEqual(adapter.evidence.requiredProofLaneIds, ['required-proof']);
+  assert.deepEqual(adapter.evidence.proofs.map((lane) => lane.command), ['npm run ci:fast']);
+  assert.deepEqual(adapter.evidence.requiredProofIds, ['required-proof']);
 });
 
 test('policy pack includes multiple rule classes', () => {
@@ -38,23 +38,23 @@ test('classification artifact groups the current convergence rule surface', () =
 
 test('evidence schema requires framework and adapter sections', () => {
   const evidenceSchema = readJson('../schemas/veritas-evidence.schema.json');
-  const proofFamilySchema = readJson('../schemas/veritas-proof-family-manifest.schema.json');
+  const proofFamilySchema = readJson('../schemas/veritas-proof-suite-manifest.schema.json');
   assert.ok(evidenceSchema.required.includes('framework'));
   assert.ok(evidenceSchema.required.includes('adapter'));
   assert.ok(evidenceSchema.required.includes('selected_proof_commands'));
-  assert.ok(evidenceSchema.required.includes('selected_proof_lanes'));
+  assert.ok(evidenceSchema.required.includes('selected_proofs'));
   assert.ok(evidenceSchema.required.includes('proof_resolution_source'));
   assert.ok(evidenceSchema.required.includes('policy_results'));
   assert.ok(evidenceSchema.required.includes('surface'));
   assert.ok(evidenceSchema.properties.surface);
-  assert.ok(evidenceSchema.properties.proof_family_results);
+  assert.ok(evidenceSchema.properties.proof_suite_results);
   assert.ok(evidenceSchema.properties.verification_budget);
   assert.ok(
     evidenceSchema.properties.verification_budget.$ref.endsWith('verificationBudget'),
   );
-  assert.ok(proofFamilySchema.properties.families);
+  assert.ok(proofFamilySchema.properties.suites);
   assert.ok(
-    proofFamilySchema.$defs.proofFamily.properties.defaultDisposition.enum.includes('move-to-test'),
+    proofFamilySchema.$defs.proofSuite.properties.defaultDisposition.enum.includes('move-to-test'),
   );
 });
 
@@ -115,12 +115,12 @@ test('adapter and policy schemas declare activation and lint rule contracts', ()
   assert.ok(activation.required.includes('path'));
   assert.equal(activation.properties.tool.type, 'string');
   assert.equal(activation.properties.required.type, 'boolean');
-  assert.ok(adapterSchema.properties.evidence.properties.proofFamilyManifests);
+  assert.ok(adapterSchema.properties.evidence.properties.proofSuiteManifests);
   assert.ok(
-    adapterSchema.properties.evidence.properties.proofLanes.items.properties.externalTool,
+    adapterSchema.properties.evidence.properties.proofs.items.properties.externalTool,
   );
   const externalTool =
-    adapterSchema.properties.evidence.properties.proofLanes.items.properties.externalTool;
+    adapterSchema.properties.evidence.properties.proofs.items.properties.externalTool;
   assert.equal(externalTool.properties.tool.minLength, 1);
   assert.equal(externalTool.properties.format.minLength, 1);
   assert.equal(externalTool.properties.artifactPath.minLength, 1);
@@ -145,13 +145,13 @@ test('adapter and policy schemas declare activation and lint rule contracts', ()
 test('fixture adapters and evidence examples stay readable', () => {
   const repoAdapter = readJson('../.veritas/repo.adapter.json');
   const docsAdapter = readJson('../adapters/demo-docs-site.adapter.json');
-  const fallowLane = repoAdapter.evidence.proofLanes.find((lane) => lane.id === 'fallow-advisory');
+  const fallowLane = repoAdapter.evidence.proofs.find((lane) => lane.id === 'fallow-advisory');
   assert.ok(fallowLane);
   assert.equal(fallowLane.externalTool.blocking, false);
   assert.equal(fallowLane.externalTool.artifactPath, '.veritas/external/fallow-audit.json');
-  assert.ok(repoAdapter.evidence.defaultProofLaneIds.includes('fallow-advisory'));
+  assert.ok(repoAdapter.evidence.defaultProofIds.includes('fallow-advisory'));
   assert.equal(docsAdapter.name, 'demo-docs-site');
-  assert.deepEqual(docsAdapter.evidence.proofLanes.map((lane) => lane.command), [
+  assert.deepEqual(docsAdapter.evidence.proofs.map((lane) => lane.command), [
     'npm run docs:build',
     'npm test',
   ]);
@@ -162,7 +162,7 @@ test('fixture adapters and evidence examples stay readable', () => {
   const fallowAdvisoryExample = readJson('../examples/evidence/fallow-advisory.json');
 
   assert.equal(passExample.baseline_ci_fast_passed, true);
-  assert.deepEqual(passExample.selected_proof_lanes.map((lane) => lane.command), ['npm run ci:fast']);
+  assert.deepEqual(passExample.selected_proofs.map((lane) => lane.command), ['npm run ci:fast']);
   assert.equal(failExample.baseline_ci_fast_passed, false);
   assert.equal(policyGapExample.recommendations[0].kind, 'policy-gap');
   assert.ok(Array.isArray(passExample.policy_results));

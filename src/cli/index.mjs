@@ -156,14 +156,14 @@ export async function runVeritasReportCli(argv = process.argv.slice(2), defaults
 
 function formatVerificationBudgetHuman(record) {
   const budget = record.verification_budget ?? buildVerificationBudget({
-    proofLanes: [],
-    proofFamilyResults: [],
+    proofs: [],
+    proofSuiteResults: [],
   });
   const lines = [
     'Veritas Verification Budget',
     '',
-    `Proof lanes: ${budget.selected_proof_lane_count}/${budget.proof_lane_count} selected`,
-    `Proof families: ${budget.proof_family_count} total`,
+    `Proofs: ${budget.selected_proof_count}/${budget.proof_count} selected`,
+    `Proof suites: ${budget.proof_suite_count} total`,
     `Required: ${budget.required_family_count}`,
     `Candidate: ${budget.candidate_family_count}`,
     `Advisory: ${budget.advisory_family_count}`,
@@ -181,7 +181,7 @@ function formatVerificationBudgetHuman(record) {
     lines.push(`Missing review triggers: ${budget.missing_review_trigger_family_ids.join(', ')}`);
   }
   if (budget.stale_family_ids?.length > 0) {
-    lines.push(`Stale or retiring families: ${budget.stale_family_ids.join(', ')}`);
+    lines.push(`Stale or retiring suites: ${budget.stale_family_ids.join(', ')}`);
   }
 
   return `${lines.join('\n')}\n`;
@@ -208,7 +208,7 @@ export async function runVerificationBudgetCli(argv = process.argv.slice(2), def
         {
           artifactPath: result.artifactPath,
           verification_budget: result.record.verification_budget,
-          proof_family_results: result.record.proof_family_results,
+          proof_suite_results: result.record.proof_suite_results,
         },
         null,
         2,
@@ -252,7 +252,7 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
     const recommendation = buildInitRecommendation({
       rootDir,
       projectName,
-      proofLane: options.proofLane ?? defaults.proofLane,
+      proof: options.proof ?? defaults.proof,
       answers,
       mode: options.guided ? 'guided' : 'explore',
     });
@@ -286,7 +286,7 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
   const result = writeBootstrapStarterKit({
     rootDir,
     projectName,
-    proofLane: options.proofLane ?? defaults.proofLane,
+    proof: options.proof ?? defaults.proof,
     pack: options.pack,
     force: options.force ?? false,
   });
@@ -332,16 +332,16 @@ export function runPrintPackageScriptsCli(argv = process.argv.slice(2), defaults
   const options = parsePrintArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const proofLane = options.proofLane ?? repoInsights.proofLane;
+  const proof = options.proof ?? repoInsights.proof;
 
   process.stdout.write(
     `${JSON.stringify(
       {
         rootDir,
-        proofLane,
+        proof,
         repoInsights,
         scripts: buildSuggestedPackageScripts({
-          proofLane,
+          proof,
           baseRef: repoInsights.baseRef,
         }),
       },
@@ -355,16 +355,16 @@ export function runPrintCiSnippetCli(argv = process.argv.slice(2), defaults = {}
   const options = parsePrintArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const proofLane = options.proofLane ?? repoInsights.proofLane;
+  const proof = options.proof ?? repoInsights.proof;
 
   process.stdout.write(
     `${JSON.stringify(
       {
         rootDir,
-        proofLane,
+        proof,
         repoInsights,
         ciSnippet: buildSuggestedCiSnippet({
-          proofLane,
+          proof,
           baseRef: repoInsights.baseRef,
         }),
       },
@@ -502,10 +502,10 @@ export function runApplyPackageScriptsCli(argv = process.argv.slice(2), defaults
   const options = parseApplyArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const proofLane = options.proofLane ?? repoInsights.proofLane;
+  const proof = options.proof ?? repoInsights.proof;
   const result = applyPackageScripts({
     rootDir,
-    proofLane,
+    proof,
     baseRef: repoInsights.baseRef,
     force: options.force ?? false,
   });
@@ -526,10 +526,10 @@ export function runApplyCiSnippetCli(argv = process.argv.slice(2), defaults = {}
   const options = parseApplyArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const proofLane = options.proofLane ?? repoInsights.proofLane;
+  const proof = options.proof ?? repoInsights.proof;
   const result = applyCiSnippet({
     rootDir,
-    proofLane,
+    proof,
     baseRef: repoInsights.baseRef,
     outputPath: options.outputPath ?? '.veritas/snippets/ci-snippet.yml',
     force: options.force ?? false,

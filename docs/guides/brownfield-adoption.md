@@ -20,7 +20,7 @@ For a read-only first pass, run:
 npx @kontourai/veritas init --explore --output .veritas/init-plans/brownfield.json
 ```
 
-When package scripts or legacy paths such as `.ai-guidance`, `verify:convergence`, or `guidance:report` are detected, the recommendation includes `legacy_verification` and `recommended_proof_family_inventory` sections. Treat those as a review queue, not applied policy.
+When package scripts or existing guidance paths such as `.ai-guidance`, `verify:convergence`, or `guidance:report` are detected, the recommendation includes `existing_verification` and `recommended_proof_family_inventory` sections. Treat those as a review queue, not applied policy.
 
 ## 2. Classify Existing Checks
 

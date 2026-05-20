@@ -8,10 +8,10 @@
   "resolved_phase": "Phase 0",
   "resolved_workstream": "Fallow advisory demo",
   "matched_artifacts": ["docs/guides/fallow-integration.md"],
-  "affected_nodes": ["root.manifest"],
-  "affected_lanes": ["package.json"],
+  "components": ["root.manifest"],
+  "triggered_proofs": ["package.json"],
   "selected_proof_commands": ["node scripts/run-fallow-audit.mjs"],
-  "selected_proof_lanes": [
+  "selected_proofs": [
     {
       "id": "fallow-advisory",
       "command": "node scripts/run-fallow-audit.mjs",
@@ -21,11 +21,11 @@
     }
   ],
   "proof_resolution_source": "required",
-  "proof_family_results": [],
+  "proof_suite_results": [],
   "verification_budget": {
-    "proof_lane_count": 1,
-    "selected_proof_lane_count": 1,
-    "proof_family_count": 0,
+    "proof_count": 1,
+    "selected_proof_count": 1,
+    "proof_suite_count": 0,
     "required_family_count": 0,
     "candidate_family_count": 0,
     "advisory_family_count": 0,
@@ -84,7 +84,7 @@
       "matchedArtifacts": ["docs/guides/fallow-integration.md"]
     },
     "non_sliceable_invariants": [],
-    "proof_lanes": [
+    "proofs": [
       {
         "id": "fallow-advisory",
         "command": "node scripts/run-fallow-audit.mjs",
@@ -93,9 +93,9 @@
         "summary": "Runs Fallow audit as advisory codebase-intelligence evidence."
       }
     ],
-    "required_proof_lane_ids": ["fallow-advisory"],
-    "default_proof_lane_ids": [],
-    "surface_proof_lanes": [],
+    "required_proof_ids": ["fallow-advisory"],
+    "default_proof_ids": [],
+    "proof_routes": [],
     "uncovered_path_policy": "warn"
   },
   "policy_pack": {

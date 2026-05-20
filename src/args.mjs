@@ -93,7 +93,7 @@ export function parseInitArgs(argv) {
     {
       '--root': { type: 'string', key: 'rootDir' },
       '--project-name': { type: 'string', key: 'projectName' },
-      '--proof-lane': { type: 'string', key: 'proofLane' },
+      '--proof': { type: 'string', key: 'proof' },
       '--pack': { type: 'string', key: 'pack' },
       '--force': { type: 'flag', key: 'force' },
       '--non-interactive': { type: 'flag', key: 'nonInteractive' },
@@ -130,7 +130,7 @@ export function parsePrintArgs(argv) {
     argv,
     {
       '--root': { type: 'string', key: 'rootDir' },
-      '--proof-lane': { type: 'string', key: 'proofLane' },
+      '--proof': { type: 'string', key: 'proof' },
       '--hook': { type: 'string', key: 'hook' },
       '--target-hooks-file': { type: 'string', key: 'targetHooksFile' },
       '--codex-home': { type: 'string', key: 'codexHome' },
@@ -144,7 +144,7 @@ export function parseApplyArgs(argv) {
     argv,
     {
       '--root': { type: 'string', key: 'rootDir' },
-      '--proof-lane': { type: 'string', key: 'proofLane' },
+      '--proof': { type: 'string', key: 'proof' },
       '--output': { type: 'string', key: 'outputPath' },
       '--hook': { type: 'string', key: 'hook' },
       '--force': { type: 'flag', key: 'force' },

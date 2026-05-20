@@ -242,7 +242,7 @@ Current adapters use explicit proof-lane objects:
 }
 ```
 
-Legacy `requiredProofLanes`, `defaultProofLanes`, and `surfaceProofLanes` command arrays are intentionally rejected by runtime validation. Migrate by assigning each command a stable `proofLanes[].id`, moving the command into `proofLanes[].command`, and replacing route command arrays with `proofLaneIds`.
+Removed proof command array fields such as `requiredProofLanes`, `defaultProofLanes`, and `surfaceProofLanes` are intentionally rejected by runtime validation. Migrate by assigning each command a stable `proofLanes[].id`, moving the command into `proofLanes[].command`, and replacing route command arrays with `proofLaneIds`.
 
 Proof lanes may optionally declare an external tool artifact. Veritas reads the artifact after the proof lane has run, records a normalized `external_tool_results` entry, and maps the verdict into `surface.input`.
 
@@ -275,7 +275,7 @@ Adapters can also declare family-level proof inventories:
 }
 ```
 
-Those manifests are repo-local inventories. Veritas reports their portable summary as `proof_family_results` and `verification_budget` in the evidence artifact.
+Those manifests are repo-local inventories. Veritas reports their portable summary as `proof_suite_results` and `verification_budget` in the evidence artifact.
 
 The portable manifest contract is documented in [veritas-proof-family-manifest.schema.json](../../schemas/veritas-proof-family-manifest.schema.json). Runtime validation adds usefulness rules that JSON Schema alone cannot express:
 
@@ -305,12 +305,13 @@ After validation, Veritas calls Surface's public `buildTrustReport` API and pers
 | Evidence field | Surface mapping | Classification |
 | --- | --- | --- |
 | `run_id`, `timestamp`, `source_ref`, `source_kind`, `source_scope` | Surface input source, claim/evidence/event timestamps, integrity refs, and evidence metadata | Surface-mapped |
-| `resolved_phase`, `resolved_workstream`, `matched_artifacts`, `affected_lanes`, `files`, `unresolved_files` | Claim and evidence metadata that explains why Veritas selected the surface | Surface-mapped |
-| `affected_nodes` | `Claim`, `Evidence`, and `VerificationEvent` records on `veritas.affected-surface` | Surface-mapped |
-| `affected_node_details`, `file_nodes` | Surface ownership and boundary metadata for matched files | Surface-mapped |
-| `selected_proof_commands`, `selected_proof_lanes`, `proof_resolution_source` | `Claim`, `Evidence`, `VerificationPolicy`, and `VerificationEvent` records on `veritas.proof-lanes` | Surface-mapped |
-| `uncovered_path_result`, `baseline_ci_fast_passed` | Proof-lane claim status, verification events, and metadata for proof confidence | Surface-mapped |
-| `proof_family_results` | `Claim`, `Evidence`, `VerificationEvent`, and metadata records on `veritas.proof-families` | Surface-mapped |
+| `integrity` | Source anchor, file fingerprints, and producer configuration hashes attached to claims/evidence so verified status can be traced to concrete inputs | Surface-mapped |
+| `resolved_phase`, `resolved_workstream`, `matched_artifacts`, `triggered_proofs`, `files`, `unresolved_files` | Claim and evidence metadata that explains why Veritas selected the surface | Surface-mapped |
+| `components` | `Claim`, `Evidence`, and `VerificationEvent` records on `veritas.affected-surface` | Surface-mapped |
+| `component_details`, `file_nodes` | Surface ownership and boundary metadata for matched files | Surface-mapped |
+| `selected_proof_commands`, `selected_proofs`, `proof_resolution_source` | `Claim`, `Evidence`, `VerificationPolicy`, and `VerificationEvent` records on `veritas.proofs` | Surface-mapped |
+| `uncovered_path_result`, `baseline_ci_fast_passed` | Proof claim status, verification events, and metadata for proof confidence | Surface-mapped |
+| `proof_suite_results` | `Claim`, `Evidence`, `VerificationEvent`, and metadata records on `veritas.proof-suites` | Surface-mapped |
 | `verification_budget` | A budget claim/evidence pair plus metadata used by Surface report generation | Surface-mapped |
 | `external_tool_results` | External tool verdict claims, evidence, events, and metadata for advisory/blocking proof lanes | Surface-mapped |
 | `policy_pack`, `policy_results` | Policy-result claims, evidence, events, and policy-violation fault-line hints | Surface-mapped |

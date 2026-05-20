@@ -12,7 +12,7 @@
     "source_scope": [
       "explicit"
     ],
-    "affected_nodes": [
+    "components": [
       "app.src",
       "docs.docs",
       "governance.guidance",
@@ -21,7 +21,7 @@
       "tooling.bin",
       "verification.tests"
     ],
-    "affected_lanes": [
+    "triggered_proofs": [
       ".veritas/**",
       "bin/**",
       "docs/**",

@@ -227,8 +227,8 @@ export function buildEvalDraftFromNormalizedEvents({
           source_ref: evidenceRecord.source_ref ?? `${source}-transcript`,
           source_kind: evidenceRecord.source_kind ?? 'explicit-files',
           source_scope: evidenceRecord.source_scope ?? ['transcript'],
-          affected_nodes: evidenceRecord.affected_nodes ?? [],
-          affected_lanes: evidenceRecord.affected_lanes ?? [],
+          components: evidenceRecord.components ?? [],
+          triggered_proofs: evidenceRecord.triggered_proofs ?? [],
         }
       : {
           artifact_path: transcriptRelativePath,
@@ -237,8 +237,8 @@ export function buildEvalDraftFromNormalizedEvents({
           source_ref: transcriptRelativePath,
           source_kind: 'explicit-files',
           source_scope: ['transcript'],
-          affected_nodes: [],
-          affected_lanes: [],
+          components: [],
+          triggered_proofs: [],
         },
     governance: {
       surface_touched: false,

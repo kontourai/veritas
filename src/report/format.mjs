@@ -17,15 +17,15 @@ export function buildMarkdownSummary(record, artifactPath) {
     `- **Source:** ${record.source_kind} (${record.source_scope.join(', ')})`,
     `- **Phase:** ${record.resolved_phase}`,
     `- **Workstream:** ${record.resolved_workstream}`,
-    `- **Affected nodes:** ${
-      record.affected_nodes.length ? record.affected_nodes.join(', ') : 'none'
+    `- **Components:** ${
+      record.components.length ? record.components.join(', ') : 'none'
     }`,
-    `- **Affected lanes:** ${
-      record.affected_lanes.length ? record.affected_lanes.join(', ') : 'none'
+    `- **Triggered proofs:** ${
+      record.triggered_proofs.length ? record.triggered_proofs.join(', ') : 'none'
     }`,
     `- **Selected proof commands:** \`${record.selected_proof_commands.join(', ') || 'none'}\``,
     `- **Proof resolution source:** ${record.proof_resolution_source}`,
-    `- **Proof families:** ${record.verification_budget?.proof_family_count ?? 0} total, ${record.verification_budget?.required_family_count ?? 0} required, ${record.verification_budget?.candidate_family_count ?? 0} candidate, ${record.verification_budget?.move_to_test_family_count ?? 0} move-to-test, ${record.verification_budget?.retire_family_count ?? 0} retiring`,
+    `- **Proof suites:** ${record.verification_budget?.proof_suite_count ?? 0} total, ${record.verification_budget?.required_family_count ?? 0} required, ${record.verification_budget?.candidate_family_count ?? 0} candidate, ${record.verification_budget?.move_to_test_family_count ?? 0} move-to-test, ${record.verification_budget?.retire_family_count ?? 0} retiring`,
     `- **External tool results:** ${record.external_tool_results?.length ?? 0}`,
     `- **Uncovered path result:** ${record.uncovered_path_result}`,
     `- **Baseline \`ci:fast\` passed:** ${formatTriState(record.baseline_ci_fast_passed)}`,
@@ -48,9 +48,9 @@ export function buildMarkdownSummary(record, artifactPath) {
     }
   }
 
-  if (record.proof_family_results?.length > 0) {
-    lines.push('', '### Proof Families');
-    for (const family of record.proof_family_results) {
+  if (record.proof_suite_results?.length > 0) {
+    lines.push('', '### Proof Suites');
+    for (const family of record.proof_suite_results) {
       const selected = family.selected ? 'selected' : 'not selected';
       lines.push(
         `- ${family.id}: ${family.disposition} / ${family.verification_weight} (${selected}) — ${family.rationale || 'No rationale recorded.'}`,
@@ -66,7 +66,7 @@ export function buildMarkdownSummary(record, artifactPath) {
     for (const result of record.external_tool_results) {
       const weight = result.blocking ? 'blocking' : 'advisory';
       lines.push(
-        `- ${result.tool}:${result.proof_lane_id}: ${result.verdict} / ${weight} — ${result.artifact_path}`,
+        `- ${result.tool}:${result.proof_id}: ${result.verdict} / ${weight} — ${result.artifact_path}`,
       );
     }
   }
@@ -179,11 +179,11 @@ export function buildFeedbackSummary({
     }
   }
 
-  for (const family of record?.proof_family_results ?? []) {
+  for (const family of record?.proof_suite_results ?? []) {
     if (!family.selected) continue;
     const status = family.verification_weight === 'blocking' ? 'PASS' : 'INFO';
     lines.push(
-      `${status.padEnd(5)} proof-family:${family.id}: ${family.disposition} / ${family.verification_weight}`,
+      `${status.padEnd(5)} proof-suite:${family.id}: ${family.disposition} / ${family.verification_weight}`,
     );
     if (family.review_trigger) {
       lines.push(`      -> review: ${family.review_trigger}`);

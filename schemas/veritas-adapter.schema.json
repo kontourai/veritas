@@ -83,7 +83,7 @@
       "required": ["artifactDir", "reportTransport"],
       "properties": {
         "artifactDir": { "type": "string" },
-        "proofLanes": {
+        "proofs": {
           "type": "array",
           "items": {
             "type": "object",
@@ -119,11 +119,11 @@
           },
           "minItems": 1
         },
-        "requiredProofLaneIds": {
+        "requiredProofIds": {
           "type": "array",
           "items": { "type": "string" }
         },
-        "defaultProofLaneIds": {
+        "defaultProofIds": {
           "type": "array",
           "items": { "type": "string" }
         },
@@ -132,14 +132,14 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["nodeIds", "proofLaneIds"],
+            "required": ["nodeIds", "proofIds"],
             "properties": {
               "nodeIds": {
                 "type": "array",
                 "items": { "type": "string" },
                 "minItems": 1
               },
-              "proofLaneIds": {
+              "proofIds": {
                 "type": "array",
                 "items": { "type": "string" },
                 "minItems": 1
@@ -147,7 +147,7 @@
             }
           }
         },
-        "proofFamilyManifests": {
+        "proofSuiteManifests": {
           "type": "array",
           "items": { "type": "string" }
         },
@@ -158,7 +158,7 @@
         "reportTransport": { "type": "string" }
       },
       "anyOf": [
-        { "required": ["proofLanes"] }
+        { "required": ["proofs"] }
       ]
     }
   }

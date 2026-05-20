@@ -3,6 +3,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -29,18 +30,18 @@ import {
   inspectAttestationStatus,
 } from './attestations.mjs';
 import {
-  readSurfaceProofRoutes,
-  readProofLanes,
-  readDefaultProofLaneIds,
-  readRequiredProofLaneIds,
-  proofCommandsForLaneIds,
-  proofLaneRecordsForCommands,
-  loadProofFamilyResults,
+  readProofRoutes,
+  readProofs,
+  readDefaultProofIds,
+  readRequiredProofIds,
+  commandsForProofIds,
+  proofRecordsForCommands,
+  loadProofSuiteResults,
   buildVerificationBudget,
   buildExternalToolResults,
   readUncoveredPathPolicy,
-  routeMatchesAnyNode,
-  serializeSurfaceProofRoutes,
+  routeMatchesAnyComponent,
+  serializeProofRoutes,
 } from './proof/index.mjs';
 import {
   buildMarkdownSummary,
@@ -63,6 +64,99 @@ function resolveSourceRef({ explicitSourceRef, rootDir, sourceKind = 'explicit-f
   return `working-tree:${hash}`;
 }
 
+function sha256Ref(value) {
+  return `sha256:${sha256Hex(value)}`;
+}
+
+function stableStringify(value) {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function fileIntegrityRef(rootDir, repoPath) {
+  const path = normalizeRepoPath(repoPath, rootDir);
+  const absolutePath = resolve(rootDir, path);
+  try {
+    assertWithinDir(absolutePath, rootDir, `Cannot hash file outside repo: ${repoPath}`);
+    if (!existsSync(absolutePath)) return { path, status: 'missing' };
+    const stat = statSync(absolutePath);
+    if (!stat.isFile()) return { path, status: stat.isDirectory() ? 'directory' : 'non-file' };
+    return {
+      path,
+      hash: sha256Ref(readFileSync(absolutePath)),
+      sizeBytes: stat.size,
+    };
+  } catch (error) {
+    return {
+      path,
+      status: 'unreadable',
+      error: error.message,
+    };
+  }
+}
+
+function configIntegrityRef({ name, value, path, rootDir }) {
+  const ref = { name };
+  if (path && rootDir) ref.path = relativeRepoPath(rootDir, path);
+  try {
+    if (path && existsSync(path)) {
+      ref.hash = sha256Ref(readFileSync(path));
+      return ref;
+    }
+  } catch (error) {
+    ref.status = 'unreadable';
+    ref.error = error.message;
+  }
+  ref.hash = sha256Ref(stableStringify(value ?? null));
+  return ref;
+}
+
+function buildEvidenceIntegrity({
+  rootDir,
+  normalizedFiles,
+  sourceRef,
+  sourceKind,
+  sourceScope,
+  config,
+  policyPack,
+  options,
+}) {
+  const sources = options.integritySources ?? {};
+  return {
+    sourceRef,
+    sourceKind,
+    sourceScope,
+    fileRefs: rootDir
+      ? normalizedFiles.map((file) => fileIntegrityRef(rootDir, file))
+      : normalizedFiles.map((file) => ({ path: file, status: 'not-hashed' })),
+    configRefs: {
+      adapter: configIntegrityRef({
+        name: config.name ?? config.adapter?.name ?? 'adapter',
+        value: config,
+        path: sources.adapterPath,
+        rootDir,
+      }),
+      policyPack: configIntegrityRef({
+        name: policyPack.name ?? 'policy-pack',
+        value: policyPack,
+        path: sources.policyPackPath,
+        rootDir,
+      }),
+      ...(sources.teamProfilePath ? {
+        teamProfile: configIntegrityRef({
+          name: 'team-profile',
+          value: null,
+          path: sources.teamProfilePath,
+          rootDir,
+        }),
+      } : {}),
+    },
+  };
+}
+
 export function resolveProofPlan({
   files,
   config,
@@ -77,8 +171,8 @@ export function resolveProofPlan({
     fileNodes,
   } = classifyNodes(files, config, rootDir);
   const uncoveredPathPolicy = readUncoveredPathPolicy(config);
-  const surfaceRoutes = readSurfaceProofRoutes(config);
-  const matchedRoutes = surfaceRoutes.filter((route) => routeMatchesAnyNode(route, affectedNodes));
+  const proofRoutes = readProofRoutes(config);
+  const matchedRoutes = proofRoutes.filter((route) => routeMatchesAnyComponent(route, affectedNodes));
   let proofCommands = [];
   let resolutionSource = 'none';
 
@@ -86,28 +180,28 @@ export function resolveProofPlan({
     proofCommands = [explicitProofCommand];
     resolutionSource = 'explicit';
   } else if (matchedRoutes.length > 0) {
-    const routedNodeIds = new Set(
-      matchedRoutes.flatMap((route) => (route.nodeIds ?? []).filter((nodeId) => affectedNodes.includes(nodeId))),
+    const routedComponentIds = new Set(
+      matchedRoutes.flatMap((route) => (route.componentIds ?? []).filter((componentId) => affectedNodes.includes(componentId))),
     );
-    proofCommands = proofCommandsForLaneIds(config, uniqueStrings(matchedRoutes.flatMap((route) => route.proofLaneIds ?? [])));
-    if (affectedNodes.some((nodeId) => !routedNodeIds.has(nodeId))) {
-      const defaultProofLaneIds = readDefaultProofLaneIds(config);
-      const requiredProofLaneIds = readRequiredProofLaneIds(config);
+    proofCommands = commandsForProofIds(config, uniqueStrings(matchedRoutes.flatMap((route) => route.proofIds ?? [])));
+    if (affectedNodes.some((nodeId) => !routedComponentIds.has(nodeId))) {
+      const defaultProofIds = readDefaultProofIds(config);
+      const requiredProofIds = readRequiredProofIds(config);
       proofCommands = uniqueStrings([
         ...proofCommands,
-        ...proofCommandsForLaneIds(config, defaultProofLaneIds.length > 0 ? defaultProofLaneIds : requiredProofLaneIds),
+        ...commandsForProofIds(config, defaultProofIds.length > 0 ? defaultProofIds : requiredProofIds),
       ]);
     }
     resolutionSource = 'surface';
   } else {
-    const defaultProofLaneIds = readDefaultProofLaneIds(config);
-    const requiredProofLaneIds = readRequiredProofLaneIds(config);
+    const defaultProofIds = readDefaultProofIds(config);
+    const requiredProofIds = readRequiredProofIds(config);
 
-    if (defaultProofLaneIds.length > 0) {
-      proofCommands = proofCommandsForLaneIds(config, defaultProofLaneIds);
+    if (defaultProofIds.length > 0) {
+      proofCommands = commandsForProofIds(config, defaultProofIds);
       resolutionSource = 'default';
-    } else if (requiredProofLaneIds.length > 0) {
-      proofCommands = proofCommandsForLaneIds(config, requiredProofLaneIds);
+    } else if (requiredProofIds.length > 0) {
+      proofCommands = commandsForProofIds(config, requiredProofIds);
       resolutionSource = 'required';
     }
   }
@@ -121,7 +215,7 @@ export function resolveProofPlan({
     uncoveredPathPolicy,
     uncoveredPathResult: unmatchedFiles.length > 0 ? uncoveredPathPolicy : 'clear',
     proofCommands,
-    proofLanes: proofLaneRecordsForCommands(config, proofCommands),
+    proofs: proofRecordsForCommands(config, proofCommands),
     resolutionSource,
   };
 }
@@ -258,58 +352,72 @@ export async function buildEvidenceRecord({
         ...policyResults,
       ]
     : policyResults;
-  const selectedProofLaneSources =
-    proofPlan.proofLanes ?? proofLaneRecordsForCommands(config, proofPlan.proofCommands);
-  const selectedProofLanes = selectedProofLaneSources.map((lane) => {
-    const proofResult = proofResultForCommand(options.proofResults, lane.command);
+  const selectedProofSources =
+    proofPlan.proofs ?? proofRecordsForCommands(config, proofPlan.proofCommands);
+  const selectedProofs = selectedProofSources.map((proof) => {
+    const proofResult = proofResultForCommand(options.proofResults, proof.command);
     return {
-      id: lane.id,
-      command: lane.command,
-      method: lane.method,
-      surface_claim_ids: uniqueStrings(lane.surfaceClaimIds ?? []),
-      summary: proofResultSummary(proofResult) ?? lane.summary ?? `Proof lane ${lane.id}: ${lane.command}`,
+      id: proof.id,
+      command: proof.command,
+      method: proof.method,
+      surface_claim_ids: uniqueStrings(proof.surfaceClaimIds ?? []),
+      summary: proofResultSummary(proofResult) ?? proof.summary ?? `Proof ${proof.id}: ${proof.command}`,
       ...(proofResult ? { proof_result: proofResult } : {}),
     };
   });
-  const selectedProofLaneIds = selectedProofLanes.map((lane) => lane.id);
-  const proofFamilyResults = loadProofFamilyResults(config, rootDir, selectedProofLaneIds);
-  const allProofLanes = readProofLanes(config).map((lane) => ({
-    id: lane.id,
-    command: lane.command,
-    method: lane.method,
-    surface_claim_ids: uniqueStrings(lane.surfaceClaimIds ?? []),
-    summary: lane.summary ?? '',
-    selected: selectedProofLaneIds.includes(lane.id),
+  const selectedProofIds = selectedProofs.map((proof) => proof.id);
+  const proofSuiteResults = loadProofSuiteResults(config, rootDir, selectedProofIds);
+  const allProofs = readProofs(config).map((proof) => ({
+    id: proof.id,
+    command: proof.command,
+    method: proof.method,
+    surface_claim_ids: uniqueStrings(proof.surfaceClaimIds ?? []),
+    summary: proof.summary ?? '',
+    selected: selectedProofIds.includes(proof.id),
   }));
+  const sourceRef = resolveSourceRef({
+    explicitSourceRef: options.sourceRef,
+    rootDir,
+    sourceKind: options.sourceKind,
+  });
+  const sourceKind = options.sourceKind ?? 'explicit-files';
+  const sourceScope = options.sourceScope ?? ['explicit'];
+  const integrity = buildEvidenceIntegrity({
+    rootDir,
+    normalizedFiles,
+    sourceRef,
+    sourceKind,
+    sourceScope,
+    config,
+    policyPack: resolvedPolicyPack,
+    options,
+  });
 
   const record = {
     framework_version: frameworkVersion,
     run_id: runId,
     timestamp,
-    source_ref: resolveSourceRef({
-      explicitSourceRef: options.sourceRef,
-      rootDir,
-      sourceKind: options.sourceKind,
-    }),
-    source_kind: options.sourceKind ?? 'explicit-files',
-    source_scope: options.sourceScope ?? ['explicit'],
+    source_ref: sourceRef,
+    source_kind: sourceKind,
+    source_scope: sourceScope,
+    integrity,
     resolved_phase: resolution.resolvedPhase,
     resolved_workstream: resolution.resolvedWorkstream,
     matched_artifacts: resolution.matchedArtifacts,
-    affected_nodes: affectedNodes,
-    affected_node_details: matchedNodes ?? [],
+    components: affectedNodes,
+    component_details: matchedNodes ?? [],
     file_nodes: fileNodes ?? {},
-    affected_lanes: affectedLanes,
+    triggered_proofs: affectedLanes,
     selected_proof_commands: proofPlan.proofCommands,
-    selected_proof_lanes: selectedProofLanes,
+    selected_proofs: selectedProofs,
     proof_resolution_source: proofPlan.resolutionSource,
-    proof_family_results: proofFamilyResults,
+    proof_suite_results: proofSuiteResults,
     verification_budget: buildVerificationBudget({
-      proofLanes: allProofLanes,
-      proofFamilyResults,
+      proofs: allProofs,
+      proofSuiteResults,
     }),
     external_tool_results: buildExternalToolResults({
-      proofLanes: selectedProofLaneSources,
+      proofs: selectedProofSources,
       rootDir,
     }),
     uncovered_path_result: proofPlan.uncoveredPathResult,
@@ -333,10 +441,10 @@ export async function buildEvidenceRecord({
       report_transport: config.evidence.reportTransport,
       default_resolution: config.graph.defaultResolution,
       non_sliceable_invariants: config.graph.nonSliceableInvariants,
-      proof_lanes: allProofLanes.map(({ selected, ...lane }) => lane),
-      required_proof_lane_ids: readRequiredProofLaneIds(config),
-      default_proof_lane_ids: readDefaultProofLaneIds(config),
-      surface_proof_lanes: serializeSurfaceProofRoutes(config),
+      proofs: allProofs.map(({ selected, ...proof }) => proof),
+      required_proof_ids: readRequiredProofIds(config),
+      default_proof_ids: readDefaultProofIds(config),
+      proof_routes: serializeProofRoutes(config),
       uncovered_path_policy: proofPlan.uncoveredPathPolicy,
     },
     policy_pack: {
@@ -637,6 +745,11 @@ export async function generateVeritasReport(options = {}, defaults = {}, explici
       sourceKind: reportInputs.sourceKind,
       sourceScope: reportInputs.sourceScope,
       proofPlan,
+      integritySources: {
+        adapterPath,
+        policyPackPath,
+        teamProfilePath,
+      },
       ...(attestationStatus ? { governanceState: attestationStatus } : {}),
     },
     config,
@@ -679,6 +792,7 @@ export function resolveProofCommands({ adapterPath, files = [], rootDir, explici
       resolutionSource: explicitProofCommand ? 'explicit' : 'none',
       affectedNodes: [],
       affectedLanes: [],
+      triggeredProofs: [],
       unmatchedFiles: [],
       uncoveredPathPolicy: 'warn',
       uncoveredPathResult: 'clear',

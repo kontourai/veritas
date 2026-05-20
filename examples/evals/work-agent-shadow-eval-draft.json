@@ -10,8 +10,8 @@
     "source_ref": "refs/heads/main",
     "source_kind": "branch-diff",
     "source_scope": ["changed-from:origin/main", "changed-to:HEAD"],
-    "affected_nodes": ["delivery.github", "governance.root-manifests"],
-    "affected_lanes": [".github/**", "root manifests"]
+    "components": ["delivery.github", "governance.root-manifests"],
+    "triggered_proofs": [".github/**", "root manifests"]
   },
   "governance": {
     "surface_touched": true,

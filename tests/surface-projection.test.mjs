@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { buildTrustReport, validateTrustInput } from '@kontourai/surface';
+import { TrustInputBuilder, buildTrustReport, validateTrustInput } from '@kontourai/surface';
 import { generateVeritasReport, initClaimStore } from '../src/index.mjs';
 import { frameworkRootDir } from './helpers.mjs';
 
@@ -38,6 +38,10 @@ test('Veritas surface.input validates against Surface and has policy coverage', 
   assert.equal(input.source, 'veritas:surface-projection-test');
   assert.equal(input.policies.some((policy) => policy.id === 'veritas.governance-artifact'), true);
   assert.equal(report.claims.length, input.claims.length);
+  if (typeof TrustInputBuilder.prototype.addCollection === 'function') {
+    assert.ok(input.collections?.some((collection) => collection.kind === 'framework'));
+    assert.ok(report.collectionRollups.some((collection) => collection.id.startsWith('veritas.framework.')));
+  }
 
   for (const claim of report.claims) {
     assert.ok(

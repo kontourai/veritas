@@ -2,6 +2,11 @@ node_modules/
 dist/
 .DS_Store
 .omx/
+.agents/
+.surface/
+
+# Veritas generated run state. Keep durable governance config trackable:
+# .veritas/repo.adapter.json, .veritas/policy-packs/**, and .veritas/team/**.
 .veritas/evidence/
 .veritas/claims/
 .veritas/surface-dashboard/

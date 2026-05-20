@@ -14,7 +14,7 @@ import { commitAll, frameworkRootDir, initCommittedRepo, parseCliJson } from '..
 function bootstrapRepo(prefix = 'veritas-claude-') {
   const rootDir = initCommittedRepo(prefix);
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { test: 'node -e "process.exit(0)"' } }, null, 2));
-  writeBootstrapStarterKit({ rootDir, projectName: 'integration-fixture', proofLane: 'npm test', force: true });
+  writeBootstrapStarterKit({ rootDir, projectName: 'integration-fixture', proof: 'npm test', force: true });
   commitAll(rootDir, 'Bootstrap Veritas');
   return rootDir;
 }

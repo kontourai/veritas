@@ -81,7 +81,7 @@
   "evidence": {
     "artifactDir": ".omx/evidence/demo-docs-site",
     "reportTransport": "local-json",
-    "proofLanes": [
+    "proofs": [
       {
         "id": "required-proof",
         "command": "npm run docs:build",
@@ -95,7 +95,7 @@
         "summary": "Runs npm test."
       }
     ],
-    "requiredProofLaneIds": [
+    "requiredProofIds": [
       "required-proof",
       "proof-2"
     ]

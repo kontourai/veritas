@@ -96,8 +96,8 @@ function buildEvalEvidenceContext({ evidenceRecord, evidenceRaw, evidencePath, r
     'source_ref',
     'source_kind',
     'source_scope',
-    'affected_nodes',
-    'affected_lanes',
+    'components',
+    'triggered_proofs',
   ];
   for (const key of requiredEvidenceKeys) {
     if (!(key in evidenceRecord)) {
@@ -115,8 +115,8 @@ function buildEvalEvidenceContext({ evidenceRecord, evidenceRaw, evidencePath, r
     source_ref: evidenceRecord.source_ref,
     source_kind: evidenceRecord.source_kind,
     source_scope: evidenceRecord.source_scope ?? [],
-    affected_nodes: evidenceRecord.affected_nodes ?? [],
-    affected_lanes: evidenceRecord.affected_lanes ?? [],
+    components: evidenceRecord.components ?? [],
+    triggered_proofs: evidenceRecord.triggered_proofs ?? [],
     unresolved_files: evidenceRecord.unresolved_files ?? [],
     policy_results: evidenceRecord.policy_results ?? [],
   };
@@ -138,7 +138,7 @@ function isGovernancePath(filePath) {
 function buildEvalGovernanceContext(evidenceRecord) {
   const changedPaths = (evidenceRecord.files ?? []).filter(isGovernancePath);
   const surfaceTouched =
-    (evidenceRecord.affected_nodes ?? []).some(isGovernanceAffectedNode) ||
+    (evidenceRecord.components ?? []).some(isGovernanceAffectedNode) ||
     changedPaths.length > 0;
   const classification =
     evidenceRecord.governance_surface?.classification ??

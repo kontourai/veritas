@@ -1,6 +1,6 @@
 import { SURFACE_TRUST_POLICIES } from '../surface/policies.mjs';
 
-export function buildBaselineClaims(repoName, { hasGovernance = false, proofLaneCommands = [], surfaceNodes = [] } = {}) {
+export function buildBaselineClaims(repoName, { hasGovernance = false, proofCommands = [], surfaceNodes = [] } = {}) {
   const now = new Date().toISOString();
   const claims = [];
   const policies = new Map();
@@ -38,21 +38,21 @@ export function buildBaselineClaims(repoName, { hasGovernance = false, proofLane
     policies.set(SURFACE_TRUST_POLICIES.governanceArtifact.id, SURFACE_TRUST_POLICIES.governanceArtifact);
   }
 
-  for (const command of proofLaneCommands) {
+  for (const command of proofCommands) {
     claims.push({
       id: `${safeId(repoName)}.proof.${safeId(command)}`,
-      surface: 'veritas.proof-lane',
+      surface: 'veritas.proof',
       claimType: 'software-proof',
       fieldOrBehavior: command,
       subjectType: 'repository',
       subjectId: repoName,
       impactLevel: 'high',
-      verificationPolicyId: SURFACE_TRUST_POLICIES.proofLane.id,
+      verificationPolicyId: SURFACE_TRUST_POLICIES.proof.id,
       metadata: { command },
       createdAt: now,
       updatedAt: now,
     });
-    policies.set(SURFACE_TRUST_POLICIES.proofLane.id, SURFACE_TRUST_POLICIES.proofLane);
+    policies.set(SURFACE_TRUST_POLICIES.proof.id, SURFACE_TRUST_POLICIES.proof);
   }
 
   return { claims, policies: [...policies.values()] };

@@ -20,6 +20,7 @@ Surface owns portable trust primitives:
 - evidence
 - verification policies
 - verification events
+- collections, controls, and validation strategies
 - freshness and status
 - conflict and fault-line generation
 - proof requirements
@@ -51,14 +52,14 @@ Any new Veritas abstraction must choose one of three paths:
 | verification budget | budget claim/evidence and report metadata | Surface-mapped |
 | policy result | claim, evidence, event, fault-line hint | Surface-mapped |
 | shadow run | evidence-producing eval run | Veritas producer, Surface input |
-| policy pack | source of governance claims about integrity, freshness, drift, and attestation | Surface-mapped state |
+| policy pack | Surface collection/framework plus source of governance claims about integrity, freshness, drift, and attestation | Surface-mapped state |
 | repo adapter | source of governance claims about integrity and applicability | Surface-mapped state |
 | team profile | source of governance claims about integrity and attestation | Surface-mapped state |
 | move-to-test / retire / upstream-abstraction | lifecycle disposition | Veritas-local until another domain needs the same lifecycle |
 
-Policy packs, repo adapters, and team profiles are **sources of governance claims, not claims themselves**. The artifact mechanics stay in Veritas: file layout, graph routing, policy-pack rule kinds, and team ownership conventions remain repo-governance vocabulary. At the Surface boundary, Veritas projects evaluated state about those artifacts: current content hash, whether that hash matches the active human attestation, whether the adapter applied cleanly to the changed paths, and whether the attestation is current, stale, missing, or drifted.
+Policy packs, repo adapters, and team profiles are Veritas artifacts that project Surface state. The artifact mechanics stay in Veritas: file layout, graph routing, policy-pack rule kinds, and team ownership conventions remain repo-governance vocabulary. At the Surface boundary, Veritas projects concrete claims, evidence, events, and collections about those artifacts: current content hash, whether that hash matches the active human attestation, whether the adapter applied cleanly to the changed paths, whether policy rules passed, and whether attestations are current, stale, missing, or drifted.
 
-This keeps the one-way dependency intact. Surface receives normal claims, evidence, policies, and events; it does not learn what a Veritas policy pack or repo adapter is as a first-class primitive.
+This keeps the one-way dependency intact. Surface receives normal claims, evidence, policies, events, and collections; it does not need Veritas-specific runtime code to understand the trust report.
 
 ## Artifact Contract
 
@@ -73,7 +74,8 @@ Veritas evidence artifacts include `surface.input`, which is a Surface `TrustInp
       "claims": [],
       "evidence": [],
       "policies": [],
-      "events": []
+      "events": [],
+      "collections": []
     }
   }
 }

@@ -189,7 +189,7 @@
     "artifactDir": ".veritas/evidence",
     "reportTransport": "local-json",
     "uncoveredPathPolicy": "warn",
-    "proofLanes": [
+    "proofs": [
       {
         "id": "required-proof",
         "command": "npm run verify",
@@ -209,10 +209,10 @@
         }
       }
     ],
-    "requiredProofLaneIds": [
+    "requiredProofIds": [
       "required-proof"
     ],
-    "defaultProofLaneIds": [
+    "defaultProofIds": [
       "required-proof",
       "fallow-advisory"
     ]

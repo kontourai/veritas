@@ -12,8 +12,8 @@
     "untracked"
   ],
   "unresolved_files_count": 1,
-  "affected_nodes": [],
-  "affected_lanes": [],
+  "components": [],
+  "triggered_proofs": [],
   "selected_proof_commands": [
     "npm run verify"
   ],

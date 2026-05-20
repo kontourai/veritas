@@ -34,7 +34,7 @@ See [claim-authoring.md](./claim-authoring.md) for the full authoring workflow.
 
 ## Adapter Proof Lanes Are Explicit Objects
 
-Adapters now use explicit proof-lane objects. Legacy command arrays such as `requiredProofLanes`, `defaultProofLanes`, and `surfaceProofLanes[].proofLanes` fail runtime validation with a migration-oriented error.
+Adapters now use explicit proof-lane objects. Removed command arrays such as `requiredProofLanes`, `defaultProofLanes`, and `surfaceProofLanes[].proofLanes` fail runtime validation with a migration-oriented error.
 
 Before:
 

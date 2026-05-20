@@ -91,8 +91,8 @@ export function buildFilesystemEvalDraft({ rootDir, evidenceRecord, evidencePath
       source_ref: evidenceRecord.source_ref,
       source_kind: evidenceRecord.source_kind,
       source_scope: evidenceRecord.source_scope ?? [],
-      affected_nodes: evidenceRecord.affected_nodes ?? [],
-      affected_lanes: evidenceRecord.affected_lanes ?? [],
+      components: evidenceRecord.components ?? [],
+      triggered_proofs: evidenceRecord.triggered_proofs ?? [],
     },
     governance: {
       surface_touched: false,

@@ -13,8 +13,8 @@ export const SURFACE_TRUST_POLICIES = {
     conflictRules: ['newer evidence for the same node supersedes older evidence'],
     impactLevel: 'medium',
   }),
-  proofLane: buildCommitValidityPolicy({
-    id: 'veritas.proof-lane',
+  proof: buildCommitValidityPolicy({
+    id: 'veritas.proof',
     claimType: 'software-proof',
     requiredEvidence: ['test_output'],
     requiredMethods: ['validation'],
@@ -37,17 +37,17 @@ export const SURFACE_TRUST_POLICIES = {
     conflictRules: ['blocking failed rules reject the affected policy claim'],
     impactLevel: 'high',
   }),
-  proofFamily: {
-    id: 'veritas.proof-family',
-    claimType: 'veritas-proof-family',
+  proofSuite: {
+    id: 'veritas.proof-suite',
+    claimType: 'veritas-proof-suite',
     requiredEvidence: ['policy_rule'],
     requiredMethods: ['validation'],
     requiresCorroboration: false,
-    requiredProof: ['proof-family manifest'],
-    reviewAuthority: 'veritas proof family owner',
+    requiredProof: ['proof-suite manifest'],
+    reviewAuthority: 'veritas proof suite owner',
     validityRule: { kind: 'duration', durationDays: 7 },
     stalenessTriggers: ['review trigger changes', 'freshness status changes', 'catch evidence changes'],
-    conflictRules: ['stale or unknown proof families dispute promotion readiness'],
+    conflictRules: ['stale or unknown proof suites dispute promotion readiness'],
     impactLevel: 'medium',
   },
   verificationBudget: buildCommitValidityPolicy({
@@ -58,8 +58,8 @@ export const SURFACE_TRUST_POLICIES = {
     requiresCorroboration: false,
     requiredProof: ['verification budget'],
     reviewAuthority: 'veritas',
-    stalenessTriggers: ['proof family inventory changes', 'proof lane inventory changes'],
-    conflictRules: ['unknown or stale proof families dispute budget readiness'],
+    stalenessTriggers: ['proof suite inventory changes', 'proof inventory changes'],
+    conflictRules: ['unknown or stale proof suites dispute budget readiness'],
     impactLevel: 'medium',
   }),
   externalToolResult: buildCommitValidityPolicy({

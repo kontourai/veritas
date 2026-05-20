@@ -93,8 +93,7 @@ function validateOwnerAnswers(answers) {
     throw new Error('init answers must be an object');
   }
   const allowedKeys = new Set([
-    'proofLane',
-    'proof_lane',
+    'proof',
     'selectedInstructionTargets',
     'selected_instruction_targets',
     'boundaries',
@@ -201,7 +200,7 @@ export function inferBootstrapRepoInsights(rootDir) {
       ? ['docs:build', 'build', 'test', 'verify']
       : ['ci:fast', 'verify', 'test:smoke', 'test', 'build'];
   const matchingScript = scriptPriority.find((name) => typeof scripts[name] === 'string');
-  const proofLane = matchingScript ? `npm run ${matchingScript}` : 'npm test';
+  const proof = matchingScript ? `npm run ${matchingScript}` : 'npm test';
 
   return {
     repoKind,
@@ -209,16 +208,16 @@ export function inferBootstrapRepoInsights(rootDir) {
     toolingRoots,
     testRoots,
     hasWorkflows,
-    proofLane,
+    proof,
     enableSurfaceProofRouting: repoKind === 'workspace' || toolingRoots.length > 0,
     baseRef: inferBaseRef(rootDir),
     packageManager: packageJson ? 'npm' : 'unknown',
     matchedScripts: scriptPriority.filter((name) => typeof scripts[name] === 'string'),
-    legacyVerification: detectLegacyVerification(rootDir, scripts),
+    existingVerification: detectExistingVerification(rootDir, scripts),
   };
 }
 
-function detectLegacyVerification(rootDir, scripts = {}) {
+function detectExistingVerification(rootDir, scripts = {}) {
   const scriptEntries = Object.entries(scripts)
     .filter(([name, command]) => {
       if (typeof command !== 'string') return false;
@@ -232,7 +231,7 @@ function detectLegacyVerification(rootDir, scripts = {}) {
       id: name,
       command,
       recommendedDisposition: name.includes('verify') ? 'candidate' : 'advisory',
-      reason: 'Legacy or custom verification-shaped package script detected during brownfield init.',
+      reason: 'Existing custom verification-shaped package script detected during brownfield init.',
     }));
 
   const fileEntries = [
@@ -243,17 +242,17 @@ function detectLegacyVerification(rootDir, scripts = {}) {
   ]
     .filter((path) => existsSync(resolve(rootDir, path)))
     .map((path) => ({
-      kind: 'legacy-path',
+      kind: 'existing-path',
       id: path,
       path,
       recommendedDisposition: path === '.ai-guidance' ? 'candidate' : 'advisory',
-      reason: 'Legacy guidance or convergence path detected; inventory before copying into Veritas.',
+      reason: 'Existing guidance or convergence path detected; inventory before copying into Veritas.',
     }));
 
   return {
     detected: scriptEntries.length + fileEntries.length > 0,
     items: [...scriptEntries, ...fileEntries],
-    recommendedProofFamilyDefaults: {
+    recommendedProofSuiteDefaults: {
       unknownCatchEvidenceDefault: 'candidate',
       requiredNeedsOwner: true,
       requiredNeedsReviewTrigger: true,
@@ -344,23 +343,23 @@ export function buildAdaptiveNodes(repoInsights) {
   return nodes;
 }
 
-function buildStarterEvidenceConfig({ proofLane, repoInsights }) {
+function buildStarterEvidenceConfig({ proof, repoInsights }) {
   const evidence = {
     artifactDir: '.veritas/evidence',
-    proofLanes: [
+    proofs: [
       {
         id: 'required-proof',
-        command: proofLane,
+        command: proof,
         method: 'validation',
-        summary: 'Default repository proof lane.',
+        summary: 'Default repository proof.',
       },
     ],
-    requiredProofLaneIds: ['required-proof'],
+    requiredProofIds: ['required-proof'],
     reportTransport: 'local-json',
   };
 
   if (repoInsights.enableSurfaceProofRouting) {
-    evidence.defaultProofLaneIds = ['required-proof'];
+    evidence.defaultProofIds = ['required-proof'];
     evidence.uncoveredPathPolicy = 'warn';
   }
 
@@ -369,7 +368,7 @@ function buildStarterEvidenceConfig({ proofLane, repoInsights }) {
 
 export function buildStarterAdapter({
   projectName,
-  proofLane = 'npm test',
+  proof = 'npm test',
   instructionTargets = [
     ...DEFAULT_SELECTED_INSTRUCTION_TARGETS,
     ...OPTIONAL_INSTRUCTION_TARGETS,
@@ -425,7 +424,7 @@ export function buildStarterAdapter({
       ],
       nodes: buildAdaptiveNodes(repoInsights),
     },
-    evidence: buildStarterEvidenceConfig({ proofLane, repoInsights }),
+    evidence: buildStarterEvidenceConfig({ proof, repoInsights }),
     activation: {
       aiInstructionFiles: normalizeInstructionTargets(instructionTargets),
     },
@@ -505,7 +504,7 @@ export function loadStarterPolicyPack(pack) {
   return loadJson(packPath, `starter policy pack ${pack}`);
 }
 
-export function buildStarterTeamProfile({ projectName, proofLane = 'npm test' }) {
+export function buildStarterTeamProfile({ projectName, proof = 'npm test' }) {
   const projectSlug = slugifyProjectName(projectName);
 
   return {
@@ -525,7 +524,7 @@ export function buildStarterTeamProfile({ projectName, proofLane = 'npm test' })
         'A major rewrite replaces the main structure or control flow instead of making local edits.',
     },
     promotion_preferences: {
-      proof_lanes_required_before_block: [proofLane],
+      proofs_required_before_block: [proof],
       warnings_block_in_ci: false,
       require_consistent_eval_before_promotion: true,
     },
@@ -534,7 +533,7 @@ export function buildStarterTeamProfile({ projectName, proofLane = 'npm test' })
 
 export function buildBootstrapReadme({
   projectName,
-  proofLane = 'npm test',
+  proof = 'npm test',
   recommendationSummary = null,
   ownerAnswers = null,
   repoInsights = {
@@ -586,7 +585,7 @@ This repo was bootstrapped for \`${projectName}\` with a conservative starter ki
 ## What To Do Next
 
 1. Confirm the inferred source/test roots match the real repo layout.
-2. Replace the suggested proof lane if a stronger project health command exists.
+2. Replace the suggested proof if a stronger project health command exists.
 3. Keep the team profile in \`shadow\` mode until you have enough evidence to tighten rules.
 
 ${
@@ -617,16 +616,16 @@ npx @kontourai/veritas run --check shadow \\
   package.json
 \`\`\`
 
-## Suggested Proof Lane
+## Suggested Proof
 
-\`${proofLane}\`
+\`${proof}\`
 
 ## Surface-Aware Routing
 
 ${
   repoInsights.enableSurfaceProofRouting
-    ? 'This repo shape justifies surface-aware proof routing, so the starter adapter also includes `defaultProofLaneIds` and `uncoveredPathPolicy` alongside explicit proof-lane objects.'
-    : 'This starter stays on the minimal single-proof-lane path by default. Surface-aware proof routing can be added later if the repo grows multiple independently verified surfaces.'
+    ? 'This repo shape justifies surface-aware proof routing, so the starter adapter also includes `defaultProofIds` and `uncoveredPathPolicy` alongside explicit proof objects.'
+    : 'This starter stays on the minimal single-proof path by default. Surface-aware proof routing can be added later if the repo grows multiple independently verified surfaces.'
 }
 
 ## Why This Exists
@@ -667,13 +666,13 @@ export function buildSuggestedCodeownersBlock() {
 export function writeBootstrapStarterKit({
   rootDir,
   projectName = basename(resolve(rootDir)),
-  proofLane,
+  proof,
   instructionTargets,
   pack,
   force = false,
 }) {
   const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const resolvedProofLane = proofLane ?? repoInsights.proofLane;
+  const resolvedProof = proof ?? repoInsights.proof;
   const selectedInstructionTargets = normalizeInstructionTargets(instructionTargets ?? DEFAULT_SELECTED_INSTRUCTION_TARGETS);
   const adapterPath = resolve(rootDir, '.veritas/repo.adapter.json');
   const policyPackPath = resolve(rootDir, '.veritas/policy-packs/default.policy-pack.json');
@@ -682,18 +681,18 @@ export function writeBootstrapStarterKit({
   const governancePath = resolve(rootDir, '.veritas/GOVERNANCE.md');
   const claimStorePath = resolve(rootDir, 'veritas.claims.json');
   const requiredInstructionFiles = selectedInstructionTargets.map((target) => resolve(rootDir, target.path));
-  const starterAdapter = buildStarterAdapter({ projectName, proofLane: resolvedProofLane, repoInsights, instructionTargets: selectedInstructionTargets });
+  const starterAdapter = buildStarterAdapter({ projectName, proof: resolvedProof, repoInsights, instructionTargets: selectedInstructionTargets });
 
   const files = [
     [adapterPath, starterAdapter],
     [policyPackPath, loadStarterPolicyPack(pack) ?? buildStarterPolicyPack({ projectName, instructionTargets: selectedInstructionTargets })],
-    [teamProfilePath, buildStarterTeamProfile({ projectName, proofLane: resolvedProofLane })],
+    [teamProfilePath, buildStarterTeamProfile({ projectName, proof: resolvedProof })],
     [claimStorePath, {
       schemaVersion: 1,
       producer: 'veritas',
       ...buildBaselineClaims(projectName, {
         hasGovernance: true,
-        proofLaneCommands: [resolvedProofLane],
+        proofCommands: [resolvedProof],
         surfaceNodes: starterAdapter.graph?.nodes ?? [],
       }),
     }],
@@ -727,7 +726,7 @@ export function writeBootstrapStarterKit({
 
   writeFileSync(
     readmePath,
-    buildBootstrapReadme({ projectName, proofLane: resolvedProofLane, repoInsights }),
+    buildBootstrapReadme({ projectName, proof: resolvedProof, repoInsights }),
     'utf8',
   );
   writeFileSync(governancePath, buildGovernanceInstructions(), 'utf8');
@@ -747,7 +746,7 @@ export function writeBootstrapStarterKit({
     rootDir,
     projectName,
     pack: pack ?? null,
-    proofLane: resolvedProofLane,
+    proof: resolvedProof,
     repoInsights,
     codeownersBlock: buildSuggestedCodeownersBlock(),
     generatedFiles: [
@@ -765,7 +764,7 @@ export function writeBootstrapStarterKit({
 }
 
 export function buildSuggestedPackageScripts({
-  proofLane = 'npm test',
+  proof = 'npm test',
   baseRef = '<base-ref>',
 }) {
   return {
@@ -775,19 +774,19 @@ export function buildSuggestedPackageScripts({
     'veritas:check:working-tree': 'npm exec -- veritas run --working-tree',
     'veritas:check:diff': `npm exec -- veritas run --changed-from ${baseRef} --changed-to HEAD`,
     'veritas:budget': 'npm exec -- veritas run --check budget --working-tree',
-    'veritas:proof': proofLane,
+    'veritas:proof': proof,
     'lint:governance': 'npm exec -- veritas run --format feedback --working-tree',
     'veritas:eval': 'npm exec -- veritas run',
   };
 }
 
 export function buildSuggestedCiSnippet({
-  proofLane = 'npm test',
+  proof = 'npm test',
   baseRef = '<base-ref>',
 }) {
   return `# Suggested Veritas CI snippet
-- name: Run project proof lane
-  run: ${proofLane}
+- name: Run project proof
+  run: ${proof}
 
 - name: Generate Veritas report
   run: npm exec -- veritas run --changed-from ${baseRef} --changed-to HEAD

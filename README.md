@@ -21,7 +21,7 @@ That bootstraps your repo with an adapter, policy pack, team profile, and AI ins
 
 If the adapter, policy pack, or team profile changes later, `veritas run` emits `policy-changes-require-attestation` until a human runs `veritas attest policy-change --actor <human-id> --message <reason>`.
 
-Veritas projects every run into a `surface.input` block consumable by [Surface](https://github.com/kontourai/surface). You can also use Veritas by itself.
+Veritas projects every run into a `surface.input` block consumable by [Surface](https://github.com/kontourai/surface). Policy results become concrete Surface claims, and policy packs become Surface collections/control frameworks so teams can review both the high-level governance outcome and the exact evidence behind each rule. You can also use Veritas by itself.
 
 ## What You Get
 
@@ -30,6 +30,7 @@ Veritas projects every run into a `surface.input` block consumable by [Surface](
 - **Turn eval signal into proposals** — `veritas eval propose` drafts rule relaxations, retirements, and surface additions; `veritas proposal decide` accepts or rejects them, and accepted rule diffs chain a fresh attestation.
 - **Deliver just-in-time context** — `veritas explain` and hook output tell the agent why the file or rule matters at the point of edit.
 - **Help agents self-correct** — `veritas run` prints concise `PASS` / `FAIL` / `WARN` feedback the agent can act on before it declares done.
+- **Show governance evidence** — every run can carry policy claims, rule evidence, collection rollups, and governance attestation state into Surface for dashboard or downstream review.
 
 ## Caught In The Wild
 

@@ -79,8 +79,7 @@ function validateOwnerAnswers(answers) {
     throw new Error('init answers must be an object');
   }
   const allowedKeys = new Set([
-    'proofLane',
-    'proof_lane',
+    'proof',
     'selectedInstructionTargets',
     'selected_instruction_targets',
     'boundaries',
@@ -120,15 +119,15 @@ function recommendedInstructionTargets(rootDir, selectedInstructionTargets) {
   });
 }
 
-function recommendedProofLanes(repoInsights) {
+function recommendedProofs(repoInsights) {
   return [
     {
       id: 'required-proof',
-      command: repoInsights.proofLane,
+      command: repoInsights.proof,
       method: 'validation',
       reason: repoInsights.matchedScripts.length > 0
         ? `Selected from package script priority; matched scripts: ${repoInsights.matchedScripts.join(', ')}.`
-        : 'Fallback proof lane because no known package scripts were detected.',
+        : 'Fallback proof because no known package scripts were detected.',
       confidence: repoInsights.matchedScripts.length > 0 ? 'high' : 'low',
       source: repoInsights.matchedScripts.length > 0 ? 'package.json scripts' : 'fallback',
     },
@@ -146,9 +145,9 @@ function recommendedSurfaces(repoInsights) {
 function ownerQuestions(repoInsights) {
   const questions = [
     {
-      id: 'canonical-proof-lane',
+      id: 'canonical-proof',
       group: 'proof',
-      question: `Is \`${repoInsights.proofLane}\` the command that should prove repo health before AI-authored changes are considered ready?`,
+      question: `Is \`${repoInsights.proof}\` the command that should prove repo health before AI-authored changes are considered ready?`,
     },
     {
       id: 'protected-paths',
@@ -176,55 +175,55 @@ function ownerQuestions(repoInsights) {
     questions.push({
       id: 'package-manager',
       group: 'tooling',
-      question: 'No package.json was detected. What command should Veritas use as the initial proof lane?',
+      question: 'No package.json was detected. What command should Veritas use as the initial proof?',
     });
   }
 
-  if (repoInsights.legacyVerification?.detected) {
+  if (repoInsights.existingVerification?.detected) {
     questions.push({
-      id: 'legacy-verification-inventory',
+      id: 'existing-verification-inventory',
       group: 'brownfield',
-      question: 'Which legacy verification checks have recent catch evidence, and which should move to tests, stay candidate, or retire?',
+      question: 'Which existing verification checks have recent catch evidence, and which should move to tests, stay candidate, or retire?',
     });
   }
 
   return questions;
 }
 
-function recommendedProofFamilyInventory(repoInsights) {
-  return (repoInsights.legacyVerification?.items ?? []).map((item) => ({
-    id: item.id.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'legacy-verification',
+function recommendedProofSuiteInventory(repoInsights) {
+  return (repoInsights.existingVerification?.items ?? []).map((item) => ({
+    id: item.id.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'existing-verification',
     source_kind: item.kind,
     source: item.command ?? item.path,
     default_disposition: item.recommendedDisposition,
     recent_catch_evidence: 'unknown',
     owner: null,
     replacement_test_available: null,
-    review_trigger: 'review before promoting this legacy check to required',
+    review_trigger: 'review before promoting this existing check to required',
     rationale: item.reason,
   }));
 }
 
-function buildArtifactPayloads({ rootDir, projectName, proofLane, repoInsights, selectedInstructionTargets, ownerAnswers }) {
+function buildArtifactPayloads({ rootDir, projectName, proof, repoInsights, selectedInstructionTargets, ownerAnswers }) {
   const adapter = buildStarterAdapter({
     projectName,
-    proofLane,
+    proof,
     repoInsights,
     instructionTargets: selectedInstructionTargets,
   });
   const policyPack = buildStarterPolicyPack({ projectName, instructionTargets: selectedInstructionTargets });
-  const teamProfile = buildStarterTeamProfile({ projectName, proofLane });
+  const teamProfile = buildStarterTeamProfile({ projectName, proof });
   const recommendationSummary = [
     `- Mode: guided initialization artifact`,
     `- Repo kind: \`${repoInsights.repoKind}\``,
-    `- Proof lane: \`${proofLane}\``,
+    `- Proof: \`${proof}\``,
     `- Selected instruction targets: ${selectedInstructionTargets.map((target) => `\`${target.path}\``).join(', ') || '`none`'}`,
   ].join('\n');
   const governanceBlock = buildGovernanceBlock();
   const payloads = {
     '.veritas/README.md': buildBootstrapReadme({
       projectName,
-      proofLane,
+      proof,
       repoInsights,
       recommendationSummary,
       ownerAnswers,
@@ -251,18 +250,18 @@ function artifactHashes(payloads) {
 export function buildInitRecommendation({
   rootDir,
   projectName = basename(resolve(rootDir)),
-  proofLane,
+  proof,
   answers,
   mode = 'explore',
 }) {
   const ownerAnswers = validateOwnerAnswers(answers);
   const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const resolvedProofLane = ownerAnswers.proofLane ?? ownerAnswers.proof_lane ?? proofLane ?? repoInsights.proofLane;
+  const resolvedProof = ownerAnswers.proof ?? proof ?? repoInsights.proof;
   const selectedInstructionTargets = selectedInstructionTargetsFromAnswers(ownerAnswers);
   const artifactPayloads = buildArtifactPayloads({
     rootDir,
     projectName,
-    proofLane: resolvedProofLane,
+    proof: resolvedProof,
     repoInsights,
     selectedInstructionTargets,
     ownerAnswers,
@@ -273,16 +272,16 @@ export function buildInitRecommendation({
     mode,
     target_root: resolve(rootDir),
     project_name: projectName,
-    proof_lane: resolvedProofLane,
+    proof: resolvedProof,
     repo_insights: repoInsights,
     artifact_payloads: artifactPayloads,
     artifact_hashes: artifactHashes(artifactPayloads),
     recommended_adapter: JSON.parse(artifactPayloads['.veritas/repo.adapter.json']),
     recommended_policy_pack: JSON.parse(artifactPayloads['.veritas/policy-packs/default.policy-pack.json']),
     recommended_team_profile: JSON.parse(artifactPayloads['.veritas/team/default.team-profile.json']),
-    recommended_proof_lanes: recommendedProofLanes({ ...repoInsights, proofLane: resolvedProofLane }),
-    recommended_proof_family_inventory: recommendedProofFamilyInventory(repoInsights),
-    legacy_verification: repoInsights.legacyVerification,
+    recommended_proofs: recommendedProofs({ ...repoInsights, proof: resolvedProof }),
+    recommended_proof_suite_inventory: recommendedProofSuiteInventory(repoInsights),
+    existing_verification: repoInsights.existingVerification,
     recommended_surfaces: recommendedSurfaces(repoInsights),
     recommended_instruction_targets: recommendedInstructionTargets(rootDir, selectedInstructionTargets),
     selected_instruction_targets: selectedInstructionTargets,
@@ -291,7 +290,7 @@ export function buildInitRecommendation({
     apply_command: 'npx @kontourai/veritas init --apply --plan <path-to-this-artifact>',
     reasoning_summary: [
       `Detected repo kind \`${repoInsights.repoKind}\`.`,
-      `Selected proof lane \`${resolvedProofLane}\`.`,
+      `Selected proof \`${resolvedProof}\`.`,
       `Selected instruction targets: ${selectedInstructionTargets.map((target) => target.path).join(', ')}.`,
     ],
   };
@@ -351,7 +350,7 @@ export function applyInitRecommendation({ rootDir, recommendation, force = false
   return {
     rootDir,
     projectName: recommendation.project_name,
-    proofLane: recommendation.proof_lane,
+    proof: recommendation.proof,
     repoInsights: recommendation.repo_insights,
     codeownersBlock: buildSuggestedCodeownersBlock(),
     generatedFiles: [
@@ -360,4 +359,3 @@ export function applyInitRecommendation({ rootDir, recommendation, force = false
     ],
   };
 }
-

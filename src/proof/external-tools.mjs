@@ -4,19 +4,19 @@ import { assertWithinDir } from '../paths.mjs';
 
 export function assertExternalToolConfig(externalTool) {
   if (!externalTool || typeof externalTool !== 'object' || Array.isArray(externalTool)) {
-    throw new Error('Veritas adapter evidence.proofLanes[].externalTool must be an object.');
+    throw new Error('Veritas adapter evidence.proofs[].externalTool must be an object.');
   }
   for (const field of ['tool', 'format', 'artifactPath']) {
     if (typeof externalTool[field] !== 'string' || externalTool[field].length === 0) {
-      throw new Error(`Veritas adapter evidence.proofLanes[].externalTool.${field} must be a non-empty string.`);
+      throw new Error(`Veritas adapter evidence.proofs[].externalTool.${field} must be a non-empty string.`);
     }
   }
   if (typeof externalTool.blocking !== 'boolean') {
-    throw new Error('Veritas adapter evidence.proofLanes[].externalTool.blocking must be a boolean.');
+    throw new Error('Veritas adapter evidence.proofs[].externalTool.blocking must be a boolean.');
   }
   const artifactPath = externalTool.artifactPath;
   if (artifactPath.startsWith('/') || artifactPath.includes('..') || !artifactPath.startsWith('.veritas/')) {
-    throw new Error('Veritas adapter evidence.proofLanes[].externalTool.artifactPath must be a repo-local path inside .veritas/.');
+    throw new Error('Veritas adapter evidence.proofs[].externalTool.artifactPath must be a repo-local path inside .veritas/.');
   }
 }
 
@@ -83,18 +83,18 @@ export function externalToolActions(payload) {
     }));
 }
 
-export function buildExternalToolResults({ proofLanes, rootDir }) {
-  return proofLanes
-    .filter((lane) => lane.externalTool)
-    .map((lane) => {
-      const externalTool = lane.externalTool;
+export function buildExternalToolResults({ proofs, rootDir }) {
+  return proofs
+    .filter((proof) => proof.externalTool)
+    .map((proof) => {
+      const externalTool = proof.externalTool;
       const payload = readExternalToolPayload(rootDir, externalTool.artifactPath);
       if (!payload) {
         return {
           tool: externalTool.tool,
           format: externalTool.format,
-          command: lane.command,
-          proof_lane_id: lane.id,
+          command: proof.command,
+          proof_id: proof.id,
           verdict: 'missing',
           blocking: externalTool.blocking,
           summary: { message: `External tool artifact ${externalTool.artifactPath} was not found.` },
@@ -105,8 +105,8 @@ export function buildExternalToolResults({ proofLanes, rootDir }) {
       return {
         tool: externalTool.tool,
         format: externalTool.format,
-        command: lane.command,
-        proof_lane_id: lane.id,
+        command: proof.command,
+        proof_id: proof.id,
         verdict: normalizeExternalToolVerdict(payload),
         blocking: externalTool.blocking,
         summary: externalToolSummary(payload),

@@ -25,7 +25,7 @@ function setupRepo() {
     graph: { nodes: [], defaultResolution: 'manual-review', resolverPrecedence: [], nonSliceableInvariants: [] },
     evidence: {
       reportTransport: 'local-json',
-      proofLanes: [{ id: 'unit', command: 'npm test', method: 'validation' }],
+      proofs: [{ id: 'unit', command: 'npm test', method: 'validation' }],
     },
   });
   writeJson(join(rootDir, '.veritas/policy-packs/default.policy-pack.json'), {
@@ -142,11 +142,11 @@ test('proposal artifacts can be accepted and surface as proposed claims before d
     source_scope: ['unstaged'],
     resolved_phase: 'Phase 7',
     resolved_workstream: 'Proposal test',
-    affected_nodes: [],
-    affected_lanes: [],
-    selected_proof_lanes: [],
+    components: [],
+    triggered_proofs: [],
+    selected_proofs: [],
     policy_results: [],
-    proof_family_results: [],
+    proof_suite_results: [],
     external_tool_results: [],
     verification_budget: null,
     selected_proof_commands: [],

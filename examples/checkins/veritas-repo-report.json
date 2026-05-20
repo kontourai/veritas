@@ -12,7 +12,7 @@
   "matched_artifacts": [
     ".veritas/**"
   ],
-  "affected_nodes": [
+  "components": [
     "app.src",
     "docs.docs",
     "governance.guidance",
@@ -21,7 +21,7 @@
     "tooling.bin",
     "verification.tests"
   ],
-  "affected_node_details": [
+  "component_details": [
     {
       "id": "governance.guidance",
       "label": ".veritas/**",
@@ -275,7 +275,7 @@
       }
     ]
   },
-  "affected_lanes": [
+  "triggered_proofs": [
     ".veritas/**",
     "bin/**",
     "docs/**",
@@ -288,7 +288,7 @@
     "npm run verify",
     "npm run veritas:fallow:advisory"
   ],
-  "selected_proof_lanes": [
+  "selected_proofs": [
     {
       "id": "required-proof",
       "command": "npm run verify",
@@ -305,11 +305,11 @@
     }
   ],
   "proof_resolution_source": "default",
-  "proof_family_results": [],
+  "proof_suite_results": [],
   "verification_budget": {
-    "proof_lane_count": 2,
-    "selected_proof_lane_count": 2,
-    "proof_family_count": 0,
+    "proof_count": 2,
+    "selected_proof_count": 2,
+    "proof_suite_count": 0,
     "required_family_count": 0,
     "candidate_family_count": 0,
     "advisory_family_count": 0,
@@ -556,7 +556,7 @@
       "repo-local guidance",
       "tracked policy artifacts"
     ],
-    "proof_lanes": [
+    "proofs": [
       {
         "id": "required-proof",
         "command": "npm run verify",
@@ -572,14 +572,14 @@
         "summary": "Runs Fallow as advisory codebase-intelligence evidence."
       }
     ],
-    "required_proof_lane_ids": [
+    "required_proof_ids": [
       "required-proof"
     ],
-    "default_proof_lane_ids": [
+    "default_proof_ids": [
       "required-proof",
       "fallow-advisory"
     ],
-    "surface_proof_lanes": [],
+    "proof_routes": [],
     "uncovered_path_policy": "warn"
   },
   "policy_pack": {
@@ -952,7 +952,7 @@
           "evidenceType": "policy_rule",
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
-          "sourceLocator": "affected_nodes",
+          "sourceLocator": "components",
           "excerptOrSummary": "Veritas marked app.src as an affected repo surface for Initial Project Setup.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
@@ -985,7 +985,7 @@
           "evidenceType": "policy_rule",
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
-          "sourceLocator": "affected_nodes",
+          "sourceLocator": "components",
           "excerptOrSummary": "Veritas marked docs.docs as an affected repo surface for Initial Project Setup.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
@@ -1018,7 +1018,7 @@
           "evidenceType": "policy_rule",
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
-          "sourceLocator": "affected_nodes",
+          "sourceLocator": "components",
           "excerptOrSummary": "Veritas marked governance.guidance as an affected repo surface for Initial Project Setup.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
@@ -1051,7 +1051,7 @@
           "evidenceType": "policy_rule",
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
-          "sourceLocator": "affected_nodes",
+          "sourceLocator": "components",
           "excerptOrSummary": "Veritas marked governance.root-manifests as an affected repo surface for Initial Project Setup.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
@@ -1084,7 +1084,7 @@
           "evidenceType": "policy_rule",
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
-          "sourceLocator": "affected_nodes",
+          "sourceLocator": "components",
           "excerptOrSummary": "Veritas marked governance.schemas as an affected repo surface for Initial Project Setup.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
@@ -1117,7 +1117,7 @@
           "evidenceType": "policy_rule",
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
-          "sourceLocator": "affected_nodes",
+          "sourceLocator": "components",
           "excerptOrSummary": "Veritas marked tooling.bin as an affected repo surface for Initial Project Setup.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
@@ -1150,7 +1150,7 @@
           "evidenceType": "policy_rule",
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
-          "sourceLocator": "affected_nodes",
+          "sourceLocator": "components",
           "excerptOrSummary": "Veritas marked verification.tests as an affected repo surface for Initial Project Setup.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
@@ -1183,7 +1183,7 @@
           "evidenceType": "test_output",
           "method": "validation",
           "sourceRef": "veritas-repo-check-in",
-          "sourceLocator": "selected_proof_lanes",
+          "sourceLocator": "selected_proofs",
           "excerptOrSummary": "All proof checks passed.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
@@ -1227,7 +1227,7 @@
           "evidenceType": "test_output",
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
-          "sourceLocator": "selected_proof_lanes",
+          "sourceLocator": "selected_proofs",
           "excerptOrSummary": "All proof checks passed.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",

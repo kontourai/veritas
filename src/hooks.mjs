@@ -368,7 +368,7 @@ export function evaluatePreToolUse({
 
 export function applyPackageScripts({
   rootDir,
-  proofLane = 'npm test',
+  proof = 'npm test',
   baseRef = '<base-ref>',
   force = false,
 }) {
@@ -378,7 +378,7 @@ export function applyPackageScripts({
   }
 
   const packageJson = loadJson(packageJsonPath, 'package.json');
-  const nextScripts = buildSuggestedPackageScripts({ proofLane, baseRef });
+  const nextScripts = buildSuggestedPackageScripts({ proof, baseRef });
   const currentScripts = packageJson.scripts ?? {};
 
   for (const [key, value] of Object.entries(nextScripts)) {
@@ -395,7 +395,7 @@ export function applyPackageScripts({
   return {
     rootDir,
     packageJsonPath: relativeRepoPath(rootDir, packageJsonPath),
-    proofLane,
+    proof,
     baseRef,
     appliedScripts: Object.keys(nextScripts),
   };
@@ -403,7 +403,7 @@ export function applyPackageScripts({
 
 export function applyCiSnippet({
   rootDir,
-  proofLane = 'npm test',
+  proof = 'npm test',
   baseRef = '<base-ref>',
   outputPath = '.veritas/snippets/ci-snippet.yml',
   force = false,
@@ -425,14 +425,14 @@ export function applyCiSnippet({
   mkdirSync(resolve(rootDir, '.veritas/snippets'), { recursive: true });
   writeFileSync(
     resolvedOutputPath,
-    buildSuggestedCiSnippet({ proofLane, baseRef }),
+    buildSuggestedCiSnippet({ proof, baseRef }),
     'utf8',
   );
 
   return {
     rootDir,
     outputPath: relativeOutputPath,
-    proofLane,
+    proof,
     baseRef,
   };
 }
