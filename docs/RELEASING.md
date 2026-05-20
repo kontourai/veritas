@@ -43,5 +43,14 @@ The repo publishes through npm trusted publishing via GitHub Actions OIDC. Confi
 - organization or user: `kontourai`
 - repository: `veritas`
 - workflow filename: `publish-npm.yml`
+- allowed action: `npm publish`
+
+For an already-published package, you can configure the same relationship from a local authenticated npm CLI with npm `11.15.0` or later:
+
+```bash
+npm trust github @kontourai/veritas --repo kontourai/veritas --file publish-npm.yml --allow-publish
+```
+
+Publishing through trusted publishing requires npm CLI `11.5.1` or later in CI. The checked-in workflow uses Node 24 for the publish job so npm can authenticate through OIDC without a long-lived `NPM_TOKEN`.
 
 If that OIDC path is unavailable, use the fallback path documented in [docs/guides/publish-and-release.md](./guides/publish-and-release.md).

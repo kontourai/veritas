@@ -59,7 +59,12 @@ What you need to do on the npm side:
    - organization or user: `kontourai`
    - repository: `veritas`
    - workflow filename: `publish-npm.yml`
-4. confirm the publishing identity can create or update `@kontourai/veritas`
+   - allowed action: `npm publish`
+4. for an already-published package, alternatively configure it from a local authenticated npm CLI with npm `11.15.0` or later:
+   ```bash
+   npm trust github @kontourai/veritas --repo kontourai/veritas --file publish-npm.yml --allow-publish
+   ```
+5. confirm the publishing identity can create or update `@kontourai/veritas`
 
 Once that is configured, the workflow can publish without storing a long-lived npm publish token in GitHub Actions.
 
