@@ -1,130 +1,75 @@
-# Framework Core vs Adapter
+# Product Core And Repo Map
 
-## [shipped] Purpose
+This architecture note uses the current product vocabulary.
 
-Define a reusable AI-guidance system that stays generic enough to travel across repos while still being concrete enough to guide real development work.
+## Purpose
 
-## [shipped] Core Thesis
+Veritas should stay generic enough to work across repos while still being concrete enough to guide real development work.
 
-The framework is not a bag of repo-specific CI assertions.
+## Current Separation
 
-It is a contract with three layers:
+The product model has three layers:
 
-1. **framework core**: graph semantics, resolution semantics, evidence shape, and executable policy evaluation
-2. **repo adapter**: the mapping from those semantics onto one real codebase
-3. **policy pack**: the repo's current rules, staged by confidence and enforcement level
+1. **Veritas product core**: requirement evaluation, evidence shape, readiness reporting, standards feedback, and Surface-format projection.
+2. **Repo Map**: the mapping from Veritas concepts onto one real codebase: work areas, boundaries, protected areas, ownership context, and dependency relationships.
+3. **Repo Standards**: the requirements, evidenceChecks, verification authorities, exceptions, enforcement levels, and merge thresholds for that repo.
 
-That separation matters because it preserves both portability and auditability.
+Current schema/file names still include pre-glossary names. Product docs should use the names above and treat implementation renames as open work.
 
-## [shipped] Why This Helps AI Focus
+## Why This Helps AI Focus
 
 AI systems lose focus when they cannot tell:
 
-- what surface they are operating in
+- what work area they are operating in
 - what boundaries are real
-- which proofs are mandatory
-- whether a rule is absolute or only a preference
+- which evidenceChecks matter
+- whether a requirement is guidance or mandatory
+- who or what can verify an exception
 
-The framework fixes that by making those concepts explicit.
+Veritas makes those concepts explicit.
 
-- The **graph** shrinks the search space.
-- The **adapter** localizes repo knowledge.
-- The **policy pack** distinguishes hard rails from softer guidance.
-- The **evidence record** captures what happened in a form humans can audit quickly.
+## What Belongs In The Product Core
 
-## [shipped] Framework Core
+The product core owns:
 
-The core owns:
-
-- graph semantics
-- resolver semantics
-- evidence schema
-- policy-pack lifecycle
-- executable policy evaluation
-- reporting contract
-
-The core should reason about abstract node kinds such as:
-
-- `product-surface`
-- `shared-contract-surface`
-- `verification-surface`
-- `governance-surface`
-- `tooling-surface`
-- `delivery-surface`
+- requirement evaluation semantics
+- generated evidence shape
+- readiness reporting
+- standards feedback and recommendations
+- Surface-format trust projection
+- CLI and runtime integration contracts
 
 The core should not hardcode local repo paths or product-specific workflows.
 
-## [shipped] Repo Adapter
+## What Belongs In The Repo Map
 
-A repo adapter binds the framework to a specific codebase.
+The repo map owns:
 
-An adapter owns:
+- path-to-work-area mapping
+- boundary and protected-area metadata
+- ownership context
+- dependency relationships
+- routing hints for evidenceChecks
 
-- path-to-node mapping
-- default resolution
-- repo-specific invariants
-- required proof lanes
-- optional surface-aware proof routing
-- reporting transport details
+The repo map should not own evidence semantics, authority semantics, or standards improvement policy.
 
-An adapter does not own:
+## What Belongs In Repo Standards
 
-- node-kind semantics
-- evidence semantics
-- policy evaluation semantics
-- promotion lifecycle
+Repo standards own:
 
-When an adapter uses surface-aware proof routing, it should route by existing node IDs rather than introducing a second path-matching surface. The graph continues to own path-to-node mapping; proof selection becomes a consequence of matched nodes.
+- requirements
+- evidenceChecks
+- verification authorities
+- exception rules
+- enforcement levels
+- merge thresholds
+- repo conformance requirements
+- standards growth rules
 
-## [shipped] Policy Packs
+This is the layer teams should review when deciding what good looks like.
 
-Policy packs encode what a repo considers acceptable.
+## Human Role
 
-They should be staged, not flattened.
+Humans should review the standards, protected changes, exceptions, and high-risk readiness gaps.
 
-- `hard-invariant`: must hold
-- `promotable-policy`: strong preference that may mature into a hard invariant
-- `advisory-pattern`: useful guidance without hard blocking
-- `brittle-implementation-check`: temporary source-shape rail that should eventually be replaced with a stronger semantic rule
-
-This is one of the framework's biggest differentiators.
-
-Most systems only ask "did the check pass?"
-This framework also asks "what kind of rule is this and how much trust should we place in it?"
-
-## [shipped] Human Signoff
-
-Humans should sign off on:
-
-- policy changes
-- invariant changes
-- promotion thresholds
-- adapter boundary changes
-- trust-boundary and security rule changes
-
-Humans should not need to re-audit every routine implementation detail when the change stays inside established policy and the evidence is strong.
-
-## [shipped] Onboarding Bias
-
-The framework should stay easy to adopt.
-
-The intended onboarding shape is:
-
-1. one adapter
-2. one policy pack
-3. one proof lane
-4. one executable rule
-
-Anything heavier than that should be justified by operator value, not by framework purity.
-
-## [shipped] `work-agent`
-
-`work-agent` is adapter `#1`, not the framework itself.
-
-Its old `verify:convergence` logic has been replaced by Veritas-native proof lanes and proof-family reporting. The current migration shape is best understood as:
-
-- partly a mature repo-specific policy pack
-- partly a broad transitional `repo-guardrails` lane
-- partly a proof-family inventory that separates required, candidate, advisory, move-to-test, retiring, and upstream-abstraction checks
-
-That makes it the right proving ground, but the wrong long-term home for repo-specific assertions. Reusable shapes should move into Veritas; work-agent-specific facts should stay in the adapter, proof-family manifest, or normal product tests.
+Humans should not need to re-audit every routine implementation detail when the change stays inside established standards and the evidence is strong.

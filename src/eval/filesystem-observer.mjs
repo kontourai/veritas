@@ -82,7 +82,7 @@ export function buildFilesystemEvalDraft({ rootDir, evidenceRecord, evidencePath
     version: 1,
     run_id: evidenceRecord.run_id,
     team_profile_id: 'filesystem-observed',
-    mode: 'shadow',
+    mode: 'observe',
     source: 'filesystem-inferred',
     evidence: {
       artifact_path: relativeEvidencePath,
@@ -92,7 +92,7 @@ export function buildFilesystemEvalDraft({ rootDir, evidenceRecord, evidencePath
       source_kind: evidenceRecord.source_kind,
       source_scope: evidenceRecord.source_scope ?? [],
       components: evidenceRecord.components ?? [],
-      triggered_proofs: evidenceRecord.triggered_proofs ?? [],
+      triggered_evidence_checks: evidenceRecord.triggered_evidence_checks ?? [],
     },
     governance: {
       surface_touched: false,

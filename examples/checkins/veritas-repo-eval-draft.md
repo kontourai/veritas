@@ -1,12 +1,12 @@
 ## Veritas Eval Draft
 
 - **Run ID:** veritas-repo-check-in
-- **Mode:** shadow
+- **Mode:** readiness
 - **Team profile:** veritas-default
 - **Evidence artifact:** `.veritas/evidence/veritas-repo-check-in.json`
 - **Draft artifact:** `.veritas/eval-drafts/veritas-repo-check-in.json`
 - **Missing confirmation fields:** accepted_without_major_rewrite, required_followup
-- **Governance paths:** .veritas/GOVERNANCE.md, .veritas/repo.adapter.json, .veritas/policy-packs/default.policy-pack.json, .veritas/team/default.team-profile.json
+- **Governance paths:** .veritas/GOVERNANCE.md, .veritas/repo.adapter.json, .veritas/repo-standards/default.repo-standards.json, .veritas/team/default.team-profile.json
 - **Governance surface touched:** yes
 - **Governance classification:** unknown
 - **Human governance review required:** no

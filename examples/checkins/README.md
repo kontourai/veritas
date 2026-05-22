@@ -1,6 +1,6 @@
 # Veritas Check-in Examples
 
-These files are curated proof artifacts generated from the `veritas` repo using its tracked `.veritas/` configuration.
+These files are curated evidenceCheck artifacts generated from the `veritas` repo using its tracked `.veritas/` configuration.
 
 They are intentionally copied out of `.veritas/evidence/`, `.veritas/eval-drafts/`, and `.veritas/evals/` so the repo can demonstrate a self-hosted report and eval flow without committing transient local state.
 

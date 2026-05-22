@@ -10,7 +10,7 @@ export function shellQuote(value) {
 
 function tokenizeCommand(command) {
   if (typeof command !== 'string' || command.trim().length === 0) {
-    throw new Error('Proof command must be a non-empty string');
+    throw new Error('Evidence Check command must be a non-empty string');
   }
 
   const tokens = [];
@@ -54,7 +54,7 @@ function tokenizeCommand(command) {
     if (character === '\\') {
       index += 1;
       if (index >= command.length) {
-        throw new Error('Proof command cannot end with a bare escape');
+        throw new Error('Evidence Check command cannot end with a bare escape');
       }
       current += command[index];
       continue;
@@ -72,19 +72,19 @@ function tokenizeCommand(command) {
   }
 
   if (quote) {
-    throw new Error(`Proof command contains an unmatched ${quote}`);
+    throw new Error(`Evidence Check command contains an unmatched ${quote}`);
   }
   if (current.length > 0) {
     tokens.push(current);
   }
   if (tokens.length === 0) {
-    throw new Error('Proof command must contain an executable');
+    throw new Error('Evidence Check command must contain an executable');
   }
 
   return tokens;
 }
 
-export function runProofCommand(command, rootDir, options = {}) {
+export function runEvidenceCheckCommand(command, rootDir, options = {}) {
   const [executable, ...args] = tokenizeCommand(command);
   return execFileSync(executable, args, {
     cwd: rootDir,
@@ -94,7 +94,7 @@ export function runProofCommand(command, rootDir, options = {}) {
   });
 }
 
-export function runProofCommandDetailed(command, rootDir) {
+export function runEvidenceCheckCommandDetailed(command, rootDir) {
   const [executable, ...args] = tokenizeCommand(command);
   const result = spawnSync(executable, args, {
     cwd: rootDir,

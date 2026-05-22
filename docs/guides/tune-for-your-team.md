@@ -1,99 +1,80 @@
-# Tune The Framework For Your Team
+# Tune Veritas For Your Team
 
-This guide is about making the framework fit your team without turning it into a one-off fork.
+Tune Veritas by improving your repo standards, not by forking the product or adding one-off scripts for every complaint.
 
-The easiest mistake is to change code every time something feels off.
+The goal is earned autonomy: requirements become stronger when evidence shows they help, and weaker or clearer when evidence shows they create noise.
 
-Do this instead:
+## What To Adjust
 
-1. keep the framework structure stable
-2. tune behavior through team-owned settings
-3. use live-eval outcomes to decide what should change
+Most teams adjust:
 
-## The Two Things To Adjust
+- **Requirements**: what must be true for merge readiness or repo conformance.
+- **Evidence Checks**: which tests, scanners, CI jobs, or authority checks produce evidence.
+- **Enforcement Levels**: Observe, Guide, or Require.
+- **Change Boundaries**: where shared-code coordination or stronger authority is needed.
+- **Verification Authorities**: who or what is trusted to verify each requirement.
 
-Most teams only need to adjust two things:
+The current implementation stores some of this in generated files under `.veritas/`. Treat exact file names as implementation details, not product concepts.
 
-- a **team profile** for how strict and review-heavy the framework should be
-- the **policy pack** for what the repo currently considers mandatory or promotable
+## Rollout Ladder
 
-That gives you flexibility without losing auditability.
+Start with the enforcement ladder:
 
-## What A Team Profile Should Control
+- **Observe**: collect evidence and standards feedback.
+- **Guide**: give developers and agents correction while they work.
+- **Require**: require fresh evidence or authority-backed exception before readiness is complete.
 
-A team profile is where you capture how your team likes to work.
-
-Good examples:
-
-- your default rollout mode: `shadow`, `assist`, or `gate`
-- whether new rules start as recommendations or warnings
-- whether warnings should block in CI for your team
-- whether a reviewer must explicitly sign off before a rule can move to `block`
-- how you score reviewer confidence
-- what counts as a major rewrite for eval purposes
-
-Bad examples:
-
-- repo path mapping
-- graph node definitions
-- low-level framework internals
-
-Those belong somewhere else.
-
-## The Easiest Rollout
-
-If you want the shortest path:
-
-1. keep your existing adapter
-2. keep your existing policy pack
-3. add one team profile
-4. start collecting eval records in `shadow` mode
-
-That gives you feedback before it gives you friction.
+Do not start by requiring everything. First learn which requirements are useful and which ones create noise.
 
 ## How To Decide What To Change
 
-Use a simple decision loop:
+If a requirement keeps getting exceptions:
 
-### If a rule keeps getting waived
+- clarify the requirement
+- lower its enforcement level
+- split one fuzzy requirement into clearer requirements
+- add better change guidance
 
-- lower the enforcement stage
-- clarify the rule wording
-- or split one fuzzy rule into two clearer ones
+If humans keep catching the same issue:
 
-### If humans keep catching the same issue
+- add a requirement
+- add or strengthen an evidenceCheck
+- add a work area or change boundary to the repo map
+- make the requirement easier for agents to discover
 
-- add a missing rule
-- improve the evidence output
-- or tighten an existing policy
+If evidence often goes stale:
 
-### If the AI output is usually accepted but review still feels slow
+- add a recheck path
+- tighten integrity references
+- adjust the freshness policy
+- make the evidenceCheck run closer to merge
 
-- improve evidence summaries
-- shrink the number of mandatory proof lanes
-- or make the affected-node mapping clearer
+If review still feels slow:
+
+- improve the readiness report
+- make readiness coverage easier to scan
+- reduce checks that are not relevant to the change
+- move product behavior into normal tests and have Veritas route those tests
 
 ## What Not To Tune First
 
-Do not start with model fine-tuning.
+Do not start with model fine-tuning or a large governance rollout.
 
 Start with:
 
-- rule severity
-- proof-lane requirements
-- team review expectations
-- evidence fields that help reviewers move faster
-
-That is lower risk and usually gives better signal sooner.
+- clearer requirements
+- better change guidance
+- more trustworthy evidenceChecks
+- stronger authority evidence for protected standards
+- standards recommendations based on real outcomes
 
 ## What Success Looks Like
 
-You know the framework is tuned well when:
+Veritas is tuned well when:
 
-- the AI stays inside the right repo lane more often
-- reviewers can trust the evidence quickly
-- waivers become less common
-- the team can explain why a rule exists without reading a long script
-
-That is the practical goal.
-The framework should feel easier to trust, not harder to use.
+- agents self-correct before review
+- developers understand why requirements apply
+- readiness reports make review faster
+- exceptions become rare and well-explained
+- standards recommendations are grounded in evidence
+- the team can reduce manual review for low-risk, well-evidenced changes

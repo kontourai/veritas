@@ -61,7 +61,7 @@ export function parseTokens(argv, spec, { defaults = {} } = {}) {
 export function parseArgs(argv) {
   const { options, rest } = parseTokens(argv, {
     '--adapter': { type: 'string', key: 'adapterPath' },
-    '--policy-pack': { type: 'string', key: 'policyPackPath' },
+    '--repo-standards': { type: 'string', key: 'repoStandardsPath' },
     '--root': { type: 'string', key: 'rootDir' },
     '--workstream': { type: 'string', key: 'workstream' },
     '--phase': { type: 'string', key: 'phase' },
@@ -83,7 +83,7 @@ export function parseArgs(argv) {
   return { options, files: rest };
 }
 
-export function parseBudgetArgs(argv) {
+export function parseCoverageArgs(argv) {
   return parseArgs(argv);
 }
 
@@ -93,8 +93,8 @@ export function parseInitArgs(argv) {
     {
       '--root': { type: 'string', key: 'rootDir' },
       '--project-name': { type: 'string', key: 'projectName' },
-      '--proof': { type: 'string', key: 'proof' },
-      '--pack': { type: 'string', key: 'pack' },
+      '--evidence-check': { type: 'string', key: 'evidenceCheck' },
+      '--template': { type: 'string', key: 'template' },
       '--force': { type: 'flag', key: 'force' },
       '--non-interactive': { type: 'flag', key: 'nonInteractive' },
       '--explore': { type: 'flag', key: 'explore' },
@@ -130,7 +130,7 @@ export function parsePrintArgs(argv) {
     argv,
     {
       '--root': { type: 'string', key: 'rootDir' },
-      '--proof': { type: 'string', key: 'proof' },
+      '--evidence-check': { type: 'string', key: 'evidenceCheck' },
       '--hook': { type: 'string', key: 'hook' },
       '--target-hooks-file': { type: 'string', key: 'targetHooksFile' },
       '--codex-home': { type: 'string', key: 'codexHome' },
@@ -144,7 +144,7 @@ export function parseApplyArgs(argv) {
     argv,
     {
       '--root': { type: 'string', key: 'rootDir' },
-      '--proof': { type: 'string', key: 'proof' },
+      '--evidence-check': { type: 'string', key: 'evidenceCheck' },
       '--output': { type: 'string', key: 'outputPath' },
       '--hook': { type: 'string', key: 'hook' },
       '--force': { type: 'flag', key: 'force' },
@@ -229,20 +229,20 @@ export function parseMarkerSuiteEvalArgs(argv) {
   ).options;
 }
 
-export function parseShadowArgs(argv) {
+export function parseReadinessArgs(argv) {
   return parseTokens(
     argv,
     {
       '--root': { type: 'string', key: 'rootDir' },
       '--adapter': { type: 'string', key: 'adapterPath' },
-      '--policy-pack': { type: 'string', key: 'policyPackPath' },
+      '--repo-standards': { type: 'string', key: 'repoStandardsPath' },
       '--team-profile': { type: 'string', key: 'teamProfilePath' },
       '--run-id': { type: 'string', key: 'runId' },
       '--working-tree': { type: 'flag', key: 'workingTree' },
       '--changed-from': { type: 'string', key: 'changedFrom' },
       '--changed-to': { type: 'string', key: 'changedTo' },
-      '--proof-command': { type: 'string', key: 'proofCommand' },
-      '--skip-proof': { type: 'flag', key: 'skipProof' },
+      '--evidence-check-command': { type: 'string', key: 'evidenceCheckCommand' },
+      '--skip-evidence-check': { type: 'flag', key: 'skipEvidenceCheck' },
       '--baseline-ci-fast-status': { type: 'string', key: 'baselineCiFastStatus' },
       '--accepted-without-major-rewrite': {
         type: 'boolean-string',

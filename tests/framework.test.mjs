@@ -39,7 +39,7 @@ import {
   classifyNodes,
   checkBoundaries,
   evaluateCrossSurfaceWriteRule,
-  evaluatePolicyPack,
+  evaluateRepoStandards,
   feedbackStatusForPolicyResult,
   feedbackHasFailures,
   generateEvalRecord,
@@ -50,10 +50,10 @@ import {
   inferBootstrapRepoInsights,
   listWorkingTreeFiles,
   loadJson,
-  loadPolicyPack,
+  loadRepoStandards,
   matchesPatterns,
   parseTokens,
-  resolveProofCommands,
+  resolveEvidenceCheckCommands,
   resolveReportInputs,
   runVeritasReportCli,
   resolveWorkstream,
@@ -89,23 +89,23 @@ exec ${JSON.stringify(realNpmPath)} "$@"
 chmodSync(join(testBinDir, 'npm'), 0o755);
 process.env.PATH = `${testBinDir}:${process.env.PATH}`;
 
-function writeClaimStoreForAdapter(rootDir, adapter, policyPack, options = {}) {
+function writeClaimStoreForAdapter(rootDir, adapter, repoStandards, options = {}) {
   const repoName = adapter.name ?? 'repo';
-  const proofCommands = (adapter.evidence?.proofs ?? []).map((lane) => lane.command).filter(Boolean);
+  const evidenceCheckCommands = (adapter.evidence?.evidenceChecks ?? []).map((lane) => lane.command).filter(Boolean);
   const { claims, policies } = buildBaselineClaims(repoName, {
     hasGovernance: options.hasGovernance ?? false,
-    proofCommands,
-    surfaceNodes: adapter.graph?.nodes ?? [],
+    evidenceCheckCommands,
+    workAreas: adapter.graph?.nodes ?? [],
   });
   const policyById = new Map(policies.map((policy) => [policy.id, policy]));
-  for (const rule of policyPack?.rules ?? []) {
+  for (const rule of repoStandards?.rules ?? []) {
     claims.push({
       id: `${repoName}.policy.${rule.id}`,
       surface: 'veritas.policy-results',
       claimType: 'veritas-policy-result',
       fieldOrBehavior: rule.id,
       subjectType: 'veritas-policy-rule',
-      subjectId: `${policyPack.name}:${rule.id}`,
+      subjectId: `${repoStandards.name}:${rule.id}`,
       impactLevel: rule.stage === 'block' ? 'high' : 'medium',
       verificationPolicyId: SURFACE_TRUST_POLICIES.policyResult.id,
       metadata: { ruleId: rule.id },
@@ -114,7 +114,7 @@ function writeClaimStoreForAdapter(rootDir, adapter, policyPack, options = {}) {
     });
     policyById.set(SURFACE_TRUST_POLICIES.policyResult.id, SURFACE_TRUST_POLICIES.policyResult);
   }
-  for (const lane of adapter.evidence?.proofs ?? []) {
+  for (const lane of adapter.evidence?.evidenceChecks ?? []) {
     if (!lane.externalTool) continue;
     claims.push({
       id: `${repoName}.external-tool.${lane.externalTool.tool}.${lane.id}`,
@@ -125,42 +125,42 @@ function writeClaimStoreForAdapter(rootDir, adapter, policyPack, options = {}) {
       subjectId: `${repoName}:${lane.externalTool.tool}:${lane.id}`,
       impactLevel: lane.externalTool.blocking ? 'high' : 'medium',
       verificationPolicyId: SURFACE_TRUST_POLICIES.externalToolResult.id,
-      metadata: { tool: lane.externalTool.tool, proofId: lane.id },
+      metadata: { tool: lane.externalTool.tool, evidenceCheckId: lane.id },
       createdAt: '2026-05-19T00:00:00.000Z',
       updatedAt: '2026-05-19T00:00:00.000Z',
     });
     policyById.set(SURFACE_TRUST_POLICIES.externalToolResult.id, SURFACE_TRUST_POLICIES.externalToolResult);
   }
-  for (const suiteId of options.proofSuiteIds ?? []) {
+  for (const suiteId of options.evidenceInventoryIds ?? []) {
     claims.push({
-      id: `${repoName}.proof-suite.${suiteId}`,
-      surface: 'veritas.proof-suites',
-      claimType: 'veritas-proof-suite',
+      id: `${repoName}.evidence-inventory.${suiteId}`,
+      surface: 'veritas.evidence-inventories',
+      claimType: 'veritas-evidence-inventory',
       fieldOrBehavior: suiteId,
-      subjectType: 'repo-proof-suite',
+      subjectType: 'repo-evidence-inventory',
       subjectId: `${repoName}:${suiteId}`,
       impactLevel: 'medium',
-      verificationPolicyId: SURFACE_TRUST_POLICIES.proofSuite.id,
+      verificationPolicyId: SURFACE_TRUST_POLICIES.evidenceInventory.id,
       metadata: { suiteId },
       createdAt: '2026-05-19T00:00:00.000Z',
       updatedAt: '2026-05-19T00:00:00.000Z',
     });
-    policyById.set(SURFACE_TRUST_POLICIES.proofSuite.id, SURFACE_TRUST_POLICIES.proofSuite);
+    policyById.set(SURFACE_TRUST_POLICIES.evidenceInventory.id, SURFACE_TRUST_POLICIES.evidenceInventory);
   }
-  if (options.verificationBudget) {
+  if (options.readinessCoverage) {
     claims.push({
-      id: `${repoName}.verification-budget`,
-      surface: 'veritas.verification-budget',
-      claimType: 'veritas-verification-budget',
-      fieldOrBehavior: 'verification budget',
-      subjectType: 'repo-verification-budget',
-      subjectId: `${repoName}:verification-budget`,
+      id: `${repoName}.readiness-coverage`,
+      surface: 'veritas.readiness-coverage',
+      claimType: 'veritas-readiness-coverage',
+      fieldOrBehavior: 'readiness coverage',
+      subjectType: 'repo-readiness-coverage',
+      subjectId: `${repoName}:readiness-coverage`,
       impactLevel: 'medium',
-      verificationPolicyId: SURFACE_TRUST_POLICIES.verificationBudget.id,
+      verificationPolicyId: SURFACE_TRUST_POLICIES.readinessCoverage.id,
       createdAt: '2026-05-19T00:00:00.000Z',
       updatedAt: '2026-05-19T00:00:00.000Z',
     });
-    policyById.set(SURFACE_TRUST_POLICIES.verificationBudget.id, SURFACE_TRUST_POLICIES.verificationBudget);
+    policyById.set(SURFACE_TRUST_POLICIES.readinessCoverage.id, SURFACE_TRUST_POLICIES.readinessCoverage);
   }
   writeFileSync(join(rootDir, 'veritas.claims.json'), `${JSON.stringify({
     schemaVersion: 1,
@@ -243,12 +243,12 @@ test('parseTokens supports the shared CLI token types', () => {
 
 test('core classifies nodes and builds evidence from an adapter config', async () => {
   const adapter = readJson('../adapters/work-agent.adapter.json');
-  const policyPack = loadPolicyPack(
-    new URL('../policy-packs/work-agent-convergence.policy-pack.json', import.meta.url),
+  const repoStandards = loadRepoStandards(
+    new URL('../repo-standards/work-agent-convergence.repo-standards.json', import.meta.url),
   );
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
-  writeClaimStoreForAdapter(rootDir, adapter, policyPack);
+  writeClaimStoreForAdapter(rootDir, adapter, repoStandards);
 
   const classification = classifyNodes(
     ['package.json', '.github/workflows/ci.yml'],
@@ -277,7 +277,7 @@ test('core classifies nodes and builds evidence from an adapter config', async (
     files: ['package.json'],
     options: { baselineCiFastStatus: 'failed' },
     config: adapter,
-    policyPack,
+    repoStandards,
     rootDir,
   });
   assert.equal(record.framework_version, 1);
@@ -289,13 +289,13 @@ test('core classifies nodes and builds evidence from an adapter config', async (
   assert.equal(record.integrity.fileRefs[0].path, 'package.json');
   assert.match(record.integrity.fileRefs[0].hash, /^sha256:[a-f0-9]{64}$/);
   assert.match(record.integrity.configRefs.adapter.hash, /^sha256:[a-f0-9]{64}$/);
-  assert.match(record.integrity.configRefs.policyPack.hash, /^sha256:[a-f0-9]{64}$/);
-  assert.deepEqual(record.selected_proof_labels, ['npm run ci:fast']);
-  assert.deepEqual(record.selected_proof_ids, ['required-proof']);
-  assert.deepEqual(record.selected_proofs.map((lane) => lane.command), ['npm run ci:fast']);
-  assert.equal(record.proof_resolution_source, 'required');
+  assert.match(record.integrity.configRefs.repoStandards.hash, /^sha256:[a-f0-9]{64}$/);
+  assert.deepEqual(record.selected_evidence_check_labels, ['npm run ci:fast']);
+  assert.deepEqual(record.selected_evidence_check_ids, ['required-evidence-check']);
+  assert.deepEqual(record.selected_evidence_checks.map((lane) => lane.command), ['npm run ci:fast']);
+  assert.equal(record.evidence_check_resolution_source, 'required');
   assert.equal(record.adapter.name, 'work-agent');
-  assert.deepEqual(record.policy_pack, {
+  assert.deepEqual(record.repo_standards, {
     name: 'work-agent-convergence',
     version: 1,
     rule_count: 4,
@@ -307,21 +307,21 @@ test('core classifies nodes and builds evidence from an adapter config', async (
   assert.equal(record.surface.input.schemaVersion, 2);
   assert.equal(record.surface.input.source, `veritas:${record.run_id}`);
   assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.affected-surface'));
-  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.proof'));
+  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.evidence-check'));
   assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.policy-results'));
   assert.ok(record.surface.input.evidence.some((item) =>
     item.integrityRef === record.source_ref &&
     item.metadata.integrity?.fileRefs?.some((ref) => ref.path === 'package.json' && ref.hash)
   ));
-  assert.equal(record.surface.input.faultLines, undefined);
-  assert.equal(record.surface.input.proofRequirementsByClaimId, undefined);
+  assert.equal(record.surface.input.transparencyGaps, undefined);
+  assert.equal(record.surface.input.evidenceRequirementsByClaimId, undefined);
   assert.deepEqual(adapter.policy, {
     defaultFalsePositiveReview: 'unknown',
     defaultPromotionCandidate: false,
     defaultOverrideOrBypass: false,
   });
 
-  const evaluatedRules = evaluatePolicyPack(policyPack, { rootDir }, {
+  const evaluatedRules = evaluateRepoStandards(repoStandards, { rootDir }, {
     ruleIds: ['required-repo-artifacts'],
   });
   assert.equal(evaluatedRules.length, 1);
@@ -334,20 +334,20 @@ test('core classifies nodes and builds evidence from an adapter config', async (
   );
 });
 
-test('evidence records include native proof-suite budget when configured', async () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-proof-suite-'));
-  mkdirp(join(rootDir, '.veritas/proof-families'));
+test('evidence records include native evidence inventory coverage when configured', async () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-evidence-inventory-'));
+  mkdirp(join(rootDir, '.veritas/evidence-inventories'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
   writeFileSync(
-    join(rootDir, '.veritas/proof-families/guardrails.json'),
+    join(rootDir, '.veritas/evidence-inventories/guardrails.json'),
     JSON.stringify(
       {
         version: 1,
-        sourceProofLaneId: 'legacy-guardrails',
-        families: [
+        sourceEvidenceCheckId: 'legacy-guardrails',
+        items: [
           {
             id: 'repo-governance',
-            proofId: 'required-proof',
+            evidenceCheckId: 'required-evidence-check',
             destination: 'veritas-policy',
             owner: 'repo-core',
             defaultDisposition: 'required',
@@ -356,14 +356,14 @@ test('evidence records include native proof-suite budget when configured', async
             regressionSeverity: 'high',
             falsePositiveRisk: 'low',
             replacementTestAvailable: 'none',
-            expiryOrReviewTrigger: 'review when upstream policy fully covers this family',
+            expiryOrReviewTrigger: 'review when upstream policy fully covers this item',
             lastReviewed: '2026-04-26',
-            evidenceBasis: 'migration proof',
+            evidenceBasis: 'migration evidenceCheck',
             rationale: 'Protects the repository trust contract.',
           },
           {
             id: 'refactor-tombstones',
-            proofId: 'legacy-guardrails',
+            evidenceCheckId: 'legacy-guardrails',
             destination: 'retire-or-soften',
             defaultDisposition: 'retire',
             currentBlockingStatus: 'advisory',
@@ -383,44 +383,44 @@ test('evidence records include native proof-suite budget when configured', async
     ...readJson('../adapters/work-agent.adapter.json'),
     evidence: {
       ...readJson('../adapters/work-agent.adapter.json').evidence,
-      proofSuiteManifests: ['.veritas/proof-families/guardrails.json'],
+      evidenceInventoryManifests: ['.veritas/evidence-inventories/guardrails.json'],
     },
   };
-  const policyPack = loadPolicyPack(
-    new URL('../policy-packs/work-agent-convergence.policy-pack.json', import.meta.url),
+  const repoStandards = loadRepoStandards(
+    new URL('../repo-standards/work-agent-convergence.repo-standards.json', import.meta.url),
   );
-  writeClaimStoreForAdapter(rootDir, adapter, policyPack, {
-    proofSuiteIds: ['repo-governance', 'refactor-tombstones'],
-    verificationBudget: true,
+  writeClaimStoreForAdapter(rootDir, adapter, repoStandards, {
+    evidenceInventoryIds: ['repo-governance', 'refactor-tombstones'],
+    readinessCoverage: true,
   });
   const record = await buildEvidenceRecord({
     files: ['package.json'],
     config: adapter,
-    policyPack,
+    repoStandards,
     rootDir,
   });
 
-  assert.equal(record.proof_suite_results.length, 2);
-  assert.equal(record.proof_suite_results[0].id, 'repo-governance');
-  assert.equal(record.proof_suite_results[0].verification_weight, 'blocking');
-  assert.equal(record.proof_suite_results[0].selected, true);
-  assert.equal(record.proof_suite_results[0].freshness_status, 'current');
-  assert.equal(record.proof_suite_results[0].last_reviewed, '2026-04-26');
-  assert.equal(record.verification_budget.required_family_count, 1);
-  assert.equal(record.verification_budget.advisory_family_count, 0);
-  assert.equal(record.verification_budget.retire_family_count, 1);
-  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.proof-suites'));
-  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.verification-budget'));
+  assert.equal(record.evidence_inventory_results.length, 2);
+  assert.equal(record.evidence_inventory_results[0].id, 'repo-governance');
+  assert.equal(record.evidence_inventory_results[0].verification_weight, 'blocking');
+  assert.equal(record.evidence_inventory_results[0].selected, true);
+  assert.equal(record.evidence_inventory_results[0].freshness_status, 'current');
+  assert.equal(record.evidence_inventory_results[0].last_reviewed, '2026-04-26');
+  assert.equal(record.readiness_coverage.required_inventory_count, 1);
+  assert.equal(record.readiness_coverage.advisory_inventory_count, 0);
+  assert.equal(record.readiness_coverage.retire_inventory_count, 1);
+  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.evidence-inventories'));
+  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.readiness-coverage'));
   assert.ok(record.surface.input.events.some((event) => event.status === 'stale' || event.status === 'superseded'));
-  assert.deepEqual(record.verification_budget.unknown_catch_evidence_family_ids, [
+  assert.deepEqual(record.readiness_coverage.unknown_catch_evidence_inventory_ids, [
     'refactor-tombstones',
   ]);
-  assert.deepEqual(record.verification_budget.stale_or_unknown_family_ids, [
+  assert.deepEqual(record.readiness_coverage.stale_or_unknown_inventory_ids, [
     'refactor-tombstones',
   ]);
   assert.match(
     buildFeedbackSummary({ record }),
-    /proof-suite:repo-governance: required \/ blocking/,
+    /evidence-inventory:repo-governance: required \/ blocking/,
   );
 });
 
@@ -469,7 +469,7 @@ test('evidence records include advisory external tool results in Surface input',
     evidence: {
       artifactDir: '.veritas/evidence',
       reportTransport: 'local-json',
-      proofs: [
+      evidenceChecks: [
         {
           id: 'fallow-advisory',
           command: 'node scripts/run-fallow-audit.mjs',
@@ -483,17 +483,17 @@ test('evidence records include advisory external tool results in Surface input',
           },
         },
       ],
-      requiredProofIds: ['fallow-advisory'],
+      requiredEvidenceCheckIds: ['fallow-advisory'],
       uncoveredPathPolicy: 'warn',
     },
   };
-  const policyPack = { name: 'external-tool-policy', version: 1, rules: [] };
-  writeClaimStoreForAdapter(rootDir, adapter, policyPack);
+  const repoStandards = { name: 'external-tool-policy', version: 1, rules: [] };
+  writeClaimStoreForAdapter(rootDir, adapter, repoStandards);
 
   const record = await buildEvidenceRecord({
     files: ['package.json'],
     config: adapter,
-    policyPack,
+    repoStandards,
     rootDir,
   });
 
@@ -507,13 +507,13 @@ test('evidence records include advisory external tool results in Surface input',
       (claim) => claim.surface === 'veritas.external-tools',
     ),
   );
-  const proofClaim = record.surface.input.claims.find(
-    (claim) => claim.surface === 'veritas.proof' && claim.metadata.command === 'node scripts/run-fallow-audit.mjs',
+  const evidenceCheckClaim = record.surface.input.claims.find(
+    (claim) => claim.surface === 'veritas.evidence-check' && claim.metadata.command === 'node scripts/run-fallow-audit.mjs',
   );
   const externalToolClaim = record.surface.input.claims.find(
     (claim) => claim.surface === 'veritas.external-tools',
   );
-  assert.ok(proofClaim);
+  assert.ok(evidenceCheckClaim);
   assert.ok(externalToolClaim);
   assert.equal(externalToolClaim.derivedFrom, undefined);
   assert.ok(
@@ -549,7 +549,7 @@ test('blocking external tool results count as feedback failures', async () => {
     evidence: {
       artifactDir: '.veritas/evidence',
       reportTransport: 'local-json',
-      proofs: [
+      evidenceChecks: [
         {
           id: 'blocking-tool',
           command: 'node scripts/run-tool.mjs',
@@ -562,7 +562,7 @@ test('blocking external tool results count as feedback failures', async () => {
           },
         },
       ],
-      requiredProofIds: ['blocking-tool'],
+      requiredEvidenceCheckIds: ['blocking-tool'],
       uncoveredPathPolicy: 'warn',
     },
   };
@@ -570,7 +570,7 @@ test('blocking external tool results count as feedback failures', async () => {
   const record = await buildEvidenceRecord({
     files: ['package.json'],
     config: adapter,
-    policyPack: { name: 'external-tool-policy', version: 1, rules: [] },
+    repoStandards: { name: 'external-tool-policy', version: 1, rules: [] },
     rootDir,
   });
 
@@ -582,20 +582,20 @@ test('blocking external tool results count as feedback failures', async () => {
   );
 });
 
-test('proof-suite manifest validation rejects required families without review evidence', async () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-proof-suite-invalid-'));
-  mkdirp(join(rootDir, '.veritas/proof-families'));
+test('evidence-inventory manifest validation rejects required inventories without review evidence', async () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-evidence-inventory-invalid-'));
+  mkdirp(join(rootDir, '.veritas/evidence-inventories'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
   writeFileSync(
-    join(rootDir, '.veritas/proof-families/guardrails.json'),
+    join(rootDir, '.veritas/evidence-inventories/guardrails.json'),
     JSON.stringify(
       {
         version: 1,
-        sourceProofLaneId: 'legacy-guardrails',
-        families: [
+        sourceEvidenceCheckId: 'legacy-guardrails',
+        items: [
           {
             id: 'unsafe-required',
-            proofId: 'required-proof',
+            evidenceCheckId: 'required-evidence-check',
             defaultDisposition: 'required',
             currentBlockingStatus: 'required',
             recentCatchEvidence: 'unknown',
@@ -612,11 +612,11 @@ test('proof-suite manifest validation rejects required families without review e
     ...readJson('../adapters/work-agent.adapter.json'),
     evidence: {
       ...readJson('../adapters/work-agent.adapter.json').evidence,
-      proofSuiteManifests: ['.veritas/proof-families/guardrails.json'],
+      evidenceInventoryManifests: ['.veritas/evidence-inventories/guardrails.json'],
     },
   };
-  const policyPack = loadPolicyPack(
-    new URL('../policy-packs/work-agent-convergence.policy-pack.json', import.meta.url),
+  const repoStandards = loadRepoStandards(
+    new URL('../repo-standards/work-agent-convergence.repo-standards.json', import.meta.url),
   );
 
   await assert.rejects(
@@ -624,19 +624,19 @@ test('proof-suite manifest validation rejects required families without review e
       buildEvidenceRecord({
         files: ['package.json'],
         config: adapter,
-        policyPack,
+        repoStandards,
         rootDir,
       }),
-    /proof-suite unsafe-required owner must be a non-empty string/,
+    /evidence-inventory unsafe-required owner must be a non-empty string/,
   );
 });
 
-test('policy pack evaluates governance blocks and diff-required rules', () => {
+test('Repo Standards evaluates governance blocks and diff-required rules', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-policy-rules-'));
   writeFileSync(join(rootDir, 'AGENTS.md'), `# Agents\n\n${buildGovernanceBlock()}\n`);
   writeFileSync(join(rootDir, 'CLAUDE.md'), '# Claude\n');
 
-  const policyPack = {
+  const repoStandards = {
     version: 1,
     name: 'policy-rule-demo',
     rules: [
@@ -664,7 +664,7 @@ test('policy pack evaluates governance blocks and diff-required rules', () => {
     ],
   };
 
-  const failedResults = evaluatePolicyPack(policyPack, {
+  const failedResults = evaluateRepoStandards(repoStandards, {
     rootDir,
     changedFiles: ['src/api/routes.ts'],
   });
@@ -675,7 +675,7 @@ test('policy pack evaluates governance blocks and diff-required rules', () => {
   assert.equal(failedResults[1].findings[0].required, 'tests/api/');
 
   writeFileSync(join(rootDir, 'CLAUDE.md'), `${buildGovernanceBlock()}\n`);
-  const passedResults = evaluatePolicyPack(policyPack, {
+  const passedResults = evaluateRepoStandards(repoStandards, {
     rootDir,
     changedFiles: ['src/api/routes.ts', 'tests/api/routes.test.ts'],
   });
@@ -683,8 +683,8 @@ test('policy pack evaluates governance blocks and diff-required rules', () => {
   assert.equal(passedResults[1].passed, true);
 });
 
-test('policy pack fails closed for unknown rule kinds', () => {
-  const policyPack = {
+test('Repo Standards fails closed for unknown rule kinds', () => {
+  const repoStandards = {
     version: 1,
     name: 'unknown-kind-demo',
     rules: [
@@ -701,7 +701,7 @@ test('policy pack fails closed for unknown rule kinds', () => {
     ],
   };
 
-  const [result] = evaluatePolicyPack(policyPack, { rootDir: frameworkRootDir });
+  const [result] = evaluateRepoStandards(repoStandards, { rootDir: frameworkRootDir });
   assert.equal(result.implemented, false);
   assert.equal(result.passed, null);
   assert.equal(result.status, 'error');
@@ -713,7 +713,7 @@ test('policy pack fails closed for unknown rule kinds', () => {
       files: ['package.json'],
       components: [],
       policy_results: [result],
-      proof_suite_results: [],
+      evidence_inventory_results: [],
       external_tool_results: [],
     },
   });
@@ -735,7 +735,7 @@ test('content-level policy rules report file and line findings', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-content-rules-'));
   mkdirp(join(rootDir, 'src/nested'));
   writeFileSync(join(rootDir, 'src/nested/module.mjs'), 'const x = 1;\nconsole.log(x);\n');
-  const policyPack = {
+  const repoStandards = {
     version: 1,
     name: 'content-rules',
     rules: [
@@ -766,7 +766,7 @@ test('content-level policy rules report file and line findings', () => {
     ],
   };
 
-  const results = evaluatePolicyPack(policyPack, {
+  const results = evaluateRepoStandards(repoStandards, {
     rootDir,
     changedFiles: ['src/nested/module.mjs'],
   });
@@ -788,7 +788,7 @@ test('explain selects only file-matching rule context and stays concise', () => 
       ],
     },
   };
-  const policyPack = {
+  const repoStandards = {
     rules: [
       {
         id: 'src-rule',
@@ -813,7 +813,7 @@ test('explain selects only file-matching rule context and stays concise', () => 
   const text = buildExplainText({
     rootDir,
     adapter,
-    policyPack,
+    repoStandards,
     filePath: 'src/index.mjs',
   });
   assert.match(text, /src-rule/);
@@ -928,15 +928,15 @@ test('cross-surface boundary fails closed without actor and reports owner outcom
   }
 });
 
-test('surface-aware proof routing prefers surface routes, then default, then required lanes', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-proof-plan-'));
+test('work-area evidence routing prefers work-area routes, then default, then required checks', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-evidence-check-plan-'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
   mkdirp(join(rootDir, 'scripts'));
   mkdirp(join(rootDir, 'packages/core'));
   mkdirp(join(rootDir, 'docs'));
 
   const adapter = {
-    name: 'surface-proof-demo',
+    name: 'surface-evidenceCheck-demo',
     kind: 'repo-adapter',
     policy: {
       defaultFalsePositiveReview: 'unknown',
@@ -961,56 +961,56 @@ test('surface-aware proof routing prefers surface routes, then default, then req
     evidence: {
       artifactDir: '.veritas/evidence',
       reportTransport: 'local-json',
-      proofs: [
-        { id: 'required-proof', command: 'npm run required-proof', method: 'validation' },
-        { id: 'default-proof', command: 'npm run default-proof', method: 'validation' },
+      evidenceChecks: [
+        { id: 'required-evidence-check', command: 'npm run required-evidence-check', method: 'validation' },
+        { id: 'default-evidence-check', command: 'npm run default-evidence-check', method: 'validation' },
         { id: 'viewer-build', command: 'npm run viewer:build', method: 'validation' },
       ],
-      requiredProofIds: ['required-proof'],
-      defaultProofIds: ['default-proof'],
-      proofRoutes: [
-        { componentIds: ['tooling.scripts'], proofIds: ['viewer-build', 'viewer-build'] },
+      requiredEvidenceCheckIds: ['required-evidence-check'],
+      defaultEvidenceCheckIds: ['default-evidence-check'],
+      evidenceCheckRoutes: [
+        { componentIds: ['tooling.scripts'], evidenceCheckIds: ['viewer-build', 'viewer-build'] },
       ],
       uncoveredPathPolicy: 'warn',
     },
   };
 
-  const surfacePlan = resolveProofCommands({
+  const surfacePlan = resolveEvidenceCheckCommands({
     adapterPath: writeTempAdapter(rootDir, adapter),
     files: ['scripts/build-viewer.mjs'],
     rootDir,
   });
-  assert.deepEqual(surfacePlan.proofCommands, ['npm run viewer:build']);
+  assert.deepEqual(surfacePlan.evidenceCheckCommands, ['npm run viewer:build']);
   assert.equal(surfacePlan.resolutionSource, 'surface');
 
-  const defaultPlan = resolveProofCommands({
+  const defaultPlan = resolveEvidenceCheckCommands({
     adapterPath: writeTempAdapter(rootDir, adapter),
     files: ['packages/core/index.ts'],
     rootDir,
   });
-  assert.deepEqual(defaultPlan.proofCommands, ['npm run default-proof']);
+  assert.deepEqual(defaultPlan.evidenceCheckCommands, ['npm run default-evidence-check']);
   assert.equal(defaultPlan.resolutionSource, 'default');
 
-  const mixedPlan = resolveProofCommands({
+  const mixedPlan = resolveEvidenceCheckCommands({
     adapterPath: writeTempAdapter(rootDir, adapter),
     files: ['scripts/build-viewer.mjs', 'packages/core/index.ts'],
     rootDir,
   });
-  assert.deepEqual(mixedPlan.proofCommands, ['npm run viewer:build', 'npm run default-proof']);
+  assert.deepEqual(mixedPlan.evidenceCheckCommands, ['npm run viewer:build', 'npm run default-evidence-check']);
   assert.equal(mixedPlan.resolutionSource, 'surface');
 
-  delete adapter.evidence.defaultProofIds;
-  const requiredPlan = resolveProofCommands({
+  delete adapter.evidence.defaultEvidenceCheckIds;
+  const requiredPlan = resolveEvidenceCheckCommands({
     adapterPath: writeTempAdapter(rootDir, adapter),
     files: ['docs/guide.md'],
     rootDir,
   });
-  assert.deepEqual(requiredPlan.proofCommands, ['npm run required-proof']);
+  assert.deepEqual(requiredPlan.evidenceCheckCommands, ['npm run required-evidence-check']);
   assert.equal(requiredPlan.resolutionSource, 'required');
 
-  adapter.evidence.requiredProofs = ['npm run removed-proof'];
+  adapter.evidence.requiredEvidenceChecks = ['npm run removed-evidence-check'];
   assert.throws(
-    () => resolveProofCommands({
+    () => resolveEvidenceCheckCommands({
       adapterPath: writeTempAdapter(rootDir, adapter),
       files: ['docs/guide.md'],
       rootDir,
@@ -1019,13 +1019,13 @@ test('surface-aware proof routing prefers surface routes, then default, then req
   );
 });
 
-test('guidance CLI can run with explicit adapter and policy-pack inputs', () => {
+test('guidance CLI can run with explicit adapter and repo-standards inputs', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-cli-'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
   writeClaimStoreForAdapter(
     rootDir,
     readJson('../adapters/work-agent.adapter.json'),
-    loadPolicyPack(new URL('../policy-packs/work-agent-convergence.policy-pack.json', import.meta.url)),
+    loadRepoStandards(new URL('../repo-standards/work-agent-convergence.repo-standards.json', import.meta.url)),
   );
 
   const stdout = execFileSync(
@@ -1038,10 +1038,10 @@ test('guidance CLI can run with explicit adapter and policy-pack inputs', () => 
       fileURLToPath(
         new URL('../adapters/work-agent.adapter.json', import.meta.url),
       ),
-      '--policy-pack',
+      '--repo-standards',
       fileURLToPath(
         new URL(
-          '../policy-packs/work-agent-convergence.policy-pack.json',
+          '../repo-standards/work-agent-convergence.repo-standards.json',
           import.meta.url,
         ),
       ),
@@ -1055,8 +1055,8 @@ test('guidance CLI can run with explicit adapter and policy-pack inputs', () => 
   const parsed = parseCliJson(stdout);
   assert.equal(parsed.run_id, 'framework-cli-smoke');
   assert.equal(parsed.adapter.name, 'work-agent');
-  assert.deepEqual(parsed.triggered_proofs, ['root manifests']);
-  assert.deepEqual(parsed.policy_pack, {
+  assert.deepEqual(parsed.triggered_evidence_checks, ['root manifests']);
+  assert.deepEqual(parsed.repo_standards, {
     name: 'work-agent-convergence',
     version: 1,
     rule_count: 4,
@@ -1070,17 +1070,17 @@ test('CLI entrypoints expose help text for publishable operator surfaces', () =>
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   assert.match(mainHelp, /veritas init/);
-  assert.match(mainHelp, /veritas run \[--check shadow\|boundaries\|budget\]/);
+  assert.match(mainHelp, /veritas readiness \[--check evidence\|boundaries\|coverage\]/);
   assert.match(mainHelp, /veritas eval marker/);
   assert.match(mainHelp, /veritas eval marker-suite/);
   assert.doesNotMatch(mainHelp, /Deprecated shims/);
 
   const runHelp = execFileSync(
     'npm',
-    ['exec', '--', 'veritas', 'run', '--help'],
+    ['exec', '--', 'veritas', 'readiness', '--help'],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
-  assert.match(runHelp, /veritas run/);
+  assert.match(runHelp, /veritas readiness/);
   assert.match(runHelp, /--check boundaries/);
 
   const integrationsHelp = execFileSync(
@@ -1124,12 +1124,12 @@ test('init CLI writes a conservative starter kit and report CLI can use it', asy
     rootDir,
     '--project-name',
     'Demo Starter',
-    '--proof',
+    '--evidence-check',
     'npm run test:smoke',
   ]);
   const initResult = parseCliJson(initStdout);
   assert.equal(initResult.projectName, 'Demo Starter');
-  assert.equal(initResult.proof, 'npm run test:smoke');
+  assert.equal(initResult.evidenceCheck, 'npm run test:smoke');
   assert.match(initResult.codeownersBlock, /\.veritas\/repo\.adapter\.json  @your-team\/governance/);
   assert.ok(
     initResult.generatedFiles.includes('.veritas/repo.adapter.json'),
@@ -1145,8 +1145,8 @@ test('init CLI writes a conservative starter kit and report CLI can use it', asy
     join(rootDir, '.veritas/GOVERNANCE.md'),
     'utf8',
   );
-  const starterPolicyPack = readJsonFromAbsolute(
-    join(rootDir, '.veritas/policy-packs/default.policy-pack.json'),
+  const starterRepoStandards = readJsonFromAbsolute(
+    join(rootDir, '.veritas/repo-standards/default.repo-standards.json'),
   );
   const starterTeamProfile = readJsonFromAbsolute(
     join(rootDir, '.veritas/team/default.team-profile.json'),
@@ -1158,18 +1158,18 @@ test('init CLI writes a conservative starter kit and report CLI can use it', asy
     { path: 'AGENTS.md', tool: 'codex', required: true },
     { path: 'CLAUDE.md', tool: 'claude-code', required: true },
   ]);
-  assert.equal(starterPolicyPack.name, 'demo-starter-default');
+  assert.equal(starterRepoStandards.name, 'demo-starter-default');
   assert.ok(
-    starterPolicyPack.rules.some((rule) => rule.match?.['governance-block']),
+    starterRepoStandards.rules.some((rule) => rule.match?.['governance-block']),
   );
-  assert.equal(starterTeamProfile.defaults.mode, 'shadow');
+  assert.equal(starterTeamProfile.defaults.mode, 'observe');
   assert.equal(initResult.repoInsights.repoKind, 'application');
-  assert.equal(starterAdapter.evidence.defaultProofIds, undefined);
+  assert.equal(starterAdapter.evidence.defaultEvidenceCheckIds, undefined);
   assert.equal(starterAdapter.evidence.uncoveredPathPolicy, undefined);
-  assert.match(governanceInstructions, /Do not modify:/);
-  assert.match(governanceInstructions, /\.veritas\/policy-packs\//);
-  assert.match(governanceInstructions, /Zone 2 is additive policy growth/);
-  assert.match(governanceInstructions, /Zone 3 is generated output/);
+  assert.match(governanceInstructions, /Do not modify without a fresh Veritas attestation/);
+  assert.match(governanceInstructions, /\.veritas\/repo-standards\//);
+  assert.match(governanceInstructions, /Standards Growth is additive/);
+  assert.match(governanceInstructions, /Generated Evidence is output/);
   assert.match(readFileSync(join(rootDir, 'AGENTS.md'), 'utf8'), /veritas:governance-block:start/);
   assert.match(readFileSync(join(rootDir, 'CLAUDE.md'), 'utf8'), /veritas:governance-block:start/);
 
@@ -1179,13 +1179,13 @@ test('init CLI writes a conservative starter kit and report CLI can use it', asy
   }, { rootDir }, ['package.json'])).record;
   assert.equal(reportResult.run_id, 'bootstrap-smoke');
   assert.equal(reportResult.adapter.name, 'demo-starter');
-  assert.equal(reportResult.policy_pack.name, 'demo-starter-default');
+  assert.equal(reportResult.repo_standards.name, 'demo-starter-default');
   assert.equal(reportResult.source_kind, 'explicit-files');
   assert.deepEqual(reportResult.source_scope, ['explicit']);
 });
 
-test('init CLI can install a named starter policy pack', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-pack-'));
+test('init CLI can install a named Repo Standards template', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-template-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   const initStdout = runLocalVeritas([
@@ -1194,15 +1194,15 @@ test('init CLI can install a named starter policy pack', () => {
     rootDir,
     '--project-name',
     'Next Starter',
-    '--pack',
+    '--template',
     'nextjs-typescript',
   ]);
   const initResult = parseCliJson(initStdout);
-  const policyPack = readJsonFromAbsolute(join(rootDir, '.veritas/policy-packs/default.policy-pack.json'));
+  const repoStandards = readJsonFromAbsolute(join(rootDir, '.veritas/repo-standards/default.repo-standards.json'));
 
-  assert.equal(initResult.pack, 'nextjs-typescript');
-  assert.equal(policyPack.name, 'nextjs-typescript');
-  assert.ok(policyPack.rules.some((rule) => rule.id === 'api-routes-require-api-tests'));
+  assert.equal(initResult.template, 'nextjs-typescript');
+  assert.equal(repoStandards.name, 'nextjs-typescript');
+  assert.ok(repoStandards.rules.some((rule) => rule.id === 'api-routes-require-api-tests'));
 });
 
 test('init explore emits a read-only recommendation artifact', () => {
@@ -1231,8 +1231,8 @@ test('init explore emits a read-only recommendation artifact', () => {
 
   assert.equal(recommendation.mode, 'explore');
   assert.equal(recommendation.target_root, rootDir);
-  assert.equal(recommendation.proof, 'npm run verify');
-  assert.equal(recommendation.recommended_proofs[0].command, 'npm run verify');
+  assert.equal(recommendation.evidenceCheck, 'npm run verify');
+  assert.equal(recommendation.recommended_evidence_checks[0].command, 'npm run verify');
   assert.ok(recommendation.artifact_payloads['.veritas/repo.adapter.json']);
   assert.ok(recommendation.artifact_hashes['.veritas/repo.adapter.json']);
   assert.deepEqual(
@@ -1272,8 +1272,8 @@ test('init explore inventories existing brownfield verification', () => {
 
   assert.equal(recommendation.existing_verification.detected, true);
   assert.ok(
-    recommendation.recommended_proof_suite_inventory.some(
-      (family) => family.id === 'verify-convergence' && family.default_disposition === 'candidate',
+    recommendation.recommended_evidence_inventory.some(
+      (item) => item.id === 'verify-convergence' && item.default_disposition === 'candidate',
     ),
   );
   assert.ok(
@@ -1283,25 +1283,25 @@ test('init explore inventories existing brownfield verification', () => {
   );
 });
 
-test('budget CLI prints verification budget without reading the full report', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-budget-cli-'));
+test('readiness coverage CLI prints readiness coverage without reading the full report', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-coverage-cli-'));
   writeFileSync(
     join(rootDir, 'package.json'),
     JSON.stringify({ scripts: { test: 'node -e "process.exit(0)"' } }, null, 2),
   );
   writeFileSync(join(rootDir, 'AGENTS.md'), '# Agents\n');
-  runLocalVeritas(['init', '--root', rootDir, '--proof', 'npm test']);
-  mkdirp(join(rootDir, '.veritas/proof-families'));
+  runLocalVeritas(['init', '--root', rootDir, '--evidence-check', 'npm test']);
+  mkdirp(join(rootDir, '.veritas/evidence-inventories'));
   writeFileSync(
-    join(rootDir, '.veritas/proof-families/guardrails.json'),
+    join(rootDir, '.veritas/evidence-inventories/guardrails.json'),
     JSON.stringify(
       {
         version: 1,
-        sourceProofLaneId: 'required-proof',
-        families: [
+        sourceEvidenceCheckId: 'required-evidence-check',
+        items: [
           {
             id: 'repo-governance',
-            proofId: 'required-proof',
+            evidenceCheckId: 'required-evidence-check',
             owner: 'repo-core',
             defaultDisposition: 'required',
             currentBlockingStatus: 'required',
@@ -1319,16 +1319,16 @@ test('budget CLI prints verification budget without reading the full report', ()
   );
   const adapterPath = join(rootDir, '.veritas/repo.adapter.json');
   const adapter = readJsonFromAbsolute(adapterPath);
-  adapter.evidence.proofSuiteManifests = ['.veritas/proof-families/guardrails.json'];
+  adapter.evidence.evidenceInventoryManifests = ['.veritas/evidence-inventories/guardrails.json'];
   writeFileSync(adapterPath, `${JSON.stringify(adapter, null, 2)}\n`);
 
   const jsonStdout = execFileSync(
     'node',
     [
       join(frameworkRootDir, 'bin/veritas.mjs'),
-      'run',
+      'readiness',
       '--check',
-      'budget',
+      'coverage',
       '--root',
       rootDir,
       '--format',
@@ -1339,8 +1339,8 @@ test('budget CLI prints verification budget without reading the full report', ()
   );
   const result = parseCliJson(jsonStdout);
 
-  assert.equal(result.verification_budget.required_family_count, 1);
-  assert.equal(result.proof_suite_results[0].id, 'repo-governance');
+  assert.equal(result.readiness_coverage.required_inventory_count, 1);
+  assert.equal(result.evidence_inventory_results[0].id, 'repo-governance');
 });
 
 test('init explore output is constrained to .veritas/init-plans', () => {
@@ -1402,7 +1402,7 @@ test('init guided answers drive the reviewed apply artifact', () => {
     join(rootDir, 'answers.json'),
     JSON.stringify(
       {
-        proof: 'npm run lint',
+        evidenceCheck: 'npm run lint',
         selectedInstructionTargets: ['AGENTS.md'],
         boundaries: ['Do not edit generated snapshots without approval.'],
         codingStyle: 'Prefer small ESM modules.',
@@ -1433,9 +1433,9 @@ test('init guided answers drive the reviewed apply artifact', () => {
   const recommendation = parseCliJson(guidedStdout);
 
   assert.equal(recommendation.mode, 'guided');
-  assert.equal(recommendation.proof, 'npm run lint');
+  assert.equal(recommendation.evidenceCheck, 'npm run lint');
   assert.deepEqual(recommendation.selected_instruction_targets.map((target) => target.path), ['AGENTS.md']);
-  assert.deepEqual(recommendation.recommended_policy_pack.rules[1].match['governance-block'], ['AGENTS.md']);
+  assert.deepEqual(recommendation.recommended_repo_standards.rules[1].match['governance-block'], ['AGENTS.md']);
   assert.equal(existsSync(join(rootDir, '.veritas/repo.adapter.json')), false);
 
   const applyStdout = execFileSync(
@@ -1445,12 +1445,12 @@ test('init guided answers drive the reviewed apply artifact', () => {
   );
   const applyResult = parseCliJson(applyStdout);
   const adapter = readJsonFromAbsolute(join(rootDir, '.veritas/repo.adapter.json'));
-  const policyPack = readJsonFromAbsolute(join(rootDir, '.veritas/policy-packs/default.policy-pack.json'));
+  const repoStandards = readJsonFromAbsolute(join(rootDir, '.veritas/repo-standards/default.repo-standards.json'));
   const readme = readFileSync(join(rootDir, '.veritas/README.md'), 'utf8');
 
   assert.deepEqual(applyResult.generatedFiles.includes('AGENTS.md'), true);
   assert.deepEqual(adapter.activation.aiInstructionFiles.map((target) => target.path), ['AGENTS.md']);
-  assert.deepEqual(policyPack.rules[1].match['governance-block'], ['AGENTS.md']);
+  assert.deepEqual(repoStandards.rules[1].match['governance-block'], ['AGENTS.md']);
   assert.match(readFileSync(join(rootDir, 'AGENTS.md'), 'utf8'), /veritas:governance-block:start/);
   assert.doesNotMatch(readFileSync(join(rootDir, 'CLAUDE.md'), 'utf8'), /veritas:governance-block:start/);
   assert.match(readme, /Owner Answers/);
@@ -1534,7 +1534,7 @@ test('buildEvalRecord links a real evidence artifact to a team profile', () => {
         source_kind: 'working-tree',
         source_scope: ['staged', 'unstaged'],
         components: ['governance.root-manifests'],
-        triggered_proofs: ['root manifests'],
+        triggered_evidence_checks: ['root manifests'],
       },
       null,
       2,
@@ -1548,7 +1548,7 @@ test('buildEvalRecord links a real evidence artifact to a team profile', () => {
     source_kind: 'working-tree',
     source_scope: ['staged', 'unstaged'],
     components: ['governance.root-manifests'],
-    triggered_proofs: ['root manifests'],
+    triggered_evidence_checks: ['root manifests'],
   };
   const teamProfile = readJson('../examples/evals/work-agent-team-profile.json');
 
@@ -1571,7 +1571,7 @@ test('buildEvalRecord links a real evidence artifact to a team profile', () => {
 
   assert.equal(record.run_id, 'eval-build-smoke');
   assert.equal(record.team_profile_id, 'work-agent-default');
-  assert.equal(record.mode, 'shadow');
+  assert.equal(record.mode, 'observe');
   assert.equal(record.evidence.source_ref, 'working-tree');
   assert.equal(record.evidence.source_kind, 'working-tree');
   assert.deepEqual(record.evidence.source_scope, ['staged', 'unstaged']);
@@ -1601,7 +1601,7 @@ test('buildEvalRecord accepts reviewer confidence values from the team profile s
         source_kind: 'explicit-files',
         source_scope: ['explicit'],
         components: [],
-        triggered_proofs: [],
+        triggered_evidence_checks: [],
       },
       null,
       2,
@@ -1609,7 +1609,7 @@ test('buildEvalRecord accepts reviewer confidence values from the team profile s
   );
   const teamProfile = {
     id: 'custom-team',
-    defaults: { mode: 'shadow' },
+    defaults: { mode: 'observe' },
     review_preferences: { reviewer_confidence_scale: ['red', 'yellow', 'green'] },
   };
 
@@ -1648,7 +1648,7 @@ test('buildEvalDraft captures prefilled context without fabricating judgment', (
         source_kind: 'working-tree',
         source_scope: ['staged'],
         components: ['governance.root-manifests'],
-        triggered_proofs: ['root manifests'],
+        triggered_evidence_checks: ['root manifests'],
       },
       null,
       2,
@@ -1777,22 +1777,22 @@ test('report CLI can measure the full working tree', () => {
       'exec',
       '--',
       'veritas',
-      'run',
+      'readiness',
       '--check',
-      'shadow',
+      'evidence',
       '--root',
       rootDir,
       '--working-tree',
       '--format',
       'json',
-      '--skip-proof',
+      '--skip-evidence-check',
       '--run-id',
       'working-tree-smoke',
     ],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
-  const shadowResult = parseCliJson(stdout);
-  const parsed = readJsonFromAbsolute(join(rootDir, shadowResult.reportArtifactPath));
+  const readinessResult = parseCliJson(stdout);
+  const parsed = readJsonFromAbsolute(join(rootDir, readinessResult.reportArtifactPath));
 
   assert.equal(parsed.source_kind, 'working-tree');
   assert.deepEqual(parsed.source_scope, ['staged', 'unstaged', 'untracked']);
@@ -1810,28 +1810,28 @@ test('report CLI can emit an empty current-state artifact for a clean working tr
       'exec',
       '--',
       'veritas',
-      'run',
+      'readiness',
       '--check',
-      'shadow',
+      'evidence',
       '--root',
       rootDir,
       '--working-tree',
       '--format',
       'json',
-      '--skip-proof',
+      '--skip-evidence-check',
       '--run-id',
       'working-tree-clean-smoke',
     ],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
-  const shadowResult = parseCliJson(stdout);
-  const parsed = readJsonFromAbsolute(join(rootDir, shadowResult.reportArtifactPath));
+  const readinessResult = parseCliJson(stdout);
+  const parsed = readJsonFromAbsolute(join(rootDir, readinessResult.reportArtifactPath));
 
   assert.equal(parsed.source_kind, 'working-tree');
   assert.deepEqual(parsed.source_scope, ['staged', 'unstaged', 'untracked']);
   assert.deepEqual(parsed.files, []);
   assert.deepEqual(parsed.components, []);
-  assert.deepEqual(parsed.triggered_proofs, []);
+  assert.deepEqual(parsed.triggered_evidence_checks, []);
 });
 
 test('report CLI preserves branch-diff behavior', () => {
@@ -1847,9 +1847,9 @@ test('report CLI preserves branch-diff behavior', () => {
       'exec',
       '--',
       'veritas',
-      'run',
+      'readiness',
       '--check',
-      'shadow',
+      'evidence',
       '--root',
       rootDir,
       '--changed-from',
@@ -1858,21 +1858,21 @@ test('report CLI preserves branch-diff behavior', () => {
       'HEAD',
       '--format',
       'json',
-      '--skip-proof',
+      '--skip-evidence-check',
       '--run-id',
       'branch-diff-smoke',
     ],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
-  const shadowResult = parseCliJson(stdout);
-  const parsed = readJsonFromAbsolute(join(rootDir, shadowResult.reportArtifactPath));
+  const readinessResult = parseCliJson(stdout);
+  const parsed = readJsonFromAbsolute(join(rootDir, readinessResult.reportArtifactPath));
 
   assert.equal(parsed.source_kind, 'branch-diff');
   assert.deepEqual(parsed.source_scope, ['changed-from:HEAD~1', 'changed-to:HEAD']);
   assert.deepEqual(parsed.files, [
     '.veritas/GOVERNANCE.md',
     '.veritas/README.md',
-    '.veritas/policy-packs/default.policy-pack.json',
+    '.veritas/repo-standards/default.repo-standards.json',
     '.veritas/repo.adapter.json',
     '.veritas/team/default.team-profile.json',
     'AGENTS.md',
@@ -1908,14 +1908,14 @@ test('report writes one trimmed Surface claim input per claim', async () => {
     evidence: {
       artifactDir: '.veritas/evidence',
       reportTransport: 'local-json',
-      proofs: [
+      evidenceChecks: [
         { id: 'unit', command: 'npm test', method: 'validation' },
       ],
-      defaultProofIds: ['unit'],
+      defaultEvidenceCheckIds: ['unit'],
       uncoveredPathPolicy: 'warn',
     },
   });
-  const policyPackPath = writeTempJson(rootDir, '.veritas-policy-pack.json', {
+  const repoStandardsPath = writeTempJson(rootDir, '.veritas-repo-standards.json', {
     name: 'claim-input-policy',
     version: 1,
     rules: [
@@ -1932,38 +1932,38 @@ test('report writes one trimmed Surface claim input per claim', async () => {
   writeClaimStoreForAdapter(
     rootDir,
     readJsonFromAbsolute(adapterPath),
-    readJsonFromAbsolute(policyPackPath),
+    readJsonFromAbsolute(repoStandardsPath),
   );
 
   const result = await generateVeritasReport({
     rootDir,
     adapterPath,
-    policyPackPath,
+    repoStandardsPath,
     runId: 'claim-input-smoke',
     sourceRef: 'test-source-ref',
   }, {}, ['package.json']);
 
   assert.equal(result.claimInputPaths.length, result.record.surface.input.claims.length);
-  assert.match(result.dashboardReadModelPath, /^\.surface\/runs\/claim-input-smoke\.dashboard\.json$/);
-  const dashboard = readJsonFromAbsolute(join(rootDir, result.dashboardReadModelPath));
-  assert.equal(dashboard.kind, 'surface-dashboard-read-model');
-  assert.equal(dashboard.source, 'veritas:claim-input-smoke');
-  assert.equal(dashboard.producer.evidenceArtifactPath, result.artifactPath);
-  assert.deepEqual(dashboard.producer.claimInputPaths, result.claimInputPaths);
-  assert.equal(dashboard.summary.claimCount, result.record.surface.input.claims.length);
-  assert.equal(dashboard.contract, 'surface.analytics-compatible');
-  assert.equal(dashboard.analytics.reportId, result.record.surface.report.id);
-  assert.equal(dashboard.analytics.totals.claims, result.record.surface.input.claims.length);
-  assert.ok(Array.isArray(dashboard.analytics.coverageBySurface));
-  assert.ok(Array.isArray(dashboard.analytics.actionQueues.reviewNow));
-  assert.equal(dashboard.claims.length, result.record.surface.input.claims.length);
-  assert.ok(dashboard.claims.every((claim) => claim.status));
-  assert.ok(dashboard.policies.some((policy) => policy.id === 'veritas.policy-result'));
-  assert.ok(dashboard.graph.nodes.some((node) => node.kind === 'claim'));
-  assert.ok(dashboard.graph.edges.some((edge) => edge.kind === 'supports'));
-  const dashboardIndex = readJsonFromAbsolute(join(rootDir, '.surface/runs/latest.json'));
-  assert.equal(dashboardIndex.latestRunId, 'claim-input-smoke');
-  assert.equal(dashboardIndex.readModelPath, result.dashboardReadModelPath);
+  assert.match(result.consoleReadModelPath, /^\.surface\/runs\/claim-input-smoke\.console\.json$/);
+  const console = readJsonFromAbsolute(join(rootDir, result.consoleReadModelPath));
+  assert.equal(console.kind, 'surface-console-read-model');
+  assert.equal(console.source, 'veritas:claim-input-smoke');
+  assert.equal(console.producer.evidenceArtifactPath, result.artifactPath);
+  assert.deepEqual(console.producer.claimInputPaths, result.claimInputPaths);
+  assert.equal(console.summary.claimCount, result.record.surface.input.claims.length);
+  assert.equal(console.contract, 'surface.analytics-compatible');
+  assert.equal(console.analytics.reportId, result.record.surface.report.id);
+  assert.equal(console.analytics.totals.claims, result.record.surface.input.claims.length);
+  assert.ok(Array.isArray(console.analytics.coverageBySurface));
+  assert.ok(Array.isArray(console.analytics.actionQueues.reviewNow));
+  assert.equal(console.claims.length, result.record.surface.input.claims.length);
+  assert.ok(console.claims.every((claim) => claim.status));
+  assert.ok(console.policies.some((policy) => policy.id === 'veritas.policy-result'));
+  assert.ok(console.graph.nodes.some((node) => node.kind === 'claim'));
+  assert.ok(console.graph.edges.some((edge) => edge.kind === 'supports'));
+  const consoleIndex = readJsonFromAbsolute(join(rootDir, '.surface/runs/latest.json'));
+  assert.equal(consoleIndex.latestRunId, 'claim-input-smoke');
+  assert.equal(consoleIndex.readModelPath, result.consoleReadModelPath);
   for (const relativePath of result.claimInputPaths) {
     const claimInput = readJsonFromAbsolute(join(rootDir, relativePath));
     const fileName = relativePath.split('/').at(-1);
@@ -1975,7 +1975,7 @@ test('report writes one trimmed Surface claim input per claim', async () => {
   }
 });
 
-test('eval record CLI writes a repo-local shadow eval artifact from report output', async () => {
+test('eval record CLI writes a repo-local observe eval artifact from report output', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-eval-cli-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
@@ -2029,7 +2029,7 @@ test('eval record CLI writes a repo-local shadow eval artifact from report outpu
   assert.equal(evalResult.artifactPath, '.veritas/evals/eval-cli-smoke.json');
   assert.equal(evalResult.run_id, 'eval-cli-smoke');
   assert.equal(evalResult.team_profile_id, 'eval-demo-default');
-  assert.equal(evalResult.mode, 'shadow');
+  assert.equal(evalResult.mode, 'observe');
   assert.equal(evalResult.evidence.artifact_path, reportResult.artifactPath);
   assert.match(evalResult.evidence.artifact_digest, /^[a-f0-9]{64}$/);
   assert.equal(evalArtifact.outcome.reviewer_confidence, 'high');
@@ -2291,14 +2291,14 @@ test('eval record CLI rejects draft/team-profile rebinding', async () => {
         id: 'alt-team',
         name: 'Alt Team',
         description: 'Alt scale',
-        defaults: { mode: 'shadow', new_rule_stage: 'recommend' },
+        defaults: { mode: 'observe', new_rule_stage: 'recommend' },
         review_preferences: {
           human_signoff_required_for_stage_promotion: true,
           reviewer_confidence_scale: ['red', 'yellow', 'green'],
           major_rewrite_definition: 'Alt',
         },
         promotion_preferences: {
-          proofs_required_before_block: ['npm test'],
+          evidence_checks_required_before_require: ['npm test'],
           warnings_block_in_ci: false,
           require_consistent_eval_before_promotion: true,
         },
@@ -2377,7 +2377,7 @@ test('eval record CLI supports explicit team-profile and output paths', async ()
       '--team-profile',
       initResult.generatedFiles.find((path) => path.endsWith('default.team-profile.json')),
       '--output',
-      '.veritas/evals/custom-shadow.json',
+      '.veritas/evals/custom-observe.json',
       '--accepted-without-major-rewrite',
       'false',
       '--required-followup',
@@ -2397,7 +2397,7 @@ test('eval record CLI supports explicit team-profile and output paths', async ()
   );
   const evalResult = JSON.parse(evalStdout);
 
-  assert.equal(evalResult.artifactPath, '.veritas/evals/custom-shadow.json');
+  assert.equal(evalResult.artifactPath, '.veritas/evals/custom-observe.json');
   assert.equal(evalResult.outcome.accepted_without_major_rewrite, false);
   assert.equal(evalResult.outcome.required_followup, true);
   assert.equal(evalResult.outcome.reviewer_confidence, 'unknown');
@@ -2566,8 +2566,8 @@ test('eval record CLI refuses to overwrite an existing eval artifact without for
   });
 });
 
-test('shadow run CLI stops at report and draft when judgment fields are missing', () => {
-  const rootDir = initCommittedRepo('veritas-shadow-run-draft-');
+test('readiness check CLI stops at report and draft when judgment fields are missing', () => {
+  const rootDir = initCommittedRepo('veritas-readiness-check-draft-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -2580,8 +2580,8 @@ test('shadow run CLI stops at report and draft when judgment fields are missing'
       '--root',
       rootDir,
       '--project-name',
-      'Shadow Run Demo',
-      '--proof',
+      'Readiness Check Demo',
+      '--evidence-check',
       'node -e "process.exit(0)"',
     ],
     { cwd: frameworkRootDir, encoding: 'utf8' },
@@ -2589,19 +2589,19 @@ test('shadow run CLI stops at report and draft when judgment fields are missing'
 
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'veritas', 'run', '--format', 'json', '--root', rootDir],
+    ['exec', '--', 'veritas', 'readiness', '--format', 'json', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   const parsed = parseCliJson(stdout);
 
   assert.equal(parsed.mode, 'report-and-draft');
-  assert.equal(parsed.proofRan, true);
-  assert.deepEqual(parsed.proofLabels, ['node -e "process.exit(0)"']);
+  assert.equal(parsed.evidenceCheckRan, true);
+  assert.deepEqual(parsed.evidenceCheckLabels, ['node -e "process.exit(0)"']);
   assert.match(parsed.suggestedEvalCommand, /veritas eval record --draft/);
 });
 
-test('shadow run CLI defaults to agent-readable feedback output', () => {
-  const rootDir = initCommittedRepo('veritas-shadow-run-feedback-');
+test('readiness check CLI defaults to agent-readable feedback output', () => {
+  const rootDir = initCommittedRepo('veritas-readiness-check-feedback-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -2614,8 +2614,8 @@ test('shadow run CLI defaults to agent-readable feedback output', () => {
       '--root',
       rootDir,
       '--project-name',
-      'Shadow Run Feedback Demo',
-      '--proof',
+      'Readiness Check Feedback Demo',
+      '--evidence-check',
       'node -e "process.exit(0)"',
     ],
     { cwd: frameworkRootDir, encoding: 'utf8' },
@@ -2623,18 +2623,18 @@ test('shadow run CLI defaults to agent-readable feedback output', () => {
 
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'veritas', 'run', '--root', rootDir],
+    ['exec', '--', 'veritas', 'readiness', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
 
   assert.match(stdout, /^veritas: /);
-  assert.match(stdout, /PASS\s+proof-command/);
+  assert.match(stdout, /PASS\s+evidence-check/);
   assert.match(stdout, /report: \.veritas\/evidence\//);
-  assert.match(stdout, /eval draft: \.veritas\/eval-drafts\//);
+  assert.match(stdout, /standards feedback draft: \.veritas\/eval-drafts\//);
 });
 
-test('shadow run CLI can complete the full draft-and-record path', () => {
-  const rootDir = initCommittedRepo('veritas-shadow-run-record-');
+test('readiness check CLI can complete the full draft-and-record path', () => {
+  const rootDir = initCommittedRepo('veritas-readiness-check-record-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -2647,8 +2647,8 @@ test('shadow run CLI can complete the full draft-and-record path', () => {
       '--root',
       rootDir,
       '--project-name',
-      'Shadow Run Record Demo',
-      '--proof',
+      'Readiness Check Record Demo',
+      '--evidence-check',
       'node -e "process.exit(0)"',
     ],
     { cwd: frameworkRootDir, encoding: 'utf8' },
@@ -2660,7 +2660,7 @@ test('shadow run CLI can complete the full draft-and-record path', () => {
       'exec',
       '--',
       'veritas',
-      'run',
+      'readiness',
       '--format',
       'json',
       '--root',
@@ -2677,23 +2677,23 @@ test('shadow run CLI can complete the full draft-and-record path', () => {
   const parsed = parseCliJson(stdout);
 
   assert.equal(parsed.mode, 'report-draft-and-eval');
-  assert.equal(parsed.evalMode, 'shadow');
-  assert.equal(parsed.proofRan, true);
-  assert.deepEqual(parsed.proofLabels, ['node -e "process.exit(0)"']);
+  assert.equal(parsed.evalMode, 'observe');
+  assert.equal(parsed.evidenceCheckRan, true);
+  assert.deepEqual(parsed.evidenceCheckLabels, ['node -e "process.exit(0)"']);
 });
 
-test('shadow run records run history and reuses fail-to-pass time to green', () => {
+test('readiness check records run history and reuses fail-to-pass time to green', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-run-history-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
-  writeBootstrapStarterKit({ rootDir, projectName: 'Run History Demo', proof: 'node -e process.exit(0)' });
+  writeBootstrapStarterKit({ rootDir, projectName: 'Run History Demo', evidenceCheck: 'node -e process.exit(0)' });
   execFileSync('git', ['init'], { cwd: rootDir, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.email', 'veritas@example.com'], { cwd: rootDir });
   execFileSync('git', ['config', 'user.name', 'Veritas Test'], { cwd: rootDir });
   execFileSync('git', ['add', '.'], { cwd: rootDir });
   execFileSync('git', ['commit', '-m', 'initial'], { cwd: rootDir, stdio: 'ignore' });
-  const policyPath = join(rootDir, '.veritas/policy-packs/default.policy-pack.json');
-  const policyPack = readJsonFromAbsolute(policyPath);
-  policyPack.rules.push({
+  const policyPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
+  const repoStandards = readJsonFromAbsolute(policyPath);
+  repoStandards.rules.push({
     id: 'requires-fix-marker',
     kind: 'required-artifacts',
     classification: 'promotable-policy',
@@ -2703,7 +2703,7 @@ test('shadow run records run history and reuses fail-to-pass time to green', () 
     rollback_switch: null,
     match: { artifacts: ['fix-marker.txt'] },
   });
-  writeFileSync(policyPath, `${JSON.stringify(policyPack, null, 2)}\n`);
+  writeFileSync(policyPath, `${JSON.stringify(repoStandards, null, 2)}\n`);
 
   assert.throws(() =>
     execFileSync(
@@ -2712,10 +2712,10 @@ test('shadow run records run history and reuses fail-to-pass time to green', () 
         'exec',
         '--',
         'veritas',
-      'run',
+      'readiness',
         '--root',
         rootDir,
-        '--skip-proof',
+        '--skip-evidence-check',
         '--working-tree',
         '--run-id',
         'run-history-fail',
@@ -2734,14 +2734,14 @@ test('shadow run records run history and reuses fail-to-pass time to green', () 
       'exec',
       '--',
       'veritas',
-      'run',
+      'readiness',
       '--root',
       rootDir,
-      '--skip-proof',
+      '--skip-evidence-check',
       '--working-tree',
       '--run-id',
       'run-history-pass',
-      '--skip-proof',
+      '--skip-evidence-check',
       '--format',
       'json',
     ],
@@ -2753,8 +2753,8 @@ test('shadow run records run history and reuses fail-to-pass time to green', () 
   assert.equal(typeof draft.prefilled_measurements.time_to_green_minutes, 'number');
 });
 
-test('shadow run JSON mode reports proof failures as run failures', () => {
-  const rootDir = initCommittedRepo('veritas-shadow-run-json-proof-failure-');
+test('readiness check JSON mode reports evidenceCheck failures as run failures', () => {
+  const rootDir = initCommittedRepo('veritas-readiness-check-json-evidenceCheck-failure-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -2767,8 +2767,8 @@ test('shadow run JSON mode reports proof failures as run failures', () => {
       '--root',
       rootDir,
       '--project-name',
-      'Shadow Run JSON Proof Failure Demo',
-      '--proof',
+      'Readiness Check JSON Evidence Check Failure Demo',
+      '--evidence-check',
       'node -e "process.exit(3)"',
     ],
     { cwd: frameworkRootDir, encoding: 'utf8' },
@@ -2778,14 +2778,14 @@ test('shadow run JSON mode reports proof failures as run failures', () => {
     () =>
       execFileSync(
         'npm',
-        ['exec', '--', 'veritas', 'run', '--format', 'json', '--root', rootDir],
+        ['exec', '--', 'veritas', 'readiness', '--format', 'json', '--root', rootDir],
         { cwd: frameworkRootDir, encoding: 'utf8' },
       ),
     (error) => {
       assert.equal(error.status, 1);
       const parsed = parseCliJson(error.stdout.toString());
-      assert.equal(parsed.proofFailure.label, 'node -e "process.exit(3)"');
-      assert.equal(parsed.proofRan, true);
+      assert.equal(parsed.evidenceCheckFailure.label, 'node -e "process.exit(3)"');
+      assert.equal(parsed.evidenceCheckRan, true);
       return true;
     },
   );
@@ -3546,8 +3546,8 @@ test('marker benchmark comparison rejects malformed scenarios and transcripts', 
   );
 });
 
-test('shadow run CLI rejects incomplete branch-diff refs', () => {
-  const rootDir = initCommittedRepo('veritas-shadow-run-diff-');
+test('readiness check CLI rejects incomplete branch-diff refs', () => {
+  const rootDir = initCommittedRepo('veritas-readiness-check-diff-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -3560,8 +3560,8 @@ test('shadow run CLI rejects incomplete branch-diff refs', () => {
       '--root',
       rootDir,
       '--project-name',
-      'Shadow Run Diff Demo',
-      '--proof',
+      'Readiness Check Diff Demo',
+      '--evidence-check',
       'node -e "process.exit(0)"',
     ],
     { cwd: frameworkRootDir, encoding: 'utf8' },
@@ -3575,10 +3575,10 @@ test('shadow run CLI rejects incomplete branch-diff refs', () => {
           'exec',
           '--',
           'veritas',
-      'run',
+      'readiness',
           '--root',
           rootDir,
-          '--skip-proof',
+          '--skip-evidence-check',
           '--changed-from',
           'HEAD~1',
         ],
@@ -3588,8 +3588,8 @@ test('shadow run CLI rejects incomplete branch-diff refs', () => {
   );
 });
 
-test('shadow run CLI executes every required proof lane from the adapter', () => {
-  const rootDir = initCommittedRepo('veritas-shadow-run-multi-proof-');
+test('readiness check CLI executes every required evidenceCheck from the adapter', () => {
+  const rootDir = initCommittedRepo('veritas-readiness-check-multi-evidenceCheck-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -3602,8 +3602,8 @@ test('shadow run CLI executes every required proof lane from the adapter', () =>
       '--root',
       rootDir,
       '--project-name',
-      'Shadow Run Multi Proof Demo',
-      '--proof',
+      'Readiness Check Multi Evidence Check Demo',
+      '--evidence-check',
       'node -e "process.exit(0)"',
     ],
     { cwd: frameworkRootDir, encoding: 'utf8' },
@@ -3611,27 +3611,27 @@ test('shadow run CLI executes every required proof lane from the adapter', () =>
 
   const adapterPath = join(rootDir, '.veritas/repo.adapter.json');
   const adapter = readJsonFromAbsolute(adapterPath);
-  adapter.evidence.proofs = [
-    { id: 'duplicate-proof', command: 'node -e "process.exit(0)"', method: 'validation' },
-    { id: 'duplicate-proof-2', command: 'node -e "process.exit(0)"', method: 'validation' },
+  adapter.evidence.evidenceChecks = [
+    { id: 'duplicate-evidence-check', command: 'node -e "process.exit(0)"', method: 'validation' },
+    { id: 'duplicate-evidence-check-2', command: 'node -e "process.exit(0)"', method: 'validation' },
   ];
-  adapter.evidence.requiredProofIds = ['duplicate-proof', 'duplicate-proof-2'];
-  delete adapter.evidence.defaultProofIds;
+  adapter.evidence.requiredEvidenceCheckIds = ['duplicate-evidence-check', 'duplicate-evidence-check-2'];
+  delete adapter.evidence.defaultEvidenceCheckIds;
   writeFileSync(adapterPath, `${JSON.stringify(adapter, null, 2)}\n`, 'utf8');
 
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'veritas', 'run', '--format', 'json', '--root', rootDir],
+    ['exec', '--', 'veritas', 'readiness', '--format', 'json', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   const parsed = parseCliJson(stdout);
 
-  assert.deepEqual(parsed.proofLabels, ['node -e "process.exit(0)"', 'node -e "process.exit(0)"']);
-  assert.equal(parsed.proofResolutionSource, 'required');
+  assert.deepEqual(parsed.evidenceCheckLabels, ['node -e "process.exit(0)"', 'node -e "process.exit(0)"']);
+  assert.equal(parsed.evidenceCheckResolutionSource, 'required');
 });
 
-test('shadow run CLI treats shell metacharacters as literal proof-command arguments', () => {
-  const rootDir = initCommittedRepo('veritas-shadow-run-literal-metachars-');
+test('readiness check CLI treats shell metacharacters as literal evidence-check-command arguments', () => {
+  const rootDir = initCommittedRepo('veritas-readiness-check-literal-metachars-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
 
   execFileSync(
@@ -3644,8 +3644,8 @@ test('shadow run CLI treats shell metacharacters as literal proof-command argume
       '--root',
       rootDir,
       '--project-name',
-      'Shadow Run Literal Metachars Demo',
-      '--proof',
+      'Readiness Check Literal Metachars Demo',
+      '--evidence-check',
       'node -e "process.exit(0)"',
     ],
     { cwd: frameworkRootDir, encoding: 'utf8' },
@@ -3653,31 +3653,31 @@ test('shadow run CLI treats shell metacharacters as literal proof-command argume
 
   const adapterPath = join(rootDir, '.veritas/repo.adapter.json');
   const adapter = readJsonFromAbsolute(adapterPath);
-  adapter.evidence.proofs = [
+  adapter.evidence.evidenceChecks = [
     {
-      id: 'literal-proof',
-      command: `node -e "const { writeFileSync } = require('node:fs'); console.log('proof stdout'); writeFileSync('proof-output.txt', 'ok');" && node -e "require('node:fs').writeFileSync('proof-injected.txt', 'bad')"`,
+      id: 'literal-evidence-check',
+      command: `node -e "const { writeFileSync } = require('node:fs'); console.log('evidenceCheck stdout'); writeFileSync('evidence-check-output.txt', 'ok');" && node -e "require('node:fs').writeFileSync('evidence-check-injected.txt', 'bad')"`,
       method: 'validation',
     },
   ];
-  adapter.evidence.requiredProofIds = ['literal-proof'];
-  delete adapter.evidence.defaultProofIds;
+  adapter.evidence.requiredEvidenceCheckIds = ['literal-evidence-check'];
+  delete adapter.evidence.defaultEvidenceCheckIds;
   writeFileSync(adapterPath, `${JSON.stringify(adapter, null, 2)}\n`, 'utf8');
 
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'veritas', 'run', '--format', 'json', '--root', rootDir],
+    ['exec', '--', 'veritas', 'readiness', '--format', 'json', '--root', rootDir],
     { cwd: frameworkRootDir, encoding: 'utf8' },
   );
   const parsed = parseCliJson(stdout);
 
-  assert.match(stdout, /proof stdout/);
-  assert.equal(readFileSync(join(rootDir, 'proof-output.txt'), 'utf8'), 'ok');
-  assert.equal(existsSync(join(rootDir, 'proof-injected.txt')), true);
-  assert.deepEqual(parsed.proofLabels, [adapter.evidence.proofs[0].command]);
+  assert.match(stdout, /evidenceCheck stdout/);
+  assert.equal(readFileSync(join(rootDir, 'evidence-check-output.txt'), 'utf8'), 'ok');
+  assert.equal(existsSync(join(rootDir, 'evidence-check-injected.txt')), true);
+  assert.deepEqual(parsed.evidenceCheckLabels, [adapter.evidence.evidenceChecks[0].command]);
 });
 
-test('package script suggestions use the consolidated run surface', () => {
+test('package script suggestions use the consolidated readiness surface', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-print-scripts-'));
   writeFileSync(
     join(rootDir, 'package.json'),
@@ -3695,48 +3695,48 @@ test('package script suggestions use the consolidated run surface', () => {
 
   const repoInsights = inferBootstrapRepoInsights(rootDir);
   const scripts = buildSuggestedPackageScripts({
-    proof: repoInsights.proof,
+    evidenceCheck: repoInsights.evidenceCheck,
     baseRef: repoInsights.baseRef,
   });
 
-  assert.equal(repoInsights.proof, 'npm run verify');
+  assert.equal(repoInsights.evidenceCheck, 'npm run verify');
   assert.equal(repoInsights.baseRef, 'main');
   assert.equal(scripts['veritas:init'], 'npm exec -- veritas init');
-  assert.equal(scripts['veritas:proof'], 'npm run verify');
+  assert.equal(scripts['veritas:evidence-check'], 'npm run verify');
   assert.equal(
     scripts['veritas:check:working-tree'],
-    'npm exec -- veritas run --working-tree',
+    'npm exec -- veritas readiness --working-tree',
   );
-  assert.equal(scripts['veritas:eval'], 'npm exec -- veritas run');
+  assert.equal(scripts['veritas:eval'], 'npm exec -- veritas readiness');
   assert.equal(
     scripts['lint:governance'],
-    'npm exec -- veritas run --format feedback --working-tree',
+    'npm exec -- veritas readiness --format feedback --working-tree',
   );
   assert.equal(
     scripts['veritas:check:diff'],
-    'npm exec -- veritas run --changed-from main --changed-to HEAD',
+    'npm exec -- veritas readiness --changed-from main --changed-to HEAD',
   );
 });
 
 test('print ci-snippet returns a copy-paste starter snippet', () => {
   const snippet = buildSuggestedCiSnippet({
-    proof: 'npm run verify',
+    evidenceCheck: 'npm run verify',
     baseRef: 'main',
   });
-  assert.match(snippet, /Run project proof/);
-  assert.match(snippet, /npm exec -- veritas run --changed-from main --changed-to HEAD/);
+  assert.match(snippet, /Run project evidenceCheck/);
+  assert.match(snippet, /npm exec -- veritas readiness --changed-from main --changed-to HEAD/);
 
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-print-ci-'));
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { verify: 'turbo run verify' } }, null, 2));
   const repoInsights = inferBootstrapRepoInsights(rootDir);
-  assert.equal(repoInsights.proof, 'npm run verify');
-  assert.match(buildSuggestedCiSnippet({ proof: repoInsights.proof }), /run: npm run verify/);
+  assert.equal(repoInsights.evidenceCheck, 'npm run verify');
+  assert.match(buildSuggestedCiSnippet({ evidenceCheck: repoInsights.evidenceCheck }), /run: npm run verify/);
 });
 
 test('print git-hook returns a tracked post-commit adapter', () => {
   const hookBody = buildSuggestedGitHook({ hook: 'post-commit' });
   assert.match(hookBody, /^#!\/bin\/sh/m);
-  assert.match(hookBody, /veritas run --changed-from HEAD~1 --changed-to HEAD/);
+  assert.match(hookBody, /veritas readiness --changed-from HEAD~1 --changed-to HEAD/);
 
   assert.match(hookBody, /VERITAS_HOOK_SKIP/);
 });
@@ -3744,7 +3744,7 @@ test('print git-hook returns a tracked post-commit adapter', () => {
 test('print runtime-hook returns a tracked agent-runtime adapter', () => {
   const hookBody = buildSuggestedRuntimeHook();
   assert.match(hookBody, /^#!\/bin\/sh/m);
-  assert.match(hookBody, /veritas run --format json --working-tree/);
+  assert.match(hookBody, /veritas readiness --format json --working-tree/);
 
   assert.match(hookBody, /VERITAS_HOOK_SKIP/);
 });
@@ -3752,7 +3752,7 @@ test('print runtime-hook returns a tracked agent-runtime adapter', () => {
 test('print stop-hook returns generic and tool-specific stop hook suggestions', () => {
   const genericHook = buildSuggestedStopHook({ tool: 'generic' });
   assert.equal(genericHook.outputPath, '.veritas/hooks/stop.sh');
-  assert.match(genericHook.hookBody, /veritas run --format feedback --working-tree/);
+  assert.match(genericHook.hookBody, /veritas readiness --format feedback --working-tree/);
 
   const claudeHook = buildSuggestedStopHook({ tool: 'claude-code' });
   assert.equal(claudeHook.toolConfigPath, '.claude/settings.json');
@@ -3874,7 +3874,7 @@ test('apply package-scripts writes the suggested guidance scripts into package.j
   assert.equal(pkg.scripts['veritas:init'], 'npm exec -- veritas init');
   assert.equal(
     pkg.scripts['veritas:check:diff'],
-    'npm exec -- veritas run --changed-from main --changed-to HEAD',
+    'npm exec -- veritas readiness --changed-from main --changed-to HEAD',
   );
 });
 
@@ -3885,7 +3885,7 @@ test('apply package-scripts surfaces script conflicts without force', () => {
     JSON.stringify(
       {
         scripts: {
-          'veritas:proof': 'echo custom',
+          'veritas:evidence-check': 'echo custom',
         },
       },
       null,
@@ -3897,10 +3897,10 @@ test('apply package-scripts surfaces script conflicts without force', () => {
     () =>
       applyPackageScripts({
         rootDir,
-        proof: 'npm test',
+        evidenceCheck: 'npm test',
         baseRef: '<base-ref>',
       }),
-    /Refusing to overwrite existing script veritas:proof/,
+    /Refusing to overwrite existing script veritas:evidence-check/,
   );
 });
 
@@ -3908,7 +3908,7 @@ test('apply ci-snippet writes a stable snippet file', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-ci-'));
   const result = applyCiSnippet({
     rootDir,
-    proof: 'npm run verify',
+    evidenceCheck: 'npm run verify',
     baseRef: 'main',
   });
   const contents = readFileSync(
@@ -3931,7 +3931,7 @@ test('apply git-hook writes a tracked executable hook file', () => {
 
   assert.equal(result.outputPath, '.githooks/post-commit');
   assert.equal(result.hook, 'post-commit');
-  assert.match(contents, /veritas run --changed-from HEAD~1 --changed-to HEAD/);
+  assert.match(contents, /veritas readiness --changed-from HEAD~1 --changed-to HEAD/);
 });
 
 test('apply git-hook can configure the local hooks path explicitly', () => {
@@ -3959,7 +3959,7 @@ test('apply runtime-hook writes a tracked executable runtime hook file', () => {
   const contents = readFileSync(join(rootDir, '.veritas/hooks/agent-runtime.sh'), 'utf8');
 
   assert.equal(result.outputPath, '.veritas/hooks/agent-runtime.sh');
-  assert.match(contents, /veritas run --format json --working-tree/);
+  assert.match(contents, /veritas readiness --format json --working-tree/);
 });
 
 test('apply stop-hook writes the generic script and requested tool config', () => {
@@ -3987,7 +3987,7 @@ test('apply stop-hook writes the generic script and requested tool config', () =
   assert.equal(result.outputPath, '.veritas/hooks/stop.sh');
   assert.equal(result.tool, 'cursor');
   assert.equal(result.configuredToolConfigPath, '.cursor/hooks.json');
-  assert.match(contents, /veritas run --format feedback --working-tree/);
+  assert.match(contents, /veritas readiness --format feedback --working-tree/);
   assert.equal(cursorConfig.hooks.stop[0].command, 'echo keep-me');
   assert.equal(cursorConfig.hooks.stop[1].command, '.veritas/hooks/stop.sh');
 });
@@ -4366,7 +4366,7 @@ test('generated post-commit hook runs successfully after the initial commit boun
       rootDir,
       '--project-name',
       'Hook Root Commit Demo',
-      '--proof',
+      '--evidence-check',
       'node -e "process.exit(0)"',
     ],
     { cwd: frameworkRootDir, encoding: 'utf8' },
@@ -4380,7 +4380,7 @@ test('generated post-commit hook runs successfully after the initial commit boun
   });
 
   assert.match(stdout, /^veritas: /);
-  assert.match(stdout, /PASS\s+proof-command: node -e "process\.exit\(0\)"/);
+  assert.match(stdout, /PASS\s+evidence-check: node -e "process\.exit\(0\)"/);
   assert.match(stdout, /report: \.veritas\/evidence\//);
 });
 
@@ -4400,7 +4400,7 @@ test('generated post-commit hook runs successfully on a normal subsequent commit
       rootDir,
       '--project-name',
       'Hook Followup Commit Demo',
-      '--proof',
+      '--evidence-check',
       'node -e "process.exit(0)"',
     ],
     { cwd: frameworkRootDir, encoding: 'utf8' },
@@ -4419,7 +4419,7 @@ test('generated post-commit hook runs successfully on a normal subsequent commit
 
   assert.match(stdout, /^veritas: /);
   assert.match(stdout, /1 file changed/);
-  assert.match(stdout, /PASS\s+proof-command: node -e "process\.exit\(0\)"/);
+  assert.match(stdout, /PASS\s+evidence-check: node -e "process\.exit\(0\)"/);
 });
 
 test('generated runtime hook runs successfully with the default working-tree path', () => {
@@ -4438,7 +4438,7 @@ test('generated runtime hook runs successfully with the default working-tree pat
       rootDir,
       '--project-name',
       'Runtime Hook Demo',
-      '--proof',
+      '--evidence-check',
       'node -e "process.exit(0)"',
     ],
     { cwd: frameworkRootDir, encoding: 'utf8' },
@@ -4452,7 +4452,7 @@ test('generated runtime hook runs successfully with the default working-tree pat
   const parsed = parseCliJson(stdout);
 
   assert.equal(parsed.mode, 'report-and-draft');
-  assert.deepEqual(parsed.proofLabels, ['node -e "process.exit(0)"']);
+  assert.deepEqual(parsed.evidenceCheckLabels, ['node -e "process.exit(0)"']);
   assert.equal(parsed.reportSourceKind, 'working-tree');
 });
 
@@ -4486,15 +4486,15 @@ test('adaptive bootstrap detects a workspace-shaped repo', () => {
   const bootstrapReadme = readFileSync(join(rootDir, '.veritas/README.md'), 'utf8');
 
   assert.equal(result.repoInsights.repoKind, 'workspace');
-  assert.equal(result.proof, 'npm run verify');
+  assert.equal(result.evidenceCheck, 'npm run verify');
   assert.ok(adapter.graph.nodes.some((node) => node.patterns.includes('packages/')));
-  assert.deepEqual(adapter.evidence.defaultProofIds, ['required-proof']);
+  assert.deepEqual(adapter.evidence.defaultEvidenceCheckIds, ['required-evidence-check']);
   assert.equal(adapter.evidence.uncoveredPathPolicy, 'warn');
   assert.match(bootstrapReadme, /Repo kind: `workspace`/);
-  assert.match(bootstrapReadme, /Surface-Aware Routing/);
+  assert.match(bootstrapReadme, /Work-Area Evidence Routing/);
 });
 
-test('adaptive bootstrap infers the proof lane through the shipped CLI path', () => {
+test('adaptive bootstrap infers the evidenceCheck through the shipped CLI path', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-workspace-cli-'));
   writeFileSync(
     join(rootDir, 'package.json'),
@@ -4519,9 +4519,9 @@ test('adaptive bootstrap infers the proof lane through the shipped CLI path', ()
   const initStdout = runLocalVeritas(['init', '--root', rootDir]);
   const initResult = parseCliJson(initStdout);
 
-  assert.equal(initResult.proof, 'npm run verify');
+  assert.equal(initResult.evidenceCheck, 'npm run verify');
   assert.equal(initResult.repoInsights.repoKind, 'workspace');
-  assert.equal(initResult.repoInsights.enableSurfaceProofRouting, true);
+  assert.equal(initResult.repoInsights.enableWorkAreaEvidenceRouting, true);
 });
 
 test('adaptive bootstrap falls back cleanly when git HEAD is detached', () => {
@@ -4557,7 +4557,7 @@ test('adaptive bootstrap falls back cleanly when git HEAD is detached', () => {
   const insights = inferBootstrapRepoInsights(rootDir);
 
   assert.equal(insights.baseRef, '<base-ref>');
-  assert.equal(insights.proof, 'npm run verify');
+  assert.equal(insights.evidenceCheck, 'npm run verify');
 });
 
 test('adaptive bootstrap detects a docs-shaped repo', () => {
@@ -4585,7 +4585,7 @@ test('adaptive bootstrap detects a docs-shaped repo', () => {
   const adapter = readJsonFromAbsolute(join(rootDir, '.veritas/repo.adapter.json'));
 
   assert.equal(insights.repoKind, 'docs');
-  assert.equal(result.proof, 'npm run docs:build');
+  assert.equal(result.evidenceCheck, 'npm run docs:build');
   assert.ok(
     adapter.graph.nodes.some(
       (node) => node.kind === 'product-surface' && node.patterns.includes('docs/'),
@@ -4609,7 +4609,7 @@ test('starter kit helper refuses to overwrite without force', () => {
 
 test('script suggestion helper returns the expected keys', () => {
   const scripts = buildSuggestedPackageScripts({
-    proof: 'npm run verify',
+    evidenceCheck: 'npm run verify',
     baseRef: 'main',
   });
   assert.deepEqual(Object.keys(scripts), [
@@ -4618,8 +4618,8 @@ test('script suggestion helper returns the expected keys', () => {
     'veritas:check',
     'veritas:check:working-tree',
     'veritas:check:diff',
-    'veritas:budget',
-    'veritas:proof',
+    'veritas:coverage',
+    'veritas:evidence-check',
     'lint:governance',
     'veritas:eval',
   ]);

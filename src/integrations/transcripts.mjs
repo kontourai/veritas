@@ -66,7 +66,7 @@ function commandFromClaudeToolUse(item) {
 }
 
 function classifyCommand(commandText, files = [], raw = {}) {
-  if (/\bveritas\s+(?:shadow\s+run|run)\b/.test(commandText) || /\bPASS\b|\bFAIL\b/.test(commandText)) return 'shadow-run';
+  if (/\bveritas\s+readiness\b/.test(commandText) || /\bPASS\b|\bFAIL\b/.test(commandText)) return 'readiness-check';
   if (/VERITAS_OVERRIDE_RULE=|VERITAS_HOOK_SKIP=1/.test(commandText)) return 'override';
   const toolName = raw?.name ?? raw?.tool_name;
   if (['Edit', 'MultiEdit', 'Write', 'NotebookEdit'].includes(toolName) || files.length > 0 && /edit|write|multiedit/i.test(commandText)) return 'edit';
@@ -180,10 +180,10 @@ function isFailing(event) {
 
 function deriveTimeToGreen(events) {
   if (events.length === 0) return heuristicMissing(REASON_CODES.transcriptSchemaUnrecognized);
-  const firstFailure = events.find((event) => event.kind === 'shadow-run' && isFailing(event) && eventTime(event) !== null);
+  const firstFailure = events.find((event) => event.kind === 'readiness-check' && isFailing(event) && eventTime(event) !== null);
   if (!firstFailure) return heuristicMissing(REASON_CODES.noFailingRunObserved);
   const failedAt = eventTime(firstFailure);
-  const firstPass = events.find((event) => event.kind === 'shadow-run' && isPassing(event) && eventTime(event) !== null && eventTime(event) >= failedAt);
+  const firstPass = events.find((event) => event.kind === 'readiness-check' && isPassing(event) && eventTime(event) !== null && eventTime(event) >= failedAt);
   if (!firstPass) return heuristicMissing(REASON_CODES.noPassingRunObserved);
   return Math.round(((eventTime(firstPass) - failedAt) / 60000) * 100) / 100;
 }
@@ -191,10 +191,10 @@ function deriveTimeToGreen(events) {
 function deriveAcceptedWithoutMajorRewrite(events, files, threshold) {
   if (events.length === 0) return heuristicMissing(REASON_CODES.transcriptSchemaUnrecognized);
   if (files.length === 0) return heuristicMissing(REASON_CODES.churnThresholdNotApplicable);
-  const finishIndex = events.findLastIndex((event) => event.kind === 'shadow-run');
+  const finishIndex = events.findLastIndex((event) => event.kind === 'readiness-check');
   const postRunEdits = events.slice(finishIndex + 1).filter((event) => event.kind === 'edit' && event.files.some((file) => files.includes(file)));
   const changedLines = postRunEdits.reduce((total, event) => total + Number(event.raw?.line_churn ?? event.raw?.lineChurn ?? event.raw?.changed_lines ?? event.raw?.changedLines ?? 0), 0);
-  const baseline = Math.max(1, Number(events.find((event) => event.kind === 'shadow-run')?.raw?.reported_lines ?? 100));
+  const baseline = Math.max(1, Number(events.find((event) => event.kind === 'readiness-check')?.raw?.reported_lines ?? 100));
   return changedLines / baseline <= threshold;
 }
 
@@ -216,7 +216,7 @@ export function buildEvalDraftFromNormalizedEvents({
     version: 1,
     run_id: runId,
     team_profile_id: `${source}-observed`,
-    mode: 'shadow',
+    mode: 'observe',
     source: `${source}-transcript`,
     transcript_path: transcriptRelativePath,
     evidence: evidenceRecord
@@ -228,7 +228,7 @@ export function buildEvalDraftFromNormalizedEvents({
           source_kind: evidenceRecord.source_kind ?? 'explicit-files',
           source_scope: evidenceRecord.source_scope ?? ['transcript'],
           components: evidenceRecord.components ?? [],
-          triggered_proofs: evidenceRecord.triggered_proofs ?? [],
+          triggered_evidence_checks: evidenceRecord.triggered_evidence_checks ?? [],
         }
       : {
           artifact_path: transcriptRelativePath,
@@ -238,7 +238,7 @@ export function buildEvalDraftFromNormalizedEvents({
           source_kind: 'explicit-files',
           source_scope: ['transcript'],
           components: [],
-          triggered_proofs: [],
+          triggered_evidence_checks: [],
         },
     governance: {
       surface_touched: false,
@@ -253,7 +253,7 @@ export function buildEvalDraftFromNormalizedEvents({
     },
     prefilled_measurements: {
       time_to_green_minutes: timeToGreenMinutes,
-      override_count: events.filter((event) => event.kind === 'override' || /VERITAS_[A-Z0-9_]+|--skip-proof/.test(event.commandText ?? '')).length,
+      override_count: events.filter((event) => event.kind === 'override' || /VERITAS_[A-Z0-9_]+|--skip-evidence-check/.test(event.commandText ?? '')).length,
       false_positive_rules: [],
       missed_issues: [],
     },

@@ -1,74 +1,48 @@
 # Getting Started
 
-This guide is written for the end user of the framework, not the framework maintainer.
+This guide gets Veritas readiness checkning in a repository so developers and agents can check changes against repo standards.
 
 The goal is simple:
 
-- give your AI a bounded map of the repo
-- define the few rules that actually matter
-- emit lint-style feedback that the agent can fix before it finishes
-- keep evidence and eval history for human review
+- define what good looks like for the repo
+- map the work areas and change boundaries that matter
+- run evidence checks for the current change
+- produce feedback and generated evidence before review
 
-This guide is about installation and use first.
-Framework development belongs in `CONTRIBUTING.md`.
-
-If your next question is "how does this turn on for the AI?", read [Agent Activation](../design/agent-activation.md) after this guide.
-If your next question is "what are the exact commands and generated files?", use [CLI Reference](../reference/cli.md) and [Artifacts and Schemas](../reference/artifacts-and-schemas.md).
+For the product model, read [Concepts](../concepts.md). For exact current commands, read [CLI Reference](../reference/cli.md).
 
 ## Mental Model
 
-Use the framework as:
+Use Veritas as:
 
-1. **rules**: "what does this repo require from AI-authored changes?"
-2. **feedback**: "what should the agent fix right now?"
-3. **improvement**: "did this guidance actually help the team?"
-
-If you keep those concepts separate, the system stays understandable.
+1. **Repo Standards**: what this repo requires.
+2. **Repo Map**: where work lives and which boundaries matter.
+3. **Readiness Report**: whether this change has enough evidence to merge.
+4. **Standards Feedback**: whether the standards are helping or need improvement.
 
 ## Minimal Onboarding
 
-You do not need a giant rollout.
+Start small:
 
-Start with:
+1. one repo map
+2. a small set of repo standards
+3. one evidenceCheck
+4. one requirement that catches a real review issue
 
-1. one adapter
-2. one policy pack
-3. one proof lane
-4. one executable rule
+That is enough to make Veritas useful. You do not need to model the whole organization on day one.
 
-That is enough to make the framework useful.
-
-## Install First
-
-The install path should feel boring:
-
-```bash
-npm install
-```
-
-Then verify the repo artifacts:
-
-```bash
-npm run verify
-npm test
-```
-
-If those pass, move straight into adapter + policy-pack setup.
-
-## Bootstrap The Repo
-
-The fastest way to start is:
+## Install
 
 ```bash
 npm install -D @kontourai/veritas
 npx @kontourai/veritas init
 ```
 
-That gives you a starter adapter, policy pack, team profile, governance instruction file, local README under `.veritas/`, and marker-bounded governance blocks in AI instruction files.
+`init` writes starter files under `.veritas/`, injects a governance block into AI instruction files, and creates a reviewable starting point for standards and map configuration.
 
-The bootstrap README also tells you what the framework inferred about the repo so you can confirm or correct it right away.
+Current generated paths are documented in [CLI Reference](../reference/cli.md). The product model is Repo Standards, Repo Map, and protected standards metadata.
 
-For a repo where the first setup should be reviewed before anything is mutated, use the guided path:
+For a repo where setup should be reviewed before files are written, use the guided path:
 
 ```bash
 npx @kontourai/veritas init --explore --output .veritas/init-plans/first-pass.json
@@ -76,154 +50,74 @@ npx @kontourai/veritas init --guided --answers answers.json --output .veritas/in
 npx @kontourai/veritas init --apply --plan .veritas/init-plans/guided.json
 ```
 
-The guided path is built for agent-led setup. Exploration and interview work can be rich, but the actual mutation still happens through `veritas init --apply --plan ...` after the plan artifact has been reviewed.
+## Protect The Standards
 
-## Step 1: Create an Adapter
-
-An adapter should answer:
-
-- what are the meaningful repo surfaces?
-- what proof lane do changes need?
-- when different surfaces need different proof commands, which node IDs route to which proof lanes?
-- how should unresolved files be treated?
-
-Use [adapters/work-agent.adapter.json](../../adapters/work-agent.adapter.json) as the richer example and [adapters/demo-docs-site.adapter.json](../../adapters/demo-docs-site.adapter.json) as the smaller one.
-
-## Step 2: Create a Policy Pack
-
-A policy pack should start small.
-
-Prefer:
-
-- one `hard-invariant` rule that must never drift
-- one `promotable-policy` rule that captures a strong preference
-- one `brittle-implementation-check` rule only if you need a temporary safety rail during refactoring
-
-Start with executable rules that are easy to explain:
-
-- `artifacts`: required repo files must exist.
-- `governance-block`: AI instruction files must contain the canonical Veritas block.
-- `if-changed` plus `then-require`: if one path changes, a companion path must also change.
-
-## Step 3: Generate Evidence
-
-Run the CLI with your adapter and policy pack:
+After reviewing the generated standards and map, record the first attestation:
 
 ```bash
-npx @kontourai/veritas run --check shadow \
-  --root /path/to/repo \
-  --adapter ./adapters/work-agent.adapter.json \
-  --policy-pack ./policy-packs/work-agent-convergence.policy-pack.json \
-  --run-id local-smoke \
-  package.json
+npx @kontourai/veritas attest bootstrap --actor <authority-id> --non-interactive
 ```
 
-The output gives you:
+This records authority-backed evidence for the current protected standards. If the standards or map change later, Veritas reports that fresh authority is needed before those changes can be trusted.
 
-- resolved phase and workstream
-- affected nodes and lanes
-- proof-lane status
-- policy-pack provenance
-- a durable evidence artifact for review or CI
+## Run A Readiness Check
 
-If you want proof plus agent-readable feedback, run:
+Run a readiness check:
 
 ```bash
-npx @kontourai/veritas run --working-tree
+npx @kontourai/veritas readiness --working-tree
 ```
 
-Then record a local eval when you know the outcome:
+The output gives developer- and agent-facing feedback, writes generated evidence, and records enough context for standards feedback.
+
+For a lower-level evidence artifact without the full orchestration path:
 
 ```bash
+npx @kontourai/veritas readiness --check evidence --working-tree
+```
 
-npx @kontourai/veritas eval draft \
-  --evidence .veritas/evidence/local-smoke.json
+`veritas readiness` is the front door for readiness reports. Existing hook and CI integrations may still use the lower-level `veritas readiness` compatibility path.
 
-npx @kontourai/veritas eval record \
-  --draft .veritas/eval-drafts/local-smoke.json \
-  --accepted-without-major-rewrite true \
-  --required-followup false \
-  --reviewer-confidence high \
-  --time-to-green-minutes 12 \
-  --override-count 0
+## Add Change Guidance
 
+Use `explain` when an agent or developer needs context before editing:
+
+```bash
+npx @kontourai/veritas explain --file src/api/users.ts
+npx @kontourai/veritas explain <requirement-id>
+```
+
+Good change guidance should say what to do next, what not to do, why it matters, and what evidence will satisfy the requirement.
+
+## Improve The Standards
+
+After Veritas has generated enough evidence, use the current feedback commands:
+
+```bash
 npx @kontourai/veritas eval summary
+npx @kontourai/veritas eval recommend
+npx @kontourai/veritas recommendation list
 ```
 
-Optional runtime installs still exist, but they are not required for the core product path:
+In product language, these commands create **Standards Feedback** and **Standards Recommendations**. Recommendations should be reviewed before they change the repo standards.
 
-```bash
-npx @kontourai/veritas apply git-hook --configure-git
-npx @kontourai/veritas apply stop-hook --tool generic
-npx @kontourai/veritas apply runtime-hook
-npx @kontourai/veritas print codex-hook --codex-home /path/to/.codex
-npx @kontourai/veritas integrations codex status --codex-home /path/to/.codex
-npx @kontourai/veritas apply codex-hook --codex-home /path/to/.codex
-npx @kontourai/veritas apply codex-hook --target-hooks-file /path/to/hooks.json
-```
+## Roll Out Gradually
 
-That keeps the workflow explicit:
+Use the enforcement ladder:
 
-1. report what happened
-2. then record how useful that guidance was afterward
+- **Observe**: collect evidence and learn what matters.
+- **Guide**: give developers and agents just-in-time correction.
+- **Require**: require fresh evidence or an authority-backed exception before merge readiness is complete.
 
-The eval step stays conservative:
-
-- `veritas run --working-tree` is the shortest hook-friendly path for proof + report + draft
-- if the adapter defines surface-aware proof routing, `veritas run --working-tree` is also the shortest path to ensure the changed surfaces select the right proof commands
-- `apply git-hook --configure-git` is the shortest tracked git-hook install path
-- `apply runtime-hook` is the shortest tracked non-git hook install path
-- `apply codex-hook --codex-home ...` is the shortest higher-level Codex hook merge path
-- `print codex-hook --codex-home ...` is the shortest no-mutation preview path for that install target
-- `runtime status` is the shortest cross-adapter diagnostic path
-- when no `--codex-home` or `--target-hooks-file` is supplied, it should tell you that no Codex target was checked yet
-- the evidence input must be repo-local under `.veritas/evidence/`
-- the draft artifact stays repo-local under `.veritas/eval-drafts/`
-- reviewer confidence should match the team profile scale, or use `unknown`
-- existing eval artifacts are not overwritten unless you pass `--force`
-
-If you want current-state truth instead of an explicit file list, use one of the working-tree modes:
-
-```bash
-npx @kontourai/veritas run --check shadow --working-tree
-npx @kontourai/veritas run --check shadow --staged
-npx @kontourai/veritas run --check shadow --unstaged --untracked
-```
-
-If you want branch-diff truth, keep using explicit refs:
-
-```bash
-npx @kontourai/veritas run --check shadow --changed-from main --changed-to HEAD
-```
-
-## Step 4: Add Live Eval Later, Not First
-
-Do this only after the first three steps are working.
-
-Add:
-
-1. one team profile
-2. one eval record example
-3. `shadow` mode as the default rollout
-
-That lets you measure usefulness before you harden more rules.
-
-If you want that next, read [Tune The Framework For Your Team](./tune-for-your-team.md) and [Live Evals](../design/live-evals.md).
-
-## Start The Next Project This Way
-
-If you are setting up a brand-new repo, the next guide to read is [Start Your Next Project With Veritas](./start-your-next-project.md).
-If you want example payloads before wiring your own repo, inspect [Example Fixtures](../reference/examples.md).
+Start in Observe or Guide. Promote requirements only when the evidence says they are useful.
 
 ## Why Teams Care
 
-This structure helps because it creates a better contract between AI and humans.
+Veritas creates a better contract between AI and humans.
 
-- **For the AI:** it reduces search space and ambiguity.
-- **For reviewers:** it shortens the audit path from "read the whole diff" to "inspect the evidence, the affected lane, and the policy result."
-- **For the organization:** it turns repo knowledge into reusable policy instead of tribal memory.
+- **For agents:** less ambiguity and more precise correction.
+- **For developers:** repo standards appear at the point of work.
+- **For reviewers:** a readiness report narrows review to evidence, exceptions, and risky boundaries.
+- **For the organization:** humans review the standards and exceptions instead of manually rediscovering the same expectations in every diff.
 
-That is the differentiator.
-
-The point is not only to make agents faster.
-The point is to make them easier to trust.
+The point is not only to make agents faster. The point is to make more changes trustworthy enough for reduced human review.

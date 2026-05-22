@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Demonstrates the Veritas → Surface handoff.
 //
-// Reads a Veritas evidence artifact (the kind produced by `veritas run`
+// Reads a Veritas evidence artifact (the kind produced by `veritas readiness`
 // or `veritas report`), extracts its `surface.input` block, and feeds it to
 // Surface's `buildTrustReport` to produce a portable trust report.
 //

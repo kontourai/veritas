@@ -1,11 +1,11 @@
 import { SURFACE_TRUST_POLICIES } from '../surface/policies.mjs';
 
-export function buildBaselineClaims(repoName, { hasGovernance = false, proofCommands = [], surfaceNodes = [] } = {}) {
+export function buildBaselineClaims(repoName, { hasGovernance = false, evidenceCheckCommands = [], workAreas = [] } = {}) {
   const now = new Date().toISOString();
   const claims = [];
   const policies = new Map();
 
-  for (const node of surfaceNodes) {
+  for (const node of workAreas) {
     claims.push({
       id: `${safeId(repoName)}.surface.${safeId(node.id ?? node)}`,
       surface: 'veritas.affected-surface',
@@ -38,21 +38,21 @@ export function buildBaselineClaims(repoName, { hasGovernance = false, proofComm
     policies.set(SURFACE_TRUST_POLICIES.governanceArtifact.id, SURFACE_TRUST_POLICIES.governanceArtifact);
   }
 
-  for (const command of proofCommands) {
+  for (const command of evidenceCheckCommands) {
     claims.push({
-      id: `${safeId(repoName)}.proof.${safeId(command)}`,
-      surface: 'veritas.proof',
-      claimType: 'software-proof',
+      id: `${safeId(repoName)}.evidence-check.${safeId(command)}`,
+      surface: 'veritas.evidence-check',
+      claimType: 'software-evidence-check',
       fieldOrBehavior: command,
       subjectType: 'repository',
       subjectId: repoName,
       impactLevel: 'high',
-      verificationPolicyId: SURFACE_TRUST_POLICIES.proof.id,
+      verificationPolicyId: SURFACE_TRUST_POLICIES.evidenceCheck.id,
       metadata: { command },
       createdAt: now,
       updatedAt: now,
     });
-    policies.set(SURFACE_TRUST_POLICIES.proof.id, SURFACE_TRUST_POLICIES.proof);
+    policies.set(SURFACE_TRUST_POLICIES.evidenceCheck.id, SURFACE_TRUST_POLICIES.evidenceCheck);
   }
 
   return { claims, policies: [...policies.values()] };

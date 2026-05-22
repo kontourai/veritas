@@ -16,7 +16,7 @@ Skips eval-draft schema validation for transcript observation.
 
 This is intended as a short-lived escape hatch while repairing an eval observer or schema mismatch. Veritas prints a warning on every invocation when this variable is set.
 
-## Hook Control
+## Hook Requirement
 
 ### `VERITAS_HOOK_SKIP=1`
 

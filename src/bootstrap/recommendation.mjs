@@ -5,7 +5,7 @@ import { buildGovernanceBlock, replaceGovernanceBlock } from '../governance.mjs'
 import {
   buildAdaptiveNodes,
   buildStarterAdapter,
-  buildStarterPolicyPack,
+  buildStarterRepoStandards,
   buildStarterTeamProfile,
   buildBootstrapReadme,
   buildGovernanceInstructions,
@@ -79,7 +79,7 @@ function validateOwnerAnswers(answers) {
     throw new Error('init answers must be an object');
   }
   const allowedKeys = new Set([
-    'proof',
+    'evidenceCheck',
     'selectedInstructionTargets',
     'selected_instruction_targets',
     'boundaries',
@@ -119,15 +119,15 @@ function recommendedInstructionTargets(rootDir, selectedInstructionTargets) {
   });
 }
 
-function recommendedProofs(repoInsights) {
+function recommendedEvidenceChecks(repoInsights) {
   return [
     {
-      id: 'required-proof',
-      command: repoInsights.proof,
+      id: 'required-evidence-check',
+      command: repoInsights.evidenceCheck,
       method: 'validation',
       reason: repoInsights.matchedScripts.length > 0
         ? `Selected from package script priority; matched scripts: ${repoInsights.matchedScripts.join(', ')}.`
-        : 'Fallback proof because no known package scripts were detected.',
+        : 'Fallback evidenceCheck because no known package scripts were detected.',
       confidence: repoInsights.matchedScripts.length > 0 ? 'high' : 'low',
       source: repoInsights.matchedScripts.length > 0 ? 'package.json scripts' : 'fallback',
     },
@@ -145,9 +145,9 @@ function recommendedSurfaces(repoInsights) {
 function ownerQuestions(repoInsights) {
   const questions = [
     {
-      id: 'canonical-proof',
-      group: 'proof',
-      question: `Is \`${repoInsights.proof}\` the command that should prove repo health before AI-authored changes are considered ready?`,
+      id: 'canonical-evidenceCheck',
+      group: 'evidenceCheck',
+      question: `Is \`${repoInsights.evidenceCheck}\` the command that should prove repo health before AI-authored changes are considered ready?`,
     },
     {
       id: 'protected-paths',
@@ -175,7 +175,7 @@ function ownerQuestions(repoInsights) {
     questions.push({
       id: 'package-manager',
       group: 'tooling',
-      question: 'No package.json was detected. What command should Veritas use as the initial proof?',
+      question: 'No package.json was detected. What command should Veritas use as the initial evidenceCheck?',
     });
   }
 
@@ -190,7 +190,7 @@ function ownerQuestions(repoInsights) {
   return questions;
 }
 
-function recommendedProofSuiteInventory(repoInsights) {
+function recommendedEvidenceInventory(repoInsights) {
   return (repoInsights.existingVerification?.items ?? []).map((item) => ({
     id: item.id.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'existing-verification',
     source_kind: item.kind,
@@ -204,33 +204,33 @@ function recommendedProofSuiteInventory(repoInsights) {
   }));
 }
 
-function buildArtifactPayloads({ rootDir, projectName, proof, repoInsights, selectedInstructionTargets, ownerAnswers }) {
+function buildArtifactPayloads({ rootDir, projectName, evidenceCheck, repoInsights, selectedInstructionTargets, ownerAnswers }) {
   const adapter = buildStarterAdapter({
     projectName,
-    proof,
+    evidenceCheck,
     repoInsights,
     instructionTargets: selectedInstructionTargets,
   });
-  const policyPack = buildStarterPolicyPack({ projectName, instructionTargets: selectedInstructionTargets });
-  const teamProfile = buildStarterTeamProfile({ projectName, proof });
+  const repoStandards = buildStarterRepoStandards({ projectName, instructionTargets: selectedInstructionTargets });
+  const teamProfile = buildStarterTeamProfile({ projectName, evidenceCheck });
   const recommendationSummary = [
     `- Mode: guided initialization artifact`,
     `- Repo kind: \`${repoInsights.repoKind}\``,
-    `- Proof: \`${proof}\``,
+    `- Evidence Check: \`${evidenceCheck}\``,
     `- Selected instruction targets: ${selectedInstructionTargets.map((target) => `\`${target.path}\``).join(', ') || '`none`'}`,
   ].join('\n');
   const governanceBlock = buildGovernanceBlock();
   const payloads = {
     '.veritas/README.md': buildBootstrapReadme({
       projectName,
-      proof,
+      evidenceCheck,
       repoInsights,
       recommendationSummary,
       ownerAnswers,
     }),
     '.veritas/GOVERNANCE.md': buildGovernanceInstructions(),
     '.veritas/repo.adapter.json': jsonPayload(adapter),
-    '.veritas/policy-packs/default.policy-pack.json': jsonPayload(policyPack),
+    '.veritas/repo-standards/default.repo-standards.json': jsonPayload(repoStandards),
     '.veritas/team/default.team-profile.json': jsonPayload(teamProfile),
   };
 
@@ -250,18 +250,18 @@ function artifactHashes(payloads) {
 export function buildInitRecommendation({
   rootDir,
   projectName = basename(resolve(rootDir)),
-  proof,
+  evidenceCheck,
   answers,
   mode = 'explore',
 }) {
   const ownerAnswers = validateOwnerAnswers(answers);
   const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const resolvedProof = ownerAnswers.proof ?? proof ?? repoInsights.proof;
+  const resolvedEvidenceCheck = ownerAnswers.evidenceCheck ?? evidenceCheck ?? repoInsights.evidenceCheck;
   const selectedInstructionTargets = selectedInstructionTargetsFromAnswers(ownerAnswers);
   const artifactPayloads = buildArtifactPayloads({
     rootDir,
     projectName,
-    proof: resolvedProof,
+    evidenceCheck: resolvedEvidenceCheck,
     repoInsights,
     selectedInstructionTargets,
     ownerAnswers,
@@ -272,15 +272,15 @@ export function buildInitRecommendation({
     mode,
     target_root: resolve(rootDir),
     project_name: projectName,
-    proof: resolvedProof,
+    evidenceCheck: resolvedEvidenceCheck,
     repo_insights: repoInsights,
     artifact_payloads: artifactPayloads,
     artifact_hashes: artifactHashes(artifactPayloads),
     recommended_adapter: JSON.parse(artifactPayloads['.veritas/repo.adapter.json']),
-    recommended_policy_pack: JSON.parse(artifactPayloads['.veritas/policy-packs/default.policy-pack.json']),
+    recommended_repo_standards: JSON.parse(artifactPayloads['.veritas/repo-standards/default.repo-standards.json']),
     recommended_team_profile: JSON.parse(artifactPayloads['.veritas/team/default.team-profile.json']),
-    recommended_proofs: recommendedProofs({ ...repoInsights, proof: resolvedProof }),
-    recommended_proof_suite_inventory: recommendedProofSuiteInventory(repoInsights),
+    recommended_evidence_checks: recommendedEvidenceChecks({ ...repoInsights, evidenceCheck: resolvedEvidenceCheck }),
+    recommended_evidence_inventory: recommendedEvidenceInventory(repoInsights),
     existing_verification: repoInsights.existingVerification,
     recommended_surfaces: recommendedSurfaces(repoInsights),
     recommended_instruction_targets: recommendedInstructionTargets(rootDir, selectedInstructionTargets),
@@ -290,7 +290,7 @@ export function buildInitRecommendation({
     apply_command: 'npx @kontourai/veritas init --apply --plan <path-to-this-artifact>',
     reasoning_summary: [
       `Detected repo kind \`${repoInsights.repoKind}\`.`,
-      `Selected proof \`${resolvedProof}\`.`,
+      `Selected evidenceCheck \`${resolvedEvidenceCheck}\`.`,
       `Selected instruction targets: ${selectedInstructionTargets.map((target) => target.path).join(', ')}.`,
     ],
   };
@@ -327,7 +327,7 @@ export function applyInitRecommendation({ rootDir, recommendation, force = false
     '.veritas/README.md',
     '.veritas/GOVERNANCE.md',
     '.veritas/repo.adapter.json',
-    '.veritas/policy-packs/default.policy-pack.json',
+    '.veritas/repo-standards/default.repo-standards.json',
     '.veritas/team/default.team-profile.json',
   ];
   for (const path of starterPaths) {
@@ -337,7 +337,7 @@ export function applyInitRecommendation({ rootDir, recommendation, force = false
     }
   }
 
-  mkdirSync(resolve(rootDir, '.veritas/policy-packs'), { recursive: true });
+  mkdirSync(resolve(rootDir, '.veritas/repo-standards'), { recursive: true });
   mkdirSync(resolve(rootDir, '.veritas/team'), { recursive: true });
   mkdirSync(resolve(rootDir, '.veritas/evidence'), { recursive: true });
 
@@ -350,7 +350,7 @@ export function applyInitRecommendation({ rootDir, recommendation, force = false
   return {
     rootDir,
     projectName: recommendation.project_name,
-    proof: recommendation.proof,
+    evidenceCheck: recommendation.evidenceCheck,
     repoInsights: recommendation.repo_insights,
     codeownersBlock: buildSuggestedCodeownersBlock(),
     generatedFiles: [

@@ -39,7 +39,7 @@ export function classifyNodes(files, config, rootDir) {
 
   return {
     affectedNodes: [...matchedNodeIds].sort(),
-    affectedLanes: [...matchedLaneLabels].sort(),
+    affectedEvidenceChecks: [...matchedLaneLabels].sort(),
     matchedNodes,
     fileNodes,
     unmatchedFiles,

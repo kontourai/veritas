@@ -38,14 +38,14 @@ test('Veritas surface.input validates against Surface and has policy coverage', 
   assert.equal(input.source, 'veritas:surface-projection-test');
   assert.equal(input.policies.some((policy) => policy.id === 'veritas.governance-artifact'), true);
   assert.equal(report.claims.length, input.claims.length);
-  if (typeof TrustInputBuilder.prototype.addCollection === 'function') {
-    assert.ok(input.collections?.some((collection) => collection.kind === 'framework'));
-    assert.ok(report.collectionRollups.some((collection) => collection.id.startsWith('veritas.framework.')));
+  if (typeof TrustInputBuilder.prototype.addClaimGroup === 'function') {
+    assert.ok(input.claimGroups?.some((claimGroup) => claimGroup.kind === 'requirement-set'));
+    assert.ok(report.claimGroupRollups.some((claimGroup) => claimGroup.id.startsWith('veritas.requirements.')));
   }
 
   for (const claim of report.claims) {
     assert.ok(
-      report.proofRequirementsByClaimId[claim.id],
+      report.evidenceRequirementsByClaimId[claim.id],
       `expected policy coverage for ${claim.id}`,
     );
   }
@@ -61,7 +61,7 @@ test('Surface validation failure writes rejected input artifact and uses config 
       {
         rootDir,
         adapterPath: join(frameworkRootDir, '.veritas/repo.adapter.json'),
-        policyPackPath: join(frameworkRootDir, '.veritas/policy-packs/default.policy-pack.json'),
+        repoStandardsPath: join(frameworkRootDir, '.veritas/repo-standards/default.repo-standards.json'),
         runId: 'invalid-surface-projection-test',
         sourceRef: 'test-source-ref',
         sourceKind: 'explicit-files',

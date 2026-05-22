@@ -108,16 +108,16 @@
       "updatedAt": "2026-05-19T13:38:14.077Z"
     },
     {
-      "id": "veritas.surface.governance.policy-packs",
+      "id": "veritas.surface.governance.repo-standards",
       "surface": "veritas.affected-surface",
       "claimType": "veritas-affected-surface",
-      "fieldOrBehavior": "governance.policy-packs",
+      "fieldOrBehavior": "governance.repo-standards",
       "subjectType": "repo-surface",
-      "subjectId": "veritas:governance.policy-packs",
+      "subjectId": "veritas:governance.repo-standards",
       "impactLevel": "medium",
       "verificationPolicyId": "veritas.surface",
       "metadata": {
-        "nodeId": "governance.policy-packs"
+        "nodeId": "governance.repo-standards"
       },
       "createdAt": "2026-05-19T13:38:14.077Z",
       "updatedAt": "2026-05-19T13:38:14.077Z"
@@ -195,14 +195,14 @@
       "updatedAt": "2026-05-19T13:38:14.077Z"
     },
     {
-      "id": "veritas.proof.npm-run-verify",
-      "surface": "veritas.proof-lane",
-      "claimType": "software-proof",
+      "id": "veritas.evidence-check.npm-run-verify",
+      "surface": "veritas.evidence-check",
+      "claimType": "software-evidence-check",
       "fieldOrBehavior": "npm run verify",
       "subjectType": "repository",
       "subjectId": "veritas",
       "impactLevel": "high",
-      "verificationPolicyId": "veritas.proof-lane",
+      "verificationPolicyId": "veritas.evidence-check",
       "metadata": {
         "command": "npm run verify"
       },
@@ -210,14 +210,14 @@
       "updatedAt": "2026-05-19T13:38:14.077Z"
     },
     {
-      "id": "veritas.proof.npm-run-veritas-fallow-advisory",
-      "surface": "veritas.proof-lane",
-      "claimType": "software-proof",
+      "id": "veritas.evidence-check.npm-run-veritas-fallow-advisory",
+      "surface": "veritas.evidence-check",
+      "claimType": "software-evidence-check",
       "fieldOrBehavior": "npm run veritas:fallow:advisory",
       "subjectType": "repository",
       "subjectId": "veritas",
       "impactLevel": "high",
-      "verificationPolicyId": "veritas.proof-lane",
+      "verificationPolicyId": "veritas.evidence-check",
       "metadata": {
         "command": "npm run veritas:fallow:advisory"
       },
@@ -236,7 +236,7 @@
         "auditability"
       ],
       "requiresCorroboration": false,
-      "requiredProof": [
+      "acceptanceCriteria": [
         "veritas evidence artifact"
       ],
       "reviewAuthority": "veritas",
@@ -264,8 +264,8 @@
         "attestation"
       ],
       "requiresCorroboration": false,
-      "requiredProof": [
-        "Zone 1 hash inspection",
+      "acceptanceCriteria": [
+        "Protected Standards hash inspection",
         "human attestation status"
       ],
       "reviewAuthority": "veritas plus human attestation",
@@ -273,7 +273,7 @@
         "kind": "manual"
       },
       "stalenessTriggers": [
-        "policy pack hash changes",
+        "repo standards hash changes",
         "adapter hash changes",
         "team profile hash changes",
         "attestation expiry"
@@ -284,8 +284,8 @@
       "impactLevel": "high"
     },
     {
-      "id": "veritas.proof-lane",
-      "claimType": "software-proof",
+      "id": "veritas.evidence-check",
+      "claimType": "software-evidence-check",
       "requiredEvidence": [
         "test_output"
       ],
@@ -293,8 +293,8 @@
         "validation"
       ],
       "requiresCorroboration": false,
-      "requiredProof": [
-        "selected proof command"
+      "acceptanceCriteria": [
+        "selected evidenceCheck command"
       ],
       "reviewAuthority": "veritas",
       "validityRule": {
@@ -302,11 +302,11 @@
       },
       "stalenessTriggers": [
         "source_ref changes",
-        "proof command changes",
-        "baseline proof fails"
+        "evidenceCheck command changes",
+        "baseline evidenceCheck fails"
       ],
       "conflictRules": [
-        "failed proof rejects a previously verified proof claim"
+        "failed evidenceCheck rejects a previously verified evidenceCheck claim"
       ],
       "impactLevel": "high"
     }

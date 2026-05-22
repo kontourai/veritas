@@ -24,7 +24,7 @@
       "properties": {
         "mode": {
           "type": "string",
-          "enum": ["shadow", "assist", "gate"]
+          "enum": ["observe", "assist", "gate"]
         },
         "new_rule_stage": {
           "type": "string",
@@ -52,9 +52,9 @@
     "promotion_preferences": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["proofs_required_before_block"],
+      "required": ["evidence_checks_required_before_require"],
       "properties": {
-        "proofs_required_before_block": {
+        "evidence_checks_required_before_require": {
           "type": "array",
           "items": { "type": "string" }
         },

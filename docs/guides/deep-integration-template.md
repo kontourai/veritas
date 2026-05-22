@@ -1,13 +1,13 @@
 # Deep Integration
 
-The generic Veritas contract stays a shell command: run `veritas run`, read the feedback, fix the issue, and rerun. A deep integration adds runtime hooks and transcript capture around that same contract.
+The generic Veritas contract stays a shell command: run `veritas readiness`, read the feedback, fix the issue, and rerun. A deep integration adds runtime hooks and transcript capture around that same contract.
 
 Deep means:
 
 - repo instruction files carry the Veritas governance block,
-- a stop or post-action hook runs `veritas run`,
+- a stop or post-action hook runs `veritas readiness`,
 - optional just-in-time hooks can block deny-enforced rules before edits,
-- a transcript observer can draft eval data without inventing human judgment.
+- a transcript observer can draft standards-feedback data without inventing human judgment.
 
 ## Integration Contract
 
@@ -16,7 +16,7 @@ Each deep integration has two pieces:
 - `TranscriptReader`: `{ name, canRead(transcriptPath), readEvents(transcriptPath) }`, returning normalized events with `kind`, `timestamp`, `files`, `commandText`, `exitCode`, and `raw`.
 - `RuntimeAdapter`: `{ name, installPreToolUseHook(opts), installStopHook(opts), installPostSessionHook(opts), uninstall(), status() }`.
 
-`veritas eval observe --tool <tool> --transcript <path>` chooses a transcript reader from the registry, or auto-detects by transcript shape. New runtimes should implement this contract instead of adding tool-specific logic to the eval command.
+`veritas eval observe --tool <tool> --transcript <path>` chooses a transcript reader from the registry, or auto-detects by transcript shape. New runtimes should implement this contract instead of adding tool-specific logic to the feedback command.
 
 ## Worked Example: Codex
 
@@ -24,15 +24,15 @@ Codex is the reference deep integration because it can run a stop hook and an en
 
 The generated Codex hook config now wires:
 
-- `Stop`: runs `.veritas/hooks/agent-runtime.sh`, which keeps the existing shadow-run feedback loop.
+- `Stop`: runs `.veritas/hooks/agent-runtime.sh`, which keeps the existing readiness-check feedback loop.
 - `PostSession`: runs `veritas eval observe --transcript "$CODEX_TRANSCRIPT_PATH"` when the transcript path is available.
 - Fallback: when only `CODEX_SESSION_ID` is present, the hook reads `$HOME/.codex/sessions/$CODEX_SESSION_ID.json`.
 
-`veritas eval observe` defensively reads transcript events and fills an eval draft under `.veritas/eval-drafts/`:
+`veritas eval observe` defensively reads transcript events and fills a standards-feedback draft under `.veritas/eval-drafts/`:
 
-- `time_to_green_minutes`: first failing `veritas run` to first later passing veritas run.
+- `time_to_green_minutes`: first failing `veritas readiness` to first later passing veritas readiness.
 - `accepted_without_major_rewrite`: based on post-Veritas churn against files Veritas reported on.
-- `override_count`: `VERITAS_*` bypasses and `--skip-proof` after the run.
+- `override_count`: `VERITAS_*` bypasses and `--skip-evidence-check` after the run.
 
 Unknown fields are reported as missing instead of being guessed.
 

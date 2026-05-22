@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "run_id": "work-agent-observe-001",
+  "team_profile_id": "work-agent-default",
+  "mode": "observe",
+  "evidence": {
+    "artifact_path": ".veritas/evidence/work-agent-observe-001.json",
+    "artifact_digest": "2db8e73290eab9bf01eb3b56167ff0915ccf0f73bfc1f7f3acb4b8dbf6f49093",
+    "timestamp": "2026-04-19T00:00:00.000Z",
+    "source_ref": "refs/heads/main",
+    "source_kind": "branch-diff",
+    "source_scope": ["changed-from:origin/main", "changed-to:HEAD"],
+    "components": ["delivery.github", "governance.root-manifests"],
+    "triggered_evidence_checks": [".github/**", "root manifests"]
+  },
+  "governance": {
+    "surface_touched": true,
+    "classification": "unknown",
+    "human_review_required": false,
+    "changed_paths": []
+  },
+  "outcome": {
+    "accepted_without_major_rewrite": true,
+    "required_followup": false,
+    "reviewer_confidence": "high"
+  },
+  "measurements": {
+    "time_to_green_minutes": 18,
+    "override_count": 0,
+    "false_positive_rules": [],
+    "missed_issues": []
+  },
+  "notes": [
+    "Evidence artifact was enough for the reviewer to understand the lane quickly.",
+    "No policy waivers were needed on this run."
+  ]
+}

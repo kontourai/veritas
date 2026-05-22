@@ -16,10 +16,10 @@
   "components": [
     "tooling.scripts"
   ],
-  "triggered_proofs": [
+  "triggered_evidence_checks": [
     "scripts/**"
   ],
-  "proof_resolution_source": "required",
+  "evidence_check_resolution_source": "required",
   "uncovered_path_result": "clear",
   "baseline_ci_fast_passed": true,
   "recommendations": [
@@ -69,11 +69,11 @@
       "plugin/core boundary protection",
       "mandatory CI coverage"
     ],
-    "proof_routes": [],
+    "evidence_check_routes": [],
     "uncovered_path_policy": "warn",
-    "proofs": [
+    "evidenceChecks": [
       {
-        "id": "required-proof",
+        "id": "required-evidence-check",
         "command": "npm run ci:fast",
         "method": "validation",
         "surface_claim_ids": [],
@@ -82,12 +82,12 @@
         "label": "npm run ci:fast"
       }
     ],
-    "required_proof_ids": [
-      "required-proof"
+    "required_evidence_check_ids": [
+      "required-evidence-check"
     ],
-    "default_proof_ids": []
+    "default_evidence_check_ids": []
   },
-  "policy_pack": {
+  "repo_standards": {
     "name": "work-agent-convergence",
     "version": 1,
     "rule_count": 4
@@ -106,15 +106,15 @@
       "findings": []
     },
     {
-      "rule_id": "baseline-proof-lane",
+      "rule_id": "baseline-evidence-check",
       "classification": "hard-invariant",
       "stage": "block",
-      "message": "The primary PR workflow must execute the baseline proof lane and the connected-agents suite.",
+      "message": "The primary PR workflow must execute the baseline evidenceCheck and the connected-agents suite.",
       "owner": "repo-core",
       "rollback_switch": null,
       "implemented": false,
       "passed": null,
-      "summary": "Rule baseline-proof-lane is metadata-only in the current framework.",
+      "summary": "Requirement baseline-evidence-check is metadata-only in the current product runtime.",
       "findings": []
     },
     {
@@ -142,9 +142,9 @@
       "findings": []
     }
   ],
-  "selected_proofs": [
+  "selected_evidence_checks": [
     {
-      "id": "required-proof",
+      "id": "required-evidence-check",
       "command": "npm run ci:fast",
       "method": "validation",
       "surface_claim_ids": [],
@@ -153,10 +153,10 @@
       "label": "npm run ci:fast"
     }
   ],
-  "selected_proof_ids": [
-    "required-proof"
+  "selected_evidence_check_ids": [
+    "required-evidence-check"
   ],
-  "selected_proof_labels": [
+  "selected_evidence_check_labels": [
     "npm run ci:fast"
   ]
 }

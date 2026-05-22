@@ -7,7 +7,7 @@
           {
             "type": "command",
             "command": ".veritas/hooks/agent-runtime.sh",
-            "statusMessage": "Running Veritas shadow automation",
+            "statusMessage": "Running Veritas readiness automation",
             "timeout": 60
           }
         ]

@@ -1,17 +1,18 @@
-# Governance Surface
+# Veritas Governance
 
-Zone 1 is human-owned. Do not modify:
+Protected Standards require authority-backed review. Do not modify without a fresh Veritas attestation:
 - `.veritas/repo.adapter.json`
-- `.veritas/policy-packs/`
+- `.veritas/repo-standards/`
 - `.veritas/team/`
 
-Zone 2 is additive policy growth. Agents may:
-- add new surface nodes for new feature directories
-- add advisory-tier rules for new surfaces
+Standards Growth is additive. Developers and agents may:
+- add new work areas for new feature directories
+- add advisory requirements for new work areas
+- add clearer change guidance backed by evidence
 
-Do not weaken or delete existing governance.
+Do not weaken or delete existing standards without the required authority.
 
-Zone 3 is generated output:
+Generated Evidence is output, not the source of standards:
 - `.veritas/evidence/`
 - `.veritas/eval-drafts/`
 - `.veritas/evals/`

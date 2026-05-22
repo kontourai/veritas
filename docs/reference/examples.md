@@ -1,12 +1,12 @@
 # Example Fixtures
 
-The files in `examples/` are canonical fixtures for the framework surface that this repo currently ships.
+The files in `examples/` are canonical fixtures for the current schemas. They are read by tests, so docs can point at them without drifting.
 
-They are not decorative samples. They are read by tests in [tests/framework.test.mjs](../../tests/framework.test.mjs) so the docs can point at them without drifting.
+Some example paths and fields predate the current product vocabulary. Treat them as exact fixture references, not naming guidance.
 
 ## Evidence Fixtures
 
-These live under `examples/evidence/` and demonstrate the current evidence schema in realistic states.
+These live under `examples/evidence/` and demonstrate generated evidence in realistic states.
 
 ### Pass example
 
@@ -14,10 +14,10 @@ These live under `examples/evidence/` and demonstrate the current evidence schem
 
 Use it to see a clean branch-diff run:
 
-- matched nodes and lanes
-- selected proof commands
-- clear uncovered-path result
-- positive baseline proof outcome
+- matched work areas
+- selected evidenceChecks
+- uncovered-path result
+- baseline evidence outcome
 
 ### Fail example
 
@@ -26,145 +26,62 @@ Use it to see a clean branch-diff run:
 Use it to see:
 
 - unmatched files
-- a `warn` uncovered-path result
-- a failed baseline proof outcome
-- promotion suppression through `multi-workstream`
+- warning-level uncovered-path result
+- failed baseline evidence outcome
+- suppression of stronger enforcement when the change spans multiple work areas
 
-### Policy-gap example
+### Requirement-gap example
 
 - [examples/evidence/work-agent-policy-gap.json](../../examples/evidence/work-agent-policy-gap.json)
 
-Use it to see a case where the change stayed inside known lanes, but the framework still records a recommendation that the policy surface has a gap.
+Use it to see a case where the change stayed inside known work areas, but Veritas still records that the standards are missing coverage.
 
-## Eval Fixtures
+## Standards Feedback Fixtures
 
-These live under `examples/evals/` and show how evidence turns into team-scored outcomes.
-
-### Team profile
+These live under `examples/evals/` and demonstrate standards feedback.
 
 - [examples/evals/work-agent-team-profile.json](../../examples/evals/work-agent-team-profile.json)
+- [examples/evals/work-agent-observe-eval-draft.json](../../examples/evals/work-agent-observe-eval-draft.json)
+- [examples/evals/work-agent-observe-eval.json](../../examples/evals/work-agent-observe-eval.json)
 
-Use it to understand the current team-profile shape:
+Use them to inspect:
 
-- rollout mode
-- reviewer confidence scale
-- promotion preferences
-
-### Eval draft
-
-- [examples/evals/work-agent-shadow-eval-draft.json](../../examples/evals/work-agent-shadow-eval-draft.json)
-
-Use it to see:
-
-- repo-local evidence provenance
-- prefilled measurements
-- missing confirmation fields
-
-### Eval record
-
-- [examples/evals/work-agent-shadow-eval.json](../../examples/evals/work-agent-shadow-eval.json)
-
-Use it to see the completed live-eval shape:
-
-- accepted or rejected outcome
-- reviewer confidence
-- measured time to green
-- false-positive and missed-issue arrays
-- governance context derived from the evidence surface
-- operator notes
+- current shape for standards strictness settings
+- generated evidence provenance
+- completed feedback outcomes
+- time-to-green and exception/override counts
+- false positives and missed issues
 
 ## Benchmark Fixtures
 
-These live under `examples/benchmarks/` and show a deterministic benchmark for timely marker surfacing.
+These live under `examples/benchmarks/` and show deterministic benchmark fixtures for whether change guidance surfaced at the right time.
 
-### Scenario
+Use them to inspect:
+
+- marker phrases
+- trigger tags
+- assistant-turn timing windows
+- baseline vs Veritas comparisons
+- grouped reliability metrics
+
+## Operational Summary Fixtures
+
+These examples demonstrate generated readiness, conformance, or standards-feedback summaries.
+
+- [examples/checkins/veritas-repo-report.json](../../examples/checkins/veritas-repo-report.json)
+- [examples/checkins/veritas-repo-checkin-red.json](../../examples/checkins/veritas-repo-checkin-red.json)
+
+## Specific Benchmark Fixtures
 
 - [examples/benchmarks/migration-marker-scenario.json](../../examples/benchmarks/migration-marker-scenario.json)
-
-Use it to see:
-
-- the required marker phrases
-- the trigger tag and optional response-window tag
-- the assistant-turn timing window
-
-### Transcripts
-
-- [examples/benchmarks/migration-marker-without-veritas.json](../../examples/benchmarks/migration-marker-without-veritas.json)
-- [examples/benchmarks/migration-marker-with-veritas.json](../../examples/benchmarks/migration-marker-with-veritas.json)
-
-Use them to inspect:
-
-- an early false positive in the baseline condition
-- a timely first-response surfacing in the Veritas condition
-- the exact tagged turns the scorer reads
-
-### Comparison
-
 - [examples/benchmarks/migration-marker-comparison.json](../../examples/benchmarks/migration-marker-comparison.json)
-
-Use it to see the scored benchmark output:
-
-- pass/fail for each condition
-- false-positive detection
-- assistant-turn latency
-- treatment-vs-baseline improvement summary
-
-### Suite
-
 - [examples/benchmarks/marker-suite.json](../../examples/benchmarks/marker-suite.json)
 - [examples/benchmarks/marker-suite-report.json](../../examples/benchmarks/marker-suite-report.json)
-
-Use them to inspect:
-
-- multiple benchmark classes in one canonical fixture set
-- repeated trials for grouped reliability metrics
-- suite-level `pass_at_1`, `pass_at_k`, and `pass_pow_k`
-- aggregate false-positive and latency summaries
-
-### Governance markers
-
-- [examples/benchmarks/governance-zone1-marker-scenario.json](../../examples/benchmarks/governance-zone1-marker-scenario.json)
-- [examples/benchmarks/governance-zone1-marker-comparison.json](../../examples/benchmarks/governance-zone1-marker-comparison.json)
-- [examples/benchmarks/governance-zone2-marker-scenario.json](../../examples/benchmarks/governance-zone2-marker-scenario.json)
-- [examples/benchmarks/governance-zone2-marker-comparison.json](../../examples/benchmarks/governance-zone2-marker-comparison.json)
-
-Use them to inspect:
-
-- a benchmark where the correct behavior is surfacing that a Zone 1 weakening move touches the constitutional core and needs human review
-- a benchmark where the correct behavior is allowing Zone 2 additive-only governance growth
+- [examples/benchmarks/governance-protected-standards-marker-scenario.json](../../examples/benchmarks/governance-protected-standards-marker-scenario.json)
+- [examples/benchmarks/governance-standards-growth-marker-scenario.json](../../examples/benchmarks/governance-standards-growth-marker-scenario.json)
 
 ## Classification Fixture
 
-- [examples/classification/work-agent-convergence-rule-families.json](../../examples/classification/work-agent-convergence-rule-families.json)
+- [examples/classification/work-agent-convergence-rule-groups.json](../../examples/classification/work-agent-convergence-rule-groups.json)
 
-This file groups a real repo's current convergence checks into rule families. It is useful when you want to move from bespoke enforcement scripts toward a clearer policy-pack vocabulary.
-
-## Check-in Examples
-
-These live under `examples/checkins/` and show Veritas used on the Veritas repo itself.
-
-- [examples/checkins/README.md](../../examples/checkins/README.md)
-- [examples/checkins/veritas-repo-report.json](../../examples/checkins/veritas-repo-report.json)
-- [examples/checkins/veritas-repo-report.md](../../examples/checkins/veritas-repo-report.md)
-- [examples/checkins/veritas-repo-eval-draft.json](../../examples/checkins/veritas-repo-eval-draft.json)
-- [examples/checkins/veritas-repo-eval.json](../../examples/checkins/veritas-repo-eval.json)
-- [examples/checkins/veritas-repo-checkin-red.json](../../examples/checkins/veritas-repo-checkin-red.json)
-- [examples/checkins/veritas-repo-checkin-red.md](../../examples/checkins/veritas-repo-checkin-red.md)
-
-Use these to inspect:
-
-- a repo-local adapter classifying this repo without unresolved files
-- a repo-local policy pack producing concrete `policy_results`
-- a draft-first eval flow on a real self-hosted example
-- the exact shape of a red-health automated check-in when check-in automation detects a regression
-
-## How To Use These Fixtures
-
-Use the fixtures in four ways:
-
-1. Read them while designing adapters, policy packs, or downstream tooling.
-2. Compare your generated artifacts to them when the shapes seem unclear.
-3. Use them as stable examples in docs and demos.
-4. Keep them current whenever the schema or operator surface changes.
-
-For the contract behind these files, see [Artifacts and Schemas](artifacts-and-schemas.md).
+This file groups a real repo's current checks. It is useful when moving from bespoke scripts toward clearer requirements and evidence-check inventories.

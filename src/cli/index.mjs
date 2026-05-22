@@ -3,7 +3,7 @@ import { basename, dirname, relative, resolve } from 'node:path';
 import { loadJson } from '../load.mjs';
 import {
   parseArgs,
-  parseBudgetArgs,
+  parseCoverageArgs,
   parseInitArgs,
   parseAttestArgs,
   parsePrintArgs,
@@ -12,7 +12,7 @@ import {
   parseEvalArgs,
   parseMarkerEvalArgs,
   parseMarkerSuiteEvalArgs,
-  parseShadowArgs,
+  parseReadinessArgs,
   parseTokens,
 } from '../args.mjs';
 import { assertWithinDir } from '../paths.mjs';
@@ -26,7 +26,7 @@ import {
   buildInitRecommendation,
   applyInitRecommendation,
 } from '../bootstrap/recommendation.mjs';
-import { shellQuote, runProofCommand } from '../shell.mjs';
+import { shellQuote, runEvidenceCheckCommand } from '../shell.mjs';
 import {
   buildSuggestedGitHook,
   buildSuggestedRuntimeHook,
@@ -45,14 +45,14 @@ import {
   evaluatePreToolUse,
 } from '../hooks.mjs';
 import { applyGovernanceBlocks, buildGovernanceBlock } from '../governance.mjs';
-import { buildVerificationBudget } from '../proof/index.mjs';
+import { buildReadinessCoverage } from '../evidence/index.mjs';
 import {
   generateVeritasReport,
   buildFeedbackSummary,
   feedbackHasFailures,
   resolveVeritasPaths,
   resolveReportInputs,
-  resolveProofCommands,
+  resolveEvidenceCheckCommands,
 } from '../report.mjs';
 import {
   generateEvalDraft,
@@ -66,7 +66,7 @@ import {
 import { observeTranscriptEval } from '../integrations/transcripts.mjs';
 import { runtimeAdapterFor } from '../integrations/runtime-adapters.mjs';
 import { observeFilesystemEval } from '../eval/filesystem-observer.mjs';
-import { runShadowRunCli } from './shadow-run.mjs';
+import { runReadinessCheckCli } from './readiness-check.mjs';
 import { runClaimCli } from './claims.mjs';
 import {
   createAttestation,
@@ -74,13 +74,13 @@ import {
   writePendingAttestationMarker,
 } from '../attestations.mjs';
 import {
-  applyProposal,
-  generateAndWriteProposals,
-  listProposals,
-  loadProposal,
-} from '../proposals.mjs';
+  applyRecommendation,
+  generateAndWriteRecommendations,
+  listRecommendations,
+  loadRecommendation,
+} from '../recommendations.mjs';
 
-function hasShadowOutcomeInputs(options) {
+function hasReadinessOutcomeInputs(options) {
   return (
     typeof options.acceptedWithoutMajorRewrite === 'boolean' &&
     typeof options.requiredFollowup === 'boolean' &&
@@ -154,41 +154,41 @@ export async function runVeritasReportCli(argv = process.argv.slice(2), defaults
   );
 }
 
-function formatVerificationBudgetHuman(record) {
-  const budget = record.verification_budget ?? buildVerificationBudget({
-    proofs: [],
-    proofSuiteResults: [],
+function formatReadinessCoverageHuman(record) {
+  const coverage = record.readiness_coverage ?? buildReadinessCoverage({
+    evidenceChecks: [],
+    evidenceInventoryResults: [],
   });
   const lines = [
-    'Veritas Verification Budget',
+    'Veritas Readiness Coverage',
     '',
-    `Proofs: ${budget.selected_proof_count}/${budget.proof_count} selected`,
-    `Proof suites: ${budget.proof_suite_count} total`,
-    `Required: ${budget.required_family_count}`,
-    `Candidate: ${budget.candidate_family_count}`,
-    `Advisory: ${budget.advisory_family_count}`,
-    `Move to test: ${budget.move_to_test_family_count}`,
-    `Retiring: ${budget.retire_family_count}`,
-    `Upstream candidates: ${budget.upstream_candidate_count}`,
+    `Evidence Checks: ${coverage.selected_evidence_check_count}/${coverage.evidence_check_count} selected`,
+    `Evidence inventories: ${coverage.evidence_inventory_count} total`,
+    `Required: ${coverage.required_inventory_count}`,
+    `Candidate: ${coverage.candidate_inventory_count}`,
+    `Advisory: ${coverage.advisory_inventory_count}`,
+    `Move to test: ${coverage.move_to_test_inventory_count}`,
+    `Retiring: ${coverage.retire_inventory_count}`,
+    `Upstream candidates: ${coverage.upstream_candidate_count}`,
     '',
-    budget.recommendation,
+    coverage.recommendation,
   ];
 
-  if (budget.unknown_catch_evidence_family_ids?.length > 0) {
-    lines.push(`Unknown catch evidence: ${budget.unknown_catch_evidence_family_ids.join(', ')}`);
+  if (coverage.unknown_catch_evidence_inventory_ids?.length > 0) {
+    lines.push(`Unknown catch evidence: ${coverage.unknown_catch_evidence_inventory_ids.join(', ')}`);
   }
-  if (budget.missing_review_trigger_family_ids?.length > 0) {
-    lines.push(`Missing review triggers: ${budget.missing_review_trigger_family_ids.join(', ')}`);
+  if (coverage.missing_review_trigger_inventory_ids?.length > 0) {
+    lines.push(`Missing review triggers: ${coverage.missing_review_trigger_inventory_ids.join(', ')}`);
   }
-  if (budget.stale_family_ids?.length > 0) {
-    lines.push(`Stale or retiring suites: ${budget.stale_family_ids.join(', ')}`);
+  if (coverage.stale_inventory_ids?.length > 0) {
+    lines.push(`Stale or retiring inventories: ${coverage.stale_inventory_ids.join(', ')}`);
   }
 
   return `${lines.join('\n')}\n`;
 }
 
-export async function runVerificationBudgetCli(argv = process.argv.slice(2), defaults = {}) {
-  const { options, files: explicitFiles } = parseBudgetArgs(argv);
+export async function runReadinessCoverageCli(argv = process.argv.slice(2), defaults = {}) {
+  const { options, files: explicitFiles } = parseCoverageArgs(argv);
   const format = options.format ?? 'human';
   if (!['human', 'feedback', 'json'].includes(format)) {
     throw new Error('--format must be human, feedback, or json');
@@ -196,7 +196,7 @@ export async function runVerificationBudgetCli(argv = process.argv.slice(2), def
   const result = await generateVeritasReport(
     {
       ...options,
-      runId: options.runId ?? `budget-${Date.now()}`,
+      runId: options.runId ?? `coverage-${Date.now()}`,
     },
     defaults,
     explicitFiles,
@@ -207,8 +207,8 @@ export async function runVerificationBudgetCli(argv = process.argv.slice(2), def
       `${JSON.stringify(
         {
           artifactPath: result.artifactPath,
-          verification_budget: result.record.verification_budget,
-          proof_suite_results: result.record.proof_suite_results,
+          readiness_coverage: result.record.readiness_coverage,
+          evidence_inventory_results: result.record.evidence_inventory_results,
         },
         null,
         2,
@@ -227,7 +227,7 @@ export async function runVerificationBudgetCli(argv = process.argv.slice(2), def
     return;
   }
 
-  process.stdout.write(formatVerificationBudgetHuman(result.record));
+  process.stdout.write(formatReadinessCoverageHuman(result.record));
 }
 
 export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
@@ -243,8 +243,8 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
   if (options.answersPath && !options.guided) {
     throw new Error('veritas init --answers requires --guided');
   }
-  if (options.pack && (options.explore || options.guided || options.apply)) {
-    throw new Error('veritas init --pack is only supported on the direct init path');
+  if (options.template && (options.explore || options.guided || options.apply)) {
+    throw new Error('veritas init --template is only supported on the direct init path');
   }
 
   if (options.explore || options.guided) {
@@ -252,7 +252,7 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
     const recommendation = buildInitRecommendation({
       rootDir,
       projectName,
-      proof: options.proof ?? defaults.proof,
+      evidenceCheck: options.evidenceCheck ?? defaults.evidenceCheck,
       answers,
       mode: options.guided ? 'guided' : 'explore',
     });
@@ -277,7 +277,7 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
       force: options.force ?? false,
     });
     process.stderr.write(
-      `Next Steps\n\nSuggested CODEOWNERS block (not written automatically):\n\n${result.codeownersBlock}\n\n`,
+      `Next Steps\n\nSuggested CODEOWNERS block for protected standards (not written automatically):\n\n${result.codeownersBlock}\n\n`,
     );
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
@@ -286,8 +286,8 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
   const result = writeBootstrapStarterKit({
     rootDir,
     projectName,
-    proof: options.proof ?? defaults.proof,
-    pack: options.pack,
+    evidenceCheck: options.evidenceCheck ?? defaults.evidenceCheck,
+    template: options.template,
     force: options.force ?? false,
   });
   if (options.nonInteractive) {
@@ -297,12 +297,12 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
   } else {
     result.attestation = {
       status: 'not-recorded',
-      suggestedCommand: `veritas attest bootstrap --actor <human-id> --non-interactive --root ${rootDir}`,
+    suggestedCommand: `veritas attest bootstrap --actor <authority-id> --non-interactive --root ${rootDir}`,
     };
   }
 
   process.stderr.write(
-    `Next Steps\n\nSuggested CODEOWNERS block (not written automatically):\n\n${result.codeownersBlock}\n\n`,
+    `Next Steps\n\nSuggested CODEOWNERS block for protected standards (not written automatically):\n\n${result.codeownersBlock}\n\n`,
   );
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
@@ -332,16 +332,16 @@ export function runPrintPackageScriptsCli(argv = process.argv.slice(2), defaults
   const options = parsePrintArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const proof = options.proof ?? repoInsights.proof;
+  const evidenceCheck = options.evidenceCheck ?? repoInsights.evidenceCheck;
 
   process.stdout.write(
     `${JSON.stringify(
       {
         rootDir,
-        proof,
+        evidenceCheck,
         repoInsights,
         scripts: buildSuggestedPackageScripts({
-          proof,
+          evidenceCheck,
           baseRef: repoInsights.baseRef,
         }),
       },
@@ -355,16 +355,16 @@ export function runPrintCiSnippetCli(argv = process.argv.slice(2), defaults = {}
   const options = parsePrintArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const proof = options.proof ?? repoInsights.proof;
+  const evidenceCheck = options.evidenceCheck ?? repoInsights.evidenceCheck;
 
   process.stdout.write(
     `${JSON.stringify(
       {
         rootDir,
-        proof,
+        evidenceCheck,
         repoInsights,
         ciSnippet: buildSuggestedCiSnippet({
-          proof,
+          evidenceCheck,
           baseRef: repoInsights.baseRef,
         }),
       },
@@ -502,10 +502,10 @@ export function runApplyPackageScriptsCli(argv = process.argv.slice(2), defaults
   const options = parseApplyArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const proof = options.proof ?? repoInsights.proof;
+  const evidenceCheck = options.evidenceCheck ?? repoInsights.evidenceCheck;
   const result = applyPackageScripts({
     rootDir,
-    proof,
+    evidenceCheck,
     baseRef: repoInsights.baseRef,
     force: options.force ?? false,
   });
@@ -526,10 +526,10 @@ export function runApplyCiSnippetCli(argv = process.argv.slice(2), defaults = {}
   const options = parseApplyArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const proof = options.proof ?? repoInsights.proof;
+  const evidenceCheck = options.evidenceCheck ?? repoInsights.evidenceCheck;
   const result = applyCiSnippet({
     rootDir,
-    proof,
+    evidenceCheck,
     baseRef: repoInsights.baseRef,
     outputPath: options.outputPath ?? '.veritas/snippets/ci-snippet.yml',
     force: options.force ?? false,
@@ -671,27 +671,27 @@ export function runEvalSummaryCli(argv = process.argv.slice(2), defaults = {}) {
   process.stdout.write(result.markdownSummary);
 }
 
-export function runEvalProposeCli(argv = process.argv.slice(2), defaults = {}) {
+export function runEvalRecommendCli(argv = process.argv.slice(2), defaults = {}) {
   const { options } = parseTokens(argv, {
     '--root': { type: 'string', key: 'rootDir' },
-    '--policy-pack': { type: 'string', key: 'policyPackPath' },
+    '--repo-standards': { type: 'string', key: 'repoStandardsPath' },
     '--adapter': { type: 'string', key: 'adapterPath' },
     '--force': { type: 'flag', key: 'force' },
     '--dry-run': { type: 'flag', key: 'dryRun' },
   });
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  const result = generateAndWriteProposals({
+  const result = generateAndWriteRecommendations({
     ...options,
     rootDir,
     write: !options.dryRun,
   });
   process.stdout.write(`${JSON.stringify({
-    proposals: result.proposals,
+    recommendations: result.recommendations,
     written: result.written,
   }, null, 2)}\n`);
 }
 
-export function runProposalCli(kind, argv = process.argv.slice(2), defaults = {}) {
+export function runRecommendationCli(kind, argv = process.argv.slice(2), defaults = {}) {
   const { options, rest } = parseTokens(argv, {
     '--root': { type: 'string', key: 'rootDir' },
     '--status': { type: 'string', key: 'status' },
@@ -703,18 +703,18 @@ export function runProposalCli(kind, argv = process.argv.slice(2), defaults = {}
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   if (kind === 'list') {
     process.stdout.write(`${JSON.stringify({
-      proposals: listProposals({ rootDir, status: options.status ?? 'proposed' }),
+      recommendations: listRecommendations({ rootDir, status: options.status ?? 'proposed' }),
     }, null, 2)}\n`);
     return;
   }
   const id = rest[0];
-  if (!id) throw new Error(`veritas proposal ${kind} requires <id>`);
+  if (!id) throw new Error(`veritas recommendation ${kind} requires <id>`);
   if (kind === 'show') {
-    process.stdout.write(`${JSON.stringify(loadProposal(rootDir, id), null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify(loadRecommendation(rootDir, id), null, 2)}\n`);
     return;
   }
   if (kind === 'decide') {
-    process.stdout.write(`${JSON.stringify(applyProposal({
+    process.stdout.write(`${JSON.stringify(applyRecommendation({
       rootDir,
       id,
       actor: options.actor,
@@ -724,7 +724,7 @@ export function runProposalCli(kind, argv = process.argv.slice(2), defaults = {}
     }), null, 2)}\n`);
     return;
   }
-  throw new Error(`Unsupported proposal command: ${kind}`);
+  throw new Error(`Unsupported recommendation command: ${kind}`);
 }
 
 export function runEvalMarkerCli(argv = process.argv.slice(2), defaults = {}) {
@@ -825,5 +825,5 @@ export function runIntegrationsCli(tool, action, argv = process.argv.slice(2), d
 }
 
 
-export { runShadowRunCli };
+export { runReadinessCheckCli };
 export { runClaimCli };

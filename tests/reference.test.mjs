@@ -7,17 +7,17 @@ import {
 } from '../src/index.mjs';
 import { frameworkRootDir, readJson } from './helpers.mjs';
 
-test('adapter example declares nodes and proof lanes', () => {
+test('Repo Map example declares nodes and evidenceChecks', () => {
   const adapter = readJson('../adapters/work-agent.adapter.json');
   assert.equal(adapter.kind, 'repo-adapter');
   assert.ok(adapter.graph.nodes.length > 0);
-  assert.deepEqual(adapter.evidence.proofs.map((lane) => lane.command), ['npm run ci:fast']);
-  assert.deepEqual(adapter.evidence.requiredProofIds, ['required-proof']);
+  assert.deepEqual(adapter.evidence.evidenceChecks.map((lane) => lane.command), ['npm run ci:fast']);
+  assert.deepEqual(adapter.evidence.requiredEvidenceCheckIds, ['required-evidence-check']);
 });
 
-test('policy pack includes multiple rule classes', () => {
-  const policyPack = readJson('../policy-packs/work-agent-convergence.policy-pack.json');
-  const classes = new Set(policyPack.rules.map((rule) => rule.classification));
+test('Repo Standards example includes multiple requirement classes', () => {
+  const repoStandards = readJson('../repo-standards/work-agent-convergence.repo-standards.json');
+  const classes = new Set(repoStandards.rules.map((rule) => rule.classification));
   assert.ok(classes.has('hard-invariant'));
   assert.ok(classes.has('promotable-policy'));
   assert.ok(classes.has('brittle-implementation-check'));
@@ -25,37 +25,37 @@ test('policy pack includes multiple rule classes', () => {
 
 test('classification artifact groups the current convergence rule surface', () => {
   const classification = readJson(
-    '../examples/classification/work-agent-convergence-rule-families.json',
+    '../examples/classification/work-agent-convergence-rule-groups.json',
   );
   assert.equal(classification.source_repo, 'work-agent');
-  assert.ok(classification.families.length >= 10);
+  assert.ok(classification.groups.length >= 10);
   assert.ok(
-    classification.families.some(
-      (family) => family.id === 'runtime-and-orchestration-decomposition',
+    classification.groups.some(
+      (group) => group.id === 'runtime-and-orchestration-decomposition',
     ),
   );
 });
 
-test('evidence schema requires framework and adapter sections', () => {
+test('evidence schema requires current producer metadata sections', () => {
   const evidenceSchema = readJson('../schemas/veritas-evidence.schema.json');
-  const proofFamilySchema = readJson('../schemas/veritas-proof-suite-manifest.schema.json');
+  const evidenceInventorySchema = readJson('../schemas/veritas-evidence-inventory-manifest.schema.json');
   assert.ok(evidenceSchema.required.includes('framework'));
   assert.ok(evidenceSchema.required.includes('adapter'));
-  assert.ok(evidenceSchema.required.includes('selected_proof_ids'));
-  assert.ok(evidenceSchema.required.includes('selected_proof_labels'));
-  assert.ok(evidenceSchema.required.includes('selected_proofs'));
-  assert.ok(evidenceSchema.required.includes('proof_resolution_source'));
+  assert.ok(evidenceSchema.required.includes('selected_evidence_check_ids'));
+  assert.ok(evidenceSchema.required.includes('selected_evidence_check_labels'));
+  assert.ok(evidenceSchema.required.includes('selected_evidence_checks'));
+  assert.ok(evidenceSchema.required.includes('evidence_check_resolution_source'));
   assert.ok(evidenceSchema.required.includes('policy_results'));
   assert.ok(evidenceSchema.required.includes('surface'));
   assert.ok(evidenceSchema.properties.surface);
-  assert.ok(evidenceSchema.properties.proof_suite_results);
-  assert.ok(evidenceSchema.properties.verification_budget);
+  assert.ok(evidenceSchema.properties.evidence_inventory_results);
+  assert.ok(evidenceSchema.properties.readiness_coverage);
   assert.ok(
-    evidenceSchema.properties.verification_budget.$ref.endsWith('verificationBudget'),
+    evidenceSchema.properties.readiness_coverage.$ref.endsWith('readinessCoverage'),
   );
-  assert.ok(proofFamilySchema.properties.suites);
+  assert.ok(evidenceInventorySchema.properties.items);
   assert.ok(
-    proofFamilySchema.$defs.proofSuite.properties.defaultDisposition.enum.includes('move-to-test'),
+    evidenceInventorySchema.$defs.evidenceInventory.properties.defaultDisposition.enum.includes('move-to-test'),
   );
 });
 
@@ -91,24 +91,24 @@ test('first-contact docs preserve the Surface foundation boundary', () => {
   const cliReference = readDoc('../docs/reference/cli.md');
   const boundary = readDoc('../docs/architecture/surface-veritas-boundary.md');
 
-  assert.match(readme, /repo-local policy-pack lint/);
-  assert.match(readme, /surface\.input/);
-  assert.match(concepts, /## Surface Foundation/);
-  assert.match(concepts, /TrustInput/);
-  assert.match(concepts, /must not contain Surface report-only fields/);
+  assert.match(readme, /earn merge autonomy/);
+  assert.match(readme, /built with \[Surface\]/);
+  assert.match(concepts, /## Built With Surface/);
+  assert.match(concepts, /Veritas owns the repo-native workflow/);
+  assert.match(concepts, /Surface powers the portable transparency layer/);
   assert.match(siteIndex, /Surface-Veritas Boundary/);
-  assert.match(siteIndex, /Surface-Veritas Boundary/);
+  assert.match(siteIndex, /Built With Surface/);
   assert.match(cliReference, /surface\.input/);
-  assert.match(cliReference, /Veritas owns repo-native collection/);
-  assert.match(boundary, /## Foundation Contract/);
-  assert.match(boundary, /Surface does not depend on Veritas runtime code/);
-  assert.match(boundary, /Veritas-to-Surface adapter/);
-  assert.match(boundary, /Map to existing Surface primitives/);
+  assert.match(cliReference, /Repo Standards/);
+  assert.match(boundary, /## Boundary Rule/);
+  assert.match(boundary, /Surface does not depend on Veritas readiness checktime code/);
+  assert.match(boundary, /Veritas owns repo-native governance/);
+  assert.match(boundary, /Surface owns portable transparency/);
 });
 
-test('adapter and policy schemas declare activation and lint rule contracts', () => {
+test('Repo Map and Repo Standards schemas declare activation and lint requirement contracts', () => {
   const adapterSchema = readJson('../schemas/veritas-adapter.schema.json');
-  const policySchema = readJson('../schemas/veritas-policy-pack.schema.json');
+  const policySchema = readJson('../schemas/veritas-repo-standards.schema.json');
   const activation = adapterSchema.properties.activation.properties.aiInstructionFiles.items;
   const ruleProperties = policySchema.properties.rules.items.properties;
   const matchDefs = policySchema.$defs;
@@ -116,12 +116,12 @@ test('adapter and policy schemas declare activation and lint rule contracts', ()
   assert.ok(activation.required.includes('path'));
   assert.equal(activation.properties.tool.type, 'string');
   assert.equal(activation.properties.required.type, 'boolean');
-  assert.ok(adapterSchema.properties.evidence.properties.proofSuiteManifests);
+  assert.ok(adapterSchema.properties.evidence.properties.evidenceInventoryManifests);
   assert.ok(
-    adapterSchema.properties.evidence.properties.proofs.items.properties.externalTool,
+    adapterSchema.properties.evidence.properties.evidenceChecks.items.properties.externalTool,
   );
   const externalTool =
-    adapterSchema.properties.evidence.properties.proofs.items.properties.externalTool;
+    adapterSchema.properties.evidence.properties.evidenceChecks.items.properties.externalTool;
   assert.equal(externalTool.properties.tool.minLength, 1);
   assert.equal(externalTool.properties.format.minLength, 1);
   assert.equal(externalTool.properties.artifactPath.minLength, 1);
@@ -143,16 +143,16 @@ test('adapter and policy schemas declare activation and lint rule contracts', ()
   assert.ok(matchDefs.filesPatternMatch.properties.pattern);
 });
 
-test('fixture adapters and evidence examples stay readable', () => {
+test('fixture Repo Maps and evidence examples stay readable', () => {
   const repoAdapter = readJson('../.veritas/repo.adapter.json');
   const docsAdapter = readJson('../adapters/demo-docs-site.adapter.json');
-  const fallowLane = repoAdapter.evidence.proofs.find((lane) => lane.id === 'fallow-advisory');
+  const fallowLane = repoAdapter.evidence.evidenceChecks.find((lane) => lane.id === 'fallow-advisory');
   assert.ok(fallowLane);
   assert.equal(fallowLane.externalTool.blocking, false);
   assert.equal(fallowLane.externalTool.artifactPath, '.veritas/external/fallow-audit.json');
-  assert.ok(repoAdapter.evidence.defaultProofIds.includes('fallow-advisory'));
+  assert.ok(repoAdapter.evidence.defaultEvidenceCheckIds.includes('fallow-advisory'));
   assert.equal(docsAdapter.name, 'demo-docs-site');
-  assert.deepEqual(docsAdapter.evidence.proofs.map((lane) => lane.command), [
+  assert.deepEqual(docsAdapter.evidence.evidenceChecks.map((lane) => lane.command), [
     'npm run docs:build',
     'npm test',
   ]);
@@ -163,7 +163,7 @@ test('fixture adapters and evidence examples stay readable', () => {
   const fallowAdvisoryExample = readJson('../examples/evidence/fallow-advisory.json');
 
   assert.equal(passExample.baseline_ci_fast_passed, true);
-  assert.deepEqual(passExample.selected_proofs.map((lane) => lane.command), ['npm run ci:fast']);
+  assert.deepEqual(passExample.selected_evidence_checks.map((lane) => lane.command), ['npm run ci:fast']);
   assert.equal(failExample.baseline_ci_fast_passed, false);
   assert.equal(policyGapExample.recommendations[0].kind, 'policy-gap');
   assert.ok(Array.isArray(passExample.policy_results));
@@ -178,9 +178,9 @@ test('fixture adapters and evidence examples stay readable', () => {
   );
 });
 
-test('live-eval fixtures explain outcome measurement and team tuning', () => {
-  const evalRecord = readJson('../examples/evals/work-agent-shadow-eval.json');
-  const evalDraft = readJson('../examples/evals/work-agent-shadow-eval-draft.json');
+test('standards feedback fixtures explain outcome measurement and team tuning', () => {
+  const evalRecord = readJson('../examples/evals/work-agent-observe-eval.json');
+  const evalDraft = readJson('../examples/evals/work-agent-observe-eval-draft.json');
   const teamProfile = readJson('../examples/evals/work-agent-team-profile.json');
   const evalSchema = readJson('../schemas/veritas-eval-record.schema.json');
   const evalDraftSchema = readJson('../schemas/veritas-eval-draft.schema.json');
@@ -193,7 +193,7 @@ test('live-eval fixtures explain outcome measurement and team tuning', () => {
   assert.ok(evalDraftSchema.required.includes('governance'));
   assert.ok(teamProfileSchema.required.includes('promotion_preferences'));
 
-  assert.equal(evalRecord.mode, 'shadow');
+  assert.equal(evalRecord.mode, 'observe');
   assert.equal(evalRecord.evidence.source_kind, 'branch-diff');
   assert.equal(evalRecord.governance.surface_touched, true);
   assert.equal(evalRecord.governance.classification, 'unknown');
@@ -257,10 +257,10 @@ test('marker benchmark fixtures explain timely surfacing scoring', () => {
   assert.equal(comparison.comparison.treatment_beats_baseline, true);
   assert.equal(suite.benchmarks.length, 6);
   assert.ok(
-    suite.benchmarks.some((benchmark) => benchmark.benchmark_id === 'governance-zone1-marker'),
+    suite.benchmarks.some((benchmark) => benchmark.benchmark_id === 'governance-protected-standards-marker'),
   );
   assert.ok(
-    suite.benchmarks.some((benchmark) => benchmark.benchmark_id === 'governance-zone2-marker'),
+    suite.benchmarks.some((benchmark) => benchmark.benchmark_id === 'governance-standards-growth-marker'),
   );
   assert.equal(suiteReport.metrics.pass_pow_k, 5 / 6);
   assert.equal(suiteReport.metrics.treatment_pass_rate, 7 / 8);
@@ -281,18 +281,18 @@ test('marker benchmark fixtures explain timely surfacing scoring', () => {
   );
 });
 
-test('repo-local operational config covers the framework repo surface', () => {
+test('repo-local operational config covers the Veritas repo work areas', () => {
   const adapter = readJson('../.veritas/repo.adapter.json');
   const nodeIds = new Set(adapter.graph.nodes.map((node) => node.id));
   assert.ok(nodeIds.has('tooling.bin'));
   assert.ok(nodeIds.has('governance.schemas'));
-  assert.ok(nodeIds.has('governance.policy-packs'));
+  assert.ok(nodeIds.has('governance.repo-standards'));
   assert.ok(nodeIds.has('examples.fixtures'));
 
-  const policyPack = readJson('../.veritas/policy-packs/default.policy-pack.json');
-  assert.ok(policyPack.rules.length >= 3);
+  const repoStandards = readJson('../.veritas/repo-standards/default.repo-standards.json');
+  assert.ok(repoStandards.rules.length >= 3);
   assert.ok(
-    policyPack.rules.some(
+    repoStandards.rules.some(
       (rule) =>
         Array.isArray(rule.match?.artifacts) && rule.match.artifacts.includes('bin/veritas.mjs'),
     ),
@@ -306,7 +306,7 @@ test('repo includes an automated check-in workflow', () => {
   );
 
   assert.match(workflow, /schedule:/);
-  assert.match(workflow, /npm run veritas:proof/);
+  assert.match(workflow, /npm run veritas:evidence-check/);
   assert.match(workflow, /node scripts\/checkin-status\.mjs/);
   assert.match(workflow, /Update PR Comment/);
   assert.match(workflow, /Update Health Issue/);

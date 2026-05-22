@@ -11,7 +11,7 @@ import {
   appendEvalHistory,
   writeEvalDraftArtifact,
 } from './loop.mjs';
-import { updateRunEvalSummary } from '../surface/dashboard.mjs';
+import { updateRunEvalSummary } from '../surface/console.mjs';
 import {
   buildEvalMarkdownSummary,
   buildEvalDraftMarkdownSummary,

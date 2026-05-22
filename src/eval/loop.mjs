@@ -63,7 +63,7 @@ export function buildEvalRecord({
     version: 1,
     run_id: evidenceRecord.run_id,
     team_profile_id: teamProfile.id,
-    mode: teamProfile.defaults?.mode ?? 'shadow',
+    mode: teamProfile.defaults?.mode ?? 'observe',
     evidence,
     governance: buildEvalGovernanceContext(evidenceRecord),
     outcome: {
@@ -97,7 +97,7 @@ function buildEvalEvidenceContext({ evidenceRecord, evidenceRaw, evidencePath, r
     'source_kind',
     'source_scope',
     'components',
-    'triggered_proofs',
+    'triggered_evidence_checks',
   ];
   for (const key of requiredEvidenceKeys) {
     if (!(key in evidenceRecord)) {
@@ -116,7 +116,7 @@ function buildEvalEvidenceContext({ evidenceRecord, evidenceRaw, evidencePath, r
     source_kind: evidenceRecord.source_kind,
     source_scope: evidenceRecord.source_scope ?? [],
     components: evidenceRecord.components ?? [],
-    triggered_proofs: evidenceRecord.triggered_proofs ?? [],
+    triggered_evidence_checks: evidenceRecord.triggered_evidence_checks ?? [],
     unresolved_files: evidenceRecord.unresolved_files ?? [],
     policy_results: evidenceRecord.policy_results ?? [],
   };
@@ -130,7 +130,7 @@ function isGovernancePath(filePath) {
   return (
     filePath === '.veritas/repo.adapter.json' ||
     filePath === '.veritas/GOVERNANCE.md' ||
-    (typeof filePath === 'string' && filePath.startsWith('.veritas/policy-packs/')) ||
+    (typeof filePath === 'string' && filePath.startsWith('.veritas/repo-standards/')) ||
     (typeof filePath === 'string' && filePath.startsWith('.veritas/team/'))
   );
 }
@@ -147,7 +147,7 @@ function buildEvalGovernanceContext(evidenceRecord) {
   return {
     surface_touched: surfaceTouched,
     classification,
-    human_review_required: classification === 'constitutional-modification',
+    human_review_required: classification === 'protected-standards-modification',
     changed_paths: changedPaths,
   };
 }
@@ -199,7 +199,7 @@ export function buildEvalDraft({
     version: 1,
     run_id: evidenceRecord.run_id,
     team_profile_id: teamProfile.id,
-    mode: teamProfile.defaults?.mode ?? 'shadow',
+    mode: teamProfile.defaults?.mode ?? 'observe',
     evidence: buildEvalEvidenceContext({ evidenceRecord, evidencePath, rootDir }),
     governance: buildEvalGovernanceContext(evidenceRecord),
     reviewer_confidence_scale: [

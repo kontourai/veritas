@@ -8,7 +8,7 @@
     "kind",
     "actor",
     "attestedAt",
-    "policyPackHash",
+    "repoStandardsHash",
     "adapterHash",
     "teamProfileHash",
     "priorAttestationId",
@@ -18,14 +18,14 @@
   "properties": {
     "schemaVersion": { "type": "integer", "const": 1 },
     "id": { "type": "string" },
-    "kind": { "enum": ["bootstrap", "policy-change", "proposal-acceptance"] },
+    "kind": { "enum": ["bootstrap", "policy-change", "recommendation-acceptance"] },
     "actor": {
       "type": "object",
-      "required": ["id", "displayName", "identityProof"],
+      "required": ["id", "displayName", "identityEvidence"],
       "properties": {
         "id": { "type": "string" },
         "displayName": { "type": "string" },
-        "identityProof": {
+        "identityEvidence": {
           "type": "object",
           "required": ["gitEmail", "signingKeyFingerprint"],
           "properties": {
@@ -38,7 +38,7 @@
       "additionalProperties": false
     },
     "attestedAt": { "type": "string", "format": "date-time" },
-    "policyPackHash": { "type": "string" },
+    "repoStandardsHash": { "type": "string" },
     "adapterHash": { "type": "string" },
     "teamProfileHash": { "type": "string" },
     "priorAttestationId": { "type": ["string", "null"] },

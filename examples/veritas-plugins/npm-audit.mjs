@@ -29,7 +29,7 @@ export default {
       requiredEvidence: ['policy_rule'],
       requiredMethods: ['validation'],
       requiresCorroboration: false,
-      requiredProof: ['npm audit --json'],
+      acceptanceCriteria: ['npm audit --json'],
       reviewAuthority: 'package manager audit',
       validityRule: { kind: 'duration', durationDays: 1 },
       stalenessTriggers: ['new npm advisory', 'dependency version changes', 'lockfile changes'],

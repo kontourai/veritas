@@ -37,8 +37,8 @@ jobs:
       - name: Install
         run: npm ci --no-fund --no-audit
 
-      - name: Run Veritas Proof Lane
-        run: npm run veritas:proof
+      - name: Run Veritas Evidence Check
+        run: npm run veritas:evidence-check
 
       - name: Refresh Committed Check-in Examples
         run: npm run veritas:checkin:examples

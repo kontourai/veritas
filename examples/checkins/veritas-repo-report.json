@@ -135,7 +135,7 @@
         ]
       }
     ],
-    ".veritas/policy-packs/default.policy-pack.json": [
+    ".veritas/repo-standards/default.repo-standards.json": [
       {
         "id": "governance.guidance",
         "label": ".veritas/**",
@@ -275,7 +275,7 @@
       }
     ]
   },
-  "triggered_proofs": [
+  "triggered_evidence_checks": [
     ".veritas/**",
     "bin/**",
     "docs/**",
@@ -284,9 +284,9 @@
     "src/**",
     "tests/**"
   ],
-  "selected_proofs": [
+  "selected_evidence_checks": [
     {
-      "id": "required-proof",
+      "id": "required-evidence-check",
       "command": "npm run verify",
       "method": "validation",
       "surface_claim_ids": [],
@@ -304,30 +304,30 @@
       "label": "npm run veritas:fallow:advisory"
     }
   ],
-  "proof_resolution_source": "default",
-  "proof_suite_results": [],
-  "verification_budget": {
-    "proof_count": 2,
-    "selected_proof_count": 2,
-    "proof_suite_count": 0,
-    "required_family_count": 0,
-    "candidate_family_count": 0,
-    "advisory_family_count": 0,
-    "move_to_test_family_count": 0,
-    "retire_family_count": 0,
+  "evidence_check_resolution_source": "default",
+  "evidence_inventory_results": [],
+  "readiness_coverage": {
+    "evidence_check_count": 2,
+    "selected_evidence_check_count": 2,
+    "evidence_inventory_count": 0,
+    "required_inventory_count": 0,
+    "candidate_inventory_count": 0,
+    "advisory_inventory_count": 0,
+    "move_to_test_inventory_count": 0,
+    "retire_inventory_count": 0,
     "upstream_candidate_count": 0,
-    "unknown_catch_evidence_family_ids": [],
-    "missing_review_trigger_family_ids": [],
-    "stale_family_ids": [],
-    "stale_or_unknown_family_ids": [],
-    "recommendation": "Verification budget has owners, review triggers, and no unknown catch-evidence families."
+    "unknown_catch_evidence_inventory_ids": [],
+    "missing_review_trigger_inventory_ids": [],
+    "stale_inventory_ids": [],
+    "stale_or_unknown_inventory_ids": [],
+    "recommendation": "Readiness coverage has owners, review triggers, and no unknown catch-evidence inventories."
   },
   "external_tool_results": [
     {
       "tool": "fallow",
       "format": "veritas-fallow-advisory-v1",
       "command": "npm run veritas:fallow:advisory",
-      "proof_lane_id": "fallow-advisory",
+      "evidence_check_id": "fallow-advisory",
       "verdict": "warn",
       "blocking": false,
       "summary": {
@@ -345,7 +345,7 @@
           "description": "Remove 4 unused exports to reduce surface area (67% dead)",
           "auto_fixable": false,
           "paths": [
-            "src/proof/external-tools.mjs"
+            "src/evidence/external-tools.mjs"
           ]
         },
         {
@@ -353,7 +353,7 @@
           "description": "Suppress the underlying complexity finding",
           "auto_fixable": false,
           "paths": [
-            "src/proof/external-tools.mjs"
+            "src/evidence/external-tools.mjs"
           ]
         },
         {
@@ -361,7 +361,7 @@
           "description": "Remove 3 unused exports to reduce surface area (50% dead)",
           "auto_fixable": false,
           "paths": [
-            "src/proof/family.mjs"
+            "src/evidence/suites.mjs"
           ]
         },
         {
@@ -369,7 +369,7 @@
           "description": "Suppress the underlying complexity finding",
           "auto_fixable": false,
           "paths": [
-            "src/proof/family.mjs"
+            "src/evidence/suites.mjs"
           ]
         },
         {
@@ -377,7 +377,7 @@
           "description": "2 complex functions lack test coverage path, add tests before modifying",
           "auto_fixable": false,
           "paths": [
-            "src/proof/lanes.mjs"
+            "src/evidence/evidenceChecks.mjs"
           ]
         },
         {
@@ -385,7 +385,7 @@
           "description": "Suppress the underlying complexity finding",
           "auto_fixable": false,
           "paths": [
-            "src/proof/lanes.mjs"
+            "src/evidence/evidenceChecks.mjs"
           ]
         },
         {
@@ -473,7 +473,7 @@
           "description": "4 complex functions lack test coverage path, add tests before modifying",
           "auto_fixable": false,
           "paths": [
-            "src/proposals.mjs"
+            "src/recommendations.mjs"
           ]
         },
         {
@@ -481,7 +481,7 @@
           "description": "Suppress the underlying complexity finding",
           "auto_fixable": false,
           "paths": [
-            "src/proposals.mjs"
+            "src/recommendations.mjs"
           ]
         },
         {
@@ -513,7 +513,7 @@
   "files": [
     ".veritas/GOVERNANCE.md",
     ".veritas/repo.adapter.json",
-    ".veritas/policy-packs/default.policy-pack.json",
+    ".veritas/repo-standards/default.repo-standards.json",
     ".veritas/team/default.team-profile.json",
     "CLAUDE.md",
     "README.md",
@@ -552,13 +552,13 @@
       ]
     },
     "non_sliceable_invariants": [
-      "baseline proof lane",
+      "baseline evidenceCheck",
       "repo-local guidance",
       "tracked policy artifacts"
     ],
-    "proofs": [
+    "evidenceChecks": [
       {
-        "id": "required-proof",
+        "id": "required-evidence-check",
         "command": "npm run verify",
         "method": "validation",
         "surface_claim_ids": [],
@@ -576,17 +576,17 @@
         "label": "npm run veritas:fallow:advisory"
       }
     ],
-    "required_proof_ids": [
-      "required-proof"
+    "required_evidence_check_ids": [
+      "required-evidence-check"
     ],
-    "default_proof_ids": [
-      "required-proof",
+    "default_evidence_check_ids": [
+      "required-evidence-check",
       "fallow-advisory"
     ],
-    "proof_routes": [],
+    "evidence_check_routes": [],
     "uncovered_path_policy": "warn"
   },
-  "policy_pack": {
+  "repo_standards": {
     "name": "veritas-default",
     "version": 1,
     "rule_count": 7
@@ -667,7 +667,7 @@
       "classification": "promotable-policy",
       "stage": "recommend",
       "enforcement": "lint",
-      "message": "Prefer keeping the tracked Veritas proof and check-in integration surfaces present so changes flow through the documented operational path before review.",
+      "message": "Prefer keeping the tracked Veritas evidenceCheck and check-in integration surfaces present so changes flow through the documented operational path before review.",
       "owner": "repo-maintainers",
       "rollback_switch": "soften-veritas-route",
       "implemented": true,
@@ -816,20 +816,20 @@
           "currentIntegrityRef": "refs/heads/main"
         },
         {
-          "id": "veritas.surface.governance.policy-packs",
+          "id": "veritas.surface.governance.repo-standards",
           "surface": "veritas.affected-surface",
           "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "governance.policy-packs",
+          "fieldOrBehavior": "governance.repo-standards",
           "subjectType": "repo-surface",
-          "subjectId": "veritas:governance.policy-packs",
+          "subjectId": "veritas:governance.repo-standards",
           "impactLevel": "medium",
           "verificationPolicyId": "veritas.surface",
           "metadata": {
-            "nodeId": "governance.policy-packs"
+            "nodeId": "governance.repo-standards"
           },
           "createdAt": "2026-05-19T13:38:14.077Z",
           "updatedAt": "2026-04-21T22:00:00.000Z",
-          "value": "governance.policy-packs",
+          "value": "governance.repo-standards",
           "currentIntegrityRef": "refs/heads/main"
         },
         {
@@ -915,14 +915,14 @@
           "currentIntegrityRef": "refs/heads/main"
         },
         {
-          "id": "veritas.proof.npm-run-verify",
-          "surface": "veritas.proof-lane",
-          "claimType": "software-proof",
+          "id": "veritas.evidence-check.npm-run-verify",
+          "surface": "veritas.evidence-check",
+          "claimType": "software-evidence-check",
           "fieldOrBehavior": "npm run verify",
           "subjectType": "repository",
           "subjectId": "veritas",
           "impactLevel": "high",
-          "verificationPolicyId": "veritas.proof-lane",
+          "verificationPolicyId": "veritas.evidence-check",
           "metadata": {
             "command": "npm run verify"
           },
@@ -932,14 +932,14 @@
           "currentIntegrityRef": "refs/heads/main"
         },
         {
-          "id": "veritas.proof.npm-run-veritas-fallow-advisory",
-          "surface": "veritas.proof-lane",
-          "claimType": "software-proof",
+          "id": "veritas.evidence-check.npm-run-veritas-fallow-advisory",
+          "surface": "veritas.evidence-check",
+          "claimType": "software-evidence-check",
           "fieldOrBehavior": "npm run veritas:fallow:advisory",
           "subjectType": "repository",
           "subjectId": "veritas",
           "impactLevel": "high",
-          "verificationPolicyId": "veritas.proof-lane",
+          "verificationPolicyId": "veritas.evidence-check",
           "metadata": {
             "command": "npm run veritas:fallow:advisory"
           },
@@ -957,7 +957,7 @@
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
           "sourceLocator": "components",
-          "excerptOrSummary": "Veritas marked app.src as an affected repo surface for Initial Project Setup.",
+          "excerptOrSummary": "Veritas marked app.src as an affected work area for Initial Project Setup.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
           "integrityRef": "refs/heads/main",
@@ -969,7 +969,7 @@
             "files": [
               ".veritas/GOVERNANCE.md",
               ".veritas/repo.adapter.json",
-              ".veritas/policy-packs/default.policy-pack.json",
+              ".veritas/repo-standards/default.repo-standards.json",
               ".veritas/team/default.team-profile.json",
               "CLAUDE.md",
               "README.md",
@@ -990,7 +990,7 @@
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
           "sourceLocator": "components",
-          "excerptOrSummary": "Veritas marked docs.docs as an affected repo surface for Initial Project Setup.",
+          "excerptOrSummary": "Veritas marked docs.docs as an affected work area for Initial Project Setup.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
           "integrityRef": "refs/heads/main",
@@ -1002,7 +1002,7 @@
             "files": [
               ".veritas/GOVERNANCE.md",
               ".veritas/repo.adapter.json",
-              ".veritas/policy-packs/default.policy-pack.json",
+              ".veritas/repo-standards/default.repo-standards.json",
               ".veritas/team/default.team-profile.json",
               "CLAUDE.md",
               "README.md",
@@ -1023,7 +1023,7 @@
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
           "sourceLocator": "components",
-          "excerptOrSummary": "Veritas marked governance.guidance as an affected repo surface for Initial Project Setup.",
+          "excerptOrSummary": "Veritas marked governance.guidance as an affected work area for Initial Project Setup.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
           "integrityRef": "refs/heads/main",
@@ -1035,7 +1035,7 @@
             "files": [
               ".veritas/GOVERNANCE.md",
               ".veritas/repo.adapter.json",
-              ".veritas/policy-packs/default.policy-pack.json",
+              ".veritas/repo-standards/default.repo-standards.json",
               ".veritas/team/default.team-profile.json",
               "CLAUDE.md",
               "README.md",
@@ -1056,7 +1056,7 @@
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
           "sourceLocator": "components",
-          "excerptOrSummary": "Veritas marked governance.root-manifests as an affected repo surface for Initial Project Setup.",
+          "excerptOrSummary": "Veritas marked governance.root-manifests as an affected work area for Initial Project Setup.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
           "integrityRef": "refs/heads/main",
@@ -1068,7 +1068,7 @@
             "files": [
               ".veritas/GOVERNANCE.md",
               ".veritas/repo.adapter.json",
-              ".veritas/policy-packs/default.policy-pack.json",
+              ".veritas/repo-standards/default.repo-standards.json",
               ".veritas/team/default.team-profile.json",
               "CLAUDE.md",
               "README.md",
@@ -1089,7 +1089,7 @@
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
           "sourceLocator": "components",
-          "excerptOrSummary": "Veritas marked governance.schemas as an affected repo surface for Initial Project Setup.",
+          "excerptOrSummary": "Veritas marked governance.schemas as an affected work area for Initial Project Setup.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
           "integrityRef": "refs/heads/main",
@@ -1101,7 +1101,7 @@
             "files": [
               ".veritas/GOVERNANCE.md",
               ".veritas/repo.adapter.json",
-              ".veritas/policy-packs/default.policy-pack.json",
+              ".veritas/repo-standards/default.repo-standards.json",
               ".veritas/team/default.team-profile.json",
               "CLAUDE.md",
               "README.md",
@@ -1122,7 +1122,7 @@
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
           "sourceLocator": "components",
-          "excerptOrSummary": "Veritas marked tooling.bin as an affected repo surface for Initial Project Setup.",
+          "excerptOrSummary": "Veritas marked tooling.bin as an affected work area for Initial Project Setup.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
           "integrityRef": "refs/heads/main",
@@ -1134,7 +1134,7 @@
             "files": [
               ".veritas/GOVERNANCE.md",
               ".veritas/repo.adapter.json",
-              ".veritas/policy-packs/default.policy-pack.json",
+              ".veritas/repo-standards/default.repo-standards.json",
               ".veritas/team/default.team-profile.json",
               "CLAUDE.md",
               "README.md",
@@ -1155,7 +1155,7 @@
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
           "sourceLocator": "components",
-          "excerptOrSummary": "Veritas marked verification.tests as an affected repo surface for Initial Project Setup.",
+          "excerptOrSummary": "Veritas marked verification.tests as an affected work area for Initial Project Setup.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
           "integrityRef": "refs/heads/main",
@@ -1167,7 +1167,7 @@
             "files": [
               ".veritas/GOVERNANCE.md",
               ".veritas/repo.adapter.json",
-              ".veritas/policy-packs/default.policy-pack.json",
+              ".veritas/repo-standards/default.repo-standards.json",
               ".veritas/team/default.team-profile.json",
               "CLAUDE.md",
               "README.md",
@@ -1182,13 +1182,13 @@
           }
         },
         {
-          "id": "veritas-repo-check-in.proof.required-proof.evidence",
-          "claimId": "veritas.proof.npm-run-verify",
+          "id": "veritas-repo-check-in.evidence-check.required-evidence-check.evidence",
+          "claimId": "veritas.evidence-check.npm-run-verify",
           "evidenceType": "test_output",
           "method": "validation",
           "sourceRef": "veritas-repo-check-in",
-          "sourceLocator": "selected_proofs",
-          "excerptOrSummary": "All proof checks passed.",
+          "sourceLocator": "selected_evidence_checks",
+          "excerptOrSummary": "All evidence checks passed.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
           "integrityRef": "refs/heads/main",
@@ -1200,7 +1200,7 @@
             "files": [
               ".veritas/GOVERNANCE.md",
               ".veritas/repo.adapter.json",
-              ".veritas/policy-packs/default.policy-pack.json",
+              ".veritas/repo-standards/default.repo-standards.json",
               ".veritas/team/default.team-profile.json",
               "CLAUDE.md",
               "README.md",
@@ -1217,22 +1217,22 @@
             "observedResult": {
               "expected": "all checks pass",
               "status": "passed",
-              "summary": "All proof checks passed."
+              "summary": "All evidence checks passed."
             },
-            "proofResolutionSource": "default",
+            "evidenceCheckResolutionSource": "default",
             "baselineCiFastPassed": true,
-            "proofLaneId": "required-proof",
+            "evidenceCheckId": "required-evidence-check",
             "surfaceClaimIds": []
           }
         },
         {
-          "id": "veritas-repo-check-in.proof.fallow-advisory.evidence",
-          "claimId": "veritas.proof.npm-run-veritas-fallow-advisory",
+          "id": "veritas-repo-check-in.evidence-check.fallow-advisory.evidence",
+          "claimId": "veritas.evidence-check.npm-run-veritas-fallow-advisory",
           "evidenceType": "test_output",
           "method": "auditability",
           "sourceRef": "veritas-repo-check-in",
-          "sourceLocator": "selected_proofs",
-          "excerptOrSummary": "All proof checks passed.",
+          "sourceLocator": "selected_evidence_checks",
+          "excerptOrSummary": "All evidence checks passed.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
           "integrityRef": "refs/heads/main",
@@ -1244,7 +1244,7 @@
             "files": [
               ".veritas/GOVERNANCE.md",
               ".veritas/repo.adapter.json",
-              ".veritas/policy-packs/default.policy-pack.json",
+              ".veritas/repo-standards/default.repo-standards.json",
               ".veritas/team/default.team-profile.json",
               "CLAUDE.md",
               "README.md",
@@ -1261,11 +1261,11 @@
             "observedResult": {
               "expected": "all checks pass",
               "status": "passed",
-              "summary": "All proof checks passed."
+              "summary": "All evidence checks passed."
             },
-            "proofResolutionSource": "default",
+            "evidenceCheckResolutionSource": "default",
             "baselineCiFastPassed": true,
-            "proofLaneId": "fallow-advisory",
+            "evidenceCheckId": "fallow-advisory",
             "surfaceClaimIds": []
           }
         }
@@ -1281,7 +1281,7 @@
             "auditability"
           ],
           "requiresCorroboration": false,
-          "requiredProof": [
+          "acceptanceCriteria": [
             "veritas evidence artifact"
           ],
           "reviewAuthority": "veritas",
@@ -1309,8 +1309,8 @@
             "attestation"
           ],
           "requiresCorroboration": false,
-          "requiredProof": [
-            "Zone 1 hash inspection",
+          "acceptanceCriteria": [
+            "protected standards hash inspection",
             "human attestation status"
           ],
           "reviewAuthority": "veritas plus human attestation",
@@ -1318,7 +1318,7 @@
             "kind": "manual"
           },
           "stalenessTriggers": [
-            "policy pack hash changes",
+            "repo standards hash changes",
             "adapter hash changes",
             "team profile hash changes",
             "attestation expiry"
@@ -1329,8 +1329,8 @@
           "impactLevel": "high"
         },
         {
-          "id": "veritas.proof-lane",
-          "claimType": "software-proof",
+          "id": "veritas.evidence-check",
+          "claimType": "software-evidence-check",
           "requiredEvidence": [
             "test_output"
           ],
@@ -1338,8 +1338,8 @@
             "validation"
           ],
           "requiresCorroboration": false,
-          "requiredProof": [
-            "selected proof command"
+          "acceptanceCriteria": [
+            "selected evidenceCheck command"
           ],
           "reviewAuthority": "veritas",
           "validityRule": {
@@ -1347,11 +1347,11 @@
           },
           "stalenessTriggers": [
             "source_ref changes",
-            "proof command changes",
-            "baseline proof fails"
+            "evidenceCheck command changes",
+            "baseline evidenceCheck fails"
           ],
           "conflictRules": [
-            "failed proof rejects a previously verified proof claim"
+            "failed evidenceCheck rejects a previously verified evidenceCheck claim"
           ],
           "impactLevel": "high"
         }
@@ -1362,7 +1362,7 @@
           "claimId": "veritas.surface.app.src",
           "status": "verified",
           "actor": "veritas",
-          "method": "affected surface resolution",
+          "method": "affected work area resolution",
           "evidenceIds": [
             "veritas-repo-check-in.surface.app.src.evidence"
           ],
@@ -1374,7 +1374,7 @@
           "claimId": "veritas.surface.docs.docs",
           "status": "verified",
           "actor": "veritas",
-          "method": "affected surface resolution",
+          "method": "affected work area resolution",
           "evidenceIds": [
             "veritas-repo-check-in.surface.docs.docs.evidence"
           ],
@@ -1386,7 +1386,7 @@
           "claimId": "veritas.surface.governance.guidance",
           "status": "verified",
           "actor": "veritas",
-          "method": "affected surface resolution",
+          "method": "affected work area resolution",
           "evidenceIds": [
             "veritas-repo-check-in.surface.governance.guidance.evidence"
           ],
@@ -1398,7 +1398,7 @@
           "claimId": "veritas.surface.governance.root-manifests",
           "status": "verified",
           "actor": "veritas",
-          "method": "affected surface resolution",
+          "method": "affected work area resolution",
           "evidenceIds": [
             "veritas-repo-check-in.surface.governance.root-manifests.evidence"
           ],
@@ -1410,7 +1410,7 @@
           "claimId": "veritas.surface.governance.schemas",
           "status": "verified",
           "actor": "veritas",
-          "method": "affected surface resolution",
+          "method": "affected work area resolution",
           "evidenceIds": [
             "veritas-repo-check-in.surface.governance.schemas.evidence"
           ],
@@ -1422,7 +1422,7 @@
           "claimId": "veritas.surface.tooling.bin",
           "status": "verified",
           "actor": "veritas",
-          "method": "affected surface resolution",
+          "method": "affected work area resolution",
           "evidenceIds": [
             "veritas-repo-check-in.surface.tooling.bin.evidence"
           ],
@@ -1434,7 +1434,7 @@
           "claimId": "veritas.surface.verification.tests",
           "status": "verified",
           "actor": "veritas",
-          "method": "affected surface resolution",
+          "method": "affected work area resolution",
           "evidenceIds": [
             "veritas-repo-check-in.surface.verification.tests.evidence"
           ],
@@ -1442,25 +1442,25 @@
           "verifiedAt": "2026-04-21T22:00:00.000Z"
         },
         {
-          "id": "veritas-repo-check-in.proof.required-proof.verified",
-          "claimId": "veritas.proof.npm-run-verify",
+          "id": "veritas-repo-check-in.evidence-check.required-evidence-check.verified",
+          "claimId": "veritas.evidence-check.npm-run-verify",
           "status": "verified",
           "actor": "veritas",
           "method": "npm run verify",
           "evidenceIds": [
-            "veritas-repo-check-in.proof.required-proof.evidence"
+            "veritas-repo-check-in.evidence-check.required-evidence-check.evidence"
           ],
           "createdAt": "2026-04-21T22:00:00.000Z",
           "verifiedAt": "2026-04-21T22:00:00.000Z"
         },
         {
-          "id": "veritas-repo-check-in.proof.fallow-advisory.verified",
-          "claimId": "veritas.proof.npm-run-veritas-fallow-advisory",
+          "id": "veritas-repo-check-in.evidence-check.fallow-advisory.verified",
+          "claimId": "veritas.evidence-check.npm-run-veritas-fallow-advisory",
           "status": "verified",
           "actor": "veritas",
           "method": "npm run veritas:fallow:advisory",
           "evidenceIds": [
-            "veritas-repo-check-in.proof.fallow-advisory.evidence"
+            "veritas-repo-check-in.evidence-check.fallow-advisory.evidence"
           ],
           "createdAt": "2026-04-21T22:00:00.000Z",
           "verifiedAt": "2026-04-21T22:00:00.000Z"
@@ -1485,18 +1485,18 @@
         "bySurface": {
           "veritas.affected-surface": 12,
           "veritas.governance": 1,
-          "veritas.proof-lane": 2
+          "veritas.evidence-check": 2
         },
         "confidenceBasis": {
           "sourceQuality": {},
           "reviewerAuthority": {},
-          "proofStrength": {},
+          "evidenceStrength": {},
           "corroboratedClaims": 0,
           "averageExtractionConfidence": null,
           "freshnessAtRisk": [],
           "conflictedClaims": []
         },
-        "faultLinesByType": {
+        "transparencyGapsByType": {
           "contradiction": 0,
           "provenance_gap": 6,
           "policy_violation": 7,
@@ -1610,14 +1610,14 @@
           "currentIntegrityRef": "refs/heads/main"
         },
         {
-          "id": "veritas.surface.governance.policy-packs",
+          "id": "veritas.surface.governance.repo-standards",
           "status": "unknown",
           "subjectType": "repo-surface",
-          "subjectId": "veritas:governance.policy-packs",
+          "subjectId": "veritas:governance.repo-standards",
           "surface": "veritas.affected-surface",
           "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "governance.policy-packs",
-          "value": "governance.policy-packs",
+          "fieldOrBehavior": "governance.repo-standards",
+          "value": "governance.repo-standards",
           "verificationPolicyId": "veritas.surface",
           "createdAt": "2026-05-19T13:38:14.077Z",
           "updatedAt": "2026-04-21T22:00:00.000Z",
@@ -1694,37 +1694,37 @@
           "currentIntegrityRef": "refs/heads/main"
         },
         {
-          "id": "veritas.proof.npm-run-verify",
+          "id": "veritas.evidence-check.npm-run-verify",
           "status": "verified",
           "subjectType": "repository",
           "subjectId": "veritas",
-          "surface": "veritas.proof-lane",
-          "claimType": "software-proof",
+          "surface": "veritas.evidence-check",
+          "claimType": "software-evidence-check",
           "fieldOrBehavior": "npm run verify",
           "value": "all checks pass",
-          "verificationPolicyId": "veritas.proof-lane",
+          "verificationPolicyId": "veritas.evidence-check",
           "createdAt": "2026-05-19T13:38:14.077Z",
           "updatedAt": "2026-04-21T22:00:00.000Z",
           "currentIntegrityRef": "refs/heads/main"
         },
         {
-          "id": "veritas.proof.npm-run-veritas-fallow-advisory",
+          "id": "veritas.evidence-check.npm-run-veritas-fallow-advisory",
           "status": "verified",
           "subjectType": "repository",
           "subjectId": "veritas",
-          "surface": "veritas.proof-lane",
-          "claimType": "software-proof",
+          "surface": "veritas.evidence-check",
+          "claimType": "software-evidence-check",
           "fieldOrBehavior": "npm run veritas:fallow:advisory",
           "value": "all checks pass",
-          "verificationPolicyId": "veritas.proof-lane",
+          "verificationPolicyId": "veritas.evidence-check",
           "createdAt": "2026-05-19T13:38:14.077Z",
           "updatedAt": "2026-04-21T22:00:00.000Z",
           "currentIntegrityRef": "refs/heads/main"
         }
       ],
-      "faultLines": [
+      "transparencyGaps": [
         {
-          "id": "veritas.surface.delivery.github.fault.provenance-gap",
+          "id": "veritas.surface.delivery.github.gap.provenance-gap",
           "claimId": "veritas.surface.delivery.github",
           "type": "provenance_gap",
           "severity": "medium",
@@ -1733,7 +1733,7 @@
           "createdAt": "2026-04-21T22:00:00.000Z"
         },
         {
-          "id": "veritas.surface.delivery.github.fault.policy-violation",
+          "id": "veritas.surface.delivery.github.gap.policy-violation",
           "claimId": "veritas.surface.delivery.github",
           "type": "policy_violation",
           "severity": "medium",
@@ -1743,7 +1743,7 @@
           "evidenceIds": []
         },
         {
-          "id": "veritas.surface.tooling.scripts.fault.provenance-gap",
+          "id": "veritas.surface.tooling.scripts.gap.provenance-gap",
           "claimId": "veritas.surface.tooling.scripts",
           "type": "provenance_gap",
           "severity": "medium",
@@ -1752,7 +1752,7 @@
           "createdAt": "2026-04-21T22:00:00.000Z"
         },
         {
-          "id": "veritas.surface.tooling.scripts.fault.policy-violation",
+          "id": "veritas.surface.tooling.scripts.gap.policy-violation",
           "claimId": "veritas.surface.tooling.scripts",
           "type": "policy_violation",
           "severity": "medium",
@@ -1762,7 +1762,7 @@
           "evidenceIds": []
         },
         {
-          "id": "veritas.surface.governance.adapters.fault.provenance-gap",
+          "id": "veritas.surface.governance.adapters.gap.provenance-gap",
           "claimId": "veritas.surface.governance.adapters",
           "type": "provenance_gap",
           "severity": "medium",
@@ -1771,7 +1771,7 @@
           "createdAt": "2026-04-21T22:00:00.000Z"
         },
         {
-          "id": "veritas.surface.governance.adapters.fault.policy-violation",
+          "id": "veritas.surface.governance.adapters.gap.policy-violation",
           "claimId": "veritas.surface.governance.adapters",
           "type": "policy_violation",
           "severity": "medium",
@@ -1781,8 +1781,8 @@
           "evidenceIds": []
         },
         {
-          "id": "veritas.surface.governance.policy-packs.fault.provenance-gap",
-          "claimId": "veritas.surface.governance.policy-packs",
+          "id": "veritas.surface.governance.repo-standards.gap.provenance-gap",
+          "claimId": "veritas.surface.governance.repo-standards",
           "type": "provenance_gap",
           "severity": "medium",
           "message": "Missing required evidence: policy_rule.",
@@ -1790,8 +1790,8 @@
           "createdAt": "2026-04-21T22:00:00.000Z"
         },
         {
-          "id": "veritas.surface.governance.policy-packs.fault.policy-violation",
-          "claimId": "veritas.surface.governance.policy-packs",
+          "id": "veritas.surface.governance.repo-standards.gap.policy-violation",
+          "claimId": "veritas.surface.governance.repo-standards",
           "type": "policy_violation",
           "severity": "medium",
           "message": "Missing required verification method: auditability.",
@@ -1800,7 +1800,7 @@
           "evidenceIds": []
         },
         {
-          "id": "veritas.surface.examples.fixtures.fault.provenance-gap",
+          "id": "veritas.surface.examples.fixtures.gap.provenance-gap",
           "claimId": "veritas.surface.examples.fixtures",
           "type": "provenance_gap",
           "severity": "medium",
@@ -1809,7 +1809,7 @@
           "createdAt": "2026-04-21T22:00:00.000Z"
         },
         {
-          "id": "veritas.surface.examples.fixtures.fault.policy-violation",
+          "id": "veritas.surface.examples.fixtures.gap.policy-violation",
           "claimId": "veritas.surface.examples.fixtures",
           "type": "policy_violation",
           "severity": "medium",
@@ -1819,7 +1819,7 @@
           "evidenceIds": []
         },
         {
-          "id": "veritas.governance.fault.provenance-gap",
+          "id": "veritas.governance.gap.provenance-gap",
           "claimId": "veritas.governance",
           "type": "provenance_gap",
           "severity": "high",
@@ -1828,7 +1828,7 @@
           "createdAt": "2026-04-21T22:00:00.000Z"
         },
         {
-          "id": "veritas.governance.fault.policy-violation",
+          "id": "veritas.governance.gap.policy-violation",
           "claimId": "veritas.governance",
           "type": "policy_violation",
           "severity": "high",
@@ -1838,29 +1838,29 @@
           "evidenceIds": []
         },
         {
-          "id": "veritas.proof.npm-run-veritas-fallow-advisory.fault.policy-violation",
-          "claimId": "veritas.proof.npm-run-veritas-fallow-advisory",
+          "id": "veritas.evidence-check.npm-run-veritas-fallow-advisory.gap.policy-violation",
+          "claimId": "veritas.evidence-check.npm-run-veritas-fallow-advisory",
           "type": "policy_violation",
           "severity": "high",
           "message": "Missing required verification method: validation.",
-          "policyId": "veritas.proof-lane",
+          "policyId": "veritas.evidence-check",
           "createdAt": "2026-04-21T22:00:00.000Z",
           "evidenceIds": [
-            "veritas-repo-check-in.proof.fallow-advisory.evidence"
+            "veritas-repo-check-in.evidence-check.fallow-advisory.evidence"
           ]
         }
       ],
-      "faultLinesByClaimId": {
+      "transparencyGapsByClaimId": {
         "veritas.surface.delivery.github": [
           {
-            "id": "veritas.surface.delivery.github.fault.provenance-gap",
+            "id": "veritas.surface.delivery.github.gap.provenance-gap",
             "type": "provenance_gap",
             "severity": "medium",
             "message": "Missing required evidence: policy_rule.",
             "policyId": "veritas.surface"
           },
           {
-            "id": "veritas.surface.delivery.github.fault.policy-violation",
+            "id": "veritas.surface.delivery.github.gap.policy-violation",
             "type": "policy_violation",
             "severity": "medium",
             "message": "Missing required verification method: auditability.",
@@ -1869,14 +1869,14 @@
         ],
         "veritas.surface.tooling.scripts": [
           {
-            "id": "veritas.surface.tooling.scripts.fault.provenance-gap",
+            "id": "veritas.surface.tooling.scripts.gap.provenance-gap",
             "type": "provenance_gap",
             "severity": "medium",
             "message": "Missing required evidence: policy_rule.",
             "policyId": "veritas.surface"
           },
           {
-            "id": "veritas.surface.tooling.scripts.fault.policy-violation",
+            "id": "veritas.surface.tooling.scripts.gap.policy-violation",
             "type": "policy_violation",
             "severity": "medium",
             "message": "Missing required verification method: auditability.",
@@ -1885,30 +1885,30 @@
         ],
         "veritas.surface.governance.adapters": [
           {
-            "id": "veritas.surface.governance.adapters.fault.provenance-gap",
+            "id": "veritas.surface.governance.adapters.gap.provenance-gap",
             "type": "provenance_gap",
             "severity": "medium",
             "message": "Missing required evidence: policy_rule.",
             "policyId": "veritas.surface"
           },
           {
-            "id": "veritas.surface.governance.adapters.fault.policy-violation",
+            "id": "veritas.surface.governance.adapters.gap.policy-violation",
             "type": "policy_violation",
             "severity": "medium",
             "message": "Missing required verification method: auditability.",
             "policyId": "veritas.surface"
           }
         ],
-        "veritas.surface.governance.policy-packs": [
+        "veritas.surface.governance.repo-standards": [
           {
-            "id": "veritas.surface.governance.policy-packs.fault.provenance-gap",
+            "id": "veritas.surface.governance.repo-standards.gap.provenance-gap",
             "type": "provenance_gap",
             "severity": "medium",
             "message": "Missing required evidence: policy_rule.",
             "policyId": "veritas.surface"
           },
           {
-            "id": "veritas.surface.governance.policy-packs.fault.policy-violation",
+            "id": "veritas.surface.governance.repo-standards.gap.policy-violation",
             "type": "policy_violation",
             "severity": "medium",
             "message": "Missing required verification method: auditability.",
@@ -1917,14 +1917,14 @@
         ],
         "veritas.surface.examples.fixtures": [
           {
-            "id": "veritas.surface.examples.fixtures.fault.provenance-gap",
+            "id": "veritas.surface.examples.fixtures.gap.provenance-gap",
             "type": "provenance_gap",
             "severity": "medium",
             "message": "Missing required evidence: policy_rule.",
             "policyId": "veritas.surface"
           },
           {
-            "id": "veritas.surface.examples.fixtures.fault.policy-violation",
+            "id": "veritas.surface.examples.fixtures.gap.policy-violation",
             "type": "policy_violation",
             "severity": "medium",
             "message": "Missing required verification method: auditability.",
@@ -1933,37 +1933,37 @@
         ],
         "veritas.governance": [
           {
-            "id": "veritas.governance.fault.provenance-gap",
+            "id": "veritas.governance.gap.provenance-gap",
             "type": "provenance_gap",
             "severity": "high",
             "message": "Missing required evidence: attestation, policy_rule.",
             "policyId": "veritas.governance-artifact"
           },
           {
-            "id": "veritas.governance.fault.policy-violation",
+            "id": "veritas.governance.gap.policy-violation",
             "type": "policy_violation",
             "severity": "high",
             "message": "Missing required verification method: auditability, attestation.",
             "policyId": "veritas.governance-artifact"
           }
         ],
-        "veritas.proof.npm-run-veritas-fallow-advisory": [
+        "veritas.evidence-check.npm-run-veritas-fallow-advisory": [
           {
-            "id": "veritas.proof.npm-run-veritas-fallow-advisory.fault.policy-violation",
+            "id": "veritas.evidence-check.npm-run-veritas-fallow-advisory.gap.policy-violation",
             "type": "policy_violation",
             "severity": "high",
             "message": "Missing required verification method: validation.",
-            "policyId": "veritas.proof-lane"
+            "policyId": "veritas.evidence-check"
           }
         ]
       }
     }
   },
-  "selected_proof_ids": [
-    "required-proof",
+  "selected_evidence_check_ids": [
+    "required-evidence-check",
     "fallow-advisory"
   ],
-  "selected_proof_labels": [
+  "selected_evidence_check_labels": [
     "npm run verify",
     "npm run veritas:fallow:advisory"
   ]

@@ -1,23 +1,54 @@
 # Migration Guide
 
+## Product Terminology Migration
+
+Veritas now uses the product vocabulary in [reference/glossary.md](reference/glossary.md). Pre-glossary names should be renamed, not preserved as a public surface.
+
+Current implementation names to migrate:
+
+| Current implementation name | Canonical product name |
+| --- | --- |
+| repo standards | Repo Standards or Standards File |
+| adapter | Repo Map |
+| work area / work area | Work Area |
+| rule | Requirement |
+| evidenceCheck / evidenceCheck / evidenceCheck command | Evidence Check |
+| evidence inventory | Evidence Check Inventory |
+| readiness coverage | Readiness Coverage |
+| team profile | Repo Standards settings, authority settings, or rollout settings |
+| eval | Standards Feedback |
+| recommendation | Standards Recommendation |
+| check-in | Readiness Report, Repo Conformance, or Standards Feedback depending on context |
+| Protected Standards | Protected Standards |
+| Standards Growth | Standards Growth |
+| Generated Evidence | Generated Evidence |
+| framework | Product, CLI, SDK, or implementation module depending on context |
+
+Near-term rename targets:
+
+1. Rename generated `.veritas/` files to standards/map/settings language.
+2. Rename schema files and field names after generated files are settled.
+3. Rename CLI command groups from implementation names to readiness, feedback, and recommendations.
+4. Keep exact current implementation names only in migration notes, schema references, and code comments needed to explain an active rename.
+
 ## Run Snapshots Move to `.surface/runs/`
 
-Veritas now writes run snapshots to `.surface/runs/` instead of `.veritas/surface-dashboard/`.
+Veritas writes run snapshots to `.surface/runs/`.
 
 New paths:
 
 ```
-.surface/runs/<run-id>.dashboard.json
+.surface/runs/<run-id>.console.json
 .surface/runs/latest.json
 ```
 
-The Surface dashboard detects the old path automatically as a fallback, so existing setups keep working without any change. When you are ready to migrate:
+When updating an existing local checkout:
 
 1. Add `.surface/` to your `.gitignore` if it is not already there (run snapshots are derived and should not be committed).
-2. The next `veritas run` writes to the new path automatically.
-3. Remove `.veritas/surface-dashboard/` from your `.gitignore` once the old directory is gone.
+2. The next `veritas readiness` writes to the new path automatically.
+3. Remove stale ignore entries for the retired Veritas-local console directory once that directory is gone.
 
-If you pass `--read-model .veritas/surface-dashboard/latest.json` explicitly to the Surface dashboard, update that flag to `--read-model .surface/runs/latest.json` (or omit it entirely, since `.surface/runs/latest.json` is now the default).
+If you pass a `--read-model` flag explicitly to the Surface Console, set it to `.surface/runs/latest.json` or omit it entirely, since `.surface/runs/latest.json` is now the default.
 
 ## Claims Are Now Authored, Not Generated Per Run
 
@@ -32,19 +63,19 @@ To migrate:
 
 See [claim-authoring.md](./claim-authoring.md) for the full authoring workflow.
 
-## Adapter Proof Lanes Are Explicit Objects
+## Adapter Evidence Checks Are Explicit Objects
 
-Adapters now use explicit proof-lane objects. Removed command arrays such as `requiredProofLanes`, `defaultProofLanes`, and `surfaceProofLanes[].proofLanes` fail runtime validation with a migration-oriented error.
+Adapters now use explicit evidence-check objects. Removed command arrays such as `requiredEvidenceCheckCommands`, `defaultEvidenceCheckCommands`, and `surfaceEvidenceCheckCommands[].evidenceChecks` fail runtime validation with a migration-oriented error.
 
 Before:
 
 ```json
 {
   "evidence": {
-    "requiredProofLanes": ["npm run ci:fast"],
-    "defaultProofLanes": ["npm test"],
-    "surfaceProofLanes": [
-      { "nodeIds": ["src/api"], "proofLanes": ["npm run api:test"] }
+    "requiredEvidenceCheckCommands": ["npm run ci:fast"],
+    "defaultEvidenceCheckCommands": ["npm test"],
+    "surfaceEvidenceCheckCommands": [
+      { "nodeIds": ["src/api"], "evidenceChecks": ["npm run api:test"] }
     ]
   }
 }
@@ -55,15 +86,15 @@ After:
 ```json
 {
   "evidence": {
-    "proofs": [
+    "evidenceChecks": [
       { "id": "ci-fast", "command": "npm run ci:fast", "method": "validation" },
       { "id": "unit-tests", "command": "npm test", "method": "validation" },
       { "id": "api-tests", "command": "npm run api:test", "method": "validation" }
     ],
-    "requiredProofIds": ["ci-fast"],
-    "defaultProofIds": ["unit-tests"],
-    "proofRoutes": [
-      { "componentIds": ["src/api"], "proofIds": ["api-tests"] }
+    "requiredEvidenceCheckIds": ["ci-fast"],
+    "defaultEvidenceCheckIds": ["unit-tests"],
+    "evidenceCheckRoutes": [
+      { "componentIds": ["src/api"], "evidenceCheckIds": ["api-tests"] }
     ]
   }
 }
@@ -71,13 +102,13 @@ After:
 
 Owned repos can update `.veritas/repo.adapter.json` manually or rerun `veritas init --force` and reapply local policy edits.
 
-## Proof Commands No Longer Run Through a Shell
+## Evidence Check Commands No Longer Run Through a Shell
 
-`veritas run` now tokenizes proof commands and executes them directly instead of passing the full string through `SHELL -lc`.
+`veritas readiness` now tokenizes evidenceCheck commands and executes them directly instead of passing the full string through `SHELL -lc`.
 
-This closes a config-level command-injection path, but it changes the proof-lane contract:
+This closes a config-level command-injection path, but it changes the evidence-check contract:
 
-- shell control operators such as `&&`, `||`, `|`, `>`, and `<` are no longer interpreted
+- shell requirement operators such as `&&`, `||`, `|`, `>`, and `<` are no longer interpreted
 - environment-variable expansion such as `$FOO` is no longer interpreted
 - quoting still works for grouping argv tokens
 
@@ -85,15 +116,15 @@ This closes a config-level command-injection path, but it changes the proof-lane
 
 Recommended:
 
-1. Split compound proof flows into multiple `proofs` entries.
-2. Keep each proof lane to one executable plus its argv.
+1. Split compound evidenceCheck flows into multiple `evidenceChecks` entries.
+2. Keep each evidenceCheck to one executable plus its argv.
 
 Before:
 
 ```json
 {
-  "proofs": [{ "id": "ci", "command": "npm run ci:fast && npm test", "method": "validation" }],
-  "requiredProofIds": ["ci"]
+  "evidenceChecks": [{ "id": "ci", "command": "npm run ci:fast && npm test", "method": "validation" }],
+  "requiredEvidenceCheckIds": ["ci"]
 }
 ```
 
@@ -101,24 +132,24 @@ After:
 
 ```json
 {
-  "proofs": [
+  "evidenceChecks": [
     { "id": "ci-fast", "command": "npm run ci:fast", "method": "validation" },
     { "id": "unit-tests", "command": "npm test", "method": "validation" }
   ],
-  "requiredProofIds": ["ci-fast", "unit-tests"]
+  "requiredEvidenceCheckIds": ["ci-fast", "unit-tests"]
 }
 ```
 
-If you previously relied on shell expansion, move that logic into a real script and call the script as the proof lane.
+If you previously relied on shell expansion, move that logic into a real script and call the script as the evidenceCheck.
 
-## Proof Output Now Uses Inherited StdIO
+## Evidence Check Output Now Uses Inherited StdIO
 
-Proof commands now run with inherited stdio instead of redirecting stdout into stderr.
+Evidence Check commands now run with inherited stdio instead of redirecting stdout into stderr.
 
 Operational effect:
 
-- proof stdout stays on stdout
-- proof stderr stays on stderr
-- CLI consumers that assumed `veritas run` emitted only JSON on stdout must now parse the trailing JSON payload instead of the entire stream
+- evidenceCheck stdout stays on stdout
+- evidenceCheck stderr stays on stderr
+- CLI callers that assumed `veritas readiness` emitted only JSON on stdout must now parse the trailing JSON payload instead of the entire stream
 
-This is intentional. The command no longer rewrites proof-lane output streams behind the operator's back.
+This is intentional. The command no longer rewrites evidence-check output streams behind the operator's back.

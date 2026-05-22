@@ -21,15 +21,15 @@ function baseRecord(overrides = {}) {
     resolved_phase: 'Phase 5',
     resolved_workstream: 'Surface report consumption',
     components: [],
-    triggered_proofs: [],
-    selected_proofs: [],
+    triggered_evidence_checks: [],
+    selected_evidence_checks: [],
     policy_results: [],
-    proof_suite_results: [],
+    evidence_inventory_results: [],
     external_tool_results: [],
-    verification_budget: null,
-    selected_proof_ids: [],
-    selected_proof_labels: [],
-    proof_resolution_source: 'default',
+    readiness_coverage: null,
+    selected_evidence_check_ids: [],
+    selected_evidence_check_labels: [],
+    evidence_check_resolution_source: 'default',
     baseline_ci_fast_passed: null,
     uncovered_path_result: 'clear',
     files: ['src/example.mjs'],
@@ -39,8 +39,8 @@ function baseRecord(overrides = {}) {
       kind: 'repo-adapter',
       report_transport: 'local-json',
     },
-    policy_pack: {
-      name: 'test-policy-pack',
+    repo_standards: {
+      name: 'test-repo-standards',
       version: '1',
       rule_count: 1,
     },
@@ -62,11 +62,11 @@ test('Surface trust report summary is persisted with stale and disputed statuses
       message: 'Warn rule produced a policy warning.',
       findings: [],
     }],
-    proof_suite_results: [{
-      id: 'stale-family',
-      proof_id: 'ci-fast',
-      source_proof_id: 'ci-fast',
-      manifest_path: '.veritas/proof-suites/stale.json',
+    evidence_inventory_results: [{
+      id: 'stale-inventory',
+      evidence_check_id: 'ci-fast',
+      source_evidence_check_id: 'ci-fast',
+      manifest_path: '.veritas/evidence-inventories/stale.json',
       owner: 'verification',
       selected: true,
       disposition: 'required',
@@ -92,26 +92,26 @@ test('Surface trust report summary is persisted with stale and disputed statuses
       claimType: 'veritas-policy-result',
       fieldOrBehavior: 'warn-rule',
       subjectType: 'veritas-policy-rule',
-      subjectId: 'test-policy-pack:warn-rule',
+      subjectId: 'test-repo-standards:warn-rule',
       impactLevel: 'medium',
       verificationPolicyId: 'veritas.policy-result',
       metadata: { ruleId: 'warn-rule' },
       createdAt: '2026-05-10T12:00:00.000Z',
       updatedAt: '2026-05-10T12:00:00.000Z',
     }, {
-      id: 'veritas.surface-report-consumption-test.proof-suite.stale-family',
-      surface: 'veritas.proof-suites',
-      claimType: 'veritas-proof-suite',
-      fieldOrBehavior: 'stale-family',
-      subjectType: 'repo-proof-suite',
-      subjectId: 'veritas:stale-family',
+      id: 'veritas.surface-report-consumption-test.evidence-inventory.stale-inventory',
+      surface: 'veritas.evidence-inventories',
+      claimType: 'veritas-evidence-inventory',
+      fieldOrBehavior: 'stale-inventory',
+      subjectType: 'repo-evidence-inventory',
+      subjectId: 'veritas:stale-inventory',
       impactLevel: 'high',
-      verificationPolicyId: 'veritas.proof-suite',
-      metadata: { suiteId: 'stale-family' },
+      verificationPolicyId: 'veritas.evidence-inventory',
+      metadata: { suiteId: 'stale-inventory' },
       createdAt: '2026-05-10T12:00:00.000Z',
       updatedAt: '2026-05-10T12:00:00.000Z',
     }],
-    policies: [SURFACE_TRUST_POLICIES.policyResult, SURFACE_TRUST_POLICIES.proofSuite],
+    policies: [SURFACE_TRUST_POLICIES.policyResult, SURFACE_TRUST_POLICIES.evidenceInventory],
   }, null, 2)}\n`);
 
   const input = await buildSurfaceTrustInput(record, { rootDir });
@@ -119,8 +119,8 @@ test('Surface trust report summary is persisted with stale and disputed statuses
   const statuses = Object.fromEntries(report.claims.map((claim) => [claim.id, claim.status]));
 
   assert.equal(statuses['veritas.surface-report-consumption-test.policy.warn-rule'], 'disputed');
-  assert.equal(statuses['veritas.surface-report-consumption-test.proof-suite.stale-family'], 'stale');
-  assert.ok(report.faultLinesByClaimId['veritas.surface-report-consumption-test.proof-suite.stale-family']);
+  assert.equal(statuses['veritas.surface-report-consumption-test.evidence-inventory.stale-inventory'], 'stale');
+  assert.ok(report.transparencyGapsByClaimId['veritas.surface-report-consumption-test.evidence-inventory.stale-inventory']);
 
   const feedback = buildFeedbackSummary({
     record: {
@@ -129,6 +129,6 @@ test('Surface trust report summary is persisted with stale and disputed statuses
     },
   });
   assert.match(feedback, /WARN  surface-status: claim "veritas\.surface-report-consumption-test\.policy\.warn-rule" is DISPUTED/);
-  assert.match(feedback, /WARN  surface-status: claim "veritas\.surface-report-consumption-test\.proof-suite\.stale-family" is STALE/);
+  assert.match(feedback, /WARN  surface-status: claim "veritas\.surface-report-consumption-test\.evidence-inventory\.stale-inventory" is STALE/);
   rmSync(rootDir, { recursive: true, force: true });
 });

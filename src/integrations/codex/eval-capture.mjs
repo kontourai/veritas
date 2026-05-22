@@ -39,8 +39,8 @@ function eventFiles(event) {
   return candidates.flatMap((value) => (Array.isArray(value) ? value : [])).filter((item) => typeof item === 'string');
 }
 
-function isShadowRun(event) {
-  return /\bveritas\s+(?:shadow\s+run|run)\b/.test(eventText(event));
+function isReadinessCheck(event) {
+  return /\bveritas\s+readiness\b/.test(eventText(event));
 }
 
 function isPassing(event) {
@@ -66,10 +66,10 @@ function observedFiles(events, evidenceRecord) {
 
 function deriveTimeToGreen(events) {
   if (events.length === 0) return heuristicMissing(REASON_CODES.transcriptSchemaUnrecognized);
-  const firstFailure = events.find((event) => isShadowRun(event) && isFailing(event) && eventTime(event) !== null);
+  const firstFailure = events.find((event) => isReadinessCheck(event) && isFailing(event) && eventTime(event) !== null);
   if (!firstFailure) return heuristicMissing(REASON_CODES.noFailingRunObserved);
   const failedAt = eventTime(firstFailure);
-  const firstPass = events.find((event) => isShadowRun(event) && isPassing(event) && eventTime(event) !== null && eventTime(event) >= failedAt);
+  const firstPass = events.find((event) => isReadinessCheck(event) && isPassing(event) && eventTime(event) !== null && eventTime(event) >= failedAt);
   if (!firstPass) return heuristicMissing(REASON_CODES.noPassingRunObserved);
   return Math.round(((eventTime(firstPass) - failedAt) / 60000) * 100) / 100;
 }
@@ -77,7 +77,7 @@ function deriveTimeToGreen(events) {
 function deriveAcceptedWithoutMajorRewrite(events, files, threshold) {
   if (events.length === 0) return heuristicMissing(REASON_CODES.transcriptSchemaUnrecognized);
   if (files.length === 0) return heuristicMissing(REASON_CODES.churnThresholdNotApplicable);
-  const finishIndex = events.findLastIndex?.((event) => isShadowRun(event)) ?? [...events].reverse().findIndex((event) => isShadowRun(event));
+  const finishIndex = events.findLastIndex?.((event) => isReadinessCheck(event)) ?? [...events].reverse().findIndex((event) => isReadinessCheck(event));
   const start = finishIndex >= 0 ? finishIndex + 1 : 0;
   let changedLines = 0;
   for (const event of events.slice(start)) {
@@ -85,12 +85,12 @@ function deriveAcceptedWithoutMajorRewrite(events, files, threshold) {
     if (!touchesTrackedFile) continue;
     changedLines += Number(event.line_churn ?? event.lineChurn ?? event.changed_lines ?? event.changedLines ?? 0);
   }
-  const baseline = Math.max(1, Number(events.find((event) => isShadowRun(event))?.reported_lines ?? 100));
+  const baseline = Math.max(1, Number(events.find((event) => isReadinessCheck(event))?.reported_lines ?? 100));
   return changedLines / baseline <= threshold;
 }
 
 function countOverrides(events) {
-  return events.filter((event) => /VERITAS_[A-Z0-9_]+|--skip-proof/.test(eventText(event))).length;
+  return events.filter((event) => /VERITAS_[A-Z0-9_]+|--skip-evidence-check/.test(eventText(event))).length;
 }
 
 export function buildCodexEvalDraft({ transcript, transcriptPath, evidenceRecord = null, rootDir, churnThreshold = 0.3 }) {
@@ -105,7 +105,7 @@ export function buildCodexEvalDraft({ transcript, transcriptPath, evidenceRecord
     version: 1,
     run_id: runId,
     team_profile_id: 'codex-observed',
-    mode: 'shadow',
+    mode: 'observe',
     source: 'codex-transcript',
     transcript_path: transcriptRelativePath,
     evidence: evidenceRecord
@@ -117,7 +117,7 @@ export function buildCodexEvalDraft({ transcript, transcriptPath, evidenceRecord
           source_kind: evidenceRecord.source_kind ?? 'explicit-files',
           source_scope: evidenceRecord.source_scope ?? ['transcript'],
           components: evidenceRecord.components ?? [],
-          triggered_proofs: evidenceRecord.triggered_proofs ?? [],
+          triggered_evidence_checks: evidenceRecord.triggered_evidence_checks ?? [],
         }
       : {
           artifact_path: transcriptRelativePath,
@@ -127,7 +127,7 @@ export function buildCodexEvalDraft({ transcript, transcriptPath, evidenceRecord
           source_kind: 'explicit-files',
           source_scope: ['transcript'],
           components: [],
-          triggered_proofs: [],
+          triggered_evidence_checks: [],
         },
     governance: {
       surface_touched: false,

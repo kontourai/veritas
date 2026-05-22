@@ -8,7 +8,7 @@ Send a private report to `security@kontourai.com` with:
 
 - a short summary of the issue
 - affected versions or commit range
-- reproduction steps or proof of concept
+- reproduction steps or evidenceCheck of concept
 - impact assessment
 - any suggested remediation
 

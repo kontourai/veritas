@@ -1,24 +1,26 @@
 # Walkthrough: Next.js API Change
 
-This walkthrough shows the smallest useful Veritas loop: initialize a repo, make an API change without its companion test, see Veritas fail, add the test, and rerun.
+This walkthrough shows the smallest useful Veritas loop: initialize a repo, make an API change without its companion test, see the requirement fail, add the test, and rerun.
 
-## 1. Install and initialize
+## 1. Install And Initialize
 
 ```bash
 npm install -D @kontourai/veritas
-npx veritas init --pack nextjs-typescript
+npx veritas init --template nextjs-typescript
 ```
 
-Output includes the generated starter files:
+`--template` is the current CLI flag for selecting a starter template. The product concept is a Repo Standards Template.
+
+Output includes generated starter files:
 
 ```json
 {
-  "pack": "nextjs-typescript",
+  "template": "nextjs-typescript",
   "generatedFiles": [
     ".veritas/README.md",
     ".veritas/GOVERNANCE.md",
     ".veritas/repo.adapter.json",
-    ".veritas/policy-packs/default.policy-pack.json",
+    ".veritas/repo-standards/default.repo-standards.json",
     ".veritas/team/default.team-profile.json",
     "AGENTS.md",
     "CLAUDE.md"
@@ -26,7 +28,9 @@ Output includes the generated starter files:
 }
 ```
 
-## 2. Change an API route without a test
+Together, these generated files represent starter Repo Standards, a Repo Map, and protected standards metadata.
+
+## 2. Change An API Route Without A Test
 
 ```bash
 mkdir -p app/api/projects
@@ -40,19 +44,19 @@ EOF
 Run Veritas:
 
 ```bash
-npx veritas run --working-tree --skip-proof
+npx veritas readiness --working-tree --skip-evidence-check
 ```
 
-The `nextjs-typescript` pack reports the missing companion test:
+The starter standards report the missing companion test requirement:
 
 ```text
 FAIL  api-routes-require-api-tests: Changed files matched app/api/** but no companion changes matched tests/api/**.
       -> app/api/projects/route.ts
 
-1 failure · 0 warnings · run `veritas run --check shadow` for full evidence
+1 failure · 0 warnings · run `veritas readiness --check evidence` for full evidence
 ```
 
-## 3. Add the companion test
+## 3. Add The Companion Test
 
 ```bash
 mkdir -p tests/api
@@ -69,15 +73,15 @@ EOF
 Rerun:
 
 ```bash
-npx veritas run --working-tree --skip-proof
+npx veritas readiness --working-tree --skip-evidence-check
 ```
 
-Now the companion rule passes:
+Now the requirement passes:
 
 ```text
 PASS  api-routes-require-api-tests: Changed files matched app/api/** and included required companion changes under tests/api/**.
 
-0 failures · 0 warnings · run `veritas run --check shadow` for full evidence
+0 failures · 0 warnings · run `veritas readiness --check evidence` for full evidence
 ```
 
-In a real repo, remove `--skip-proof` and let the adapter proof lane run the project test or verify command.
+In a real repo, remove `--skip-evidence-check` and let the configured evidenceCheck run the project test or verify command.

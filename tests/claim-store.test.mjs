@@ -16,9 +16,9 @@ test('veritas claim add writes veritas.claims.json', async () => {
   try {
     await runClaimCli([
       'add',
-      '--id', 'repo.proof.npm-test',
-      '--type', 'software-proof',
-      '--surface', 'veritas.proof',
+      '--id', 'repo.evidence-check.npm-test',
+      '--type', 'software-evidence-check',
+      '--surface', 'veritas.evidence-check',
       '--subject-type', 'repository',
       '--subject-id', 'repo',
       '--field', 'npm test',
@@ -26,7 +26,7 @@ test('veritas claim add writes veritas.claims.json', async () => {
     ], { rootDir });
     const store = JSON.parse(readFileSync(join(rootDir, 'veritas.claims.json'), 'utf8'));
     assert.equal(store.producer, 'veritas');
-    assert.equal(store.claims[0].id, 'repo.proof.npm-test');
+    assert.equal(store.claims[0].id, 'repo.evidence-check.npm-test');
   } finally {
     rmSync(rootDir, { recursive: true, force: true });
   }
@@ -39,19 +39,19 @@ test('Surface projection reads authored claims from veritas.claims.json', async 
       schemaVersion: 1,
       producer: 'veritas',
       claims: [{
-        id: 'repo.proof.npm-test',
-        surface: 'veritas.proof',
-        claimType: 'software-proof',
+        id: 'repo.evidence-check.npm-test',
+        surface: 'veritas.evidence-check',
+        claimType: 'software-evidence-check',
         fieldOrBehavior: 'npm test',
         subjectType: 'repository',
         subjectId: 'repo',
         impactLevel: 'high',
-        verificationPolicyId: 'veritas.proof',
+        verificationPolicyId: 'veritas.evidence-check',
         metadata: { command: 'npm test' },
         createdAt: '2026-05-19T00:00:00.000Z',
         updatedAt: '2026-05-19T00:00:00.000Z',
       }],
-      policies: [SURFACE_TRUST_POLICIES.proof],
+      policies: [SURFACE_TRUST_POLICIES.evidenceCheck],
     }, null, 2)}\n`);
     const input = await buildSurfaceTrustInput({
       run_id: 'claim-store-projection',
@@ -60,11 +60,11 @@ test('Surface projection reads authored claims from veritas.claims.json', async 
       source_kind: 'explicit-files',
       source_scope: ['explicit'],
       components: [],
-      selected_proofs: [{
+      selected_evidence_checks: [{
         id: 'test',
         command: 'npm test',
         method: 'validation',
-        proof_result: {
+        evidence_check_result: {
           command: 'npm test',
           passed: true,
           exitCode: 0,
@@ -78,9 +78,9 @@ test('Surface projection reads authored claims from veritas.claims.json', async 
       baseline_ci_fast_passed: true,
     }, { rootDir });
 
-    assert.deepEqual(input.claims.map((claim) => claim.id), ['repo.proof.npm-test']);
+    assert.deepEqual(input.claims.map((claim) => claim.id), ['repo.evidence-check.npm-test']);
     assert.equal(input.claims[0].value, 'all checks pass');
-    assert.equal(input.evidence[0].claimId, 'repo.proof.npm-test');
+    assert.equal(input.evidence[0].claimId, 'repo.evidence-check.npm-test');
     assert.equal(input.evidence[0].metadata.observedResult.status, 'passed');
     assert.equal(input.evidence[0].metadata.commandOutput.stdout, '2 tests passed\n');
     assert.equal(input.events[0].status, 'verified');
@@ -100,7 +100,7 @@ test('Surface projection requires an authored claim store', async () => {
         source_kind: 'explicit-files',
         source_scope: ['explicit'],
         components: [],
-        selected_proofs: [],
+        selected_evidence_checks: [],
         policy_results: [],
       }, { rootDir }),
       /veritas\.claims\.json is required/,

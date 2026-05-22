@@ -4,14 +4,13 @@ import {
   runEvalObserveCli,
   runEvalMarkerCli,
   runEvalMarkerSuiteCli,
-  runEvalProposeCli,
+  runEvalRecommendCli,
   runEvalRecordCli,
   runEvalSummaryCli,
-  runProposalCli,
-  runVeritasReportCli,
-  runVerificationBudgetCli,
+  runRecommendationCli,
+  runReadinessCoverageCli,
   runInitCli,
-  runShadowRunCli,
+  runReadinessCheckCli,
   runExplainCli,
   runBoundariesCheckCli,
   runAttestCli,
@@ -20,12 +19,12 @@ import {
 } from '../src/index.mjs';
 
 const MAIN_USAGE = `Usage:
-  veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--pack <name>] [--force]
-  veritas run [--check shadow|boundaries|budget] [--root <path>] [--working-tree] [--actor <id>]
-  veritas explain <ruleId|surfaceNode|filePath> [--file <path>] [--surface-node <id>] [--root <path>]
+  veritas init [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--template <name>] [--force]
+  veritas readiness [--check evidence|boundaries|coverage] [--root <path>] [--working-tree] [--actor <id>]
+  veritas explain <ruleId|workArea|filePath> [--file <path>] [--work-area <id>] [--root <path>]
   veritas attest bootstrap --actor <id> [--root <path>] [--non-interactive] [--valid-until-days <days>]
   veritas attest policy-change --actor <id> --message <text> [--root <path>] [--valid-until-days <days>]
-  veritas attest proposal <id> --accept|--reject --actor <id> [--message <text>] [--root <path>]
+  veritas attest recommendation <id> --accept|--reject --actor <id> [--message <text>] [--root <path>]
   veritas attest status [--root <path>]
   veritas claim init|list|add|edit|remove|scaffold|validate [--root <path>]
   veritas plugin list [--root <path>]
@@ -35,15 +34,15 @@ const MAIN_USAGE = `Usage:
   veritas eval record --draft <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false>
   veritas eval marker --scenario <path> --without-veritas-transcript <path> --with-veritas-transcript <path>
   veritas eval marker-suite --suite <path>
-  veritas eval propose [--root <path>] [--force] [--dry-run]
+  veritas eval recommend [--root <path>] [--force] [--dry-run]
   veritas eval summary [--root <path>]
-  veritas proposal list|show <id>|decide <id> [--accept|--reject] [--actor <id>] [--message <text>]
+  veritas recommendation list|show <id>|decide <id> [--accept|--reject] [--actor <id>] [--message <text>]
   veritas integrations codex|claude-code|cursor|copilot install|status|uninstall [--root <path>] [--force]
 `;
 
 const RUN_USAGE = `Usage:
-  veritas run [--check shadow|boundaries|budget] [--root <path>] [--working-tree]
-  veritas run --check boundaries --actor <id> [--diff <ref>] [--root <path>] [--adapter <path>]
+  veritas readiness [--check evidence|boundaries|coverage] [--root <path>] [--working-tree]
+  veritas readiness --check boundaries --actor <id> [--diff <ref>] [--root <path>] [--adapter <path>]
 `;
 
 const EVAL_USAGE = `Usage:
@@ -69,20 +68,20 @@ const EVAL_USAGE = `Usage:
     --without-veritas-transcript <path>
     --with-veritas-transcript <path>
   veritas eval marker-suite --suite <path>
-  veritas eval propose [--root <path>] [--force] [--dry-run]
+  veritas eval recommend [--root <path>] [--force] [--dry-run]
   veritas eval summary [--root <path>]
 `;
 
 const PROPOSAL_USAGE = `Usage:
-  veritas proposal list [--root <path>] [--status proposed|accepted|rejected|all]
-  veritas proposal show <id> [--root <path>]
-  veritas proposal decide <id> --accept|--reject --actor <id> [--message <text>] [--root <path>]
+  veritas recommendation list [--root <path>] [--status proposed|accepted|rejected|all]
+  veritas recommendation show <id> [--root <path>]
+  veritas recommendation decide <id> --accept|--reject --actor <id> [--message <text>] [--root <path>]
 `;
 
 const ATTEST_USAGE = `Usage:
   veritas attest bootstrap --actor <id> [--root <path>] [--non-interactive] [--valid-until-days <days>]
   veritas attest policy-change --actor <id> --message <text> [--root <path>] [--valid-until-days <days>]
-  veritas attest proposal <id> --accept|--reject --actor <id> [--message <text>] [--root <path>]
+  veritas attest recommendation <id> --accept|--reject --actor <id> [--message <text>] [--root <path>]
   veritas attest status [--root <path>]
 `;
 
@@ -124,7 +123,7 @@ if (!subcommand || isHelpToken(subcommand)) {
   writeStdout(MAIN_USAGE);
 } else if (subcommand === 'init') {
   if (args.some(isHelpToken)) {
-    writeStdout('Usage:\n  veritas init [--root <path>] [--project-name <name>] [--proof-lane <cmd>] [--pack <name>] [--force] [--non-interactive]\n');
+    writeStdout('Usage:\n  veritas init [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--template <name>] [--force] [--non-interactive]\n');
   } else {
     runInitCli(args, { rootDir: cwd });
   }
@@ -132,8 +131,8 @@ if (!subcommand || isHelpToken(subcommand)) {
   const [kind, ...attestArgs] = args;
   if (!kind || isHelpToken(kind) || attestArgs.some(isHelpToken)) {
     writeStdout(ATTEST_USAGE);
-  } else if (kind === 'proposal') {
-    runProposalCli('decide', attestArgs, { rootDir: cwd });
+  } else if (kind === 'recommendation') {
+    runRecommendationCli('decide', attestArgs, { rootDir: cwd });
   } else if (['bootstrap', 'policy-change', 'status'].includes(kind)) {
     runAttestCli(kind, attestArgs, { rootDir: cwd });
   } else {
@@ -153,21 +152,21 @@ if (!subcommand || isHelpToken(subcommand)) {
     const { runPluginCli } = await import('../src/cli/plugins.mjs');
     await runPluginCli(args, { rootDir: cwd });
   }
-} else if (subcommand === 'run') {
+} else if (subcommand === 'readiness') {
   if (args.some(isHelpToken)) {
     writeStdout(RUN_USAGE);
   } else {
     const checkIndex = args.indexOf('--check');
-    const check = checkIndex >= 0 ? args[checkIndex + 1] : 'shadow';
+    const check = checkIndex >= 0 ? args[checkIndex + 1] : 'evidence';
     const forwarded = checkIndex >= 0
       ? args.filter((_, index) => index !== checkIndex && index !== checkIndex + 1)
       : args;
     if (check === 'boundaries') {
       runBoundariesCheckCli(forwarded, { rootDir: cwd });
-    } else if (check === 'budget') {
-      await runVerificationBudgetCli(forwarded, { rootDir: cwd });
-    } else if (check === 'shadow') {
-      await runShadowRunCli(forwarded, { rootDir: cwd });
+    } else if (check === 'coverage') {
+      await runReadinessCoverageCli(forwarded, { rootDir: cwd });
+    } else if (check === 'evidence') {
+      await runReadinessCheckCli(forwarded, { rootDir: cwd });
     } else {
       writeStderr(RUN_USAGE);
       process.exitCode = 1;
@@ -188,8 +187,8 @@ if (!subcommand || isHelpToken(subcommand)) {
           'Usage:\n  veritas eval marker --scenario <path>\n    --without-veritas-transcript <path>\n    --with-veritas-transcript <path>\n',
         'marker-suite':
           'Usage:\n  veritas eval marker-suite --suite <path>\n',
-        propose:
-          'Usage:\n  veritas eval propose [--root <path>] [--force] [--dry-run]\n',
+        recommend:
+          'Usage:\n  veritas eval recommend [--root <path>] [--force] [--dry-run]\n',
         summary:
           'Usage:\n  veritas eval summary [--root <path>]\n',
       }),
@@ -204,24 +203,24 @@ if (!subcommand || isHelpToken(subcommand)) {
     runEvalMarkerCli(evalArgs, { rootDir: cwd });
   } else if (kind === 'marker-suite') {
     runEvalMarkerSuiteCli(evalArgs, { rootDir: cwd });
-  } else if (kind === 'propose') {
-    runEvalProposeCli(evalArgs, { rootDir: cwd });
+  } else if (kind === 'recommend') {
+    runEvalRecommendCli(evalArgs, { rootDir: cwd });
   } else if (kind === 'summary') {
     runEvalSummaryCli(evalArgs, { rootDir: cwd });
   } else {
     writeStderr(EVAL_USAGE);
     process.exitCode = 1;
   }
-} else if (subcommand === 'proposal') {
-  const [kind, ...proposalArgs] = args;
-  if (!kind || isHelpToken(kind) || proposalArgs.some(isHelpToken) || !['list', 'show', 'decide'].includes(kind)) {
+} else if (subcommand === 'recommendation') {
+  const [kind, ...recommendationArgs] = args;
+  if (!kind || isHelpToken(kind) || recommendationArgs.some(isHelpToken) || !['list', 'show', 'decide'].includes(kind)) {
     writeStdout(PROPOSAL_USAGE);
   } else {
-    runProposalCli(kind, proposalArgs, { rootDir: cwd });
+    runRecommendationCli(kind, recommendationArgs, { rootDir: cwd });
   }
 } else if (subcommand === 'explain') {
   if (args.some(isHelpToken)) {
-    writeStdout('Usage:\n  veritas explain <ruleId|surfaceNode|filePath> [--file <path>] [--surface-node <id>] [--root <path>] [--adapter <path>] [--policy-pack <path>]\n');
+    writeStdout('Usage:\n  veritas explain <ruleId|workArea|filePath> [--file <path>] [--work-area <id>] [--root <path>] [--adapter <path>] [--repo-standards <path>]\n');
   } else {
     runExplainCli(args, { rootDir: cwd });
   }

@@ -189,16 +189,16 @@
   "evidence": {
     "artifactDir": ".omx/evidence/work-agent-pilot",
     "reportTransport": "github-step-summary",
-    "proofs": [
+    "evidenceChecks": [
       {
-        "id": "required-proof",
+        "id": "required-evidence-check",
         "command": "npm run ci:fast",
         "method": "validation",
         "summary": "Runs npm run ci:fast."
       }
     ],
-    "requiredProofIds": [
-      "required-proof"
+    "requiredEvidenceCheckIds": [
+      "required-evidence-check"
     ]
   }
 }

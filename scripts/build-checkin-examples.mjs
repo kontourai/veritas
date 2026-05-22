@@ -14,7 +14,7 @@ const timestamp = '2026-04-21T22:00:00.000Z';
 const explicitFiles = [
   '.veritas/GOVERNANCE.md',
   '.veritas/repo.adapter.json',
-  '.veritas/policy-packs/default.policy-pack.json',
+  '.veritas/repo-standards/default.repo-standards.json',
   '.veritas/team/default.team-profile.json',
   'CLAUDE.md',
   'README.md',
@@ -79,7 +79,7 @@ const evaluation = generateEvalRecord(
     falsePositiveRules: [],
     missedIssues: [],
     notes: [
-      'The repo-local adapter and policy pack were sufficient to classify the selected surfaces without unresolved files.',
+      'The repo-local adapter and repo standards were sufficient to classify the selected surfaces without unresolved files.',
       'This example demonstrates the value claim in-repo: focused surface mapping plus reviewable evidence and eval artifacts.',
     ],
   },

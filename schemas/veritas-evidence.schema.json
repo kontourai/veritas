@@ -16,11 +16,11 @@
     "resolved_workstream",
     "matched_artifacts",
     "components",
-    "triggered_proofs",
-    "selected_proof_ids",
-    "selected_proof_labels",
-    "selected_proofs",
-    "proof_resolution_source",
+    "triggered_evidence_checks",
+    "selected_evidence_check_ids",
+    "selected_evidence_check_labels",
+    "selected_evidence_checks",
+    "evidence_check_resolution_source",
     "uncovered_path_result",
     "baseline_ci_fast_passed",
     "recommendations",
@@ -33,7 +33,7 @@
     "surface",
     "framework",
     "adapter",
-    "policy_pack",
+    "repo_standards",
     "policy_results"
   ],
   "properties": {
@@ -68,23 +68,23 @@
       "x_surface_mapping": "mapped",
       "x_surface_targets": ["metadata"]
     },
-    "triggered_proofs": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
-    "selected_proof_ids": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence"] },
-    "selected_proof_labels": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence"] },
-    "selected_proofs": {
+    "triggered_evidence_checks": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
+    "selected_evidence_check_ids": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence"] },
+    "selected_evidence_check_labels": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence"] },
+    "selected_evidence_checks": {
       "type": "array",
-      "items": { "$ref": "#/$defs/proofLane" },
+      "items": { "$ref": "#/$defs/evidenceCheck" },
       "x_surface_mapping": "mapped",
       "x_surface_targets": ["claim", "evidence", "policy", "event"]
     },
-    "proof_resolution_source": { "type": "string", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
-    "proof_suite_results": {
+    "evidence_check_resolution_source": { "type": "string", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
+    "evidence_inventory_results": {
       "type": "array",
-      "items": { "$ref": "#/$defs/proofSuiteResult" },
+      "items": { "$ref": "#/$defs/evidenceInventoryResult" },
       "x_surface_mapping": "mapped",
       "x_surface_targets": ["claim", "evidence", "policy", "event", "metadata"]
     },
-    "verification_budget": { "$ref": "#/$defs/verificationBudget", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence", "event", "metadata", "report-input"] },
+    "readiness_coverage": { "$ref": "#/$defs/readinessCoverage", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence", "event", "metadata", "report-input"] },
     "external_tool_results": {
       "type": "array",
       "items": { "$ref": "#/$defs/externalToolResult" },
@@ -146,10 +146,10 @@
         "report_transport",
         "default_resolution",
         "non_sliceable_invariants",
-        "proofs",
-        "required_proof_ids",
-        "default_proof_ids",
-        "proof_routes",
+        "evidenceChecks",
+        "required_evidence_check_ids",
+        "default_evidence_check_ids",
+        "evidence_check_routes",
         "uncovered_path_policy"
       ],
       "properties": {
@@ -158,21 +158,21 @@
         "report_transport": { "type": "string" },
         "default_resolution": { "$ref": "#/$defs/resolution" },
         "non_sliceable_invariants": { "$ref": "#/$defs/stringArray" },
-        "proofs": {
+        "evidenceChecks": {
           "type": "array",
-          "items": { "$ref": "#/$defs/proofLane" }
+          "items": { "$ref": "#/$defs/evidenceCheck" }
         },
-        "required_proof_ids": { "$ref": "#/$defs/stringArray" },
-        "default_proof_ids": { "$ref": "#/$defs/stringArray" },
-        "proof_routes": {
+        "required_evidence_check_ids": { "$ref": "#/$defs/stringArray" },
+        "default_evidence_check_ids": { "$ref": "#/$defs/stringArray" },
+        "evidence_check_routes": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["component_ids", "proof_ids"],
+            "required": ["component_ids", "evidence_check_ids"],
             "properties": {
               "component_ids": { "$ref": "#/$defs/stringArray" },
-              "proof_ids": { "$ref": "#/$defs/stringArray" }
+              "evidence_check_ids": { "$ref": "#/$defs/stringArray" }
             }
           }
         },
@@ -182,7 +182,7 @@
         }
       }
     },
-    "policy_pack": {
+    "repo_standards": {
       "type": "object",
       "x_surface_mapping": "mapped",
       "x_surface_targets": ["claim", "metadata"],
@@ -248,8 +248,8 @@
           { "required": ["id"] },
           { "required": ["generatedAt"] },
           { "required": ["summary"] },
-          { "required": ["faultLines"] },
-          { "required": ["proofRequirementsByClaimId"] }
+          { "required": ["transparencyGaps"] },
+          { "required": ["evidenceRequirementsByClaimId"] }
         ]
       }
     },
@@ -299,7 +299,7 @@
         "error": { "type": "string" }
       }
     },
-    "proof": {
+    "evidenceCheck": {
       "type": "object",
       "additionalProperties": false,
       "required": ["id", "runner", "label", "method", "surface_claim_ids", "summary"],
@@ -313,10 +313,10 @@
         },
         "surface_claim_ids": { "$ref": "#/$defs/stringArray" },
         "summary": { "type": "string" },
-        "proof_result": { "$ref": "#/$defs/proofResult" }
+        "evidence_check_result": { "$ref": "#/$defs/evidenceCheckResult" }
       }
     },
-    "proofResult": {
+    "evidenceCheckResult": {
       "type": "object",
       "additionalProperties": false,
       "required": ["id", "runner", "label", "passed", "durationMs"],
@@ -344,13 +344,13 @@
         "durationMs": { "type": "number", "minimum": 0 }
       }
     },
-    "proofSuiteResult": {
+    "evidenceInventoryResult": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "id",
-        "proof_id",
-        "source_proof_id",
+        "evidence_check_id",
+        "source_evidence_check_id",
         "manifest_path",
         "destination",
         "owner",
@@ -370,8 +370,8 @@
       ],
       "properties": {
         "id": { "type": "string" },
-        "proof_id": { "type": "string" },
-        "source_proof_id": { "type": ["string", "null"] },
+        "evidence_check_id": { "type": "string" },
+        "source_evidence_check_id": { "type": ["string", "null"] },
         "manifest_path": { "type": "string" },
         "destination": { "type": ["string", "null"] },
         "owner": { "type": ["string", "null"] },
@@ -399,39 +399,39 @@
         "rationale": { "type": "string" }
       }
     },
-    "verificationBudget": {
+    "readinessCoverage": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "proof_count",
-        "selected_proof_count",
-        "proof_suite_count",
-        "required_family_count",
-        "candidate_family_count",
-        "advisory_family_count",
-        "move_to_test_family_count",
-        "retire_family_count",
+        "evidence_check_count",
+        "selected_evidence_check_count",
+        "evidence_inventory_count",
+        "required_inventory_count",
+        "candidate_inventory_count",
+        "advisory_inventory_count",
+        "move_to_test_inventory_count",
+        "retire_inventory_count",
         "upstream_candidate_count",
-        "unknown_catch_evidence_family_ids",
-        "missing_review_trigger_family_ids",
-        "stale_family_ids",
-        "stale_or_unknown_family_ids",
+        "unknown_catch_evidence_inventory_ids",
+        "missing_review_trigger_inventory_ids",
+        "stale_inventory_ids",
+        "stale_or_unknown_inventory_ids",
         "recommendation"
       ],
       "properties": {
-        "proof_count": { "type": "integer", "minimum": 0 },
-        "selected_proof_count": { "type": "integer", "minimum": 0 },
-        "proof_suite_count": { "type": "integer", "minimum": 0 },
-        "required_family_count": { "type": "integer", "minimum": 0 },
-        "candidate_family_count": { "type": "integer", "minimum": 0 },
-        "advisory_family_count": { "type": "integer", "minimum": 0 },
-        "move_to_test_family_count": { "type": "integer", "minimum": 0 },
-        "retire_family_count": { "type": "integer", "minimum": 0 },
+        "evidence_check_count": { "type": "integer", "minimum": 0 },
+        "selected_evidence_check_count": { "type": "integer", "minimum": 0 },
+        "evidence_inventory_count": { "type": "integer", "minimum": 0 },
+        "required_inventory_count": { "type": "integer", "minimum": 0 },
+        "candidate_inventory_count": { "type": "integer", "minimum": 0 },
+        "advisory_inventory_count": { "type": "integer", "minimum": 0 },
+        "move_to_test_inventory_count": { "type": "integer", "minimum": 0 },
+        "retire_inventory_count": { "type": "integer", "minimum": 0 },
         "upstream_candidate_count": { "type": "integer", "minimum": 0 },
-        "unknown_catch_evidence_family_ids": { "$ref": "#/$defs/stringArray" },
-        "missing_review_trigger_family_ids": { "$ref": "#/$defs/stringArray" },
-        "stale_family_ids": { "$ref": "#/$defs/stringArray" },
-        "stale_or_unknown_family_ids": { "$ref": "#/$defs/stringArray" },
+        "unknown_catch_evidence_inventory_ids": { "$ref": "#/$defs/stringArray" },
+        "missing_review_trigger_inventory_ids": { "$ref": "#/$defs/stringArray" },
+        "stale_inventory_ids": { "$ref": "#/$defs/stringArray" },
+        "stale_or_unknown_inventory_ids": { "$ref": "#/$defs/stringArray" },
         "recommendation": { "type": "string" }
       }
     },
@@ -453,7 +453,7 @@
         "tool",
         "format",
         "command",
-        "proof_id",
+        "evidence_check_id",
         "verdict",
         "blocking",
         "summary",
@@ -464,7 +464,7 @@
         "tool": { "type": "string" },
         "format": { "type": "string" },
         "command": { "type": "string" },
-        "proof_id": { "type": "string" },
+        "evidence_check_id": { "type": "string" },
         "verdict": {
           "type": "string",
           "enum": ["pass", "warn", "fail", "missing", "unknown"]
@@ -513,7 +513,7 @@
             "properties": {
               "field": {
                 "type": "string",
-                "enum": ["policyPackHash", "adapterHash", "teamProfileHash", "currentAttestationId"]
+                "enum": ["repoStandardsHash", "adapterHash", "teamProfileHash", "currentAttestationId"]
               },
               "attested": { "type": ["string", "null"] },
               "current": { "type": ["string", "null"] }
@@ -523,16 +523,16 @@
         "expired": { "type": "boolean" },
         "ageDays": { "type": ["integer", "null"] },
         "validUntil": { "type": ["string", "null"] },
-        "zone1": {
+        "protectedStandards": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
             "hashes": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["policyPackHash", "adapterHash", "teamProfileHash"],
+              "required": ["repoStandardsHash", "adapterHash", "teamProfileHash"],
               "properties": {
-                "policyPackHash": { "type": "string" },
+                "repoStandardsHash": { "type": "string" },
                 "adapterHash": { "type": "string" },
                 "teamProfileHash": { "type": "string" }
               }
@@ -540,9 +540,9 @@
             "paths": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["policyPackPath", "adapterPath", "teamProfilePath"],
+              "required": ["repoStandardsPath", "adapterPath", "teamProfilePath"],
               "properties": {
-                "policyPackPath": { "type": "string" },
+                "repoStandardsPath": { "type": "string" },
                 "adapterPath": { "type": "string" },
                 "teamProfilePath": { "type": "string" }
               }

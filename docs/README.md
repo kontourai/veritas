@@ -4,55 +4,55 @@ Find what you need by what you're trying to do.
 
 ## Start Here
 
-- [Concepts Overview](concepts.md) — understand the core ideas in five minutes
-- [Getting Started](guides/getting-started.md) — install, bootstrap, and run your first evidence report
+- [Concepts Overview](concepts.md) — understand the product model in five minutes
+- [Getting Started](guides/getting-started.md) — install, bootstrap, and run your first readiness check
+- [Glossary](reference/glossary.md) — canonical Veritas vocabulary
 
 ## I Want To...
 
 ### Set up Veritas in a new repo
 
 - [Getting Started](guides/getting-started.md) for installation and first run
-- [Human Attestation](guides/attestation.md) for the Zone 1 human-review gate
-- [Proposal Flow](guides/proposal-flow.md) for eval-driven policy changes
 - [Start Your Next Project](guides/start-your-next-project.md) for greenfield repos
-- [Brownfield Adoption](guides/brownfield-adoption.md) for existing repos with custom guidance or verification
-- [Fallow Integration](guides/fallow-integration.md) for optional JS/TS codebase-intelligence proof lanes
-- [Plugin Authoring](plugin-authoring.md) for importing tool-owned evidence into authored claims
+- [Brownfield Adoption](guides/brownfield-adoption.md) for existing repos with custom standards or verification
+- [Human Attestation](guides/attestation.md) for authority-backed protection of standards changes
 - [CLI Reference](reference/cli.md) for exact commands and flags
 
 ### Wire Veritas into my AI agent
 
-- [Agent Runtime Integrations](guides/agent-runtime-integrations.md) for Claude Code, Cursor, Codex hooks
-- [Agent Activation](design/agent-activation.md) for how the framework reaches agents
-- [CLI Reference](reference/cli.md) for `explain`, `boundaries check`, and Claude Code PreToolUse hook setup
+- [Agent Runtime Integrations](guides/agent-runtime-integrations.md) for Claude Code, Cursor, and Codex hooks
+- [Agent Activation](design/agent-activation.md) for how Veritas reaches agents
+- [CLI Reference](reference/cli.md) for `explain`, boundary checks, and hook setup
 
-### Write rules for my repo
+### Define repo standards
 
-- [Policy Packs](design/policy-packs.md) for classification and staging model
+- [Concepts Overview](concepts.md) for Repo Standards, Requirements, Evidence Checks, and Change Boundaries
 - [Tune For Your Team](guides/tune-for-your-team.md) for rollout strategy
+- [Repo Standards Schema](design/repo-standards.md) for current schema internals
 
-### Understand what reviewers see
+### Understand readiness and evidence
 
-- [Artifacts and Schemas](reference/artifacts-and-schemas.md) for the JSON contract surface
-- [Example Fixtures](reference/examples.md) for sample evidence and eval payloads
-- [Telemetry and Read Models](reference/telemetry-and-read-models.md) for derived artifacts
-- [Environment Variables](reference/env-vars.md) for hook controls and temporary validation escape hatches
+- [Artifacts and Schemas](reference/artifacts-and-schemas.md) for current generated artifact shapes
+- [Example Fixtures](reference/examples.md) for sample evidence and feedback payloads
+- [Telemetry and Read Models](reference/telemetry-and-read-models.md) for derived artifacts and trend data
+- [Environment Variables](reference/env-vars.md) for hook requirements and emergency validation escape hatches
 
-### Measure if Veritas is helping
+### Improve standards over time
 
-- [Live Evals](design/live-evals.md) for the feedback model
+- [Standards Recommendations](guides/recommendations.md) for recommendations in the current CLI
+- [Standards Feedback](design/standards-feedback.md) for feedback mechanics
 - [Benchmarking](reference/benchmarking.md) for deterministic marker scoring
-- [Live Eval Roadmap](design/live-eval-roadmap.md) for what's coming
+- [Standards Feedback Roadmap](design/standards-feedback-roadmap.md) for planned feedback-loop work
 
 ### Run Veritas in CI
 
-- [Operational Check-ins](guides/operational-checkins.md) for CI workflow setup
+- [Operational Check-ins](guides/operational-checkins.md) for current CI workflow setup
 - [CLI Reference](reference/cli.md) for command flags and output format
 
-### Contribute to the framework
+### Work on Veritas itself
 
-- [Framework Core vs Adapter](design/framework-core-vs-adapter.md) for architecture decisions
-- [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md) for the one-way Surface foundation and Veritas product boundary
+- [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md) for the Veritas product boundary and Surface projection rules
+- [Product Core And Repo Map](design/framework-core-vs-adapter.md) for architecture notes
 - [Schema Evolution](design/schema-evolution.md) for schema change policy
 - [CONTRIBUTING.md](../CONTRIBUTING.md) for development workflow
 
@@ -60,41 +60,42 @@ Find what you need by what you're trying to do.
 
 ### Guides
 
-- [Getting Started](guides/getting-started.md) — install the framework and run your first evidence report
-- [Walkthrough](guides/walkthrough.md) — initialize a Next.js-style repo and see a fail/pass feedback loop
-- [Human Attestation](guides/attestation.md) — record and renew the Zone 1 human-review gate
-- [Proposal Flow](guides/proposal-flow.md) — turn eval signal into accepted or rejected policy changes
-- [Agent Runtime Integrations](guides/agent-runtime-integrations.md) — connect Veritas to Claude Code, Cursor, and Codex
-- [Start Your Next Project](guides/start-your-next-project.md) — bootstrap a greenfield repo with Veritas from day one
-- [Tune For Your Team](guides/tune-for-your-team.md) — adapt policy and rollout without forking the framework
-- [Operational Check-ins](guides/operational-checkins.md) — run the check-in flow in CI and interpret the output
-- [Fallow Integration](guides/fallow-integration.md) — record Fallow results as advisory Veritas evidence
-- [Publish And Release](guides/publish-and-release.md) — what gets published, versioned, and how
+- [Getting Started](guides/getting-started.md)
+- [Walkthrough](guides/walkthrough.md)
+- [Human Attestation](guides/attestation.md)
+- [Standards Recommendations](guides/recommendations.md)
+- [Agent Runtime Integrations](guides/agent-runtime-integrations.md)
+- [Start Your Next Project](guides/start-your-next-project.md)
+- [Tune For Your Team](guides/tune-for-your-team.md)
+- [Operational Check-ins](guides/operational-checkins.md)
+- [Fallow Integration](guides/fallow-integration.md)
+- [Publish And Release](guides/publish-and-release.md)
 
 ### Reference
 
-- [CLI Reference](reference/cli.md) — every command, flag, and JSON output shape
-- [Artifacts and Schemas](reference/artifacts-and-schemas.md) — the JSON contract surface the framework ships
-- [Example Fixtures](reference/examples.md) — canonical sample evidence and eval payloads used by tests
-- [Telemetry and Read Models](reference/telemetry-and-read-models.md) — derived artifacts and how to read trends over time
-- [Benchmarking](reference/benchmarking.md) — deterministic scoring against marker fixtures
-- [Environment Variables](reference/env-vars.md) — hook controls and validation escape hatches
-- [Plugin Authoring](plugin-authoring.md) — plugin interface, attribution, and claim scaffolding
+- [CLI Reference](reference/cli.md)
+- [Artifacts and Schemas](reference/artifacts-and-schemas.md)
+- [Glossary](reference/glossary.md)
+- [Example Fixtures](reference/examples.md)
+- [Telemetry and Read Models](reference/telemetry-and-read-models.md)
+- [Benchmarking](reference/benchmarking.md)
+- [Environment Variables](reference/env-vars.md)
+- [Plugin Authoring](plugin-authoring.md)
 
 ### Design
 
-- [Framework Core vs Adapter](design/framework-core-vs-adapter.md) — what stays generic and what lives in the repo adapter
-- [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md) — how Veritas maps repo proof into Surface trust input without reversing dependency direction
-- [Agent Activation](design/agent-activation.md) — how the framework reaches whatever agent is touching the codebase
-- [Policy Packs](design/policy-packs.md) — classification and staging model for repo-specific rules
-- [Proof Family Results](design/proof-family-results.md) — native family-level evidence for decomposing broad proof lanes
-- [Live Evals](design/live-evals.md) — how the framework measures whether its guidance is actually helping
-- [Live Eval Roadmap](design/live-eval-roadmap.md) — the build plan for live eval, phase by phase
-- [Schema Evolution](design/schema-evolution.md) — how framework contracts change without breaking consumers
+- [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md)
+- [Agent Activation](design/agent-activation.md)
+- [Repo Standards Schema](design/repo-standards.md)
+- [Evidence Check Inventories](design/evidence-inventories.md)
+- [Standards Feedback](design/standards-feedback.md)
+- [Standards Feedback Roadmap](design/standards-feedback-roadmap.md)
+- [Schema Evolution](design/schema-evolution.md)
+- [Product Core And Repo Map](design/framework-core-vs-adapter.md)
 
 ### Project
 
-- [Roadmap](design/roadmap.md) — open design questions and planned work
-- [Implementation Backlog](design/implementation-backlog.md) — ordered execution backlog
-- [Migrating](MIGRATING.md) — breaking changes and upgrade notes
-- [Releasing](RELEASING.md) — publish and release checklist
+- [Roadmap](design/roadmap.md)
+- [Implementation Backlog](design/implementation-backlog.md)
+- [Migrating](MIGRATING.md)
+- [Releasing](RELEASING.md)

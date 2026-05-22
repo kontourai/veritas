@@ -23,7 +23,7 @@
     "team_profile_id": { "type": "string" },
     "mode": {
       "type": "string",
-      "enum": ["shadow", "assist", "gate"]
+      "enum": ["observe", "assist", "gate"]
     },
     "evidence": { "$ref": "./veritas-eval-record.schema.json#/properties/evidence" },
     "governance": { "$ref": "./veritas-eval-record.schema.json#/properties/governance" },

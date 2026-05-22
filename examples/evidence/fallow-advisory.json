@@ -15,10 +15,10 @@
   "components": [
     "root.manifest"
   ],
-  "triggered_proofs": [
+  "triggered_evidence_checks": [
     "package.json"
   ],
-  "selected_proofs": [
+  "selected_evidence_checks": [
     {
       "id": "fallow-advisory",
       "command": "node scripts/run-fallow-audit.mjs",
@@ -29,30 +29,30 @@
       "label": "node scripts/run-fallow-audit.mjs"
     }
   ],
-  "proof_resolution_source": "required",
-  "proof_suite_results": [],
-  "verification_budget": {
-    "proof_count": 1,
-    "selected_proof_count": 1,
-    "proof_suite_count": 0,
-    "required_family_count": 0,
-    "candidate_family_count": 0,
-    "advisory_family_count": 0,
-    "move_to_test_family_count": 0,
-    "retire_family_count": 0,
+  "evidence_check_resolution_source": "required",
+  "evidence_inventory_results": [],
+  "readiness_coverage": {
+    "evidence_check_count": 1,
+    "selected_evidence_check_count": 1,
+    "evidence_inventory_count": 0,
+    "required_inventory_count": 0,
+    "candidate_inventory_count": 0,
+    "advisory_inventory_count": 0,
+    "move_to_test_inventory_count": 0,
+    "retire_inventory_count": 0,
     "upstream_candidate_count": 0,
-    "unknown_catch_evidence_family_ids": [],
-    "missing_review_trigger_family_ids": [],
-    "stale_family_ids": [],
-    "stale_or_unknown_family_ids": [],
-    "recommendation": "Verification budget has owners, review triggers, and no unknown catch-evidence families."
+    "unknown_catch_evidence_inventory_ids": [],
+    "missing_review_trigger_inventory_ids": [],
+    "stale_inventory_ids": [],
+    "stale_or_unknown_inventory_ids": [],
+    "recommendation": "Readiness coverage has owners, review triggers, and no unknown catch-evidence inventories."
   },
   "external_tool_results": [
     {
       "tool": "fallow",
       "format": "fallow-audit-json",
       "command": "node scripts/run-fallow-audit.mjs",
-      "proof_lane_id": "fallow-advisory",
+      "evidence_check_id": "fallow-advisory",
       "verdict": "warn",
       "blocking": false,
       "summary": {
@@ -99,7 +99,7 @@
       ]
     },
     "non_sliceable_invariants": [],
-    "proofs": [
+    "evidenceChecks": [
       {
         "id": "fallow-advisory",
         "command": "node scripts/run-fallow-audit.mjs",
@@ -110,14 +110,14 @@
         "label": "node scripts/run-fallow-audit.mjs"
       }
     ],
-    "required_proof_ids": [
+    "required_evidence_check_ids": [
       "fallow-advisory"
     ],
-    "default_proof_ids": [],
-    "proof_routes": [],
+    "default_evidence_check_ids": [],
+    "evidence_check_routes": [],
     "uncovered_path_policy": "warn"
   },
-  "policy_pack": {
+  "repo_standards": {
     "name": "fallow-advisory-policy",
     "version": 1,
     "rule_count": 0
@@ -165,10 +165,10 @@
       ]
     }
   },
-  "selected_proof_ids": [
+  "selected_evidence_check_ids": [
     "fallow-advisory"
   ],
-  "selected_proof_labels": [
+  "selected_evidence_check_labels": [
     "node scripts/run-fallow-audit.mjs"
   ]
 }

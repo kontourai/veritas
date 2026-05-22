@@ -23,10 +23,10 @@ const OPTIONAL_INSTRUCTION_TARGETS = [
 
 const INIT_RECOMMENDATION_SCHEMA_VERSION = 1;
 
-const STARTER_POLICY_PACKS = new Map([
-  ['nextjs-typescript', 'nextjs-typescript.policy-pack.json'],
-  ['python-fastapi', 'python-fastapi.policy-pack.json'],
-  ['monorepo-pnpm', 'monorepo-pnpm.policy-pack.json'],
+const STARTER_REPO_STANDARD_TEMPLATES = new Map([
+  ['nextjs-typescript', 'nextjs-typescript.repo-standards.json'],
+  ['python-fastapi', 'python-fastapi.repo-standards.json'],
+  ['monorepo-pnpm', 'monorepo-pnpm.repo-standards.json'],
 ]);
 
 const FRAMEWORK_ROOT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -93,7 +93,7 @@ function validateOwnerAnswers(answers) {
     throw new Error('init answers must be an object');
   }
   const allowedKeys = new Set([
-    'proof',
+    'evidenceCheck',
     'selectedInstructionTargets',
     'selected_instruction_targets',
     'boundaries',
@@ -200,7 +200,7 @@ export function inferBootstrapRepoInsights(rootDir) {
       ? ['docs:build', 'build', 'test', 'verify']
       : ['ci:fast', 'verify', 'test:smoke', 'test', 'build'];
   const matchingScript = scriptPriority.find((name) => typeof scripts[name] === 'string');
-  const proof = matchingScript ? `npm run ${matchingScript}` : 'npm test';
+  const evidenceCheck = matchingScript ? `npm run ${matchingScript}` : 'npm test';
 
   return {
     repoKind,
@@ -208,8 +208,8 @@ export function inferBootstrapRepoInsights(rootDir) {
     toolingRoots,
     testRoots,
     hasWorkflows,
-    proof,
-    enableSurfaceProofRouting: repoKind === 'workspace' || toolingRoots.length > 0,
+    evidenceCheck,
+    enableWorkAreaEvidenceRouting: repoKind === 'workspace' || toolingRoots.length > 0,
     baseRef: inferBaseRef(rootDir),
     packageManager: packageJson ? 'npm' : 'unknown',
     matchedScripts: scriptPriority.filter((name) => typeof scripts[name] === 'string'),
@@ -252,7 +252,7 @@ function detectExistingVerification(rootDir, scripts = {}) {
   return {
     detected: scriptEntries.length + fileEntries.length > 0,
     items: [...scriptEntries, ...fileEntries],
-    recommendedProofSuiteDefaults: {
+    recommendedEvidenceInventoryDefaults: {
       unknownCatchEvidenceDefault: 'candidate',
       requiredNeedsOwner: true,
       requiredNeedsReviewTrigger: true,
@@ -343,23 +343,23 @@ export function buildAdaptiveNodes(repoInsights) {
   return nodes;
 }
 
-function buildStarterEvidenceConfig({ proof, repoInsights }) {
+function buildStarterEvidenceConfig({ evidenceCheck, repoInsights }) {
   const evidence = {
     artifactDir: '.veritas/evidence',
-    proofs: [
+    evidenceChecks: [
       {
-        id: 'required-proof',
-        command: proof,
+        id: 'required-evidence-check',
+        command: evidenceCheck,
         method: 'validation',
-        summary: 'Default repository proof.',
+        summary: 'Default repository evidenceCheck.',
       },
     ],
-    requiredProofIds: ['required-proof'],
+    requiredEvidenceCheckIds: ['required-evidence-check'],
     reportTransport: 'local-json',
   };
 
-  if (repoInsights.enableSurfaceProofRouting) {
-    evidence.defaultProofIds = ['required-proof'];
+  if (repoInsights.enableWorkAreaEvidenceRouting) {
+    evidence.defaultEvidenceCheckIds = ['required-evidence-check'];
     evidence.uncoveredPathPolicy = 'warn';
   }
 
@@ -368,7 +368,7 @@ function buildStarterEvidenceConfig({ proof, repoInsights }) {
 
 export function buildStarterAdapter({
   projectName,
-  proof = 'npm test',
+  evidenceCheck = 'npm test',
   instructionTargets = [
     ...DEFAULT_SELECTED_INSTRUCTION_TARGETS,
     ...OPTIONAL_INSTRUCTION_TARGETS,
@@ -399,9 +399,9 @@ export function buildStarterAdapter({
         matchedArtifacts: ['README.md'],
       },
       nonSliceableInvariants: [
-        'baseline proof lane',
+        'baseline evidenceCheck',
         'repo-local guidance',
-        'tracked policy artifacts',
+        'tracked standards artifacts',
       ],
       resolverPrecedence: [
         'explicit task or issue reference',
@@ -424,14 +424,14 @@ export function buildStarterAdapter({
       ],
       nodes: buildAdaptiveNodes(repoInsights),
     },
-    evidence: buildStarterEvidenceConfig({ proof, repoInsights }),
+    evidence: buildStarterEvidenceConfig({ evidenceCheck, repoInsights }),
     activation: {
       aiInstructionFiles: normalizeInstructionTargets(instructionTargets),
     },
   };
 }
 
-export function buildStarterPolicyPack({ projectName, instructionTargets = DEFAULT_SELECTED_INSTRUCTION_TARGETS }) {
+export function buildStarterRepoStandards({ projectName, instructionTargets = DEFAULT_SELECTED_INSTRUCTION_TARGETS }) {
   const projectSlug = slugifyProjectName(projectName);
   const governanceBlockTargets = normalizeInstructionTargets(instructionTargets).map((target) => target.path);
 
@@ -439,7 +439,7 @@ export function buildStarterPolicyPack({ projectName, instructionTargets = DEFAU
     version: 1,
     name: `${projectSlug}-default`,
     description:
-      'Conservative starter policy pack for a newly bootstrapped Veritas-enabled repository.',
+      'Conservative starter Repo Standards for a newly bootstrapped Veritas-enabled repository.',
     rules: [
       {
         id: 'required-veritas-artifacts',
@@ -455,7 +455,7 @@ export function buildStarterPolicyPack({ projectName, instructionTargets = DEFAU
             '.veritas/README.md',
             '.veritas/GOVERNANCE.md',
             '.veritas/repo.adapter.json',
-            '.veritas/policy-packs/default.policy-pack.json',
+            '.veritas/repo-standards/default.repo-standards.json',
             '.veritas/team/default.team-profile.json',
           ],
         },
@@ -466,7 +466,7 @@ export function buildStarterPolicyPack({ projectName, instructionTargets = DEFAU
         classification: 'hard-invariant',
         stage: 'warn',
         message:
-          'All required AI tool instruction files must contain the Veritas governance block.',
+          'All required AI tool instruction files must contain the Veritas guidance block.',
         owner: 'repo-maintainers',
         rollback_switch: null,
         match: {
@@ -479,7 +479,7 @@ export function buildStarterPolicyPack({ projectName, instructionTargets = DEFAU
         classification: 'promotable-policy',
         stage: 'recommend',
         message:
-          'Prefer running new AI-guided changes through the Veritas report and the documented proof lane before review.',
+          'Prefer running new AI-guided changes through Veritas readiness checks and the documented evidenceCheck before review.',
         owner: 'repo-maintainers',
         rollback_switch: 'soften-veritas-route',
         match: {
@@ -490,21 +490,21 @@ export function buildStarterPolicyPack({ projectName, instructionTargets = DEFAU
   };
 }
 
-export function listStarterPolicyPacks() {
-  return [...STARTER_POLICY_PACKS.keys()];
+export function listStarterRepoStandards() {
+  return [...STARTER_REPO_STANDARD_TEMPLATES.keys()];
 }
 
-export function loadStarterPolicyPack(pack) {
-  if (!pack) return null;
-  const fileName = STARTER_POLICY_PACKS.get(pack);
+export function loadStarterRepoStandards(template) {
+  if (!template) return null;
+  const fileName = STARTER_REPO_STANDARD_TEMPLATES.get(template);
   if (!fileName) {
-    throw new Error(`Unknown Veritas starter policy pack: ${pack}. Available packs: ${listStarterPolicyPacks().join(', ')}`);
+    throw new Error(`Unknown Veritas Repo Standards template: ${template}. Available templates: ${listStarterRepoStandards().join(', ')}`);
   }
-  const packPath = resolve(FRAMEWORK_ROOT_DIR, 'examples/policy-packs', fileName);
-  return loadJson(packPath, `starter policy pack ${pack}`);
+  const templatePath = resolve(FRAMEWORK_ROOT_DIR, 'examples/repo-standards', fileName);
+  return loadJson(templatePath, `Repo Standards template ${template}`);
 }
 
-export function buildStarterTeamProfile({ projectName, proof = 'npm test' }) {
+export function buildStarterTeamProfile({ projectName, evidenceCheck = 'npm test' }) {
   const projectSlug = slugifyProjectName(projectName);
 
   return {
@@ -512,19 +512,19 @@ export function buildStarterTeamProfile({ projectName, proof = 'npm test' }) {
     id: `${projectSlug}-default`,
     name: `${projectName} Default`,
     description:
-      'Conservative starter profile: begin in shadow mode, learn first, and only harden rules after repeated evidence.',
+      'Conservative starter settings: observe first, learn from evidence, and only require what has earned trust.',
     defaults: {
-      mode: 'shadow',
+      mode: 'observe',
       new_rule_stage: 'recommend',
     },
     review_preferences: {
       human_signoff_required_for_stage_promotion: true,
       reviewer_confidence_scale: ['low', 'medium', 'high'],
       major_rewrite_definition:
-        'A major rewrite replaces the main structure or control flow instead of making local edits.',
+        'A major rewrite replaces the main structure or requirement flow instead of making local edits.',
     },
     promotion_preferences: {
-      proofs_required_before_block: [proof],
+      evidence_checks_required_before_require: [evidenceCheck],
       warnings_block_in_ci: false,
       require_consistent_eval_before_promotion: true,
     },
@@ -533,7 +533,7 @@ export function buildStarterTeamProfile({ projectName, proof = 'npm test' }) {
 
 export function buildBootstrapReadme({
   projectName,
-  proof = 'npm test',
+  evidenceCheck = 'npm test',
   recommendationSummary = null,
   ownerAnswers = null,
   repoInsights = {
@@ -554,7 +554,7 @@ This repo was bootstrapped for \`${projectName}\` with a conservative starter ki
 - \`.veritas/README.md\`
 - \`.veritas/GOVERNANCE.md\`
 - \`.veritas/repo.adapter.json\`
-- \`.veritas/policy-packs/default.policy-pack.json\`
+- \`.veritas/repo-standards/default.repo-standards.json\`
 - \`.veritas/team/default.team-profile.json\`
 
 ## Inferred Repo Shape
@@ -585,8 +585,8 @@ This repo was bootstrapped for \`${projectName}\` with a conservative starter ki
 ## What To Do Next
 
 1. Confirm the inferred source/test roots match the real repo layout.
-2. Replace the suggested proof if a stronger project health command exists.
-3. Keep the team profile in \`shadow\` mode until you have enough evidence to tighten rules.
+2. Replace the suggested evidenceCheck if a stronger project health command exists.
+3. Keep uncertain requirements in Observe or Guide until evidence shows they should be required.
 
 ${
   recommendationSummary
@@ -601,54 +601,55 @@ ${
 ## Suggested Commands
 
 \`\`\`bash
-npx @kontourai/veritas run --check shadow package.json
-npx @kontourai/veritas run --check budget --working-tree
+npx @kontourai/veritas readiness --working-tree
+npx @kontourai/veritas readiness --check coverage --working-tree
 npx @kontourai/veritas integrations codex status
-npx @kontourai/veritas attest bootstrap --actor <human-id> --non-interactive
+npx @kontourai/veritas attest bootstrap --actor <authority-id> --non-interactive
 \`\`\`
 
 If you prefer explicit paths:
 
 \`\`\`bash
-npx @kontourai/veritas run --check shadow \\
+npx @kontourai/veritas readiness --check evidence \\
   --adapter ./.veritas/repo.adapter.json \\
-  --policy-pack ./.veritas/policy-packs/default.policy-pack.json \\
+  --repo-standards ./.veritas/repo-standards/default.repo-standards.json \\
   package.json
 \`\`\`
 
-## Suggested Proof
+## Suggested Evidence Check
 
-\`${proof}\`
+\`${evidenceCheck}\`
 
-## Surface-Aware Routing
+## Work-Area Evidence Routing
 
 ${
-  repoInsights.enableSurfaceProofRouting
-    ? 'This repo shape justifies surface-aware proof routing, so the starter adapter also includes `defaultProofIds` and `uncoveredPathPolicy` alongside explicit proof objects.'
-    : 'This starter stays on the minimal single-proof path by default. Surface-aware proof routing can be added later if the repo grows multiple independently verified surfaces.'
+  repoInsights.enableWorkAreaEvidenceRouting
+    ? 'This repo shape justifies work-area evidence routing, so the starter Repo Map also includes `defaultEvidenceCheckIds` and `uncoveredPathPolicy` alongside explicit evidence-check objects.'
+    : 'This starter stays on the minimal single-check path by default. Work-area evidence routing can be added later if the repo grows multiple independently verified work areas.'
 }
 
 ## Why This Exists
 
-The goal is to give any compatible agent just-in-time repo guidance from day one, while keeping review and CI grounded in the same starter rules.
+The goal is to give developers and agents just-in-time repo guidance from day one, while keeping review and CI grounded in the same starter standards.
 `;
 }
 
 export function buildGovernanceInstructions() {
-  return `# Governance Surface
+  return `# Veritas Governance
 
-Zone 1 is human-owned. Do not modify:
+Protected Standards require authority-backed review. Do not modify without a fresh Veritas attestation:
 - \`.veritas/repo.adapter.json\`
-- \`.veritas/policy-packs/\`
+- \`.veritas/repo-standards/\`
 - \`.veritas/team/\`
 
-Zone 2 is additive policy growth. Agents may:
-- add new surface nodes for new feature directories
-- add advisory-tier rules for new surfaces
+Standards Growth is additive. Developers and agents may propose:
+- new work areas for new feature directories
+- advisory requirements for new work areas
+- clearer change guidance backed by evidence
 
-Do not weaken or delete existing governance.
+Do not weaken or delete existing standards without the required authority.
 
-Zone 3 is generated output:
+Generated Evidence is output, not the source of standards:
 - \`.veritas/evidence/\`
 - \`.veritas/eval-drafts/\`
 - \`.veritas/evals/\`
@@ -657,43 +658,43 @@ Zone 3 is generated output:
 }
 
 export function buildSuggestedCodeownersBlock() {
-  return `# Veritas constitutional core - changes require human governance approval
+  return `# Veritas protected standards - changes require authority-backed review
 .veritas/repo.adapter.json  @your-team/governance
-.veritas/policy-packs/      @your-team/governance
+.veritas/repo-standards/      @your-team/governance
 .veritas/team/              @your-team/governance`;
 }
 
 export function writeBootstrapStarterKit({
   rootDir,
   projectName = basename(resolve(rootDir)),
-  proof,
+  evidenceCheck,
   instructionTargets,
-  pack,
+  template,
   force = false,
 }) {
   const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const resolvedProof = proof ?? repoInsights.proof;
+  const resolvedEvidenceCheck = evidenceCheck ?? repoInsights.evidenceCheck;
   const selectedInstructionTargets = normalizeInstructionTargets(instructionTargets ?? DEFAULT_SELECTED_INSTRUCTION_TARGETS);
   const adapterPath = resolve(rootDir, '.veritas/repo.adapter.json');
-  const policyPackPath = resolve(rootDir, '.veritas/policy-packs/default.policy-pack.json');
+  const repoStandardsPath = resolve(rootDir, '.veritas/repo-standards/default.repo-standards.json');
   const teamProfilePath = resolve(rootDir, '.veritas/team/default.team-profile.json');
   const readmePath = resolve(rootDir, '.veritas/README.md');
   const governancePath = resolve(rootDir, '.veritas/GOVERNANCE.md');
   const claimStorePath = resolve(rootDir, 'veritas.claims.json');
   const requiredInstructionFiles = selectedInstructionTargets.map((target) => resolve(rootDir, target.path));
-  const starterAdapter = buildStarterAdapter({ projectName, proof: resolvedProof, repoInsights, instructionTargets: selectedInstructionTargets });
+  const starterAdapter = buildStarterAdapter({ projectName, evidenceCheck: resolvedEvidenceCheck, repoInsights, instructionTargets: selectedInstructionTargets });
 
   const files = [
     [adapterPath, starterAdapter],
-    [policyPackPath, loadStarterPolicyPack(pack) ?? buildStarterPolicyPack({ projectName, instructionTargets: selectedInstructionTargets })],
-    [teamProfilePath, buildStarterTeamProfile({ projectName, proof: resolvedProof })],
+    [repoStandardsPath, loadStarterRepoStandards(template) ?? buildStarterRepoStandards({ projectName, instructionTargets: selectedInstructionTargets })],
+    [teamProfilePath, buildStarterTeamProfile({ projectName, evidenceCheck: resolvedEvidenceCheck })],
     [claimStorePath, {
       schemaVersion: 1,
       producer: 'veritas',
       ...buildBaselineClaims(projectName, {
         hasGovernance: true,
-        proofCommands: [resolvedProof],
-        surfaceNodes: starterAdapter.graph?.nodes ?? [],
+        evidenceCheckCommands: [resolvedEvidenceCheck],
+        workAreas: starterAdapter.graph?.nodes ?? [],
       }),
     }],
   ];
@@ -716,7 +717,7 @@ export function writeBootstrapStarterKit({
     );
   }
 
-  mkdirSync(resolve(rootDir, '.veritas/policy-packs'), { recursive: true });
+  mkdirSync(resolve(rootDir, '.veritas/repo-standards'), { recursive: true });
   mkdirSync(resolve(rootDir, '.veritas/team'), { recursive: true });
   mkdirSync(resolve(rootDir, '.veritas/evidence'), { recursive: true });
 
@@ -726,7 +727,7 @@ export function writeBootstrapStarterKit({
 
   writeFileSync(
     readmePath,
-    buildBootstrapReadme({ projectName, proof: resolvedProof, repoInsights }),
+    buildBootstrapReadme({ projectName, evidenceCheck: resolvedEvidenceCheck, repoInsights }),
     'utf8',
   );
   writeFileSync(governancePath, buildGovernanceInstructions(), 'utf8');
@@ -745,15 +746,15 @@ export function writeBootstrapStarterKit({
   return {
     rootDir,
     projectName,
-    pack: pack ?? null,
-    proof: resolvedProof,
+    template: template ?? null,
+    evidenceCheck: resolvedEvidenceCheck,
     repoInsights,
     codeownersBlock: buildSuggestedCodeownersBlock(),
     generatedFiles: [
       relative(rootDir, readmePath).replaceAll('\\', '/'),
       relative(rootDir, governancePath).replaceAll('\\', '/'),
       relative(rootDir, adapterPath).replaceAll('\\', '/'),
-      relative(rootDir, policyPackPath).replaceAll('\\', '/'),
+      relative(rootDir, repoStandardsPath).replaceAll('\\', '/'),
       relative(rootDir, teamProfilePath).replaceAll('\\', '/'),
       relative(rootDir, claimStorePath).replaceAll('\\', '/'),
       ...requiredInstructionFiles.map((filePath) =>
@@ -764,31 +765,31 @@ export function writeBootstrapStarterKit({
 }
 
 export function buildSuggestedPackageScripts({
-  proof = 'npm test',
+  evidenceCheck = 'npm test',
   baseRef = '<base-ref>',
 }) {
   return {
     'veritas:init': 'npm exec -- veritas init',
     'veritas:status:codex': 'npm exec -- veritas integrations codex status',
-    'veritas:check': 'npm exec -- veritas run --run-id local-smoke package.json',
-    'veritas:check:working-tree': 'npm exec -- veritas run --working-tree',
-    'veritas:check:diff': `npm exec -- veritas run --changed-from ${baseRef} --changed-to HEAD`,
-    'veritas:budget': 'npm exec -- veritas run --check budget --working-tree',
-    'veritas:proof': proof,
-    'lint:governance': 'npm exec -- veritas run --format feedback --working-tree',
-    'veritas:eval': 'npm exec -- veritas run',
+    'veritas:check': 'npm exec -- veritas readiness --run-id local-smoke package.json',
+    'veritas:check:working-tree': 'npm exec -- veritas readiness --working-tree',
+    'veritas:check:diff': `npm exec -- veritas readiness --changed-from ${baseRef} --changed-to HEAD`,
+    'veritas:coverage': 'npm exec -- veritas readiness --check coverage --working-tree',
+    'veritas:evidence-check': evidenceCheck,
+    'lint:governance': 'npm exec -- veritas readiness --format feedback --working-tree',
+    'veritas:eval': 'npm exec -- veritas readiness',
   };
 }
 
 export function buildSuggestedCiSnippet({
-  proof = 'npm test',
+  evidenceCheck = 'npm test',
   baseRef = '<base-ref>',
 }) {
   return `# Suggested Veritas CI snippet
-- name: Run project proof
-  run: ${proof}
+- name: Run project evidenceCheck
+  run: ${evidenceCheck}
 
-- name: Generate Veritas report
-  run: npm exec -- veritas run --changed-from ${baseRef} --changed-to HEAD
+- name: Generate Veritas readiness report
+  run: npm exec -- veritas readiness --changed-from ${baseRef} --changed-to HEAD
 `;
 }

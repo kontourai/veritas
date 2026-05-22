@@ -58,22 +58,22 @@ function rejectNonHumanActor(actorId) {
   }
 }
 
-export function resolveZone1Paths(rootDir, options = {}) {
+export function resolveProtectedStandardsPaths(rootDir, options = {}) {
   return {
-    policyPackPath: resolve(rootDir, options.policyPackPath ?? '.veritas/policy-packs/default.policy-pack.json'),
+    repoStandardsPath: resolve(rootDir, options.repoStandardsPath ?? '.veritas/repo-standards/default.repo-standards.json'),
     adapterPath: resolve(rootDir, options.adapterPath ?? '.veritas/repo.adapter.json'),
     teamProfilePath: resolve(rootDir, options.teamProfilePath ?? '.veritas/team/default.team-profile.json'),
   };
 }
 
-export function hashZone1(rootDir, options = {}) {
-  const paths = resolveZone1Paths(rootDir, options);
+export function hashProtectedStandards(rootDir, options = {}) {
+  const paths = resolveProtectedStandardsPaths(rootDir, options);
   return {
-    policyPackHash: hashFile(paths.policyPackPath),
+    repoStandardsHash: hashFile(paths.repoStandardsPath),
     adapterHash: hashFile(paths.adapterPath),
     teamProfileHash: hashFile(paths.teamProfilePath),
     paths: {
-      policyPackPath: relativeRepoPath(rootDir, paths.policyPackPath),
+      repoStandardsPath: relativeRepoPath(rootDir, paths.repoStandardsPath),
       adapterPath: relativeRepoPath(rootDir, paths.adapterPath),
       teamProfilePath: relativeRepoPath(rootDir, paths.teamProfilePath),
     },
@@ -121,7 +121,7 @@ function buildActor(rootDir, actorId, displayName) {
   return {
     id: actorId,
     displayName: displayName ?? readGitConfig(rootDir, 'user.name') ?? actorId,
-    identityProof: {
+    identityEvidence: {
       gitEmail: readGitConfig(rootDir, 'user.email'),
       signingKeyFingerprint: readGitConfig(rootDir, 'user.signingkey'),
     },
@@ -130,7 +130,7 @@ function buildActor(rootDir, actorId, displayName) {
 
 function nextAttestationId(kind, attestedAt, hashes) {
   const timestamp = attestedAt.replace(/[^0-9A-Za-z]+/g, '-').replace(/-$/, '');
-  const digest = sha256Hex(`${kind}:${attestedAt}:${hashes.policyPackHash}:${hashes.adapterHash}:${hashes.teamProfileHash}`).slice(0, 12);
+  const digest = sha256Hex(`${kind}:${attestedAt}:${hashes.repoStandardsHash}:${hashes.adapterHash}:${hashes.teamProfileHash}`).slice(0, 12);
   return `${kind}-${timestamp}-${digest}`;
 }
 
@@ -149,7 +149,7 @@ function buildAttestationSurfaceProjection({
   const evidence = Surface.buildHumanAttestationEvidence({
     subject: {
       claimId,
-      sourceRef: 'veritas:zone1',
+      sourceRef: 'veritas:protected-standards',
       sourceLocator: '.veritas/attestations',
     },
     actor: {
@@ -159,13 +159,13 @@ function buildAttestationSurfaceProjection({
     attestedAt,
     validUntil,
     contentHash,
-    summary: notes || `Human ${kind} attestation for Veritas Zone 1 governance.`,
+    summary: notes || `Authority-backed ${kind} attestation for Veritas Protected Standards.`,
   });
   return {
     claim: {
       id: claimId,
-      subjectType: 'veritas-zone1',
-      subjectId: 'governance-core',
+      subjectType: 'veritas-protected-standards',
+      subjectId: 'protected-standards',
       surface: 'veritas.attestations',
       claimType: 'veritas-human-attestation',
       fieldOrBehavior: kind,
@@ -177,7 +177,7 @@ function buildAttestationSurfaceProjection({
       confidenceBasis: {
         sourceQuality: 'strong',
         reviewerAuthority: 'human',
-        proofStrength: 'strong',
+        evidenceStrength: 'strong',
         impactLevel: 'high',
       },
     },
@@ -203,11 +203,11 @@ export function createAttestation({
   notes = '',
   validUntilDays = DEFAULT_VALID_UNTIL_DAYS,
   attestedAt,
-  policyPackPath,
+  repoStandardsPath,
   adapterPath,
   teamProfilePath,
 } = {}) {
-  if (!['bootstrap', 'policy-change', 'proposal-acceptance'].includes(kind)) {
+  if (!['bootstrap', 'policy-change', 'recommendation-acceptance'].includes(kind)) {
     throw new Error(`Unsupported attestation kind: ${kind}`);
   }
   if (!actor) {
@@ -226,7 +226,7 @@ export function createAttestation({
     throw new Error('veritas attest policy-change requires --message <text>');
   }
 
-  const hashes = hashZone1(rootDir, { policyPackPath, adapterPath, teamProfilePath });
+  const hashes = hashProtectedStandards(rootDir, { repoStandardsPath, adapterPath, teamProfilePath });
   const actorRecord = buildActor(rootDir, actor, displayName);
   const validUntil = new Date(new Date(timestamp).getTime() + validUntilDays * 86_400_000).toISOString();
   const surfaceClaimId = `veritas.attestation.${nextAttestationId(kind, timestamp, hashes)}`;
@@ -236,14 +236,14 @@ export function createAttestation({
     kind,
     actor: actorRecord,
     attestedAt: timestamp,
-    policyPackHash: hashes.policyPackHash,
+    repoStandardsHash: hashes.repoStandardsHash,
     adapterHash: hashes.adapterHash,
     teamProfileHash: hashes.teamProfileHash,
     priorAttestationId: priorAttestationId ?? null,
     validUntilDays,
     notes,
     metadata: {
-      zone1Paths: hashes.paths,
+      protectedStandardsPaths: hashes.paths,
       supersedes: priorAttestationId ?? null,
     },
     surface: buildAttestationSurfaceProjection({
@@ -252,7 +252,7 @@ export function createAttestation({
       actor: actorRecord,
       attestedAt: timestamp,
       validUntil,
-      contentHash: sha256Hex(`${hashes.policyPackHash}:${hashes.adapterHash}:${hashes.teamProfileHash}`),
+      contentHash: sha256Hex(`${hashes.repoStandardsHash}:${hashes.adapterHash}:${hashes.teamProfileHash}`),
       notes,
     }),
   };
@@ -275,12 +275,12 @@ export function createAttestation({
 export function inspectAttestationStatus(rootDir, options = {}) {
   const current = readCurrentAttestation(rootDir);
   const pending = existsSync(pendingPath(rootDir));
-  const zone1 = (() => {
+  const protectedStandards = (() => {
     try {
-      const hashes = hashZone1(rootDir, options);
+      const hashes = hashProtectedStandards(rootDir, options);
       return {
         hashes: {
-          policyPackHash: hashes.policyPackHash,
+          repoStandardsHash: hashes.repoStandardsHash,
           adapterHash: hashes.adapterHash,
           teamProfileHash: hashes.teamProfileHash,
         },
@@ -301,7 +301,7 @@ export function inspectAttestationStatus(rootDir, options = {}) {
       expired: false,
       ageDays: null,
       validUntil: null,
-      zone1,
+      protectedStandards,
     };
   }
   if (current.missing) {
@@ -313,11 +313,11 @@ export function inspectAttestationStatus(rootDir, options = {}) {
       expired: false,
       ageDays: null,
       validUntil: null,
-      zone1,
+      protectedStandards,
     };
   }
-  const hashes = zone1.hashes ?? hashZone1(rootDir, options);
-  const drift = ['policyPackHash', 'adapterHash', 'teamProfileHash']
+  const hashes = protectedStandards.hashes ?? hashProtectedStandards(rootDir, options);
+  const drift = ['repoStandardsHash', 'adapterHash', 'teamProfileHash']
     .filter((field) => current[field] !== hashes[field])
     .map((field) => ({
       field,
@@ -337,7 +337,7 @@ export function inspectAttestationStatus(rootDir, options = {}) {
     expired: now.getTime() > validUntil.getTime(),
     ageDays,
     validUntil: validUntil.toISOString(),
-    zone1,
+    protectedStandards,
   };
 }
 
@@ -347,19 +347,19 @@ export function buildAttestationPolicyResult(status) {
       rule_id: 'policy-changes-require-attestation',
       classification: 'hard-invariant',
       stage: 'block',
-      message: 'Zone 1 governance changes require a fresh human attestation.',
+      message: 'Protected standards changes require a fresh authority-backed attestation.',
       owner: 'repo-core',
       rollback_switch: null,
       implemented: true,
       passed: false,
       status: 'fail',
-      summary: 'Current Zone 1 hashes do not match the active human attestation.',
+      summary: 'Current protected standards hashes do not match the active attestation.',
       findings: status.drift.map((item) => ({
         kind: 'attestation-drift',
         artifact: item.field,
         attested: item.attested,
         current: item.current,
-        remediation: 'Run veritas attest policy-change --message <text> --actor <human-id> after human review.',
+        remediation: 'Run veritas attest policy-change --message <text> --actor <authority-id> after authority review.',
       })),
     };
   }
@@ -368,17 +368,17 @@ export function buildAttestationPolicyResult(status) {
       rule_id: 'policy-changes-require-attestation',
       classification: 'hard-invariant',
       stage: 'warn',
-      message: 'No human attestation has activated the policy pack yet.',
+      message: 'No authority-backed attestation has activated the protected standards yet.',
       owner: 'repo-core',
       rollback_switch: null,
       implemented: true,
       passed: false,
       status: 'warn',
-      summary: 'No active human attestation found; shadow run is advisory until bootstrap attestation is recorded.',
+      summary: 'No active attestation found; readiness is advisory until bootstrap attestation is recorded.',
       findings: [{
         kind: 'missing-attestation',
         artifact: ATTESTATIONS_DIR,
-        remediation: 'Run veritas attest bootstrap --actor <human-id> --non-interactive.',
+        remediation: 'Run veritas attest bootstrap --actor <authority-id> --non-interactive.',
       }],
     };
   }
@@ -387,7 +387,7 @@ export function buildAttestationPolicyResult(status) {
       rule_id: 'policy-changes-require-attestation',
       classification: 'hard-invariant',
       stage: 'warn',
-      message: 'The active human attestation has expired.',
+      message: 'The active protected-standards attestation has expired.',
       owner: 'repo-core',
       rollback_switch: null,
       implemented: true,
@@ -397,7 +397,7 @@ export function buildAttestationPolicyResult(status) {
       findings: [{
         kind: 'expired-attestation',
         artifact: status.currentAttestationId,
-        remediation: 'Run veritas attest policy-change --message <text> --actor <human-id> to refresh attestation.',
+        remediation: 'Run veritas attest policy-change --message <text> --actor <authority-id> to refresh attestation.',
       }],
     };
   }
@@ -405,13 +405,13 @@ export function buildAttestationPolicyResult(status) {
     rule_id: 'policy-changes-require-attestation',
     classification: 'hard-invariant',
     stage: 'block',
-    message: 'Zone 1 governance changes require a fresh human attestation.',
+    message: 'Protected standards changes require a fresh authority-backed attestation.',
     owner: 'repo-core',
     rollback_switch: null,
     implemented: true,
     passed: true,
     status: 'pass',
-    summary: `Active attestation ${status.currentAttestationId} matches current Zone 1 hashes.`,
+    summary: `Active attestation ${status.currentAttestationId} matches current protected standards hashes.`,
     findings: [],
   };
 }

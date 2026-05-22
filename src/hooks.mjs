@@ -10,11 +10,11 @@ import {
 import { basename, dirname, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { loadJson } from './load.mjs';
-import { loadAdapterConfig, loadPolicyPack } from './load.mjs';
+import { loadAdapterConfig, loadRepoStandards } from './load.mjs';
 import { assertWithinDir, relativeRepoPath } from './paths.mjs';
 import { buildSuggestedCiSnippet, buildSuggestedPackageScripts } from './bootstrap.mjs';
 import { shellQuote } from './shell.mjs';
-import { evaluateCrossSurfaceWriteRule, evaluatePolicyPack } from './rules/evaluate.mjs';
+import { evaluateCrossSurfaceWriteRule, evaluateRepoStandards } from './rules/evaluate.mjs';
 import { readCurrentAttestation } from './attestations.mjs';
 
 export function buildSuggestedGitHook({ hook = 'post-commit' } = {}) {
@@ -30,10 +30,10 @@ if [ "\${VERITAS_HOOK_SKIP:-\${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
 fi
 
 if git rev-parse --verify --quiet HEAD~1 >/dev/null; then
-  npm exec -- veritas run --changed-from HEAD~1 --changed-to HEAD
+  npm exec -- veritas readiness --changed-from HEAD~1 --changed-to HEAD
 else
   EMPTY_TREE="$(git hash-object -t tree /dev/null)"
-  npm exec -- veritas run --changed-from "$EMPTY_TREE" --changed-to HEAD
+  npm exec -- veritas readiness --changed-from "$EMPTY_TREE" --changed-to HEAD
 fi
 `;
 }
@@ -47,10 +47,10 @@ if [ "\${VERITAS_HOOK_SKIP:-\${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
 fi
 
 if [ "$#" -eq 0 ]; then
-  exec npm exec -- veritas run --format json --working-tree
+  exec npm exec -- veritas readiness --format json --working-tree
 fi
 
-exec npm exec -- veritas run --format json "$@"
+exec npm exec -- veritas readiness --format json "$@"
 `;
 }
 
@@ -67,7 +67,7 @@ if [ "\${VERITAS_HOOK_SKIP:-\${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
   exit 0
 fi
 
-RESULT=$(npm exec -- veritas run --format feedback --working-tree 2>&1)
+RESULT=$(npm exec -- veritas readiness --format feedback --working-tree 2>&1)
 EXIT=$?
 if [ "$EXIT" -ne 0 ]; then
   echo "$RESULT"
@@ -139,7 +139,7 @@ export function buildSuggestedCodexHookConfig() {
             {
               type: 'command',
               command: '.veritas/hooks/agent-runtime.sh',
-              statusMessage: 'Running Veritas shadow automation',
+              statusMessage: 'Running Veritas readiness automation',
               timeout: 60,
             },
           ],
@@ -260,7 +260,7 @@ function buildBuiltinCrossSurfaceRule() {
     classification: 'hard-invariant',
     stage: 'block',
     enforcement: 'deny',
-    message: 'Strict repo surfaces cannot be edited by actors without ownership or explicit allowlist access.',
+    message: 'Strict work areas cannot be edited by actors without ownership or explicit allowlist access.',
     owner: 'repo-core',
     rollback_switch: null,
     match: {},
@@ -309,9 +309,9 @@ export function evaluatePreToolUse({
     };
   }
   const config = loadAdapterConfig(resolve(rootDir, '.veritas/repo.adapter.json'));
-  const policyPack = loadPolicyPack(resolve(rootDir, '.veritas/policy-packs/default.policy-pack.json'));
+  const repoStandards = loadRepoStandards(resolve(rootDir, '.veritas/repo-standards/default.repo-standards.json'));
   const effectiveActor = resolveHookActor(rootDir, actor);
-  const policyResults = evaluatePolicyPack(policyPack, {
+  const policyResults = evaluateRepoStandards(repoStandards, {
     rootDir,
     changedFiles: [relativeFile],
     config,
@@ -368,7 +368,7 @@ export function evaluatePreToolUse({
 
 export function applyPackageScripts({
   rootDir,
-  proof = 'npm test',
+  evidenceCheck = 'npm test',
   baseRef = '<base-ref>',
   force = false,
 }) {
@@ -378,7 +378,7 @@ export function applyPackageScripts({
   }
 
   const packageJson = loadJson(packageJsonPath, 'package.json');
-  const nextScripts = buildSuggestedPackageScripts({ proof, baseRef });
+  const nextScripts = buildSuggestedPackageScripts({ evidenceCheck, baseRef });
   const currentScripts = packageJson.scripts ?? {};
 
   for (const [key, value] of Object.entries(nextScripts)) {
@@ -395,7 +395,7 @@ export function applyPackageScripts({
   return {
     rootDir,
     packageJsonPath: relativeRepoPath(rootDir, packageJsonPath),
-    proof,
+    evidenceCheck,
     baseRef,
     appliedScripts: Object.keys(nextScripts),
   };
@@ -403,7 +403,7 @@ export function applyPackageScripts({
 
 export function applyCiSnippet({
   rootDir,
-  proof = 'npm test',
+  evidenceCheck = 'npm test',
   baseRef = '<base-ref>',
   outputPath = '.veritas/snippets/ci-snippet.yml',
   force = false,
@@ -425,14 +425,14 @@ export function applyCiSnippet({
   mkdirSync(resolve(rootDir, '.veritas/snippets'), { recursive: true });
   writeFileSync(
     resolvedOutputPath,
-    buildSuggestedCiSnippet({ proof, baseRef }),
+    buildSuggestedCiSnippet({ evidenceCheck, baseRef }),
     'utf8',
   );
 
   return {
     rootDir,
     outputPath: relativeOutputPath,
-    proof,
+    evidenceCheck,
     baseRef,
   };
 }

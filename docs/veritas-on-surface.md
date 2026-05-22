@@ -1,21 +1,22 @@
-# Veritas on Surface
+# Veritas Built With Surface
 
-Veritas is the producer experience. Surface is the product-neutral protocol underneath it.
+Veritas is a producer of Surface-format trust state. Surface powers the portable transparency layer underneath Veritas, while Veritas owns the repo-native product experience.
 
 ```text
-Repository -> veritas.claims.json -> stable authored claims
-Veritas    -> evidence collection  -> per-run proof and policy observations
-Surface    -> trust derivation     -> status, fault lines, reports, analytics
+Repository -> Veritas Repo Standards and Repo Map -> requirements and boundaries
+Veritas    -> readiness evaluation             -> evidence, authority, guidance
+Surface    -> transparency derivation          -> status, freshness, conflicts, gaps
 ```
 
-Veritas registers a Surface extension so local dashboards can use Veritas vocabulary, claim type definitions, and theme. Applications using Veritas do not need to know Surface internals, but the exported `surface.input` remains a valid Surface trust input.
+Normal Veritas users should not need to configure Surface directly. Veritas can use Surface internally to validate trust state, derive freshness and conflict signals, and power a Veritas Console with Veritas vocabulary.
 
 ## Runtime Model
 
-1. The repository commits `veritas.claims.json`.
-2. A Veritas run loads that store.
-3. Veritas matches run observations to authored claim IDs.
-4. Veritas emits evidence and verification events for matched claims.
-5. Surface derives the authoritative status from evidence, policy, freshness, and fault lines.
+1. A repository defines Repo Standards and a Repo Map.
+2. A Veritas readiness check evaluates a change or repo state against those standards.
+3. Veritas records evidence, attestations, exceptions, and readiness coverage.
+4. Veritas emits Surface-format trust state at the boundary.
+5. Surface derives status, freshness, conflicts, and transparency gaps.
+6. Veritas presents those results as readiness reports, repo conformance, and standards feedback.
 
-If `veritas.claims.json` is missing, projection fails with a migration error. Run `veritas claim init` and commit the resulting store.
+The product signal is **Built with Surface**. The user-facing product remains Veritas.

@@ -1,26 +1,54 @@
 # Veritas and Surface
 
-Veritas is a repo-local lint tool for AI-assisted code changes. **Surface** is the foundation it sits on — a generic substrate for representing claims, evidence, freshness, and trust status.
+Veritas is the repo and AI-agent governance product. Surface is the transparency layer Veritas is built with.
 
-You almost never have to choose between them. The right question is "which one are you reaching for *first*?"
+Most Veritas users should not need to choose between them, configure Surface directly, or learn Surface vocabulary first. Use Veritas when the job is repo standards, change boundaries, evidenceChecks, merge readiness, repo conformance, or change guidance.
 
-## You came here because you want repo lint for AI agents
+## Use Veritas For Repo Governance
 
-Use Veritas. The Quickstart in the [README](../README.md) is the entry point. You will not need to think about Surface to get value from Veritas.
+Use Veritas when you want to:
 
-Surface is doing real work underneath — every Veritas evidence artifact projects into a `surface.input` block that Surface can turn into a portable trust report — but that is a downstream capability you opt into when you need it (e.g. piping evidence into a dashboard or another consumer). Veritas also writes a dashboard-friendly read model under `.veritas/surface-dashboard/` so Surface analytics can load claim rows, policy summaries, aggregate counts, and graph edges without importing Veritas runtime code. For the handoff, see [`examples/surface-handoff.mjs`](../examples/surface-handoff.mjs).
+- define repo standards
+- map work areas and change boundaries
+- give developers and agents just-in-time change guidance
+- evaluate merge readiness for a change
+- track repo conformance for standing requirements
+- protect the standards that define what good looks like
+- improve standards from observed outcomes
 
-## You're building a different product that needs to show provenance
+Veritas may emit Surface-format trust state underneath, but that is an implementation and interoperability detail for normal repo governance workflows.
 
-Use [Surface](https://github.com/kontourai/surface) directly. Veritas is one consumer of Surface, not the only one. Anything that needs to answer "is this information verified, fresh, and uncontested?" can sit on top of Surface — code-change governance (Veritas), public-data records, fact resolution, dependency audits, and any other domain where you need to make claims and back them with evidence.
+## Use Surface For Product Transparency
 
-You do not need Veritas to use Surface.
+Use [Surface](https://github.com/kontourai/surface) directly when you are building a different product that needs to expose claims, evidence, freshness, conflicts, transparency gaps, trust panels, or portable trust snapshots.
 
-## How they relate
+Surface does not know what a repo, work area, boundary crossing, or merge readiness result is. Those are Veritas concepts.
 
-Veritas and Surface enforce a strict boundary:
+## How They Relate
 
-- **Surface** owns: the schema for `claims`, `evidence`, `policies`, `events`; the derivation of trust status; the shape of a `TrustReport`. It does not know what a "repo" or an "AI agent" is.
-- **Veritas** owns: rules, policy packs, proof execution, repo runs, governance blocks, eval drafts. It knows everything about repos and agents. At the boundary, it emits a `surface.input` block and a derived dashboard read model — and never anything else from Surface's report-only surface.
+Veritas owns the repo-native workflow:
 
-The full rule lives in [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md). The pattern (separate workflow vocabulary, project to a common trust shape) is the same pattern any Surface consumer should follow.
+- repo standards
+- repo maps
+- requirements
+- evidenceChecks
+- verification authorities
+- attestations and exceptions
+- readiness reports
+- repo conformance
+- standards feedback and recommendations
+
+Surface owns portable transparency primitives:
+
+- claims
+- evidence
+- policies
+- events
+- freshness
+- conflicts
+- transparency gaps
+- trust snapshots and reports
+
+At the boundary, Veritas acts as a Surface producer. It turns requirement evaluations, evidenceChecks, attestations, exceptions, and readiness outcomes into Surface-format claims and evidence. Surface can then derive status, freshness, conflicts, and gaps without importing Veritas readiness checktime code.
+
+The public product signal is **Built with Surface**. The Veritas product experience should still use Veritas vocabulary.

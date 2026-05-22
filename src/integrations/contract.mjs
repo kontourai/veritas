@@ -1,6 +1,6 @@
 /**
  * @typedef {Object} NormalizedEvent
- * @property {"tool-call"|"shadow-run"|"edit"|"override"|"completion"} kind
+ * @property {"tool-call"|"readiness-check"|"edit"|"override"|"completion"} kind
  * @property {string|null} timestamp
  * @property {string[]} files
  * @property {string|null} commandText

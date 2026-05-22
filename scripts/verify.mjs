@@ -203,7 +203,7 @@ assert(
   'CLI reference must include the top-level help path.',
 );
 assert(
-  cliReference.includes('npx @kontourai/veritas run --help'),
+  cliReference.includes('npx @kontourai/veritas readiness --help'),
   'CLI reference must include subcommand help.',
 );
 assert(
@@ -211,8 +211,8 @@ assert(
   'CLI reference should use the scoped package invocation in public examples.',
 );
 assert(
-  cliReference.includes('veritas run'),
-  'CLI reference must document run.',
+  cliReference.includes('veritas readiness'),
+  'CLI reference must document readiness.',
 );
 assert(
   cliReference.includes('veritas integrations'),
@@ -270,8 +270,8 @@ assert(
   'Artifacts reference must mention adapters.',
 );
 assert(
-  artifactsReference.includes('policy-packs/'),
-  'Artifacts reference must mention policy packs.',
+  artifactsReference.includes('repo-standards/'),
+  'Artifacts reference must mention repo standardss.',
 );
 assert(
   artifactsReference.includes('examples/'),
@@ -289,11 +289,11 @@ assert(
   'Examples reference must include the fail evidence fixture.',
 );
 assert(
-  examplesReference.includes('examples/evals/work-agent-shadow-eval-draft.json'),
+  examplesReference.includes('examples/evals/work-agent-observe-eval-draft.json'),
   'Examples reference must include the eval draft fixture.',
 );
 assert(
-  examplesReference.includes('examples/classification/work-agent-convergence-rule-families.json'),
+  examplesReference.includes('examples/classification/work-agent-convergence-rule-groups.json'),
   'Examples reference must include the classification fixture.',
 );
 assert(
@@ -321,12 +321,12 @@ assert(
   'Examples reference must include the marker benchmark suite report fixture.',
 );
 assert(
-  examplesReference.includes('examples/benchmarks/governance-zone1-marker-scenario.json'),
-  'Examples reference must include the Zone 1 governance benchmark fixture.',
+  examplesReference.includes('examples/benchmarks/governance-protected-standards-marker-scenario.json'),
+  'Examples reference must include the protected-standards governance benchmark fixture.',
 );
 assert(
-  examplesReference.includes('examples/benchmarks/governance-zone2-marker-scenario.json'),
-  'Examples reference must include the Zone 2 governance benchmark fixture.',
+  examplesReference.includes('examples/benchmarks/governance-standards-growth-marker-scenario.json'),
+  'Examples reference must include the standards-growth governance benchmark fixture.',
 );
 
 const benchmarkingReference = readText('docs/reference/benchmarking.md');
@@ -340,7 +340,8 @@ assert(
   'Benchmarking reference must mention the suite command.',
 );
 assert(
-  benchmarkingReference.includes('Zone 1') && benchmarkingReference.includes('Zone 2'),
+  benchmarkingReference.includes('protected-standards weakening') &&
+    benchmarkingReference.includes('standards growth'),
   'Benchmarking reference must explain the governance benchmark classes.',
 );
 
@@ -500,8 +501,8 @@ assert(fileExists('.site-src/.github/workflows/publish-npm.yml'), 'Pages build m
 
 const designDoc = readText('docs/design/framework-core-vs-adapter.md');
 assert(
-  designDoc.includes('framework core') || designDoc.includes('Framework Core'),
-  'Design doc must explain the framework core.',
+  designDoc.includes('product core') || designDoc.includes('Product Core'),
+  'Design doc must explain the product core.',
 );
 
 for (const relativePath of [
@@ -518,4 +519,4 @@ for (const relativePath of [
 const benchmarkFixtures = readdirSync(new URL('examples/benchmarks/', rootUrl));
 assert(benchmarkFixtures.length >= 10, 'Expected a richer set of benchmark fixtures.');
 
-console.log('Framework verification passed.');
+console.log('Veritas verification passed.');

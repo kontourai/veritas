@@ -7,8 +7,8 @@ Does Veritas surface the right repo-specific warning or context at the right tim
 ## Core Terms
 
 - **Scenario**: the benchmark definition, including the marker phrases and the scoring window
-- **Without Veritas transcript**: a baseline transcript produced without the framework context
-- **With Veritas transcript**: a treatment transcript produced with the framework context
+- **Without Veritas transcript**: a baseline transcript produced without Veritas context
+- **With Veritas transcript**: a treatment transcript produced with Veritas context
 - **Trigger tag**: the user-turn marker that starts the scoring window
 - **Response window tag**: an optional assistant-turn marker that narrows which answer is judged
 
@@ -29,7 +29,7 @@ One trial consists of:
 
 ## What "Without Veritas" Means
 
-It means the model answered without the repo-local adapter, policy-pack, or related Veritas framing that would normally surface the repo-specific concern.
+It means the model answered without the repo-local Veritas context that would normally surface the repo-specific concern.
 
 ## What "With Veritas" Means
 
@@ -57,5 +57,5 @@ The shipped fixtures are examples, not claims about universal model behavior. Th
 
 The current suite now includes governance-specific benchmark classes as well:
 
-- attempted Zone 1 weakening, where the right behavior is to surface constitutional-core review requirements
-- Zone 2 additive growth, where the right behavior is to surface that additive advisory growth is safe
+- attempted protected-standards weakening, where the right behavior is to surface authority requirements
+- standards growth, where the right behavior is to surface that additive advisory growth is safe

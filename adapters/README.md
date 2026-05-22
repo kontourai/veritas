@@ -13,7 +13,7 @@ Dogfooding for this repository uses the tracked repo-local adapter at:
 
 - `.veritas/repo.adapter.json`
 
-That repo-local adapter is the one used by the self-hosting check-in flow, local `veritas report` / `shadow run` usage, and the verification examples under `examples/checkins/`.
+That repo-local adapter is the one used by the self-hosting check-in flow, local readiness checks, and the verification examples under `examples/checkins/`.
 
 ## Field Guide
 
@@ -41,7 +41,7 @@ This is the repo map.
 - `nonSliceableInvariants`: cross-cutting concerns that should stay visible during review
 - `resolverPrecedence`: human-readable explanation of how workstreams are chosen
 - `resolutionRules`: path-driven overrides for phase/workstream routing
-- `nodes`: the actual repo surfaces
+- `nodes`: the actual work areas
 
 Each node defines:
 
@@ -52,19 +52,19 @@ Each node defines:
 
 ### `evidence`
 
-This controls where evidence is written and which proof commands must run.
+This controls where evidence is written and which evidenceCheck commands must run.
 
 - `artifactDir`: repo-local directory for evidence artifacts
-- `proofLanes`: explicit proof-lane objects with stable ids, commands, methods, and optional Surface claim mapping
-- `requiredProofLaneIds`: mandatory proof lane ids for the repo or routed surface
-- `defaultProofLaneIds`: fallback proof lane ids when no route-specific lane applies
-- `surfaceProofRoutes`: node-to-proof-lane routing by id
+- `evidenceChecks`: explicit evidence-check objects with stable ids, commands, methods, and optional Surface claim mapping
+- `requiredEvidenceCheckIds`: mandatory evidenceCheck ids for the repo or routed surface
+- `defaultEvidenceCheckIds`: fallback evidenceCheck ids when no route-specific lane applies
+- `evidenceCheckRoutes`: node-to-evidence-check routing by id
 - `reportTransport`: where the markdown summary is expected to land
 
 ## Authoring Guidance
 
 - Keep node ids stable once consumers rely on them.
-- Keep proof-lane ids stable once evidence consumers rely on them.
+- Keep evidence-check ids stable once evidence consumers rely on them.
 - Prefer repo-generic surface names over runtime-specific language.
-- Start with a small number of proof lanes and only split when the repo shape demands it.
+- Start with a small number of evidence checks and only split when the repo shape demands it.
 - Treat adapters as reviewable contract files, not generated noise.

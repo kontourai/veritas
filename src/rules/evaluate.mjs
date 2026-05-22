@@ -289,9 +289,9 @@ export function evaluatePolicyRule(rule, context) {
   return evaluator(rule, context);
 }
 
-export function evaluatePolicyPack(policyPack, context, options = {}) {
+export function evaluateRepoStandards(repoStandards, context, options = {}) {
   const selectedRuleIds = new Set(options.ruleIds ?? []);
-  return policyPack.rules
+  return repoStandards.rules
     .filter((rule) => selectedRuleIds.size === 0 || selectedRuleIds.has(rule.id))
     .map((rule) => evaluatePolicyRule(rule, context));
 }

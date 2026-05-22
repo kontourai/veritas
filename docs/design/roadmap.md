@@ -1,101 +1,99 @@
 # Roadmap
 
-Open design questions and planned work. Each item names the gap, why it matters, what the options are, and what comes next.
+Open design questions and planned work, updated to the current product vocabulary.
 
----
+## Standards Feedback Persistence
 
-## [planned] Longitudinal eval tracking
+### Gap
 
-### [planned] The gap
+Veritas can generate local evidence and feedback, but long-term trend data is still limited by local files and CI artifact retention.
 
-The current CI model answers two questions well:
+The product claim is:
 
-- **Is the repo healthy right now?** — the "Veritas Health" GitHub issue is open when red, closed when green, and its comment history provides a human-readable timeline.
-- **What happened in this PR?** — the sticky PR comment posts the check-in summary for every run.
+> Teams should be able to improve repo standards from observed outcomes.
 
-It does not answer:
+That requires durable standards feedback: which requirements were noisy, which evidenceChecks helped, which exceptions repeated, and whether review time is falling.
 
-- **Is the framework getting more useful over time?** — there is no durable, machine-readable record of eval outcomes across runs that a team could query, trend, or act on.
+### Options
 
-Generated artifacts (`evidence/`, `eval-drafts/`, `evals/`, `checkins/`) are gitignored by design and uploaded to GitHub Actions as workflow artifacts. Those artifacts expire after 90 days. After expiry, the only persistent record is the GitHub issue comment history, which is human-readable but not machine-queryable.
+**GitHub issue state**
+Useful for current health and short-term history, but awkward as a durable machine-readable store.
 
-This means the "measurable improvement over time" value claim is not fully backed at the product level yet. Teams can see whether they are healthy now but cannot easily answer whether review time is shrinking, override rates are falling, or which rules are reliably earning promotion.
+**GitHub Actions cache**
+Good for short-horizon comparison, weak for quiet repos and long-term trends.
 
-### [planned] Why this matters
+**Configurable external sink**
+Lets teams keep ownership of data, but adds setup friction.
 
-The live eval model is designed around a feedback loop: shadow → assist → gate. That loop only works if the accumulated eval data is inspectable. Without longitudinal persistence, teams are flying on anecdote after the 90-day artifact window closes.
+**Hosted feedback sink**
+Best UX for cross-repo longitudinal standards feedback, but requires infrastructure and a trust model for team data.
 
-### [planned] Options considered
+### Next
 
-**Commit a rolling `health.json` to the repo.**
-CI would need `contents: write` permission and would generate a commit on every run. This pollutes git history, creates merge conflicts between concurrent runs, and violates the principle that generated outputs do not live in the repo. Locally the file would always be stale. Rejected.
+1. Be clear that local feedback is available now and durable cross-run aggregation is planned.
+2. Stabilize the standards feedback payload before adding hosted infrastructure.
+3. Make any hosted or external sink opt-in during setup.
 
-**Use GitHub Actions cache for run-to-run comparison.**
-Cache keyed per branch can store the previous run's eval summary. CI downloads it, compares, and reports the delta in the PR comment. The cache expires after 7 days of inactivity, which resets the baseline during quiet periods. Viable for short-horizon PR comparison but not for longitudinal trend.
+## Protected Standards Integrity
 
-**Extend the GitHub issue body with a machine-readable block.**
-The health issue body could carry a JSON block alongside the markdown summary. CI reads the previous block, calculates the delta, and writes back the updated body. The comment history becomes the longitudinal log. No external infrastructure, no auto-commits, and the issue already exists. Viable but awkward — the issue body becomes a hidden state store, and the history is only recoverable by scraping issue comments.
+### Gap
 
-**Hosted eval sink (opt-in).**
-A lightweight endpoint that accepts eval payloads and returns trend data on demand. Teams opt in during `veritas init`. The cleanest UX and the only approach that makes the longitudinal claim genuinely true at scale. Requires infrastructure and a trust model for how team data is handled.
+The repo standards and repo map define what good looks like. If an agent can freely weaken them, it can change the standard used to judge its own work.
 
-**Configurable external sink.**
-Teams configure their own destination (S3, Postgres, a webhook). The framework emits to it after each eval. No Veritas-hosted infrastructure required. Adds setup friction but keeps data ownership with the team.
+Current attestations make protected standards changes visible, but the product should get better at classifying standards changes as:
 
-### [planned] What comes next
+- additive standards growth
+- protected standards updates
+- weakening or demotion
+- generated evidence only
 
-The hosted sink is the right long-term answer. It is also infrastructure that does not exist yet.
+### Product Model
 
-In the near term:
+Use:
 
-1. Be honest in the docs that longitudinal trend data is a planned capability, not a current one. The "measurable over time" claim should be scoped to what is actually true: the GitHub issue and PR comment surface current health; full trend data requires a sink.
-2. Design the eval payload shape that a sink would accept. That shape should be stable before any sink infrastructure is built, because it becomes a contract.
-3. When the sink is ready, `veritas init` should offer to configure it as an optional step, not require it.
+- **Protected Standards** for standards/map/authority definitions that require stronger authority to change.
+- **Standards Growth** for additive improvements that do not weaken existing standards.
+- **Generated Evidence** for outputs that should not become the source of standards.
 
----
+Avoid numbered governance areas in product language.
 
-## [partially shipped] Governance surface integrity
+### Next
 
-### [planned] The gap
+1. Add machine-readable protected-standards metadata.
+2. Classify standards diffs as additive, protected, weakening, or generated.
+3. Include that classification in readiness reports and CI summaries.
+4. Define when additive Standards Growth can merge with reduced review.
+5. Keep CODEOWNERS as an optional implementation aid, not the primary model.
 
-The `.veritas/` directory is the trust infrastructure of the repo. The adapter defines what surfaces exist and their risk profiles. The policy pack defines what rules apply and how hard. An AI agent that can freely modify these files can quietly weaken the governance it is supposed to operate under — downgrading a `block` rule to `recommend`, removing a node from scrutiny, or adding a waiver for its own output.
+## Readiness Command
 
-The current framework now makes this visible, but it still does not fully prevent it. `veritas init` writes `.veritas/GOVERNANCE.md`, the adapter can classify `.veritas/` as a `governance-surface`, and eval/check-in artifacts can carry governance classification. The remaining gap is a complete integrity gate that classifies governance diffs as additive, destructive, or demotion and blocks unsafe Zone 1 changes in CI.
+### Gap
 
-The agent-activation design doc is honest about this: the framework cannot force compliance from an agent that ignores repo context entirely. What it can do is make governance changes tamper-evident and human-gated.
+`veritas readiness` is now the user-facing product command, but the output still needs to become a fuller Readiness Report rather than mostly command feedback.
 
-### [shipped] The three-zone model
+### Next
 
-Not all of `.veritas/` warrants the same treatment.
+Evolve `veritas readiness` into a complete Readiness Report:
 
-**Zone 1 — Constitutional core.** `repo.adapter.json` surface type definitions, `hard-invariant` rules at `block` stage, team profile thresholds. These encode decisions that required organizational trust to make. Any modification or deletion here should require human authorization — not because AI cannot understand them, but because loosening them should require accountability.
+- Merge Readiness
+- Readiness Coverage
+- Boundary Crossings
+- Evidence Freshness
+- Exceptions
+- Recheck options
+- Change Guidance
 
-**Zone 2 — Living policy.** New surface nodes for new feature areas, `advisory-pattern` and `promotable-policy` rules at `recommend` or `warn` stage, rule promotions backed by eval data. These extend governance without weakening it. An AI agent should be able to propose and, in a repo with strong foundations, merge Zone 2 additions without blocking on human approval for every change.
 
-**Zone 3 — Evidence layer.** `evidence/`, `eval-drafts/`, `evals/`, `checkins/`. Always generated, never human-authored. No gate applies.
 
-### [planned] The ratchet principle
+## Product Naming Migration
 
-Governance should only tighten automatically, never loosen. An AI agent:
+### Gap
 
-- May add a new `advisory-pattern` rule for a new surface.
-- May propose promoting a `recommend` rule to `warn` when eval data supports it.
-- May add a new node to the adapter for a new feature directory.
-- Must not modify the classification or stage of an existing `hard-invariant` rule.
-- Must not delete any rule that has reached `block` stage.
-- Must not demote an existing rule to a lower stage.
+Current generated files, schemas, and CLI groups still use pre-glossary names.
 
-The ratchet is the property that makes it safe to give AI agents more autonomy over Zone 2. The constitutional core stays stable because the framework structurally prevents regression, not because humans review every change.
+### Next
 
-### [planned] On CODEOWNERS
-
-CODEOWNERS is one implementation of Zone 1 protection — not the mechanism itself. It is GitHub-specific, requires branch protection to be enforced, does not distinguish additive from destructive changes, and can be bypassed by admins. It is worth generating as a suggested next step from `veritas init` for teams that want it, but it should not be the primary or only protection.
-
-The right primary mechanism is a CI governance integrity check: diff the governance files, classify the change as additive, destructive, or demotion, surface that classification in the evidence artifact and PR summary. This is platform-agnostic, distinguishes Zone 1 from Zone 2 changes, and fits naturally within the existing evidence and policy evaluation model.
-
-### [planned] What comes next
-
-1. **Governance lock metadata.** Add a `governance-locked: true` flag to Zone 1 adapter nodes so the intent is machine-readable, not only human-readable.
-2. **CI governance integrity check.** A CI step that diffs governance files, classifies the change type, and includes the classification in the check-in summary. This is the platform-agnostic enforcement layer that makes Zone 1 changes visible as a distinct class.
-3. **CODEOWNERS suggestion.** Keep `veritas init` outputting a CODEOWNERS block as a "next step" for teams that want the GitHub-level gate.
-4. **Zone 2 auto-merge criteria.** Define what makes a Zone 2 addition safe to merge without explicit human review: additive only, advisory tier only, evidence passes, no existing rule touched. This is the property that makes the ratchet real rather than only described.
+1. Rename generated README text and CLI help to canonical terms first.
+2. Rename schemas and file paths to Repo Standards, Repo Map, Evidence Checks, Standards Feedback, Standards Recommendations, and Readiness Coverage.
+3. Add migration notes only for contributors who encounter existing local artifacts.
+4. Remove old names from product docs instead of treating them as a supported public surface.

@@ -11,7 +11,7 @@ import { execFileSync } from 'node:child_process';
 import {
   loadJson,
   loadAdapterConfig,
-  loadPolicyPack,
+  loadRepoStandards,
   loadTeamProfile,
   loadEvidenceArtifact,
   loadEvalDraftArtifact,
@@ -22,7 +22,7 @@ import {
 import {
   parseTokens,
   parseArgs,
-  parseBudgetArgs,
+  parseCoverageArgs,
   parseInitArgs,
   parseAttestArgs,
   parsePrintArgs,
@@ -31,14 +31,14 @@ import {
   parseEvalArgs,
   parseMarkerEvalArgs,
   parseMarkerSuiteEvalArgs,
-  parseShadowArgs,
+  parseReadinessArgs,
 } from './args.mjs';
 import { assertWithinDir, normalizeRepoPath, relativeRepoPath } from './paths.mjs';
 import {
   slugifyProjectName,
   inferBootstrapRepoInsights,
   buildStarterAdapter,
-  buildStarterPolicyPack,
+  buildStarterRepoStandards,
   buildStarterTeamProfile,
   buildBootstrapReadme,
   writeBootstrapStarterKit,
@@ -49,7 +49,7 @@ import {
   buildInitRecommendation,
   applyInitRecommendation,
 } from './bootstrap/recommendation.mjs';
-import { shellQuote, runProofCommand, resolveGitHead, stagedDiffSha256 } from './shell.mjs';
+import { shellQuote, runEvidenceCheckCommand, resolveGitHead, stagedDiffSha256 } from './shell.mjs';
 import {
   buildSuggestedGitHook,
   buildSuggestedRuntimeHook,
@@ -94,19 +94,19 @@ import {
   writeEvalDraftArtifact,
 } from './eval/loop.mjs';
 import {
-  readProofRoutes,
-  readProofs,
-  readDefaultProofIds,
-  readRequiredProofIds,
-  commandsForProofIds,
-  proofRecordsForCommands,
-  loadProofSuiteResults,
-  buildVerificationBudget,
+  readEvidenceCheckRoutes,
+  readEvidenceChecks,
+  readDefaultEvidenceCheckIds,
+  readRequiredEvidenceCheckIds,
+  commandsForEvidenceCheckIds,
+  evidenceCheckRecordsForCommands,
+  loadEvidenceInventoryResults,
+  buildReadinessCoverage,
   buildExternalToolResults,
   readUncoveredPathPolicy,
   routeMatchesAnyComponent,
-  serializeProofRoutes,
-} from './proof/index.mjs';
+  serializeEvidenceCheckRoutes,
+} from './evidence/index.mjs';
 import {
   buildCodexEvalDraft,
   observeCodexEval,
@@ -115,7 +115,7 @@ import { classifyNodes } from './repo/classify.mjs';
 import { matchesPatterns, matchesPatternsForAnyFile } from './util/patterns.mjs';
 import { uniqueStrings } from './util/strings.mjs';
 import {
-  resolveProofPlan,
+  resolveEvidenceCheckPlan,
   resolveWorkstream,
   parseBaselineCiFastStatus,
   formatTriState,
@@ -134,7 +134,7 @@ import {
   mergeEvalRecordOptions,
   resolveVeritasPaths,
   generateVeritasReport,
-  resolveProofCommands,
+  resolveEvidenceCheckCommands,
 } from './report.mjs';
 import {
   evaluateRequiredArtifactsRule,
@@ -145,7 +145,7 @@ import {
   evaluateHeaderRequiredRule,
   evaluateCrossSurfaceWriteRule,
   evaluatePolicyRule,
-  evaluatePolicyPack,
+  evaluateRepoStandards,
   RULE_EVALUATORS,
 } from './rules/evaluate.mjs';
 import {
@@ -160,15 +160,15 @@ import {
   generateEvalSummary,
 } from './eval/records.mjs';
 import {
-  generateRuleProposals,
-  generateAndWriteProposals,
-  listProposals,
-  loadProposal,
-  applyProposal,
-} from './proposals.mjs';
+  generateRuleRecommendations,
+  generateAndWriteRecommendations,
+  listRecommendations,
+  loadRecommendation,
+  applyRecommendation,
+} from './recommendations.mjs';
 import {
   runVeritasReportCli,
-  runVerificationBudgetCli,
+  runReadinessCoverageCli,
   runInitCli,
   runPrintPackageScriptsCli,
   runPrintCiSnippetCli,
@@ -191,18 +191,18 @@ import {
   runEvalSummaryCli,
   runEvalMarkerCli,
   runEvalMarkerSuiteCli,
-  runEvalProposeCli,
+  runEvalRecommendCli,
   runEvalDraftCli,
   runEvalObserveCli,
-  runProposalCli,
+  runRecommendationCli,
   runAttestCli,
   runClaudeCodePreToolUseCli,
   runIntegrationsCli,
-  runShadowRunCli,
+  runReadinessCheckCli,
   runClaimCli,
 } from './cli/index.mjs';
 export * from './surface/projection.mjs';
-export * from './surface/dashboard.mjs';
+export * from './surface/console.mjs';
 export * from './surface/extension.mjs';
 export * from './claims/store.mjs';
 export * from './claims/templates.mjs';
@@ -211,7 +211,7 @@ export * from './claims/init.mjs';
 export {
   loadJson,
   loadAdapterConfig,
-  loadPolicyPack,
+  loadRepoStandards,
   loadTeamProfile,
   loadEvidenceArtifact,
   loadEvalDraftArtifact,
@@ -220,7 +220,7 @@ export {
   loadMarkerBenchmarkSuite,
   parseTokens,
   parseArgs,
-  parseBudgetArgs,
+  parseCoverageArgs,
   parseInitArgs,
   parseAttestArgs,
   parsePrintArgs,
@@ -229,12 +229,12 @@ export {
   parseEvalArgs,
   parseMarkerEvalArgs,
   parseMarkerSuiteEvalArgs,
-  parseShadowArgs,
+  parseReadinessArgs,
   normalizeRepoPath,
   slugifyProjectName,
   inferBootstrapRepoInsights,
   buildStarterAdapter,
-  buildStarterPolicyPack,
+  buildStarterRepoStandards,
   buildStarterTeamProfile,
   buildBootstrapReadme,
   buildInitRecommendation,
@@ -273,7 +273,7 @@ export {
   evaluateHeaderRequiredRule,
   evaluateCrossSurfaceWriteRule,
   evaluatePolicyRule,
-  evaluatePolicyPack,
+  evaluateRepoStandards,
   RULE_EVALUATORS,
   scoreMarkerBenchmarkCondition,
   compareMarkerBenchmarkRuns,
@@ -287,21 +287,21 @@ export {
   writeEvalArtifact,
   appendEvalHistory,
   writeEvalDraftArtifact,
-  readProofRoutes,
-  readProofs,
-  readDefaultProofIds,
-  readRequiredProofIds,
-  commandsForProofIds,
-  proofRecordsForCommands,
-  loadProofSuiteResults,
-  buildVerificationBudget,
+  readEvidenceCheckRoutes,
+  readEvidenceChecks,
+  readDefaultEvidenceCheckIds,
+  readRequiredEvidenceCheckIds,
+  commandsForEvidenceCheckIds,
+  evidenceCheckRecordsForCommands,
+  loadEvidenceInventoryResults,
+  buildReadinessCoverage,
   buildExternalToolResults,
   readUncoveredPathPolicy,
   routeMatchesAnyComponent,
-  serializeProofRoutes,
+  serializeEvidenceCheckRoutes,
   buildCodexEvalDraft,
   observeCodexEval,
-  resolveProofPlan,
+  resolveEvidenceCheckPlan,
   resolveWorkstream,
   parseBaselineCiFastStatus,
   formatTriState,
@@ -320,7 +320,7 @@ export {
   mergeEvalRecordOptions,
   resolveVeritasPaths,
   generateVeritasReport,
-  resolveProofCommands,
+  resolveEvidenceCheckCommands,
   buildExplainText,
   runExplainCli,
   checkBoundaries,
@@ -328,13 +328,13 @@ export {
   generateEvalDraft,
   generateEvalRecord,
   generateEvalSummary,
-  generateRuleProposals,
-  generateAndWriteProposals,
-  listProposals,
-  loadProposal,
-  applyProposal,
+  generateRuleRecommendations,
+  generateAndWriteRecommendations,
+  listRecommendations,
+  loadRecommendation,
+  applyRecommendation,
   runVeritasReportCli,
-  runVerificationBudgetCli,
+  runReadinessCoverageCli,
   runInitCli,
   runPrintPackageScriptsCli,
   runPrintCiSnippetCli,
@@ -357,14 +357,14 @@ export {
   runEvalSummaryCli,
   runEvalMarkerCli,
   runEvalMarkerSuiteCli,
-  runEvalProposeCli,
+  runEvalRecommendCli,
   runEvalDraftCli,
   runEvalObserveCli,
-  runProposalCli,
+  runRecommendationCli,
   runAttestCli,
   runClaudeCodePreToolUseCli,
   runIntegrationsCli,
-  runShadowRunCli,
+  runReadinessCheckCli,
   runClaimCli,
 };
 export * from './attestations.mjs';
@@ -373,7 +373,7 @@ export * from './integrations/transcripts.mjs';
 export * from './integrations/runtime-adapters.mjs';
 export * from './eval/filesystem-observer.mjs';
 export * from './eval/run-history.mjs';
-export * from './proposals.mjs';
+export * from './recommendations.mjs';
 export * from './cli/plugins.mjs';
 export * from './plugins/registry.mjs';
 export * from './plugins/loader.mjs';

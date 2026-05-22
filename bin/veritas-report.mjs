@@ -9,7 +9,7 @@ const argv = process.argv.slice(2);
 if (argv.some((token) => token === '--help' || token === '-h' || token === 'help')) {
   process.stdout.write(
     `Usage:
-  veritas-report [--trend] [--root <path>] [--adapter <path>] [--policy-pack <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
+  veritas-report [--trend] [--root <path>] [--adapter <path>] [--repo-standards <path>] [--working-tree | --staged | --unstaged | --untracked | --changed-from <ref> --changed-to <ref>] [--run-id <id>] [file ...]
 `,
   );
   process.exit(0);
@@ -18,9 +18,9 @@ if (argv.some((token) => token === '--help' || token === '-h' || token === 'help
 await runVeritasReportCli(argv, {
   rootDir: process.cwd(),
   adapterPath: resolve(process.cwd(), '.veritas/repo.adapter.json'),
-  policyPackPath: resolve(
+  repoStandardsPath: resolve(
     process.cwd(),
-    '.veritas/policy-packs/default.policy-pack.json',
+    '.veritas/repo-standards/default.repo-standards.json',
   ),
   frameworkRootDir: repoRoot,
 });

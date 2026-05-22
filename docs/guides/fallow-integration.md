@@ -1,12 +1,12 @@
 # Fallow Integration
 
-Use this guide when a JavaScript or TypeScript repo wants Veritas to record Fallow codebase-intelligence results as external-tool proof evidence.
+Use this guide when a JavaScript or TypeScript repo wants Veritas to record Fallow codebase-intelligence results as external-tool evidence.
 
 Fallow and Veritas should stay separate:
 
 - Fallow finds codebase facts: unused code, duplicate logic, circular dependencies, complexity hotspots, architecture boundary violations, and optional runtime hot/cold-path evidence.
 - Veritas governs whether those facts were checked, baselined, promoted, and shown to agents before they finish work.
-- Veritas records Fallow results as an external-tool proof lane (advisory or blocking).
+- Veritas records Fallow results as an external-tool evidenceCheck (advisory or blocking).
 - Surface receives the normalized `surface.input` projection from Veritas evidence; Veritas does not become a second trust report generator.
 
 ## Start Advisory
@@ -20,15 +20,15 @@ For example, a one-off Fallow smoke on this Veritas checkout reported:
 - 4.5% duplicated lines
 - 100 functions above threshold
 
-That is useful evidence, but it is not a reason to fail every Veritas run before the repo has either cleaned up the issues or committed an intentional baseline.
+That is useful evidence, but it is not a reason to fail every Veritas readiness check before the repo has either cleaned up the issues or committed an intentional baseline.
 
-## External-Tool Proof Lanes
+## External-Tool Evidence Checks
 
-Veritas proof lanes can declare an external tool via the `externalTool` field. The external tool produces a JSON artifact that Veritas reads and normalizes into evidence.
+Veritas evidence checks can declare an external tool via the `externalTool` field. The external tool produces a JSON artifact that Veritas reads and normalizes into evidence.
 
-Keep compound shell behavior in a script because Veritas proof commands are tokenized argv, not implicit shell snippets.
+Keep compound shell behavior in a script because Veritas evidence-check commands are tokenized argv, not implicit shell snippets.
 
-Example adapter lane:
+Example Repo Map check:
 
 ```json
 {
@@ -90,7 +90,7 @@ writeFileSync(
 );
 ```
 
-Then include the lane as a default or routed proof lane while it is advisory. Promote it to required only after the team has reviewed the results.
+Then include the check as a default or routed evidenceCheck while it is advisory. Promote it to required only after the team has reviewed the results.
 
 ## Baseline Existing Debt
 
@@ -118,7 +118,7 @@ fallow audit \
 ## Promotion Path
 
 1. **Advisory** — Veritas records Fallow output as `external_tool_results`, but non-pass verdicts are warnings.
-2. **Candidate** — the proof family has an owner, review trigger, and recent catch evidence.
-3. **Required** — the Fallow lane is blocking only after eval history shows useful catches and tolerable false positives.
+2. **Candidate** — the evidence-check inventory item has an owner, review trigger, and recent catch evidence.
+3. **Required** — the Fallow check is blocking only after standards feedback shows useful catches and tolerable false positives.
 
 If Fallow Runtime is available, treat hot/cold-path findings the same way: external evidence first, promotion only after the repo has a reviewable baseline and owner.

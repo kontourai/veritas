@@ -1,102 +1,65 @@
 # Telemetry and Read Models
 
-This page describes how Veritas should be interpreted over time without turning the framework into a heavy observability product.
+This page describes how Veritas output should be interpreted over time without turning the product into a heavy observability platform.
 
 ## Canonical Records
 
-The canonical Veritas records are repo-local artifacts:
+The canonical Veritas records are repo-local generated evidence and feedback artifacts:
 
 - `.veritas/evidence/<run-id>.json`
 - `.veritas/eval-drafts/<run-id>.json`
 - `.veritas/evals/<run-id>.json`
 
-These are the durable, reviewable records that define what happened and how a run was judged.
+These artifacts support **Standards Feedback**.
 
 ## Derived Summaries
 
-Some Veritas outputs are derived summaries rather than canonical truth.
+Some outputs are read models rather than source-of-truth records.
 
-Current example:
+Current examples:
 
 - `.veritas/checkins/*.json`
 - `.veritas/checkins/*.md`
+- `.surface/runs/<run-id>.console.json`
+- `.surface/runs/latest.json`
 
-`checkin` is useful as a compact operator-facing summary, but it is derived from canonical report/eval inputs and should be treated as a read-model layer, not a peer source of truth.
+Use **Readiness Report**, **Repo Conformance**, or **Standards Feedback** depending on the summary.
 
 ## Human-Facing Read Model
 
-The intended path for human interpretation is:
+The intended interpretation path is:
 
-1. canonical artifacts first
-2. derived summaries second
-3. dashboards later, if needed
-
-This keeps Veritas lightweight while still supporting trend analysis and operator insight.
-
-Run snapshots for the Surface dashboard live at:
-
-```
-.surface/runs/<run-id>.dashboard.json
-.surface/runs/latest.json
-```
-
-These are derived from `surface.input` and `surface.report` inside the evidence artifact. They are gitignored and regenerated on each run.
-
-After `veritas eval record` completes, it patches the matching run snapshot with a generic `EvalSummary` field. The dashboard can then show post-hoc review context alongside the live trust state without any extra commands.
+1. readiness report for a change
+2. repo conformance for standing requirements
+3. standards feedback for trends
+4. optional console or telemetry exports
 
 Questions a read-model layer should answer:
 
-- which rules are noisy over time
-- which misses repeat
-- whether reviewer confidence is improving
+- which requirements are noisy over time
+- which missed issues repeat
+- whether evidence is making review faster
 - where time-to-green is drifting
-- which proof lanes produce the most friction
+- which evidence checks produce the most friction
+- which standards recommendations are waiting for review
 
 ## Optional OTLP Export
 
-OTLP is an optional export surface, not the canonical model.
+OTLP is optional. Use it for team dashboards, cross-repo aggregation, or trend analysis in existing observability infrastructure.
 
-Use OTLP when you want:
+Do not use OTLP as the first or only source of truth. Keep rich detail in repo-local generated evidence.
 
-- team dashboards
-- cross-repo aggregation
-- trend analysis in existing observability infrastructure
+## Recommended Dimensions
 
-Do not use OTLP as the first or only source of truth.
-
-## Recommended OTLP Shape
-
-Veritas should emit one telemetry unit per command invocation, not one synthetic trace for the entire human review lifecycle.
-
-Good command-level units:
-
-- `veritas.report`
-- `veritas.shadow_run`
-- `veritas.eval_draft`
-- `veritas.eval_record`
-- `veritas.checkin`
-
-Correlate them with stable keys such as:
-
-- `run_id`
-- `evidence_digest`
-- `command`
-- `source_kind`
-- `adapter_name`
-- `policy_pack_name`
-
-## Cardinality Rules
-
-Safe telemetry dimensions are small and bounded:
+Safe dimensions are small and bounded:
 
 - command name
 - result status
 - source kind
-- adapter name
-- policy pack name
-- stable rule IDs when bounded
+- current artifact class
+- stable requirement IDs when bounded
 
-Do not export:
+Avoid high-cardinality labels:
 
 - file paths
 - free-text notes
@@ -104,15 +67,12 @@ Do not export:
 - reviewer comments
 - repo-specific arbitrary strings
 
-Keep rich detail in artifacts, not telemetry labels.
-
 ## Product Guidance
 
-Veritas should stay lightweight by following this order:
+Veritas should stay artifact-first:
 
-1. artifact-first canonical records
-2. derived local summaries
-3. optional telemetry export
-4. optional dashboards
-
-That keeps the framework useful for humans and agents out of the box while preserving room for richer analytics later.
+1. generated evidence
+2. readiness and conformance summaries
+3. standards feedback
+4. optional telemetry export
+5. optional console

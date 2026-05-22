@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { loadAdapterConfig, loadPolicyPack } from './load.mjs';
+import { loadAdapterConfig, loadRepoStandards } from './load.mjs';
 import { normalizeRepoPath } from './paths.mjs';
 import { matchesPatterns } from './util/patterns.mjs';
 import { evaluateCrossSurfaceWriteRule } from './rules/evaluate.mjs';
@@ -21,9 +21,9 @@ function ruleMatchesFile(rule, filePath) {
 
 function ruleMatchesSurfaceNode(rule, node, config) {
   if (!node) return false;
-  const surfaceNode = (config.graph?.nodes ?? []).find((item) => item.id === node);
-  if (!surfaceNode) return rule.id === node;
-  return (surfaceNode.patterns ?? []).some((pattern) => ruleMatchesFile(rule, pattern));
+  const workArea = (config.graph?.nodes ?? []).find((item) => item.id === node);
+  if (!workArea) return rule.id === node;
+  return (workArea.patterns ?? []).some((pattern) => ruleMatchesFile(rule, pattern));
 }
 
 function governanceExcerpt(rootDir) {
@@ -58,19 +58,19 @@ function syntheticPolicyRules() {
     classification: 'hard-invariant',
     stage: 'block',
     enforcement: 'deny',
-    message: 'Zone 1 governance changes require a current human attestation.',
+    message: 'Protected standards changes require a current authority-backed attestation.',
     explain: {
-      summary: 'Veritas hashes the adapter, policy pack, and team profile as Zone 1. Shadow runs fail on drift until a human records a fresh attestation.',
+      summary: 'Veritas hashes the Repo Map, Repo Standards, and authority settings as Protected Standards. Readiness checks fail on drift until a valid authority records a fresh attestation.',
       mustDo: [
-        'Run `veritas attest bootstrap --actor <human-id>` after first installing Veritas governance.',
-        'Run `veritas attest policy-change --actor <human-id> --message <reason>` after changing Zone 1 files.',
+        'Run `veritas attest bootstrap --actor <authority-id>` after first installing Veritas governance.',
+        'Run `veritas attest policy-change --actor <authority-id> --message <reason>` after changing Protected Standards files.',
       ],
       mustNotDo: [
-        'Do not treat generated evidence or agent edits as a substitute for human governance review.',
+        'Do not treat generated evidence or agent edits as a substitute for authority-backed standards review.',
       ],
       contextLinks: [
         'docs/guides/attestation.md',
-        'docs/concepts.md#human-attestation',
+        'docs/concepts.md#attestation',
       ],
     },
   }];
@@ -96,7 +96,7 @@ function latestSurfaceReportForRule(rootDir, ruleId) {
       if (claim) {
         return {
           claim,
-          faultLines: report.faultLinesByClaimId?.[claim.id] ?? [],
+          transparencyGaps: report.transparencyGapsByClaimId?.[claim.id] ?? [],
           reportId: report.id,
           generatedAt: report.generatedAt,
         };
@@ -108,13 +108,13 @@ function latestSurfaceReportForRule(rootDir, ruleId) {
   return null;
 }
 
-export function buildExplainText({ rootDir, adapter, policyPack, ruleId, filePath, surfaceNode }) {
+export function buildExplainText({ rootDir, adapter, repoStandards, ruleId, filePath, workArea }) {
   const normalizedFile = filePath ? normalizeRepoPath(filePath, rootDir) : null;
-  const allRules = [...(policyPack.rules ?? []), ...syntheticPolicyRules()];
+  const allRules = [...(repoStandards.rules ?? []), ...syntheticPolicyRules()];
   const selectedRules = allRules.filter((rule) => {
     if (ruleId) return rule.id === ruleId;
     if (normalizedFile) return ruleMatchesFile(rule, normalizedFile);
-    if (surfaceNode) return ruleMatchesSurfaceNode(rule, surfaceNode, adapter);
+    if (workArea) return ruleMatchesSurfaceNode(rule, workArea, adapter);
     return false;
   });
   const lines = [
@@ -123,15 +123,15 @@ export function buildExplainText({ rootDir, adapter, policyPack, ruleId, filePat
     ...governanceExcerpt(rootDir).map((line) => `Governance: ${line}`),
   ];
   if (selectedRules.length === 0) {
-    lines.push('', 'No matching policy rule found.');
+    lines.push('', 'No matching requirement found.');
   }
   for (const rule of selectedRules) {
     lines.push('', ...explainRuleBlock(rule));
     const surfaceContext = latestSurfaceReportForRule(rootDir, rule.id);
     if (surfaceContext) {
       lines.push(`Surface status: ${surfaceContext.claim.status} (${surfaceContext.reportId})`);
-      for (const faultLine of surfaceContext.faultLines.slice(0, 3)) {
-        lines.push(`Surface fault: ${faultLine.type} — ${faultLine.message}`);
+      for (const transparencyGap of surfaceContext.transparencyGaps.slice(0, 3)) {
+        lines.push(`Surface fault: ${transparencyGap.type} — ${transparencyGap.message}`);
       }
     }
   }
@@ -142,23 +142,23 @@ export function runExplainCli(argv = process.argv.slice(2), defaults = {}) {
   const { options, rest } = parseTokens(argv, {
     '--root': { type: 'string', key: 'rootDir' },
     '--adapter': { type: 'string', key: 'adapterPath' },
-    '--policy-pack': { type: 'string', key: 'policyPackPath' },
+    '--repo-standards': { type: 'string', key: 'repoStandardsPath' },
     '--file': { type: 'string', key: 'filePath' },
-    '--surface-node': { type: 'string', key: 'surfaceNode' },
+    '--work-area': { type: 'string', key: 'workArea' },
   });
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  const { adapterPath, policyPackPath } = resolveVeritasPaths({ ...options, rootDir }, { ...defaults, rootDir });
+  const { adapterPath, repoStandardsPath } = resolveVeritasPaths({ ...options, rootDir }, { ...defaults, rootDir });
   const selector = rest[0];
   const adapter = loadAdapterConfig(adapterPath);
-  const policyPack = loadPolicyPack(policyPackPath);
-  const selectorIsRule = [...(policyPack.rules ?? []), ...syntheticPolicyRules()].some((rule) => rule.id === selector);
+  const repoStandards = loadRepoStandards(repoStandardsPath);
+  const selectorIsRule = [...(repoStandards.rules ?? []), ...syntheticPolicyRules()].some((rule) => rule.id === selector);
   const text = buildExplainText({
     rootDir,
     adapter,
-    policyPack,
-    ruleId: options.filePath || options.surfaceNode ? null : selectorIsRule ? selector : null,
-    filePath: options.filePath ?? (!options.surfaceNode && !selectorIsRule && selector?.includes('/') ? selector : null),
-    surfaceNode: options.surfaceNode ?? (!options.filePath && !selectorIsRule && selector && !selector.includes('/') ? selector : null),
+    repoStandards,
+    ruleId: options.filePath || options.workArea ? null : selectorIsRule ? selector : null,
+    filePath: options.filePath ?? (!options.workArea && !selectorIsRule && selector?.includes('/') ? selector : null),
+    workArea: options.workArea ?? (!options.filePath && !selectorIsRule && selector && !selector.includes('/') ? selector : null),
   });
   process.stdout.write(text);
 }

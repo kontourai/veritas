@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "name": "python-fastapi",
+  "description": "Starter repo standards for a Python FastAPI service.",
+  "rules": [
+    {
+      "id": "required-fastapi-artifacts",
+      "kind": "required-artifacts",
+      "classification": "hard-invariant",
+      "stage": "block",
+      "message": "FastAPI services should declare Python tooling and Veritas governance.",
+      "owner": "service-team",
+      "rollback_switch": null,
+      "match": {
+        "artifacts": [
+          "pyproject.toml",
+          ".veritas/README.md",
+          ".veritas/GOVERNANCE.md",
+          ".veritas/repo.adapter.json",
+          ".veritas/repo-standards/default.repo-standards.json",
+          ".veritas/team/default.team-profile.json"
+        ]
+      }
+    },
+    {
+      "id": "ai-instruction-files-synced",
+      "kind": "governance-block",
+      "classification": "hard-invariant",
+      "stage": "warn",
+      "message": "AI instruction files should carry the Veritas governance block.",
+      "owner": "service-team",
+      "rollback_switch": null,
+      "match": {
+        "governance-block": ["AGENTS.md", "CLAUDE.md"]
+      }
+    },
+    {
+      "id": "routers-require-router-tests",
+      "kind": "diff-required",
+      "classification": "promotable-policy",
+      "stage": "warn",
+      "message": "Router changes should include router tests.",
+      "owner": "service-team",
+      "rollback_switch": "soften-router-test-companion-rule",
+      "match": {
+        "if-changed": "app/routers/**",
+        "then-require": "tests/routers/**"
+      }
+    },
+    {
+      "id": "no-print-in-app",
+      "kind": "forbidden-pattern",
+      "classification": "advisory-pattern",
+      "stage": "warn",
+      "message": "Avoid print() in application code; use logging.",
+      "owner": "service-team",
+      "rollback_switch": "allow-print-in-app",
+      "match": {
+        "files": ["app/**/*.py"],
+        "pattern": "\\bprint\\("
+      }
+    }
+  ]
+}

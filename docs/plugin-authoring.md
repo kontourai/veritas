@@ -47,7 +47,7 @@ Veritas adds `metadata._plugin` to every plugin evidence item:
 }
 ```
 
-The Surface dashboard uses that attribution to show that evidence came from the tool owner instead of hand-written application mapping.
+The Surface Console uses that attribution to show that evidence came from the tool owner instead of hand-written application mapping.
 
 ## Register A Plugin
 

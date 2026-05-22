@@ -16,7 +16,7 @@
       ]
     },
     "nonSliceableInvariants": [
-      "baseline proof lane",
+      "baseline evidenceCheck",
       "repo-local guidance",
       "tracked policy artifacts"
     ],
@@ -129,11 +129,11 @@
         "crossSurfaceAllow": ["repo-core"]
       },
       {
-        "id": "governance.policy-packs",
+        "id": "governance.repo-standards",
         "kind": "governance-surface",
-        "label": "policy-packs/**",
+        "label": "repo-standards/**",
         "patterns": [
-          "policy-packs/"
+          "repo-standards/"
         ],
         "owners": ["governance-team"],
         "boundary": "strict",
@@ -189,9 +189,9 @@
     "artifactDir": ".veritas/evidence",
     "reportTransport": "local-json",
     "uncoveredPathPolicy": "warn",
-    "proofs": [
+    "evidenceChecks": [
       {
-        "id": "required-proof",
+        "id": "required-evidence-check",
         "command": "npm run verify",
         "method": "validation",
         "summary": "Runs npm run verify."
@@ -209,11 +209,11 @@
         }
       }
     ],
-    "requiredProofIds": [
-      "required-proof"
+    "requiredEvidenceCheckIds": [
+      "required-evidence-check"
     ],
-    "defaultProofIds": [
-      "required-proof",
+    "defaultEvidenceCheckIds": [
+      "required-evidence-check",
       "fallow-advisory"
     ]
   },

@@ -27,7 +27,7 @@ function bootstrapVeritasRepo(prefix = 'veritas-attest-') {
   writeBootstrapStarterKit({
     rootDir,
     projectName: 'attestation-fixture',
-    proof: 'npm test',
+    evidenceCheck: 'npm test',
     force: true,
   });
   commitAll(rootDir, 'Bootstrap Veritas');
@@ -38,7 +38,7 @@ async function attestationSurfaceClaims(rootDir, options = {}) {
   const result = await generateVeritasReport({
     rootDir,
     includeAttestationGate: true,
-    skipProof: true,
+    skipEvidenceCheck: true,
     runId: options.runId ?? `attestation-surface-${Date.now()}`,
     timestamp: options.timestamp ?? '2026-05-11T00:00:00.000Z',
     attestationNow: options.attestationNow,
@@ -60,7 +60,7 @@ function governanceClaim(claims) {
   return claims.find((claim) => claim.claimType === 'veritas-governance-artifact');
 }
 
-test('bootstrap attestation records Zone 1 hashes and status detects drift', () => {
+test('bootstrap attestation records protected standards hashes and status detects drift', () => {
   const rootDir = bootstrapVeritasRepo();
   const result = createAttestation({
     rootDir,
@@ -75,14 +75,14 @@ test('bootstrap attestation records Zone 1 hashes and status detects drift', () 
   assert.equal(current.state, 'current');
   assert.equal(current.expired, false);
 
-  const policyPath = join(rootDir, '.veritas/policy-packs/default.policy-pack.json');
+  const policyPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
   const policy = JSON.parse(readFileSync(policyPath, 'utf8'));
   policy.description = `${policy.description} Changed after attestation.`;
   writeFileSync(policyPath, `${JSON.stringify(policy, null, 2)}\n`);
 
   const drifted = inspectAttestationStatus(rootDir, { now: '2026-05-11T00:00:00.000Z' });
   assert.equal(drifted.state, 'drifted');
-  assert.deepEqual(drifted.drift.map((item) => item.field), ['policyPackHash']);
+  assert.deepEqual(drifted.drift.map((item) => item.field), ['repoStandardsHash']);
 });
 
 test('policy-change attestation chains to prior attestation and refreshes drift', () => {
@@ -94,7 +94,7 @@ test('policy-change attestation chains to prior attestation and refreshes drift'
     notes: 'Initial human approval.',
     attestedAt: '2026-05-10T00:00:00.000Z',
   });
-  const policyPath = join(rootDir, '.veritas/policy-packs/default.policy-pack.json');
+  const policyPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
   const policy = JSON.parse(readFileSync(policyPath, 'utf8'));
   policy.description = `${policy.description} Human-reviewed update.`;
   writeFileSync(policyPath, `${JSON.stringify(policy, null, 2)}\n`);
@@ -161,7 +161,7 @@ test('surface input projects missing, drifted, and expired governance attestatio
     notes: 'Initial human approval.',
     attestedAt: '2026-05-10T00:00:00.000Z',
   });
-  const policyPath = join(driftRoot, '.veritas/policy-packs/default.policy-pack.json');
+  const policyPath = join(driftRoot, '.veritas/repo-standards/default.repo-standards.json');
   const policy = JSON.parse(readFileSync(policyPath, 'utf8'));
   policy.description = `${policy.description} Drift for surface claims.`;
   writeFileSync(policyPath, `${JSON.stringify(policy, null, 2)}\n`);
@@ -184,8 +184,8 @@ test('surface input projects missing, drifted, and expired governance attestatio
   assert.equal(governanceClaim(expiredClaims).status, 'stale');
 });
 
-test('shadow run prints a warning for expired attestation', () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-expired-shadow-');
+test('readiness check prints a warning for expired attestation', () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-expired-readiness-');
   createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -197,10 +197,10 @@ test('shadow run prints a warning for expired attestation', () => {
   const cli = join(frameworkRootDir, 'bin/veritas.mjs');
   const output = execFileSync('node', [
     cli,
-    'run',
+    'readiness',
     '--root',
     rootDir,
-    '--skip-proof',
+    '--skip-evidence-check',
     '--working-tree',
   ], { cwd: rootDir, encoding: 'utf8' });
   assert.match(output, /WARN\s+policy-changes-require-attestation/);
@@ -212,11 +212,11 @@ test('attestation rule is visible to explain context', () => {
   const text = buildExplainText({
     rootDir,
     adapter: readJsonFromAbsolute(join(rootDir, '.veritas/repo.adapter.json')),
-    policyPack: readJsonFromAbsolute(join(rootDir, '.veritas/policy-packs/default.policy-pack.json')),
+    repoStandards: readJsonFromAbsolute(join(rootDir, '.veritas/repo-standards/default.repo-standards.json')),
     ruleId: 'policy-changes-require-attestation',
   });
   assert.match(text, /Rule: policy-changes-require-attestation/);
-  assert.match(text, /Shadow runs fail on drift until a human records a fresh attestation/);
+  assert.match(text, /Readiness checks fail on drift until a valid authority records a fresh attestation/);
 });
 
 test('attestation refuses CI or bot actors', () => {
@@ -227,7 +227,7 @@ test('attestation refuses CI or bot actors', () => {
   );
 });
 
-test('CLI bootstrap writes tracked attestation and shadow run fails on Zone 1 drift until policy-change attestation', () => {
+test('CLI bootstrap writes tracked attestation and readiness check fails on protected standards drift until policy-change attestation', () => {
   const rootDir = bootstrapVeritasRepo();
   const cli = join(frameworkRootDir, 'bin/veritas.mjs');
   const bootstrapOutput = execFileSync('node', [
@@ -243,18 +243,18 @@ test('CLI bootstrap writes tracked attestation and shadow run fails on Zone 1 dr
   const bootstrap = parseCliJson(bootstrapOutput);
   assert.equal(readJsonFromAbsolute(join(rootDir, '.veritas/attestations/HEAD')).currentAttestationId, bootstrap.attestation.id);
 
-  const policyPath = join(rootDir, '.veritas/policy-packs/default.policy-pack.json');
+  const policyPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
   const policy = JSON.parse(readFileSync(policyPath, 'utf8'));
-  policy.description = `${policy.description} Drift for shadow run.`;
+  policy.description = `${policy.description} Drift for readiness check.`;
   writeFileSync(policyPath, `${JSON.stringify(policy, null, 2)}\n`);
 
   assert.throws(
     () => execFileSync('node', [
       cli,
-      'run',
+      'readiness',
       '--root',
       rootDir,
-      '--skip-proof',
+      '--skip-evidence-check',
       '--working-tree',
     ], { cwd: rootDir, encoding: 'utf8', stdio: 'pipe' }),
     (error) => {
@@ -274,13 +274,13 @@ test('CLI bootstrap writes tracked attestation and shadow run fails on Zone 1 dr
     '--message',
     'Reviewed policy drift.',
   ], { cwd: rootDir, encoding: 'utf8' });
-  const shadowOutput = execFileSync('node', [
+  const readinessOutput = execFileSync('node', [
     cli,
-    'run',
+    'readiness',
     '--root',
     rootDir,
-    '--skip-proof',
+    '--skip-evidence-check',
     '--working-tree',
   ], { cwd: rootDir, encoding: 'utf8' });
-  assert.match(shadowOutput, /PASS\s+policy-changes-require-attestation/);
+  assert.match(readinessOutput, /PASS\s+policy-changes-require-attestation/);
 });

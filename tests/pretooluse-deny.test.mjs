@@ -17,7 +17,7 @@ function bootstrapRepo() {
   writeBootstrapStarterKit({
     rootDir,
     projectName: 'pretool-fixture',
-    proof: 'npm test',
+    evidenceCheck: 'npm test',
     force: true,
   });
   const adapterPath = join(rootDir, '.veritas/repo.adapter.json');

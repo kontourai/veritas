@@ -21,7 +21,7 @@
     "team_profile_id": { "type": "string" },
     "mode": {
       "type": "string",
-      "enum": ["shadow", "assist", "gate"]
+      "enum": ["observe", "assist", "gate"]
     },
     "evidence": {
       "type": "object",
@@ -34,7 +34,7 @@
         "source_kind",
         "source_scope",
         "components",
-        "triggered_proofs"
+        "triggered_evidence_checks"
       ],
       "properties": {
         "artifact_path": { "type": "string" },
@@ -53,7 +53,7 @@
           "type": "array",
           "items": { "type": "string" }
         },
-        "triggered_proofs": {
+        "triggered_evidence_checks": {
           "type": "array",
           "items": { "type": "string" }
         },
@@ -76,7 +76,7 @@
         "surface_touched": { "type": "boolean" },
         "classification": {
           "type": "string",
-          "enum": ["clean", "additive-only", "constitutional-modification", "unknown"]
+          "enum": ["clean", "additive-only", "protected-standards-modification", "unknown"]
         },
         "human_review_required": { "type": "boolean" },
         "changed_paths": {

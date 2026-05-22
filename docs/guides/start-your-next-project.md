@@ -1,38 +1,22 @@
 # Start Your Next Project With Veritas
 
-If this framework is doing its job well, starting a new project should feel simple.
+Starting a new project with Veritas should feel simple:
 
-The goal is not:
+- define starter repo standards
+- map the obvious work areas and boundaries
+- choose the first evidenceCheck
+- give agents the right change guidance from day one
 
-- install a complicated platform
-- read a stack of internal docs
-- hand-wire every rule before you can begin
+The goal is not to model everything before the first commit. The goal is to make the repo's expectations executable before tribal knowledge starts drifting.
 
-The goal is:
-
-- run one setup flow
-- get the right starter files
-- let the repo guide the AI from the beginning
-
-For the exact generated paths and artifact contracts behind that starter kit, use [Artifacts and Schemas](../reference/artifacts-and-schemas.md). For the exact CLI flags, use [CLI Reference](../reference/cli.md).
-
-## The Current Experience
-
-The framework now ships a first bootstrap command:
+## Bootstrap
 
 ```bash
 npm install -D @kontourai/veritas
 npx @kontourai/veritas init
 ```
 
-That command writes the minimum starter kit:
-
-1. an adapter
-2. a starter policy pack
-3. a team profile
-4. a short human-friendly README in the repo
-
-It also records the repo shape it inferred so the team can review the guessed source roots, test roots, and proof lane before moving on.
+That command writes starter files under `.veritas/`, including generated files for the Repo Map, Repo Standards, and protected standards metadata.
 
 For agent-guided setup, use the plan-first variant:
 
@@ -42,104 +26,58 @@ npx @kontourai/veritas init --guided --answers answers.json --output .veritas/in
 npx @kontourai/veritas init --apply --plan .veritas/init-plans/guided.json
 ```
 
-That keeps the initialization conversation flexible while making the reviewed JSON plan the source of truth. The agent can inspect the repo and ask richer questions about proof lanes, protected paths, release expectations, and instruction targets, but `--apply --plan` remains the only file-writing step.
+The conversation can be flexible, but `--apply --plan` remains the reviewed write path.
 
-## The Minimum Starter Kit
+## Minimum Useful Setup
 
-For the framework to guide the next project well, the repo should start with:
+Start with:
 
-- one **adapter**
-- one **policy pack**
-- one **team profile**
-- one **proof lane**
+- one Repo Map
+- one small set of Repo Standards
+- one Evidence Check
+- one Required or Guided requirement that catches a real review issue
 
-That is enough to make the system feel real without overbuilding.
+That is enough to make Veritas useful without overbuilding.
 
-## What The Bootstrap Should Do
+## What Bootstrap Should Infer
 
-The bootstrap path should:
+The setup flow should identify:
 
-### Inspect the repo
+- project type
+- likely source roots
+- likely test roots
+- obvious work areas
+- protected standards files
+- first evidenceCheck
+- AI instruction targets
+- release or CI expectations
 
-- what kind of project is this?
-- where are the obvious surfaces?
-- what is the likely build/test proof lane?
+Anything uncertain should start as guidance or observation, not a hard requirement.
 
-### Generate the first framework files
+## Safe Defaults
 
-- adapter
-- policy pack
-- team profile
+Use the enforcement ladder:
 
-### Default to a safe rollout
+- **Observe** first for uncertain requirements.
+- **Guide** when the requirement is useful but still being tuned.
+- **Require** when the evidenceCheck and authority model are trusted.
 
-- use `shadow` mode first
-- recommend before warning
-- warn before block
+For protected standards, record an attestation after the generated files have been reviewed:
 
-### Wire normal development flow
-
-- suggested local commands
-- suggested CI hooks
-- short onboarding docs
-
-## Why This Matters
-
-If setup is heavy, teams will postpone it.
-If they postpone it, the framework arrives after local norms have already drifted.
-
-That weakens the whole point of the system.
-
-The framework should be present at project start so the repo can guide the AI from the first meaningful change.
-
-## Activation In Practice
-
-Once bootstrapped, the repo should activate guidance in three ways:
-
-1. **Ambiently** through repo-native instructions and artifacts
-2. **Explicitly** through wrapper commands and skills
-3. **Downstream** through evidence, review, and CI
-
-This means the framework does not need every agent to behave identically.
-It needs the repo to expose guidance clearly and consistently.
+```bash
+npx @kontourai/veritas attest bootstrap --actor <authority-id> --non-interactive
+```
 
 ## What To Do Today
 
-Use this sequence:
+1. Run `npx @kontourai/veritas init`, or use the guided plan-first flow.
+2. Review the generated `.veritas/` files.
+3. Replace the default evidenceCheck with the command that proves repo health.
+4. Run `npx @kontourai/veritas readiness --working-tree`.
+5. Use `npx @kontourai/veritas explain --file <path>` to inspect change guidance.
+6. Add CI or runtime hooks only after the basic readiness check is useful.
+7. Use `npx @kontourai/veritas eval summary` later to review standards feedback.
 
-1. run `npx @kontourai/veritas init`, or use `init --explore` then `init --guided --answers ...` when you want an agent-reviewed plan first
-2. if using the guided path, review `.veritas/init-plans/<name>.json` and run `npx @kontourai/veritas init --apply --plan .veritas/init-plans/<name>.json`
-3. review the generated `.veritas/` files
-4. replace the default proof lane with the one that proves your repo is healthy
-5. run `npx @kontourai/veritas print package-scripts`
-6. run `npx @kontourai/veritas print ci-snippet`
-7. run `npx @kontourai/veritas apply package-scripts`
-8. run `npx @kontourai/veritas apply ci-snippet`
-9. run `npx @kontourai/veritas run --check shadow --working-tree`
-10. or run `npx @kontourai/veritas run --working-tree`
-11. run `npx @kontourai/veritas apply governance-blocks`
-12. optionally run `npx @kontourai/veritas apply git-hook --configure-git`
-13. or run `npx @kontourai/veritas apply stop-hook --tool generic`
-14. or run `npx @kontourai/veritas apply runtime-hook`
-15. or run `npx @kontourai/veritas print codex-hook --codex-home /path/to/.codex`
-16. then run `npx @kontourai/veritas apply codex-hook --codex-home /path/to/.codex`
-17. or run `npx @kontourai/veritas apply codex-hook --target-hooks-file /path/to/hooks.json`
-18. or run `npx @kontourai/veritas integrations codex status --codex-home /path/to/.codex`
-19. optionally run `npx @kontourai/veritas eval summary`
-20. wire the same paths into review and CI if you want them in your permanent workflow files
-
-This slice is intentionally conservative. Install helpers exist, but the core usage should already be clear before you add extra wiring.
-
-Use `--changed-from <ref> --changed-to <ref>` when you want branch-diff evidence instead of current-state evidence.
-
-Use `eval draft` and `eval record` only after `report`. That keeps shadow eval grounded in a real run instead of free-floating operator notes.
-The eval input must come from `.veritas/evidence/`, and reruns should use `--force` if you intentionally want to replace an existing eval artifact.
-
-For hooks or repo scripts, prefer `veritas run` so the framework owns the orchestration path instead of each repo rebuilding it.
-For git-based passive automation, prefer the tracked `.githooks/post-commit` adapter generated by `apply git-hook`.
-For agent turn-end feedback, prefer the tracked `.veritas/hooks/stop.sh` adapter generated by `apply stop-hook`.
-For agent-runtime integrations, prefer the tracked `.veritas/hooks/agent-runtime.sh` adapter generated by `apply runtime-hook`.
-For Codex specifically, prefer the tracked `.veritas/runtime/codex-hooks.json` artifact plus an explicit merge into a chosen Codex home or hooks file.
-If `runtime status` is run without a Codex target, treat that as “Codex target not inspected yet,” not as proof that Codex is fully installed.
+Use `--changed-from <ref> --changed-to <ref>` when you want branch-diff evidence instead of current working-tree evidence.
 
 If you want concrete payload examples before generating your own repo-local artifacts, inspect [Example Fixtures](../reference/examples.md).

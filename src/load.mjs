@@ -14,8 +14,8 @@ export function loadAdapterConfig(configPath, options = {}) {
   return loadJson(configPath, 'adapter config', options);
 }
 
-export function loadPolicyPack(policyPackPath, options = {}) {
-  return loadJson(policyPackPath, 'policy pack', options);
+export function loadRepoStandards(repoStandardsPath, options = {}) {
+  return loadJson(repoStandardsPath, 'Repo Standards', options);
 }
 
 export function loadTeamProfile(teamProfilePath, options = {}) {

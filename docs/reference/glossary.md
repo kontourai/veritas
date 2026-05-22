@@ -1,59 +1,64 @@
 # Glossary
 
-Veritas adds repo-workflow vocabulary on top of Surface's trust vocabulary. They are not synonyms — Veritas terms describe *how a check is run in a repo*; Surface terms describe *what is true and how we know*.
+Veritas is the product for repo and AI-agent governance. Surface is the transparency layer Veritas is built with. Veritas users should think in repo-native language; Surface-format claims and evidence are emitted at the boundary.
 
-## Veritas terms (repo workflow)
-
-| Term | Meaning |
-|------|---------|
-| **rule** | A repo-local lint check. One of seven `kind`s: `required-artifacts`, `governance-block`, `diff-required`, `forbidden-pattern`, `required-pattern`, `header-required`, `cross-surface-write`. |
-| **policy pack** | A bundle of rules at `.veritas/policy-packs/*.policy-pack.json`. |
-| **adapter** | The repo's surface map at `.veritas/repo.adapter.json`. Defines surfaces, owners, boundaries, and activation targets. |
-| **surface** | A named region of the repo (e.g. `product.code`, `tests`, `governance.guidance`). Has owners and a `strict` or `advisory` boundary. |
-| **proof lane** | The shell command Veritas runs to gather proof (e.g. `npm run verify`). Configured per repo. |
-| **proof family** | A grouping of proof lanes by lifecycle status (`required`, `candidate`, `advisory`, `move-to-test`, `retiring`, `stale`, `triggerless`). |
-| **verification budget** | The classification of proof families relative to current repo state. Output of `veritas run --check budget`. |
-| **run** | The agent-facing evaluation path. It gathers evidence, runs configured proof, writes Surface input/report data, and returns feedback. |
-| **attestation** | A human approval record for the current Zone 1 governance hashes. Bootstrap attestations start the chain; policy-change and proposal-acceptance attestations renew it. |
-| **proposal** | A reviewable governance change drafted from eval history, such as relaxing, retiring, or adding policy/surface coverage. |
-| **enforcement** | The runtime behavior for a rule. `deny` can block supported PreToolUse edits; `lint` reports through feedback without blocking the edit boundary. |
-| **override** | A human-recorded exception for a deny rule, including actor, reason, and timestamp. Overrides are evidence, not permanent policy changes. |
-| **priorAttestationId** | The attestation-chain pointer from a newer attestation to the human approval it supersedes. |
-| **Zone 1** | Human-owned governance: adapter, policy packs, and team profile. Drift requires attestation. |
-| **Zone 2** | Additive governance growth that agents may propose, such as new surface nodes or advisory rules. |
-| **Zone 3** | Generated Veritas output such as evidence, eval drafts, check-ins, and reports. |
-| **evidence artifact** | The JSON record at `.veritas/evidence/<run-id>.json` capturing what was checked, what passed, what failed, and the embedded `surface.input`. |
-| **eval draft** | Per-run observation about acceptance, time-to-green, overrides — under `.veritas/eval-drafts/<run-id>.json`. |
-| **governance block** | The marker-bounded paragraph Veritas injects into AI instruction files (`AGENTS.md`, `CLAUDE.md`, etc.). |
-| **governance artifact claim** | A Surface claim Veritas emits about a Zone 1 artifact's evaluated state, such as content hash, drift, applicability, or attestation currency. The artifact remains Veritas-owned. |
-| **policy result claim** | A Surface claim for one evaluated Veritas rule result. It says what the rule evaluation found, not that the policy pack is itself a Surface claim. |
-| **adapter applicability claim** | A governance artifact claim about whether the repo adapter applied to the current changed paths, including uncovered-path policy status. |
-
-## Surface terms (trust)
+## Canonical Veritas Terms
 
 | Term | Meaning |
 |------|---------|
-| **claim** | A statement about a subject (e.g. "the proof lane `npm run verify` is selected"). |
-| **evidence** | The traceable record supporting a claim. |
-| **policy** | A `VerificationPolicy` — what makes a claim valid for how long. |
-| **event** | A `VerificationEvent` — `verify`, `dispute`, `supersede`, `reject`. |
-| **TrustInput** | The portable shape: `{ claims, evidence, policies, events, source }`. |
-| **TrustReport** | What Surface generates from `TrustInput`: summaries, derived statuses, fault lines, proof requirements, freshness. |
-| **fault line** | A discoverable conflict or weakness across claims (contradiction, supersede chain, missing evidence). |
-| **derivation ceiling** | The strongest status a claim can reach given its evidence — e.g. an unverified claim cannot be `verified` regardless of policy. |
+| **Veritas** | A repo and AI-agent governance product for earning trust in AI-authored code changes. |
+| **Repo Standards** | The maintained definition of what good looks like for a repository. |
+| **Standards File** | The repo-local machine-readable artifact that stores repo standards. |
+| **Repo Standards Template** | A reusable starting point for repo standards, tailored to a repo type, language stack, or workflow. |
+| **Repo Map** | The repo-local model of work areas, change boundaries, protected areas, ownership context, and dependency relationships. |
+| **Work Area** | A meaningful part of a repository with a purpose, ownership context, and change expectations. |
+| **Change Boundary** | A coordination or risk threshold around a work area. Crossing it can add evidence, guidance, authority, or coordination requirements. |
+| **Boundary Crossing** | A change that touches a work area outside the expected scope, authority, or dependency path for the current work. |
+| **Protected Area** | A high-risk work area where changes require stronger authority or evidence. |
+| **Requirement** | A condition in the repo standards that must be satisfied, evidenced, or accepted by exception. |
+| **Requirement Applicability** | The condition that determines when a requirement matters for a change, repo state, release, recurring interval, work area, or boundary crossing. |
+| **Enforcement Level** | How strongly Veritas applies a requirement: Observe, Guide, or Require. |
+| **Observe** | Records evidence and outcomes without guiding or blocking work. |
+| **Guide** | Gives just-in-time correction or review feedback without by itself preventing merge readiness. |
+| **Require** | Requires fresh evidence or authority-backed exception before merge readiness or repo conformance is complete. |
+| **Evidence** | A traceable result, observation, artifact, attestation, or record that supports, challenges, or qualifies a requirement. |
+| **Evidence Check** | A runnable or inspectable check that produces evidence for one or more requirements. |
+| **Evidence Freshness** | Whether evidence still applies to the current change, including commit, diff, files, standards version, authority state, dependencies, and time policy. |
+| **Recheck** | An action that verifies evidence, authority, freshness, or integrity again for the current change. |
+| **Verification Authority** | A person, system, tool, environment, or policy source trusted to verify a specific requirement. |
+| **Authority Evidence** | Evidence explaining why a verification authority was allowed to count for a requirement. |
+| **Attestation** | Evidence from a verification authority asserting that something was verified, accepted, approved, or reviewed. |
+| **Exception** | An authority-backed decision to accept an unmet or failing requirement for a specific change. |
+| **Change Guidance** | Just-in-time instructions for a developer or agent when a requirement, work area, boundary, or evidence result matters. |
+| **Merge Readiness** | The per-change trust state that says whether a change has enough current evidence to merge under the repo standards. |
+| **Readiness Report** | The human- and agent-facing report that explains a change's merge readiness. |
+| **Readiness Coverage** | The current evidence state for the requirements that apply to a specific change. |
+| **Repo Conformance** | Whether the repository as a whole currently satisfies standing requirements in its repo standards. |
+| **Protected Standards** | The parts of the repo standards and repo map that define what good looks like, where boundaries are, or who is trusted to verify requirements. |
+| **Standards Growth** | Additive improvements to repo standards that do not weaken protected standards without required authority. |
+| **Generated Evidence** | Readiness reports, evidence records, conformance outputs, feedback, and other artifacts generated by Veritas. |
+| **Standards Feedback** | Observed evidence about whether repo standards are helping, missing coverage, creating noise, or failing to catch issues. |
+| **Standards Recommendation** | A suggested change to repo standards based on standards feedback. |
+| **Built with Surface** | The product signal that Veritas uses Surface for portable transparency state. |
 
-## How they map
+Implementation names that predate this glossary are not canonical Veritas vocabulary. Track renames in [Migration Guide](../MIGRATING.md), not in the product glossary.
 
-Veritas terms project into Surface terms when an evidence artifact embeds `surface.input`:
+## Surface Mapping
+
+Veritas emits Surface-format trust state as a producer. The mapping is intentionally one-way: Veritas owns repo governance language and Surface owns portable transparency primitives.
 
 | Veritas concept | Surface projection |
 |------------------|--------------------|
-| Selected proof lane (`npm run verify`) | Claim about subject `repo-proof-lane`, surface `veritas.proof-lanes` |
-| Policy result (one rule's pass/fail) | Claim about subject `repo-policy`, surface `veritas.policy-results` |
-| Zone 1 governance state | Claims about policy-pack, adapter, team-profile, and attestation state under `veritas.governance-artifacts` and `veritas.attestations` |
-| Affected surface (which repo region was touched) | Claim about subject `repo-surface`, surface `veritas.surface` |
-| Proof family classification | Claim about subject `proof-family`, surface `veritas.proof-family` |
-| Verification budget | Claim about subject `verification-budget`, surface `veritas.verification-budget` |
-| External tool result (lint, test, audit) | Claim about subject `external-tool-result`, surface `veritas.external-tool-results` |
+| Requirement evaluation | Claim, evidence, policy, and event describing whether the requirement was satisfied |
+| Evidence Check result | Evidence and verification event |
+| Verification Authority | Authority trace, policy context, or verifier metadata |
+| Attestation | Evidence with authority and integrity context |
+| Evidence Freshness | Freshness, Changed Since Verified, or Expired Verification |
+| Exception | Authority-backed evidence plus metadata explaining the accepted unmet requirement |
+| Merge Readiness | Domain validity claim or trust snapshot summary emitted by Veritas |
+| Readiness Coverage | Claims, evidence, gaps, conflicts, and freshness outcomes |
+| Repo Conformance | Standing claims and evidence about repo-wide requirements |
+| Protected Standards | Claims and evidence about standards/map integrity and authority |
+| Standards Recommendation | Proposed claim and evidence supporting a standards change |
 
-The full mapping rule lives in [Surface-Veritas Boundary](../architecture/surface-veritas-boundary.md). Veritas owns the projection; Surface owns the schema and the report shape.
+Surface terms such as Claim, Evidence, Policy, TrustInput, TrustReport, and Transparency Gap are valid when documenting the Surface boundary or API. They should not replace Veritas' user-facing terms in normal product docs.

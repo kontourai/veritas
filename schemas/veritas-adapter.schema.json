@@ -83,7 +83,7 @@
       "required": ["artifactDir", "reportTransport"],
       "properties": {
         "artifactDir": { "type": "string" },
-        "proofs": {
+        "evidenceChecks": {
           "type": "array",
           "items": {
             "type": "object",
@@ -138,27 +138,27 @@
           },
           "minItems": 1
         },
-        "requiredProofIds": {
+        "requiredEvidenceCheckIds": {
           "type": "array",
           "items": { "type": "string" }
         },
-        "defaultProofIds": {
+        "defaultEvidenceCheckIds": {
           "type": "array",
           "items": { "type": "string" }
         },
-        "surfaceProofRoutes": {
+        "evidenceCheckRoutes": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["nodeIds", "proofIds"],
+            "required": ["nodeIds", "evidenceCheckIds"],
             "properties": {
               "nodeIds": {
                 "type": "array",
                 "items": { "type": "string" },
                 "minItems": 1
               },
-              "proofIds": {
+              "evidenceCheckIds": {
                 "type": "array",
                 "items": { "type": "string" },
                 "minItems": 1
@@ -166,7 +166,7 @@
             }
           }
         },
-        "proofSuiteManifests": {
+        "evidenceInventoryManifests": {
           "type": "array",
           "items": { "type": "string" }
         },
@@ -177,7 +177,7 @@
         "reportTransport": { "type": "string" }
       },
       "anyOf": [
-        { "required": ["proofs"] }
+        { "required": ["evidenceChecks"] }
       ]
     }
   }

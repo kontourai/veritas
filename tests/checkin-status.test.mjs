@@ -17,7 +17,7 @@ function writeJsonFile(rootDir, relativePath, value) {
 
 function createGovernanceRepo(prefix = 'veritas-checkin-governance-') {
   const rootDir = initCommittedRepo(prefix);
-  mkdirp(join(rootDir, '.veritas/policy-packs'));
+  mkdirp(join(rootDir, '.veritas/repo-standards'));
   mkdirp(join(rootDir, '.veritas/team'));
   writeJsonFile(rootDir, '.veritas/repo.adapter.json', {
     name: 'demo',
@@ -25,7 +25,7 @@ function createGovernanceRepo(prefix = 'veritas-checkin-governance-') {
       version: 1,
     },
   });
-  writeJsonFile(rootDir, '.veritas/policy-packs/default.policy-pack.json', {
+  writeJsonFile(rootDir, '.veritas/repo-standards/default.repo-standards.json', {
     name: 'default',
     rules: [
       {
@@ -102,8 +102,8 @@ test('governance surface stays clean for semantic no-op formatting changes', () 
   assert.equal(result.summary, 'clean (no semantic governance changes)');
 });
 
-test('governance surface treats removals as constitutional modifications', () => {
-  const rootDir = createGovernanceRepo('veritas-checkin-constitutional-');
+test('governance surface treats removals as protected standards modifications', () => {
+  const rootDir = createGovernanceRepo('veritas-checkin-protected-standards-');
   unlinkSync(join(rootDir, '.veritas/team/default.team-profile.json'));
   commitAll(rootDir, 'Remove default team profile');
 
@@ -113,7 +113,7 @@ test('governance surface treats removals as constitutional modifications', () =>
     changedTo: 'HEAD',
   });
 
-  assert.equal(result.classification, 'constitutional-modification');
+  assert.equal(result.classification, 'protected-standards-modification');
   assert.deepEqual(result.files, [
     {
       path: '.veritas/team/default.team-profile.json',
@@ -124,7 +124,7 @@ test('governance surface treats removals as constitutional modifications', () =>
   ]);
 });
 
-test('governance surface treats governance renames as constitutional modifications', () => {
+test('governance surface treats governance renames as protected standards modifications', () => {
   const rootDir = createGovernanceRepo('veritas-checkin-rename-');
   const originalPath = join(rootDir, '.veritas/team/default.team-profile.json');
   const renamedPath = join(rootDir, '.veritas/team/release.team-profile.json');
@@ -142,7 +142,7 @@ test('governance surface treats governance renames as constitutional modificatio
     changedTo: 'HEAD',
   });
 
-  assert.equal(result.classification, 'constitutional-modification');
+  assert.equal(result.classification, 'protected-standards-modification');
   assert.deepEqual(result.semantic_changed_paths, [
     '.veritas/team/default.team-profile.json',
     '.veritas/team/release.team-profile.json',
@@ -173,11 +173,11 @@ test('governance trend summary includes recent classification counts', () => {
       classification: 'clean',
     },
   });
-  writeJsonFile(rootDir, '.veritas/checkins/older-constitutional.json', {
-    run_id: 'older-constitutional',
+  writeJsonFile(rootDir, '.veritas/checkins/older-protected-standards.json', {
+    run_id: 'older-protected-standards',
     generated_at: '2026-04-21T00:00:00.000Z',
     governance_surface: {
-      classification: 'constitutional-modification',
+      classification: 'protected-standards-modification',
     },
   });
   writeJsonFile(rootDir, '.veritas/team/release.team-profile.json', {
@@ -196,10 +196,10 @@ test('governance trend summary includes recent classification counts', () => {
 
   assert.equal(trend.clean, 1);
   assert.equal(trend.additive_only, 1);
-  assert.equal(trend.constitutional_modification, 1);
+  assert.equal(trend.protected_standards_modification, 1);
   assert.equal(
     trend.summary,
-    'last 3 governance run(s): 1 clean, 1 additive-only, 1 constitutional-modification',
+    'last 3 governance run(s): 1 clean, 1 additive-only, 1 protected-standards-modification',
   );
   assert.equal(trend.latest_non_clean_run_id, 'current-run');
   assert.equal(trend.latest_non_clean_classification, 'additive-only');

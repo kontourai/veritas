@@ -7,20 +7,20 @@ export const VERITAS_EXTENSION = {
   vocab: {
     projectKind: 'repository',
     surfaceLabels: {
-      'veritas.affected-surface': 'Affected Surface',
-      'veritas.proof': 'Proofs',
+      'veritas.affected-surface': 'Affected Repo Area',
+      'veritas.evidence-check': 'Evidence Checks',
       'veritas.governance': 'Governance',
       'veritas.external-tools': 'External Tools',
-      'veritas.proposals': 'Proposals',
+      'veritas.recommendations': 'Standards Recommendations',
     },
     claimTypeLabels: {
-      'veritas-affected-surface': 'Affected surface node',
-      'software-proof': 'Proof',
+      'veritas-affected-surface': 'Affected repo area',
+      'software-evidence-check': 'Evidence Check',
       'veritas-governance-artifact': 'Governance artifact',
       'veritas-policy-result': 'Policy result',
       'veritas-external-tool-result': 'External tool result',
-      'veritas-verification-budget': 'Verification budget',
-      'veritas-proposal': 'Proposal',
+      'veritas-readiness-coverage': 'Readiness coverage',
+      'veritas-recommendation': 'Standards recommendation',
     },
     statusLabels: {
       proposed: 'Pending evidence',
@@ -43,14 +43,14 @@ export const VERITAS_EXTENSION = {
   },
   claimTypes: [
     {
-      id: 'software-proof',
-      displayName: 'Proof',
-      description: 'An automated test suite or proof command that verifies code correctness.',
+      id: 'software-evidence-check',
+      displayName: 'Evidence Check',
+      description: 'An automated or inspectable check that produces evidence for code readiness.',
       defaultImpact: 'high',
-      defaultSurface: 'veritas.proof',
-      policyTemplateId: 'veritas.proof',
+      defaultSurface: 'veritas.evidence-check',
+      policyTemplateId: 'veritas.evidence-check',
       metadataFields: [
-        { key: 'command', label: 'Proof command', type: 'string', required: true },
+        { key: 'command', label: 'Evidence Check command', type: 'string', required: true },
         { key: 'scope', label: 'Scope', type: 'string' },
       ],
     },

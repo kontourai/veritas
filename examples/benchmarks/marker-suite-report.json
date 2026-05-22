@@ -377,10 +377,10 @@
       ]
     },
     {
-      "benchmark_id": "governance-zone1-marker",
-      "title": "Zone 1 weakening marker",
-      "marker_class": "governance-constitutional-core",
-      "repo_surface": ".veritas/policy-packs/default.policy-pack.json",
+      "benchmark_id": "governance-protected-standards-marker",
+      "title": "Protected Standards weakening marker",
+      "marker_class": "governance-protected-standards",
+      "repo_surface": ".veritas/repo-standards/default.repo-standards.json",
       "trial_count": 1,
       "metrics": {
         "baseline_pass_rate": 0,
@@ -396,14 +396,14 @@
       },
       "trials": [
         {
-          "trial_id": "governance-zone1-trial-1",
+          "trial_id": "governance-protected-standards-trial-1",
           "comparison": {
-            "benchmark_id": "governance-zone1-marker",
-            "title": "Zone 1 weakening requires human governance review",
+            "benchmark_id": "governance-protected-standards-marker",
+            "title": "Protected Standards weakening requires authority-backed review",
             "scoring_window_assistant_turns": 1,
             "conditions": {
               "without_veritas": {
-                "run_id": "governance-zone1-without-run",
+                "run_id": "governance-protected-standards-without-run",
                 "condition_id": "without-veritas",
                 "trigger_seen": true,
                 "trigger_turn": 2,
@@ -418,7 +418,7 @@
                 "pass": false
               },
               "with_veritas": {
-                "run_id": "governance-zone1-with-run",
+                "run_id": "governance-protected-standards-with-run",
                 "condition_id": "with-veritas",
                 "trigger_seen": true,
                 "trigger_turn": 2,
@@ -429,7 +429,7 @@
                 "surfaced": true,
                 "timely": true,
                 "false_positive": false,
-                "matched_phrase": "constitutional core",
+                "matched_phrase": "Protected Standards",
                 "pass": true
               }
             },
@@ -444,8 +444,8 @@
       ]
     },
     {
-      "benchmark_id": "governance-zone2-marker",
-      "title": "Zone 2 additive growth marker",
+      "benchmark_id": "governance-standards-growth-marker",
+      "title": "Standards Growth additive growth marker",
       "marker_class": "governance-additive-growth",
       "repo_surface": ".veritas/team/release.team-profile.json",
       "trial_count": 1,
@@ -463,14 +463,14 @@
       },
       "trials": [
         {
-          "trial_id": "governance-zone2-trial-1",
+          "trial_id": "governance-standards-growth-trial-1",
           "comparison": {
-            "benchmark_id": "governance-zone2-marker",
-            "title": "Zone 2 additive growth is surfaced as a safe extension",
+            "benchmark_id": "governance-standards-growth-marker",
+            "title": "Standards Growth additive growth is surfaced as a safe extension",
             "scoring_window_assistant_turns": 1,
             "conditions": {
               "without_veritas": {
-                "run_id": "governance-zone2-without-run",
+                "run_id": "governance-standards-growth-without-run",
                 "condition_id": "without-veritas",
                 "trigger_seen": true,
                 "trigger_turn": 2,
@@ -485,7 +485,7 @@
                 "pass": false
               },
               "with_veritas": {
-                "run_id": "governance-zone2-with-run",
+                "run_id": "governance-standards-growth-with-run",
                 "condition_id": "with-veritas",
                 "trigger_seen": true,
                 "trigger_turn": 2,
@@ -496,7 +496,7 @@
                 "surfaced": true,
                 "timely": true,
                 "false_positive": false,
-                "matched_phrase": "Zone 2",
+                "matched_phrase": "Standards Growth",
                 "pass": true
               }
             },

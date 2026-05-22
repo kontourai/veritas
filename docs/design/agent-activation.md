@@ -2,123 +2,70 @@
 
 This document answers a simple question:
 
-> does the framework only work with one agent, or can it guide whatever AI is touching the codebase?
+> Can Veritas guide any agent or developer working in the repo?
 
 The intended answer is:
 
-- **the framework is agent-agnostic by design**
-- **activation is repo-native and just-in-time**
-- **actual enforcement depends on whether the agent respects repo context or is routed through the framework path**
+- Veritas is agent-first, not agent-only.
+- Change guidance is repo-native and just-in-time.
+- Stronger enforcement depends on whether the tool is routed through Veritas hooks, wrappers, or CI.
 
-## [shipped] The Core Principle
+## Core Principle
 
-The framework should not depend on one proprietary agent runtime.
+Veritas should not depend on one proprietary agent runtime.
 
-If it did, it would stop being a repo-level system and turn into a tool integration.
+The repo should expose:
 
-Instead, the framework should activate from the codebase itself.
+- Repo Standards
+- Repo Map
+- Change Guidance
+- generated evidence
+- local and CI commands
+- optional runtime hooks
 
-That means the important activation surfaces are:
+An agent or developer should encounter the relevant standards at the point of work.
 
-- repo-level instructions
-- adapter and policy artifacts
-- evidence and eval artifacts
-- local and CI wrapper commands
+## Activation Modes
 
-Those are the things an agent can encounter at the moment it starts interacting with the repo.
+### Ambient Activation
 
-Tracked runtime-hook adapters make that more concrete for post-task integration:
+The repo contains instructions, standards, map files, and guidance. Any tool that reads repo context can discover what matters.
 
-- `.veritas/hooks/agent-runtime.sh`
-- repo-local invocation of `veritas run`
-- no requirement that the framework know one runtime vendor's config format
+This is the baseline. It is portable, but it depends on the tool actually reading the repo context.
 
-When a runtime-specific layer is worth adding, keep it outside the generic hook:
+### Explicit Activation
 
-- tracked runtime-specific artifact
-- explicit merge/install step
-- no silent mutation of global runtime config
+Some environments should route through Veritas directly:
 
-## [shipped] The Three Activation Modes
+- wrapper commands
+- agent skills
+- `veritas explain`
+- `veritas readiness`
 
-### [shipped] 1. Ambient Activation
+This gives stronger guarantees than ambient instructions alone.
 
-This is the most important mode.
+### Hook And CI Activation
 
-The repo contains:
-
-- instructions for the AI
-- an adapter that explains the repo shape
-- a policy pack that explains the current rules
-- a team profile that explains how strict the team wants the system to be
-
-If an agent reads repo instructions and local guidance files, the framework is already present when the agent begins work.
-
-That is what we mean by **just-in-time instruction**.
-
-The repo itself tells the agent:
-
-- where it is
-- what matters
-- what must be proved
-- what should be guided instead of blocked
-
-### [shipped] 2. Explicit Activation
-
-Some environments should route through the framework on purpose.
+When supported, hooks can provide change guidance before edits or at the end of a session. CI can evaluate merge readiness even if an interactive agent ignored repo context.
 
 Examples:
 
-- a local wrapper command
-- a skill
-- an `init` or bootstrap command
-- a `veritas:report` or `veritas:verify` command
+- Claude Code PreToolUse hooks
+- stop hooks
+- local wrapper scripts
+- pull request checks
+- protected branch CI
 
-This is useful when you want stronger guarantees than ambient repo context alone can provide.
+## Honest Compatibility
 
-### [shipped] 3. Review And CI Activation
+Veritas cannot force compliance from an agent that ignores repo context and never runs the CLI.
 
-Even when the interactive agent path is weak, the framework can still activate later in the flow through:
+It can still help by:
 
-- evidence generation
-- policy evaluation
-- CI checks
-- live eval capture
+- putting standards and guidance in the repo
+- exposing simple commands
+- wiring optional hooks
+- producing readiness reports in CI
+- protecting standards from silent weakening
 
-This is how the system stays useful even when the front-end agent experience is uneven across tools.
-
-## [shipped] Does It Work With Every Agent?
-
-In the product sense, it should be usable with any agent that interacts with the repo.
-
-In the strict runtime sense, not every agent will honor it equally.
-
-The honest framing is:
-
-- it works best with agents that read repo instructions and local artifacts
-- it can still participate through wrapper commands and CI when an agent does not
-- it cannot force compliance from an agent that ignores repo context entirely
-
-So the compatibility goal is not:
-
-- "every agent obeys automatically"
-
-The goal is:
-
-- "the repo exposes the guidance in a tool-agnostic way, and stronger activation paths exist when needed"
-
-## [shipped] Why This Is A Differentiator
-
-Most agent systems are either:
-
-- tightly bound to one runtime
-- or too loose to preserve repo-level trust
-
-This framework tries to take a better path:
-
-- repo-native activation for portability
-- just-in-time instruction for focus
-- evidence artifacts for auditability
-- optional stronger activation through wrappers and CI
-
-That makes it feel less like a prompt trick and more like a development operating layer.
+The goal is not "every agent obeys automatically." The goal is "the repo exposes the standard in a tool-agnostic way, and stronger activation paths exist when needed."

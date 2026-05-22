@@ -9,13 +9,13 @@ import {
 import { createHash } from 'node:crypto';
 import { dirname, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { loadAdapterConfig, loadPolicyPack } from './load.mjs';
+import { loadAdapterConfig, loadRepoStandards } from './load.mjs';
 import { assertWithinDir, normalizeRepoPath, relativeRepoPath } from './paths.mjs';
 import { resolveGitHead, stagedDiffSha256 } from './shell.mjs';
 import { classifyNodes } from './repo/classify.mjs';
 import { matchesPatternsForAnyFile } from './util/patterns.mjs';
 import { uniqueStrings } from './util/strings.mjs';
-import { evaluatePolicyPack } from './rules/evaluate.mjs';
+import { evaluateRepoStandards } from './rules/evaluate.mjs';
 import {
   buildSurfaceTrustInput,
   buildSurfaceTrustReportSummary,
@@ -23,27 +23,27 @@ import {
   validateSurfaceTrustInputAtBoundary,
 } from './surface/projection.mjs';
 import {
-  writeSurfaceDashboardReadModel,
-} from './surface/dashboard.mjs';
+  writeSurfaceConsoleReadModel,
+} from './surface/console.mjs';
 import {
   buildAttestationPolicyResult,
   inspectAttestationStatus,
 } from './attestations.mjs';
 import {
-  readProofRoutes,
-  readProofs,
-  readDefaultProofIds,
-  readRequiredProofIds,
-  proofsByIds,
-  proofLabel,
-  proofRecordsForCommands,
-  loadProofSuiteResults,
-  buildVerificationBudget,
+  readEvidenceCheckRoutes,
+  readEvidenceChecks,
+  readDefaultEvidenceCheckIds,
+  readRequiredEvidenceCheckIds,
+  evidenceChecksByIds,
+  evidenceCheckLabel,
+  evidenceCheckRecordsForCommands,
+  loadEvidenceInventoryResults,
+  buildReadinessCoverage,
   buildExternalToolResults,
   readUncoveredPathPolicy,
   routeMatchesAnyComponent,
-  serializeProofRoutes,
-} from './proof/index.mjs';
+  serializeEvidenceCheckRoutes,
+} from './evidence/index.mjs';
 import {
   buildMarkdownSummary,
   feedbackStatusForPolicyResult,
@@ -122,7 +122,7 @@ function buildEvidenceIntegrity({
   sourceKind,
   sourceScope,
   config,
-  policyPack,
+  repoStandards,
   options,
 }) {
   const sources = options.integritySources ?? {};
@@ -140,10 +140,10 @@ function buildEvidenceIntegrity({
         path: sources.adapterPath,
         rootDir,
       }),
-      policyPack: configIntegrityRef({
-        name: policyPack.name ?? 'policy-pack',
-        value: policyPack,
-        path: sources.policyPackPath,
+      repoStandards: configIntegrityRef({
+        name: repoStandards.name ?? 'repo-standards',
+        value: repoStandards,
+        path: sources.repoStandardsPath,
         rootDir,
       }),
       ...(sources.teamProfilePath ? {
@@ -158,65 +158,65 @@ function buildEvidenceIntegrity({
   };
 }
 
-export function resolveProofPlan({
+export function resolveEvidenceCheckPlan({
   files,
   config,
   rootDir,
-  explicitProofCommand,
+  explicitEvidenceCheckCommand,
 }) {
   const {
     affectedNodes,
-    affectedLanes,
+    affectedEvidenceChecks,
     unmatchedFiles,
     matchedNodes,
     fileNodes,
   } = classifyNodes(files, config, rootDir);
   const uncoveredPathPolicy = readUncoveredPathPolicy(config);
-  const proofRoutes = readProofRoutes(config);
-  const matchedRoutes = proofRoutes.filter((route) => routeMatchesAnyComponent(route, affectedNodes));
-  let proofs = [];
+  const evidenceCheckRoutes = readEvidenceCheckRoutes(config);
+  const matchedRoutes = evidenceCheckRoutes.filter((route) => routeMatchesAnyComponent(route, affectedNodes));
+  let evidenceChecks = [];
   let resolutionSource = 'none';
 
-  if (explicitProofCommand) {
-    proofs = proofRecordsForCommands(config, [explicitProofCommand]);
+  if (explicitEvidenceCheckCommand) {
+    evidenceChecks = evidenceCheckRecordsForCommands(config, [explicitEvidenceCheckCommand]);
     resolutionSource = 'explicit';
   } else if (matchedRoutes.length > 0) {
     const routedComponentIds = new Set(
       matchedRoutes.flatMap((route) => (route.componentIds ?? []).filter((componentId) => affectedNodes.includes(componentId))),
     );
-    proofs = proofsByIds(config, uniqueStrings(matchedRoutes.flatMap((route) => route.proofIds ?? [])));
+    evidenceChecks = evidenceChecksByIds(config, uniqueStrings(matchedRoutes.flatMap((route) => route.evidenceCheckIds ?? [])));
     if (affectedNodes.some((nodeId) => !routedComponentIds.has(nodeId))) {
-      const defaultProofIds = readDefaultProofIds(config);
-      const requiredProofIds = readRequiredProofIds(config);
-      const fallbackProofs = proofsByIds(config, defaultProofIds.length > 0 ? defaultProofIds : requiredProofIds);
-      const seenProofIds = new Set(proofs.map((proof) => proof.id));
-      proofs = [...proofs, ...fallbackProofs.filter((proof) => !seenProofIds.has(proof.id))];
+      const defaultEvidenceCheckIds = readDefaultEvidenceCheckIds(config);
+      const requiredEvidenceCheckIds = readRequiredEvidenceCheckIds(config);
+      const fallbackEvidenceChecks = evidenceChecksByIds(config, defaultEvidenceCheckIds.length > 0 ? defaultEvidenceCheckIds : requiredEvidenceCheckIds);
+      const seenEvidenceCheckIds = new Set(evidenceChecks.map((evidenceCheck) => evidenceCheck.id));
+      evidenceChecks = [...evidenceChecks, ...fallbackEvidenceChecks.filter((evidenceCheck) => !seenEvidenceCheckIds.has(evidenceCheck.id))];
     }
     resolutionSource = 'surface';
   } else {
-    const defaultProofIds = readDefaultProofIds(config);
-    const requiredProofIds = readRequiredProofIds(config);
+    const defaultEvidenceCheckIds = readDefaultEvidenceCheckIds(config);
+    const requiredEvidenceCheckIds = readRequiredEvidenceCheckIds(config);
 
-    if (defaultProofIds.length > 0) {
-      proofs = proofsByIds(config, defaultProofIds);
+    if (defaultEvidenceCheckIds.length > 0) {
+      evidenceChecks = evidenceChecksByIds(config, defaultEvidenceCheckIds);
       resolutionSource = 'default';
-    } else if (requiredProofIds.length > 0) {
-      proofs = proofsByIds(config, requiredProofIds);
+    } else if (requiredEvidenceCheckIds.length > 0) {
+      evidenceChecks = evidenceChecksByIds(config, requiredEvidenceCheckIds);
       resolutionSource = 'required';
     }
   }
-  const proofCommands = proofs.flatMap((proof) => (proof.runner ?? 'bash') === 'mcp' ? [] : [proof.command]);
+  const evidenceCheckCommands = evidenceChecks.flatMap((evidenceCheck) => (evidenceCheck.runner ?? 'bash') === 'mcp' ? [] : [evidenceCheck.command]);
 
   return {
     affectedNodes,
-    affectedLanes,
+    affectedEvidenceChecks,
     matchedNodes,
     fileNodes,
     unmatchedFiles,
     uncoveredPathPolicy,
     uncoveredPathResult: unmatchedFiles.length > 0 ? uncoveredPathPolicy : 'clear',
-    proofCommands,
-    proofs,
+    evidenceCheckCommands,
+    evidenceChecks,
     resolutionSource,
   };
 }
@@ -267,13 +267,13 @@ export function formatTriState(value) {
   return 'unknown';
 }
 
-function proofResultById(proofResults, id) {
-  return (proofResults ?? []).find((result) => result.id === id) ?? null;
+function evidenceCheckResultById(evidenceCheckResults, id) {
+  return (evidenceCheckResults ?? []).find((result) => result.id === id) ?? null;
 }
 
-function proofResultSummary(result) {
+function evidenceCheckResultSummary(result) {
   if (!result) return null;
-  if (result.passed) return 'All proof checks passed.';
+  if (result.passed) return 'All evidence checks passed.';
   if (result.runner === 'mcp') {
     const text = result.content?.find((content) => content.type === 'text')?.text;
     return text
@@ -288,41 +288,41 @@ function proofResultSummary(result) {
     .map((line) => line.trim())
     .find(Boolean);
   return firstOutputLine
-    ? `Proof checks failed with ${status}: ${firstOutputLine}`
-    : `Proof checks failed with ${status}.`;
+    ? `Evidence checks failed with ${status}: ${firstOutputLine}`
+    : `Evidence checks failed with ${status}.`;
 }
 
 export async function buildEvidenceRecord({
   files,
   options = {},
   config,
-  policyPack,
+  repoStandards,
   rootDir,
 }) {
   const frameworkVersion = config.frameworkVersion ?? config.graph?.version;
   const runId = options.runId ?? `veritas-${Date.now()}`;
   const timestamp = options.timestamp ?? new Date().toISOString();
   const normalizedFiles = files.map((file) => normalizeRepoPath(file, rootDir));
-  const proofPlan =
-    options.proofPlan ??
-    resolveProofPlan({
+  const evidenceCheckPlan =
+    options.evidenceCheckPlan ??
+    resolveEvidenceCheckPlan({
       files,
       config,
       rootDir,
-      explicitProofCommand: options.explicitProofCommand,
+      explicitEvidenceCheckCommand: options.explicitEvidenceCheckCommand,
     });
-  const { affectedNodes, affectedLanes, unmatchedFiles, matchedNodes, fileNodes } = proofPlan;
+  const { affectedNodes, affectedEvidenceChecks, unmatchedFiles, matchedNodes, fileNodes } = evidenceCheckPlan;
   const unresolvedMessage =
-    proofPlan.uncoveredPathResult === 'fail'
+    evidenceCheckPlan.uncoveredPathResult === 'fail'
       ? 'Some files do not match a configured surface and fail the uncovered-path policy.'
-      : proofPlan.uncoveredPathResult === 'ignore'
+      : evidenceCheckPlan.uncoveredPathResult === 'ignore'
         ? 'Some files do not match a configured surface and were ignored by policy.'
         : 'Some files do not match a configured surface and need manual review.';
   const recommendations = unmatchedFiles.length
     ? [
         {
           kind: 'unmatched-files',
-          severity: proofPlan.uncoveredPathResult,
+          severity: evidenceCheckPlan.uncoveredPathResult,
           message: unresolvedMessage,
           files: unmatchedFiles,
         },
@@ -339,14 +339,14 @@ export async function buildEvidenceRecord({
   };
   const adapterName = config.name ?? config.adapter?.name;
   const adapterKind = config.kind ?? config.adapter?.kind;
-  const resolvedPolicyPack =
-    policyPack ??
+  const resolvedRepoStandards =
+    repoStandards ??
     (() => {
-      throw new Error('buildEvidenceRecord requires a policyPack');
+      throw new Error('buildEvidenceRecord requires a repoStandards');
     })();
   const policyResults =
     options.policyResults ??
-    evaluatePolicyPack(resolvedPolicyPack, {
+    evaluateRepoStandards(resolvedRepoStandards, {
       rootDir,
       changedFiles: normalizedFiles,
       config,
@@ -359,34 +359,34 @@ export async function buildEvidenceRecord({
         ...policyResults,
       ]
     : policyResults;
-  const selectedProofSources =
-    proofPlan.proofs ?? proofRecordsForCommands(config, proofPlan.proofCommands);
-  const selectedProofs = selectedProofSources.map((proof) => {
-    const label = proofLabel(proof);
-    const runner = proof.runner ?? 'bash';
-    const proofResult = proofResultById(options.proofResults, proof.id);
+  const selectedEvidenceCheckSources =
+    evidenceCheckPlan.evidenceChecks ?? evidenceCheckRecordsForCommands(config, evidenceCheckPlan.evidenceCheckCommands);
+  const selectedEvidenceChecks = selectedEvidenceCheckSources.map((evidenceCheck) => {
+    const label = evidenceCheckLabel(evidenceCheck);
+    const runner = evidenceCheck.runner ?? 'bash';
+    const evidenceCheckResult = evidenceCheckResultById(options.evidenceCheckResults, evidenceCheck.id);
     return {
-      id: proof.id,
+      id: evidenceCheck.id,
       runner,
       label,
-      ...(proof.command ? { command: proof.command } : {}),
-      method: proof.method,
-      surface_claim_ids: uniqueStrings(proof.surfaceClaimIds ?? []),
-      summary: proofResultSummary(proofResult) ?? proof.summary ?? `Proof ${proof.id}: ${label}`,
-      ...(proofResult ? { proof_result: proofResult } : {}),
+      ...(evidenceCheck.command ? { command: evidenceCheck.command } : {}),
+      method: evidenceCheck.method,
+      surface_claim_ids: uniqueStrings(evidenceCheck.surfaceClaimIds ?? []),
+      summary: evidenceCheckResultSummary(evidenceCheckResult) ?? evidenceCheck.summary ?? `Evidence Check ${evidenceCheck.id}: ${label}`,
+      ...(evidenceCheckResult ? { evidence_check_result: evidenceCheckResult } : {}),
     };
   });
-  const selectedProofIds = selectedProofs.map((proof) => proof.id);
-  const proofSuiteResults = loadProofSuiteResults(config, rootDir, selectedProofIds);
-  const allProofs = readProofs(config).map((proof) => ({
-    id: proof.id,
-    runner: proof.runner ?? 'bash',
-    label: proofLabel(proof),
-    ...(proof.command ? { command: proof.command } : {}),
-    method: proof.method,
-    surface_claim_ids: uniqueStrings(proof.surfaceClaimIds ?? []),
-    summary: proof.summary ?? '',
-    selected: selectedProofIds.includes(proof.id),
+  const selectedEvidenceCheckIds = selectedEvidenceChecks.map((evidenceCheck) => evidenceCheck.id);
+  const evidenceInventoryResults = loadEvidenceInventoryResults(config, rootDir, selectedEvidenceCheckIds);
+  const allEvidenceChecks = readEvidenceChecks(config).map((evidenceCheck) => ({
+    id: evidenceCheck.id,
+    runner: evidenceCheck.runner ?? 'bash',
+    label: evidenceCheckLabel(evidenceCheck),
+    ...(evidenceCheck.command ? { command: evidenceCheck.command } : {}),
+    method: evidenceCheck.method,
+    surface_claim_ids: uniqueStrings(evidenceCheck.surfaceClaimIds ?? []),
+    summary: evidenceCheck.summary ?? '',
+    selected: selectedEvidenceCheckIds.includes(evidenceCheck.id),
   }));
   const sourceRef = resolveSourceRef({
     explicitSourceRef: options.sourceRef,
@@ -402,7 +402,7 @@ export async function buildEvidenceRecord({
     sourceKind,
     sourceScope,
     config,
-    policyPack: resolvedPolicyPack,
+    repoStandards: resolvedRepoStandards,
     options,
   });
 
@@ -420,21 +420,21 @@ export async function buildEvidenceRecord({
     components: affectedNodes,
     component_details: matchedNodes ?? [],
     file_nodes: fileNodes ?? {},
-    triggered_proofs: affectedLanes,
-    selected_proof_ids: selectedProofIds,
-    selected_proof_labels: selectedProofs.map((proof) => proof.label),
-    selected_proofs: selectedProofs,
-    proof_resolution_source: proofPlan.resolutionSource,
-    proof_suite_results: proofSuiteResults,
-    verification_budget: buildVerificationBudget({
-      proofs: allProofs,
-      proofSuiteResults,
+    triggered_evidence_checks: affectedEvidenceChecks,
+    selected_evidence_check_ids: selectedEvidenceCheckIds,
+    selected_evidence_check_labels: selectedEvidenceChecks.map((evidenceCheck) => evidenceCheck.label),
+    selected_evidence_checks: selectedEvidenceChecks,
+    evidence_check_resolution_source: evidenceCheckPlan.resolutionSource,
+    evidence_inventory_results: evidenceInventoryResults,
+    readiness_coverage: buildReadinessCoverage({
+      evidenceChecks: allEvidenceChecks,
+      evidenceInventoryResults,
     }),
     external_tool_results: buildExternalToolResults({
-      proofs: selectedProofSources,
+      evidenceChecks: selectedEvidenceCheckSources,
       rootDir,
     }),
-    uncovered_path_result: proofPlan.uncoveredPathResult,
+    uncovered_path_result: evidenceCheckPlan.uncoveredPathResult,
     baseline_ci_fast_passed: baselineCiFastPassed,
     recommendations,
     false_positive_review: policyDefaults.false_positive_review,
@@ -455,16 +455,16 @@ export async function buildEvidenceRecord({
       report_transport: config.evidence.reportTransport,
       default_resolution: config.graph.defaultResolution,
       non_sliceable_invariants: config.graph.nonSliceableInvariants,
-      proofs: allProofs.map(({ selected, ...proof }) => proof),
-      required_proof_ids: readRequiredProofIds(config),
-      default_proof_ids: readDefaultProofIds(config),
-      proof_routes: serializeProofRoutes(config),
-      uncovered_path_policy: proofPlan.uncoveredPathPolicy,
+      evidenceChecks: allEvidenceChecks.map(({ selected, ...evidenceCheck }) => evidenceCheck),
+      required_evidence_check_ids: readRequiredEvidenceCheckIds(config),
+      default_evidence_check_ids: readDefaultEvidenceCheckIds(config),
+      evidence_check_routes: serializeEvidenceCheckRoutes(config),
+      uncovered_path_policy: evidenceCheckPlan.uncoveredPathPolicy,
     },
-    policy_pack: {
-      name: resolvedPolicyPack.name,
-      version: resolvedPolicyPack.version,
-      rule_count: resolvedPolicyPack.rules.length,
+    repo_standards: {
+      name: resolvedRepoStandards.name,
+      version: resolvedRepoStandards.version,
+      rule_count: resolvedRepoStandards.rules.length,
     },
     policy_results: resolvedPolicyResults,
     ...(governanceState ? { governance_state: governanceState } : {}),
@@ -696,10 +696,10 @@ export function resolveVeritasPaths(options, defaults = {}) {
   const defaultAdapterPath =
     defaults.adapterPath ??
     (rootDir ? resolve(rootDir, '.veritas/repo.adapter.json') : undefined);
-  const defaultPolicyPackPath =
-    defaults.policyPackPath ??
+  const defaultRepoStandardsPath =
+    defaults.repoStandardsPath ??
     (rootDir
-      ? resolve(rootDir, '.veritas/policy-packs/default.policy-pack.json')
+      ? resolve(rootDir, '.veritas/repo-standards/default.repo-standards.json')
       : undefined);
   const defaultTeamProfilePath =
     defaults.teamProfilePath ??
@@ -710,9 +710,9 @@ export function resolveVeritasPaths(options, defaults = {}) {
     adapterPath: options.adapterPath
       ? resolve(rootDir ?? process.cwd(), options.adapterPath)
       : defaultAdapterPath,
-    policyPackPath: options.policyPackPath
-      ? resolve(rootDir ?? process.cwd(), options.policyPackPath)
-      : defaultPolicyPackPath,
+    repoStandardsPath: options.repoStandardsPath
+      ? resolve(rootDir ?? process.cwd(), options.repoStandardsPath)
+      : defaultRepoStandardsPath,
     teamProfilePath: options.teamProfilePath
       ? resolve(rootDir ?? process.cwd(), options.teamProfilePath)
       : defaultTeamProfilePath,
@@ -720,11 +720,11 @@ export function resolveVeritasPaths(options, defaults = {}) {
 }
 
 export async function generateVeritasReport(options = {}, defaults = {}, explicitFiles = []) {
-  const { rootDir, adapterPath, policyPackPath, teamProfilePath } = resolveVeritasPaths(options, defaults);
+  const { rootDir, adapterPath, repoStandardsPath, teamProfilePath } = resolveVeritasPaths(options, defaults);
 
-  if (!rootDir || !adapterPath || !policyPackPath) {
+  if (!rootDir || !adapterPath || !repoStandardsPath) {
     throw new Error(
-      'Veritas report requires rootDir, adapterPath, and policyPackPath',
+      'Veritas report requires rootDir, adapterPath, and repoStandardsPath',
     );
   }
 
@@ -736,16 +736,16 @@ export async function generateVeritasReport(options = {}, defaults = {}, explici
   }
 
   const config = loadAdapterConfig(adapterPath);
-  const policyPack = loadPolicyPack(policyPackPath);
-  const proofPlan = resolveProofPlan({
+  const repoStandards = loadRepoStandards(repoStandardsPath);
+  const evidenceCheckPlan = resolveEvidenceCheckPlan({
     files,
     config,
     rootDir,
-    explicitProofCommand: options.explicitProofCommand,
+    explicitEvidenceCheckCommand: options.explicitEvidenceCheckCommand,
   });
   const attestationStatus = options.includeAttestationGate
     ? inspectAttestationStatus(rootDir, {
-        policyPackPath,
+        repoStandardsPath,
         adapterPath,
         teamProfilePath,
         now: options.attestationNow ?? options.timestamp,
@@ -758,22 +758,22 @@ export async function generateVeritasReport(options = {}, defaults = {}, explici
       sourceRef: reportInputs.sourceRef,
       sourceKind: reportInputs.sourceKind,
       sourceScope: reportInputs.sourceScope,
-      proofPlan,
+      evidenceCheckPlan,
       integritySources: {
         adapterPath,
-        policyPackPath,
+        repoStandardsPath,
         teamProfilePath,
       },
       ...(attestationStatus ? { governanceState: attestationStatus } : {}),
     },
     config,
-    policyPack,
+    repoStandards,
     rootDir,
   });
   const artifactPath = writeEvidenceArtifact(record, config, rootDir);
   const relativeArtifactPath = relative(rootDir, artifactPath).replaceAll('\\', '/');
   const claimInputPaths = writeSurfaceClaimInputs(record, rootDir);
-  const dashboardReadModelPath = writeSurfaceDashboardReadModel(record, rootDir, {
+  const consoleReadModelPath = writeSurfaceConsoleReadModel(record, rootDir, {
     evidenceArtifactPath: relativeArtifactPath,
     claimInputPaths,
   });
@@ -794,31 +794,31 @@ export async function generateVeritasReport(options = {}, defaults = {}, explici
     record,
     artifactPath: relativeArtifactPath,
     claimInputPaths,
-    dashboardReadModelPath,
+    consoleReadModelPath,
     markdownSummary,
   };
 }
 
-export function resolveProofCommands({ adapterPath, files = [], rootDir, explicitProofCommand }) {
+export function resolveEvidenceCheckCommands({ adapterPath, files = [], rootDir, explicitEvidenceCheckCommand }) {
   if (!adapterPath || !rootDir) {
     return {
-      proofCommands: explicitProofCommand ? [explicitProofCommand] : [],
-      proofs: explicitProofCommand ? proofRecordsForCommands({ evidence: { proofs: [{ id: 'explicit-proof', runner: 'bash', command: explicitProofCommand, method: 'validation' }] } }, [explicitProofCommand]) : [],
-      resolutionSource: explicitProofCommand ? 'explicit' : 'none',
+      evidenceCheckCommands: explicitEvidenceCheckCommand ? [explicitEvidenceCheckCommand] : [],
+      evidenceChecks: explicitEvidenceCheckCommand ? evidenceCheckRecordsForCommands({ evidence: { evidenceChecks: [{ id: 'explicit-evidence-check', runner: 'bash', command: explicitEvidenceCheckCommand, method: 'validation' }] } }, [explicitEvidenceCheckCommand]) : [],
+      resolutionSource: explicitEvidenceCheckCommand ? 'explicit' : 'none',
       affectedNodes: [],
-      affectedLanes: [],
-      triggeredProofs: [],
+      affectedEvidenceChecks: [],
+      triggeredEvidenceChecks: [],
       unmatchedFiles: [],
       uncoveredPathPolicy: 'warn',
       uncoveredPathResult: 'clear',
     };
   }
   const config = loadAdapterConfig(adapterPath);
-  return resolveProofPlan({
+  return resolveEvidenceCheckPlan({
     files,
     config,
     rootDir,
-    explicitProofCommand,
+    explicitEvidenceCheckCommand,
   });
 }
 

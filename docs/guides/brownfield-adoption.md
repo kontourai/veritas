@@ -2,80 +2,79 @@
 
 Use this guide when adding Veritas to a repo that already has custom AI instructions, guidance folders, CI contracts, or verification scripts.
 
+The goal is not to copy every existing check into Veritas. The goal is to turn the parts that actually define merge readiness and repo conformance into repo standards.
+
 ## 1. Inventory First
 
 Collect:
 
-- AI instruction files,
-- custom verification scripts,
-- CI jobs,
-- policy or trust docs,
-- existing evidence or report artifacts.
+- AI instruction files
+- custom verification scripts
+- CI jobs
+- ownership or review docs
+- existing evidence or report artifacts
+- known shared-code boundaries
+- recurring repo-health checks
 
-Do not copy old verification checks into Veritas one-to-one.
-
-For a read-only first pass, run:
+For a read-only first pass:
 
 ```bash
 npx @kontourai/veritas init --explore --output .veritas/init-plans/brownfield.json
 ```
 
-When package scripts or existing guidance paths such as `.ai-guidance`, `verify:convergence`, or `guidance:report` are detected, the recommendation includes `existing_verification` and `recommended_proof_family_inventory` sections. Treat those as a review queue, not applied policy.
+When package scripts or existing guidance paths are detected, the recommendation may include implementation fields such as `existing_verification` and `recommended_evidence_inventory`. Treat those as review queues for evidence checks and readiness coverage, not as applied standards.
 
 ## 2. Classify Existing Checks
 
-For each check family, record:
+For each existing check or check item, record:
 
-- recent catch evidence,
-- regression severity,
-- false-positive risk,
-- replacement test availability,
-- owner,
-- expiry or review trigger,
-- default disposition.
+- what requirement it supports
+- what evidence it produces
+- whether the evidence is fresh for the current change
+- who or what is the verification authority
+- recent catch evidence
+- false-positive risk
+- replacement test availability
+- owner or review authority
+- expiry or recheck trigger
+- suggested enforcement level
 
-Unknown catch evidence defaults to candidate/advisory status. Required checks need an owner and a review trigger.
-Required checks also need non-unknown catch evidence. If the evidence is unknown, keep the family candidate/advisory while you add tests or gather real catches.
+Unknown catch evidence should start at Observe or Guide. Use Require only after the check has a clear requirement, authority, freshness policy, and review trigger.
 
-For external codebase-intelligence tools such as Fallow, start with advisory evidence. Commit any intentional migration baselines under a reviewable path such as `fallow-baselines/`, not under `.fallow/`; `.fallow/` is cache/local data. Promote the lane only after cleanup or baseline review gives it an owner, review trigger, and useful catch evidence.
+## 3. Keep Required Standards Small
 
-## 3. Keep Required Gates Small
+Start by requiring only the standards that protect the system itself:
 
-Start with a required governance lane that proves:
+- Veritas artifacts exist
+- AI instruction files point agents at Veritas guidance
+- the repo has at least one real evidenceCheck
+- protected standards changes require attestation
 
-- `.veritas` artifacts exist,
-- CI runs a real proof lane,
-- AI instruction files point agents at Veritas governance,
-- evidence/report commands are wired.
-
-Keep broad legacy guardrails as compatibility aggregators only while decomposed lanes prove equivalence.
+Keep broad existing guardrails as observation or guidance while you decompose them into clearer requirements.
 
 ## 4. Move Product Behavior To Tests
 
 If a check asserts product behavior, move it into the normal test suite:
 
-- route and schema behavior -> unit/integration tests,
-- runtime/provider behavior -> integration tests,
-- user workflows -> E2E tests,
-- published docs -> docs build and rendered review.
+- route and schema behavior -> unit or integration tests
+- runtime/provider behavior -> integration tests
+- user workflows -> E2E tests
+- published docs -> docs build and rendered review
 
-Veritas should route and report those tests as proof lanes.
+Veritas should route and report those checks as evidence. It should not become the product test suite.
 
-## 5. Promote Reusable Shapes Upstream
+## 5. Promote Reusable Shapes Carefully
 
 Promote generic Veritas capabilities such as:
 
-- proof-family results,
-- candidate/advisory proof lanes,
-- expiry and freshness metadata,
-- forbidden import-owner policies,
-- brownfield inventory generation.
+- evidenceCheck inventories
+- candidate or advisory checks
+- expiry and freshness metadata
+- forbidden import-owner requirements
+- brownfield inventory generation
+- boundary guidance for shared code
 
-Do not promote one repo's module names or refactor history into Veritas.
-
-## 6. Publish Only After The Package Catches Up
-
-Local proving-ground work may use a file dependency on a local Veritas checkout. Public docs should point to the published `@kontourai/veritas` package only after the needed features are released.
+Do not promote one repo's module names, historical exceptions, or refactor details into Veritas itself.
 
 ## Verification
 
@@ -84,23 +83,9 @@ Before considering a brownfield migration complete:
 ```bash
 npm run verify
 npm test
-npm exec -- veritas run --check shadow --working-tree
-npm exec -- veritas run --check budget --working-tree
-npm exec -- veritas run --working-tree --format feedback
+npm exec -- veritas readiness --check evidence --working-tree
+npm exec -- veritas readiness --check coverage --working-tree
+npm exec -- veritas readiness --working-tree --format feedback
 ```
 
-Repo-specific proof lanes may add stricter commands, but the migration should stay clear about which checks are required, candidate, advisory, or retiring.
-
-When using proof families, add the manifest to the adapter:
-
-```json
-{
-  "evidence": {
-    "proofFamilyManifests": [
-      ".veritas/proof-families/repo-guardrails.families.json"
-    ]
-  }
-}
-```
-
-Then confirm the report includes `proof_family_results` and `verification_budget`. The budget should be reviewed before promoting more checks to required; `veritas run --check budget` gives the same promotion/retirement signal without requiring the full report.
+`readiness --check coverage` is the current command for readiness coverage. Review its output before moving more requirements to Require.

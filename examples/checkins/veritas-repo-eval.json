@@ -2,7 +2,7 @@
   "version": 1,
   "run_id": "veritas-repo-check-in",
   "team_profile_id": "veritas-default",
-  "mode": "shadow",
+  "mode": "observe",
   "evidence": {
     "artifact_path": ".veritas/evidence/veritas-repo-check-in.json",
     "artifact_digest": "297a32fa6316b174966916eafef523c0a70bd97362920b747f373cb0538af236",
@@ -21,7 +21,7 @@
       "tooling.bin",
       "verification.tests"
     ],
-    "triggered_proofs": [
+    "triggered_evidence_checks": [
       ".veritas/**",
       "bin/**",
       "docs/**",
@@ -107,7 +107,7 @@
         "classification": "promotable-policy",
         "stage": "recommend",
         "enforcement": "lint",
-        "message": "Prefer keeping the tracked Veritas proof and check-in integration surfaces present so changes flow through the documented operational path before review.",
+        "message": "Prefer keeping the tracked Veritas evidenceCheck and check-in integration surfaces present so changes flow through the documented operational path before review.",
         "owner": "repo-maintainers",
         "rollback_switch": "soften-veritas-route",
         "implemented": true,
@@ -139,7 +139,7 @@
     "changed_paths": [
       ".veritas/GOVERNANCE.md",
       ".veritas/repo.adapter.json",
-      ".veritas/policy-packs/default.policy-pack.json",
+      ".veritas/repo-standards/default.repo-standards.json",
       ".veritas/team/default.team-profile.json"
     ]
   },
@@ -156,7 +156,7 @@
   },
   "overrides": [],
   "notes": [
-    "The repo-local adapter and policy pack were sufficient to classify the selected surfaces without unresolved files.",
+    "The repo-local adapter and repo standards were sufficient to classify the selected surfaces without unresolved files.",
     "This example demonstrates the value claim in-repo: focused surface mapping plus reviewable evidence and eval artifacts."
   ]
 }

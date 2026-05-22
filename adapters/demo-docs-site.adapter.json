@@ -81,23 +81,23 @@
   "evidence": {
     "artifactDir": ".omx/evidence/demo-docs-site",
     "reportTransport": "local-json",
-    "proofs": [
+    "evidenceChecks": [
       {
-        "id": "required-proof",
+        "id": "required-evidence-check",
         "command": "npm run docs:build",
         "method": "validation",
         "summary": "Runs npm run docs:build."
       },
       {
-        "id": "proof-2",
+        "id": "evidenceCheck-2",
         "command": "npm test",
         "method": "validation",
         "summary": "Runs npm test."
       }
     ],
-    "requiredProofIds": [
-      "required-proof",
-      "proof-2"
+    "requiredEvidenceCheckIds": [
+      "required-evidence-check",
+      "evidenceCheck-2"
     ]
   }
 }

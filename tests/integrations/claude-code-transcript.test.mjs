@@ -14,7 +14,7 @@ import { commitAll, frameworkRootDir, initCommittedRepo, parseCliJson } from '..
 function bootstrapRepo(prefix = 'veritas-claude-') {
   const rootDir = initCommittedRepo(prefix);
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { test: 'node -e "process.exit(0)"' } }, null, 2));
-  writeBootstrapStarterKit({ rootDir, projectName: 'integration-fixture', proof: 'npm test', force: true });
+  writeBootstrapStarterKit({ rootDir, projectName: 'integration-fixture', evidenceCheck: 'npm test', force: true });
   commitAll(rootDir, 'Bootstrap Veritas');
   return rootDir;
 }
@@ -25,7 +25,7 @@ function writeClaudeTranscript(rootDir) {
     {
       type: 'assistant',
       timestamp: '2026-05-10T00:00:00.000Z',
-      message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'veritas run --working-tree' } }] },
+      message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'veritas readiness --working-tree' } }] },
     },
     {
       type: 'user',
@@ -45,7 +45,7 @@ function writeClaudeTranscript(rootDir) {
     {
       type: 'assistant',
       timestamp: '2026-05-10T00:03:00.000Z',
-      message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'veritas run --working-tree' } }] },
+      message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'veritas readiness --working-tree' } }] },
     },
     {
       type: 'user',
@@ -67,7 +67,7 @@ test('ClaudeCodeTranscriptReader normalizes Claude Code JSONL events', () => {
   const transcriptPath = writeClaudeTranscript(rootDir);
   const events = [...ClaudeCodeTranscriptReader.readEvents(transcriptPath)];
 
-  assert.ok(events.some((event) => event.kind === 'shadow-run'));
+  assert.ok(events.some((event) => event.kind === 'readiness-check'));
   assert.ok(events.some((event) => event.kind === 'edit' && event.files.includes('src/app.mjs')));
   assert.ok(events.some((event) => event.kind === 'override'));
   assert.ok(events.some((event) => event.kind === 'completion'));
@@ -93,12 +93,12 @@ test('CodexTranscriptReader reads legacy JSON transcript shape through the regis
   const transcriptPath = join(rootDir, 'codex.json');
   writeFileSync(transcriptPath, JSON.stringify({
     events: [
-      { timestamp: '2026-05-10T00:00:00.000Z', command: 'veritas run', status: 'failed', files: ['src/app.mjs'] },
-      { timestamp: '2026-05-10T00:01:00.000Z', command: 'veritas run', status: 'passed', files: ['src/app.mjs'] },
+      { timestamp: '2026-05-10T00:00:00.000Z', command: 'veritas readiness', status: 'failed', files: ['src/app.mjs'] },
+      { timestamp: '2026-05-10T00:01:00.000Z', command: 'veritas readiness', status: 'passed', files: ['src/app.mjs'] },
     ],
   }, null, 2));
   const events = [...CodexTranscriptReader.readEvents(transcriptPath)];
-  assert.equal(events.filter((event) => event.kind === 'shadow-run').length, 2);
+  assert.equal(events.filter((event) => event.kind === 'readiness-check').length, 2);
 });
 
 test('integrations claude-code install wires PreToolUse, Stop, and PostSession hooks', () => {

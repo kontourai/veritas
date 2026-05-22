@@ -5,7 +5,7 @@
   "actor": {
     "id": "brian",
     "displayName": "Brian Anderson",
-    "identityProof": {
+    "identityEvidence": {
       "gitEmail": "brian.anderson1222@gmail.com",
       "signingKeyFingerprint": null
     }
@@ -18,8 +18,8 @@
   "validUntilDays": 90,
   "notes": "",
   "metadata": {
-    "zone1Paths": {
-      "policyPackPath": ".veritas/policy-packs/default.policy-pack.json",
+    "protectedStandardsPaths": {
+      "repoStandardsPath": ".veritas/repo-standards/default.repo-standards.json",
       "adapterPath": ".veritas/repo.adapter.json",
       "teamProfilePath": ".veritas/team/default.team-profile.json"
     },

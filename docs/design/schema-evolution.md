@@ -1,6 +1,6 @@
 # Schema Evolution Policy
 
-Veritas ships multiple JSON schemas because adapters, policy packs, evidence artifacts, eval artifacts, and benchmark fixtures are all part of the framework contract.
+Veritas ships multiple JSON schemas because Repo Maps, Repo Standards, evidence artifacts, standards-feedback artifacts, and benchmark fixtures are all part of the product contract.
 
 This document defines how those contracts evolve.
 
@@ -16,9 +16,9 @@ Breaking contract changes require both:
 - a new artifact version in the payload
 - a matching schema update that reflects that version
 
-## [shipped] Compatibility Rule
+## [shipped] Schema Change Rule
 
-Additive, backward-compatible changes may stay within the current major artifact version when:
+Additive changes may stay within the current major artifact version when:
 
 - existing required keys stay required
 - existing meanings do not change
@@ -44,13 +44,13 @@ When a new major schema version is introduced:
 - do not reuse an old version number for a new contract
 - update the relevant design/reference docs at the same time as the schema
 
-## [shipped] Contract: Proof Family Results
+## [shipped] Contract: Evidence Check Inventories
 
-Brownfield repos may need family-level proof evidence before every individual check becomes a reusable Veritas policy. The evidence schema now supports this with additive `proof_family_results` and `verification_budget` fields, populated from adapter-declared `proofFamilyManifests`.
+Brownfield repos may need grouped evidence before every individual check becomes a reusable Veritas requirement. The evidence schema supports this with `evidence_inventory_results` and `readiness_coverage` fields, populated from Repo Map inventory manifests.
 
 When evolving these fields:
 
-- keep existing proof-lane command results valid,
+- keep existing evidence-check command results valid,
 - document candidate/advisory/required disposition semantics,
 - keep repo-specific assertions inside repo-local manifests,
-- add fixtures that prove old evidence remains valid and new family-level evidence renders correctly.
+- add fixtures that prove old evidence remains valid and new item-level evidence renders correctly.

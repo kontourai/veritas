@@ -13,7 +13,7 @@ import { commitAll, initCommittedRepo } from '../helpers.mjs';
 function bootstrapRepo() {
   const rootDir = initCommittedRepo('veritas-fs-observer-');
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { test: 'node -e "process.exit(0)"' } }, null, 2));
-  writeBootstrapStarterKit({ rootDir, projectName: 'fs-observer-fixture', proof: 'npm test', force: true });
+  writeBootstrapStarterKit({ rootDir, projectName: 'fs-observer-fixture', evidenceCheck: 'npm test', force: true });
   commitAll(rootDir, 'Bootstrap Veritas');
   return rootDir;
 }
@@ -50,7 +50,7 @@ test('filesystem observer infers eval fields without transcript', () => {
     source_kind: 'working-tree',
     source_scope: ['staged'],
     components: ['app.src'],
-    triggered_proofs: ['src/**'],
+    triggered_evidence_checks: ['src/**'],
     files: ['src/app.mjs'],
   };
   writeFileSync(join(rootDir, '.veritas/evidence/pass-run.json'), `${JSON.stringify(evidence, null, 2)}\n`);
@@ -108,7 +108,7 @@ test('filesystem observer scopes time to green to the active run transition', ()
     source_kind: 'working-tree',
     source_scope: ['staged'],
     components: ['app.src'],
-    triggered_proofs: ['src/**'],
+    triggered_evidence_checks: ['src/**'],
     files: ['src/app.mjs'],
   };
   writeFileSync(join(rootDir, '.veritas/evidence/current-pass.json'), `${JSON.stringify(evidence, null, 2)}\n`);

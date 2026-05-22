@@ -5,6 +5,8 @@ function formatTriState(value) {
 }
 
 export function buildMarkdownSummary(record, artifactPath) {
+  const triggeredEvidenceChecks = record.triggered_evidence_checks ?? [];
+  const selectedEvidenceCheckLabels = record.selected_evidence_check_labels ?? [];
   const policyPassCount = record.policy_results.filter((result) => result.passed === true).length;
   const policyFailCount = record.policy_results.filter((result) => result.passed === false).length;
   const policyMetadataOnlyCount = record.policy_results.filter(
@@ -20,12 +22,12 @@ export function buildMarkdownSummary(record, artifactPath) {
     `- **Components:** ${
       record.components.length ? record.components.join(', ') : 'none'
     }`,
-    `- **Triggered proofs:** ${
-      record.triggered_proofs.length ? record.triggered_proofs.join(', ') : 'none'
+    `- **Triggered evidenceChecks:** ${
+      triggeredEvidenceChecks.length ? triggeredEvidenceChecks.join(', ') : 'none'
     }`,
-    `- **Selected proof labels:** \`${record.selected_proof_labels.join(', ') || 'none'}\``,
-    `- **Proof resolution source:** ${record.proof_resolution_source}`,
-    `- **Proof suites:** ${record.verification_budget?.proof_suite_count ?? 0} total, ${record.verification_budget?.required_family_count ?? 0} required, ${record.verification_budget?.candidate_family_count ?? 0} candidate, ${record.verification_budget?.move_to_test_family_count ?? 0} move-to-test, ${record.verification_budget?.retire_family_count ?? 0} retiring`,
+    `- **Selected evidenceCheck labels:** \`${selectedEvidenceCheckLabels.join(', ') || 'none'}\``,
+    `- **Evidence Check selection:** ${record.evidence_check_resolution_source}`,
+    `- **Evidence inventories:** ${record.readiness_coverage?.evidence_inventory_count ?? 0} total, ${record.readiness_coverage?.required_inventory_count ?? 0} required, ${record.readiness_coverage?.candidate_inventory_count ?? 0} candidate, ${record.readiness_coverage?.move_to_test_inventory_count ?? 0} move-to-test, ${record.readiness_coverage?.retire_inventory_count ?? 0} retiring`,
     `- **External tool results:** ${record.external_tool_results?.length ?? 0}`,
     `- **Uncovered path result:** ${record.uncovered_path_result}`,
     `- **Baseline \`ci:fast\` passed:** ${formatTriState(record.baseline_ci_fast_passed)}`,
@@ -48,15 +50,15 @@ export function buildMarkdownSummary(record, artifactPath) {
     }
   }
 
-  if (record.proof_suite_results?.length > 0) {
-    lines.push('', '### Proof Suites');
-    for (const family of record.proof_suite_results) {
-      const selected = family.selected ? 'selected' : 'not selected';
+  if (record.evidence_inventory_results?.length > 0) {
+    lines.push('', '### Evidence Inventorys');
+    for (const item of record.evidence_inventory_results) {
+      const selected = item.selected ? 'selected' : 'not selected';
       lines.push(
-        `- ${family.id}: ${family.disposition} / ${family.verification_weight} (${selected}) — ${family.rationale || 'No rationale recorded.'}`,
+        `- ${item.id}: ${item.disposition} / ${item.verification_weight} (${selected}) — ${item.rationale || 'No rationale recorded.'}`,
       );
-      if (family.review_trigger) {
-        lines.push(`  - Review trigger: ${family.review_trigger}`);
+      if (item.review_trigger) {
+        lines.push(`  - Review trigger: ${item.review_trigger}`);
       }
     }
   }
@@ -66,17 +68,17 @@ export function buildMarkdownSummary(record, artifactPath) {
     for (const result of record.external_tool_results) {
       const weight = result.blocking ? 'blocking' : 'advisory';
       lines.push(
-        `- ${result.tool}:${result.proof_id}: ${result.verdict} / ${weight} — ${result.artifact_path}`,
+        `- ${result.tool}:${result.evidence_check_id}: ${result.verdict} / ${weight} — ${result.artifact_path}`,
       );
     }
   }
 
-  if (record.verification_budget) {
-    lines.push('', '### Verification Budget');
-    lines.push(`- ${record.verification_budget.recommendation}`);
-    if (record.verification_budget.stale_or_unknown_family_ids.length > 0) {
+  if (record.readiness_coverage) {
+    lines.push('', '### Readiness Coverage');
+    lines.push(`- ${record.readiness_coverage.recommendation}`);
+    if (record.readiness_coverage.stale_or_unknown_inventory_ids.length > 0) {
       lines.push(
-        `- Review candidates: ${record.verification_budget.stale_or_unknown_family_ids.join(', ')}`,
+        `- Review candidates: ${record.readiness_coverage.stale_or_unknown_inventory_ids.join(', ')}`,
       );
     }
   }
@@ -104,8 +106,8 @@ export function feedbackStatusForPolicyResult(result) {
   return 'INFO';
 }
 
-function summarizeFeedbackCounts(record, proofFailure = null) {
-  let failures = proofFailure ? 1 : 0;
+function summarizeFeedbackCounts(record, evidenceCheckFailure = null) {
+  let failures = evidenceCheckFailure ? 1 : 0;
   let warnings = 0;
   let passes = 0;
 
@@ -116,8 +118,8 @@ function summarizeFeedbackCounts(record, proofFailure = null) {
     if (status === 'PASS') passes += 1;
   }
 
-  for (const family of record?.proof_suite_results ?? []) {
-    if (family.verification_weight === 'blocking' && family.blocking_status === 'failed') {
+  for (const item of record?.evidence_inventory_results ?? []) {
+    if (item.verification_weight === 'blocking' && item.blocking_status === 'failed') {
       failures += 1;
     }
   }
@@ -144,12 +146,12 @@ export function buildFeedbackSummary({
   reportArtifactPath = null,
   draftArtifactPath = null,
   evalArtifactPath = null,
-  proofLabels = [],
-  proofCommands = [],
-  proofRan = false,
-  proofFailure = null,
+  evidenceCheckLabels = [],
+  evidenceCheckCommands = [],
+  evidenceCheckRan = false,
+  evidenceCheckFailure = null,
 } = {}) {
-  const resolvedProofLabels = proofLabels.length > 0 ? proofLabels : proofCommands;
+  const resolvedEvidenceCheckLabels = evidenceCheckLabels.length > 0 ? evidenceCheckLabels : evidenceCheckCommands;
   const affectedNodes = record?.components?.length
     ? record.components.join(', ')
     : 'no matched nodes';
@@ -158,13 +160,13 @@ export function buildFeedbackSummary({
     `veritas: ${files.length} ${files.length === 1 ? 'file' : 'files'} changed -> ${affectedNodes}`,
   ];
 
-  if (proofRan) {
-    if (proofFailure) {
-      lines.push(`FAIL  proof-command: ${proofFailure.label}`);
-      lines.push(`      -> ${proofFailure.message}`);
+  if (evidenceCheckRan) {
+    if (evidenceCheckFailure) {
+      lines.push(`FAIL  evidence-check: ${evidenceCheckFailure.label}`);
+      lines.push(`      -> ${evidenceCheckFailure.message}`);
     } else {
-      for (const label of resolvedProofLabels) {
-        lines.push(`PASS  proof-command: ${label}`);
+      for (const label of resolvedEvidenceCheckLabels) {
+        lines.push(`PASS  evidence-check: ${label}`);
       }
     }
   }
@@ -181,14 +183,14 @@ export function buildFeedbackSummary({
     }
   }
 
-  for (const family of record?.proof_suite_results ?? []) {
-    if (!family.selected) continue;
-    const status = family.verification_weight === 'blocking' ? 'PASS' : 'INFO';
+  for (const item of record?.evidence_inventory_results ?? []) {
+    if (!item.selected) continue;
+    const status = item.verification_weight === 'blocking' ? 'PASS' : 'INFO';
     lines.push(
-      `${status.padEnd(5)} proof-suite:${family.id}: ${family.disposition} / ${family.verification_weight}`,
+      `${status.padEnd(5)} evidence-inventory:${item.id}: ${item.disposition} / ${item.verification_weight}`,
     );
-    if (family.review_trigger) {
-      lines.push(`      -> review: ${family.review_trigger}`);
+    if (item.review_trigger) {
+      lines.push(`      -> review: ${item.review_trigger}`);
     }
   }
 
@@ -203,30 +205,30 @@ export function buildFeedbackSummary({
 
   for (const claim of record?.surface?.report?.claims ?? []) {
     if (claim.status !== 'stale' && claim.status !== 'disputed') continue;
-    const faultLines = record.surface.report.faultLinesByClaimId?.[claim.id] ?? [];
-    const reason = faultLines[0]?.message ?? `Surface derived status is ${claim.status}.`;
+    const transparencyGaps = record.surface.report.transparencyGapsByClaimId?.[claim.id] ?? [];
+    const reason = transparencyGaps[0]?.message ?? `Surface derived status is ${claim.status}.`;
     lines.push(
       `WARN  surface-status: claim "${claim.id}" is ${claim.status.toUpperCase()} (${reason})`,
     );
   }
 
-  const counts = summarizeFeedbackCounts(record, proofFailure);
+  const counts = summarizeFeedbackCounts(record, evidenceCheckFailure);
   const nouns = [
     `${counts.failures} ${counts.failures === 1 ? 'failure' : 'failures'}`,
     `${counts.warnings} ${counts.warnings === 1 ? 'warning' : 'warnings'}`,
   ];
-  lines.push('', `${nouns.join(' · ')} · run \`veritas run --check shadow\` for full evidence`);
-  const openProposalCount = (record?.surface?.report?.claims ?? [])
-    .filter((claim) => claim.claimType === 'veritas-proposal' && claim.status === 'proposed')
+  lines.push('', `${nouns.join(' · ')} · run \`veritas readiness --check evidence\` for full generated evidence`);
+  const openRecommendationCount = (record?.surface?.report?.claims ?? [])
+    .filter((claim) => claim.claimType === 'veritas-recommendation' && claim.status === 'proposed')
     .length;
-  if (openProposalCount > 0) {
-    lines.push(`proposals: ${openProposalCount} open · run \`veritas proposal list\` to review`);
+  if (openRecommendationCount > 0) {
+    lines.push(`recommendations: ${openRecommendationCount} open · run \`veritas recommendation list\` to review`);
   }
 
   const footer = [];
   if (reportArtifactPath) footer.push(`report: ${reportArtifactPath}`);
-  if (draftArtifactPath) footer.push(`eval draft: ${draftArtifactPath}`);
-  if (evalArtifactPath) footer.push(`eval: ${evalArtifactPath}`);
+  if (draftArtifactPath) footer.push(`standards feedback draft: ${draftArtifactPath}`);
+  if (evalArtifactPath) footer.push(`standards feedback: ${evalArtifactPath}`);
   if (record?.run_id) footer.push(`run: ${record.run_id}`);
   if (footer.length > 0) {
     lines.push(footer.join(' · '));
@@ -235,8 +237,8 @@ export function buildFeedbackSummary({
   return `${lines.join('\n')}\n`;
 }
 
-export function feedbackHasFailures(record, proofFailure = null) {
-  return summarizeFeedbackCounts(record, proofFailure).failures > 0;
+export function feedbackHasFailures(record, evidenceCheckFailure = null) {
+  return summarizeFeedbackCounts(record, evidenceCheckFailure).failures > 0;
 }
 
 export function buildEvalMarkdownSummary(record, artifactPath) {

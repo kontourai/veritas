@@ -6,7 +6,7 @@ if [ "${VERITAS_HOOK_SKIP:-${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
   exit 0
 fi
 
-RESULT=$(npm exec -- veritas shadow run --format feedback --working-tree 2>&1)
+RESULT=$(npm exec -- veritas readiness --format feedback --working-tree 2>&1)
 EXIT=$?
 if [ "$EXIT" -ne 0 ]; then
   echo "$RESULT"

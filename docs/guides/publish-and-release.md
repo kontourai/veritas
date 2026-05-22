@@ -15,15 +15,15 @@ The npm package is:
 The current publish surface is defined in [package.json](../../package.json) and includes:
 
 - `bin/` for the CLI entrypoints
-- `src/` for the framework logic
+- `src/` for implementation logic
 - `schemas/` for the contract surface
-- `adapters/` for reference adapters
-- `policy-packs/` for reference policy packs
+- `adapters/` for current Repo Map examples
+- `repo-standards/` for current Repo Standards examples
 - `docs/` for packaged documentation
 - `examples/` for canonical fixtures
 - `README.md` and `LICENSE`
 
-That means the npm package is not only the CLI binary. It also publishes the schema and fixture material needed to understand and extend the framework.
+That means the npm package is not only the CLI binary. It also publishes the schema and fixture material needed to understand and extend Veritas.
 
 ## What GitHub Actions Already Does
 
@@ -31,7 +31,7 @@ This repo now ships three core automation lanes:
 
 - [CI](../../.github/workflows/ci.yml) runs `npm run verify`, `npm test`, and the line-coverage gate on Node 20 and Node 22
 - [Docs Pages](../../.github/workflows/pages.yml) builds the Markdown docs into a GitHub Pages site
-- [Publish NPM](../../.github/workflows/publish-npm.yml) verifies on Node 20 and Node 22, then publishes `@kontourai/veritas` on tag pushes like `v0.3.0`
+- [Publish NPM](../../.github/workflows/publish-npm.yml) verifies on Node 20 and Node 22, then publishes `@kontourai/veritas` on tag pushes like `v0.4.0`
 
 ## What We Need From You
 
@@ -81,7 +81,7 @@ So the normal release path is:
 1. bump `package.json` version
 2. commit the release
 3. merge that commit to `main`
-4. create and push a tag like `v0.3.0` that points at the `main` commit you intend to release
+4. create and push a tag like `v0.4.0` that points at the `main` commit you intend to release
 
 ## Suggested First Publish Checklist
 
