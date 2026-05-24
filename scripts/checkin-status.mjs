@@ -448,6 +448,14 @@ export function renderGovernanceSurfaceLine(governanceSurface) {
   return `- **Governance surface:** ${governanceSurface.summary}`;
 }
 
+function optionalArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+export function formatSelectedEvidenceCheckCommands(value) {
+  return optionalArray(value).join(', ') || 'none';
+}
+
 function buildMarkdown({
   runId,
   timestamp,
@@ -462,17 +470,21 @@ function buildMarkdown({
   evalTrend,
 }) {
   const alertSummary = summarizeAlertCounts(alerts);
+  const unresolvedFiles = optionalArray(report.record.unresolved_files);
+  const sourceScope = optionalArray(report.record.source_scope);
+  const affectedNodes = optionalArray(report.record.affected_nodes);
+  const affectedEvidenceChecks = optionalArray(report.record.affected_evidence_checks);
   const markdown = [
     '## Veritas Check-in',
     '',
     `- **Health:** ${healthLabel(healthStatus)}`,
     `- **Alerts:** ${alertSummary.errors} error(s), ${alertSummary.warnings} warning(s)`,
-    `- **Unresolved files:** ${report.record.unresolved_files.length}`,
+    `- **Unresolved files:** ${unresolvedFiles.length}`,
     `- **Policy results:** ${policySummary.passed} passed, ${policySummary.failed} failed, ${policySummary.metadata_only} metadata-only`,
     renderGovernanceSurfaceLine(governanceSurface),
     `- **Governance trend:** ${governanceTrend.summary}`,
     `- **Eval trend:** ${evalTrend.markdownSummary.split('\n')[0]}`,
-    `- **Evidence Checks:** \`${report.record.selected_evidence_check_commands.join(', ') || 'none'}\``,
+    `- **Evidence Checks:** \`${formatSelectedEvidenceCheckCommands(report.record.selected_evidence_check_commands)}\``,
     `- **Run ID:** ${runId}`,
     '',
   ];
@@ -490,11 +502,11 @@ function buildMarkdown({
     '<summary>Scope and Verification</summary>',
     '',
     `- **Generated at:** ${timestamp}`,
-    `- **Source:** ${report.record.source_kind} (${report.record.source_scope.join(', ')})`,
+    `- **Source:** ${report.record.source_kind} (${sourceScope.join(', ') || 'none'})`,
     `- **Phase:** ${report.record.resolved_phase}`,
     `- **Workstream:** ${report.record.resolved_workstream}`,
-    `- **Affected nodes:** ${report.record.affected_nodes.length > 0 ? report.record.affected_nodes.join(', ') : 'none'}`,
-    `- **Affected evidenceChecks:** ${report.record.affected_evidence_checks.length > 0 ? report.record.affected_evidence_checks.join(', ') : 'none'}`,
+    `- **Affected nodes:** ${affectedNodes.length > 0 ? affectedNodes.join(', ') : 'none'}`,
+    `- **Affected evidenceChecks:** ${affectedEvidenceChecks.length > 0 ? affectedEvidenceChecks.join(', ') : 'none'}`,
     `- **Evidence Check selection:** ${report.record.evidence_check_resolution_source}`,
     `- **Uncovered path result:** ${report.record.uncovered_path_result}`,
     `- **Report artifact:** \`${report.artifactPath}\``,
@@ -583,6 +595,11 @@ export async function buildCheckinStatus({
     currentGovernanceSurface: governanceSurface,
   });
   const evalTrend = generateEvalSummary({ rootDir: rootDirOverride }, { rootDir: rootDirOverride });
+  const unresolvedFiles = optionalArray(report.record.unresolved_files);
+  const sourceScope = optionalArray(report.record.source_scope);
+  const affectedNodes = optionalArray(report.record.affected_nodes);
+  const affectedEvidenceChecks = optionalArray(report.record.affected_evidence_checks);
+  const selectedEvidenceCheckCommands = optionalArray(report.record.selected_evidence_check_commands);
 
   const checkin = {
     version: 1,
@@ -592,11 +609,11 @@ export async function buildCheckinStatus({
     eval_draft_artifact_path: draft.artifactPath,
     suggested_eval_command: draft.suggestedRecordCommand,
     source_kind: report.record.source_kind,
-    source_scope: report.record.source_scope,
-    unresolved_files_count: report.record.unresolved_files.length,
-    affected_nodes: report.record.affected_nodes,
-    affected_evidence_checks: report.record.affected_evidence_checks,
-    selected_evidence_check_commands: report.record.selected_evidence_check_commands,
+    source_scope: sourceScope,
+    unresolved_files_count: unresolvedFiles.length,
+    affected_nodes: affectedNodes,
+    affected_evidence_checks: affectedEvidenceChecks,
+    selected_evidence_check_commands: selectedEvidenceCheckCommands,
     uncovered_path_result: report.record.uncovered_path_result,
     policy_results_summary: policySummary,
     governance_surface: governanceSurface,

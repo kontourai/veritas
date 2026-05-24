@@ -4,6 +4,7 @@ import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
   classifyGovernanceSurface,
+  formatSelectedEvidenceCheckCommands,
   renderGovernanceSurfaceLine,
   summarizeGovernanceTrend,
 } from '../scripts/checkin-status.mjs';
@@ -203,4 +204,9 @@ test('governance trend summary includes recent classification counts', () => {
   );
   assert.equal(trend.latest_non_clean_run_id, 'current-run');
   assert.equal(trend.latest_non_clean_classification, 'additive-only');
+});
+
+test('selected evidence command formatter tolerates missing arrays', () => {
+  assert.equal(formatSelectedEvidenceCheckCommands(undefined), 'none');
+  assert.equal(formatSelectedEvidenceCheckCommands(['npm test', 'npm run verify']), 'npm test, npm run verify');
 });
