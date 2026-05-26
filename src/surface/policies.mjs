@@ -62,6 +62,18 @@ export const SURFACE_TRUST_POLICIES = {
     conflictRules: ['unknown or stale evidence inventories dispute readiness coverage'],
     impactLevel: 'medium',
   }),
+  readinessVerdict: buildCommitValidityPolicy({
+    id: 'veritas.readiness-verdict',
+    claimType: 'software-readiness-verdict',
+    requiredEvidence: ['policy_rule'],
+    requiredMethods: ['validation'],
+    requiresCorroboration: false,
+    acceptanceCriteria: ['Veritas readiness verdict'],
+    reviewAuthority: 'veritas readiness producer',
+    stalenessTriggers: ['source_ref changes', 'changed file integrity changes', 'Protected Standards hash changes'],
+    conflictRules: ['blocking failed requirements or evidenceChecks reject readiness'],
+    impactLevel: 'high',
+  }),
   externalToolResult: buildCommitValidityPolicy({
     id: 'veritas.external-tool-result',
     claimType: 'veritas-external-tool-result',

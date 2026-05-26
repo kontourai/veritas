@@ -80,6 +80,18 @@ Current Veritas evidence artifacts include a `surface.input` block, which is a S
 
 Veritas validates this projection with Surface's public validation API. Validation failures are runtime/configuration errors. `VERITAS_SKIP_SURFACE_VALIDATION=1` exists only as an emergency bypass.
 
+Readiness runs also project merge readiness as a portable Surface claim:
+
+- `claimType: "software-readiness-verdict"`
+- `surface: "veritas.readiness"`
+- `subjectType: "repository-change"`
+- `subjectId`: a stable producer/source id derived from the adapter or Repo Standards name plus the run source ref
+- `currentIntegrityRef`: the run source integrity ref
+
+Downstream systems, including Flow, should locate readiness by querying `surface.input.claims[]` or generated `surface.report.claims[]` for that claim type, subject, producer metadata, integrity scope, and authority trace. They must not import Veritas source modules or parse Veritas-only readiness fields as their integration contract.
+
+When the installed Surface package supports first-class `authorityTrace`, Veritas emits readiness authority as top-level Surface trust state. For older Surface 0.4 runtimes, Veritas also keeps the same authority context under claim and evidence `metadata.authorityTrace`: governance attestation, actor, Protected Standards hashes, and attestation state when available, or an explicit Veritas producer fallback when governance is absent. Readiness events link to that authority-traced evidence by `evidenceIds`.
+
 ## Product Language Rule
 
 First-contact Veritas docs should not lead with `surface.input`, TrustInput, TrustReport, transparency gaps, claimGroups, or pre-glossary implementation names for standards, maps, checks, feedback, recommendations, readiness coverage, operational summaries, or protected standards.

@@ -36,8 +36,39 @@ test('Veritas surface.input validates against Surface and has policy coverage', 
   });
 
   assert.equal(input.source, 'veritas:surface-projection-test');
+  assert.equal(input.id, undefined);
+  assert.equal(input.generatedAt, undefined);
+  assert.equal(input.summary, undefined);
+  assert.equal(input.transparencyGaps, undefined);
+  assert.equal(input.evidenceRequirementsByClaimId, undefined);
   assert.equal(input.policies.some((policy) => policy.id === 'veritas.governance-artifact'), true);
+  assert.equal(input.policies.some((policy) => policy.id === 'veritas.readiness-verdict'), true);
   assert.equal(report.claims.length, input.claims.length);
+  const readinessClaim = input.claims.find((claim) => claim.claimType === 'software-readiness-verdict');
+  assert.ok(readinessClaim, 'expected Surface readiness verdict claim');
+  assert.equal(readinessClaim.subjectType, 'repository-change');
+  assert.equal(readinessClaim.surface, 'veritas.readiness');
+  assert.equal(readinessClaim.verificationPolicyId, 'veritas.readiness-verdict');
+  assert.equal(['ready', 'not-ready', 'needs-review'].includes(readinessClaim.value.verdict), true);
+  assert.ok(readinessClaim.currentIntegrityRef);
+  assert.ok(readinessClaim.metadata.policyCoverage);
+  assert.ok(readinessClaim.metadata.integrity.sourceRef);
+  assert.ok(Array.isArray(readinessClaim.metadata.integrity.fileRefs));
+  assert.ok(readinessClaim.metadata.integrity.configRefs);
+  assert.ok(readinessClaim.metadata.authorityTrace);
+  assert.equal(
+    ['governance-attestation', 'producer-fallback'].includes(readinessClaim.metadata.authorityTrace.kind),
+    true,
+  );
+  const readinessEvidence = input.evidence.find((item) => item.claimId === readinessClaim.id);
+  assert.ok(readinessEvidence, 'expected readiness verdict evidence');
+  assert.ok(readinessEvidence.metadata.authorityTrace);
+  assert.ok(readinessEvidence.metadata.integrity.sourceRef);
+  assert.ok(input.events.some((event) =>
+    event.claimId === readinessClaim.id &&
+    event.evidenceIds.includes(readinessEvidence.id)
+  ));
+  assert.ok(report.claims.some((claim) => claim.id === readinessClaim.id));
   if (typeof TrustInputBuilder.prototype.addClaimGroup === 'function') {
     assert.ok(input.claimGroups?.some((claimGroup) => claimGroup.kind === 'requirement-set'));
     assert.ok(report.claimGroupRollups.some((claimGroup) => claimGroup.id.startsWith('veritas.requirements.')));

@@ -51,4 +51,6 @@ Surface owns portable transparency primitives:
 
 At the boundary, Veritas acts as a Surface producer. It turns requirement evaluations, evidenceChecks, attestations, exceptions, and readiness outcomes into Surface-format claims and evidence. Surface can then derive status, freshness, conflicts, and gaps without importing Veritas readiness checktime code.
 
+For readiness integrations, the stable artifact path is the `reportArtifactPath` returned by `veritas readiness --format json`. Consumers should query the artifact's `surface.input.claims[]` or generated `surface.report.claims[]` for `claimType: "software-readiness-verdict"` rather than parse Veritas readiness internals. Authority trace and integrity scope live in Surface trust state when supported and are mirrored in claim/evidence metadata for older Surface 0.4 consumers, with readiness events linked to that evidence, so Flow and other consumers can attach the portable trust state without importing Veritas code.
+
 The public product signal is **Built with Surface**. The Veritas product experience should still use Veritas vocabulary.

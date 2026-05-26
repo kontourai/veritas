@@ -78,12 +78,15 @@ test('Surface projection reads authored claims from veritas.claims.json', async 
       baseline_ci_fast_passed: true,
     }, { rootDir });
 
-    assert.deepEqual(input.claims.map((claim) => claim.id), ['repo.evidence-check.npm-test']);
-    assert.equal(input.claims[0].value, 'all checks pass');
-    assert.equal(input.evidence[0].claimId, 'repo.evidence-check.npm-test');
-    assert.equal(input.evidence[0].metadata.observedResult.status, 'passed');
-    assert.equal(input.evidence[0].metadata.commandOutput.stdout, '2 tests passed\n');
-    assert.equal(input.events[0].status, 'verified');
+    const authoredClaim = input.claims.find((claim) => claim.id === 'repo.evidence-check.npm-test');
+    assert.ok(authoredClaim);
+    assert.equal(authoredClaim.value, 'all checks pass');
+    assert.equal(input.claims.some((claim) => claim.claimType === 'software-readiness-verdict'), true);
+    const authoredEvidence = input.evidence.find((item) => item.claimId === 'repo.evidence-check.npm-test');
+    assert.ok(authoredEvidence);
+    assert.equal(authoredEvidence.metadata.observedResult.status, 'passed');
+    assert.equal(authoredEvidence.metadata.commandOutput.stdout, '2 tests passed\n');
+    assert.equal(input.events.some((event) => event.claimId === 'repo.evidence-check.npm-test' && event.status === 'verified'), true);
   } finally {
     rmSync(rootDir, { recursive: true, force: true });
   }
