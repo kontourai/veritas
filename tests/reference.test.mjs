@@ -135,6 +135,7 @@ test('Repo Map and Repo Standards schemas declare activation and lint requiremen
     'required-pattern',
     'header-required',
     'vocabulary-consistency',
+    'primitive-first-governance',
   ]);
   assert.ok(matchDefs.requiredArtifactsMatch.properties.artifacts);
   assert.ok(matchDefs.governanceBlockMatch.properties['governance-block']);
@@ -144,6 +145,7 @@ test('Repo Map and Repo Standards schemas declare activation and lint requiremen
   assert.ok(matchDefs.filesPatternMatch.properties.pattern);
   assert.ok(matchDefs.vocabularyConsistencyMatch.properties.files);
   assert.ok(matchDefs.vocabularyConsistencyMatch.properties.terms);
+  assert.ok(matchDefs.primitiveFirstGovernanceMatch.properties.candidates);
 });
 
 test('fixture Repo Maps and evidence examples stay readable', () => {

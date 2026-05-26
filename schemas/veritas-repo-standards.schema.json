@@ -27,7 +27,8 @@
               "forbidden-pattern",
               "required-pattern",
               "header-required",
-              "vocabulary-consistency"
+              "vocabulary-consistency",
+              "primitive-first-governance"
             ]
           },
           "classification": {
@@ -58,6 +59,7 @@
               { "$ref": "#/$defs/diffRequiredMatch" },
               { "$ref": "#/$defs/filesPatternMatch" },
               { "$ref": "#/$defs/vocabularyConsistencyMatch" },
+              { "$ref": "#/$defs/primitiveFirstGovernanceMatch" },
               { "$ref": "#/$defs/emptyMatch" }
             ]
           }
@@ -127,6 +129,17 @@
             "then": {
               "properties": {
                 "match": { "$ref": "#/$defs/vocabularyConsistencyMatch" }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": { "kind": { "const": "primitive-first-governance" } },
+              "required": ["kind"]
+            },
+            "then": {
+              "properties": {
+                "match": { "$ref": "#/$defs/primitiveFirstGovernanceMatch" }
               }
             }
           }
@@ -223,6 +236,43 @@
               "allowContexts": {
                 "type": "array",
                 "items": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "primitiveFirstGovernanceMatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidates"],
+      "properties": {
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["files", "pattern", "representedBy"],
+            "properties": {
+              "files": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "pattern": { "type": "string" },
+              "representedBy": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["kind", "id"],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": ["repo-standards-rule", "evidence-check"]
+                    },
+                    "id": { "type": "string" }
+                  }
+                }
               }
             }
           }

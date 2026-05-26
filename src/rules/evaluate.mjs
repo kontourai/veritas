@@ -10,6 +10,7 @@ import { uniqueStrings } from '../util/strings.mjs';
  * @property {string} rootDir
  * @property {string[]} [changedFiles]
  * @property {object} [config] Repo Map config; required for work-area-boundary.
+ * @property {object} [repoStandards] Active Repo Standards config; required for primitive references.
  * @property {string|null} [actor] Resolved actor for boundary rules.
  */
 
@@ -245,6 +246,55 @@ export function evaluateVocabularyConsistencyRule(rule, context) {
   });
 }
 
+function primitiveExists(reference, rule, context) {
+  if (reference.kind === 'repo-standards-rule') {
+    return (context.repoStandards?.rules ?? []).some((candidateRule) =>
+      candidateRule.id === reference.id && candidateRule.id !== rule.id
+    );
+  }
+  if (reference.kind === 'evidence-check') {
+    return (context.config?.evidence?.evidenceChecks ?? []).some((check) => check.id === reference.id);
+  }
+  return false;
+}
+
+/** @param {RuleContext} context */
+export function evaluatePrimitiveFirstGovernanceRule(rule, context) {
+  const candidates = Array.isArray(rule.match?.candidates) ? rule.match.candidates : [];
+  const findings = [];
+
+  for (const candidate of candidates) {
+    const files = matchedFilesForRule({ match: { files: candidate.files ?? [] } }, context);
+    const regex = new RegExp(candidate.pattern, 'm');
+    const represented = (candidate.representedBy ?? []).some((reference) =>
+      primitiveExists(reference, rule, context)
+    );
+
+    for (const file of files) {
+      const content = readRepoTextFile(context.rootDir, file);
+      const match = regex.exec(content);
+      if (!match || represented) continue;
+      findings.push({
+        kind: 'primitive-first-governance',
+        artifact: file,
+        line: lineForMatch(content, match.index),
+        pattern: candidate.pattern,
+        required_primitives: candidate.representedBy ?? [],
+      });
+    }
+  }
+
+  return buildRuleResult(rule, {
+    implemented: true,
+    passed: findings.length === 0,
+    summary:
+      findings.length === 0
+        ? 'Repeatable governance checks are represented by Veritas primitives.'
+        : 'Some repeatable governance checks bypass Veritas primitives.',
+    findings,
+  });
+}
+
 function actorOwnsNode(actor, node) {
   const owners = uniqueStrings(node.owners ?? []);
   if (owners.includes('shared') || owners.includes('*')) return true;
@@ -311,6 +361,7 @@ export const RULE_EVALUATORS = {
   'required-pattern': evaluateRequiredPatternRule,
   'header-required': evaluateHeaderRequiredRule,
   'vocabulary-consistency': evaluateVocabularyConsistencyRule,
+  'primitive-first-governance': evaluatePrimitiveFirstGovernanceRule,
 };
 
 /** @param {RuleContext} context */
@@ -340,5 +391,5 @@ export function evaluateRepoStandards(repoStandards, context, options = {}) {
   const selectedRuleIds = new Set(options.ruleIds ?? []);
   return repoStandards.rules
     .filter((rule) => selectedRuleIds.size === 0 || selectedRuleIds.has(rule.id))
-    .map((rule) => evaluatePolicyRule(rule, context));
+    .map((rule) => evaluatePolicyRule(rule, { ...context, repoStandards }));
 }

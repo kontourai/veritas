@@ -233,6 +233,47 @@
           }
         ]
       }
+    },
+    {
+      "id": "repeatable-governance-uses-veritas-primitives",
+      "kind": "primitive-first-governance",
+      "classification": "promotable-policy",
+      "stage": "warn",
+      "message": "Repeatable repo governance checks should be represented by Veritas primitives before they become local helper scripts.",
+      "owner": "repo-maintainers",
+      "rollback_switch": "allow-unrepresented-governance-script",
+      "explain": {
+        "summary": "Represent repeatable governance through Repo Standards Requirements, Repo Map Evidence Checks, Change Guidance, Readiness Reports, Repo Conformance, Standards Feedback, Standards Recommendations, Generated Evidence, or Protected Standards.",
+        "mustDo": ["Route governance-enforcing scripts through a Repo Map Evidence Check or express the behavior as a Repo Standards Requirement with actionable Change Guidance."],
+        "mustNotDo": ["Do not add repeatable governance checks that bypass Veritas primitives or hide policy behavior in an untracked helper script."],
+        "exampleGood": "Add an Evidence Check in .veritas/repo-map.json for a validation command, or add a Repo Standards Requirement that reports the policy result.",
+        "exampleBad": "Add an npm script that enforces repo governance without a matching Evidence Check or Requirement.",
+        "contextLinks": [".veritas/GOVERNANCE.md", "docs/reference/artifacts-and-schemas.md"]
+      },
+      "match": {
+        "candidates": [
+          {
+            "files": ["package.json"],
+            "pattern": "\"veritas:vocab:check\"\\s*:\\s*\"node scripts/check-veritas-vocabulary\\.mjs\"",
+            "representedBy": [
+              {
+                "kind": "evidence-check",
+                "id": "vocabulary-consistency"
+              }
+            ]
+          },
+          {
+            "files": ["package.json"],
+            "pattern": "\"veritas:fallow:advisory\"\\s*:\\s*\"node scripts/run-fallow-audit\\.mjs\"",
+            "representedBy": [
+              {
+                "kind": "evidence-check",
+                "id": "fallow-advisory"
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }

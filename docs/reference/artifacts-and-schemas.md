@@ -166,6 +166,7 @@ Supported rule kinds:
 - `required-pattern`
 - `header-required`
 - `vocabulary-consistency`
+- `primitive-first-governance`
 - `work-area-boundary`
 
 Reference file:
@@ -211,6 +212,40 @@ Reference file:
 Each term may provide `term`, `pattern` or `regex`, `flags`, `prefer`, and optional `allowContexts` regexes for local exceptions.
 
 `work-area-boundary` has no path payload of its own; it reads changed files, the Repo Map graph, and an explicit actor. If `--actor` or `VERITAS_ACTOR` is missing, the requirement returns an error result and fails closed.
+
+`primitive-first-governance` documents and evaluates the repo-local pattern that repeatable governance should be represented through Veritas primitives instead of living only in a helper script, local command, or review-memory checklist. Use it when a repo wants Change Guidance and Readiness Report feedback for governance behavior that should be enforceable through Repo Standards Requirements, Repo Map Evidence Checks, Repo Conformance, Generated Evidence, Standards Feedback, Standards Recommendations, or Protected Standards.
+
+The match shape is explicit: each candidate selects files, looks for a JavaScript regular expression, and names at least one Veritas primitive that represents that governance behavior.
+
+```json
+{
+  "id": "repeatable-governance-uses-veritas-primitives",
+  "kind": "primitive-first-governance",
+  "classification": "promotable-policy",
+  "stage": "warn",
+  "message": "Repeatable repo governance checks should be represented by Veritas primitives before they become local helper scripts.",
+  "match": {
+    "candidates": [
+      {
+        "files": ["package.json"],
+        "pattern": "\"veritas:vocab:check\"\\s*:",
+        "representedBy": [
+          {
+            "kind": "evidence-check",
+            "id": "vocabulary-consistency"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+`candidates[].files` uses Veritas path matching. `candidates[].pattern` is passed to JavaScript `RegExp` and is tested against each matched file. `candidates[].representedBy` accepts references with `kind: "evidence-check"` and a Repo Map `evidenceChecks[].id`, or `kind: "repo-standards-rule"` and another Repo Standards Requirement `id`. The primitive-first Requirement does not count itself as a satisfying `repo-standards-rule` reference.
+
+When a candidate pattern is present but none of its `representedBy` references exists in the current Repo Map or Repo Standards file, the policy result fails or warns according to the Requirement's stage and enforcement. Findings use `kind: "primitive-first-governance"` and include the artifact path, line, matched pattern, and required primitive references. This makes the bypass visible in Generated Evidence and Readiness Reports without promoting the Requirement to Require before Standards Feedback shows the signal is reliable.
+
+This kind is for governance-enforcing behavior, not for every script. Ordinary helper scripts may build docs, run tests, format code, publish packages, or support developer convenience without becoming governance primitives. A script becomes governance-enforcing when it decides whether repo standards, merge readiness, repo conformance, protected standards integrity, authority, evidence freshness, or change guidance are satisfied. Governance-enforcing scripts should be expressed directly as Repo Standards Requirements when possible; when the behavior must run as a command, route it as an Evidence Check adapter behind the Repo Map so Veritas can select it, record evidence, and explain the result.
 
 ### Evidence record
 
@@ -280,6 +315,10 @@ MCP checks use `runner: "mcp"` with a stdio server definition, tool name, and op
 ```
 
 Removed command array fields such as `requiredEvidenceCheckCommands`, `defaultEvidenceCheckCommands`, and `surfaceEvidenceCheckCommands` are intentionally rejected by runtime validation. Migrate by assigning each check a stable `evidenceChecks[].id`, moving bash commands into `evidenceChecks[].command`, and replacing route command arrays with `evidenceCheckIds`.
+
+Evidence Checks are the adapter boundary for runnable governance behavior. If a script enforces repeatable governance, keep the script small and route it through a Repo Map `evidenceChecks[]` entry with a stable id, method, and summary. Then select that id through `requiredEvidenceCheckIds`, `defaultEvidenceCheckIds`, or `evidenceCheckRoutes` as appropriate for the Work Area. This keeps the result available to Merge Readiness, Repo Conformance, Generated Evidence, Standards Feedback, and Change Guidance.
+
+Do not confuse that with ordinary helper scripts. A command that only builds the docs site, formats files, runs a local convenience workflow, or wraps a test runner is not automatically a governance primitive. It needs Evidence Check routing when it is the thing Veritas relies on to decide whether a Requirement is satisfied, missing, stale, failing, advisory, or accepted by exception.
 
 Evidence Checks may optionally declare an external tool artifact. Veritas reads the artifact after the check has run, records a normalized `external_tool_results` entry, and maps the verdict into `surface.input`.
 

@@ -684,6 +684,82 @@ test('Repo Standards evaluates governance blocks and diff-required rules', () =>
   assert.equal(passedResults[1].passed, true);
 });
 
+test('Repo Standards flags repeatable governance checks without Veritas primitive coverage', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-primitive-first-'));
+  writeFileSync(join(rootDir, 'package.json'), `${JSON.stringify({
+    scripts: {
+      'governance:check': 'node scripts/check-governance.js',
+    },
+  }, null, 2)}\n`);
+
+  const primitiveFirstRule = {
+    id: 'repeatable-governance-uses-veritas-primitives',
+    kind: 'primitive-first-governance',
+    classification: 'promotable-policy',
+    stage: 'warn',
+    message: 'Repeatable governance checks should use Veritas primitives.',
+    match: {
+      candidates: [
+        {
+          files: ['package.json'],
+          pattern: '"governance:check"\\s*:\\s*"node scripts/check-governance\\.js"',
+          representedBy: [
+            {
+              kind: 'evidence-check',
+              id: 'governance-check',
+            },
+          ],
+        },
+      ],
+    },
+  };
+  const repoStandards = {
+    version: 1,
+    name: 'primitive-first-demo',
+    rules: [primitiveFirstRule],
+  };
+
+  const [failedResult] = evaluateRepoStandards(
+    repoStandards,
+    {
+      rootDir,
+      changedFiles: ['package.json'],
+      config: { evidence: { evidenceChecks: [] } },
+    },
+  );
+  assert.equal(failedResult.implemented, true);
+  assert.equal(failedResult.passed, false);
+  assert.equal(failedResult.findings[0].kind, 'primitive-first-governance');
+  assert.equal(failedResult.findings[0].artifact, 'package.json');
+  assert.deepEqual(failedResult.findings[0].required_primitives, [
+    {
+      kind: 'evidence-check',
+      id: 'governance-check',
+    },
+  ]);
+
+  const [passedResult] = evaluateRepoStandards(
+    repoStandards,
+    {
+      rootDir,
+      changedFiles: ['package.json'],
+      config: {
+        evidence: {
+          evidenceChecks: [
+            {
+              id: 'governance-check',
+              command: 'npm run governance:check',
+              method: 'validation',
+            },
+          ],
+        },
+      },
+    },
+  );
+  assert.equal(passedResult.passed, true);
+  assert.deepEqual(passedResult.findings, []);
+});
+
 test('Repo Standards fails closed for unknown rule kinds', () => {
   const repoStandards = {
     version: 1,
@@ -2654,6 +2730,94 @@ test('readiness check CLI defaults to agent-readable feedback output', () => {
   assert.match(stdout, /PASS\s+evidence-check/);
   assert.match(stdout, /report: \.veritas\/evidence\//);
   assert.match(stdout, /standards feedback draft: \.veritas\/standards-feedback-drafts\//);
+});
+
+test('readiness check reports primitive-first governance findings as policy results', () => {
+  const rootDir = initCommittedRepo('veritas-readiness-primitive-first-');
+  writeFileSync(join(rootDir, 'package.json'), `${JSON.stringify({
+    scripts: {
+      'governance:check': 'node scripts/check-governance.js',
+    },
+  }, null, 2)}\n`);
+
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'veritas',
+      'init',
+      '--root',
+      rootDir,
+      '--project-name',
+      'Readiness Primitive First Demo',
+      '--evidence-check',
+      'node -e "process.exit(0)"',
+    ],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  );
+  const policyPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
+  const repoStandards = readJsonFromAbsolute(policyPath);
+  repoStandards.rules.push({
+    id: 'repeatable-governance-uses-veritas-primitives',
+    kind: 'primitive-first-governance',
+    classification: 'promotable-policy',
+    stage: 'warn',
+    message: 'Repeatable governance checks should use Veritas primitives.',
+    owner: 'test',
+    rollback_switch: null,
+    explain: {
+      summary: 'Route repeatable governance through Veritas primitives.',
+      mustDo: ['Add a Repo Map Evidence Check or Repo Standards Requirement.'],
+      mustNotDo: ['Do not hide repo governance in a helper script.'],
+    },
+    match: {
+      candidates: [
+        {
+          files: ['package.json'],
+          pattern: '"governance:check"\\s*:\\s*"node scripts/check-governance\\.js"',
+          representedBy: [
+            {
+              kind: 'evidence-check',
+              id: 'governance-check',
+            },
+          ],
+        },
+      ],
+    },
+  });
+  writeFileSync(policyPath, `${JSON.stringify(repoStandards, null, 2)}\n`);
+
+  const stdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'veritas',
+      'readiness',
+      '--root',
+      rootDir,
+      '--working-tree',
+      '--skip-evidence-check',
+      '--run-id',
+      'primitive-first-feedback',
+    ],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  );
+  assert.match(stdout, /WARN\s+repeatable-governance-uses-veritas-primitives:/);
+  assert.match(stdout, /package\.json/);
+
+  const reportPathMatch = stdout.match(/report: (\.veritas\/evidence\/[^\s]+)/);
+  assert.ok(reportPathMatch);
+  const reportPath = join(rootDir, reportPathMatch[1]);
+  const record = readJsonFromAbsolute(reportPath);
+  const result = record.policy_results.find(
+    (policyResult) =>
+      policyResult.rule_id === 'repeatable-governance-uses-veritas-primitives',
+  );
+  assert.equal(result.passed, false);
+  assert.equal(result.stage, 'warn');
+  assert.equal(result.findings[0].kind, 'primitive-first-governance');
 });
 
 test('readiness check CLI can complete the full draft-and-record path', () => {
