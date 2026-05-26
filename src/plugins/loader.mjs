@@ -10,8 +10,8 @@ function pluginSpecifier(packageName, rootDir) {
   return packageName;
 }
 
-export async function loadPluginsFromConfig(adapterConfig, rootDir = process.cwd()) {
-  const pluginEntries = Array.isArray(adapterConfig?.plugins) ? adapterConfig.plugins : [];
+export async function loadPluginsFromConfig(repoMapConfig, rootDir = process.cwd()) {
+  const pluginEntries = Array.isArray(repoMapConfig?.plugins) ? repoMapConfig.plugins : [];
   for (const entry of pluginEntries) {
     if (!entry?.package) continue;
     try {

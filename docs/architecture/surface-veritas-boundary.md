@@ -1,10 +1,12 @@
 # Surface-Veritas Boundary
 
-Veritas is the repo and AI-agent governance product. Surface is the product-neutral transparency layer Veritas is built with. The dependency direction is one-way: Veritas may use Surface contracts and APIs. Surface does not depend on Veritas readiness checktime code.
+Veritas is the repo and AI-agent governance product. Surface is the product-neutral transparency layer Veritas is built with. The dependency direction is one-way: Veritas may use Surface contracts and APIs. Surface does not depend on Veritas readiness runtime code.
 
 ## Boundary Rule
 
 Veritas owns repo-native governance. Surface owns portable transparency.
+
+Veritas callers should cross this boundary through the Built with Surface producer module. The producer accepts Veritas records and returns portable Surface state; callers should not assemble Surface claims, validation, and trust-report summaries independently.
 
 Normal Veritas users should think in Veritas terms: repo standards, repo maps, requirements, evidenceChecks, verification authorities, merge readiness, readiness reports, repo conformance, and standards feedback. Surface terms should appear only when documenting interoperability, generated trust state, or Surface APIs.
 

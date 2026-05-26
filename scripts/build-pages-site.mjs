@@ -20,7 +20,7 @@ const markdownFiles = [
   'docs/plugin-authoring.md',
   'docs/design/agent-activation.md',
   'docs/architecture/surface-veritas-boundary.md',
-  'docs/design/framework-core-vs-adapter.md',
+  'docs/design/product-core-and-repo-map.md',
   'docs/design/standards-feedback-roadmap.md',
   'docs/design/roadmap.md',
   'docs/design/standards-feedback.md',
@@ -33,7 +33,7 @@ const markdownFiles = [
   'docs/guides/walkthrough.md',
   'docs/guides/deep-integration-template.md',
   'docs/guides/brownfield-adoption.md',
-  'docs/guides/operational-checkins.md',
+  'docs/guides/repo-conformance.md',
   'docs/guides/publish-and-release.md',
   'docs/guides/start-your-next-project.md',
   'docs/guides/tune-for-your-team.md',
@@ -44,12 +44,12 @@ const markdownFiles = [
   'docs/reference/examples.md',
   'docs/reference/glossary.md',
   'docs/reference/telemetry-and-read-models.md',
-  'examples/checkins/README.md',
+  'examples/repo-conformance/README.md',
 ];
 
 const passthroughFiles = [
   'package.json',
-  '.github/workflows/veritas-checkins.yml',
+  '.github/workflows/veritas-conformance.yml',
   '.github/workflows/ci.yml',
   '.github/workflows/pages.yml',
   '.github/workflows/publish-npm.yml',
@@ -157,7 +157,7 @@ writeFileSync(
   join(siteDir, '_config.yml'),
   [
     'title: Veritas',
-    'description: Repo-native framework and CLI for trustworthy AI-assisted development',
+    'description: Repo-native governance product and CLI for trustworthy AI-assisted development',
     'include:',
     '  - .github',
     'markdown: kramdown',

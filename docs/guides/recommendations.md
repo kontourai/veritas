@@ -19,7 +19,7 @@ Standards feedback can come from:
 Use the current CLI:
 
 ```bash
-npx @kontourai/veritas eval recommend
+npx @kontourai/veritas feedback recommend
 npx @kontourai/veritas recommendation list
 npx @kontourai/veritas recommendation show <id>
 ```

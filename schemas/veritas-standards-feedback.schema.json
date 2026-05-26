@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veritas.dev/schemas/veritas-standards-feedback.schema.json",
+  "title": "Veritas Standards Feedback",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "run_id",
+    "authority_settings_id",
+    "mode",
+    "evidence",
+    "governance",
+    "outcome",
+    "measurements",
+    "notes"
+  ],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "run_id": { "type": "string" },
+    "authority_settings_id": { "type": "string" },
+    "mode": {
+      "type": "string",
+      "enum": ["observe", "assist", "gate"]
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_path",
+        "artifact_digest",
+        "timestamp",
+        "source_ref",
+        "source_kind",
+        "source_scope",
+        "components",
+        "triggered_evidence_checks"
+      ],
+      "properties": {
+        "artifact_path": { "type": "string" },
+        "artifact_digest": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "source_ref": { "type": "string" },
+        "source_kind": {
+          "type": "string",
+          "enum": ["explicit-files", "branch-diff", "working-tree"]
+        },
+        "source_scope": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "components": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "triggered_evidence_checks": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "unresolved_files": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "protected_standards_touched",
+        "classification",
+        "human_review_required",
+        "changed_paths"
+      ],
+      "properties": {
+        "protected_standards_touched": { "type": "boolean" },
+        "classification": {
+          "type": "string",
+          "enum": ["clean", "additive-only", "protected-standards-modification", "unknown"]
+        },
+        "human_review_required": { "type": "boolean" },
+        "changed_paths": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accepted_without_major_rewrite",
+        "required_followup"
+      ],
+      "properties": {
+        "accepted_without_major_rewrite": { "type": "boolean" },
+        "required_followup": { "type": "boolean" },
+        "reviewer_confidence": {
+          "type": "string"
+        }
+      }
+    },
+    "measurements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "time_to_green_minutes",
+        "exception_count",
+        "false_positive_rules",
+        "missed_issues"
+      ],
+      "properties": {
+        "time_to_green_minutes": { "type": "number", "minimum": 0 },
+        "exception_count": { "type": "integer", "minimum": 0 },
+        "false_positive_rules": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "missed_issues": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ruleId", "reason", "actor", "timestamp"],
+        "properties": {
+          "ruleId": { "type": "string" },
+          "reason": { "type": "string" },
+          "actor": { "type": ["string", "null"] },
+          "timestamp": { "type": "string" },
+          "file": { "type": "string" }
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

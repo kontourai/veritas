@@ -18,9 +18,9 @@
           "CHANGELOG.md",
           ".veritas/README.md",
           ".veritas/GOVERNANCE.md",
-          ".veritas/repo.adapter.json",
+          ".veritas/repo-map.json",
           ".veritas/repo-standards/default.repo-standards.json",
-          ".veritas/team/default.team-profile.json"
+          ".veritas/authority/default.authority-settings.json"
         ]
       }
     },
@@ -51,7 +51,7 @@
     },
     {
       "id": "strict-package-boundaries",
-      "kind": "cross-surface-write",
+      "kind": "work-area-boundary",
       "classification": "promotable-policy",
       "stage": "warn",
       "message": "Package boundary writes should match surface ownership or explicit allowlists.",

@@ -38,18 +38,18 @@ Use it to see a case where the change stayed inside known work areas, but Verita
 
 ## Standards Feedback Fixtures
 
-These live under `examples/evals/` and demonstrate standards feedback.
+These live under `examples/standards-feedback/` and demonstrate standards feedback.
 
-- [examples/evals/work-agent-team-profile.json](../../examples/evals/work-agent-team-profile.json)
-- [examples/evals/work-agent-observe-eval-draft.json](../../examples/evals/work-agent-observe-eval-draft.json)
-- [examples/evals/work-agent-observe-eval.json](../../examples/evals/work-agent-observe-eval.json)
+- [examples/standards-feedback/work-agent-authority-settings.json](../../examples/standards-feedback/work-agent-authority-settings.json)
+- [examples/standards-feedback/work-agent-observe-standards-feedback-draft.json](../../examples/standards-feedback/work-agent-observe-standards-feedback-draft.json)
+- [examples/standards-feedback/work-agent-observe-standards-feedback.json](../../examples/standards-feedback/work-agent-observe-standards-feedback.json)
 
 Use them to inspect:
 
 - current shape for standards strictness settings
 - generated evidence provenance
 - completed feedback outcomes
-- time-to-green and exception/override counts
+- time-to-green and exception/exception counts
 - false positives and missed issues
 
 ## Benchmark Fixtures
@@ -68,8 +68,8 @@ Use them to inspect:
 
 These examples demonstrate generated readiness, conformance, or standards-feedback summaries.
 
-- [examples/checkins/veritas-repo-report.json](../../examples/checkins/veritas-repo-report.json)
-- [examples/checkins/veritas-repo-checkin-red.json](../../examples/checkins/veritas-repo-checkin-red.json)
+- [examples/repo-conformance/veritas-repo-report.json](../../examples/repo-conformance/veritas-repo-report.json)
+- [examples/repo-conformance/veritas-repo-conformance-red.json](../../examples/repo-conformance/veritas-repo-conformance-red.json)
 
 ## Specific Benchmark Fixtures
 

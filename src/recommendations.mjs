@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
-import { loadAdapterConfig, loadRepoStandards } from './load.mjs';
+import { loadRepoMap, loadRepoStandards } from './load.mjs';
 import { resolveVeritasPaths } from './report.mjs';
 import { createAttestation } from './attestations.mjs';
 
@@ -24,7 +24,7 @@ function digest(value) {
 }
 
 function readHistory(rootDir) {
-  const path = resolve(rootDir, '.veritas/evals/history.jsonl');
+  const path = resolve(rootDir, '.veritas/standards-feedback/history.jsonl');
   if (!existsSync(path)) return [];
   return readFileSync(path, 'utf8')
     .split('\n')
@@ -102,15 +102,15 @@ function recentRejectedRecommendationKeys(rootDir, now, cooldownDays) {
 export function generateRuleRecommendations({
   rootDir,
   repoStandardsPath,
-  adapterPath,
+  repoMapPath,
   now = new Date().toISOString(),
   inactiveRunThreshold = 5,
   rejectionCooldownDays = 14,
 } = {}) {
-  const { repoStandardsPath: resolvedRepoStandardsPath, adapterPath: resolvedAdapterPath } =
-    resolveVeritasPaths({ rootDir, repoStandardsPath, adapterPath }, { rootDir });
+  const { repoStandardsPath: resolvedRepoStandardsPath, repoMapPath: resolvedRepoMapPath } =
+    resolveVeritasPaths({ rootDir, repoStandardsPath, repoMapPath }, { rootDir });
   const repoStandards = loadRepoStandards(resolvedRepoStandardsPath);
-  const adapter = loadAdapterConfig(resolvedAdapterPath);
+  const repoMap = loadRepoMap(resolvedRepoMapPath);
   const history = readHistory(rootDir);
   const recommendations = [];
 
@@ -121,16 +121,16 @@ export function generateRuleRecommendations({
     const failedRecords = ruleRecords.filter((record) =>
       (record.policy_results ?? []).some((result) => result.rule_id === rule.id && result.passed === false),
     );
-    const overrideRecords = failedRecords.filter((record) =>
-      (record.overrides ?? []).some((override) => override.ruleId === rule.id),
+    const exceptionRecords = failedRecords.filter((record) =>
+      (record.exceptions ?? []).some((exception) => exception.ruleId === rule.id),
     );
-    if (failedRecords.length > 0 && overrideRecords.length / failedRecords.length > 0.4) {
+    if (failedRecords.length > 0 && exceptionRecords.length / failedRecords.length > 0.4) {
       recommendations.push(buildRecommendation({
         type: 'rule-enforcement-relaxation',
         target: rule.id,
         now,
-        evidenceRunIds: overrideRecords.map((record) => record.run_id),
-        rationale: `Rule ${rule.id} failed ${failedRecords.length} time(s) and was overridden ${overrideRecords.length} time(s).`,
+        evidenceRunIds: exceptionRecords.map((record) => record.run_id),
+        rationale: `Rule ${rule.id} failed ${failedRecords.length} time(s) and was accepted by exception ${exceptionRecords.length} time(s).`,
         diff: {
           repoStandardsPath: relative(rootDir, resolvedRepoStandardsPath).replaceAll('\\', '/'),
           ruleId: rule.id,
@@ -152,7 +152,7 @@ export function generateRuleRecommendations({
         target: rule.id,
         now,
         evidenceRunIds: warnFailures.map((record) => record.run_id),
-        rationale: `Warn rule ${rule.id} failed without follow-up edits in ${warnFailures.length} eval(s).`,
+        rationale: `Warn rule ${rule.id} failed without follow-up edits in ${warnFailures.length} standards feedback run(s).`,
         diff: {
           repoStandardsPath: relative(rootDir, resolvedRepoStandardsPath).replaceAll('\\', '/'),
           ruleId: rule.id,
@@ -167,7 +167,7 @@ export function generateRuleRecommendations({
         target: rule.id,
         now,
         evidenceRunIds: history.slice(-inactiveRunThreshold).map((record) => record.run_id),
-        rationale: `Rule ${rule.id} did not fail in the last ${inactiveRunThreshold} eval(s).`,
+        rationale: `Rule ${rule.id} did not fail in the last ${inactiveRunThreshold} standards feedback run(s).`,
         diff: {
           repoStandardsPath: relative(rootDir, resolvedRepoStandardsPath).replaceAll('\\', '/'),
           ruleId: rule.id,
@@ -192,11 +192,11 @@ export function generateRuleRecommendations({
       evidenceRunIds: history.filter((record) => (record.unresolved_files ?? []).includes(file)).map((record) => record.run_id),
       rationale: `Path ${file} matched no work area in ${count} feedback record(s).`,
       diff: {
-        adapterPath: relative(rootDir, resolvedAdapterPath).replaceAll('\\', '/'),
+        repoMapPath: relative(rootDir, resolvedRepoMapPath).replaceAll('\\', '/'),
         node: {
           id: `proposed.${safeId(file)}`,
           label: file,
-          kind: 'product-surface',
+          kind: 'product-area',
           patterns: [file],
           owners: ['shared'],
           boundary: 'advisory',

@@ -168,8 +168,8 @@ assert(
   'Docs index must link to the example fixtures reference.',
 );
 assert(
-  docsIndex.includes('guides/operational-checkins.md'),
-  'Docs index must link to the operational check-ins guide.',
+  docsIndex.includes('guides/repo-conformance.md'),
+  'Docs index must link to the repo conformance guide.',
 );
 assert(
   docsIndex.includes('guides/publish-and-release.md'),
@@ -219,11 +219,11 @@ assert(
   'CLI reference must document integrations.',
 );
 assert(
-  cliReference.includes('veritas eval marker'),
+  cliReference.includes('veritas feedback marker'),
   'CLI reference must document the marker benchmark command.',
 );
 assert(
-  cliReference.includes('veritas eval marker-suite'),
+  cliReference.includes('veritas feedback marker-suite'),
   'CLI reference must document the marker benchmark suite command.',
 );
 assert(
@@ -250,8 +250,8 @@ assert(
 const artifactsReference = readText('docs/reference/artifacts-and-schemas.md');
 assertMarkdownLinksResolve('docs/reference/artifacts-and-schemas.md');
 assert(
-  artifactsReference.includes('.veritas/repo.adapter.json'),
-  'Artifacts reference must include the starter adapter path.',
+  artifactsReference.includes('.veritas/repo-map.json'),
+  'Artifacts reference must include the starter Repo Map path.',
 );
 assert(
   artifactsReference.includes('.veritas/GOVERNANCE.md'),
@@ -266,8 +266,8 @@ assert(
   'Artifacts reference must mention schema files.',
 );
 assert(
-  artifactsReference.includes('adapters/'),
-  'Artifacts reference must mention adapters.',
+  artifactsReference.includes('repo-maps/'),
+  'Artifacts reference must mention repo-maps.',
 );
 assert(
   artifactsReference.includes('repo-standards/'),
@@ -289,20 +289,20 @@ assert(
   'Examples reference must include the fail evidence fixture.',
 );
 assert(
-  examplesReference.includes('examples/evals/work-agent-observe-eval-draft.json'),
-  'Examples reference must include the eval draft fixture.',
+  examplesReference.includes('examples/standards-feedback/work-agent-observe-standards-feedback-draft.json'),
+  'Examples reference must include the standards feedback draft fixture.',
 );
 assert(
   examplesReference.includes('examples/classification/work-agent-convergence-rule-groups.json'),
   'Examples reference must include the classification fixture.',
 );
 assert(
-  examplesReference.includes('examples/checkins/veritas-repo-report.json'),
-  'Examples reference must include the check-in report example.',
+  examplesReference.includes('examples/repo-conformance/veritas-repo-report.json'),
+  'Examples reference must include the repo conformance report example.',
 );
 assert(
-  examplesReference.includes('examples/checkins/veritas-repo-checkin-red.json'),
-  'Examples reference must include the red checkin example.',
+  examplesReference.includes('examples/repo-conformance/veritas-repo-conformance-red.json'),
+  'Examples reference must include the red conformance example.',
 );
 assert(
   examplesReference.includes('examples/benchmarks/migration-marker-scenario.json'),
@@ -336,7 +336,7 @@ assert(
   'Benchmarking reference must explain the benchmark fixtures directory.',
 );
 assert(
-  benchmarkingReference.includes('veritas eval marker-suite'),
+  benchmarkingReference.includes('veritas feedback marker-suite'),
   'Benchmarking reference must mention the suite command.',
 );
 assert(
@@ -460,26 +460,26 @@ assert(
   'Publish workflow must not depend on a long-lived NPM_TOKEN secret.',
 );
 
-const checkinsWorkflow = readText('.github/workflows/veritas-checkins.yml');
+const conformanceWorkflow = readText('.github/workflows/veritas-conformance.yml');
 assert(
-  checkinsWorkflow.includes('actions/checkout@v6'),
-  'Check-in workflow must use the current checkout action.',
+  conformanceWorkflow.includes('actions/checkout@v6'),
+  'Repo Conformance workflow must use the current checkout action.',
 );
 assert(
-  checkinsWorkflow.includes('actions/setup-node@v6'),
-  'Check-in workflow must use the current setup-node action.',
+  conformanceWorkflow.includes('actions/setup-node@v6'),
+  'Repo Conformance workflow must use the current setup-node action.',
 );
 assert(
-  checkinsWorkflow.includes('actions/upload-artifact@v7'),
-  'Check-in workflow must use the current upload-artifact action.',
+  conformanceWorkflow.includes('actions/upload-artifact@v7'),
+  'Repo Conformance workflow must use the current upload-artifact action.',
 );
 assert(
-  checkinsWorkflow.includes('actions/download-artifact@v8'),
-  'Check-in workflow must use the current download-artifact action.',
+  conformanceWorkflow.includes('actions/download-artifact@v8'),
+  'Repo Conformance workflow must use the current download-artifact action.',
 );
 assert(
-  checkinsWorkflow.includes('actions/github-script@v9'),
-  'Check-in workflow must use the current github-script action.',
+  conformanceWorkflow.includes('actions/github-script@v9'),
+  'Repo Conformance workflow must use the current github-script action.',
 );
 
 execFileSync('node', ['scripts/build-pages-site.mjs'], {
@@ -492,14 +492,14 @@ assert(
   'Pages build config must explicitly include the .github path for published workflow links.',
 );
 assert(fileExists('.site-src/CONTRIBUTING.md'), 'Pages build must include CONTRIBUTING.md.');
-assert(fileExists('.site-src/examples/checkins/README.md'), 'Pages build must include the check-in README.');
+assert(fileExists('.site-src/examples/repo-conformance/README.md'), 'Pages build must include the repo conformance README.');
 assert(fileExists('.site-src/package.json'), 'Pages build must include package.json for linked publish docs.');
-assert(fileExists('.site-src/.github/workflows/veritas-checkins.yml'), 'Pages build must include workflow files referenced by the docs.');
+assert(fileExists('.site-src/.github/workflows/veritas-conformance.yml'), 'Pages build must include workflow files referenced by the docs.');
 assert(fileExists('.site-src/.github/workflows/ci.yml'), 'Pages build must include the CI workflow file.');
 assert(fileExists('.site-src/.github/workflows/pages.yml'), 'Pages build must include the Pages workflow file.');
 assert(fileExists('.site-src/.github/workflows/publish-npm.yml'), 'Pages build must include the npm publish workflow file.');
 
-const designDoc = readText('docs/design/framework-core-vs-adapter.md');
+const designDoc = readText('docs/design/product-core-and-repo-map.md');
 assert(
   designDoc.includes('product core') || designDoc.includes('Product Core'),
   'Design doc must explain the product core.',
@@ -509,7 +509,7 @@ for (const relativePath of [
   'CLAUDE.md',
   'CONTRIBUTING.md',
   ...iterDocFiles('docs'),
-  ...iterDocFiles('examples/checkins'),
+  ...iterDocFiles('examples/repo-conformance'),
   ...iterDocFiles('.veritas'),
 ]) {
   assertNoAbsoluteFilesystemLinks(readText(relativePath), relativePath);

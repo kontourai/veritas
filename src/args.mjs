@@ -60,7 +60,7 @@ export function parseTokens(argv, spec, { defaults = {} } = {}) {
 
 export function parseArgs(argv) {
   const { options, rest } = parseTokens(argv, {
-    '--adapter': { type: 'string', key: 'adapterPath' },
+    '--repo-map': { type: 'string', key: 'repoMapPath' },
     '--repo-standards': { type: 'string', key: 'repoStandardsPath' },
     '--root': { type: 'string', key: 'rootDir' },
     '--workstream': { type: 'string', key: 'workstream' },
@@ -167,15 +167,15 @@ export function parsePreToolUseArgs(argv) {
   ).options;
 }
 
-export function parseEvalArgs(argv) {
+export function parseStandardsFeedbackArgs(argv) {
   return parseTokens(
     argv,
     {
       '--root': { type: 'string', key: 'rootDir' },
       '--evidence': { type: 'string', key: 'evidencePath' },
-      '--transcript': { type: 'string', key: 'transcriptPath' },
+      '--session-log': { type: 'string', key: 'sessionLogPath' },
       '--tool': { type: 'string', key: 'tool' },
-      '--team-profile': { type: 'string', key: 'teamProfilePath' },
+      '--authority-settings': { type: 'string', key: 'authoritySettingsPath' },
       '--draft': { type: 'string', key: 'draftPath' },
       '--output': { type: 'string', key: 'outputPath' },
       '--accepted-without-major-rewrite': {
@@ -185,7 +185,7 @@ export function parseEvalArgs(argv) {
       '--required-followup': { type: 'boolean-string', key: 'requiredFollowup' },
       '--reviewer-confidence': { type: 'string', key: 'reviewerConfidence' },
       '--time-to-green-minutes': { type: 'number', key: 'timeToGreenMinutes' },
-      '--override-count': { type: 'number', key: 'overrideCount' },
+      '--exception-count': { type: 'number', key: 'exceptionCount' },
       '--rewrite-threshold': { type: 'number', key: 'rewriteThreshold' },
       '--verbose': { type: 'flag', key: 'verbose' },
       '--false-positive-rule': { type: 'array', key: 'falsePositiveRules' },
@@ -204,22 +204,22 @@ export function parseEvalArgs(argv) {
   ).options;
 }
 
-export function parseMarkerEvalArgs(argv) {
+export function parseMarkerStandardsFeedbackArgs(argv) {
   return parseTokens(
     argv,
     {
       '--root': { type: 'string', key: 'rootDir' },
       '--scenario': { type: 'string', key: 'scenarioPath' },
-      '--without-veritas-transcript': {
+      '--without-veritas-session-log': {
         type: 'string',
-        key: 'withoutVeritasTranscriptPath',
+        key: 'withoutVeritasSessionLogPath',
       },
-      '--with-veritas-transcript': { type: 'string', key: 'withVeritasTranscriptPath' },
+      '--with-veritas-session-log': { type: 'string', key: 'withVeritasSessionLogPath' },
     },
   ).options;
 }
 
-export function parseMarkerSuiteEvalArgs(argv) {
+export function parseMarkerSuiteStandardsFeedbackArgs(argv) {
   return parseTokens(
     argv,
     {
@@ -234,9 +234,9 @@ export function parseReadinessArgs(argv) {
     argv,
     {
       '--root': { type: 'string', key: 'rootDir' },
-      '--adapter': { type: 'string', key: 'adapterPath' },
+      '--repo-map': { type: 'string', key: 'repoMapPath' },
       '--repo-standards': { type: 'string', key: 'repoStandardsPath' },
-      '--team-profile': { type: 'string', key: 'teamProfilePath' },
+      '--authority-settings': { type: 'string', key: 'authoritySettingsPath' },
       '--run-id': { type: 'string', key: 'runId' },
       '--working-tree': { type: 'flag', key: 'workingTree' },
       '--changed-from': { type: 'string', key: 'changedFrom' },
@@ -251,7 +251,7 @@ export function parseReadinessArgs(argv) {
       '--required-followup': { type: 'boolean-string', key: 'requiredFollowup' },
       '--reviewer-confidence': { type: 'string', key: 'reviewerConfidence' },
       '--time-to-green-minutes': { type: 'number', key: 'timeToGreenMinutes' },
-      '--override-count': { type: 'number', key: 'overrideCount' },
+      '--exception-count': { type: 'number', key: 'exceptionCount' },
       '--false-positive-rule': { type: 'array', key: 'falsePositiveRules' },
       '--missed-issue': { type: 'array', key: 'missedIssues' },
       '--note': { type: 'array', key: 'notes' },

@@ -22,7 +22,7 @@ export function parseCliJson(output) {
   throw new Error(`Unable to parse CLI JSON output:\n${output}`);
 }
 
-export const frameworkRootDir = fileURLToPath(new URL('..', import.meta.url));
+export const repoRootDir = fileURLToPath(new URL('..', import.meta.url));
 
 export function readJsonFromAbsolute(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
@@ -34,10 +34,10 @@ export function writeTempJson(rootDir, relativePath, value) {
   return path;
 }
 
-export function writeTempAdapter(rootDir, adapter) {
-  const adapterPath = join(rootDir, '.veritas-repo.adapter.json');
-  writeFileSync(adapterPath, `${JSON.stringify(adapter, null, 2)}\n`);
-  return adapterPath;
+export function writeTempRepoMap(rootDir, repoMap) {
+  const repoMapPath = join(rootDir, '.veritas-repo-map.json');
+  writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
+  return repoMapPath;
 }
 
 export function mkdirp(path) {
@@ -71,7 +71,7 @@ export function installLocalVeritasBin(rootDir) {
   const wrapperPath = join(binDir, 'veritas');
   writeFileSync(
     wrapperPath,
-    `#!/bin/sh\nexec node ${JSON.stringify(join(frameworkRootDir, 'bin/veritas.mjs'))} "$@"\n`,
+    `#!/bin/sh\nexec node ${JSON.stringify(join(repoRootDir, 'bin/veritas.mjs'))} "$@"\n`,
     'utf8',
   );
   chmodSync(wrapperPath, 0o755);

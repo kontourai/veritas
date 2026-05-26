@@ -13,8 +13,8 @@
       "trials": [
         {
           "trial_id": "migration-trial-1",
-          "without_veritas_transcript_path": "migration-marker-without-veritas.json",
-          "with_veritas_transcript_path": "migration-marker-with-veritas.json"
+          "without_veritas_session_log_path": "migration-marker-without-veritas.json",
+          "with_veritas_session_log_path": "migration-marker-with-veritas.json"
         }
       ]
     },
@@ -27,18 +27,18 @@
       "trials": [
         {
           "trial_id": "auth-trial-1",
-          "without_veritas_transcript_path": "auth-boundary-marker-without-veritas-trial-1.json",
-          "with_veritas_transcript_path": "auth-boundary-marker-with-veritas-trial-1.json"
+          "without_veritas_session_log_path": "auth-boundary-marker-without-veritas-trial-1.json",
+          "with_veritas_session_log_path": "auth-boundary-marker-with-veritas-trial-1.json"
         },
         {
           "trial_id": "auth-trial-2",
-          "without_veritas_transcript_path": "auth-boundary-marker-without-veritas-trial-2.json",
-          "with_veritas_transcript_path": "auth-boundary-marker-with-veritas-trial-2.json"
+          "without_veritas_session_log_path": "auth-boundary-marker-without-veritas-trial-2.json",
+          "with_veritas_session_log_path": "auth-boundary-marker-with-veritas-trial-2.json"
         },
         {
           "trial_id": "auth-trial-3",
-          "without_veritas_transcript_path": "auth-boundary-marker-without-veritas-trial-3.json",
-          "with_veritas_transcript_path": "auth-boundary-marker-with-veritas-trial-3.json"
+          "without_veritas_session_log_path": "auth-boundary-marker-without-veritas-trial-3.json",
+          "with_veritas_session_log_path": "auth-boundary-marker-with-veritas-trial-3.json"
         }
       ]
     },
@@ -51,8 +51,8 @@
       "trials": [
         {
           "trial_id": "pii-trial-1",
-          "without_veritas_transcript_path": "pii-marker-without-veritas.json",
-          "with_veritas_transcript_path": "pii-marker-with-veritas.json"
+          "without_veritas_session_log_path": "pii-marker-without-veritas.json",
+          "with_veritas_session_log_path": "pii-marker-with-veritas.json"
         }
       ]
     },
@@ -65,8 +65,8 @@
       "trials": [
         {
           "trial_id": "api-trial-1",
-          "without_veritas_transcript_path": "breaking-api-marker-without-veritas.json",
-          "with_veritas_transcript_path": "breaking-api-marker-with-veritas.json"
+          "without_veritas_session_log_path": "breaking-api-marker-without-veritas.json",
+          "with_veritas_session_log_path": "breaking-api-marker-with-veritas.json"
         }
       ]
     },
@@ -79,8 +79,8 @@
       "trials": [
         {
           "trial_id": "governance-protected-standards-trial-1",
-          "without_veritas_transcript_path": "governance-protected-standards-marker-without-veritas.json",
-          "with_veritas_transcript_path": "governance-protected-standards-marker-with-veritas.json"
+          "without_veritas_session_log_path": "governance-protected-standards-marker-without-veritas.json",
+          "with_veritas_session_log_path": "governance-protected-standards-marker-with-veritas.json"
         }
       ]
     },
@@ -88,13 +88,13 @@
       "benchmark_id": "governance-standards-growth-marker",
       "title": "Standards Growth additive growth marker",
       "marker_class": "governance-additive-growth",
-      "repo_surface": ".veritas/team/release.team-profile.json",
+      "repo_surface": ".veritas/authority/release.authority-settings.json",
       "scenario_path": "governance-standards-growth-marker-scenario.json",
       "trials": [
         {
           "trial_id": "governance-standards-growth-trial-1",
-          "without_veritas_transcript_path": "governance-standards-growth-marker-without-veritas.json",
-          "with_veritas_transcript_path": "governance-standards-growth-marker-with-veritas.json"
+          "without_veritas_session_log_path": "governance-standards-growth-marker-without-veritas.json",
+          "with_veritas_session_log_path": "governance-standards-growth-marker-with-veritas.json"
         }
       ]
     }

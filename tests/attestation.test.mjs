@@ -13,7 +13,7 @@ import {
 } from '../src/index.mjs';
 import {
   commitAll,
-  frameworkRootDir,
+  repoRootDir,
   initCommittedRepo,
   parseCliJson,
   readJsonFromAbsolute,
@@ -194,7 +194,7 @@ test('readiness check prints a warning for expired attestation', () => {
     validUntilDays: 1,
     attestedAt: '2020-01-01T00:00:00.000Z',
   });
-  const cli = join(frameworkRootDir, 'bin/veritas.mjs');
+  const cli = join(repoRootDir, 'bin/veritas.mjs');
   const output = execFileSync('node', [
     cli,
     'readiness',
@@ -211,7 +211,7 @@ test('attestation rule is visible to explain context', () => {
   const rootDir = bootstrapVeritasRepo('veritas-attest-explain-');
   const text = buildExplainText({
     rootDir,
-    adapter: readJsonFromAbsolute(join(rootDir, '.veritas/repo.adapter.json')),
+    repoMap: readJsonFromAbsolute(join(rootDir, '.veritas/repo-map.json')),
     repoStandards: readJsonFromAbsolute(join(rootDir, '.veritas/repo-standards/default.repo-standards.json')),
     ruleId: 'policy-changes-require-attestation',
   });
@@ -229,7 +229,7 @@ test('attestation refuses CI or bot actors', () => {
 
 test('CLI bootstrap writes tracked attestation and readiness check fails on protected standards drift until policy-change attestation', () => {
   const rootDir = bootstrapVeritasRepo();
-  const cli = join(frameworkRootDir, 'bin/veritas.mjs');
+  const cli = join(repoRootDir, 'bin/veritas.mjs');
   const bootstrapOutput = execFileSync('node', [
     cli,
     'attest',

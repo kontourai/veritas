@@ -57,7 +57,7 @@ export const VERITAS_EXTENSION = {
     {
       id: 'veritas-governance-artifact',
       displayName: 'Governance Artifact',
-      description: 'A governance artifact that must remain in sync with policy and adapter configuration.',
+      description: 'A governance artifact that must remain in sync with policy and Repo Mapuration.',
       defaultImpact: 'high',
       defaultSurface: 'veritas.governance',
       policyTemplateId: 'veritas.governance-artifact',
@@ -65,7 +65,7 @@ export const VERITAS_EXTENSION = {
     {
       id: 'veritas-external-tool-result',
       displayName: 'External Tool Result',
-      description: 'Result from an external analysis tool integrated via a Veritas adapter.',
+      description: 'Result from an external analysis tool integrated via a Veritas Repo Map.',
       defaultImpact: 'medium',
       defaultSurface: 'veritas.external-tools',
       policyTemplateId: 'veritas.external-tool-result',

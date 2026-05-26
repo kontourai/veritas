@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { loadAdapterConfig } from '../load.mjs';
+import { loadRepoMap } from '../load.mjs';
 import { loadPluginsFromConfig } from '../plugins/loader.mjs';
 import { listPlugins } from '../plugins/registry.mjs';
 
@@ -9,12 +9,12 @@ export async function runPluginCli(argv = process.argv.slice(2), { rootDir = pro
   if (subcommand !== 'list') {
     throw new Error(`Unknown plugin subcommand: ${subcommand}. Use: list`);
   }
-  const adapterPath = resolve(rootDir, '.veritas/repo.adapter.json');
-  const config = existsSync(adapterPath) ? loadAdapterConfig(adapterPath) : {};
+  const repoMapPath = resolve(rootDir, '.veritas/repo-map.json');
+  const config = existsSync(repoMapPath) ? loadRepoMap(repoMapPath) : {};
   await loadPluginsFromConfig(config, rootDir);
   const plugins = listPlugins();
   if (plugins.length === 0) {
-    process.stdout.write('No plugins loaded. Add plugins to .veritas/repo.adapter.json.\n');
+    process.stdout.write('No plugins loaded. Add plugins to .veritas/repo-map.json.\n');
     return;
   }
   for (const plugin of plugins) {

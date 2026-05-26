@@ -2,7 +2,7 @@
 # .veritas/hooks/stop.sh -- run by AI tools at Stop/turn-end.
 # Surfaces unresolved Veritas lint issues back to the agent without blocking the session.
 
-if [ "${VERITAS_HOOK_SKIP:-${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
+if [ "${VERITAS_HOOK_SKIP:-0}" = "1" ]; then
   exit 0
 fi
 

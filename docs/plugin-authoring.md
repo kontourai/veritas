@@ -51,7 +51,7 @@ The Surface Console uses that attribution to show that evidence came from the to
 
 ## Register A Plugin
 
-Add plugin entries to `.veritas/repo.adapter.json`:
+Add plugin entries to `.veritas/repo-map.json`:
 
 ```json
 {

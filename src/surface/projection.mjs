@@ -45,9 +45,9 @@ const SURFACE_SUPPORTS_EVIDENCE_EXECUTION = (() => {
   }
 })();
 
-export async function buildSurfaceTrustInput(record, { rootDir = process.cwd(), adapterConfig = null } = {}) {
+export async function buildSurfaceTrustInput(record, { rootDir = process.cwd(), repoMapConfig = null } = {}) {
   registerVeritasExtension();
-  if (adapterConfig) await loadPluginsFromConfig(adapterConfig, rootDir);
+  if (repoMapConfig) await loadPluginsFromConfig(repoMapConfig, rootDir);
   const claimStore = loadVeritasClaimStore(rootDir);
   const effectiveClaimStore = withProjectedPolicyClaims(claimStore, record);
   const assembler = createSurfaceTrustInputAssembler({
@@ -111,7 +111,7 @@ function withProjectedPolicyClaims(claimStore, record) {
       claimType: 'veritas-policy-result',
       fieldOrBehavior: result.rule_id,
       subjectType: 'policy-rule',
-      subjectId: `${record.adapter?.name ?? 'adapter'}:${record.repo_standards?.name ?? 'repo-standards'}:${result.rule_id}`,
+      subjectId: `${record.repo_map?.name ?? 'repo-map'}:${record.repo_standards?.name ?? 'repo-standards'}:${result.rule_id}`,
       impactLevel: surfacePolicyImpact(result),
       verificationPolicyId: SURFACE_TRUST_POLICIES.policyResult.id,
       metadata: {
@@ -120,7 +120,7 @@ function withProjectedPolicyClaims(claimStore, record) {
         stage: result.stage,
         classification: result.classification,
         repoStandards: record.repo_standards?.name,
-        adapter: record.adapter?.name,
+        repoMap: record.repo_map?.name,
       },
       createdAt: record.timestamp,
       updatedAt: record.timestamp,
@@ -185,7 +185,7 @@ function buildRepoStandardsClaimGroup(record, claimStore) {
     metadata: {
       producer: 'veritas',
       repoStandards: record.repo_standards,
-      adapter: record.adapter,
+      repoMap: record.repo_map,
     },
   };
 }
@@ -592,21 +592,21 @@ export function buildGovernanceArtifactClaims({
       applicability: 'policy-results',
     },
     {
-      key: 'adapter',
-      hashField: 'adapterHash',
-      subjectId: record.adapter?.name ?? 'adapter',
-      path: governanceState.protectedStandards?.paths?.adapterPath,
-      currentHash: governanceState.protectedStandards?.hashes?.adapterHash,
-      attestedHash: governanceState.attestation?.adapterHash,
+      key: 'repo-map',
+      hashField: 'repoMapHash',
+      subjectId: record.repo_map?.name ?? 'repo-map',
+      path: governanceState.protectedStandards?.paths?.repoMapPath,
+      currentHash: governanceState.protectedStandards?.hashes?.repoMapHash,
+      attestedHash: governanceState.attestation?.repoMapHash,
       applicability: record.uncovered_path_result === 'clear' ? 'covered' : record.uncovered_path_result,
     },
     {
-      key: 'team-profile',
-      hashField: 'teamProfileHash',
-      subjectId: record.owner ?? 'team-profile',
-      path: governanceState.protectedStandards?.paths?.teamProfilePath,
-      currentHash: governanceState.protectedStandards?.hashes?.teamProfileHash,
-      attestedHash: governanceState.attestation?.teamProfileHash,
+      key: 'authority-settings',
+      hashField: 'authoritySettingsHash',
+      subjectId: record.owner ?? 'authority-settings',
+      path: governanceState.protectedStandards?.paths?.authoritySettingsPath,
+      currentHash: governanceState.protectedStandards?.hashes?.authoritySettingsHash,
+      attestedHash: governanceState.attestation?.authoritySettingsHash,
       applicability: 'governance-actor-context',
     },
   ];
@@ -622,7 +622,7 @@ export function buildGovernanceArtifactClaims({
       subjectId: `${artifact.key}:${artifact.subjectId}`,
       surface: 'veritas.governance-artifacts',
       claimType: 'veritas-governance-artifact',
-      fieldOrBehavior: artifact.key === 'adapter' ? 'integrityAndApplicability' : 'integrityAndCurrentness',
+      fieldOrBehavior: artifact.key === 'repo-map' ? 'integrityAndApplicability' : 'integrityAndCurrentness',
       value: {
         artifact: artifact.key,
         path: artifact.path,
@@ -1061,7 +1061,7 @@ export function policyResultClaimId(record, ruleId) {
   return [
     'veritas',
     'policy',
-    surfaceSafeId(record.adapter?.name ?? 'adapter'),
+    surfaceSafeId(record.repo_map?.name ?? 'repo-map'),
     surfaceSafeId(record.repo_standards?.name ?? 'repo-standards'),
     surfaceSafeId(ruleId),
   ].join('.');

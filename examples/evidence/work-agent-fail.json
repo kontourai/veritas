@@ -1,5 +1,5 @@
 {
-  "framework_version": 1,
+  "record_schema_version": 1,
   "run_id": "work-agent-fail-example",
   "timestamp": "2026-04-19T00:05:00.000Z",
   "source_ref": "refs/pull/412/head",
@@ -43,8 +43,9 @@
     "tmp/generated-note.txt"
   ],
   "promotion_allowed": false,
-  "framework": {
-    "version": 1,
+  "producer": {
+    "name": "veritas",
+    "record_schema_version": 1,
     "resolver_precedence": [
       "explicit roadmap task or issue reference in prompt/branch/PR title",
       "matching initiative plan under docs/plans/**",
@@ -58,9 +59,9 @@
       "override_or_bypass": false
     }
   },
-  "adapter": {
+  "repo_map": {
     "name": "work-agent",
-    "kind": "repo-adapter",
+    "kind": "repo-map",
     "report_transport": "github-step-summary",
     "default_resolution": {
       "phase": "Phase 1 (Harden & Onboard)",

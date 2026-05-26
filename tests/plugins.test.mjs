@@ -12,7 +12,7 @@ import {
   registerPlugin,
 } from '../src/index.mjs';
 import npmAuditPlugin from '../examples/veritas-plugins/npm-audit.mjs';
-import { frameworkRootDir } from './helpers.mjs';
+import { repoRootDir } from './helpers.mjs';
 
 function plugin(name = `test-plugin-${Date.now()}`) {
   return {
@@ -125,16 +125,16 @@ export default {
   policyTemplates: { 'cli.policy': { claimType: 'cli-claim', requiredEvidence: ['policy_rule'], requiredMethods: ['validation'], requiresCorroboration: false, reviewAuthority: 'plugin', validityRule: { kind: 'manual' }, stalenessTriggers: [], conflictRules: [], impactLevel: 'medium' } },
 };
 `);
-  writeFileSync(join(rootDir, '.veritas/repo.adapter.json'), JSON.stringify({
+  writeFileSync(join(rootDir, '.veritas/repo-map.json'), JSON.stringify({
     name: 'cli-repo',
     plugins: [{ package: './plugin.mjs' }],
   }, null, 2));
-  const list = execFileSync('node', [join(frameworkRootDir, 'bin/veritas.mjs'), 'plugin', 'list'], {
+  const list = execFileSync('node', [join(repoRootDir, 'bin/veritas.mjs'), 'plugin', 'list'], {
     cwd: rootDir,
     encoding: 'utf8',
   });
   assert.match(list, /cli-plugin@1\.0\.0/);
-  const scaffold = execFileSync('node', [join(frameworkRootDir, 'bin/veritas.mjs'), 'claim', 'scaffold', '--plugin', 'cli-plugin'], {
+  const scaffold = execFileSync('node', [join(repoRootDir, 'bin/veritas.mjs'), 'claim', 'scaffold', '--plugin', 'cli-plugin'], {
     cwd: rootDir,
     encoding: 'utf8',
   });

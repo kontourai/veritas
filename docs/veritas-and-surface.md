@@ -49,6 +49,6 @@ Surface owns portable transparency primitives:
 - transparency gaps
 - trust snapshots and reports
 
-At the boundary, Veritas acts as a Surface producer. It turns requirement evaluations, evidenceChecks, attestations, exceptions, and readiness outcomes into Surface-format claims and evidence. Surface can then derive status, freshness, conflicts, and gaps without importing Veritas readiness checktime code.
+At the boundary, Veritas acts as a Surface producer. It turns requirement evaluations, evidenceChecks, attestations, exceptions, and readiness outcomes into Surface-format claims and evidence. Surface can then derive status, freshness, conflicts, and gaps without importing Veritas readiness runtime code.
 
 The public product signal is **Built with Surface**. The Veritas product experience should still use Veritas vocabulary.

@@ -15,7 +15,7 @@ export function buildMarkdownSummary(record, artifactPath) {
   const lines = [
     '## Veritas Report',
     '',
-    `- **Adapter:** ${record.adapter.name} (${record.adapter.kind})`,
+    `- **Repo map:** ${record.repo_map.name} (${record.repo_map.kind})`,
     `- **Source:** ${record.source_kind} (${record.source_scope.join(', ')})`,
     `- **Phase:** ${record.resolved_phase}`,
     `- **Workstream:** ${record.resolved_workstream}`,
@@ -31,7 +31,7 @@ export function buildMarkdownSummary(record, artifactPath) {
     `- **External tool results:** ${record.external_tool_results?.length ?? 0}`,
     `- **Uncovered path result:** ${record.uncovered_path_result}`,
     `- **Baseline \`ci:fast\` passed:** ${formatTriState(record.baseline_ci_fast_passed)}`,
-    `- **Report transport:** ${record.adapter.report_transport}`,
+    `- **Report transport:** ${record.repo_map.report_transport}`,
     `- **Policy results:** ${policyPassCount} passed, ${policyFailCount} failed, ${policyMetadataOnlyCount} metadata-only`,
     `- **Artifact:** \`${artifactPath}\``,
   ];
@@ -145,7 +145,7 @@ export function buildFeedbackSummary({
   record,
   reportArtifactPath = null,
   draftArtifactPath = null,
-  evalArtifactPath = null,
+  standardsFeedbackArtifactPath = null,
   evidenceCheckLabels = [],
   evidenceCheckCommands = [],
   evidenceCheckRan = false,
@@ -228,7 +228,7 @@ export function buildFeedbackSummary({
   const footer = [];
   if (reportArtifactPath) footer.push(`report: ${reportArtifactPath}`);
   if (draftArtifactPath) footer.push(`standards feedback draft: ${draftArtifactPath}`);
-  if (evalArtifactPath) footer.push(`standards feedback: ${evalArtifactPath}`);
+  if (standardsFeedbackArtifactPath) footer.push(`standards feedback: ${standardsFeedbackArtifactPath}`);
   if (record?.run_id) footer.push(`run: ${record.run_id}`);
   if (footer.length > 0) {
     lines.push(footer.join(' · '));
@@ -241,21 +241,21 @@ export function feedbackHasFailures(record, evidenceCheckFailure = null) {
   return summarizeFeedbackCounts(record, evidenceCheckFailure).failures > 0;
 }
 
-export function buildEvalMarkdownSummary(record, artifactPath) {
+export function buildStandardsFeedbackMarkdownSummary(record, artifactPath) {
   const lines = [
-    '## Veritas Eval',
+    '## Veritas Standards Feedback',
     '',
     `- **Run ID:** ${record.run_id}`,
     `- **Mode:** ${record.mode}`,
-    `- **Team profile:** ${record.team_profile_id}`,
+    `- **Authority settings:** ${record.authority_settings_id}`,
     `- **Evidence artifact:** \`${record.evidence.artifact_path}\``,
-    `- **Eval artifact:** \`${artifactPath}\``,
+    `- **Standards feedback artifact:** \`${artifactPath}\``,
     `- **Accepted without major rewrite:** ${record.outcome.accepted_without_major_rewrite ? 'yes' : 'no'}`,
     `- **Required follow-up:** ${record.outcome.required_followup ? 'yes' : 'no'}`,
     `- **Reviewer confidence:** ${record.outcome.reviewer_confidence}`,
     `- **Time to green:** ${record.measurements.time_to_green_minutes} minutes`,
-    `- **Override count:** ${record.measurements.override_count}`,
-    `- **Governance surface touched:** ${record.governance.surface_touched ? 'yes' : 'no'}`,
+    `- **Exception count:** ${record.measurements.exception_count}`,
+    `- **Protected standards touched:** ${record.governance.protected_standards_touched ? 'yes' : 'no'}`,
     `- **Governance classification:** ${record.governance.classification}`,
     `- **Human governance review required:** ${record.governance.human_review_required ? 'yes' : 'no'}`,
   ];
@@ -282,17 +282,17 @@ export function buildEvalMarkdownSummary(record, artifactPath) {
   return `${lines.join('\n')}\n`;
 }
 
-export function buildEvalDraftMarkdownSummary(record, artifactPath, suggestedRecordCommand) {
+export function buildStandardsFeedbackDraftMarkdownSummary(record, artifactPath, suggestedRecordCommand) {
   const lines = [
-    '## Veritas Eval Draft',
+    '## Veritas Standards Feedback Draft',
     '',
     `- **Run ID:** ${record.run_id}`,
     `- **Mode:** ${record.mode}`,
-    `- **Team profile:** ${record.team_profile_id}`,
+    `- **Authority settings:** ${record.authority_settings_id}`,
     `- **Evidence artifact:** \`${record.evidence.artifact_path}\``,
     `- **Draft artifact:** \`${artifactPath}\``,
     `- **Missing confirmation fields:** ${record.missing_confirmation_fields.join(', ')}`,
-    `- **Governance surface touched:** ${record.governance.surface_touched ? 'yes' : 'no'}`,
+    `- **Protected standards touched:** ${record.governance.protected_standards_touched ? 'yes' : 'no'}`,
     `- **Governance classification:** ${record.governance.classification}`,
     `- **Human governance review required:** ${record.governance.human_review_required ? 'yes' : 'no'}`,
     '',

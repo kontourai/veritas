@@ -1,5 +1,5 @@
 {
-  "framework_version": 1,
+  "record_schema_version": 1,
   "run_id": "work-agent-pass-example",
   "timestamp": "2026-04-19T00:00:00.000Z",
   "source_ref": "refs/heads/main",
@@ -35,8 +35,9 @@
   ],
   "unresolved_files": [],
   "promotion_allowed": true,
-  "framework": {
-    "version": 1,
+  "producer": {
+    "name": "veritas",
+    "record_schema_version": 1,
     "resolver_precedence": [
       "explicit roadmap task or issue reference in prompt/branch/PR title",
       "matching initiative plan under docs/plans/**",
@@ -50,9 +51,9 @@
       "override_or_bypass": false
     }
   },
-  "adapter": {
+  "repo_map": {
     "name": "work-agent",
-    "kind": "repo-adapter",
+    "kind": "repo-map",
     "report_transport": "github-step-summary",
     "default_resolution": {
       "phase": "Phase 1 (Harden & Onboard)",

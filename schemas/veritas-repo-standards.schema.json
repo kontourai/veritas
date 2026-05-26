@@ -23,10 +23,11 @@
               "required-artifacts",
               "governance-block",
               "diff-required",
-              "cross-surface-write",
+              "work-area-boundary",
               "forbidden-pattern",
               "required-pattern",
-              "header-required"
+              "header-required",
+              "vocabulary-consistency"
             ]
           },
           "classification": {
@@ -56,6 +57,7 @@
               { "$ref": "#/$defs/governanceBlockMatch" },
               { "$ref": "#/$defs/diffRequiredMatch" },
               { "$ref": "#/$defs/filesPatternMatch" },
+              { "$ref": "#/$defs/vocabularyConsistencyMatch" },
               { "$ref": "#/$defs/emptyMatch" }
             ]
           }
@@ -97,7 +99,7 @@
         ,
           {
             "if": {
-              "properties": { "kind": { "const": "cross-surface-write" } },
+              "properties": { "kind": { "const": "work-area-boundary" } },
               "required": ["kind"]
             },
             "then": {
@@ -114,6 +116,17 @@
             "then": {
               "properties": {
                 "match": { "$ref": "#/$defs/filesPatternMatch" }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": { "kind": { "const": "vocabulary-consistency" } },
+              "required": ["kind"]
+            },
+            "then": {
+              "properties": {
+                "match": { "$ref": "#/$defs/vocabularyConsistencyMatch" }
               }
             }
           }
@@ -184,6 +197,36 @@
           "items": { "type": "string" }
         },
         "pattern": { "type": "string" }
+      }
+    },
+    "vocabularyConsistencyMatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["files", "terms"],
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "terms": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["term", "prefer"],
+            "properties": {
+              "term": { "type": "string" },
+              "pattern": { "type": "string" },
+              "regex": { "type": "string" },
+              "flags": { "type": "string" },
+              "prefer": { "type": "string" },
+              "allowContexts": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        }
       }
     },
     "emptyMatch": {

@@ -2,10 +2,10 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, extname, resolve } from 'node:path';
 import { relativeRepoPath } from '../paths.mjs';
-import { defineTranscriptReader } from './contract.mjs';
+import { defineSessionLogReader } from './contract.mjs';
 
 const REASON_CODES = {
-  transcriptSchemaUnrecognized: 'transcript_schema_unrecognized',
+  sessionLogSchemaUnrecognized: 'session_log_schema_unrecognized',
   noFailingRunObserved: 'no_failing_run_observed',
   noPassingRunObserved: 'no_passing_run_observed',
   churnThresholdNotApplicable: 'churn_threshold_not_applicable',
@@ -67,7 +67,7 @@ function commandFromClaudeToolUse(item) {
 
 function classifyCommand(commandText, files = [], raw = {}) {
   if (/\bveritas\s+readiness\b/.test(commandText) || /\bPASS\b|\bFAIL\b/.test(commandText)) return 'readiness-check';
-  if (/VERITAS_OVERRIDE_RULE=|VERITAS_HOOK_SKIP=1/.test(commandText)) return 'override';
+  if (/VERITAS_EXCEPTION_RULE=|VERITAS_HOOK_SKIP=1/.test(commandText)) return 'exception';
   const toolName = raw?.name ?? raw?.tool_name;
   if (['Edit', 'MultiEdit', 'Write', 'NotebookEdit'].includes(toolName) || files.length > 0 && /edit|write|multiedit/i.test(commandText)) return 'edit';
   return 'tool-call';
@@ -79,13 +79,13 @@ function exitCodeFromText(commandText) {
   return null;
 }
 
-export const ClaudeCodeTranscriptReader = defineTranscriptReader({
+export const ClaudeCodeSessionLogReader = defineSessionLogReader({
   name: 'claude-code',
-  canRead(transcriptPath) {
-    return extname(transcriptPath) === '.jsonl';
+  canRead(sessionLogPath) {
+    return extname(sessionLogPath) === '.jsonl';
   },
-  *readEvents(transcriptPath) {
-    for (const entry of parseJsonl(transcriptPath)) {
+  *readEvents(sessionLogPath) {
+    for (const entry of parseJsonl(sessionLogPath)) {
       const timestamp = entry.timestamp ?? null;
       const content = entry.message?.content;
       if (entry.type === 'assistant' && Array.isArray(content)) {
@@ -122,14 +122,14 @@ export const ClaudeCodeTranscriptReader = defineTranscriptReader({
   },
 });
 
-export const CodexTranscriptReader = defineTranscriptReader({
+export const CodexSessionLogReader = defineSessionLogReader({
   name: 'codex',
-  canRead(transcriptPath) {
-    return extname(transcriptPath) === '.json';
+  canRead(sessionLogPath) {
+    return extname(sessionLogPath) === '.json';
   },
-  *readEvents(transcriptPath) {
-    const transcript = JSON.parse(readFileSync(transcriptPath, 'utf8'));
-    const events = Array.isArray(transcript) ? transcript : transcript.events ?? transcript.messages ?? transcript.turns ?? [];
+  *readEvents(sessionLogPath) {
+    const sessionLog = JSON.parse(readFileSync(sessionLogPath, 'utf8'));
+    const events = Array.isArray(sessionLog) ? sessionLog : sessionLog.events ?? sessionLog.messages ?? sessionLog.turns ?? [];
     for (const event of events) {
       const commandText = [event.command, event.cmd, event.content, event.text, event.output, event.message]
         .filter((part) => typeof part === 'string')
@@ -143,25 +143,25 @@ export const CodexTranscriptReader = defineTranscriptReader({
         files,
         commandText,
         exitCode: typeof event.exit_code === 'number' ? event.exit_code : typeof event.exitCode === 'number' ? event.exitCode : exitCodeFromText(commandText),
-        raw: { ...event, transcript_run_id: transcript.run_id ?? transcript.session_id ?? null },
+        raw: { ...event, session_log_run_id: sessionLog.run_id ?? sessionLog.session_id ?? null },
       };
     }
   },
 });
 
-export const TRANSCRIPT_READERS = [
-  ClaudeCodeTranscriptReader,
-  CodexTranscriptReader,
+export const SESSION_LOG_READERS = [
+  ClaudeCodeSessionLogReader,
+  CodexSessionLogReader,
 ];
 
-export function resolveTranscriptReader({ tool = 'auto', transcriptPath }) {
+export function resolveSessionLogReader({ tool = 'auto', sessionLogPath }) {
   if (tool !== 'auto') {
-    const reader = TRANSCRIPT_READERS.find((candidate) => candidate.name === tool);
-    if (!reader) throw new Error(`No transcript reader registered for tool: ${tool}`);
+    const reader = SESSION_LOG_READERS.find((candidate) => candidate.name === tool);
+    if (!reader) throw new Error(`No session log reader registered for tool: ${tool}`);
     return reader;
   }
-  const reader = TRANSCRIPT_READERS.find((candidate) => candidate.canRead(transcriptPath));
-  if (!reader) throw new Error(`No transcript reader could read transcript: ${transcriptPath}`);
+  const reader = SESSION_LOG_READERS.find((candidate) => candidate.canRead(sessionLogPath));
+  if (!reader) throw new Error(`No session log reader could read session log: ${sessionLogPath}`);
   return reader;
 }
 
@@ -179,7 +179,7 @@ function isFailing(event) {
 }
 
 function deriveTimeToGreen(events) {
-  if (events.length === 0) return heuristicMissing(REASON_CODES.transcriptSchemaUnrecognized);
+  if (events.length === 0) return heuristicMissing(REASON_CODES.sessionLogSchemaUnrecognized);
   const firstFailure = events.find((event) => event.kind === 'readiness-check' && isFailing(event) && eventTime(event) !== null);
   if (!firstFailure) return heuristicMissing(REASON_CODES.noFailingRunObserved);
   const failedAt = eventTime(firstFailure);
@@ -189,7 +189,7 @@ function deriveTimeToGreen(events) {
 }
 
 function deriveAcceptedWithoutMajorRewrite(events, files, threshold) {
-  if (events.length === 0) return heuristicMissing(REASON_CODES.transcriptSchemaUnrecognized);
+  if (events.length === 0) return heuristicMissing(REASON_CODES.sessionLogSchemaUnrecognized);
   if (files.length === 0) return heuristicMissing(REASON_CODES.churnThresholdNotApplicable);
   const finishIndex = events.findLastIndex((event) => event.kind === 'readiness-check');
   const postRunEdits = events.slice(finishIndex + 1).filter((event) => event.kind === 'edit' && event.files.some((file) => files.includes(file)));
@@ -198,50 +198,50 @@ function deriveAcceptedWithoutMajorRewrite(events, files, threshold) {
   return changedLines / baseline <= threshold;
 }
 
-export function buildEvalDraftFromNormalizedEvents({
+export function buildStandardsFeedbackDraftFromNormalizedEvents({
   events,
-  transcriptPath,
+  sessionLogPath,
   evidenceRecord = null,
   rootDir,
   source,
   churnThreshold = 0.3,
 }) {
   const files = [...new Set([...(evidenceRecord?.files ?? []), ...events.flatMap((event) => event.files)])].sort();
-  const runId = evidenceRecord?.run_id ?? events.find((event) => event.raw?.transcript_run_id)?.raw?.transcript_run_id ?? `${source}-${Date.now()}`;
-  const transcriptRelativePath = relativeRepoPath(rootDir, transcriptPath);
+  const runId = evidenceRecord?.run_id ?? events.find((event) => event.raw?.session_log_run_id)?.raw?.session_log_run_id ?? `${source}-${Date.now()}`;
+  const sessionLogRelativePath = relativeRepoPath(rootDir, sessionLogPath);
   const timestamp = evidenceRecord?.timestamp ?? new Date().toISOString();
   const timeToGreenMinutes = deriveTimeToGreen(events);
   const acceptedWithoutMajorRewrite = deriveAcceptedWithoutMajorRewrite(events, files, churnThreshold);
   return {
     version: 1,
     run_id: runId,
-    team_profile_id: `${source}-observed`,
+    authority_settings_id: `${source}-observed`,
     mode: 'observe',
-    source: `${source}-transcript`,
-    transcript_path: transcriptRelativePath,
+    source: `${source}-session-log`,
+    session_log_path: sessionLogRelativePath,
     evidence: evidenceRecord
       ? {
           artifact_path: evidenceRecord.artifact_path ?? null,
           artifact_digest: evidenceRecord.artifact_digest ?? createHash('sha256').update(JSON.stringify(evidenceRecord)).digest('hex'),
           timestamp: evidenceRecord.timestamp ?? null,
-          source_ref: evidenceRecord.source_ref ?? `${source}-transcript`,
+          source_ref: evidenceRecord.source_ref ?? `${source}-session-log`,
           source_kind: evidenceRecord.source_kind ?? 'explicit-files',
-          source_scope: evidenceRecord.source_scope ?? ['transcript'],
+          source_scope: evidenceRecord.source_scope ?? ['session-log'],
           components: evidenceRecord.components ?? [],
           triggered_evidence_checks: evidenceRecord.triggered_evidence_checks ?? [],
         }
       : {
-          artifact_path: transcriptRelativePath,
+          artifact_path: sessionLogRelativePath,
           artifact_digest: createHash('sha256').update(JSON.stringify(events)).digest('hex'),
           timestamp,
-          source_ref: transcriptRelativePath,
+          source_ref: sessionLogRelativePath,
           source_kind: 'explicit-files',
-          source_scope: ['transcript'],
+          source_scope: ['session-log'],
           components: [],
           triggered_evidence_checks: [],
         },
     governance: {
-      surface_touched: false,
+      protected_standards_touched: false,
       classification: 'unknown',
       human_review_required: false,
       changed_paths: [],
@@ -253,7 +253,7 @@ export function buildEvalDraftFromNormalizedEvents({
     },
     prefilled_measurements: {
       time_to_green_minutes: timeToGreenMinutes,
-      override_count: events.filter((event) => event.kind === 'override' || /VERITAS_[A-Z0-9_]+|--skip-evidence-check/.test(event.commandText ?? '')).length,
+      exception_count: events.filter((event) => event.kind === 'exception' || /VERITAS_EXCEPTION_RULE=|VERITAS_HOOK_SKIP=1|--skip-evidence-check/.test(event.commandText ?? '')).length,
       false_positive_rules: [],
       missed_issues: [],
     },
@@ -268,22 +268,22 @@ export function buildEvalDraftFromNormalizedEvents({
   };
 }
 
-export function observeTranscriptEval({ transcriptPath, evidencePath, rootDir, outputPath, tool = 'auto', churnThreshold = 0.3, verbose = false }) {
-  const resolvedTranscriptPath = resolve(rootDir, transcriptPath);
-  const reader = resolveTranscriptReader({ tool, transcriptPath: resolvedTranscriptPath });
-  const events = [...reader.readEvents(resolvedTranscriptPath)];
+export function observeSessionLogStandardsFeedback({ sessionLogPath, evidencePath, rootDir, outputPath, tool = 'auto', churnThreshold = 0.3, verbose = false }) {
+  const resolvedSessionLogPath = resolve(rootDir, sessionLogPath);
+  const reader = resolveSessionLogReader({ tool, sessionLogPath: resolvedSessionLogPath });
+  const events = [...reader.readEvents(resolvedSessionLogPath)];
   const evidenceRecord = evidencePath && existsSync(resolve(rootDir, evidencePath))
     ? JSON.parse(readFileSync(resolve(rootDir, evidencePath), 'utf8'))
     : null;
-  const draft = buildEvalDraftFromNormalizedEvents({
+  const draft = buildStandardsFeedbackDraftFromNormalizedEvents({
     events,
-    transcriptPath: resolvedTranscriptPath,
+    sessionLogPath: resolvedSessionLogPath,
     evidenceRecord,
     rootDir,
     source: reader.name,
     churnThreshold,
   });
-  const artifactPath = resolve(rootDir, outputPath ?? `.veritas/eval-drafts/${draft.run_id}.json`);
+  const artifactPath = resolve(rootDir, outputPath ?? `.veritas/standards-feedback-drafts/${draft.run_id}.json`);
   mkdirSync(dirname(artifactPath), { recursive: true });
   writeFileSync(artifactPath, `${JSON.stringify(draft, null, 2)}\n`, 'utf8');
   return {

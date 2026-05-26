@@ -14,9 +14,9 @@ npx @kontourai/veritas attest bootstrap --actor <authority-id> --non-interactive
 
 The current implementation records hashes for the files that hold protected standards state:
 
-- `.veritas/repo.adapter.json`
+- `.veritas/repo-map.json`
 - `.veritas/repo-standards/default.repo-standards.json`
-- `.veritas/team/default.team-profile.json`
+- `.veritas/authority/default.authority-settings.json`
 
 Product language should describe them as the Repo Map and Repo Standards.
 

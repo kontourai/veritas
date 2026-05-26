@@ -21,9 +21,9 @@
           ".github/ISSUE_TEMPLATE/docs-issue.yml",
           ".github/ISSUE_TEMPLATE/config.yml",
           ".github/pull_request_template.md",
-          ".veritas/work-agent.adapter.json",
+          ".veritas/work-agent.repo-map.json",
           ".veritas/repo-standards/work-agent-convergence.repo-standards.json",
-          "vendor/veritas/adapters/work-agent.adapter.json",
+          "vendor/veritas/repo-maps/work-agent.repo-map.json",
           "vendor/veritas/repo-standards/work-agent-convergence.repo-standards.json",
           "docs/reference/contracts.md",
           "SECURITY.md"

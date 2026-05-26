@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://veritas.dev/schemas/veritas-marker-transcript.schema.json",
-  "title": "Veritas Marker Benchmark Transcript",
+  "$id": "https://veritas.dev/schemas/veritas-marker-session-log.schema.json",
+  "title": "Veritas Marker Benchmark Session Log",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "benchmark_id", "run_id", "condition_id", "turns"],

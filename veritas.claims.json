@@ -93,16 +93,16 @@
       "updatedAt": "2026-05-19T13:38:14.077Z"
     },
     {
-      "id": "veritas.surface.governance.adapters",
+      "id": "veritas.surface.governance.repo-maps",
       "surface": "veritas.affected-surface",
       "claimType": "veritas-affected-surface",
-      "fieldOrBehavior": "governance.adapters",
+      "fieldOrBehavior": "governance.repo-maps",
       "subjectType": "repo-surface",
-      "subjectId": "veritas:governance.adapters",
+      "subjectId": "veritas:governance.repo-maps",
       "impactLevel": "medium",
       "verificationPolicyId": "veritas.surface",
       "metadata": {
-        "nodeId": "governance.adapters"
+        "nodeId": "governance.repo-maps"
       },
       "createdAt": "2026-05-19T13:38:14.077Z",
       "updatedAt": "2026-05-19T13:38:14.077Z"
@@ -274,8 +274,8 @@
       },
       "stalenessTriggers": [
         "repo standards hash changes",
-        "adapter hash changes",
-        "team profile hash changes",
+        "repo map hash changes",
+        "authority settings hash changes",
         "attestation expiry"
       ],
       "conflictRules": [

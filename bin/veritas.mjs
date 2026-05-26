@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 import {
-  runEvalDraftCli,
-  runEvalObserveCli,
-  runEvalMarkerCli,
-  runEvalMarkerSuiteCli,
-  runEvalRecommendCli,
-  runEvalRecordCli,
-  runEvalSummaryCli,
+  runStandardsFeedbackDraftCli,
+  runStandardsFeedbackObserveCli,
+  runStandardsFeedbackMarkerCli,
+  runStandardsFeedbackMarkerSuiteCli,
+  runStandardsFeedbackRecommendCli,
+  runStandardsFeedbackRecordCli,
+  runStandardsFeedbackSummaryCli,
   runRecommendationCli,
   runReadinessCoverageCli,
   runInitCli,
@@ -28,48 +28,48 @@ const MAIN_USAGE = `Usage:
   veritas attest status [--root <path>]
   veritas claim init|list|add|edit|remove|scaffold|validate [--root <path>]
   veritas plugin list [--root <path>]
-  veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
-  veritas eval observe [--transcript <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>]
-  veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false> --reviewer-confidence <scale-entry|unknown> --time-to-green-minutes <number> --override-count <number>
-  veritas eval record --draft <path> [--team-profile <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false>
-  veritas eval marker --scenario <path> --without-veritas-transcript <path> --with-veritas-transcript <path>
-  veritas eval marker-suite --suite <path>
-  veritas eval recommend [--root <path>] [--force] [--dry-run]
-  veritas eval summary [--root <path>]
+  veritas feedback draft --evidence <path> [--authority-settings <path>] [--output <path>] [--force]
+  veritas feedback observe [--session-log <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>]
+  veritas feedback record --evidence <path> [--authority-settings <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false> --reviewer-confidence <scale-entry|unknown> --time-to-green-minutes <number> --exception-count <number>
+  veritas feedback record --draft <path> [--authority-settings <path>] [--output <path>] [--force] --accepted-without-major-rewrite <true|false> --required-followup <true|false>
+  veritas feedback marker --scenario <path> --without-veritas-session-log <path> --with-veritas-session-log <path>
+  veritas feedback marker-suite --suite <path>
+  veritas feedback recommend [--root <path>] [--force] [--dry-run]
+  veritas feedback summary [--root <path>]
   veritas recommendation list|show <id>|decide <id> [--accept|--reject] [--actor <id>] [--message <text>]
   veritas integrations codex|claude-code|cursor|copilot install|status|uninstall [--root <path>] [--force]
 `;
 
 const RUN_USAGE = `Usage:
   veritas readiness [--check evidence|boundaries|coverage] [--root <path>] [--working-tree]
-  veritas readiness --check boundaries --actor <id> [--diff <ref>] [--root <path>] [--adapter <path>]
+  veritas readiness --check boundaries --actor <id> [--diff <ref>] [--root <path>] [--repo-map <path>]
 `;
 
-const EVAL_USAGE = `Usage:
-  veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
-  veritas eval observe --transcript <path> [--evidence <path>] [--output <path>]
+const FEEDBACK_USAGE = `Usage:
+  veritas feedback draft --evidence <path> [--authority-settings <path>] [--output <path>] [--force]
+  veritas feedback observe --session-log <path> [--evidence <path>] [--output <path>]
     [--reviewer-confidence <scale-entry|unknown>]
     [--time-to-green-minutes <number>]
-    [--override-count <number>]
+    [--exception-count <number>]
     [--false-positive-rule <rule-id>]
     [--missed-issue <text>]
     [--note <text>]
-  veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force]
-  veritas eval record --draft <path> [--team-profile <path>] [--output <path>] [--force]
+  veritas feedback record --evidence <path> [--authority-settings <path>] [--output <path>] [--force]
+  veritas feedback record --draft <path> [--authority-settings <path>] [--output <path>] [--force]
     --accepted-without-major-rewrite <true|false>
     --required-followup <true|false>
     --reviewer-confidence <scale-entry|unknown>
     --time-to-green-minutes <number>
-    --override-count <number>
+    --exception-count <number>
     [--false-positive-rule <rule-id>]
     [--missed-issue <text>]
     [--note <text>]
-  veritas eval marker --scenario <path>
-    --without-veritas-transcript <path>
-    --with-veritas-transcript <path>
-  veritas eval marker-suite --suite <path>
-  veritas eval recommend [--root <path>] [--force] [--dry-run]
-  veritas eval summary [--root <path>]
+  veritas feedback marker --scenario <path>
+    --without-veritas-session-log <path>
+    --with-veritas-session-log <path>
+  veritas feedback marker-suite --suite <path>
+  veritas feedback recommend [--root <path>] [--force] [--dry-run]
+  veritas feedback summary [--root <path>]
 `;
 
 const PROPOSAL_USAGE = `Usage:
@@ -172,43 +172,43 @@ if (!subcommand || isHelpToken(subcommand)) {
       process.exitCode = 1;
     }
   }
-} else if (subcommand === 'eval') {
-  const [kind, ...evalArgs] = args;
-  if (!kind || isHelpToken(kind) || evalArgs.some(isHelpToken)) {
+} else if (subcommand === 'feedback') {
+  const [kind, ...feedbackArgs] = args;
+  if (!kind || isHelpToken(kind) || feedbackArgs.some(isHelpToken)) {
     writeStdout(
-      selectScopedUsage(kind, EVAL_USAGE, {
+      selectScopedUsage(kind, FEEDBACK_USAGE, {
         draft:
-          'Usage:\n  veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]\n    [--reviewer-confidence <scale-entry|unknown>]\n    [--time-to-green-minutes <number>]\n    [--override-count <number>]\n    [--false-positive-rule <rule-id>]\n    [--missed-issue <text>]\n    [--note <text>]\n',
+          'Usage:\n  veritas feedback draft --evidence <path> [--authority-settings <path>] [--output <path>] [--force]\n    [--reviewer-confidence <scale-entry|unknown>]\n    [--time-to-green-minutes <number>]\n    [--exception-count <number>]\n    [--false-positive-rule <rule-id>]\n    [--missed-issue <text>]\n    [--note <text>]\n',
         observe:
-          'Usage:\n  veritas eval observe [--transcript <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>] [--rewrite-threshold <ratio>] [--verbose]\n',
+          'Usage:\n  veritas feedback observe [--session-log <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>] [--rewrite-threshold <ratio>] [--verbose]\n',
         record:
-          'Usage:\n  veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force]\n  veritas eval record --draft <path> [--team-profile <path>] [--output <path>] [--force]\n    --accepted-without-major-rewrite <true|false>\n    --required-followup <true|false>\n    --reviewer-confidence <scale-entry|unknown>\n    --time-to-green-minutes <number>\n    --override-count <number>\n    [--false-positive-rule <rule-id>]\n    [--missed-issue <text>]\n    [--note <text>]\n',
+          'Usage:\n  veritas feedback record --evidence <path> [--authority-settings <path>] [--output <path>] [--force]\n  veritas feedback record --draft <path> [--authority-settings <path>] [--output <path>] [--force]\n    --accepted-without-major-rewrite <true|false>\n    --required-followup <true|false>\n    --reviewer-confidence <scale-entry|unknown>\n    --time-to-green-minutes <number>\n    --exception-count <number>\n    [--false-positive-rule <rule-id>]\n    [--missed-issue <text>]\n    [--note <text>]\n',
         marker:
-          'Usage:\n  veritas eval marker --scenario <path>\n    --without-veritas-transcript <path>\n    --with-veritas-transcript <path>\n',
+          'Usage:\n  veritas feedback marker --scenario <path>\n    --without-veritas-session-log <path>\n    --with-veritas-session-log <path>\n',
         'marker-suite':
-          'Usage:\n  veritas eval marker-suite --suite <path>\n',
+          'Usage:\n  veritas feedback marker-suite --suite <path>\n',
         recommend:
-          'Usage:\n  veritas eval recommend [--root <path>] [--force] [--dry-run]\n',
+          'Usage:\n  veritas feedback recommend [--root <path>] [--force] [--dry-run]\n',
         summary:
-          'Usage:\n  veritas eval summary [--root <path>]\n',
+          'Usage:\n  veritas feedback summary [--root <path>]\n',
       }),
     );
   } else if (kind === 'record') {
-    runEvalRecordCli(evalArgs, { rootDir: cwd });
+    runStandardsFeedbackRecordCli(feedbackArgs, { rootDir: cwd });
   } else if (kind === 'draft') {
-    runEvalDraftCli(evalArgs, { rootDir: cwd });
+    runStandardsFeedbackDraftCli(feedbackArgs, { rootDir: cwd });
   } else if (kind === 'observe') {
-    runEvalObserveCli(evalArgs, { rootDir: cwd });
+    runStandardsFeedbackObserveCli(feedbackArgs, { rootDir: cwd });
   } else if (kind === 'marker') {
-    runEvalMarkerCli(evalArgs, { rootDir: cwd });
+    runStandardsFeedbackMarkerCli(feedbackArgs, { rootDir: cwd });
   } else if (kind === 'marker-suite') {
-    runEvalMarkerSuiteCli(evalArgs, { rootDir: cwd });
+    runStandardsFeedbackMarkerSuiteCli(feedbackArgs, { rootDir: cwd });
   } else if (kind === 'recommend') {
-    runEvalRecommendCli(evalArgs, { rootDir: cwd });
+    runStandardsFeedbackRecommendCli(feedbackArgs, { rootDir: cwd });
   } else if (kind === 'summary') {
-    runEvalSummaryCli(evalArgs, { rootDir: cwd });
+    runStandardsFeedbackSummaryCli(feedbackArgs, { rootDir: cwd });
   } else {
-    writeStderr(EVAL_USAGE);
+    writeStderr(FEEDBACK_USAGE);
     process.exitCode = 1;
   }
 } else if (subcommand === 'recommendation') {
@@ -220,7 +220,7 @@ if (!subcommand || isHelpToken(subcommand)) {
   }
 } else if (subcommand === 'explain') {
   if (args.some(isHelpToken)) {
-    writeStdout('Usage:\n  veritas explain <ruleId|workArea|filePath> [--file <path>] [--work-area <id>] [--root <path>] [--adapter <path>] [--repo-standards <path>]\n');
+    writeStdout('Usage:\n  veritas explain <ruleId|workArea|filePath> [--file <path>] [--work-area <id>] [--root <path>] [--repo-map <path>] [--repo-standards <path>]\n');
   } else {
     runExplainCli(args, { rootDir: cwd });
   }

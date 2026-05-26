@@ -47,14 +47,14 @@
           "kind": {
             "type": "string",
             "enum": [
-              "product-surface",
-              "shared-contract-surface",
-              "verification-surface",
-              "governance-surface",
-              "tooling-surface",
-              "delivery-surface",
+              "product-area",
+              "shared-contract-area",
+              "verification-area",
+              "protected-area",
+              "tooling-area",
+              "delivery-area",
               "shared-package",
-              "example-surface"
+              "example-area"
             ]
           },
           "label": { "type": "string" },
@@ -64,7 +64,7 @@
             "type": "string",
             "enum": ["strict", "advisory"]
           },
-          "crossSurfaceAllow": { "$ref": "#/$defs/stringArray" }
+          "boundaryAllow": { "$ref": "#/$defs/stringArray" }
         }
       }
     }

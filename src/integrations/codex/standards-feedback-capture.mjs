@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { relativeRepoPath } from '../../paths.mjs';
 
 const REASON_CODES = {
-  transcriptSchemaUnrecognized: 'transcript_schema_unrecognized',
+  sessionLogSchemaUnrecognized: 'session_log_schema_unrecognized',
   noFailingRunObserved: 'no_failing_run_observed',
   noPassingRunObserved: 'no_passing_run_observed',
   churnThresholdNotApplicable: 'churn_threshold_not_applicable',
@@ -65,7 +65,7 @@ function observedFiles(events, evidenceRecord) {
 }
 
 function deriveTimeToGreen(events) {
-  if (events.length === 0) return heuristicMissing(REASON_CODES.transcriptSchemaUnrecognized);
+  if (events.length === 0) return heuristicMissing(REASON_CODES.sessionLogSchemaUnrecognized);
   const firstFailure = events.find((event) => isReadinessCheck(event) && isFailing(event) && eventTime(event) !== null);
   if (!firstFailure) return heuristicMissing(REASON_CODES.noFailingRunObserved);
   const failedAt = eventTime(firstFailure);
@@ -75,7 +75,7 @@ function deriveTimeToGreen(events) {
 }
 
 function deriveAcceptedWithoutMajorRewrite(events, files, threshold) {
-  if (events.length === 0) return heuristicMissing(REASON_CODES.transcriptSchemaUnrecognized);
+  if (events.length === 0) return heuristicMissing(REASON_CODES.sessionLogSchemaUnrecognized);
   if (files.length === 0) return heuristicMissing(REASON_CODES.churnThresholdNotApplicable);
   const finishIndex = events.findLastIndex?.((event) => isReadinessCheck(event)) ?? [...events].reverse().findIndex((event) => isReadinessCheck(event));
   const start = finishIndex >= 0 ? finishIndex + 1 : 0;
@@ -89,48 +89,48 @@ function deriveAcceptedWithoutMajorRewrite(events, files, threshold) {
   return changedLines / baseline <= threshold;
 }
 
-function countOverrides(events) {
-  return events.filter((event) => /VERITAS_[A-Z0-9_]+|--skip-evidence-check/.test(eventText(event))).length;
+function countExceptions(events) {
+  return events.filter((event) => /VERITAS_EXCEPTION_RULE=|VERITAS_HOOK_SKIP=1|--skip-evidence-check/.test(eventText(event))).length;
 }
 
-export function buildCodexEvalDraft({ transcript, transcriptPath, evidenceRecord = null, rootDir, churnThreshold = 0.3 }) {
-  const events = asArray(transcript);
-  const runId = evidenceRecord?.run_id ?? transcript.run_id ?? transcript.session_id ?? `codex-${Date.now()}`;
+export function buildCodexStandardsFeedbackDraft({ sessionLog, sessionLogPath, evidenceRecord = null, rootDir, churnThreshold = 0.3 }) {
+  const events = asArray(sessionLog);
+  const runId = evidenceRecord?.run_id ?? sessionLog.run_id ?? sessionLog.session_id ?? `codex-${Date.now()}`;
   const files = observedFiles(events, evidenceRecord);
   const timeToGreenMinutes = deriveTimeToGreen(events);
   const acceptedWithoutMajorRewrite = deriveAcceptedWithoutMajorRewrite(events, files, churnThreshold);
-  const transcriptRelativePath = relativeRepoPath(rootDir, transcriptPath);
+  const sessionLogRelativePath = relativeRepoPath(rootDir, sessionLogPath);
   const timestamp = evidenceRecord?.timestamp ?? new Date().toISOString();
   return {
     version: 1,
     run_id: runId,
-    team_profile_id: 'codex-observed',
+    authority_settings_id: 'codex-observed',
     mode: 'observe',
-    source: 'codex-transcript',
-    transcript_path: transcriptRelativePath,
+    source: 'codex-session-log',
+    session_log_path: sessionLogRelativePath,
     evidence: evidenceRecord
       ? {
           artifact_path: evidenceRecord.artifact_path ?? null,
           artifact_digest: evidenceRecord.artifact_digest ?? createHash('sha256').update(JSON.stringify(evidenceRecord)).digest('hex'),
           timestamp: evidenceRecord.timestamp ?? null,
-          source_ref: evidenceRecord.source_ref ?? 'codex-transcript',
+          source_ref: evidenceRecord.source_ref ?? 'codex-session-log',
           source_kind: evidenceRecord.source_kind ?? 'explicit-files',
-          source_scope: evidenceRecord.source_scope ?? ['transcript'],
+          source_scope: evidenceRecord.source_scope ?? ['session-log'],
           components: evidenceRecord.components ?? [],
           triggered_evidence_checks: evidenceRecord.triggered_evidence_checks ?? [],
         }
       : {
-          artifact_path: transcriptRelativePath,
-          artifact_digest: createHash('sha256').update(JSON.stringify(transcript)).digest('hex'),
+          artifact_path: sessionLogRelativePath,
+          artifact_digest: createHash('sha256').update(JSON.stringify(sessionLog)).digest('hex'),
           timestamp,
-          source_ref: transcriptRelativePath,
+          source_ref: sessionLogRelativePath,
           source_kind: 'explicit-files',
-          source_scope: ['transcript'],
+          source_scope: ['session-log'],
           components: [],
           triggered_evidence_checks: [],
         },
     governance: {
-      surface_touched: false,
+      protected_standards_touched: false,
       classification: 'unknown',
       human_review_required: false,
       changed_paths: [],
@@ -142,7 +142,7 @@ export function buildCodexEvalDraft({ transcript, transcriptPath, evidenceRecord
     },
     prefilled_measurements: {
       time_to_green_minutes: timeToGreenMinutes,
-      override_count: countOverrides(events),
+      exception_count: countExceptions(events),
       false_positive_rules: [],
       missed_issues: [],
     },
@@ -156,11 +156,11 @@ export function buildCodexEvalDraft({ transcript, transcriptPath, evidenceRecord
   };
 }
 
-function evalDraftValidationError(draft) {
+function feedbackDraftValidationError(draft) {
   const required = [
     'version',
     'run_id',
-    'team_profile_id',
+    'authority_settings_id',
     'mode',
     'evidence',
     'governance',
@@ -179,43 +179,43 @@ function evalDraftValidationError(draft) {
 }
 
 function writeValidationFailure({ rootDir, runId, draft, error }) {
-  const failurePath = resolve(rootDir, `.veritas/external/eval-draft-validation-failures/${runId}.json`);
+  const failurePath = resolve(rootDir, `.veritas/external/standards-feedback-draft-validation-failures/${runId}.json`);
   mkdirSync(dirname(failurePath), { recursive: true });
   writeFileSync(failurePath, `${JSON.stringify({ error, draft }, null, 2)}\n`, 'utf8');
   return relativeRepoPath(rootDir, failurePath);
 }
 
-function warnEvalValidationSkipped() {
-  process.stderr.write('WARN: VERITAS_SKIP_EVAL_VALIDATION=1 — this is intended as a short-lived escape hatch; remove once the underlying eval draft is fixed.\n');
+function warnStandardsFeedbackValidationSkipped() {
+  process.stderr.write('WARN: VERITAS_SKIP_STANDARDS_FEEDBACK_VALIDATION=1 — this is intended as a short-lived escape hatch; remove once the underlying standards feedback draft is fixed.\n');
 }
 
-export function observeCodexEval({ transcriptPath, evidencePath, rootDir, outputPath, churnThreshold = 0.3, verbose = false }) {
-  const resolvedTranscriptPath = resolve(rootDir, transcriptPath);
-  const transcript = JSON.parse(readFileSync(resolvedTranscriptPath, 'utf8'));
+export function observeCodexStandardsFeedback({ sessionLogPath, evidencePath, rootDir, outputPath, churnThreshold = 0.3, verbose = false }) {
+  const resolvedSessionLogPath = resolve(rootDir, sessionLogPath);
+  const sessionLog = JSON.parse(readFileSync(resolvedSessionLogPath, 'utf8'));
   const evidenceRecord = evidencePath && existsSync(resolve(rootDir, evidencePath))
     ? JSON.parse(readFileSync(resolve(rootDir, evidencePath), 'utf8'))
     : null;
-  const draft = buildCodexEvalDraft({
-    transcript,
-    transcriptPath: resolvedTranscriptPath,
+  const draft = buildCodexStandardsFeedbackDraft({
+    sessionLog,
+    sessionLogPath: resolvedSessionLogPath,
     evidenceRecord,
     rootDir,
     churnThreshold,
   });
-  const validationError = evalDraftValidationError(draft);
-  if (validationError && process.env.VERITAS_SKIP_EVAL_VALIDATION !== '1') {
+  const validationError = feedbackDraftValidationError(draft);
+  if (validationError && process.env.VERITAS_SKIP_STANDARDS_FEEDBACK_VALIDATION !== '1') {
     const failurePath = writeValidationFailure({ rootDir, runId: draft.run_id, draft, error: validationError });
-    const error = new Error(`Eval draft validation failed: ${validationError}. Failure artifact: ${failurePath}`);
+    const error = new Error(`Standards feedback draft validation failed: ${validationError}. Failure artifact: ${failurePath}`);
     error.exitCode = 2;
     throw error;
   }
-  if (process.env.VERITAS_SKIP_EVAL_VALIDATION === '1') warnEvalValidationSkipped();
+  if (process.env.VERITAS_SKIP_STANDARDS_FEEDBACK_VALIDATION === '1') warnStandardsFeedbackValidationSkipped();
 
-  const artifactPath = resolve(rootDir, outputPath ?? `.veritas/eval-drafts/${draft.run_id}.json`);
+  const artifactPath = resolve(rootDir, outputPath ?? `.veritas/standards-feedback-drafts/${draft.run_id}.json`);
   mkdirSync(dirname(artifactPath), { recursive: true });
   writeFileSync(artifactPath, `${JSON.stringify(draft, null, 2)}\n`, 'utf8');
   const heuristics = {
-    events: asArray(transcript).length,
+    events: asArray(sessionLog).length,
     time_to_green_minutes: draft.prefilled_measurements.time_to_green_minutes,
     accepted_without_major_rewrite: draft.prefilled_outcome.accepted_without_major_rewrite,
   };

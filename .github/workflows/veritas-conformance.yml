@@ -1,0 +1,281 @@
+name: Veritas Repo Conformances
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  schedule:
+    - cron: '17 15 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      health_status: ${{ steps.conformance.outputs.health_status }}
+      governance_classification: ${{ steps.conformance.outputs.governance_classification }}
+      governance_summary: ${{ steps.conformance.outputs.governance_summary }}
+      governance_trend_summary: ${{ steps.conformance.outputs.governance_trend_summary }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci --no-fund --no-audit
+
+      - name: Run Veritas Evidence Check
+        run: npm run veritas:evidence-check
+
+      - name: Refresh Committed Repo Conformance Examples
+        run: npm run veritas:conformance:examples
+
+      - name: Generate Veritas Repo Conformance
+        env:
+          VERITAS_CHANGED_FROM: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+          VERITAS_CHANGED_TO: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
+        run: node scripts/repo-conformance-status.mjs
+
+      - name: Expose Repo Conformance Outputs
+        id: conformance
+        run: |
+          node <<'EOF'
+          const { appendFileSync, readFileSync } = require('node:fs');
+          const conformance = JSON.parse(readFileSync('.veritas/repo-conformance/latest.json', 'utf8'));
+          const outputPath = process.env.GITHUB_OUTPUT;
+          const sanitize = (value) => String(value ?? '').replace(/\r?\n/g, ' ');
+          const outputs = {
+            run_id: conformance.run_id,
+            health_status: conformance.health_status,
+            alerts_count: conformance.alerts.length,
+            report_artifact_path: conformance.report_artifact_path,
+            standards_feedback_draft_artifact_path: conformance.standards_feedback_draft_artifact_path,
+            governance_classification: conformance.governance_surface?.classification ?? '',
+            governance_summary: conformance.governance_surface?.summary ?? '',
+            governance_trend_summary: conformance.governance_trend?.summary ?? '',
+          };
+          for (const [key, value] of Object.entries(outputs)) {
+            appendFileSync(outputPath, `${key}=${sanitize(value)}\n`);
+          }
+          EOF
+
+      - name: Upload Veritas Repo Conformance Artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: veritas-conformance-${{ github.run_id }}
+          path: |
+            .veritas/evidence/
+            .veritas/standards-feedback-drafts/
+            .veritas/standards-feedback/
+            .veritas/repo-conformance/
+            examples/repo-conformance/
+
+  update-pr-comment:
+    if: always() && github.event_name == 'pull_request' && needs.conformance.result == 'success'
+    needs: conformance
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Download Veritas Repo Conformance Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: veritas-conformance-${{ github.run_id }}
+
+      - name: Update PR Comment
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('node:fs');
+            const body = fs.readFileSync('.veritas/repo-conformance/latest.md', 'utf8');
+            const marker = '<!-- veritas-conformance-comment -->';
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`;
+            const commentBody = `${marker}\n${body}\n### Links\n- [Workflow run](${runUrl})\n`;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existing = comments.find((comment) => comment.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body: commentBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: commentBody,
+              });
+            }
+
+  update-health-issue:
+    if: always() && github.event_name != 'pull_request' && needs.conformance.result == 'success'
+    needs: conformance
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Download Veritas Repo Conformance Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: veritas-conformance-${{ github.run_id }}
+
+      - name: Update Health Issue
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('node:fs');
+            const conformance = JSON.parse(fs.readFileSync('.veritas/repo-conformance/latest.json', 'utf8'));
+            const body = fs.readFileSync('.veritas/repo-conformance/latest.md', 'utf8');
+            const title = 'Veritas Health';
+            const marker = '<!-- veritas-health -->';
+            const legacyTitle = 'Veritas Dogfood Health';
+            const legacyMarker = '<!-- veritas-dogfood-health -->';
+            const { owner, repo } = context.repo;
+            const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`;
+            const issueBody = `${marker}\n${body}\n### Links\n- [Workflow run](${runUrl})\n`;
+            const healthLabel = 'veritas-health';
+            const activeLabel = 'health:active';
+            const clearLabel = 'health:green';
+
+            for (const [name, color, description] of [
+              [healthLabel, '1d76db', 'Veritas operational health tracking'],
+              [activeLabel, 'd73a4a', 'Veritas health needs attention'],
+              [clearLabel, '0e8a16', 'Veritas health currently green'],
+            ]) {
+              try {
+                await github.rest.issues.createLabel({ owner, repo, name, color, description });
+              } catch (error) {
+                if (error.status !== 422) throw error;
+              }
+            }
+
+            const allIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'all',
+              per_page: 100,
+            });
+            const existing = allIssues.find((issue) =>
+              issue.title === title ||
+              issue.title === legacyTitle ||
+              issue.body?.includes(marker) ||
+              issue.body?.includes(legacyMarker),
+            );
+
+            if (conformance.health_status === 'green') {
+              if (existing) {
+                if (existing.state === 'open') {
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: existing.number,
+                    body: `Health returned to green in \`${conformance.run_id}\`.\n\n${body}`,
+                  });
+                }
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number: existing.number,
+                  title,
+                  body: issueBody,
+                  state: 'closed',
+                });
+                await github.rest.issues.setLabels({
+                  owner,
+                  repo,
+                  issue_number: existing.number,
+                  labels: [healthLabel, clearLabel],
+                });
+              }
+              return;
+            }
+
+            if (existing && existing.state === 'open') {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existing.number,
+                title,
+                body: issueBody,
+              });
+              await github.rest.issues.setLabels({
+                owner,
+                repo,
+                issue_number: existing.number,
+                labels: [healthLabel, activeLabel],
+              });
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: existing.number,
+                body: `Automated Veritas repo conformance \`${conformance.run_id}\` reported **${conformance.health_status}** health.`,
+              });
+            } else if (existing && existing.state === 'closed') {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existing.number,
+                title,
+                state: 'open',
+                body: issueBody,
+              });
+              await github.rest.issues.setLabels({
+                owner,
+                repo,
+                issue_number: existing.number,
+                labels: [healthLabel, activeLabel],
+              });
+            } else {
+              const created = await github.rest.issues.create({
+                owner,
+                repo,
+                title,
+                body: issueBody,
+              });
+              await github.rest.issues.setLabels({
+                owner,
+                repo,
+                issue_number: created.data.number,
+                labels: [healthLabel, activeLabel],
+              });
+            }
+
+  fail-on-red-health:
+    if: always() && needs.conformance.result == 'success' && needs.conformance.outputs.health_status == 'red'
+    needs:
+      - conformance
+      - update-pr-comment
+      - update-health-issue
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Fail On Red Health
+        run: |
+          echo "Veritas repo conformance health is red; see .veritas/repo-conformance/latest.md and uploaded artifacts."
+          exit 1

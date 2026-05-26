@@ -40,13 +40,13 @@
               "additionalProperties": false,
               "required": [
                 "trial_id",
-                "without_veritas_transcript_path",
-                "with_veritas_transcript_path"
+                "without_veritas_session_log_path",
+                "with_veritas_session_log_path"
               ],
               "properties": {
                 "trial_id": { "type": "string" },
-                "without_veritas_transcript_path": { "type": "string" },
-                "with_veritas_transcript_path": { "type": "string" }
+                "without_veritas_session_log_path": { "type": "string" },
+                "with_veritas_session_log_path": { "type": "string" }
               }
             }
           }

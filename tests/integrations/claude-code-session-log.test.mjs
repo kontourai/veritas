@@ -4,12 +4,12 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
-  ClaudeCodeTranscriptReader,
-  CodexTranscriptReader,
-  observeTranscriptEval,
+  ClaudeCodeSessionLogReader,
+  CodexSessionLogReader,
+  observeSessionLogStandardsFeedback,
   writeBootstrapStarterKit,
 } from '../../src/index.mjs';
-import { commitAll, frameworkRootDir, initCommittedRepo, parseCliJson } from '../helpers.mjs';
+import { commitAll, repoRootDir, initCommittedRepo, parseCliJson } from '../helpers.mjs';
 
 function bootstrapRepo(prefix = 'veritas-claude-') {
   const rootDir = initCommittedRepo(prefix);
@@ -19,8 +19,8 @@ function bootstrapRepo(prefix = 'veritas-claude-') {
   return rootDir;
 }
 
-function writeClaudeTranscript(rootDir) {
-  const transcriptPath = join(rootDir, 'claude-session.jsonl');
+function writeClaudeSessionLog(rootDir) {
+  const sessionLogPath = join(rootDir, 'claude-session.jsonl');
   const lines = [
     {
       type: 'assistant',
@@ -40,7 +40,7 @@ function writeClaudeTranscript(rootDir) {
     {
       type: 'assistant',
       timestamp: '2026-05-10T00:02:00.000Z',
-      message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'VERITAS_OVERRIDE_RULE=rule-a VERITAS_OVERRIDE_REASON=reviewed true' } }] },
+      message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'VERITAS_EXCEPTION_RULE=rule-a VERITAS_EXCEPTION_REASON=reviewed true' } }] },
     },
     {
       type: 'assistant',
@@ -58,52 +58,52 @@ function writeClaudeTranscript(rootDir) {
       message: { stop_reason: 'end_turn', content: [{ type: 'text', text: 'Done.' }] },
     },
   ];
-  writeFileSync(transcriptPath, `${lines.map((line) => JSON.stringify(line)).join('\n')}\n`);
-  return transcriptPath;
+  writeFileSync(sessionLogPath, `${lines.map((line) => JSON.stringify(line)).join('\n')}\n`);
+  return sessionLogPath;
 }
 
-test('ClaudeCodeTranscriptReader normalizes Claude Code JSONL events', () => {
+test('ClaudeCodeSessionLogReader normalizes Claude Code JSONL events', () => {
   const rootDir = bootstrapRepo();
-  const transcriptPath = writeClaudeTranscript(rootDir);
-  const events = [...ClaudeCodeTranscriptReader.readEvents(transcriptPath)];
+  const sessionLogPath = writeClaudeSessionLog(rootDir);
+  const events = [...ClaudeCodeSessionLogReader.readEvents(sessionLogPath)];
 
   assert.ok(events.some((event) => event.kind === 'readiness-check'));
   assert.ok(events.some((event) => event.kind === 'edit' && event.files.includes('src/app.mjs')));
-  assert.ok(events.some((event) => event.kind === 'override'));
+  assert.ok(events.some((event) => event.kind === 'exception'));
   assert.ok(events.some((event) => event.kind === 'completion'));
 });
 
-test('eval observe derives Claude Code parity fields from transcript reader', () => {
+test('feedback observe derives Claude Code parity fields from session log reader', () => {
   const rootDir = bootstrapRepo();
-  const transcriptPath = writeClaudeTranscript(rootDir);
-  const result = observeTranscriptEval({
+  const sessionLogPath = writeClaudeSessionLog(rootDir);
+  const result = observeSessionLogStandardsFeedback({
     rootDir,
-    transcriptPath,
+    sessionLogPath,
     tool: 'claude-code',
   });
 
   assert.equal(result.reader, 'claude-code');
   assert.equal(result.draft.prefilled_measurements.time_to_green_minutes, 3);
-  assert.equal(result.draft.prefilled_measurements.override_count, 1);
+  assert.equal(result.draft.prefilled_measurements.exception_count, 1);
   assert.equal(result.draft.prefilled_outcome.accepted_without_major_rewrite, true);
 });
 
-test('CodexTranscriptReader reads legacy JSON transcript shape through the registry contract', () => {
+test('CodexSessionLogReader reads legacy JSON session log shape through the registry contract', () => {
   const rootDir = bootstrapRepo('veritas-codex-reader-');
-  const transcriptPath = join(rootDir, 'codex.json');
-  writeFileSync(transcriptPath, JSON.stringify({
+  const sessionLogPath = join(rootDir, 'codex.json');
+  writeFileSync(sessionLogPath, JSON.stringify({
     events: [
       { timestamp: '2026-05-10T00:00:00.000Z', command: 'veritas readiness', status: 'failed', files: ['src/app.mjs'] },
       { timestamp: '2026-05-10T00:01:00.000Z', command: 'veritas readiness', status: 'passed', files: ['src/app.mjs'] },
     ],
   }, null, 2));
-  const events = [...CodexTranscriptReader.readEvents(transcriptPath)];
+  const events = [...CodexSessionLogReader.readEvents(sessionLogPath)];
   assert.equal(events.filter((event) => event.kind === 'readiness-check').length, 2);
 });
 
 test('integrations claude-code install wires PreToolUse, Stop, and PostSession hooks', () => {
   const rootDir = bootstrapRepo('veritas-claude-install-');
-  const cli = join(frameworkRootDir, 'bin/veritas.mjs');
+  const cli = join(repoRootDir, 'bin/veritas.mjs');
   const output = execFileSync('node', [
     cli,
     'integrations',
@@ -114,9 +114,61 @@ test('integrations claude-code install wires PreToolUse, Stop, and PostSession h
   ], { cwd: rootDir, encoding: 'utf8' });
   const parsed = parseCliJson(output);
   const settings = JSON.parse(readFileSync(join(rootDir, '.claude/settings.json'), 'utf8'));
+  const statusOutput = execFileSync('node', [
+    cli,
+    'integrations',
+    'claude-code',
+    'status',
+    '--root',
+    rootDir,
+  ], { cwd: rootDir, encoding: 'utf8' });
+  const status = parseCliJson(statusOutput);
 
   assert.equal(parsed.tool, 'claude-code');
   assert.ok(settings.hooks.PreToolUse);
   assert.ok(settings.hooks.Stop);
   assert.ok(settings.hooks.PostSession);
+  assert.match(
+    settings.hooks.PostSession[0].hooks[0].command,
+    /VERITAS_SESSION_LOG_PATH/,
+  );
+  assert.equal(status.preToolUseHook.exists, true);
+  assert.equal(status.preToolUseHook.executable, true);
+  assert.equal(status.stopHook.exists, true);
+  assert.equal(status.stopHook.executable, true);
+  assert.equal(status.settings.preToolUseConfigured, true);
+  assert.equal(status.settings.stopConfigured, true);
+  assert.equal(status.settings.postSessionConfigured, true);
+});
+
+test('integrations cursor install wires generic stop hook and reports config status', () => {
+  const rootDir = bootstrapRepo('veritas-cursor-install-');
+  const cli = join(repoRootDir, 'bin/veritas.mjs');
+  const output = execFileSync('node', [
+    cli,
+    'integrations',
+    'cursor',
+    'install',
+    '--root',
+    rootDir,
+  ], { cwd: rootDir, encoding: 'utf8' });
+  const parsed = parseCliJson(output);
+  const statusOutput = execFileSync('node', [
+    cli,
+    'integrations',
+    'cursor',
+    'status',
+    '--root',
+    rootDir,
+  ], { cwd: rootDir, encoding: 'utf8' });
+  const status = parseCliJson(statusOutput);
+
+  assert.equal(parsed.tool, 'cursor');
+  assert.equal(parsed.stop.outputPath, '.veritas/hooks/stop.sh');
+  assert.equal(parsed.stop.configuredToolConfigPath, '.cursor/hooks.json');
+  assert.equal(status.stopHook.exists, true);
+  assert.equal(status.stopHook.executable, true);
+  assert.equal(status.toolConfig.path, '.cursor/hooks.json');
+  assert.equal(status.toolConfig.stopConfigured, true);
+  assert.equal(status.sessionLogReader, null);
 });

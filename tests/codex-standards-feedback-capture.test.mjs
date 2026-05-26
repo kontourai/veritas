@@ -4,17 +4,17 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
-import { buildCodexEvalDraft } from '../src/index.mjs';
-import { frameworkRootDir, readJson } from './helpers.mjs';
+import { buildCodexStandardsFeedbackDraft } from '../src/index.mjs';
+import { repoRootDir, readJson } from './helpers.mjs';
 
 function tempRoot() {
-  return mkdtempSync(join(tmpdir(), 'veritas-codex-eval-'));
+  return mkdtempSync(join(tmpdir(), 'veritas-codex-feedback-'));
 }
 
-test('Codex eval capture derives time to green and accepted result', () => {
+test('Codex standards feedback capture derives time to green and accepted result', () => {
   const rootDir = tempRoot();
-  const transcriptPath = join(rootDir, 'session.json');
-  const transcript = {
+  const sessionLogPath = join(rootDir, 'session.json');
+  const sessionLog = {
     session_id: 'codex-green',
     events: [
       {
@@ -39,24 +39,24 @@ test('Codex eval capture derives time to green and accepted result', () => {
       },
     ],
   };
-  writeFileSync(transcriptPath, `${JSON.stringify(transcript, null, 2)}\n`, 'utf8');
+  writeFileSync(sessionLogPath, `${JSON.stringify(sessionLog, null, 2)}\n`, 'utf8');
 
-  const draft = buildCodexEvalDraft({
-    transcript,
-    transcriptPath,
+  const draft = buildCodexStandardsFeedbackDraft({
+    sessionLog,
+    sessionLogPath,
     rootDir,
   });
 
   assert.equal(draft.run_id, 'codex-green');
   assert.equal(draft.prefilled_measurements.time_to_green_minutes, 6);
   assert.equal(draft.prefilled_outcome.accepted_without_major_rewrite, true);
-  assert.equal(draft.prefilled_measurements.override_count, 0);
+  assert.equal(draft.prefilled_measurements.exception_count, 0);
 });
 
-test('Codex eval capture marks major rewrites and CLI writes a draft', () => {
+test('Codex standards feedback capture marks major rewrites and CLI writes a draft', () => {
   const rootDir = tempRoot();
-  const transcriptPath = join(rootDir, 'session.json');
-  const transcript = {
+  const sessionLogPath = join(rootDir, 'session.json');
+  const sessionLog = {
     session_id: 'codex-rewrite',
     events: [
       {
@@ -81,21 +81,21 @@ test('Codex eval capture marks major rewrites and CLI writes a draft', () => {
       },
     ],
   };
-  writeFileSync(transcriptPath, `${JSON.stringify(transcript, null, 2)}\n`, 'utf8');
+  writeFileSync(sessionLogPath, `${JSON.stringify(sessionLog, null, 2)}\n`, 'utf8');
 
   const output = execFileSync(
     process.execPath,
     [
       'bin/veritas.mjs',
-      'eval',
+      'feedback',
       'observe',
       '--root',
       rootDir,
-      '--transcript',
-      transcriptPath,
+      '--session-log',
+      sessionLogPath,
     ],
     {
-      cwd: frameworkRootDir,
+      cwd: repoRootDir,
       encoding: 'utf8',
     },
   );
@@ -104,32 +104,32 @@ test('Codex eval capture marks major rewrites and CLI writes a draft', () => {
 
   assert.equal(result.prefilled_outcome.accepted_without_major_rewrite, false);
   assert.equal(result.prefilled_measurements.time_to_green_minutes, 3);
-  assert.equal(result.prefilled_measurements.override_count, 1);
+  assert.equal(result.prefilled_measurements.exception_count, 1);
   assert.equal(existsSync(artifactPath), true);
   assert.equal(readJson(artifactPath).run_id, 'codex-rewrite');
 });
 
-test('Codex eval capture records reason when transcript schema is unrecognized', () => {
+test('Codex standards feedback capture records reason when session log schema is unrecognized', () => {
   const rootDir = tempRoot();
-  const transcriptPath = join(rootDir, 'session.json');
-  const transcript = { session_id: 'codex-empty', unexpected: true };
+  const sessionLogPath = join(rootDir, 'session.json');
+  const sessionLog = { session_id: 'codex-empty', unexpected: true };
 
-  const draft = buildCodexEvalDraft({ transcript, transcriptPath, rootDir });
+  const draft = buildCodexStandardsFeedbackDraft({ sessionLog, sessionLogPath, rootDir });
 
   assert.deepEqual(draft.prefilled_measurements.time_to_green_minutes, {
     value: null,
-    reason: 'transcript_schema_unrecognized',
+    reason: 'session_log_schema_unrecognized',
   });
   assert.deepEqual(draft.prefilled_outcome.accepted_without_major_rewrite, {
     value: null,
-    reason: 'transcript_schema_unrecognized',
+    reason: 'session_log_schema_unrecognized',
   });
 });
 
-test('Codex eval capture records reason when no failing run is observed', () => {
+test('Codex standards feedback capture records reason when no failing run is observed', () => {
   const rootDir = tempRoot();
-  const transcriptPath = join(rootDir, 'session.json');
-  const transcript = {
+  const sessionLogPath = join(rootDir, 'session.json');
+  const sessionLog = {
     session_id: 'codex-no-fail',
     events: [
       {
@@ -141,7 +141,7 @@ test('Codex eval capture records reason when no failing run is observed', () => 
     ],
   };
 
-  const draft = buildCodexEvalDraft({ transcript, transcriptPath, rootDir });
+  const draft = buildCodexStandardsFeedbackDraft({ sessionLog, sessionLogPath, rootDir });
 
   assert.deepEqual(draft.prefilled_measurements.time_to_green_minutes, {
     value: null,
@@ -149,10 +149,10 @@ test('Codex eval capture records reason when no failing run is observed', () => 
   });
 });
 
-test('Codex eval capture records reason when no passing run is observed', () => {
+test('Codex standards feedback capture records reason when no passing run is observed', () => {
   const rootDir = tempRoot();
-  const transcriptPath = join(rootDir, 'session.json');
-  const transcript = {
+  const sessionLogPath = join(rootDir, 'session.json');
+  const sessionLog = {
     session_id: 'codex-no-pass',
     events: [
       {
@@ -164,7 +164,7 @@ test('Codex eval capture records reason when no passing run is observed', () => 
     ],
   };
 
-  const draft = buildCodexEvalDraft({ transcript, transcriptPath, rootDir });
+  const draft = buildCodexStandardsFeedbackDraft({ sessionLog, sessionLogPath, rootDir });
 
   assert.deepEqual(draft.prefilled_measurements.time_to_green_minutes, {
     value: null,
@@ -172,10 +172,10 @@ test('Codex eval capture records reason when no passing run is observed', () => 
   });
 });
 
-test('Codex eval capture records reason when churn threshold cannot apply', () => {
+test('Codex standards feedback capture records reason when churn threshold cannot apply', () => {
   const rootDir = tempRoot();
-  const transcriptPath = join(rootDir, 'session.json');
-  const transcript = {
+  const sessionLogPath = join(rootDir, 'session.json');
+  const sessionLog = {
     session_id: 'codex-no-files',
     events: [
       {
@@ -191,7 +191,7 @@ test('Codex eval capture records reason when churn threshold cannot apply', () =
     ],
   };
 
-  const draft = buildCodexEvalDraft({ transcript, transcriptPath, rootDir });
+  const draft = buildCodexStandardsFeedbackDraft({ sessionLog, sessionLogPath, rootDir });
 
   assert.deepEqual(draft.prefilled_outcome.accepted_without_major_rewrite, {
     value: null,

@@ -10,32 +10,32 @@ export function loadJson(filePath, label = filePath, options = {}) {
   }
 }
 
-export function loadAdapterConfig(configPath, options = {}) {
-  return loadJson(configPath, 'adapter config', options);
+export function loadRepoMap(configPath, options = {}) {
+  return loadJson(configPath, 'Repo Map', options);
 }
 
 export function loadRepoStandards(repoStandardsPath, options = {}) {
   return loadJson(repoStandardsPath, 'Repo Standards', options);
 }
 
-export function loadTeamProfile(teamProfilePath, options = {}) {
-  return loadJson(teamProfilePath, 'team profile', options);
+export function loadAuthoritySettings(authoritySettingsPath, options = {}) {
+  return loadJson(authoritySettingsPath, 'authority settings', options);
 }
 
 export function loadEvidenceArtifact(evidencePath, options = {}) {
   return loadJson(evidencePath, 'evidence artifact', options);
 }
 
-export function loadEvalDraftArtifact(draftPath, options = {}) {
-  return loadJson(draftPath, 'eval draft artifact', options);
+export function loadStandardsFeedbackDraftArtifact(draftPath, options = {}) {
+  return loadJson(draftPath, 'standards feedback draft artifact', options);
 }
 
 export function loadMarkerBenchmarkScenario(scenarioPath, options = {}) {
   return loadJson(scenarioPath, 'marker benchmark scenario', options);
 }
 
-export function loadMarkerBenchmarkTranscript(transcriptPath, options = {}) {
-  return loadJson(transcriptPath, 'marker benchmark transcript', options);
+export function loadMarkerBenchmarkSessionLog(sessionLogPath, options = {}) {
+  return loadJson(sessionLogPath, 'marker benchmark session log', options);
 }
 
 export function loadMarkerBenchmarkSuite(suitePath, options = {}) {

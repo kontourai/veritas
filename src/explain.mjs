@@ -1,9 +1,9 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { loadAdapterConfig, loadRepoStandards } from './load.mjs';
+import { loadRepoMap, loadRepoStandards } from './load.mjs';
 import { normalizeRepoPath } from './paths.mjs';
 import { matchesPatterns } from './util/patterns.mjs';
-import { evaluateCrossSurfaceWriteRule } from './rules/evaluate.mjs';
+import { evaluateWorkAreaBoundaryRule } from './rules/evaluate.mjs';
 import { resolveVeritasPaths, listChangedFiles, listWorkingTreeFiles } from './report.mjs';
 import { parseTokens } from './args.mjs';
 
@@ -19,7 +19,7 @@ function ruleMatchesFile(rule, filePath) {
   return false;
 }
 
-function ruleMatchesSurfaceNode(rule, node, config) {
+function ruleMatchesWorkAreaNode(rule, node, config) {
   if (!node) return false;
   const workArea = (config.graph?.nodes ?? []).find((item) => item.id === node);
   if (!workArea) return rule.id === node;
@@ -108,13 +108,13 @@ function latestSurfaceReportForRule(rootDir, ruleId) {
   return null;
 }
 
-export function buildExplainText({ rootDir, adapter, repoStandards, ruleId, filePath, workArea }) {
+export function buildExplainText({ rootDir, repoMap, repoStandards, ruleId, filePath, workArea }) {
   const normalizedFile = filePath ? normalizeRepoPath(filePath, rootDir) : null;
   const allRules = [...(repoStandards.rules ?? []), ...syntheticPolicyRules()];
   const selectedRules = allRules.filter((rule) => {
     if (ruleId) return rule.id === ruleId;
     if (normalizedFile) return ruleMatchesFile(rule, normalizedFile);
-    if (workArea) return ruleMatchesSurfaceNode(rule, workArea, adapter);
+    if (workArea) return ruleMatchesWorkAreaNode(rule, workArea, repoMap);
     return false;
   });
   const lines = [
@@ -141,20 +141,20 @@ export function buildExplainText({ rootDir, adapter, repoStandards, ruleId, file
 export function runExplainCli(argv = process.argv.slice(2), defaults = {}) {
   const { options, rest } = parseTokens(argv, {
     '--root': { type: 'string', key: 'rootDir' },
-    '--adapter': { type: 'string', key: 'adapterPath' },
+    '--repo-map': { type: 'string', key: 'repoMapPath' },
     '--repo-standards': { type: 'string', key: 'repoStandardsPath' },
     '--file': { type: 'string', key: 'filePath' },
     '--work-area': { type: 'string', key: 'workArea' },
   });
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  const { adapterPath, repoStandardsPath } = resolveVeritasPaths({ ...options, rootDir }, { ...defaults, rootDir });
+  const { repoMapPath, repoStandardsPath } = resolveVeritasPaths({ ...options, rootDir }, { ...defaults, rootDir });
   const selector = rest[0];
-  const adapter = loadAdapterConfig(adapterPath);
+  const repoMap = loadRepoMap(repoMapPath);
   const repoStandards = loadRepoStandards(repoStandardsPath);
   const selectorIsRule = [...(repoStandards.rules ?? []), ...syntheticPolicyRules()].some((rule) => rule.id === selector);
   const text = buildExplainText({
     rootDir,
-    adapter,
+    repoMap,
     repoStandards,
     ruleId: options.filePath || options.workArea ? null : selectorIsRule ? selector : null,
     filePath: options.filePath ?? (!options.workArea && !selectorIsRule && selector?.includes('/') ? selector : null),
@@ -163,18 +163,18 @@ export function runExplainCli(argv = process.argv.slice(2), defaults = {}) {
   process.stdout.write(text);
 }
 
-export function checkBoundaries({ rootDir, adapter, actor, files }) {
+export function checkBoundaries({ rootDir, repoMap, actor, files }) {
   const rule = {
-    id: 'cross-surface-write',
-    kind: 'cross-surface-write',
+    id: 'work-area-boundary',
+    kind: 'work-area-boundary',
     classification: 'hard-invariant',
     stage: 'block',
-    message: 'Actors may only edit strict surfaces they own or are explicitly allowed to cross.',
+    message: 'Actors may only edit strict work areas they own or are explicitly allowed to cross.',
     match: {},
   };
-  return evaluateCrossSurfaceWriteRule(rule, {
+  return evaluateWorkAreaBoundaryRule(rule, {
     rootDir,
-    config: adapter,
+    config: repoMap,
     actor,
     changedFiles: files,
   });
@@ -183,19 +183,19 @@ export function checkBoundaries({ rootDir, adapter, actor, files }) {
 export function runBoundariesCheckCli(argv = process.argv.slice(2), defaults = {}) {
   const { options } = parseTokens(argv, {
     '--root': { type: 'string', key: 'rootDir' },
-    '--adapter': { type: 'string', key: 'adapterPath' },
+    '--repo-map': { type: 'string', key: 'repoMapPath' },
     '--actor': { type: 'string', key: 'actor' },
     '--diff': { type: 'string', key: 'diffRef' },
   });
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  const { adapterPath } = resolveVeritasPaths({ ...options, rootDir }, { ...defaults, rootDir });
-  const adapter = loadAdapterConfig(adapterPath);
+  const { repoMapPath } = resolveVeritasPaths({ ...options, rootDir }, { ...defaults, rootDir });
+  const repoMap = loadRepoMap(repoMapPath);
   const files = options.diffRef
     ? listChangedFiles(options.diffRef, 'HEAD', rootDir)
     : listWorkingTreeFiles({ staged: true, unstaged: true, untracked: true }, rootDir);
   const result = checkBoundaries({
     rootDir,
-    adapter,
+    repoMap,
     actor: options.actor ?? process.env.VERITAS_ACTOR ?? null,
     files,
   });

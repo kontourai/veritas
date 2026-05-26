@@ -7,8 +7,8 @@ Does Veritas surface the right repo-specific warning or context at the right tim
 ## Core Terms
 
 - **Scenario**: the benchmark definition, including the marker phrases and the scoring window
-- **Without Veritas transcript**: a baseline transcript produced without Veritas context
-- **With Veritas transcript**: a treatment transcript produced with Veritas context
+- **Without Veritas session log**: a baseline session log produced without Veritas context
+- **With Veritas session log**: a treatment session log produced with Veritas context
 - **Trigger tag**: the user-turn marker that starts the scoring window
 - **Response window tag**: an optional assistant-turn marker that narrows which answer is judged
 
@@ -17,10 +17,10 @@ Does Veritas surface the right repo-specific warning or context at the right tim
 One trial consists of:
 
 1. a scenario JSON file
-2. one baseline transcript
-3. one treatment transcript
+2. one baseline session log
+3. one treatment session log
 
-`veritas eval marker` compares those two transcripts against the same scenario and reports:
+`veritas feedback marker` compares those two session logs against the same scenario and reports:
 
 - whether the marker surfaced
 - whether it surfaced on time
@@ -37,7 +37,7 @@ It means the model answered with the relevant Veritas context in place, so the b
 
 ## Suite Metrics
 
-`veritas eval marker-suite` aggregates multiple trials and benchmark groups. The suite report includes:
+`veritas feedback marker-suite` aggregates multiple trials and benchmark groups. The suite report includes:
 
 - scenario count
 - pair count
@@ -52,7 +52,7 @@ It means the model answered with the relevant Veritas context in place, so the b
 The shipped fixtures are examples, not claims about universal model behavior. They are meant to show:
 
 - the scoring contract
-- the expected transcript tagging pattern
+- the expected session log tagging pattern
 - how to structure repeatable benchmark evidence inside a repo
 
 The current suite now includes governance-specific benchmark classes as well:
