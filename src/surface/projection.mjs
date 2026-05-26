@@ -44,6 +44,42 @@ const SURFACE_SUPPORTS_EVIDENCE_EXECUTION = (() => {
     return false;
   }
 })();
+const SURFACE_SUPPORTS_AUTHORITY_TRACE = (() => {
+  if (typeof Surface.validateTrustInput !== 'function') return false;
+  try {
+    Surface.validateTrustInput({
+      schemaVersion: 3,
+      source: 'veritas-authority-trace-capability-detect',
+      claims: [{
+        id: 'claim.authority-trace-capability',
+        subjectType: 'repository-change',
+        subjectId: 'repo',
+        surface: 'veritas.readiness',
+        claimType: 'software-readiness-verdict',
+        fieldOrBehavior: 'mergeReadiness',
+        value: 'ready',
+        createdAt: '2026-05-20T00:00:00.000Z',
+        updatedAt: '2026-05-20T00:00:00.000Z',
+      }],
+      evidence: [],
+      policies: [],
+      events: [],
+      authorityTrace: [{
+        id: 'authority.trace.capability',
+        subject: { subjectType: 'repository-change', subjectId: 'repo' },
+        actorRef: 'actor:veritas',
+        authorityType: 'system',
+        authorityRef: 'producer:veritas',
+        sourceRef: 'capability-detect',
+        observedAt: '2026-05-20T00:00:00.000Z',
+        claimIds: ['claim.authority-trace-capability'],
+      }],
+    });
+    return true;
+  } catch {
+    return false;
+  }
+})();
 
 export async function buildSurfaceTrustInput(record, { rootDir = process.cwd(), adapterConfig = null } = {}) {
   registerVeritasExtension();
@@ -54,7 +90,7 @@ export async function buildSurfaceTrustInput(record, { rootDir = process.cwd(), 
     source: `veritas:${record.run_id}`,
     schemaVersion: 2,
   });
-  const { claims, evidence, events, claimGroups } = assembler;
+  const { claims, evidence, events, claimGroups, authorityTrace } = assembler;
 
   for (const definition of effectiveClaimStore.claims) {
     claims.push(claimDefToClaim(definition, record));
@@ -66,6 +102,7 @@ export async function buildSurfaceTrustInput(record, { rootDir = process.cwd(), 
   collectEvidenceInventoryEvidence(record, effectiveClaimStore, evidence, events);
   collectExternalToolEvidence(record, effectiveClaimStore, evidence, events);
   collectReadinessCoverageEvidence(record, effectiveClaimStore, evidence, events);
+  collectReadinessVerdictEvidence(record, effectiveClaimStore, evidence, events, authorityTrace);
   collectGovernanceEvidence(record, effectiveClaimStore, evidence, events);
   collectRecommendationEvidence(record, effectiveClaimStore, evidence, rootDir);
   const policyClaimGroup = buildRepoStandardsClaimGroup(record, effectiveClaimStore);
@@ -97,6 +134,15 @@ function withProjectedPolicyClaims(claimStore, record) {
   const policies = [...claimStore.policies];
   const existingIds = new Set(claims.map((claim) => claim.id));
   const existingPolicyIds = new Set(policies.map((policy) => policy.id));
+  const readinessClaim = buildReadinessVerdictClaim(record);
+  if (!existingIds.has(readinessClaim.id)) {
+    claims.push(readinessClaim);
+    existingIds.add(readinessClaim.id);
+  }
+  if (!existingPolicyIds.has(SURFACE_TRUST_POLICIES.readinessVerdict.id)) {
+    policies.push(SURFACE_TRUST_POLICIES.readinessVerdict);
+    existingPolicyIds.add(SURFACE_TRUST_POLICIES.readinessVerdict.id);
+  }
   for (const result of record.policy_results ?? []) {
     const id = policyResultClaimId(record, result.rule_id);
     if (existingIds.has(id)) continue;
@@ -131,6 +177,49 @@ function withProjectedPolicyClaims(claimStore, record) {
     policies.push(SURFACE_TRUST_POLICIES.policyResult);
   }
   return { ...claimStore, claims, policies };
+}
+
+function buildReadinessVerdictClaim(record) {
+  const verdict = readinessVerdict(record);
+  return {
+    id: surfaceClaimId(record.run_id, 'readiness-verdict', record.source_ref ?? 'source'),
+    surface: 'veritas.readiness',
+    claimType: 'software-readiness-verdict',
+    fieldOrBehavior: 'mergeReadiness',
+    subjectType: 'repository-change',
+    subjectId: readinessSubjectId(record),
+    value: {
+      verdict,
+      promotionAllowed: record.promotion_allowed,
+      uncoveredPathResult: record.uncovered_path_result,
+      sourceRef: record.integrity?.sourceRef ?? record.source_ref,
+    },
+    status: readinessSurfaceStatus(record),
+    impactLevel: 'high',
+    verificationPolicyId: SURFACE_TRUST_POLICIES.readinessVerdict.id,
+    currentIntegrityRef: record.integrity?.sourceRef ?? record.source_ref,
+    createdAt: record.timestamp,
+    updatedAt: record.timestamp,
+    metadata: {
+      producer: 'veritas',
+      source: 'readiness',
+      sourceRef: record.source_ref,
+      sourceKind: record.source_kind,
+      sourceScope: record.source_scope,
+      policyCoverage: {
+        policyResultCount: record.policy_results?.length ?? 0,
+        selectedEvidenceCheckCount: record.selected_evidence_checks?.length ?? 0,
+        readinessCoveragePresent: Boolean(record.readiness_coverage),
+      },
+      integrity: readinessIntegrityScope(record),
+      authorityTrace: buildReadinessAuthorityTrace(record),
+    },
+  };
+}
+
+function readinessSubjectId(record) {
+  const producer = record.adapter?.name ?? record.repo_standards?.name ?? 'veritas';
+  return `${surfaceSafeId(producer)}:${surfaceSafeId(record.integrity?.sourceRef ?? record.source_ref ?? record.run_id)}`;
 }
 
 function buildRepoStandardsClaimGroup(record, claimStore) {
@@ -193,7 +282,7 @@ function buildRepoStandardsClaimGroup(record, claimStore) {
 function claimDefToClaim(definition, record) {
   return {
     ...definition,
-    value: definition.metadata?.value ?? defaultClaimValue(definition),
+    value: definition.value ?? definition.metadata?.value ?? defaultClaimValue(definition),
     currentIntegrityRef: record.integrity?.sourceRef ?? record.source_ref,
     updatedAt: record.timestamp ?? definition.updatedAt,
   };
@@ -505,6 +594,181 @@ function collectReadinessCoverageEvidence(record, claimStore, evidence, events) 
     record,
     notes: record.readiness_coverage.recommendation,
   }));
+}
+
+function collectReadinessVerdictEvidence(record, claimStore, evidence, events, authorityTraceRecords) {
+  const claim = claimsByType(claimStore, 'software-readiness-verdict')
+    .find((item) => item.id === surfaceClaimId(record.run_id, 'readiness-verdict', record.source_ref ?? 'source'));
+  if (!claim) return;
+  const status = readinessSurfaceStatus(record);
+  const evidenceId = `${record.run_id}.readiness-verdict.evidence`;
+  const authorityTrace = buildReadinessAuthorityTrace(record);
+  const firstClassAuthorityTrace = buildReadinessAuthorityTraceRecord(record, claim, evidenceId);
+  authorityTraceRecords.push(firstClassAuthorityTrace);
+  evidence.push(surfaceEvidence({
+    id: evidenceId,
+    claimId: claim.id,
+    type: 'policy_rule',
+    method: 'validation',
+    record,
+    locator: 'readiness',
+    summary: readinessVerdictSummary(record),
+    passing: status === 'verified',
+    blocking: status !== 'verified',
+    metadata: {
+      readinessVerdict: readinessVerdict(record),
+      readinessStatus: status,
+      promotionAllowed: record.promotion_allowed,
+      uncoveredPathResult: record.uncovered_path_result,
+      policyResults: readinessPolicyResultSummary(record),
+      evidenceChecks: readinessEvidenceCheckSummary(record),
+      integrity: readinessIntegrityScope(record),
+      authorityTrace,
+      transparencyGapHints: readinessTransparencyGapHints(record),
+    },
+  }));
+  events.push(surfaceEvent({
+    id: `${record.run_id}.readiness-verdict.${status}`,
+    claimId: claim.id,
+    status,
+    method: 'readiness verdict',
+    evidenceIds: [evidenceId],
+    record,
+    notes: readinessVerdictSummary(record),
+  }));
+}
+
+function readinessVerdict(record) {
+  if (record.promotion_allowed === true) return 'ready';
+  if (readinessHasBlockingFailure(record)) return 'not-ready';
+  return 'needs-review';
+}
+
+function readinessSurfaceStatus(record) {
+  if (record.promotion_allowed === true) return 'verified';
+  if (readinessHasBlockingFailure(record)) return 'rejected';
+  return 'disputed';
+}
+
+function readinessHasBlockingFailure(record) {
+  if (record.uncovered_path_result === 'fail') return true;
+  if ((record.policy_results ?? []).some((result) => result.passed === false && result.stage === 'block')) return true;
+  if ((record.selected_evidence_checks ?? []).some((check) => check.evidence_check_result?.passed === false)) return true;
+  if ((record.external_tool_results ?? []).some((result) => result.blocking !== false && ['fail', 'missing'].includes(result.verdict))) return true;
+  return false;
+}
+
+function readinessVerdictSummary(record) {
+  const verdict = readinessVerdict(record);
+  if (verdict === 'ready') return 'Veritas readiness verdict is ready for the evaluated repository change.';
+  if (verdict === 'not-ready') return 'Veritas readiness verdict is not ready because blocking requirements or evidence failed.';
+  return 'Veritas readiness verdict needs review because readiness could not be fully verified.';
+}
+
+function readinessPolicyResultSummary(record) {
+  const results = record.policy_results ?? [];
+  return {
+    total: results.length,
+    failedBlocking: results.filter((result) => result.passed === false && result.stage === 'block').map((result) => result.rule_id),
+    warnings: results.filter((result) => result.passed === false && result.stage !== 'block').map((result) => result.rule_id),
+  };
+}
+
+function readinessEvidenceCheckSummary(record) {
+  const checks = record.selected_evidence_checks ?? [];
+  return {
+    selected: checks.map((check) => check.id),
+    failed: checks.filter((check) => check.evidence_check_result?.passed === false).map((check) => check.id),
+    baselineCiFastPassed: record.baseline_ci_fast_passed,
+  };
+}
+
+function readinessIntegrityScope(record) {
+  return {
+    sourceRef: record.integrity?.sourceRef ?? record.source_ref,
+    sourceKind: record.integrity?.sourceKind ?? record.source_kind,
+    sourceScope: record.integrity?.sourceScope ?? record.source_scope ?? [],
+    fileRefs: record.integrity?.fileRefs ?? [],
+    configRefs: record.integrity?.configRefs ?? {},
+  };
+}
+
+function readinessTransparencyGapHints(record) {
+  const hints = [];
+  for (const ruleId of readinessPolicyResultSummary(record).failedBlocking) {
+    hints.push({
+      type: 'policy_violation',
+      severity: 'high',
+      message: `Blocking readiness requirement failed: ${ruleId}.`,
+      blocking: true,
+    });
+  }
+  if (record.uncovered_path_result === 'fail') {
+    hints.push({
+      type: 'policy_violation',
+      severity: 'high',
+      message: 'Changed files were outside configured work areas and uncovered path policy is fail.',
+      blocking: true,
+    });
+  }
+  if (!record.governance_state || record.governance_state.state === 'missing') {
+    hints.push({
+      type: 'provenance_gap',
+      severity: 'medium',
+      message: 'No active governance attestation was available; Veritas used producer authority fallback.',
+    });
+  }
+  return hints;
+}
+
+function buildReadinessAuthorityTrace(record) {
+  const governanceState = record.governance_state;
+  const actor = governanceState?.attestation?.actor ?? process.env.VERITAS_ACTOR ?? record.owner ?? 'veritas';
+  const protectedStandards = governanceState?.protectedStandards ?? null;
+  return {
+    kind: governanceState?.attestation ? 'governance-attestation' : 'producer-fallback',
+    producer: 'veritas',
+    actor,
+    method: governanceState?.attestation ? 'attestation' : 'readiness-producer',
+    sourceRef: record.integrity?.sourceRef ?? record.source_ref,
+    currentAttestationId: governanceState?.currentAttestationId ?? null,
+    attestationState: governanceState?.state ?? 'absent',
+    validUntil: governanceState?.validUntil ?? null,
+    protectedStandards: protectedStandards ? {
+      paths: protectedStandards.paths ?? {},
+      hashes: protectedStandards.hashes ?? {},
+      drift: governanceState?.drift ?? [],
+    } : null,
+  };
+}
+
+function buildReadinessAuthorityTraceRecord(record, claim, evidenceId) {
+  const governanceState = record.governance_state;
+  const metadataTrace = buildReadinessAuthorityTrace(record);
+  const attestationActor = governanceState?.attestation?.actor;
+  const actorRef = attestationActor
+    ? `actor:${surfaceSafeId(attestationActor)}`
+    : `system:${surfaceSafeId(process.env.VERITAS_ACTOR ?? record.owner ?? 'veritas')}`;
+  const authorityRef = governanceState?.currentAttestationId
+    ? `attestation:${surfaceSafeId(governanceState.currentAttestationId)}`
+    : 'producer:veritas';
+  return {
+    id: `${claim.id}.authority`,
+    subject: {
+      subjectType: claim.subjectType,
+      subjectId: claim.subjectId,
+    },
+    actorRef,
+    authorityType: governanceState?.attestation ? 'credential' : 'system',
+    authorityRef,
+    sourceRef: record.integrity?.sourceRef ?? record.source_ref ?? record.run_id,
+    observedAt: record.timestamp,
+    evidenceIds: [evidenceId],
+    claimIds: [claim.id],
+    validUntil: governanceState?.validUntil ?? undefined,
+    integrityRef: record.integrity?.sourceRef ?? record.source_ref,
+    metadata: metadataTrace,
+  };
 }
 
 function collectGovernanceEvidence(record, claimStore, evidence, events) {
@@ -827,6 +1091,7 @@ export function createSurfaceTrustInputAssembler({ source, schemaVersion }) {
     policies: [],
     events: [],
     claimGroups: [],
+    authorityTrace: [],
   };
   return {
     claims: {
@@ -867,13 +1132,26 @@ export function createSurfaceTrustInputAssembler({ source, schemaVersion }) {
         return items.length;
       },
     },
+    authorityTrace: {
+      push: (...items) => {
+        draft.authorityTrace.push(...items);
+        return items.length;
+      },
+    },
     build: (policies) => {
       for (const policy of policies) {
         draft.policies.push(policy);
         builder.addPolicy(policy);
       }
       try {
-        return builder.build();
+        const input = builder.build();
+        if (SURFACE_SUPPORTS_AUTHORITY_TRACE && draft.authorityTrace.length > 0) {
+          return Surface.validateTrustInput({
+            ...input,
+            authorityTrace: [...draft.authorityTrace],
+          });
+        }
+        return input;
       } catch (error) {
         error.trustInputDraft = {
           ...draft,
@@ -882,6 +1160,7 @@ export function createSurfaceTrustInputAssembler({ source, schemaVersion }) {
           policies: [...draft.policies],
           events: [...draft.events],
           claimGroups: [...draft.claimGroups],
+          ...(SURFACE_SUPPORTS_AUTHORITY_TRACE ? { authorityTrace: [...draft.authorityTrace] } : {}),
         };
         throw error;
       }

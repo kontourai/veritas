@@ -198,13 +198,15 @@ npx @kontourai/veritas boundaries check --actor framework-team
 
 Strict nodes fail when the actor is neither an owner nor listed in `crossSurfaceAllow`. This means a working tree that spans several strict surfaces may legitimately fail for one actor while passing for another owner or allowlisted actor.
 
-To turn a Veritas artifact into a Surface trust report:
+To turn a Veritas readiness artifact into a Surface trust report, use the `reportArtifactPath` returned by `veritas readiness --format json` as the stable path. Do not reconstruct `.veritas/evidence/<run-id>.json` in downstream tools.
 
 ```bash
-artifact_path="$(npx @kontourai/veritas readiness --check evidence --working-tree --format json | node -e 'let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", () => { const parsed = JSON.parse(data); if (!parsed.artifactPath) throw new Error("missing artifactPath"); console.log(parsed.artifactPath); });')"
+artifact_path="$(npx @kontourai/veritas readiness --working-tree --format json | node -e 'let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", () => { const parsed = JSON.parse(data); if (!parsed.reportArtifactPath) throw new Error("missing reportArtifactPath"); console.log(parsed.reportArtifactPath); });')"
 node -e 'const fs = require("node:fs"); const artifact = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write(JSON.stringify(artifact.surface.input, null, 2));' "$artifact_path" > .veritas/external/surface-input.json
 surface report --adapter surface --input .veritas/external/surface-input.json --format summary
 ```
+
+Portable consumers can find merge readiness by selecting `surface.input.claims[]` or generated `surface.report.claims[]` where `claimType` is `software-readiness-verdict` and `subjectType` is `repository-change`. Integrity scope is available in claim/evidence metadata; authority trace is available as first-class `surface.input.authorityTrace` when the installed Surface package supports it and mirrored in claim/evidence metadata for older Surface 0.4 consumers.
 
 Surface generates report-only fields such as `id`, `generatedAt`, `summary`, `transparencyGaps`, and `evidenceRequirementsByClaimId`. Veritas owns repo-native evidence collection and projection; Surface owns generic validation and report generation.
 

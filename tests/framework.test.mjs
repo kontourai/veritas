@@ -1794,9 +1794,17 @@ test('report CLI can measure the full working tree', () => {
   const readinessResult = parseCliJson(stdout);
   const parsed = readJsonFromAbsolute(join(rootDir, readinessResult.reportArtifactPath));
 
+  assert.equal(typeof readinessResult.reportArtifactPath, 'string');
   assert.equal(parsed.source_kind, 'working-tree');
   assert.deepEqual(parsed.source_scope, ['staged', 'unstaged', 'untracked']);
   assert.deepEqual(parsed.files, ['README.md', 'notes.txt', 'package.json']);
+  const readinessInputClaim = parsed.surface.input.claims.find((claim) => claim.claimType === 'software-readiness-verdict');
+  assert.ok(readinessInputClaim, 'expected readiness verdict claim under surface.input.claims');
+  assert.equal(['ready', 'not-ready', 'needs-review'].includes(readinessInputClaim.value.verdict), true);
+  assert.equal(parsed.surface.report.claims.some((claim) => claim.id === readinessInputClaim.id), true);
+  assert.equal(parsed.surface.input.generatedAt, undefined);
+  assert.ok(readinessInputClaim.metadata.integrity.sourceRef);
+  assert.ok(readinessInputClaim.metadata.authorityTrace);
 });
 
 test('report CLI can emit an empty current-state artifact for a clean working tree', () => {

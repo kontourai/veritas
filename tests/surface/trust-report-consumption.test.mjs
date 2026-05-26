@@ -117,6 +117,10 @@ test('Surface trust report summary is persisted with stale and disputed statuses
   const input = await buildSurfaceTrustInput(record, { rootDir });
   const report = buildSurfaceTrustReportSummary({ input, record });
   const statuses = Object.fromEntries(report.claims.map((claim) => [claim.id, claim.status]));
+  const readinessClaim = input.claims.find((claim) => claim.claimType === 'software-readiness-verdict');
+  assert.ok(readinessClaim);
+  assert.equal(readinessClaim.metadata.authorityTrace.kind, 'producer-fallback');
+  assert.equal(input.evidence.find((item) => item.claimId === readinessClaim.id).metadata.authorityTrace.kind, 'producer-fallback');
 
   assert.equal(statuses['veritas.surface-report-consumption-test.policy.warn-rule'], 'disputed');
   assert.equal(statuses['veritas.surface-report-consumption-test.evidence-inventory.stale-inventory'], 'stale');
