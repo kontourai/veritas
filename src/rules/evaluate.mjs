@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { inspectGovernanceBlockFile } from '../governance.mjs';
 import { classifyNodes } from '../repo/classify.mjs';
@@ -258,6 +258,91 @@ function primitiveExists(reference, rule, context) {
   return false;
 }
 
+function readJsonFile(rootDir, filePath) {
+  try {
+    return JSON.parse(readFileSync(resolve(rootDir, filePath), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function regexMatches(value, patterns = []) {
+  return patterns.some((pattern) => new RegExp(pattern).test(value));
+}
+
+function escapeRegexLiteral(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function evidenceCheckRunsPackageScript(check, scriptName) {
+  if (typeof check.command !== 'string') return false;
+  const escapedScriptName = escapeRegexLiteral(scriptName);
+  const npmRunPattern = new RegExp(
+    `(?:^|&&|\\|\\||;|\\s)npm\\s+run(?:-script)?\\s+${escapedScriptName}(?:\\s|$)`,
+  );
+  return npmRunPattern.test(check.command);
+}
+
+function packageScriptRepresented(scriptName, packageScripts, rule, context) {
+  const evidenceChecks = context.config?.evidence?.evidenceChecks ?? [];
+  if (evidenceChecks.some((check) => evidenceCheckRunsPackageScript(check, scriptName))) {
+    return true;
+  }
+  return (packageScripts.representedBy ?? []).some((reference) =>
+    primitiveExists(reference, rule, context)
+  );
+}
+
+function packageScriptExemption(scriptName, packageScripts) {
+  return (packageScripts.helperExemptions ?? []).find(
+    (exemption) => exemption.name === scriptName
+  );
+}
+
+function evaluatePrimitiveFirstPackageScripts(rule, context) {
+  const packageScripts = rule.match?.packageScripts;
+  if (!packageScripts) return [];
+
+  const filePath = packageScripts.file ?? 'package.json';
+  const packageJson = readJsonFile(context.rootDir, filePath);
+  const scripts =
+    packageJson && typeof packageJson.scripts === 'object' && packageJson.scripts !== null
+      ? packageJson.scripts
+      : {};
+  const namePatterns = packageScripts.namePatterns ?? [];
+  const commandPatterns = packageScripts.commandPatterns ?? [];
+  const findings = [];
+
+  for (const [scriptName, command] of Object.entries(scripts)) {
+    if (typeof command !== 'string') continue;
+    const matchesInventory =
+      regexMatches(scriptName, namePatterns) || regexMatches(command, commandPatterns);
+    if (!matchesInventory) continue;
+
+    const exemption = packageScriptExemption(scriptName, packageScripts);
+    if (exemption) continue;
+    if (packageScriptRepresented(scriptName, packageScripts, rule, context)) continue;
+
+    findings.push({
+      kind: 'primitive-first-governance',
+      artifact: filePath,
+      package_script: scriptName,
+      command,
+      name_patterns: namePatterns,
+      command_patterns: commandPatterns,
+      required_primitives: [
+        {
+          kind: 'evidence-check',
+          command: `npm run ${scriptName}`,
+        },
+        ...(packageScripts.representedBy ?? []),
+      ],
+    });
+  }
+
+  return findings;
+}
+
 /** @param {RuleContext} context */
 export function evaluatePrimitiveFirstGovernanceRule(rule, context) {
   const candidates = Array.isArray(rule.match?.candidates) ? rule.match.candidates : [];
@@ -283,6 +368,8 @@ export function evaluatePrimitiveFirstGovernanceRule(rule, context) {
       });
     }
   }
+
+  findings.push(...evaluatePrimitiveFirstPackageScripts(rule, context));
 
   return buildRuleResult(rule, {
     implemented: true,

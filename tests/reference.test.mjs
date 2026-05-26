@@ -146,6 +146,10 @@ test('Repo Map and Repo Standards schemas declare activation and lint requiremen
   assert.ok(matchDefs.vocabularyConsistencyMatch.properties.files);
   assert.ok(matchDefs.vocabularyConsistencyMatch.properties.terms);
   assert.ok(matchDefs.primitiveFirstGovernanceMatch.properties.candidates);
+  assert.ok(matchDefs.primitiveFirstGovernanceMatch.properties.packageScripts);
+  assert.ok(matchDefs.primitiveFirstGovernanceMatch.properties.packageScripts.properties.namePatterns);
+  assert.ok(matchDefs.primitiveFirstGovernanceMatch.properties.packageScripts.properties.commandPatterns);
+  assert.ok(matchDefs.primitiveFirstGovernanceMatch.properties.packageScripts.properties.helperExemptions);
 });
 
 test('fixture Repo Maps and evidence examples stay readable', () => {

@@ -272,7 +272,82 @@
               }
             ]
           }
-        ]
+        ],
+        "packageScripts": {
+          "file": "package.json",
+          "namePatterns": [
+            "^(verify|prepublishOnly|test:coverage:check|lint:governance|veritas:(check|check:working-tree|check:diff|coverage|evidence-check|vocab:check|fallow:advisory|redact:check|readiness|conformance|conformance:report|conformance:readiness|conformance:verify|ci:conformance))$"
+          ],
+          "commandPatterns": [
+            "(veritas readiness|scripts/(verify|check-|run-fallow-audit|repo-conformance-status|build-conformance-examples)\\.mjs)"
+          ],
+          "helperExemptions": [
+            {
+              "name": "prepublishOnly",
+              "rationale": "Packaging guard that composes routed verification before publish."
+            },
+            {
+              "name": "test:coverage:check",
+              "rationale": "Coverage threshold helper used by routed verification."
+            },
+            {
+              "name": "veritas:check",
+              "rationale": "Developer shortcut for a scoped Readiness Report."
+            },
+            {
+              "name": "veritas:check:working-tree",
+              "rationale": "Developer shortcut for working-tree readiness."
+            },
+            {
+              "name": "veritas:check:diff",
+              "rationale": "Developer shortcut for diff-scoped readiness."
+            },
+            {
+              "name": "veritas:coverage",
+              "rationale": "Developer shortcut for coverage readiness."
+            },
+            {
+              "name": "veritas:evidence-check",
+              "rationale": "Alias for the routed required evidence check."
+            },
+            {
+              "name": "veritas:redact:check",
+              "rationale": "Local hygiene helper; not a Repo Map Evidence Check yet."
+            },
+            {
+              "name": "lint:governance",
+              "rationale": "Feedback-format readiness shortcut for local review."
+            },
+            {
+              "name": "veritas:readiness",
+              "rationale": "CLI alias that invokes Veritas readiness."
+            },
+            {
+              "name": "veritas:conformance:report",
+              "rationale": "Generated Evidence command for repo-local conformance."
+            },
+            {
+              "name": "veritas:conformance:readiness",
+              "rationale": "Generated Evidence command for readiness conformance."
+            },
+            {
+              "name": "veritas:conformance",
+              "rationale": "Summarizes Generated Evidence; not a policy source."
+            },
+            {
+              "name": "veritas:conformance:examples",
+              "rationale": "Builds Generated Evidence examples for documentation."
+            },
+            {
+              "name": "veritas:conformance:verify",
+              "rationale": "Composes routed checks and generated conformance helpers."
+            },
+            {
+              "name": "veritas:ci:conformance",
+              "rationale": "CI alias for conformance verification composition."
+            }
+          ]
+        }
       }
     }
   ]

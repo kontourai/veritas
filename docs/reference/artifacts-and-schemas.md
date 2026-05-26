@@ -215,7 +215,7 @@ Each term may provide `term`, `pattern` or `regex`, `flags`, `prefer`, and optio
 
 `primitive-first-governance` documents and evaluates the repo-local pattern that repeatable governance should be represented through Veritas primitives instead of living only in a helper script, local command, or review-memory checklist. Use it when a repo wants Change Guidance and Readiness Report feedback for governance behavior that should be enforceable through Repo Standards Requirements, Repo Map Evidence Checks, Repo Conformance, Generated Evidence, Standards Feedback, Standards Recommendations, or Protected Standards.
 
-The match shape is explicit: each candidate selects files, looks for a JavaScript regular expression, and names at least one Veritas primitive that represents that governance behavior.
+The match shape is explicit: each candidate selects files, looks for a JavaScript regular expression, and names at least one Veritas primitive that represents that governance behavior. Package script inventory can also classify quality and governance scripts by name or command pattern, then require each matching script to be routed through a Repo Map Evidence Check, represented by a Repo Standards Requirement, or explicitly exempted as a non-governance helper with rationale.
 
 ```json
 {
@@ -236,16 +236,52 @@ The match shape is explicit: each candidate selects files, looks for a JavaScrip
           }
         ]
       }
-    ]
+    ],
+    "packageScripts": {
+      "file": "package.json",
+      "namePatterns": [
+        "^(veritas:vocab:check|quality:check|governance:check)$"
+      ],
+      "commandPatterns": [
+        "(veritas readiness|scripts/check-veritas-vocabulary\\.mjs)"
+      ],
+      "helperExemptions": [
+        {
+          "name": "docs:pages:build",
+          "rationale": "Docs site build helper; it produces site output and does not decide Requirement satisfaction."
+        }
+      ]
+    }
   }
 }
 ```
 
 `candidates[].files` uses Veritas path matching. `candidates[].pattern` is passed to JavaScript `RegExp` and is tested against each matched file. `candidates[].representedBy` accepts references with `kind: "evidence-check"` and a Repo Map `evidenceChecks[].id`, or `kind: "repo-standards-rule"` and another Repo Standards Requirement `id`. The primitive-first Requirement does not count itself as a satisfying `repo-standards-rule` reference.
 
-When a candidate pattern is present but none of its `representedBy` references exists in the current Repo Map or Repo Standards file, the policy result fails or warns according to the Requirement's stage and enforcement. Findings use `kind: "primitive-first-governance"` and include the artifact path, line, matched pattern, and required primitive references. This makes the bypass visible in Generated Evidence and Readiness Reports without promoting the Requirement to Require before Standards Feedback shows the signal is reliable.
+`packageScripts.file` points to the package manifest to inspect. `namePatterns[]` and `commandPatterns[]` are JavaScript regular expressions that identify scripts likely to enforce quality or governance. Matching scripts are represented when the current Repo Map has an Evidence Check whose `command` runs `npm run <script-name>`, or when the script is covered by a configured primitive reference. `helperExemptions[]` names scripts that are intentionally not governance primitives; each exemption should include a terse rationale that explains why the command does not decide Requirement satisfaction, merge readiness, Repo Conformance, Protected Standards integrity, authority, evidence freshness, or Change Guidance.
+
+When a candidate pattern is present but none of its `representedBy` references exists in the current Repo Map or Repo Standards file, or when a matching package script is not routed or exempted, the policy result fails or warns according to the Requirement's stage and enforcement. Findings use `kind: "primitive-first-governance"` and include the artifact path, line, matched pattern or script name, and required primitive references. This makes the bypass visible in Generated Evidence and Readiness Reports without promoting the Requirement to Require before Standards Feedback shows the signal is reliable.
 
 This kind is for governance-enforcing behavior, not for every script. Ordinary helper scripts may build docs, run tests, format code, publish packages, or support developer convenience without becoming governance primitives. A script becomes governance-enforcing when it decides whether repo standards, merge readiness, repo conformance, protected standards integrity, authority, evidence freshness, or change guidance are satisfied. Governance-enforcing scripts should be expressed directly as Repo Standards Requirements when possible; when the behavior must run as a command, route it as an Evidence Check adapter behind the Repo Map so Veritas can select it, record evidence, and explain the result.
+
+The canonical copyable adapter example in this repo is `npm run veritas:vocab:check`. It is a package script, but the governance boundary is the Repo Map Evidence Check id `vocabulary-consistency`:
+
+```json
+{
+  "id": "vocabulary-consistency",
+  "command": "npm run veritas:vocab:check",
+  "method": "validation",
+  "summary": "Checks docs and product copy for canonical Veritas vocabulary."
+}
+```
+
+When adding a new quality or governance script, choose one of these outcomes deliberately:
+
+- Prefer a direct Repo Standards Requirement when the behavior can be evaluated from repo files and should produce Change Guidance.
+- Use a Repo Map Evidence Check when the behavior must run a command; give the check a stable id and route it through the relevant Work Area evidence settings.
+- Add an explicit `helperExemptions[]` entry only for non-governance helpers, with rationale.
+
+Generated Evidence paths such as `.veritas/evidence/**` and `.veritas/repo-conformance/**` are outputs of readiness and conformance runs. They can show whether a Requirement passed, warned, failed, or produced a Standards Recommendation, but they are not governance source and should not be used to replace Repo Map or Repo Standards configuration.
 
 ### Evidence record
 
@@ -316,7 +352,7 @@ MCP checks use `runner: "mcp"` with a stdio server definition, tool name, and op
 
 Removed command array fields such as `requiredEvidenceCheckCommands`, `defaultEvidenceCheckCommands`, and `surfaceEvidenceCheckCommands` are intentionally rejected by runtime validation. Migrate by assigning each check a stable `evidenceChecks[].id`, moving bash commands into `evidenceChecks[].command`, and replacing route command arrays with `evidenceCheckIds`.
 
-Evidence Checks are the adapter boundary for runnable governance behavior. If a script enforces repeatable governance, keep the script small and route it through a Repo Map `evidenceChecks[]` entry with a stable id, method, and summary. Then select that id through `requiredEvidenceCheckIds`, `defaultEvidenceCheckIds`, or `evidenceCheckRoutes` as appropriate for the Work Area. This keeps the result available to Merge Readiness, Repo Conformance, Generated Evidence, Standards Feedback, and Change Guidance.
+Evidence Checks are the adapter boundary for runnable governance behavior. If a script enforces repeatable governance, keep the script small and route it through a Repo Map `evidenceChecks[]` entry with a stable id, method, and summary. For example, this repo routes `npm run veritas:vocab:check` through Evidence Check id `vocabulary-consistency`. Then select that id through `requiredEvidenceCheckIds`, `defaultEvidenceCheckIds`, or `evidenceCheckRoutes` as appropriate for the Work Area. This keeps the result available to Merge Readiness, Repo Conformance, Generated Evidence, Standards Feedback, and Change Guidance.
 
 Do not confuse that with ordinary helper scripts. A command that only builds the docs site, formats files, runs a local convenience workflow, or wraps a test runner is not automatically a governance primitive. It needs Evidence Check routing when it is the thing Veritas relies on to decide whether a Requirement is satisfied, missing, stale, failing, advisory, or accepted by exception.
 

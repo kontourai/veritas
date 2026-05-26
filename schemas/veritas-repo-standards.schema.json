@@ -245,7 +245,10 @@
     "primitiveFirstGovernanceMatch": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["candidates"],
+      "anyOf": [
+        { "required": ["candidates"] },
+        { "required": ["packageScripts"] }
+      ],
       "properties": {
         "candidates": {
           "type": "array",
@@ -272,6 +275,49 @@
                     },
                     "id": { "type": "string" }
                   }
+                }
+              }
+            }
+          }
+        },
+        "packageScripts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["namePatterns", "commandPatterns"],
+          "properties": {
+            "file": { "type": "string", "default": "package.json" },
+            "namePatterns": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "commandPatterns": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "representedBy": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["kind", "id"],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": ["repo-standards-rule", "evidence-check"]
+                  },
+                  "id": { "type": "string" }
+                }
+              }
+            },
+            "helperExemptions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "rationale"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "rationale": { "type": "string", "minLength": 1 }
                 }
               }
             }
