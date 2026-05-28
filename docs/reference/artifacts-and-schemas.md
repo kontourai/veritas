@@ -414,6 +414,8 @@ Veritas owns the repo-specific producer fields. Surface owns generated report fi
 
 When the attestation gate runs, the evidence record includes `governance_state`. This maps protected-standards integrity, Repo Map applicability, authority currency, and freshness into Surface-format state. The raw Repo Map object remains Veritas-local producer metadata.
 
+Readiness verdicts are exposed through a Surface claim with `claimType: "software-readiness-verdict"` on `surface: "veritas.readiness"` and `subjectType: "repository-change"`. The claim and its evidence include `metadata.integrity` with `sourceRef`, `sourceKind`, `sourceScope`, changed file refs, and protected config refs. When the installed Surface package supports first-class `authorityTrace`, the artifact includes top-level `surface.input.authorityTrace`; Veritas also mirrors the same authority context in claim/evidence `metadata.authorityTrace` for older Surface 0.4 consumers. Readiness events carry authority by linking to the authority-traced evidence ids.
+
 After validation, Veritas calls Surface's public `buildTrustReport` API and persists a compact `surface.report` summary beside the input. The report summary includes per-claim derived status, summary counts, and transparency gaps. `veritas readiness` prints WARN feedback for Surface-derived `stale` and `disputed` claims, and `veritas explain <rule>` includes the latest Surface status and gaps for that rule when an evidence record is available.
 
 | Evidence field | Surface mapping | Classification |
@@ -427,6 +429,7 @@ After validation, Veritas calls Surface's public `buildTrustReport` API and pers
 | `uncovered_path_result`, `baseline_ci_fast_passed` | Evidence Check claim status, verification events, and metadata for evidenceCheck confidence | Surface-mapped |
 | `evidence_inventory_results` | `Claim`, `Evidence`, `VerificationEvent`, and metadata records on `veritas.evidence-inventories` | Surface-mapped |
 | `readiness_coverage` | A readiness coverage claim/evidence pair plus metadata used by Surface report generation | Surface-mapped |
+| readiness verdict projection | A `software-readiness-verdict` claim, evidence, and event with integrity scope and authority trace metadata | Surface-mapped |
 | `external_tool_results` | External tool verdict claims, evidence, events, and metadata for advisory/blocking evidenceChecks | Surface-mapped |
 | `repo_standards`, `policy_results` | Policy-result claims, evidence, events, and policy-violation transparency gap hints | Surface-mapped |
 | `governance_state` | Governance artifact and attestation-currency claims, evidence, and events | Surface-mapped |

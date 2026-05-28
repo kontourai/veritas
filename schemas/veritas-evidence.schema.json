@@ -217,7 +217,11 @@
       "additionalProperties": false,
       "required": ["input"],
       "properties": {
-        "input": { "$ref": "#/$defs/surfaceTrustInput" }
+        "input": { "$ref": "#/$defs/surfaceTrustInput" },
+        "report": {
+          "type": "object",
+          "additionalProperties": true
+        }
       }
     },
     "surfaceTrustInput": {
@@ -240,6 +244,18 @@
           "items": { "type": "object" }
         },
         "events": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "claimGroups": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "identityLinks": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "authorityTrace": {
           "type": "array",
           "items": { "type": "object" }
         }

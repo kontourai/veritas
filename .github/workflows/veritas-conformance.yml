@@ -91,6 +91,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      pull-requests: write
     steps:
       - name: Download Veritas Repo Conformance Artifacts
         uses: actions/download-artifact@v8
