@@ -5,7 +5,7 @@
   "mode": "observe",
   "evidence": {
     "artifact_path": ".veritas/evidence/veritas-repo-conformance.json",
-    "artifact_digest": "297a32fa6316b174966916eafef523c0a70bd97362920b747f373cb0538af236",
+    "artifact_digest": "ee4f4c91d6b532be1a11b20a68aba497613d4391d66e2105ed827d6bcf02e30b",
     "timestamp": "2026-04-21T22:00:00.000Z",
     "source_ref": "refs/heads/main",
     "source_kind": "explicit-files",
@@ -128,6 +128,34 @@
         "passed": true,
         "status": "info",
         "summary": "No matched files contain forbidden pattern console\\.log.",
+        "findings": []
+      },
+      {
+        "rule_id": "canonical-veritas-vocabulary",
+        "classification": "advisory-pattern",
+        "stage": "warn",
+        "enforcement": "lint",
+        "message": "First-contact Veritas docs should use canonical product vocabulary from CONTEXT.md.",
+        "owner": "docs-team",
+        "rollback_switch": "allow-vocabulary-drift",
+        "implemented": true,
+        "passed": true,
+        "status": "info",
+        "summary": "All matched files use canonical Veritas vocabulary.",
+        "findings": []
+      },
+      {
+        "rule_id": "repeatable-governance-uses-veritas-primitives",
+        "classification": "promotable-policy",
+        "stage": "warn",
+        "enforcement": "lint",
+        "message": "Repeatable repo governance checks should be represented by Veritas primitives before they become local helper scripts.",
+        "owner": "repo-maintainers",
+        "rollback_switch": "allow-unrepresented-governance-script",
+        "implemented": true,
+        "passed": true,
+        "status": "info",
+        "summary": "Repeatable governance checks are represented by Veritas primitives.",
         "findings": []
       }
     ]

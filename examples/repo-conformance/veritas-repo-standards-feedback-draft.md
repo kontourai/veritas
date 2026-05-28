@@ -1,13 +1,13 @@
 ## Veritas Standards Feedback Draft
 
 - **Run ID:** veritas-repo-conformance
-- **Mode:** readiness
+- **Mode:** observe
 - **Authority settings:** veritas-default
 - **Evidence artifact:** `.veritas/evidence/veritas-repo-conformance.json`
 - **Draft artifact:** `.veritas/standards-feedback-drafts/veritas-repo-conformance.json`
 - **Missing confirmation fields:** accepted_without_major_rewrite, required_followup
 - **Governance paths:** .veritas/GOVERNANCE.md, .veritas/repo-map.json, .veritas/repo-standards/default.repo-standards.json, .veritas/authority/default.authority-settings.json
-- **Governance surface touched:** yes
+- **Protected standards touched:** yes
 - **Governance classification:** unknown
 - **Human governance review required:** no
 
