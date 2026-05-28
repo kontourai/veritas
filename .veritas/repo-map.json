@@ -64,10 +64,13 @@
           "package.json",
           "package-lock.json",
           "README.md",
+          "CHANGELOG.md",
+          "CONTEXT.md",
           "CLAUDE.md",
           "CONTRIBUTING.md",
           ".gitignore",
-          "AGENTS.md"
+          "AGENTS.md",
+          "veritas.claims.json"
         ],
         "owners": ["repo-core"],
         "boundary": "strict",
