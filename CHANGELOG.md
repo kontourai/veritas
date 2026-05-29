@@ -39,7 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Evidence Check commands now execute as tokenized argv without an implicit shell wrapper.
 - Evidence Check command output now uses inherited stdio instead of rewriting stdout into stderr.
 - Shared CLI token parsing, JSON loading, and path-boundary guard helpers were extracted into dedicated source modules.
-- The Veritas check-in workflow now sanitizes `GITHUB_OUTPUT` values and scopes write permissions to the jobs that need them.
+- The Veritas repo conformance workflow now sanitizes `GITHUB_OUTPUT` values and scopes write permissions to the jobs that need them.
 
 ### Security
 
@@ -50,6 +50,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Initial public package surface for repo-local adapters, repo standardss, evidence artifacts, and live eval artifacts.
-- CLI support for bootstrap, reporting, eval drafting/recording, runtime hook setup, and deterministic marker benchmarks.
-- Reference adapters, repo standardss, schemas, and shipped example artifacts for evidence, evals, check-ins, and benchmarks.
+- Initial public package surface for repo-local repo maps, repo standards, evidence artifacts, and live standards feedback artifacts.
+- CLI support for bootstrap, reporting, standards feedback drafting/recording, runtime hook setup, and deterministic marker benchmarks.
+- Reference repo maps, repo standards, schemas, and shipped example artifacts for evidence, standards feedback, repo conformance, and benchmarks.

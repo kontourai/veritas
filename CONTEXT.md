@@ -10,7 +10,7 @@ _Avoid_: Generic lint framework, Surface module, trust substrate
 
 **Repo Standards**:
 The maintained definition of what good looks like for a repository. Repo standards may include requirements, evidenceChecks, verification authorities, change boundaries, exception rules, enforcement levels, improvement rules, and merge thresholds.
-_Avoid_: Checklist, style guide, repo standards, team profile as separate human-facing terms
+_Avoid_: Checklist, style guide, repo standards, authority settings as separate human-facing terms
 
 **Requirement**:
 A condition in the repo standards that must be satisfied, evidenced, or explicitly waived for a change to earn merge readiness. Requirements are Veritas concepts; their evaluations may produce claims and evidence for transparency.
@@ -25,7 +25,7 @@ A person, system, tool, environment, or policy source trusted by the repo standa
 _Avoid_: Human approver only, blanket approval source
 
 **Authority Evidence**:
-Evidence explaining why a verification authority was allowed to count for a requirement. Authority evidence may include protected CI context, scanner version and configuration, owner identity, team profile membership, standard-file hash, or signed approval metadata.
+Evidence explaining why a verification authority was allowed to count for a requirement. Authority evidence may include protected CI context, scanner version and configuration, owner identity, authority settings membership, standard-file hash, or signed approval metadata.
 _Avoid_: Trust by label, untraceable approval
 
 **Attestation**:
@@ -38,7 +38,7 @@ _Avoid_: Evidence Check as the canonical term, source as a synonym
 
 **Evidence Check**:
 A runnable or inspectable check that produces evidence for one or more requirements. Evidence Checks may include tests, typechecks, scanners, protected CI results, owner lookups, approval checks, or external tool results.
-_Avoid_: Evidence Check, evidenceCheck command, check as an unqualified synonym
+_Avoid_: Generic check, evidenceCheck as human-facing prose, check as an unqualified synonym
 
 **Change Guidance**:
 Just-in-time instructions Veritas gives a developer or agent when a requirement, work area, change boundary, or evidence result matters to the current change. Change guidance should explain what to do next, what not to do, and why it matters for merge readiness.
@@ -132,6 +132,10 @@ _Avoid_: Compliance as the default term, standard health, generic repo health
 Observed evidence about whether the repo standards are helping, missing coverage, creating noise, or failing to catch important issues. Standards feedback comes from readiness results, repo conformance, exceptions, rechecks, review outcomes, and agent correction history.
 _Avoid_: Eval history as the user-facing term, reviewer confidence as the core concept
 
+**Agent Session Log**:
+A durable record of a developer or agent session that Veritas can inspect to generate standards feedback, benchmark guidance quality, or understand whether change guidance arrived at the right moment. Product docs should say agent session log or session log; implementation fields may use `sessionLog` or `session_log_*`.
+_Avoid_: Transcript as product language, chat transcript, runtime-specific log names except when documenting external environment variables
+
 **Standards Recommendation**:
 A suggested change to the repo standards based on standards feedback. A standards recommendation may add, relax, require, retire, or clarify requirements, evidenceChecks, work areas, boundaries, authorities, or guidance.
 _Avoid_: Generic proposal, automatic policy change
@@ -161,10 +165,13 @@ Do not use framework as primary Veritas product language. Use **product** for Ve
 Use rule only for implementation-specific executable checks when necessary. Product language should use **Requirement** so Veritas remains centered on repo standards and merge readiness rather than lint mechanics.
 
 **Override**:
-Use override only for low-level hook or runtime mechanics when necessary. Product language should use **Exception** for an authority-backed decision to accept an unmet or failing requirement.
+Do not use override as Veritas product language. Use **Exception** for an authority-backed decision to accept an unmet or failing requirement. Use runtime-specific names only when documenting an external API that cannot be renamed.
 
 **Actor**:
 Use actor only in schemas, audit metadata, or implementation code. Product language should say **Developer**, **Agent**, **Verification Authority**, or **Owner** depending on the role being described.
+
+**Transcript**:
+Use transcript only when a runtime exposes that exact external name, such as `CODEX_TRANSCRIPT_PATH` or `CLAUDE_TRANSCRIPT_PATH`. Veritas product language should use **Agent Session Log** or **session log**.
 
 **Example Dialogue**:
 Developer: "Can this agent-authored change merge with light review?"

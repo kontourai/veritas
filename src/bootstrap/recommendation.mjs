@@ -4,9 +4,9 @@ import { basename, dirname, resolve } from 'node:path';
 import { buildGovernanceBlock, replaceGovernanceBlock } from '../governance.mjs';
 import {
   buildAdaptiveNodes,
-  buildStarterAdapter,
+  buildStarterRepoMap,
   buildStarterRepoStandards,
-  buildStarterTeamProfile,
+  buildStarterAuthoritySettings,
   buildBootstrapReadme,
   buildGovernanceInstructions,
   buildSuggestedCodeownersBlock,
@@ -137,7 +137,7 @@ function recommendedEvidenceChecks(repoInsights) {
 function recommendedSurfaces(repoInsights) {
   return buildAdaptiveNodes(repoInsights).map((node) => ({
     ...node,
-    risk: node.kind === 'governance-surface' ? 'high' : 'medium',
+    risk: node.kind === 'protected-area' ? 'high' : 'medium',
     reason: `Detected ${node.label} as ${node.kind}.`,
   }));
 }
@@ -205,14 +205,14 @@ function recommendedEvidenceInventory(repoInsights) {
 }
 
 function buildArtifactPayloads({ rootDir, projectName, evidenceCheck, repoInsights, selectedInstructionTargets, ownerAnswers }) {
-  const adapter = buildStarterAdapter({
+  const repoMap = buildStarterRepoMap({
     projectName,
     evidenceCheck,
     repoInsights,
     instructionTargets: selectedInstructionTargets,
   });
   const repoStandards = buildStarterRepoStandards({ projectName, instructionTargets: selectedInstructionTargets });
-  const teamProfile = buildStarterTeamProfile({ projectName, evidenceCheck });
+  const authoritySettings = buildStarterAuthoritySettings({ projectName, evidenceCheck });
   const recommendationSummary = [
     `- Mode: guided initialization artifact`,
     `- Repo kind: \`${repoInsights.repoKind}\``,
@@ -229,9 +229,9 @@ function buildArtifactPayloads({ rootDir, projectName, evidenceCheck, repoInsigh
       ownerAnswers,
     }),
     '.veritas/GOVERNANCE.md': buildGovernanceInstructions(),
-    '.veritas/repo.adapter.json': jsonPayload(adapter),
+    '.veritas/repo-map.json': jsonPayload(repoMap),
     '.veritas/repo-standards/default.repo-standards.json': jsonPayload(repoStandards),
-    '.veritas/team/default.team-profile.json': jsonPayload(teamProfile),
+    '.veritas/authority/default.authority-settings.json': jsonPayload(authoritySettings),
   };
 
   for (const target of selectedInstructionTargets) {
@@ -276,9 +276,9 @@ export function buildInitRecommendation({
     repo_insights: repoInsights,
     artifact_payloads: artifactPayloads,
     artifact_hashes: artifactHashes(artifactPayloads),
-    recommended_adapter: JSON.parse(artifactPayloads['.veritas/repo.adapter.json']),
+    recommended_repo_map: JSON.parse(artifactPayloads['.veritas/repo-map.json']),
     recommended_repo_standards: JSON.parse(artifactPayloads['.veritas/repo-standards/default.repo-standards.json']),
-    recommended_team_profile: JSON.parse(artifactPayloads['.veritas/team/default.team-profile.json']),
+    recommended_authority_settings: JSON.parse(artifactPayloads['.veritas/authority/default.authority-settings.json']),
     recommended_evidence_checks: recommendedEvidenceChecks({ ...repoInsights, evidenceCheck: resolvedEvidenceCheck }),
     recommended_evidence_inventory: recommendedEvidenceInventory(repoInsights),
     existing_verification: repoInsights.existingVerification,
@@ -326,9 +326,9 @@ export function applyInitRecommendation({ rootDir, recommendation, force = false
   const starterPaths = [
     '.veritas/README.md',
     '.veritas/GOVERNANCE.md',
-    '.veritas/repo.adapter.json',
+    '.veritas/repo-map.json',
     '.veritas/repo-standards/default.repo-standards.json',
-    '.veritas/team/default.team-profile.json',
+    '.veritas/authority/default.authority-settings.json',
   ];
   for (const path of starterPaths) {
     const absolutePath = resolve(rootDir, path);
@@ -338,7 +338,7 @@ export function applyInitRecommendation({ rootDir, recommendation, force = false
   }
 
   mkdirSync(resolve(rootDir, '.veritas/repo-standards'), { recursive: true });
-  mkdirSync(resolve(rootDir, '.veritas/team'), { recursive: true });
+  mkdirSync(resolve(rootDir, '.veritas/authority'), { recursive: true });
   mkdirSync(resolve(rootDir, '.veritas/evidence'), { recursive: true });
 
   for (const [path, payload] of Object.entries(recommendation.artifact_payloads)) {

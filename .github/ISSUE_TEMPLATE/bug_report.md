@@ -32,4 +32,4 @@ Describe what happened instead, including any error output.
 
 ## Additional Context
 
-Include logs, repo shape, adapter snippets, or screenshots when relevant.
+Include logs, repo shape, Repo Map snippets, or screenshots when relevant.

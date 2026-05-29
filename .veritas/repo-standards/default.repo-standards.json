@@ -23,9 +23,9 @@
         "artifacts": [
           ".veritas/GOVERNANCE.md",
           ".veritas/README.md",
-          ".veritas/repo.adapter.json",
+          ".veritas/repo-map.json",
           ".veritas/repo-standards/default.repo-standards.json",
-          ".veritas/team/default.team-profile.json"
+          ".veritas/authority/default.authority-settings.json"
         ]
       }
     },
@@ -63,7 +63,7 @@
       "owner": "repo-core",
       "rollback_switch": null,
       "explain": {
-        "summary": "Keep reference docs aligned with framework behavior.",
+        "summary": "Keep reference docs aligned with product core behavior.",
         "mustDo": ["Update docs when schemas, commands, or artifact shapes change."],
         "mustNotDo": ["Do not document behavior that is not wired."],
         "exampleGood": "Document a new rule kind in artifacts-and-schemas.md.",
@@ -89,7 +89,7 @@
       "owner": "repo-core",
       "rollback_switch": null,
       "explain": {
-        "summary": "Schemas are the contract for adapters, policy packs, evidence, and evals.",
+        "summary": "Schemas are the contract for repo-maps, repo standards, evidence, and standards-feedback.",
         "mustDo": ["Update the relevant schema with any new persisted field."],
         "mustNotDo": ["Do not add artifact fields that schemas reject."],
         "exampleGood": "Add a rule kind to schema and evaluator registry together.",
@@ -98,13 +98,13 @@
       },
       "match": {
         "artifacts": [
-          "schemas/veritas-adapter.schema.json",
-          "schemas/veritas-eval-draft.schema.json",
-          "schemas/veritas-eval-record.schema.json",
+          "schemas/veritas-repo-map.schema.json",
+          "schemas/veritas-standards-feedback-draft.schema.json",
+          "schemas/veritas-standards-feedback.schema.json",
           "schemas/veritas-evidence.schema.json",
           "schemas/veritas-graph.schema.json",
           "schemas/veritas-repo-standards.schema.json",
-          "schemas/veritas-team-profile.schema.json"
+          "schemas/veritas-authority-settings.schema.json"
         ]
       }
     },
@@ -136,16 +136,16 @@
       "kind": "required-artifacts",
       "classification": "promotable-policy",
       "stage": "recommend",
-      "message": "Prefer keeping the tracked Veritas evidenceCheck and check-in integration surfaces present so changes flow through the documented operational path before review.",
+      "message": "Prefer keeping the tracked Veritas evidenceCheck and repo conformance integration surfaces present so changes flow through the documented operational path before review.",
       "owner": "repo-maintainers",
       "rollback_switch": "soften-veritas-route",
       "explain": {
-        "summary": "Keep hook and check-in integration artifacts in place.",
+        "summary": "Keep hook and repo conformance integration artifacts in place.",
         "mustDo": ["Preserve the local hook and workflow paths or update this rule deliberately."],
-        "mustNotDo": ["Do not bypass check-in integration by deleting hook artifacts."],
+        "mustNotDo": ["Do not bypass repo conformance integration by deleting hook artifacts."],
         "exampleGood": "Update both hook builder and default policy when adding a hook.",
         "exampleBad": "Delete .veritas/hooks/agent-runtime.sh without replacement.",
-        "contextLinks": ["docs/guides/operational-checkins.md"]
+        "contextLinks": ["docs/guides/operational-conformance.md"]
       },
       "match": {
         "artifacts": [
@@ -153,7 +153,7 @@
           ".veritas/hooks/agent-runtime.sh",
           ".veritas/hooks/stop.sh",
           ".veritas/runtime/codex-hooks.json",
-          ".github/workflows/veritas-checkins.yml"
+          ".github/workflows/veritas-conformance.yml"
         ]
       }
     },
@@ -178,6 +178,176 @@
           "src/**/*.mjs"
         ],
         "pattern": "console\\.log"
+      }
+    },
+    {
+      "id": "canonical-veritas-vocabulary",
+      "kind": "vocabulary-consistency",
+      "classification": "advisory-pattern",
+      "stage": "warn",
+      "message": "First-contact Veritas docs should use canonical product vocabulary from CONTEXT.md.",
+      "owner": "docs-team",
+      "rollback_switch": "allow-vocabulary-drift",
+      "explain": {
+        "summary": "Keep public Veritas docs aligned with the repo glossary.",
+        "mustDo": ["Use CONTEXT.md terms in first-contact docs and guides."],
+        "mustNotDo": ["Do not reintroduce pre-glossary names for product concepts."],
+        "exampleGood": "Use Standards Feedback when describing observed improvement evidence.",
+        "exampleBad": "Use eval as the product term for standards improvement evidence.",
+        "contextLinks": ["CONTEXT.md", "docs/reference/glossary.md"]
+      },
+      "match": {
+        "files": [
+          "README.md",
+          "docs/**/*.md",
+          "!docs/MIGRATING.md",
+          "!docs/design/**",
+          "!docs/reference/**",
+          "!docs/architecture/surface-veritas-boundary.md"
+        ],
+        "terms": [
+          {
+            "term": "check-in",
+            "pattern": "\\bcheck-?in\\b",
+            "prefer": "Readiness Report, Repo Conformance, or Standards Feedback"
+          },
+          {
+            "term": "eval",
+            "pattern": "\\bevals?\\b",
+            "prefer": "Standards Feedback or Standards Recommendation"
+          },
+          {
+            "term": "trust score",
+            "pattern": "\\btrust score\\b",
+            "prefer": "Merge Readiness"
+          },
+          {
+            "term": "policy pack",
+            "pattern": "\\bpolicy packs?\\b",
+            "prefer": "Repo Standards Template"
+          },
+          {
+            "term": "Surface module",
+            "pattern": "\\bSurface module\\b",
+            "prefer": "Built with Surface producer module"
+          }
+        ]
+      }
+    },
+    {
+      "id": "repeatable-governance-uses-veritas-primitives",
+      "kind": "primitive-first-governance",
+      "classification": "promotable-policy",
+      "stage": "warn",
+      "message": "Repeatable repo governance checks should be represented by Veritas primitives before they become local helper scripts.",
+      "owner": "repo-maintainers",
+      "rollback_switch": "allow-unrepresented-governance-script",
+      "explain": {
+        "summary": "Represent repeatable governance through Repo Standards Requirements, Repo Map Evidence Checks, Change Guidance, Readiness Reports, Repo Conformance, Standards Feedback, Standards Recommendations, Generated Evidence, or Protected Standards.",
+        "mustDo": ["Route governance-enforcing scripts through a Repo Map Evidence Check or express the behavior as a Repo Standards Requirement with actionable Change Guidance."],
+        "mustNotDo": ["Do not add repeatable governance checks that bypass Veritas primitives or hide policy behavior in an untracked helper script."],
+        "exampleGood": "Add an Evidence Check in .veritas/repo-map.json for a validation command, or add a Repo Standards Requirement that reports the policy result.",
+        "exampleBad": "Add an npm script that enforces repo governance without a matching Evidence Check or Requirement.",
+        "contextLinks": [".veritas/GOVERNANCE.md", "docs/reference/artifacts-and-schemas.md"]
+      },
+      "match": {
+        "candidates": [
+          {
+            "files": ["package.json"],
+            "pattern": "\"veritas:vocab:check\"\\s*:\\s*\"node scripts/check-veritas-vocabulary\\.mjs\"",
+            "representedBy": [
+              {
+                "kind": "evidence-check",
+                "id": "vocabulary-consistency"
+              }
+            ]
+          },
+          {
+            "files": ["package.json"],
+            "pattern": "\"veritas:fallow:advisory\"\\s*:\\s*\"node scripts/run-fallow-audit\\.mjs\"",
+            "representedBy": [
+              {
+                "kind": "evidence-check",
+                "id": "fallow-advisory"
+              }
+            ]
+          }
+        ],
+        "packageScripts": {
+          "file": "package.json",
+          "namePatterns": [
+            "^(verify|prepublishOnly|test:coverage:check|lint:governance|veritas:(check|check:working-tree|check:diff|coverage|evidence-check|vocab:check|fallow:advisory|redact:check|readiness|conformance|conformance:report|conformance:readiness|conformance:verify|ci:conformance))$"
+          ],
+          "commandPatterns": [
+            "(veritas readiness|scripts/(verify|check-|run-fallow-audit|repo-conformance-status|build-conformance-examples)\\.mjs)"
+          ],
+          "helperExemptions": [
+            {
+              "name": "prepublishOnly",
+              "rationale": "Packaging guard that composes routed verification before publish."
+            },
+            {
+              "name": "test:coverage:check",
+              "rationale": "Coverage threshold helper used by routed verification."
+            },
+            {
+              "name": "veritas:check",
+              "rationale": "Developer shortcut for a scoped Readiness Report."
+            },
+            {
+              "name": "veritas:check:working-tree",
+              "rationale": "Developer shortcut for working-tree readiness."
+            },
+            {
+              "name": "veritas:check:diff",
+              "rationale": "Developer shortcut for diff-scoped readiness."
+            },
+            {
+              "name": "veritas:coverage",
+              "rationale": "Developer shortcut for coverage readiness."
+            },
+            {
+              "name": "veritas:evidence-check",
+              "rationale": "Alias for the routed required evidence check."
+            },
+            {
+              "name": "veritas:redact:check",
+              "rationale": "Local hygiene helper; not a Repo Map Evidence Check yet."
+            },
+            {
+              "name": "lint:governance",
+              "rationale": "Feedback-format readiness shortcut for local review."
+            },
+            {
+              "name": "veritas:readiness",
+              "rationale": "CLI alias that invokes Veritas readiness."
+            },
+            {
+              "name": "veritas:conformance:report",
+              "rationale": "Generated Evidence command for repo-local conformance."
+            },
+            {
+              "name": "veritas:conformance:readiness",
+              "rationale": "Generated Evidence command for readiness conformance."
+            },
+            {
+              "name": "veritas:conformance",
+              "rationale": "Summarizes Generated Evidence; not a policy source."
+            },
+            {
+              "name": "veritas:conformance:examples",
+              "rationale": "Builds Generated Evidence examples for documentation."
+            },
+            {
+              "name": "veritas:conformance:verify",
+              "rationale": "Composes routed checks and generated conformance helpers."
+            },
+            {
+              "name": "veritas:ci:conformance",
+              "rationale": "CI alias for conformance verification composition."
+            }
+          ]
+        }
       }
     }
   ]

@@ -2,7 +2,7 @@
 
 This page documents the CLI surface that currently ships in this repo.
 
-The primary CLI surface is seven verbs: `init`, `readiness`, `explain`, `attest`, `recommendation`, `eval`, `integrations`. Most commands print JSON to stdout. The developer- and agent-facing readiness feedback path prints lint-style text by default; use `--format json` when you need machine-readable orchestration output.
+The primary CLI surface is seven verbs: `init`, `readiness`, `explain`, `attest`, `recommendation`, `feedback`, `integrations`. Most commands print JSON to stdout. The developer- and agent-facing readiness feedback path prints lint-style text by default; use `--format json` when you need machine-readable orchestration output.
 
 ## Entry Points
 
@@ -15,7 +15,7 @@ The primary CLI surface is seven verbs: `init`, `readiness`, `explain`, `attest`
 
 The convenience `veritas-report` binary defaults to repo-local starter paths:
 
-- `.veritas/repo.adapter.json`
+- `.veritas/repo-map.json`
 - `.veritas/repo-standards/default.repo-standards.json`
 
 ## Core Workflow
@@ -63,9 +63,9 @@ Writes:
 
 - `.veritas/GOVERNANCE.md`
 - `.veritas/README.md`
-- `.veritas/repo.adapter.json`
+- `.veritas/repo-map.json`
 - `.veritas/repo-standards/default.repo-standards.json`
-- `.veritas/team/default.team-profile.json`
+- `.veritas/authority/default.authority-settings.json`
 - `.veritas/evidence/`
 - `AGENTS.md` and `CLAUDE.md` governance blocks
 
@@ -102,7 +102,7 @@ npx @kontourai/veritas attest policy-change --actor <id> --message <text> [--roo
 npx @kontourai/veritas attest status [--root <path>]
 ```
 
-`bootstrap` records the first reviewed hashes for the current protected standards files: `.veritas/repo.adapter.json`, `.veritas/repo-standards/default.repo-standards.json`, and `.veritas/team/default.team-profile.json`. `policy-change` records a reviewed successor and requires an explanation in `--message`. `status` reports the current attestation, age, expiry, and hash drift.
+`bootstrap` records the first reviewed hashes for the current protected standards files: `.veritas/repo-map.json`, `.veritas/repo-standards/default.repo-standards.json`, and `.veritas/authority/default.authority-settings.json`. `policy-change` records a reviewed successor and requires an explanation in `--message`. `status` reports the current attestation, age, expiry, and hash drift.
 
 The built-in requirement `policy-changes-require-attestation` fails when the active attestation no longer matches protected standards.
 
@@ -116,7 +116,7 @@ npx @kontourai/veritas hooks claude-code apply [--root <path>] [--force]
 npx @kontourai/veritas hooks claude-code pre-tool-use [--root <path>] [--file <path>] [--actor <id>]
 ```
 
-`pre-tool-use` reads the Claude hook JSON payload from stdin, extracts `tool_input.file_path` or `tool_input.path`, resolves the actor from `--actor`, `VERITAS_ACTOR`, or the current attestation, and returns hook protocol JSON. Deny-enforced failures return `decision: "block"` and exit non-zero. Set `VERITAS_OVERRIDE_RULE` and `VERITAS_OVERRIDE_REASON` to allow a specific denied rule and append an override record.
+`pre-tool-use` reads the Claude hook JSON payload from stdin, extracts `tool_input.file_path` or `tool_input.path`, resolves the actor from `--actor`, `VERITAS_ACTOR`, or the current attestation, and returns hook protocol JSON. Deny-enforced failures return `decision: "block"` and exit non-zero. Set `VERITAS_EXCEPTION_RULE` and `VERITAS_EXCEPTION_REASON` to allow a specific denied rule and append an exception record.
 
 ### `integrations`
 
@@ -129,7 +129,7 @@ npx @kontourai/veritas integrations cursor install [--root <path>] [--force]
 npx @kontourai/veritas integrations copilot status [--root <path>]
 ```
 
-Codex and Claude Code have transcript readers. Claude Code install wires PreToolUse, Stop, and PostSession hooks. Cursor and Copilot currently install generic stop-hook wiring and report `transcriptReader: null`.
+Codex and Claude Code have session log readers. Claude Code install wires PreToolUse, Stop, and PostSession hooks. Cursor and Copilot currently install generic stop-hook wiring and report `sessionLogReader: null`.
 
 Answers are JSON and may include:
 
@@ -150,7 +150,7 @@ Answers are JSON and may include:
 Generates an evidence artifact for a set of files or a repo state slice.
 
 ```bash
-npx @kontourai/veritas readiness --check evidence [--root <path>] [--adapter <path>] [--repo-standards <path>] [--run-id <id>] [file ...]
+npx @kontourai/veritas readiness --check evidence [--root <path>] [--repo-map <path>] [--repo-standards <path>] [--run-id <id>] [file ...]
 npx @kontourai/veritas readiness --check evidence --format feedback --working-tree
 npx @kontourai/veritas readiness --check evidence --working-tree
 npx @kontourai/veritas readiness --check evidence --staged
@@ -187,23 +187,23 @@ Output is capped to fit an agent context window and includes the local governanc
 
 ### `boundaries check`
 
-Checks strict surface ownership for a working tree or diff.
+Checks strict work area ownership for a working tree or diff.
 
 ```bash
 npx @kontourai/veritas boundaries check --actor cli-team --diff main
-npx @kontourai/veritas boundaries check --actor framework-team
+npx @kontourai/veritas boundaries check --actor product-core-team
 ```
 
 `--actor` is required unless `VERITAS_ACTOR` is set. Veritas intentionally does not fall back to the operating-system user, because CI runner names and shell usernames are not governance actors. If no actor is supplied, the command exits non-zero with a missing-actor failure.
 
-Strict nodes fail when the actor is neither an owner nor listed in `crossSurfaceAllow`. This means a working tree that spans several strict surfaces may legitimately fail for one actor while passing for another owner or allowlisted actor.
+Strict nodes fail when the actor is neither an owner nor listed in `boundaryAllow`. This means a working tree that spans several strict work areas may legitimately fail for one actor while passing for another owner or allowlisted actor.
 
 To turn a Veritas readiness artifact into a Surface trust report, use the `reportArtifactPath` returned by `veritas readiness --format json` as the stable path. Do not reconstruct `.veritas/evidence/<run-id>.json` in downstream tools.
 
 ```bash
 artifact_path="$(npx @kontourai/veritas readiness --working-tree --format json | node -e 'let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", () => { const parsed = JSON.parse(data); if (!parsed.reportArtifactPath) throw new Error("missing reportArtifactPath"); console.log(parsed.reportArtifactPath); });')"
 node -e 'const fs = require("node:fs"); const artifact = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write(JSON.stringify(artifact.surface.input, null, 2));' "$artifact_path" > .veritas/external/surface-input.json
-surface report --adapter surface --input .veritas/external/surface-input.json --format summary
+surface report --repo-map surface --input .veritas/external/surface-input.json --format summary
 ```
 
 Portable consumers can find merge readiness by selecting `surface.input.claims[]` or generated `surface.report.claims[]` where `claimType` is `software-readiness-verdict` and `subjectType` is `repository-change`. Integrity scope is available in claim/evidence metadata; authority trace is available as first-class `surface.input.authorityTrace` when the installed Surface package supports it and mirrored in claim/evidence metadata for older Surface 0.4 consumers.
@@ -217,7 +217,7 @@ Current evidence artifacts also include `surface.report`, a compact summary gene
 Prints readiness coverage without requiring operators to read the full report artifact.
 
 ```bash
-npx @kontourai/veritas readiness --check coverage [--root <path>] [--adapter <path>] [--repo-standards <path>] [--run-id <id>] [file ...]
+npx @kontourai/veritas readiness --check coverage [--root <path>] [--repo-map <path>] [--repo-standards <path>] [--run-id <id>] [file ...]
 npx @kontourai/veritas readiness --check coverage --working-tree
 npx @kontourai/veritas readiness --check coverage --format feedback --working-tree
 npx @kontourai/veritas readiness --check coverage --format json --working-tree
@@ -236,14 +236,14 @@ Important behaviors:
 Runs evidence checks first, then creates a report, then creates a standards-feedback draft, and optionally finishes the feedback record if the missing judgment fields are supplied.
 
 ```bash
-npx @kontourai/veritas readiness [--root <path>] [--adapter <path>] [--repo-standards <path>] [--team-profile <path>]
+npx @kontourai/veritas readiness [--root <path>] [--repo-map <path>] [--repo-standards <path>] [--authority-settings <path>]
   [--format feedback|json]
   [--evidence-check-command <cmd>] [--skip-evidence-check]
   [--working-tree | --changed-from <ref> --changed-to <ref>]
   [--run-id <id>]
   [--reviewer-confidence <scale-entry|unknown>]
   [--time-to-green-minutes <number>]
-  [--override-count <number>]
+  [--exception-count <number>]
   [--false-positive-rule <rule-id>]
   [--missed-issue <text>]
   [--note <text>]
@@ -264,120 +264,120 @@ Exit codes:
 - `1`: evidenceCheck or blocking policy failure
 - `2`: config/runtime error
 
-### `eval draft`
+### `standards feedback draft`
 
 Builds a repo-local draft artifact from a repo-local evidence artifact.
 
 ```bash
-npx @kontourai/veritas eval draft --evidence <path> [--team-profile <path>] [--output <path>] [--force]
+npx @kontourai/veritas feedback draft --evidence <path> [--authority-settings <path>] [--output <path>] [--force]
   [--reviewer-confidence <scale-entry|unknown>]
   [--time-to-green-minutes <number>]
-  [--override-count <number>]
+  [--exception-count <number>]
   [--false-positive-rule <rule-id>]
   [--missed-issue <text>]
   [--note <text>]
 ```
 
-### `eval observe`
+### `feedback observe`
 
-Builds a standards-feedback draft from a Codex or Claude Code transcript. With `--tool none`, it uses filesystem artifacts instead of a transcript.
+Builds a standards-feedback draft from a Codex or Claude Code session log. With `--tool none`, it uses filesystem artifacts instead of a session log.
 
 ```bash
-npx @kontourai/veritas eval observe [--transcript <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>] [--rewrite-threshold <ratio>] [--verbose]
+npx @kontourai/veritas feedback observe [--session-log <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>] [--rewrite-threshold <ratio>] [--verbose]
 ```
 
-When a heuristic cannot compute a value, the draft stores a reason object such as `{ "value": null, "reason": "no_passing_run_observed" }` instead of a bare null. The command validates the draft shape before writing unless `VERITAS_SKIP_EVAL_VALIDATION=1` is set.
+When a heuristic cannot compute a value, the draft stores a reason object such as `{ "value": null, "reason": "no_passing_run_observed" }` instead of a bare null. The command validates the draft shape before writing unless `VERITAS_SKIP_STANDARDS_FEEDBACK_VALIDATION=1` is set.
 
-Filesystem fallback fields include `source: "filesystem-inferred"` so transcript-derived and artifact-derived values stay distinguishable.
+Filesystem fallback fields include `source: "filesystem-inferred"` so session-log-derived and artifact-derived values stay distinguishable.
 
 Guardrail:
 
 - evidence input must be under `.veritas/evidence/`
-- the generated draft now includes a derived `governance` object that records whether the evidence touched the governance surface and whether protected-standards review is required
+- the generated draft now includes a derived `governance` object that records whether the evidence touched the Protected Standards and whether protected-standards review is required
 
-### `eval record`
+### `standards feedback record`
 
 Completes a standards-feedback record from either evidence directly or a previously created draft.
 
 ```bash
-npx @kontourai/veritas eval record --evidence <path> [--team-profile <path>] [--output <path>] [--force]
+npx @kontourai/veritas feedback record --evidence <path> [--authority-settings <path>] [--output <path>] [--force]
   --accepted-without-major-rewrite <true|false>
   --required-followup <true|false>
   --reviewer-confidence <scale-entry|unknown>
   --time-to-green-minutes <number>
-  --override-count <number>
+  --exception-count <number>
 
-npx @kontourai/veritas eval record --draft <path> [--team-profile <path>] [--output <path>] [--force]
+npx @kontourai/veritas feedback record --draft <path> [--authority-settings <path>] [--output <path>] [--force]
   --accepted-without-major-rewrite <true|false>
   --required-followup <true|false>
   --reviewer-confidence <scale-entry|unknown>
   --time-to-green-minutes <number>
-  --override-count <number>
+  --exception-count <number>
 ```
 
 Guardrails:
 
 - evidence input must stay under `.veritas/evidence/`
-- draft input must stay under `.veritas/eval-drafts/`
+- draft input must stay under `.veritas/standards-feedback-drafts/`
 - a draft must be completed with the same standards settings that created it
 - the completed record keeps the same derived `governance` object so governance-touching feedback can be measured later
 - existing output is not overwritten without `--force`
 
-### `eval marker`
+### `feedback marker`
 
-Scores a deterministic marker-surfacing benchmark by comparing one `without Veritas` transcript to one `with Veritas` transcript against the same benchmark scenario.
+Scores a deterministic marker-surfacing benchmark by comparing one `without Veritas` session log to one `with Veritas` session log against the same benchmark scenario.
 
 ```bash
-npx @kontourai/veritas eval marker \
+npx @kontourai/veritas feedback marker \
   --scenario examples/benchmarks/migration-marker-scenario.json \
-  --without-veritas-transcript examples/benchmarks/migration-marker-without-veritas.json \
-  --with-veritas-transcript examples/benchmarks/migration-marker-with-veritas.json
+  --without-veritas-session-log examples/benchmarks/migration-marker-without-veritas.json \
+  --with-veritas-session-log examples/benchmarks/migration-marker-with-veritas.json
 ```
 
 Important behaviors:
 
 - the command is read-only and prints JSON to stdout
 - the scenario defines the required marker phrases and the scoring window
-- transcripts must declare the matching `benchmark_id` plus the expected `without-veritas` or `with-veritas` condition id
-- transcripts must include a trigger tag, and may include a response-window tag when the tagged assistant turn is the response that must carry the marker
+- session logs must declare the matching `benchmark_id` plus the expected `without-veritas` or `with-veritas` condition id
+- session logs must include a trigger tag, and may include a response-window tag when the tagged assistant turn is the response that must carry the marker
 - this command scores one benchmark pair; repeat it across multiple runs when you want `pass^k`-style evidence, or use `marker-suite` for the aggregated `pass_pow_k` metric
 
-### `eval marker-suite`
+### `feedback marker-suite`
 
 Scores a suite of marker benchmarks and reports aggregate reliability metrics across multiple scenario groups and trials.
 
 ```bash
-npx @kontourai/veritas eval marker-suite \
+npx @kontourai/veritas feedback marker-suite \
   --suite examples/benchmarks/marker-suite.json
 ```
 
 Important behaviors:
 
-- the suite artifact references scenario files plus one or more trial transcript pairs per benchmark
+- the suite artifact references scenario files plus one or more trial session log pairs per benchmark
 - each `benchmark_id` and `trial_id` in the suite must be unique
 - aggregate metrics include per-trial rates and grouped reliability summaries
 - `improvement_rate` counts trials where Veritas improves outcome quality or delivers the same correct outcome faster
 - `pass_at_1` is computed from the first listed trial in each benchmark group
 - `pass_at_k` means a benchmark has at least one passing `with Veritas` trial across its recorded trials
 - `pass_pow_k` is the suite report name for `pass^k`: every recorded `with Veritas` trial in a benchmark group passes
-- the command validates every referenced scenario and transcript before producing a suite summary
+- the command validates every referenced scenario and session log before producing a suite summary
 
-### `eval summary`
+### `standards feedback summary`
 
-Reads `.veritas/evals/history.jsonl` and prints recent local outcome metrics.
+Reads `.veritas/standards-feedback/history.jsonl` and prints recent local outcome metrics.
 
 ```bash
-npx @kontourai/veritas eval summary [--root <path>]
+npx @kontourai/veritas feedback summary [--root <path>]
 ```
 
-The summary includes acceptance count, required rewrites, average time to green, average overrides, confidence distribution, and the most flagged false-positive rule.
+The summary includes acceptance count, required rewrites, average time to green, average exceptions, confidence distribution, and the most flagged false-positive rule.
 
-### `eval recommend`
+### `feedback recommend`
 
-Reads `.veritas/evals/history.jsonl` and writes non-blocking recommendation artifacts under `.veritas/recommendations/`.
+Reads `.veritas/standards-feedback/history.jsonl` and writes non-blocking recommendation artifacts under `.veritas/recommendations/`.
 
 ```bash
-npx @kontourai/veritas eval recommend [--root <path>] [--force] [--dry-run]
+npx @kontourai/veritas feedback recommend [--root <path>] [--force] [--dry-run]
 ```
 
 The generator looks for frequently excepted failures, warning requirements that did not cause follow-up, inactive requirements, and paths that repeatedly matched no work area.
@@ -441,7 +441,7 @@ Write restrictions are intentional:
 - runtime hooks must stay under `.veritas/hooks/`
 - stop hooks must stay under `.veritas/hooks/`
 - Codex hook artifacts must stay under `.veritas/runtime/`
-- standards feedback artifacts must stay under `.veritas/evals/`
+- standards feedback artifacts must stay under `.veritas/standards-feedback/`
 - git hooks must stay under `.githooks/`
 
 ### `runtime status`
@@ -466,7 +466,6 @@ It reports:
 `print git-hook` and `apply git-hook` produce a `post-commit` hook that:
 
 - skips itself when `VERITAS_HOOK_SKIP=1`
-- also honors the previous `AI_GUIDANCE_HOOK_SKIP=1` alias
 - compares `HEAD~1..HEAD` on normal commits
 - uses the empty tree for the first commit
 - calls `veritas readiness`
@@ -474,7 +473,6 @@ It reports:
 `print runtime-hook` and `apply runtime-hook` produce a shell wrapper that:
 
 - skips itself when `VERITAS_HOOK_SKIP=1`
-- also honors the previous `AI_GUIDANCE_HOOK_SKIP=1` alias
 - defaults to `veritas readiness --format json --working-tree`
 - forwards any explicit arguments through to `veritas readiness --format json`
 
@@ -490,7 +488,6 @@ It reports:
 ## Environment Variables
 
 - `VERITAS_HOOK_SKIP=1`: skips generated git/runtime hook execution
-- `AI_GUIDANCE_HOOK_SKIP=1`: previous alias still honored by generated hooks
 
 Do not set either skip variable in CI if the CI lane is meant to enforce evidenceCheck execution.
 

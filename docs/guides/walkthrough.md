@@ -19,9 +19,9 @@ Output includes generated starter files:
   "generatedFiles": [
     ".veritas/README.md",
     ".veritas/GOVERNANCE.md",
-    ".veritas/repo.adapter.json",
+    ".veritas/repo-map.json",
     ".veritas/repo-standards/default.repo-standards.json",
-    ".veritas/team/default.team-profile.json",
+    ".veritas/authority/default.authority-settings.json",
     "AGENTS.md",
     "CLAUDE.md"
   ]

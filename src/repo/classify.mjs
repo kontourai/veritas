@@ -22,7 +22,7 @@ export function classifyNodes(files, config, rootDir) {
           kind: node.kind,
           owners: uniqueStrings(node.owners ?? []),
           boundary: node.boundary ?? 'advisory',
-          crossSurfaceAllow: uniqueStrings(node.crossSurfaceAllow ?? []),
+          boundaryAllow: uniqueStrings(node.boundaryAllow ?? []),
         };
         if (!matchedNodes.some((item) => item.id === node.id)) {
           matchedNodes.push(nodeSummary);

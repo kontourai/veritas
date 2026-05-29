@@ -4,28 +4,28 @@ This is the Veritas product repo. Veritas is a repo-local governance product for
 
 ## This repo runs Veritas on itself
 
-The `.veritas/` directory contains the live governance configuration for this repo. Veritas uses its own Repo Map, Repo Standards, and team profile to govern its own development.
+The `.veritas/` directory contains the live governance configuration for this repo. Veritas uses its own Repo Map, Repo Standards, and authority settings to govern its own development.
 
 ## Key commands
 
 ```bash
 npm test                        # run the full test suite
 npm run veritas:evidence-check  # run the evidenceCheck
-npm run veritas:checkin         # full readiness check + check-in report
-npm run veritas:checkin:report  # evidence report only
+npm run veritas:conformance         # full readiness check + repo conformance report
+npm run veritas:conformance:report  # evidence report only
 node scripts/build-pages-site.mjs  # rebuild the GitHub Pages site
 ```
 
-After making code changes, run `npm run veritas:checkin:report` to generate an evidence artifact for the working tree.
+After making code changes, run `npm run veritas:conformance:report` to generate an evidence artifact for the working tree.
 
 ## Protected Standards
 
 The following files define Protected Standards. Do not modify them without fresh authority:
 
 - `.veritas/GOVERNANCE.md` — terse agent-facing governance instructions
-- `.veritas/repo.adapter.json` — the Repo Map
+- `.veritas/repo-map.json` — the Repo Map
 - `.veritas/repo-standards/` — the Repo Standards
-- `.veritas/team/` — team profile and thresholds
+- `.veritas/authority/` — authority settings and thresholds
 
 You may propose additive Standards Growth for new feature areas. Do not modify, demote, or delete existing required standards or protected definitions.
 
@@ -36,7 +36,7 @@ See `.veritas/GOVERNANCE.md` for the terse agent-facing governance instructions.
 The test suite intentionally invokes the CLI with invalid inputs to test error handling. These produce error messages that look like:
 
 ```
-Error: eval record requires a repo-local draft artifact inside .veritas/eval-drafts/
+Error: standards feedback record requires a repo-local draft artifact inside .veritas/standards-feedback-drafts/
 ```
 
 These are expected. The messages are not failures.

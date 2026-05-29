@@ -5,21 +5,21 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { TrustInputBuilder, buildTrustReport, validateTrustInput } from '@kontourai/surface';
 import { generateVeritasReport, initClaimStore } from '../src/index.mjs';
-import { frameworkRootDir } from './helpers.mjs';
+import { repoRootDir } from './helpers.mjs';
 
 test('Veritas surface.input validates against Surface and has policy coverage', async () => {
-  const claimsPath = join(frameworkRootDir, 'veritas.claims.json');
+  const claimsPath = join(repoRootDir, 'veritas.claims.json');
   const originalClaims = existsSync(claimsPath) ? readFileSync(claimsPath, 'utf8') : null;
-  await initClaimStore({ rootDir: frameworkRootDir, repoName: 'veritas-framework', force: true });
+  await initClaimStore({ rootDir: repoRootDir, repoName: 'veritas-framework', force: true });
   let result;
   try {
     result = await generateVeritasReport(
       {
-        rootDir: frameworkRootDir,
+        rootDir: repoRootDir,
         workingTree: true,
         runId: 'surface-projection-test',
       },
-      { rootDir: frameworkRootDir },
+      { rootDir: repoRootDir },
     );
   } finally {
     if (originalClaims !== null) {
@@ -91,8 +91,8 @@ test('Surface validation failure writes rejected input artifact and uses config 
     () => generateVeritasReport(
       {
         rootDir,
-        adapterPath: join(frameworkRootDir, '.veritas/repo.adapter.json'),
-        repoStandardsPath: join(frameworkRootDir, '.veritas/repo-standards/default.repo-standards.json'),
+        repoMapPath: join(repoRootDir, '.veritas/repo-map.json'),
+        repoStandardsPath: join(repoRootDir, '.veritas/repo-standards/default.repo-standards.json'),
         runId: 'invalid-surface-projection-test',
         sourceRef: 'test-source-ref',
         sourceKind: 'explicit-files',

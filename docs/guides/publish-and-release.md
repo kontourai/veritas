@@ -17,7 +17,7 @@ The current publish surface is defined in [package.json](../../package.json) and
 - `bin/` for the CLI entrypoints
 - `src/` for implementation logic
 - `schemas/` for the contract surface
-- `adapters/` for current Repo Map examples
+- `repo-maps/` for current Repo Map examples
 - `repo-standards/` for current Repo Standards examples
 - `docs/` for packaged documentation
 - `examples/` for canonical fixtures

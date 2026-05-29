@@ -5,7 +5,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "framework_version",
+    "record_schema_version",
     "run_id",
     "timestamp",
     "source_ref",
@@ -31,13 +31,13 @@
     "unresolved_files",
     "promotion_allowed",
     "surface",
-    "framework",
-    "adapter",
+    "producer",
+    "repo_map",
     "repo_standards",
     "policy_results"
   ],
   "properties": {
-    "framework_version": { "type": "integer", "minimum": 1, "x_surface_mapping": "veritas-local" },
+    "record_schema_version": { "type": "integer", "minimum": 1, "x_surface_mapping": "veritas-local" },
     "run_id": { "type": "string", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata", "report-input"] },
     "timestamp": { "type": "string", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence", "event"] },
     "source_ref": { "type": "string", "x_surface_mapping": "mapped", "x_surface_targets": ["claim", "evidence", "metadata"] },
@@ -112,13 +112,14 @@
     "unresolved_files": { "$ref": "#/$defs/stringArray", "x_surface_mapping": "mapped", "x_surface_targets": ["evidence", "metadata"] },
     "promotion_allowed": { "type": "boolean", "x_surface_mapping": "mapped", "x_surface_targets": ["metadata"] },
     "surface": { "$ref": "#/$defs/surfaceBlock", "x_surface_mapping": "mapped", "x_surface_targets": ["report-input"] },
-    "framework": {
+    "producer": {
       "type": "object",
       "x_surface_mapping": "veritas-local",
       "additionalProperties": false,
-      "required": ["version", "resolver_precedence", "policy_defaults"],
+      "required": ["name", "record_schema_version", "resolver_precedence", "policy_defaults"],
       "properties": {
-        "version": { "type": "integer", "minimum": 1 },
+        "name": { "type": "string" },
+        "record_schema_version": { "type": "integer", "minimum": 1 },
         "resolver_precedence": { "$ref": "#/$defs/stringArray" },
         "policy_defaults": {
           "type": "object",
@@ -136,7 +137,7 @@
         }
       }
     },
-    "adapter": {
+    "repo_map": {
       "type": "object",
       "x_surface_mapping": "veritas-local",
       "additionalProperties": false,
@@ -529,7 +530,7 @@
             "properties": {
               "field": {
                 "type": "string",
-                "enum": ["repoStandardsHash", "adapterHash", "teamProfileHash", "currentAttestationId"]
+                "enum": ["repoStandardsHash", "repoMapHash", "authoritySettingsHash", "currentAttestationId"]
               },
               "attested": { "type": ["string", "null"] },
               "current": { "type": ["string", "null"] }
@@ -546,21 +547,21 @@
             "hashes": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["repoStandardsHash", "adapterHash", "teamProfileHash"],
+              "required": ["repoStandardsHash", "repoMapHash", "authoritySettingsHash"],
               "properties": {
                 "repoStandardsHash": { "type": "string" },
-                "adapterHash": { "type": "string" },
-                "teamProfileHash": { "type": "string" }
+                "repoMapHash": { "type": "string" },
+                "authoritySettingsHash": { "type": "string" }
               }
             },
             "paths": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["repoStandardsPath", "adapterPath", "teamProfilePath"],
+              "required": ["repoStandardsPath", "repoMapPath", "authoritySettingsPath"],
               "properties": {
                 "repoStandardsPath": { "type": "string" },
-                "adapterPath": { "type": "string" },
-                "teamProfilePath": { "type": "string" }
+                "repoMapPath": { "type": "string" },
+                "authoritySettingsPath": { "type": "string" }
               }
             },
             "error": { "type": "string" }

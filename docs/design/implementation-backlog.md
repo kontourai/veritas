@@ -1,6 +1,6 @@
 # Implementation Backlog
 
-This backlog turns the current roadmap and integration plans into executable work. It excludes restoring a Veritas-specific Surface integration: Veritas now emits `surface.input` directly, and Surface should not import Veritas readiness checktime code unless a real external product needs it.
+This backlog turns the current roadmap and integration plans into executable work. It excludes restoring a Veritas-specific Surface integration: Veritas now emits `surface.input` directly, and Surface should not import Veritas readiness runtime code unless a real external product needs it.
 
 ## Now
 
@@ -13,11 +13,12 @@ This backlog turns the current roadmap and integration plans into executable wor
 ### Deep integration documentation
 
 - Keep Codex as the only worked deep-capture example.
-- Mark Claude Code and Cursor as supported through governance blocks, PreToolUse/Stop hooks, and explicit `veritas readiness`; transcript capture is not implemented yet.
+- Mark Claude Code as supported through governance blocks, PreToolUse/Stop hooks, explicit `veritas readiness`, and agent session log observation.
+- Mark Cursor as supported through generic stop-hook wiring and explicit `veritas readiness`; agent session log observation is pending until Cursor exposes a durable session log shape Veritas can read.
 
 ### Runtime escape hatches
 
-- Document `VERITAS_SKIP_SURFACE_VALIDATION` and `VERITAS_SKIP_EVAL_VALIDATION`.
+- Document `VERITAS_SKIP_SURFACE_VALIDATION` and `VERITAS_SKIP_STANDARDS_FEEDBACK_VALIDATION`.
 - Emit a warning whenever either escape hatch is used.
 
 ## Next
@@ -31,7 +32,7 @@ This backlog turns the current roadmap and integration plans into executable wor
 ### Standards feedback quality
 
 - Harden Codex standards feedback observation so uncomputed fields include reason codes instead of bare `null`.
-- Validate generated standards-feedback drafts against `schemas/veritas-eval-draft.schema.json`.
+- Validate generated standards-feedback drafts against `schemas/veritas-standards-feedback-draft.schema.json`.
 - Add `.veritas/runs/history.jsonl` so pure CI fail-to-pass sequences can still produce `time_to_green_minutes`.
 
 ### Evidence Check module maintainability
@@ -46,7 +47,7 @@ This backlog turns the current roadmap and integration plans into executable wor
 
 ### Repo Map templates and pilots
 
-- Start Repo Map templates inside `adapters/`, then promote to packages once the shape is proven.
+- Start Repo Map templates inside `repo-maps/`, then promote to packages once the shape is proven.
 - Use Taxes as the MCP monorepo pilot and Campfit as the Next.js + Prisma confirmation pass.
 
 ### Longitudinal evidence

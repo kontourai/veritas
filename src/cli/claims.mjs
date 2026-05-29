@@ -11,7 +11,7 @@ import {
   updateClaimInStore,
   validateClaimStore,
 } from '../claims/store.mjs';
-import { loadAdapterConfig } from '../load.mjs';
+import { loadRepoMap } from '../load.mjs';
 import { loadPluginsFromConfig } from '../plugins/loader.mjs';
 import { getPlugin } from '../plugins/registry.mjs';
 
@@ -105,15 +105,15 @@ async function runClaimScaffold(args, rootDir) {
   });
   if (rest.length > 0) throw new Error(`Unknown claim scaffold argument(s): ${rest.join(', ')}`);
   if (!options.pluginName) throw new Error('veritas claim scaffold requires --plugin <name>');
-  const adapterPath = resolve(rootDir, '.veritas/repo.adapter.json');
-  const adapterConfig = existsSync(adapterPath) ? loadAdapterConfig(adapterPath) : {};
-  await loadPluginsFromConfig(adapterConfig, rootDir);
+  const repoMapPath = resolve(rootDir, '.veritas/repo-map.json');
+  const repoMapConfig = existsSync(repoMapPath) ? loadRepoMap(repoMapPath) : {};
+  await loadPluginsFromConfig(repoMapConfig, rootDir);
   const plugin = getPlugin(options.pluginName);
-  if (!plugin) throw new Error(`Plugin "${options.pluginName}" is not loaded. Check your repo.adapter.json.`);
+  if (!plugin) throw new Error(`Plugin "${options.pluginName}" is not loaded. Check your repo-map.json.`);
   if (typeof plugin.scaffoldClaims !== 'function') {
     throw new Error(`Plugin "${options.pluginName}" does not support claim scaffolding.`);
   }
-  const repoName = adapterConfig?.repo?.name ?? adapterConfig?.name ?? basename(rootDir);
+  const repoName = repoMapConfig?.repo?.name ?? repoMapConfig?.name ?? basename(rootDir);
   const scaffolded = plugin.scaffoldClaims(repoName) ?? [];
   let updated = loadVeritasClaimStoreForWrite(rootDir);
   let added = 0;

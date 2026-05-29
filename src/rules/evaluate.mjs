@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { inspectGovernanceBlockFile } from '../governance.mjs';
 import { classifyNodes } from '../repo/classify.mjs';
@@ -9,11 +9,12 @@ import { uniqueStrings } from '../util/strings.mjs';
  * @typedef {Object} RuleContext
  * @property {string} rootDir
  * @property {string[]} [changedFiles]
- * @property {object} [config] Adapter config; required for cross-surface-write.
+ * @property {object} [config] Repo Map config; required for work-area-boundary.
+ * @property {object} [repoStandards] Active Repo Standards config; required for primitive references.
  * @property {string|null} [actor] Resolved actor for boundary rules.
  */
 
-export function buildRuleResult(rule, overrides = {}) {
+export function buildRuleResult(rule, exceptions = {}) {
   const enforcement =
     rule.enforcement ?? (rule.classification === 'hard-invariant' ? 'deny' : 'lint');
   return {
@@ -27,9 +28,9 @@ export function buildRuleResult(rule, overrides = {}) {
     implemented: false,
     passed: null,
     status: 'info',
-    summary: `Rule ${rule.id} is metadata-only in the current framework.`,
+    summary: `Rule ${rule.id} is metadata-only in the current product core.`,
     findings: [],
-    ...overrides,
+    ...exceptions,
   };
 }
 
@@ -199,6 +200,188 @@ export function evaluateHeaderRequiredRule(rule, context) {
   });
 }
 
+function buildVocabularyRegex(term) {
+  const source = term.regex ?? term.pattern ?? term.term;
+  return new RegExp(source, term.flags ?? 'i');
+}
+
+function contextAllowed(content, match, allowContexts = []) {
+  if (!allowContexts.length) return false;
+  const start = Math.max(0, match.index - 120);
+  const end = Math.min(content.length, match.index + match[0].length + 120);
+  const context = content.slice(start, end);
+  return allowContexts.some((pattern) => new RegExp(pattern, 'i').test(context));
+}
+
+/** @param {RuleContext} context */
+export function evaluateVocabularyConsistencyRule(rule, context) {
+  const files = matchedFilesForRule(rule, context);
+  const terms = Array.isArray(rule.match?.terms) ? rule.match.terms : [];
+  const findings = [];
+
+  for (const file of files) {
+    const content = readRepoTextFile(context.rootDir, file);
+    for (const term of terms) {
+      const regex = buildVocabularyRegex(term);
+      const match = regex.exec(content);
+      if (!match || contextAllowed(content, match, term.allowContexts ?? [])) continue;
+      findings.push({
+        kind: 'vocabulary-drift',
+        artifact: file,
+        line: lineForMatch(content, match.index),
+        term: term.term ?? term.pattern ?? term.regex,
+        prefer: term.prefer,
+      });
+    }
+  }
+
+  return buildRuleResult(rule, {
+    implemented: true,
+    passed: findings.length === 0,
+    summary:
+      findings.length === 0
+        ? 'All matched files use canonical Veritas vocabulary.'
+        : 'Some matched files use pre-glossary or ambiguous Veritas vocabulary.',
+    findings,
+  });
+}
+
+function primitiveExists(reference, rule, context) {
+  if (reference.kind === 'repo-standards-rule') {
+    return (context.repoStandards?.rules ?? []).some((candidateRule) =>
+      candidateRule.id === reference.id && candidateRule.id !== rule.id
+    );
+  }
+  if (reference.kind === 'evidence-check') {
+    return (context.config?.evidence?.evidenceChecks ?? []).some((check) => check.id === reference.id);
+  }
+  return false;
+}
+
+function readJsonFile(rootDir, filePath) {
+  try {
+    return JSON.parse(readFileSync(resolve(rootDir, filePath), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function regexMatches(value, patterns = []) {
+  return patterns.some((pattern) => new RegExp(pattern).test(value));
+}
+
+function escapeRegexLiteral(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function evidenceCheckRunsPackageScript(check, scriptName) {
+  if (typeof check.command !== 'string') return false;
+  const escapedScriptName = escapeRegexLiteral(scriptName);
+  const npmRunPattern = new RegExp(
+    `(?:^|&&|\\|\\||;|\\s)npm\\s+run(?:-script)?\\s+${escapedScriptName}(?:\\s|$)`,
+  );
+  return npmRunPattern.test(check.command);
+}
+
+function packageScriptRepresented(scriptName, packageScripts, rule, context) {
+  const evidenceChecks = context.config?.evidence?.evidenceChecks ?? [];
+  if (evidenceChecks.some((check) => evidenceCheckRunsPackageScript(check, scriptName))) {
+    return true;
+  }
+  return (packageScripts.representedBy ?? []).some((reference) =>
+    primitiveExists(reference, rule, context)
+  );
+}
+
+function packageScriptExemption(scriptName, packageScripts) {
+  return (packageScripts.helperExemptions ?? []).find(
+    (exemption) => exemption.name === scriptName
+  );
+}
+
+function evaluatePrimitiveFirstPackageScripts(rule, context) {
+  const packageScripts = rule.match?.packageScripts;
+  if (!packageScripts) return [];
+
+  const filePath = packageScripts.file ?? 'package.json';
+  const packageJson = readJsonFile(context.rootDir, filePath);
+  const scripts =
+    packageJson && typeof packageJson.scripts === 'object' && packageJson.scripts !== null
+      ? packageJson.scripts
+      : {};
+  const namePatterns = packageScripts.namePatterns ?? [];
+  const commandPatterns = packageScripts.commandPatterns ?? [];
+  const findings = [];
+
+  for (const [scriptName, command] of Object.entries(scripts)) {
+    if (typeof command !== 'string') continue;
+    const matchesInventory =
+      regexMatches(scriptName, namePatterns) || regexMatches(command, commandPatterns);
+    if (!matchesInventory) continue;
+
+    const exemption = packageScriptExemption(scriptName, packageScripts);
+    if (exemption) continue;
+    if (packageScriptRepresented(scriptName, packageScripts, rule, context)) continue;
+
+    findings.push({
+      kind: 'primitive-first-governance',
+      artifact: filePath,
+      package_script: scriptName,
+      command,
+      name_patterns: namePatterns,
+      command_patterns: commandPatterns,
+      required_primitives: [
+        {
+          kind: 'evidence-check',
+          command: `npm run ${scriptName}`,
+        },
+        ...(packageScripts.representedBy ?? []),
+      ],
+    });
+  }
+
+  return findings;
+}
+
+/** @param {RuleContext} context */
+export function evaluatePrimitiveFirstGovernanceRule(rule, context) {
+  const candidates = Array.isArray(rule.match?.candidates) ? rule.match.candidates : [];
+  const findings = [];
+
+  for (const candidate of candidates) {
+    const files = matchedFilesForRule({ match: { files: candidate.files ?? [] } }, context);
+    const regex = new RegExp(candidate.pattern, 'm');
+    const represented = (candidate.representedBy ?? []).some((reference) =>
+      primitiveExists(reference, rule, context)
+    );
+
+    for (const file of files) {
+      const content = readRepoTextFile(context.rootDir, file);
+      const match = regex.exec(content);
+      if (!match || represented) continue;
+      findings.push({
+        kind: 'primitive-first-governance',
+        artifact: file,
+        line: lineForMatch(content, match.index),
+        pattern: candidate.pattern,
+        required_primitives: candidate.representedBy ?? [],
+      });
+    }
+  }
+
+  findings.push(...evaluatePrimitiveFirstPackageScripts(rule, context));
+
+  return buildRuleResult(rule, {
+    implemented: true,
+    passed: findings.length === 0,
+    summary:
+      findings.length === 0
+        ? 'Repeatable governance checks are represented by Veritas primitives.'
+        : 'Some repeatable governance checks bypass Veritas primitives.',
+    findings,
+  });
+}
+
 function actorOwnsNode(actor, node) {
   const owners = uniqueStrings(node.owners ?? []);
   if (owners.includes('shared') || owners.includes('*')) return true;
@@ -206,20 +389,20 @@ function actorOwnsNode(actor, node) {
   return owners.includes(actor);
 }
 
-function actorAllowedCrossSurface(actor, node) {
-  const allow = uniqueStrings(node.crossSurfaceAllow ?? []);
+function actorAllowedAcrossBoundary(actor, node) {
+  const allow = uniqueStrings(node.boundaryAllow ?? []);
   return allow.includes('*') || allow.includes(actor) || allow.includes(node.id);
 }
 
 /** @param {RuleContext} context */
-export function evaluateCrossSurfaceWriteRule(rule, { changedFiles = [], config, rootDir, actor }) {
+export function evaluateWorkAreaBoundaryRule(rule, { changedFiles = [], config, rootDir, actor }) {
   const effectiveActor = actor ?? process.env.VERITAS_ACTOR ?? null;
   if (!effectiveActor) {
     return buildRuleResult(rule, {
       implemented: true,
       passed: null,
       status: 'error',
-      summary: 'cross-surface-write requires --actor or VERITAS_ACTOR; refusing to silently pass.',
+      summary: 'work-area-boundary requires --actor or VERITAS_ACTOR; refusing to silently pass.',
       findings: [{
         kind: 'missing-actor',
         artifact: rule.id,
@@ -233,14 +416,14 @@ export function evaluateCrossSurfaceWriteRule(rule, { changedFiles = [], config,
   for (const [file, nodes] of Object.entries(classification.fileNodes ?? {})) {
     for (const node of nodes) {
       if (node.boundary !== 'strict') continue;
-      if (actorOwnsNode(effectiveActor, node) || actorAllowedCrossSurface(effectiveActor, node)) continue;
+      if (actorOwnsNode(effectiveActor, node) || actorAllowedAcrossBoundary(effectiveActor, node)) continue;
       findings.push({
-        kind: 'cross-surface-write',
+        kind: 'work-area-boundary',
         artifact: file,
         node: node.id,
         actor: effectiveActor,
         owners: node.owners,
-        remediation: `Route this change through ${node.owners.join(', ') || 'the owning surface'} or add an explicit crossSurfaceAllow entry.`,
+        remediation: `Route this change through ${node.owners.join(', ') || 'the owning work area'} or add an explicit boundaryAllow entry.`,
       });
     }
   }
@@ -250,8 +433,8 @@ export function evaluateCrossSurfaceWriteRule(rule, { changedFiles = [], config,
     passed: findings.length === 0,
     summary:
       findings.length === 0
-        ? `Actor ${effectiveActor ?? 'unknown'} stayed within owned or allowed surfaces.`
-        : `Actor ${effectiveActor ?? 'unknown'} touched a strict surface they do not own.`,
+        ? `Actor ${effectiveActor ?? 'unknown'} stayed within owned or allowed work areas.`
+        : `Actor ${effectiveActor ?? 'unknown'} touched a strict work area they do not own.`,
     findings,
   });
 }
@@ -260,10 +443,12 @@ export const RULE_EVALUATORS = {
   'required-artifacts': evaluateRequiredArtifactsRule,
   'governance-block': evaluateGovernanceBlockRule,
   'diff-required': evaluateDiffRequiredRule,
-  'cross-surface-write': evaluateCrossSurfaceWriteRule,
+  'work-area-boundary': evaluateWorkAreaBoundaryRule,
   'forbidden-pattern': evaluateForbiddenPatternRule,
   'required-pattern': evaluateRequiredPatternRule,
   'header-required': evaluateHeaderRequiredRule,
+  'vocabulary-consistency': evaluateVocabularyConsistencyRule,
+  'primitive-first-governance': evaluatePrimitiveFirstGovernanceRule,
 };
 
 /** @param {RuleContext} context */
@@ -293,5 +478,5 @@ export function evaluateRepoStandards(repoStandards, context, options = {}) {
   const selectedRuleIds = new Set(options.ruleIds ?? []);
   return repoStandards.rules
     .filter((rule) => selectedRuleIds.size === 0 || selectedRuleIds.has(rule.id))
-    .map((rule) => evaluatePolicyRule(rule, context));
+    .map((rule) => evaluatePolicyRule(rule, { ...context, repoStandards }));
 }

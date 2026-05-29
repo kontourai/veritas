@@ -1,31 +1,33 @@
-# Veritas
+# Veritas Agent Instructions
 
-## Intent
+This is the Veritas product repo. Veritas is a repo-local governance product for trustworthy AI-assisted development.
 
-This repository owns the reusable Veritas product core for:
-- graph-based codebase modeling
-- task/diff resolution
-- evidence collection
-- Repo Standards
-- adapter contracts
+## This repo runs Veritas on itself
 
-It does **not** own repo-specific product code.
+The `.veritas/` directory contains the live governance configuration for this repo. Veritas uses its own Repo Map, Repo Standards, and authority settings to govern its own development.
 
-Repo-specific bindings belong in adapters.
+## Key commands
 
-## Working Rules
+```bash
+npm test
+npm run veritas:evidence-check
+npm run veritas:conformance
+npm run veritas:conformance:report
+node scripts/build-pages-site.mjs
+```
 
-- Keep the product core generic; avoid hardcoding `work-agent` assumptions into the core docs or examples.
-- Prefer schema and contract clarity over premature implementation layers.
-- When adding new concepts, update the design doc and the relevant schema together.
-- Treat adapter examples as examples, not as the product core.
-- No new dependencies unless they buy clear leverage.
+After making code changes, run `npm run veritas:conformance:report` to generate an evidence artifact for the working tree.
 
-## Verification
+## Protected Standards
 
-Before considering a framework change complete:
-- `npm run verify`
-- `npm test`
+Do not modify these without fresh authority:
+
+- `.veritas/GOVERNANCE.md`
+- `.veritas/repo-map.json`
+- `.veritas/repo-standards/`
+- `.veritas/authority/`
+
+You may propose additive Standards Growth for new feature areas. Do not modify, demote, or delete existing required standards or protected definitions.
 
 <!-- veritas:governance-block:start -->
 This repo uses Veritas for AI governance. Read `.veritas/GOVERNANCE.md` before making changes.

@@ -33,7 +33,7 @@ Requirements can be triggered by:
 - stale or missing standing evidence
 - changes to the repo standards themselves
 
-The implementation still has rule kinds such as `required-artifacts`, `governance-block`, `diff-required`, `forbidden-pattern`, `required-pattern`, `header-required`, and `cross-surface-write`. Those are executable requirement types. Product language should say requirement unless it is describing schema internals.
+The implementation still has rule kinds such as `required-artifacts`, `governance-block`, `diff-required`, `forbidden-pattern`, `required-pattern`, `header-required`, and `work-area-boundary`. Those are executable requirement types. Product language should say requirement unless it is describing schema internals.
 
 ## Evidence
 
@@ -136,7 +136,7 @@ The current CLI exposes this area through feedback and recommendation commands d
 
 ## Built With Surface
 
-Veritas is built with Surface, but normal Veritas users should not need to configure Surface directly.
+Veritas projects its requirement and evidence model into Surface trust state at the boundary. Veritas users do not need to configure Surface.
 
 Veritas owns the repo-native workflow:
 

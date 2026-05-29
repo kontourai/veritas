@@ -6,15 +6,15 @@ dist/
 .surface/
 
 # Veritas generated run state. Keep durable governance config trackable:
-# .veritas/repo.adapter.json, .veritas/repo-standards/**, and .veritas/team/**.
+# .veritas/repo-map.json, .veritas/repo-standards/**, and .veritas/authority/**.
 .veritas/evidence/
 .veritas/claims/
 .veritas/surface-console/
 .veritas/external/
-.veritas/eval-drafts/
-.veritas/evals/
+.veritas/standards-feedback-drafts/
+.veritas/standards-feedback/
 .veritas/runs/
-.veritas/checkins/
+.veritas/repo-conformance/
 .site-src/
 .site-dist/
 coverage/

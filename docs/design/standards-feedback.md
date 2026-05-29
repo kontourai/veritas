@@ -16,10 +16,10 @@ That second record lets Veritas measure effectiveness instead of only intent.
 The current CLI command group is:
 
 ```bash
-veritas eval draft
-veritas eval record
-veritas eval summary
-veritas eval recommend
+veritas feedback draft
+veritas feedback record
+veritas feedback summary
+veritas feedback recommend
 ```
 
 These commands are the current standards-feedback and standards-recommendation surfaces.

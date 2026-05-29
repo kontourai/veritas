@@ -94,8 +94,8 @@ Good change guidance should say what to do next, what not to do, why it matters,
 After Veritas has generated enough evidence, use the current feedback commands:
 
 ```bash
-npx @kontourai/veritas eval summary
-npx @kontourai/veritas eval recommend
+npx @kontourai/veritas feedback summary
+npx @kontourai/veritas feedback recommend
 npx @kontourai/veritas recommendation list
 ```
 

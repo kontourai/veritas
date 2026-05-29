@@ -9,19 +9,14 @@ import {
 import { createHash } from 'node:crypto';
 import { dirname, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { loadAdapterConfig, loadRepoStandards } from './load.mjs';
+import { loadRepoMap, loadRepoStandards } from './load.mjs';
 import { assertWithinDir, normalizeRepoPath, relativeRepoPath } from './paths.mjs';
 import { resolveGitHead, stagedDiffSha256 } from './shell.mjs';
 import { classifyNodes } from './repo/classify.mjs';
 import { matchesPatternsForAnyFile } from './util/patterns.mjs';
 import { uniqueStrings } from './util/strings.mjs';
 import { evaluateRepoStandards } from './rules/evaluate.mjs';
-import {
-  buildSurfaceTrustInput,
-  buildSurfaceTrustReportSummary,
-  throwSurfaceTrustInputValidationError,
-  validateSurfaceTrustInputAtBoundary,
-} from './surface/projection.mjs';
+import { produceSurfaceStateForVeritasRecord } from './surface/producer.mjs';
 import {
   writeSurfaceConsoleReadModel,
 } from './surface/console.mjs';
@@ -49,8 +44,8 @@ import {
   feedbackStatusForPolicyResult,
   buildFeedbackSummary,
   feedbackHasFailures,
-  buildEvalMarkdownSummary,
-  buildEvalDraftMarkdownSummary,
+  buildStandardsFeedbackMarkdownSummary,
+  buildStandardsFeedbackDraftMarkdownSummary,
 } from './report/format.mjs';
 
 function sha256Hex(value) {
@@ -134,10 +129,10 @@ function buildEvidenceIntegrity({
       ? normalizedFiles.map((file) => fileIntegrityRef(rootDir, file))
       : normalizedFiles.map((file) => ({ path: file, status: 'not-hashed' })),
     configRefs: {
-      adapter: configIntegrityRef({
-        name: config.name ?? config.adapter?.name ?? 'adapter',
+      repoMap: configIntegrityRef({
+        name: config.name ?? config.repoMap?.name ?? 'repo-map',
         value: config,
-        path: sources.adapterPath,
+        path: sources.repoMapPath,
         rootDir,
       }),
       repoStandards: configIntegrityRef({
@@ -146,11 +141,11 @@ function buildEvidenceIntegrity({
         path: sources.repoStandardsPath,
         rootDir,
       }),
-      ...(sources.teamProfilePath ? {
-        teamProfile: configIntegrityRef({
-          name: 'team-profile',
+      ...(sources.authoritySettingsPath ? {
+        authoritySettings: configIntegrityRef({
+          name: 'authority-settings',
           value: null,
-          path: sources.teamProfilePath,
+          path: sources.authoritySettingsPath,
           rootDir,
         }),
       } : {}),
@@ -299,7 +294,7 @@ export async function buildEvidenceRecord({
   repoStandards,
   rootDir,
 }) {
-  const frameworkVersion = config.frameworkVersion ?? config.graph?.version;
+  const recordSchemaVersion = config.recordSchemaVersion ?? config.graph?.version;
   const runId = options.runId ?? `veritas-${Date.now()}`;
   const timestamp = options.timestamp ?? new Date().toISOString();
   const normalizedFiles = files.map((file) => normalizeRepoPath(file, rootDir));
@@ -314,10 +309,10 @@ export async function buildEvidenceRecord({
   const { affectedNodes, affectedEvidenceChecks, unmatchedFiles, matchedNodes, fileNodes } = evidenceCheckPlan;
   const unresolvedMessage =
     evidenceCheckPlan.uncoveredPathResult === 'fail'
-      ? 'Some files do not match a configured surface and fail the uncovered-path policy.'
+      ? 'Some files do not match a configured work area and fail the uncovered-path policy.'
       : evidenceCheckPlan.uncoveredPathResult === 'ignore'
-        ? 'Some files do not match a configured surface and were ignored by policy.'
-        : 'Some files do not match a configured surface and need manual review.';
+        ? 'Some files do not match a configured work area and were ignored by policy.'
+        : 'Some files do not match a configured work area and need manual review.';
   const recommendations = unmatchedFiles.length
     ? [
         {
@@ -335,10 +330,10 @@ export async function buildEvidenceRecord({
   const policyDefaults = {
     false_positive_review: config.policy?.defaultFalsePositiveReview ?? 'unknown',
     promotion_candidate: config.policy?.defaultPromotionCandidate ?? false,
-    override_or_bypass: config.policy?.defaultOverrideOrBypass ?? false,
+    override_or_bypass: config.policy?.defaultExceptionAllowed ?? false,
   };
-  const adapterName = config.name ?? config.adapter?.name;
-  const adapterKind = config.kind ?? config.adapter?.kind;
+  const repoMapName = config.name ?? config.repoMap?.name;
+  const repoMapKind = config.kind ?? config.repoMap?.kind;
   const resolvedRepoStandards =
     repoStandards ??
     (() => {
@@ -407,7 +402,7 @@ export async function buildEvidenceRecord({
   });
 
   const record = {
-    framework_version: frameworkVersion,
+    record_schema_version: recordSchemaVersion,
     run_id: runId,
     timestamp,
     source_ref: sourceRef,
@@ -444,14 +439,15 @@ export async function buildEvidenceRecord({
     files: normalizedFiles,
     unresolved_files: unmatchedFiles,
     promotion_allowed: resolution.promotionAllowed,
-    framework: {
-      version: frameworkVersion,
+    producer: {
+      name: 'veritas',
+      record_schema_version: recordSchemaVersion,
       resolver_precedence: config.graph.resolverPrecedence,
       policy_defaults: policyDefaults,
     },
-    adapter: {
-      name: adapterName,
-      kind: adapterKind,
+    repo_map: {
+      name: repoMapName,
+      kind: repoMapKind,
       report_transport: config.evidence.reportTransport,
       default_resolution: config.graph.defaultResolution,
       non_sliceable_invariants: config.graph.nonSliceableInvariants,
@@ -469,24 +465,17 @@ export async function buildEvidenceRecord({
     policy_results: resolvedPolicyResults,
     ...(governanceState ? { governance_state: governanceState } : {}),
   };
-  const surfaceInput = await buildSurfaceTrustInput(record, { rootDir, adapterConfig: config });
-  const validatedSurfaceInput = validateSurfaceTrustInputAtBoundary({ input: surfaceInput, record, rootDir });
-  let surfaceReport;
-  try {
-    surfaceReport = buildSurfaceTrustReportSummary({ input: validatedSurfaceInput, record });
-  } catch (error) {
-    throwSurfaceTrustInputValidationError({ error, input: validatedSurfaceInput, record, rootDir });
-  }
+  const surface = await produceSurfaceStateForVeritasRecord(record, {
+    rootDir,
+    repoMapConfig: config,
+  });
   return {
     ...record,
-    surface: {
-      input: validatedSurfaceInput,
-      report: surfaceReport,
-    },
+    surface,
   };
 }
 
-export function mergeEvalRecordOptions(options, draft) {
+export function mergeStandardsFeedbackRecordOptions(options, draft) {
   const falsePositiveRules = options.falsePositiveRules ?? [];
   const missedIssues = options.missedIssues ?? [];
   const notes = options.notes ?? [];
@@ -501,8 +490,8 @@ export function mergeEvalRecordOptions(options, draft) {
       (typeof draft?.prefilled_measurements?.time_to_green_minutes === 'number'
         ? draft.prefilled_measurements.time_to_green_minutes
         : undefined),
-    overrideCount:
-      options.overrideCount ?? draft?.prefilled_measurements?.override_count,
+    exceptionCount:
+      options.exceptionCount ?? draft?.prefilled_measurements?.exception_count,
     falsePositiveRules:
       falsePositiveRules.length > 0
         ? falsePositiveRules
@@ -693,38 +682,38 @@ export function resolveReportInputs(explicitFiles, options, rootDir) {
 
 export function resolveVeritasPaths(options, defaults = {}) {
   const rootDir = options.rootDir ? resolve(options.rootDir) : defaults.rootDir;
-  const defaultAdapterPath =
-    defaults.adapterPath ??
-    (rootDir ? resolve(rootDir, '.veritas/repo.adapter.json') : undefined);
+  const defaultRepoMapPath =
+    defaults.repoMapPath ??
+    (rootDir ? resolve(rootDir, '.veritas/repo-map.json') : undefined);
   const defaultRepoStandardsPath =
     defaults.repoStandardsPath ??
     (rootDir
       ? resolve(rootDir, '.veritas/repo-standards/default.repo-standards.json')
       : undefined);
-  const defaultTeamProfilePath =
-    defaults.teamProfilePath ??
-    (rootDir ? resolve(rootDir, '.veritas/team/default.team-profile.json') : undefined);
+  const defaultAuthoritySettingsPath =
+    defaults.authoritySettingsPath ??
+    (rootDir ? resolve(rootDir, '.veritas/authority/default.authority-settings.json') : undefined);
 
   return {
     rootDir,
-    adapterPath: options.adapterPath
-      ? resolve(rootDir ?? process.cwd(), options.adapterPath)
-      : defaultAdapterPath,
+    repoMapPath: options.repoMapPath
+      ? resolve(rootDir ?? process.cwd(), options.repoMapPath)
+      : defaultRepoMapPath,
     repoStandardsPath: options.repoStandardsPath
       ? resolve(rootDir ?? process.cwd(), options.repoStandardsPath)
       : defaultRepoStandardsPath,
-    teamProfilePath: options.teamProfilePath
-      ? resolve(rootDir ?? process.cwd(), options.teamProfilePath)
-      : defaultTeamProfilePath,
+    authoritySettingsPath: options.authoritySettingsPath
+      ? resolve(rootDir ?? process.cwd(), options.authoritySettingsPath)
+      : defaultAuthoritySettingsPath,
   };
 }
 
 export async function generateVeritasReport(options = {}, defaults = {}, explicitFiles = []) {
-  const { rootDir, adapterPath, repoStandardsPath, teamProfilePath } = resolveVeritasPaths(options, defaults);
+  const { rootDir, repoMapPath, repoStandardsPath, authoritySettingsPath } = resolveVeritasPaths(options, defaults);
 
-  if (!rootDir || !adapterPath || !repoStandardsPath) {
+  if (!rootDir || !repoMapPath || !repoStandardsPath) {
     throw new Error(
-      'Veritas report requires rootDir, adapterPath, and repoStandardsPath',
+      'Veritas report requires rootDir, repoMapPath, and repoStandardsPath',
     );
   }
 
@@ -735,7 +724,7 @@ export async function generateVeritasReport(options = {}, defaults = {}, explici
     throw new Error('veritas report requires at least one file path');
   }
 
-  const config = loadAdapterConfig(adapterPath);
+  const config = loadRepoMap(repoMapPath);
   const repoStandards = loadRepoStandards(repoStandardsPath);
   const evidenceCheckPlan = resolveEvidenceCheckPlan({
     files,
@@ -746,8 +735,8 @@ export async function generateVeritasReport(options = {}, defaults = {}, explici
   const attestationStatus = options.includeAttestationGate
     ? inspectAttestationStatus(rootDir, {
         repoStandardsPath,
-        adapterPath,
-        teamProfilePath,
+        repoMapPath,
+        authoritySettingsPath,
         now: options.attestationNow ?? options.timestamp,
       })
     : null;
@@ -760,9 +749,9 @@ export async function generateVeritasReport(options = {}, defaults = {}, explici
       sourceScope: reportInputs.sourceScope,
       evidenceCheckPlan,
       integritySources: {
-        adapterPath,
+        repoMapPath,
         repoStandardsPath,
-        teamProfilePath,
+        authoritySettingsPath,
       },
       ...(attestationStatus ? { governanceState: attestationStatus } : {}),
     },
@@ -799,8 +788,8 @@ export async function generateVeritasReport(options = {}, defaults = {}, explici
   };
 }
 
-export function resolveEvidenceCheckCommands({ adapterPath, files = [], rootDir, explicitEvidenceCheckCommand }) {
-  if (!adapterPath || !rootDir) {
+export function resolveEvidenceCheckCommands({ repoMapPath, files = [], rootDir, explicitEvidenceCheckCommand }) {
+  if (!repoMapPath || !rootDir) {
     return {
       evidenceCheckCommands: explicitEvidenceCheckCommand ? [explicitEvidenceCheckCommand] : [],
       evidenceChecks: explicitEvidenceCheckCommand ? evidenceCheckRecordsForCommands({ evidence: { evidenceChecks: [{ id: 'explicit-evidence-check', runner: 'bash', command: explicitEvidenceCheckCommand, method: 'validation' }] } }, [explicitEvidenceCheckCommand]) : [],
@@ -813,7 +802,7 @@ export function resolveEvidenceCheckCommands({ adapterPath, files = [], rootDir,
       uncoveredPathResult: 'clear',
     };
   }
-  const config = loadAdapterConfig(adapterPath);
+  const config = loadRepoMap(repoMapPath);
   return resolveEvidenceCheckPlan({
     files,
     config,
@@ -827,6 +816,6 @@ export {
   feedbackStatusForPolicyResult,
   buildFeedbackSummary,
   feedbackHasFailures,
-  buildEvalMarkdownSummary,
-  buildEvalDraftMarkdownSummary,
+  buildStandardsFeedbackMarkdownSummary,
+  buildStandardsFeedbackDraftMarkdownSummary,
 };

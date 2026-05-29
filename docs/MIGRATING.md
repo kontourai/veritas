@@ -15,7 +15,7 @@ Current implementation names to migrate:
 | evidenceCheck / evidenceCheck / evidenceCheck command | Evidence Check |
 | evidence inventory | Evidence Check Inventory |
 | readiness coverage | Readiness Coverage |
-| team profile | Repo Standards settings, authority settings, or rollout settings |
+| authority settings | Repo Standards settings, authority settings, or rollout settings |
 | eval | Standards Feedback |
 | recommendation | Standards Recommendation |
 | check-in | Readiness Report, Repo Conformance, or Standards Feedback depending on context |
@@ -63,9 +63,9 @@ To migrate:
 
 See [claim-authoring.md](./claim-authoring.md) for the full authoring workflow.
 
-## Adapter Evidence Checks Are Explicit Objects
+## Repo Map Evidence Checks Are Explicit Objects
 
-Adapters now use explicit evidence-check objects. Removed command arrays such as `requiredEvidenceCheckCommands`, `defaultEvidenceCheckCommands`, and `surfaceEvidenceCheckCommands[].evidenceChecks` fail runtime validation with a migration-oriented error.
+Repo Maps now use explicit evidence-check objects. Removed command arrays such as `requiredEvidenceCheckCommands`, `defaultEvidenceCheckCommands`, and `surfaceEvidenceCheckCommands[].evidenceChecks` fail runtime validation with a migration-oriented error.
 
 Before:
 
@@ -100,7 +100,7 @@ After:
 }
 ```
 
-Owned repos can update `.veritas/repo.adapter.json` manually or rerun `veritas init --force` and reapply local policy edits.
+Owned repos can update `.veritas/repo-map.json` manually or rerun `veritas init --force` and reapply local policy edits.
 
 ## Evidence Check Commands No Longer Run Through a Shell
 

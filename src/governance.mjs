@@ -45,12 +45,12 @@ function normalizeGovernanceTargets(config = {}, rootDir = process.cwd()) {
   });
 }
 
-function loadGovernanceTargetConfig({ rootDir, adapterPath } = {}) {
-  const resolvedAdapterPath = adapterPath ?? resolve(rootDir, '.veritas/repo.adapter.json');
-  if (!existsSync(resolvedAdapterPath)) {
+function loadGovernanceTargetConfig({ rootDir, repoMapPath } = {}) {
+  const resolvedRepoMapPath = repoMapPath ?? resolve(rootDir, '.veritas/repo-map.json');
+  if (!existsSync(resolvedRepoMapPath)) {
     return {};
   }
-  return loadJson(resolvedAdapterPath, 'adapter config');
+  return loadJson(resolvedRepoMapPath, 'Repo Map');
 }
 
 function resolveTargetPath(rootDir, targetPath) {
@@ -105,11 +105,11 @@ export function inspectGovernanceBlockFile({ rootDir, filePath, block = buildGov
 
 export function applyGovernanceBlocks({
   rootDir,
-  adapterPath,
+  repoMapPath,
   force = false,
   block = buildGovernanceBlock(),
 } = {}) {
-  const config = loadGovernanceTargetConfig({ rootDir, adapterPath });
+  const config = loadGovernanceTargetConfig({ rootDir, repoMapPath });
   const targets = normalizeGovernanceTargets(config, rootDir);
   const applied = [];
   const skipped = [];

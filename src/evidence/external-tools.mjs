@@ -4,19 +4,19 @@ import { assertWithinDir } from '../paths.mjs';
 
 export function assertExternalToolConfig(externalTool) {
   if (!externalTool || typeof externalTool !== 'object' || Array.isArray(externalTool)) {
-    throw new Error('Veritas adapter evidence.evidenceChecks[].externalTool must be an object.');
+    throw new Error('Veritas Repo Map evidence.evidenceChecks[].externalTool must be an object.');
   }
   for (const field of ['tool', 'format', 'artifactPath']) {
     if (typeof externalTool[field] !== 'string' || externalTool[field].length === 0) {
-      throw new Error(`Veritas adapter evidence.evidenceChecks[].externalTool.${field} must be a non-empty string.`);
+      throw new Error(`Veritas Repo Map evidence.evidenceChecks[].externalTool.${field} must be a non-empty string.`);
     }
   }
   if (typeof externalTool.blocking !== 'boolean') {
-    throw new Error('Veritas adapter evidence.evidenceChecks[].externalTool.blocking must be a boolean.');
+    throw new Error('Veritas Repo Map evidence.evidenceChecks[].externalTool.blocking must be a boolean.');
   }
   const artifactPath = externalTool.artifactPath;
   if (artifactPath.startsWith('/') || artifactPath.includes('..') || !artifactPath.startsWith('.veritas/')) {
-    throw new Error('Veritas adapter evidence.evidenceChecks[].externalTool.artifactPath must be a repo-local path inside .veritas/.');
+    throw new Error('Veritas Repo Map evidence.evidenceChecks[].externalTool.artifactPath must be a repo-local path inside .veritas/.');
   }
 }
 

@@ -46,13 +46,13 @@ Find what you need by what you're trying to do.
 
 ### Run Veritas in CI
 
-- [Operational Check-ins](guides/operational-checkins.md) for current CI workflow setup
+- [Repo Conformance](guides/repo-conformance.md) for current CI workflow setup
 - [CLI Reference](reference/cli.md) for command flags and output format
 
 ### Work on Veritas itself
 
 - [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md) for the Veritas product boundary and Surface projection rules
-- [Product Core And Repo Map](design/framework-core-vs-adapter.md) for architecture notes
+- [Product Core And Repo Map](design/product-core-and-repo-map.md) for architecture notes
 - [Schema Evolution](design/schema-evolution.md) for schema change policy
 - [CONTRIBUTING.md](../CONTRIBUTING.md) for development workflow
 
@@ -67,7 +67,7 @@ Find what you need by what you're trying to do.
 - [Agent Runtime Integrations](guides/agent-runtime-integrations.md)
 - [Start Your Next Project](guides/start-your-next-project.md)
 - [Tune For Your Team](guides/tune-for-your-team.md)
-- [Operational Check-ins](guides/operational-checkins.md)
+- [Repo Conformance](guides/repo-conformance.md)
 - [Fallow Integration](guides/fallow-integration.md)
 - [Publish And Release](guides/publish-and-release.md)
 
@@ -91,7 +91,7 @@ Find what you need by what you're trying to do.
 - [Standards Feedback](design/standards-feedback.md)
 - [Standards Feedback Roadmap](design/standards-feedback-roadmap.md)
 - [Schema Evolution](design/schema-evolution.md)
-- [Product Core And Repo Map](design/framework-core-vs-adapter.md)
+- [Product Core And Repo Map](design/product-core-and-repo-map.md)
 
 ### Project
 

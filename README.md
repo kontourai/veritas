@@ -5,9 +5,7 @@
 
 Veritas helps teams earn merge autonomy for AI-authored code by making repo standards executable, evidence-backed, and inspectable.
 
-You define what good looks like for the repo. Veritas checks each change against those standards, gives developers and agents just-in-time guidance, and produces a readiness report that explains whether the change has enough fresh evidence to merge with reduced human review.
-
-Veritas is built with [Surface](https://github.com/kontourai/surface), which powers the portable transparency model behind claims, evidence, freshness, authority, and gaps. Normal Veritas users should not need to configure Surface directly.
+Define what good looks like for your repo. Veritas checks each change against those standards, gives the agent just-in-time guidance while it works, and produces a readiness report that says whether the change has enough fresh evidence to merge with reduced human review.
 
 ## Quickstart
 
@@ -77,7 +75,6 @@ That is the point: the agent gets the missing requirement before it declares don
 - **Attestation** is authority-backed evidence that something was verified, accepted, approved, or reviewed.
 - **Exception** is an authority-backed decision to accept an unmet or failing requirement for a specific change.
 - **Readiness Report** explains merge readiness, readiness coverage, boundary crossings, evidence freshness, recheck options, exceptions, and change guidance.
-- **Repo Conformance** tracks whether the repo as a whole satisfies standing requirements in the repo standards.
 
 ## Documentation
 
@@ -110,3 +107,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## License
 
 Apache-2.0
+
+*Veritas is built with [Surface](https://github.com/kontourai/surface). Users don't need to configure Surface — it's the shared shape under the readiness state.*

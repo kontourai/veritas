@@ -1,5 +1,5 @@
 {
-  "framework_version": 1,
+  "record_schema_version": 1,
   "run_id": "fallow-advisory-example",
   "timestamp": "2026-04-30T00:00:00.000Z",
   "source_ref": "example",
@@ -76,8 +76,9 @@
   ],
   "unresolved_files": [],
   "promotion_allowed": true,
-  "framework": {
-    "version": 1,
+  "producer": {
+    "name": "veritas",
+    "record_schema_version": 1,
     "resolver_precedence": [
       "explicit"
     ],
@@ -87,9 +88,9 @@
       "override_or_bypass": false
     }
   },
-  "adapter": {
+  "repo_map": {
     "name": "fallow-advisory-demo",
-    "kind": "repo-adapter",
+    "kind": "repo-map",
     "report_transport": "local-json",
     "default_resolution": {
       "phase": "Phase 0",

@@ -7,8 +7,8 @@ This page describes how Veritas output should be interpreted over time without t
 The canonical Veritas records are repo-local generated evidence and feedback artifacts:
 
 - `.veritas/evidence/<run-id>.json`
-- `.veritas/eval-drafts/<run-id>.json`
-- `.veritas/evals/<run-id>.json`
+- `.veritas/standards-feedback-drafts/<run-id>.json`
+- `.veritas/standards-feedback/<run-id>.json`
 
 These artifacts support **Standards Feedback**.
 
@@ -18,8 +18,8 @@ Some outputs are read models rather than source-of-truth records.
 
 Current examples:
 
-- `.veritas/checkins/*.json`
-- `.veritas/checkins/*.md`
+- `.veritas/repo-conformance/*.json`
+- `.veritas/repo-conformance/*.md`
 - `.surface/runs/<run-id>.console.json`
 - `.surface/runs/latest.json`
 

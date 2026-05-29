@@ -265,14 +265,14 @@ export function buildAdaptiveNodes(repoInsights) {
   const nodes = [
     {
       id: 'governance.guidance',
-      kind: 'governance-surface',
+      kind: 'protected-area',
       label: '.veritas/**',
       patterns: ['.veritas/'],
       'governance-locked': true,
     },
     {
       id: 'governance.root-manifests',
-      kind: 'governance-surface',
+      kind: 'protected-area',
       label: 'root manifests',
       patterns: ['package.json', 'package-lock.json', 'README.md', '.gitignore', 'AGENTS.md'],
     },
@@ -281,7 +281,7 @@ export function buildAdaptiveNodes(repoInsights) {
   if (repoInsights.hasWorkflows) {
     nodes.push({
       id: 'delivery.workflows',
-      kind: 'delivery-surface',
+      kind: 'delivery-area',
       label: '.github/**',
       patterns: ['.github/'],
     });
@@ -290,7 +290,7 @@ export function buildAdaptiveNodes(repoInsights) {
   for (const root of repoInsights.toolingRoots ?? []) {
     nodes.push({
       id: `tooling.${root.replace(/\/$/, '').replace(/[^a-z0-9]+/g, '.')}`,
-      kind: 'tooling-surface',
+      kind: 'tooling-area',
       label: `${root}**`,
       patterns: [root],
     });
@@ -316,7 +316,7 @@ export function buildAdaptiveNodes(repoInsights) {
     if (root === 'docs/' || root === 'content/') {
       nodes.push({
         id: `docs.${idBase}`,
-        kind: 'product-surface',
+        kind: 'product-area',
         label,
         patterns: [root],
       });
@@ -325,7 +325,7 @@ export function buildAdaptiveNodes(repoInsights) {
 
     nodes.push({
       id: `app.${idBase}`,
-      kind: 'product-surface',
+      kind: 'product-area',
       label,
       patterns: [root],
     });
@@ -334,7 +334,7 @@ export function buildAdaptiveNodes(repoInsights) {
   for (const root of testRoots) {
     nodes.push({
       id: `verification.${root.replace(/\/$/, '').replace(/[^a-z0-9]+/g, '.')}`,
-      kind: 'verification-surface',
+      kind: 'verification-area',
       label: `${root}**`,
       patterns: [root],
     });
@@ -366,7 +366,7 @@ function buildStarterEvidenceConfig({ evidenceCheck, repoInsights }) {
   return evidence;
 }
 
-export function buildStarterAdapter({
+export function buildStarterRepoMap({
   projectName,
   evidenceCheck = 'npm test',
   instructionTargets = [
@@ -385,11 +385,11 @@ export function buildStarterAdapter({
 
   return {
     name: projectSlug,
-    kind: 'repo-adapter',
+    kind: 'repo-map',
     policy: {
       defaultFalsePositiveReview: 'unknown',
       defaultPromotionCandidate: false,
-      defaultOverrideOrBypass: false,
+      defaultExceptionAllowed: false,
     },
     graph: {
       version: 1,
@@ -454,9 +454,9 @@ export function buildStarterRepoStandards({ projectName, instructionTargets = DE
           artifacts: [
             '.veritas/README.md',
             '.veritas/GOVERNANCE.md',
-            '.veritas/repo.adapter.json',
+            '.veritas/repo-map.json',
             '.veritas/repo-standards/default.repo-standards.json',
-            '.veritas/team/default.team-profile.json',
+            '.veritas/authority/default.authority-settings.json',
           ],
         },
       },
@@ -504,7 +504,7 @@ export function loadStarterRepoStandards(template) {
   return loadJson(templatePath, `Repo Standards template ${template}`);
 }
 
-export function buildStarterTeamProfile({ projectName, evidenceCheck = 'npm test' }) {
+export function buildStarterAuthoritySettings({ projectName, evidenceCheck = 'npm test' }) {
   const projectSlug = slugifyProjectName(projectName);
 
   return {
@@ -526,7 +526,7 @@ export function buildStarterTeamProfile({ projectName, evidenceCheck = 'npm test
     promotion_preferences: {
       evidence_checks_required_before_require: [evidenceCheck],
       warnings_block_in_ci: false,
-      require_consistent_eval_before_promotion: true,
+      require_consistent_feedback_before_promotion: true,
     },
   };
 }
@@ -553,9 +553,9 @@ This repo was bootstrapped for \`${projectName}\` with a conservative starter ki
 
 - \`.veritas/README.md\`
 - \`.veritas/GOVERNANCE.md\`
-- \`.veritas/repo.adapter.json\`
+- \`.veritas/repo-map.json\`
 - \`.veritas/repo-standards/default.repo-standards.json\`
-- \`.veritas/team/default.team-profile.json\`
+- \`.veritas/authority/default.authority-settings.json\`
 
 ## Inferred Repo Shape
 
@@ -611,7 +611,7 @@ If you prefer explicit paths:
 
 \`\`\`bash
 npx @kontourai/veritas readiness --check evidence \\
-  --adapter ./.veritas/repo.adapter.json \\
+  --repo-map ./.veritas/repo-map.json \\
   --repo-standards ./.veritas/repo-standards/default.repo-standards.json \\
   package.json
 \`\`\`
@@ -638,9 +638,9 @@ export function buildGovernanceInstructions() {
   return `# Veritas Governance
 
 Protected Standards require authority-backed review. Do not modify without a fresh Veritas attestation:
-- \`.veritas/repo.adapter.json\`
+- \`.veritas/repo-map.json\`
 - \`.veritas/repo-standards/\`
-- \`.veritas/team/\`
+- \`.veritas/authority/\`
 
 Standards Growth is additive. Developers and agents may propose:
 - new work areas for new feature directories
@@ -651,17 +651,91 @@ Do not weaken or delete existing standards without the required authority.
 
 Generated Evidence is output, not the source of standards:
 - \`.veritas/evidence/\`
-- \`.veritas/eval-drafts/\`
-- \`.veritas/evals/\`
-- \`.veritas/checkins/\`
+- \`.veritas/standards-feedback-drafts/\`
+- \`.veritas/standards-feedback/\`
+- \`.veritas/repo-conformance/\`
 `;
 }
 
 export function buildSuggestedCodeownersBlock() {
   return `# Veritas protected standards - changes require authority-backed review
-.veritas/repo.adapter.json  @your-team/governance
+.veritas/repo-map.json  @your-team/governance
 .veritas/repo-standards/      @your-team/governance
-.veritas/team/              @your-team/governance`;
+.veritas/authority/              @your-team/governance`;
+}
+
+export function buildBootstrapStarterKitPlan({
+  rootDir,
+  projectName = basename(resolve(rootDir)),
+  evidenceCheck,
+  instructionTargets,
+  template,
+}) {
+  const repoInsights = inferBootstrapRepoInsights(rootDir);
+  const resolvedEvidenceCheck = evidenceCheck ?? repoInsights.evidenceCheck;
+  const selectedInstructionTargets = normalizeInstructionTargets(instructionTargets ?? DEFAULT_SELECTED_INSTRUCTION_TARGETS);
+  const repoMapPath = resolve(rootDir, '.veritas/repo-map.json');
+  const repoStandardsPath = resolve(rootDir, '.veritas/repo-standards/default.repo-standards.json');
+  const authoritySettingsPath = resolve(rootDir, '.veritas/authority/default.authority-settings.json');
+  const readmePath = resolve(rootDir, '.veritas/README.md');
+  const governancePath = resolve(rootDir, '.veritas/GOVERNANCE.md');
+  const claimStorePath = resolve(rootDir, 'veritas.claims.json');
+  const requiredInstructionFiles = selectedInstructionTargets.map((target) => resolve(rootDir, target.path));
+  const starterRepoMap = buildStarterRepoMap({ projectName, evidenceCheck: resolvedEvidenceCheck, repoInsights, instructionTargets: selectedInstructionTargets });
+  const governanceBlock = buildGovernanceBlock();
+  const files = [
+    [repoMapPath, starterRepoMap],
+    [repoStandardsPath, loadStarterRepoStandards(template) ?? buildStarterRepoStandards({ projectName, instructionTargets: selectedInstructionTargets })],
+    [authoritySettingsPath, buildStarterAuthoritySettings({ projectName, evidenceCheck: resolvedEvidenceCheck })],
+    [claimStorePath, {
+      schemaVersion: 1,
+      producer: 'veritas',
+      ...buildBaselineClaims(projectName, {
+        hasGovernance: true,
+        evidenceCheckCommands: [resolvedEvidenceCheck],
+        workAreas: starterRepoMap.graph?.nodes ?? [],
+      }),
+    }],
+  ];
+  const textFiles = [
+    [readmePath, buildBootstrapReadme({ projectName, evidenceCheck: resolvedEvidenceCheck, repoInsights })],
+    [governancePath, buildGovernanceInstructions()],
+    ...requiredInstructionFiles.map((instructionPath) => {
+      const existingContent = existsSync(instructionPath)
+        ? readFileSync(instructionPath, 'utf8')
+        : '';
+      return [instructionPath, replaceGovernanceBlock(existingContent, governanceBlock)];
+    }),
+  ];
+
+  return {
+    rootDir,
+    projectName,
+    template: template ?? null,
+    evidenceCheck: resolvedEvidenceCheck,
+    repoInsights,
+    selectedInstructionTargets,
+    files,
+    textFiles,
+    instructionFiles: requiredInstructionFiles,
+    directories: [
+      resolve(rootDir, '.veritas/repo-standards'),
+      resolve(rootDir, '.veritas/authority'),
+      resolve(rootDir, '.veritas/evidence'),
+    ],
+    codeownersBlock: buildSuggestedCodeownersBlock(),
+    generatedFiles: [
+      relative(rootDir, readmePath).replaceAll('\\', '/'),
+      relative(rootDir, governancePath).replaceAll('\\', '/'),
+      relative(rootDir, repoMapPath).replaceAll('\\', '/'),
+      relative(rootDir, repoStandardsPath).replaceAll('\\', '/'),
+      relative(rootDir, authoritySettingsPath).replaceAll('\\', '/'),
+      relative(rootDir, claimStorePath).replaceAll('\\', '/'),
+      ...requiredInstructionFiles.map((filePath) =>
+        relative(rootDir, filePath).replaceAll('\\', '/'),
+      ),
+    ],
+  };
 }
 
 export function writeBootstrapStarterKit({
@@ -672,95 +746,48 @@ export function writeBootstrapStarterKit({
   template,
   force = false,
 }) {
-  const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const resolvedEvidenceCheck = evidenceCheck ?? repoInsights.evidenceCheck;
-  const selectedInstructionTargets = normalizeInstructionTargets(instructionTargets ?? DEFAULT_SELECTED_INSTRUCTION_TARGETS);
-  const adapterPath = resolve(rootDir, '.veritas/repo.adapter.json');
-  const repoStandardsPath = resolve(rootDir, '.veritas/repo-standards/default.repo-standards.json');
-  const teamProfilePath = resolve(rootDir, '.veritas/team/default.team-profile.json');
-  const readmePath = resolve(rootDir, '.veritas/README.md');
-  const governancePath = resolve(rootDir, '.veritas/GOVERNANCE.md');
-  const claimStorePath = resolve(rootDir, 'veritas.claims.json');
-  const requiredInstructionFiles = selectedInstructionTargets.map((target) => resolve(rootDir, target.path));
-  const starterAdapter = buildStarterAdapter({ projectName, evidenceCheck: resolvedEvidenceCheck, repoInsights, instructionTargets: selectedInstructionTargets });
+  const plan = buildBootstrapStarterKitPlan({
+    rootDir,
+    projectName,
+    evidenceCheck,
+    instructionTargets,
+    template,
+  });
 
-  const files = [
-    [adapterPath, starterAdapter],
-    [repoStandardsPath, loadStarterRepoStandards(template) ?? buildStarterRepoStandards({ projectName, instructionTargets: selectedInstructionTargets })],
-    [teamProfilePath, buildStarterTeamProfile({ projectName, evidenceCheck: resolvedEvidenceCheck })],
-    [claimStorePath, {
-      schemaVersion: 1,
-      producer: 'veritas',
-      ...buildBaselineClaims(projectName, {
-        hasGovernance: true,
-        evidenceCheckCommands: [resolvedEvidenceCheck],
-        workAreas: starterAdapter.graph?.nodes ?? [],
-      }),
-    }],
-  ];
-
-  for (const [filePath] of files) {
+  for (const [filePath] of plan.files) {
     if (existsSync(filePath) && !force) {
       throw new Error(
         `Refusing to overwrite existing file: ${relative(rootDir, filePath)} (use --force to replace it)`,
       );
     }
   }
-  if (existsSync(readmePath) && !force) {
-    throw new Error(
-      'Refusing to overwrite existing file: .veritas/README.md (use --force to replace it)',
-    );
-  }
-  if (existsSync(governancePath) && !force) {
-    throw new Error(
-      'Refusing to overwrite existing file: .veritas/GOVERNANCE.md (use --force to replace it)',
-    );
+  const instructionFileSet = new Set(plan.instructionFiles.map((filePath) => resolve(filePath)));
+  for (const [filePath] of plan.textFiles) {
+    if (instructionFileSet.has(resolve(filePath))) continue;
+    if (existsSync(filePath) && !force) {
+      throw new Error(
+        `Refusing to overwrite existing file: ${relative(rootDir, filePath).replaceAll('\\', '/')} (use --force to replace it)`,
+      );
+    }
   }
 
-  mkdirSync(resolve(rootDir, '.veritas/repo-standards'), { recursive: true });
-  mkdirSync(resolve(rootDir, '.veritas/team'), { recursive: true });
-  mkdirSync(resolve(rootDir, '.veritas/evidence'), { recursive: true });
+  for (const directory of plan.directories) mkdirSync(directory, { recursive: true });
 
-  for (const [filePath, payload] of files) {
+  for (const [filePath, payload] of plan.files) {
     writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
   }
-
-  writeFileSync(
-    readmePath,
-    buildBootstrapReadme({ projectName, evidenceCheck: resolvedEvidenceCheck, repoInsights }),
-    'utf8',
-  );
-  writeFileSync(governancePath, buildGovernanceInstructions(), 'utf8');
-  const governanceBlock = buildGovernanceBlock();
-  for (const instructionPath of requiredInstructionFiles) {
-    const existingContent = existsSync(instructionPath)
-      ? readFileSync(instructionPath, 'utf8')
-      : '';
-    writeFileSync(
-      instructionPath,
-      replaceGovernanceBlock(existingContent, governanceBlock),
-      'utf8',
-    );
+  for (const [filePath, payload] of plan.textFiles) {
+    writeFileSync(filePath, payload, 'utf8');
   }
 
   return {
-    rootDir,
-    projectName,
-    template: template ?? null,
-    evidenceCheck: resolvedEvidenceCheck,
-    repoInsights,
-    codeownersBlock: buildSuggestedCodeownersBlock(),
-    generatedFiles: [
-      relative(rootDir, readmePath).replaceAll('\\', '/'),
-      relative(rootDir, governancePath).replaceAll('\\', '/'),
-      relative(rootDir, adapterPath).replaceAll('\\', '/'),
-      relative(rootDir, repoStandardsPath).replaceAll('\\', '/'),
-      relative(rootDir, teamProfilePath).replaceAll('\\', '/'),
-      relative(rootDir, claimStorePath).replaceAll('\\', '/'),
-      ...requiredInstructionFiles.map((filePath) =>
-        relative(rootDir, filePath).replaceAll('\\', '/'),
-      ),
-    ],
+    rootDir: plan.rootDir,
+    projectName: plan.projectName,
+    template: plan.template,
+    evidenceCheck: plan.evidenceCheck,
+    repoInsights: plan.repoInsights,
+    codeownersBlock: plan.codeownersBlock,
+    generatedFiles: plan.generatedFiles,
   };
 }
 
@@ -777,7 +804,7 @@ export function buildSuggestedPackageScripts({
     'veritas:coverage': 'npm exec -- veritas readiness --check coverage --working-tree',
     'veritas:evidence-check': evidenceCheck,
     'lint:governance': 'npm exec -- veritas readiness --format feedback --working-tree',
-    'veritas:eval': 'npm exec -- veritas readiness',
+    'veritas:readiness': 'npm exec -- veritas readiness',
   };
 }
 

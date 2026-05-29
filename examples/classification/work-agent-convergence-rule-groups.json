@@ -155,12 +155,12 @@
       "classification": "promotable-policy",
       "file_scopes": [
         "src-server/services/knowledge-*.ts",
-        "src-server/adapters/file/**",
+        "src-server/repo-maps/file/**",
         "src-server/domain/file-storage-*.ts"
       ],
       "enforcement_patterns": [
         "delegate context, namespace, filesystem, and document helpers",
-        "delegate memory adapter helper items",
+        "delegate memory Repo Map helper items",
         "retire inline storage logic"
       ]
     },
@@ -222,10 +222,10 @@
       ]
     },
     {
-      "id": "provider-adapters-and-requirement-surfaces",
+      "id": "provider-repo-maps-and-requirement-surfaces",
       "classification": "promotable-policy",
       "file_scopes": [
-        "src-server/providers/adapters/**",
+        "src-server/providers/repo-maps/**",
         "src-server/tools/stallion-requirement-*.ts",
         "src-server/voice/providers/**"
       ],

@@ -76,7 +76,7 @@ npx @kontourai/veritas attest bootstrap --actor <authority-id> --non-interactive
 4. Run `npx @kontourai/veritas readiness --working-tree`.
 5. Use `npx @kontourai/veritas explain --file <path>` to inspect change guidance.
 6. Add CI or runtime hooks only after the basic readiness check is useful.
-7. Use `npx @kontourai/veritas eval summary` later to review standards feedback.
+7. Use `npx @kontourai/veritas feedback summary` later to review standards feedback.
 
 Use `--changed-from <ref> --changed-to <ref>` when you want branch-diff evidence instead of current working-tree evidence.
 

@@ -447,7 +447,7 @@
       "benchmark_id": "governance-standards-growth-marker",
       "title": "Standards Growth additive growth marker",
       "marker_class": "governance-additive-growth",
-      "repo_surface": ".veritas/team/release.team-profile.json",
+      "repo_surface": ".veritas/authority/release.authority-settings.json",
       "trial_count": 1,
       "metrics": {
         "baseline_pass_rate": 0,

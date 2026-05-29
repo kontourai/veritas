@@ -61,8 +61,8 @@ function rejectNonHumanActor(actorId) {
 export function resolveProtectedStandardsPaths(rootDir, options = {}) {
   return {
     repoStandardsPath: resolve(rootDir, options.repoStandardsPath ?? '.veritas/repo-standards/default.repo-standards.json'),
-    adapterPath: resolve(rootDir, options.adapterPath ?? '.veritas/repo.adapter.json'),
-    teamProfilePath: resolve(rootDir, options.teamProfilePath ?? '.veritas/team/default.team-profile.json'),
+    repoMapPath: resolve(rootDir, options.repoMapPath ?? '.veritas/repo-map.json'),
+    authoritySettingsPath: resolve(rootDir, options.authoritySettingsPath ?? '.veritas/authority/default.authority-settings.json'),
   };
 }
 
@@ -70,12 +70,12 @@ export function hashProtectedStandards(rootDir, options = {}) {
   const paths = resolveProtectedStandardsPaths(rootDir, options);
   return {
     repoStandardsHash: hashFile(paths.repoStandardsPath),
-    adapterHash: hashFile(paths.adapterPath),
-    teamProfileHash: hashFile(paths.teamProfilePath),
+    repoMapHash: hashFile(paths.repoMapPath),
+    authoritySettingsHash: hashFile(paths.authoritySettingsPath),
     paths: {
       repoStandardsPath: relativeRepoPath(rootDir, paths.repoStandardsPath),
-      adapterPath: relativeRepoPath(rootDir, paths.adapterPath),
-      teamProfilePath: relativeRepoPath(rootDir, paths.teamProfilePath),
+      repoMapPath: relativeRepoPath(rootDir, paths.repoMapPath),
+      authoritySettingsPath: relativeRepoPath(rootDir, paths.authoritySettingsPath),
     },
   };
 }
@@ -130,7 +130,7 @@ function buildActor(rootDir, actorId, displayName) {
 
 function nextAttestationId(kind, attestedAt, hashes) {
   const timestamp = attestedAt.replace(/[^0-9A-Za-z]+/g, '-').replace(/-$/, '');
-  const digest = sha256Hex(`${kind}:${attestedAt}:${hashes.repoStandardsHash}:${hashes.adapterHash}:${hashes.teamProfileHash}`).slice(0, 12);
+  const digest = sha256Hex(`${kind}:${attestedAt}:${hashes.repoStandardsHash}:${hashes.repoMapHash}:${hashes.authoritySettingsHash}`).slice(0, 12);
   return `${kind}-${timestamp}-${digest}`;
 }
 
@@ -204,8 +204,8 @@ export function createAttestation({
   validUntilDays = DEFAULT_VALID_UNTIL_DAYS,
   attestedAt,
   repoStandardsPath,
-  adapterPath,
-  teamProfilePath,
+  repoMapPath,
+  authoritySettingsPath,
 } = {}) {
   if (!['bootstrap', 'policy-change', 'recommendation-acceptance'].includes(kind)) {
     throw new Error(`Unsupported attestation kind: ${kind}`);
@@ -226,7 +226,7 @@ export function createAttestation({
     throw new Error('veritas attest policy-change requires --message <text>');
   }
 
-  const hashes = hashProtectedStandards(rootDir, { repoStandardsPath, adapterPath, teamProfilePath });
+  const hashes = hashProtectedStandards(rootDir, { repoStandardsPath, repoMapPath, authoritySettingsPath });
   const actorRecord = buildActor(rootDir, actor, displayName);
   const validUntil = new Date(new Date(timestamp).getTime() + validUntilDays * 86_400_000).toISOString();
   const surfaceClaimId = `veritas.attestation.${nextAttestationId(kind, timestamp, hashes)}`;
@@ -237,8 +237,8 @@ export function createAttestation({
     actor: actorRecord,
     attestedAt: timestamp,
     repoStandardsHash: hashes.repoStandardsHash,
-    adapterHash: hashes.adapterHash,
-    teamProfileHash: hashes.teamProfileHash,
+    repoMapHash: hashes.repoMapHash,
+    authoritySettingsHash: hashes.authoritySettingsHash,
     priorAttestationId: priorAttestationId ?? null,
     validUntilDays,
     notes,
@@ -252,7 +252,7 @@ export function createAttestation({
       actor: actorRecord,
       attestedAt: timestamp,
       validUntil,
-      contentHash: sha256Hex(`${hashes.repoStandardsHash}:${hashes.adapterHash}:${hashes.teamProfileHash}`),
+      contentHash: sha256Hex(`${hashes.repoStandardsHash}:${hashes.repoMapHash}:${hashes.authoritySettingsHash}`),
       notes,
     }),
   };
@@ -281,8 +281,8 @@ export function inspectAttestationStatus(rootDir, options = {}) {
       return {
         hashes: {
           repoStandardsHash: hashes.repoStandardsHash,
-          adapterHash: hashes.adapterHash,
-          teamProfileHash: hashes.teamProfileHash,
+          repoMapHash: hashes.repoMapHash,
+          authoritySettingsHash: hashes.authoritySettingsHash,
         },
         paths: hashes.paths,
       };
@@ -317,7 +317,7 @@ export function inspectAttestationStatus(rootDir, options = {}) {
     };
   }
   const hashes = protectedStandards.hashes ?? hashProtectedStandards(rootDir, options);
-  const drift = ['repoStandardsHash', 'adapterHash', 'teamProfileHash']
+  const drift = ['repoStandardsHash', 'repoMapHash', 'authoritySettingsHash']
     .filter((field) => current[field] !== hashes[field])
     .map((field) => ({
       field,

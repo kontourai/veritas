@@ -114,7 +114,7 @@ export function buildSurfaceConsoleReadModel(record, {
       report,
       claims,
     }),
-    evalSummary: null,
+    standardsFeedbackSummary: null,
     claims,
     policies: policySummaries,
     evidence: input.evidence,
@@ -397,15 +397,15 @@ export function writeSurfaceConsoleReadModel(record, rootDir, options = {}) {
 }
 
 /**
- * Patches the evalSummary field in an existing run snapshot.
- * Called by generateEvalRecord after the eval record is written.
+ * Patches the standardsFeedbackSummary field in an existing run snapshot.
+ * Called by generateStandardsFeedbackRecord after the standards feedback record is written.
  */
-export function updateRunEvalSummary(rootDir, runId, evalSummary) {
+export function updateRunStandardsFeedbackSummary(rootDir, runId, standardsFeedbackSummary) {
   const runPath = resolve(rootDir, CONSOLE_DIR, `${runId}.console.json`);
   if (!existsSync(runPath)) return false;
   try {
     const data = JSON.parse(readFileSync(runPath, 'utf8'));
-    data.evalSummary = evalSummary;
+    data.standardsFeedbackSummary = standardsFeedbackSummary;
     writeFileSync(runPath, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
     return true;
   } catch {

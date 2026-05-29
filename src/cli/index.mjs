@@ -9,9 +9,9 @@ import {
   parsePrintArgs,
   parseApplyArgs,
   parsePreToolUseArgs,
-  parseEvalArgs,
-  parseMarkerEvalArgs,
-  parseMarkerSuiteEvalArgs,
+  parseStandardsFeedbackArgs,
+  parseMarkerStandardsFeedbackArgs,
+  parseMarkerSuiteStandardsFeedbackArgs,
   parseReadinessArgs,
   parseTokens,
 } from '../args.mjs';
@@ -31,16 +31,12 @@ import {
   buildSuggestedGitHook,
   buildSuggestedRuntimeHook,
   buildSuggestedStopHook,
-  buildSuggestedCodexHookConfig,
   buildSuggestedClaudeCodePreToolUseHook,
-  inspectCodexHookTarget,
   applyPackageScripts,
   applyCiSnippet,
   applyGitHook,
   applyRuntimeHook,
   applyStopHook,
-  inspectRuntimeAdapterStatus,
-  applyCodexHook,
   applyClaudeCodePreToolUseHook,
   evaluatePreToolUse,
 } from '../hooks.mjs';
@@ -55,17 +51,23 @@ import {
   resolveEvidenceCheckCommands,
 } from '../report.mjs';
 import {
-  generateEvalDraft,
-  generateEvalRecord,
-  generateEvalSummary,
-} from '../eval/records.mjs';
+  generateStandardsFeedbackDraft,
+  generateStandardsFeedbackRecord,
+  generateStandardsFeedbackSummary,
+} from '../standards-feedback/records.mjs';
 import {
   generateMarkerBenchmarkComparison,
   generateMarkerBenchmarkSuiteReport,
-} from '../eval/marker-benchmark.mjs';
-import { observeTranscriptEval } from '../integrations/transcripts.mjs';
-import { runtimeAdapterFor } from '../integrations/runtime-adapters.mjs';
-import { observeFilesystemEval } from '../eval/filesystem-observer.mjs';
+} from '../standards-feedback/marker-benchmark.mjs';
+import { observeSessionLogStandardsFeedback } from '../integrations/session-logs.mjs';
+import {
+  applyCodexHook,
+  buildSuggestedCodexHookConfig,
+  inspectCodexHookTarget,
+  inspectRuntimeIntegrationStatus,
+  runtimeIntegrationFor,
+} from '../integrations/runtime-integrations.mjs';
+import { observeFilesystemStandardsFeedback } from '../standards-feedback/filesystem-observer.mjs';
 import { runReadinessCheckCli } from './readiness-check.mjs';
 import { runClaimCli } from './claims.mjs';
 import {
@@ -107,7 +109,7 @@ function handleSurfaceValidationCliError(error) {
 export async function runVeritasReportCli(argv = process.argv.slice(2), defaults = {}) {
   const { options, files: explicitFiles } = parseArgs(argv);
   if (options.trend) {
-    const summary = generateEvalSummary(options, defaults);
+    const summary = generateStandardsFeedbackSummary(options, defaults);
     const worst = (summary.ruleTrend ?? []).slice(0, 3);
     process.stdout.write(summary.markdownSummary);
     if (worst.length > 0) {
@@ -481,7 +483,7 @@ export function runPrintCodexHookCli(argv = process.argv.slice(2), defaults = {}
 export function runRuntimeStatusCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parsePrintArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  const status = inspectRuntimeAdapterStatus(rootDir, {
+  const status = inspectRuntimeIntegrationStatus(rootDir, {
     targetHooksFile: options.targetHooksFile,
     codexHome: options.codexHome,
   });
@@ -640,9 +642,9 @@ export function runApplyCodexHookCli(argv = process.argv.slice(2), defaults = {}
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-export function runEvalRecordCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parseEvalArgs(argv);
-  const result = generateEvalRecord(options, {
+export function runStandardsFeedbackRecordCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseStandardsFeedbackArgs(argv);
+  const result = generateStandardsFeedbackRecord(options, {
     ...defaults,
     rootDir: resolve(options.rootDir ?? defaults.rootDir ?? process.cwd()),
   });
@@ -661,9 +663,9 @@ export function runEvalRecordCli(argv = process.argv.slice(2), defaults = {}) {
   );
 }
 
-export function runEvalSummaryCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parseEvalArgs(argv);
-  const result = generateEvalSummary(options, {
+export function runStandardsFeedbackSummaryCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseStandardsFeedbackArgs(argv);
+  const result = generateStandardsFeedbackSummary(options, {
     ...defaults,
     rootDir: resolve(options.rootDir ?? defaults.rootDir ?? process.cwd()),
   });
@@ -671,11 +673,11 @@ export function runEvalSummaryCli(argv = process.argv.slice(2), defaults = {}) {
   process.stdout.write(result.markdownSummary);
 }
 
-export function runEvalRecommendCli(argv = process.argv.slice(2), defaults = {}) {
+export function runStandardsFeedbackRecommendCli(argv = process.argv.slice(2), defaults = {}) {
   const { options } = parseTokens(argv, {
     '--root': { type: 'string', key: 'rootDir' },
     '--repo-standards': { type: 'string', key: 'repoStandardsPath' },
-    '--adapter': { type: 'string', key: 'adapterPath' },
+    '--repo-map': { type: 'string', key: 'repoMapPath' },
     '--force': { type: 'flag', key: 'force' },
     '--dry-run': { type: 'flag', key: 'dryRun' },
   });
@@ -727,8 +729,8 @@ export function runRecommendationCli(kind, argv = process.argv.slice(2), default
   throw new Error(`Unsupported recommendation command: ${kind}`);
 }
 
-export function runEvalMarkerCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parseMarkerEvalArgs(argv);
+export function runStandardsFeedbackMarkerCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseMarkerStandardsFeedbackArgs(argv);
   const result = generateMarkerBenchmarkComparison(options, {
     ...defaults,
     rootDir: resolve(options.rootDir ?? defaults.rootDir ?? process.cwd()),
@@ -737,8 +739,8 @@ export function runEvalMarkerCli(argv = process.argv.slice(2), defaults = {}) {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-export function runEvalMarkerSuiteCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parseMarkerSuiteEvalArgs(argv);
+export function runStandardsFeedbackMarkerSuiteCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseMarkerSuiteStandardsFeedbackArgs(argv);
   const result = generateMarkerBenchmarkSuiteReport(options, {
     ...defaults,
     rootDir: resolve(options.rootDir ?? defaults.rootDir ?? process.cwd()),
@@ -747,9 +749,9 @@ export function runEvalMarkerSuiteCli(argv = process.argv.slice(2), defaults = {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-export function runEvalDraftCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parseEvalArgs(argv);
-  const result = generateEvalDraft(options, {
+export function runStandardsFeedbackDraftCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseStandardsFeedbackArgs(argv);
+  const result = generateStandardsFeedbackDraft(options, {
     ...defaults,
     rootDir: resolve(options.rootDir ?? defaults.rootDir ?? process.cwd()),
   });
@@ -768,19 +770,19 @@ export function runEvalDraftCli(argv = process.argv.slice(2), defaults = {}) {
   );
 }
 
-export function runEvalObserveCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parseEvalArgs(argv);
+export function runStandardsFeedbackObserveCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseStandardsFeedbackArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const result =
-    options.tool === 'none' || !options.transcriptPath
-      ? observeFilesystemEval({
+    options.tool === 'none' || !options.sessionLogPath
+      ? observeFilesystemStandardsFeedback({
           evidencePath: options.evidencePath,
           rootDir,
           outputPath: options.outputPath,
           churnThreshold: options.rewriteThreshold ?? 0.3,
         })
-      : observeTranscriptEval({
-          transcriptPath: options.transcriptPath,
+      : observeSessionLogStandardsFeedback({
+          sessionLogPath: options.sessionLogPath,
           evidencePath: options.evidencePath,
           rootDir,
           outputPath: options.outputPath,
@@ -806,18 +808,18 @@ export function runEvalObserveCli(argv = process.argv.slice(2), defaults = {}) {
 export function runIntegrationsCli(tool, action, argv = process.argv.slice(2), defaults = {}) {
   const options = parseApplyArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  const adapter = runtimeAdapterFor(tool, rootDir, options);
+  const integration = runtimeIntegrationFor(tool, rootDir, options);
   let result;
   if (action === 'status') {
-    result = adapter.status();
+    result = integration.status();
   } else if (action === 'install') {
     result = {
-      preToolUse: adapter.installPreToolUseHook(options),
-      stop: adapter.installStopHook(options),
-      postSession: adapter.installPostSessionHook(options),
+      preToolUse: integration.installPreToolUseHook(options),
+      stop: integration.installStopHook(options),
+      postSession: integration.installPostSessionHook(options),
     };
   } else if (action === 'uninstall') {
-    result = adapter.uninstall(options);
+    result = integration.uninstall(options);
   } else {
     throw new Error(`Unsupported integrations action: ${action}`);
   }

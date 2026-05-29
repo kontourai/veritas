@@ -76,91 +76,91 @@ export function assertEvidenceCheckConfig(config) {
   ].filter((field) => field in evidence);
   if (removedFields.length > 0) {
     throw new Error(
-      `Veritas Repo Map evidence config uses removed field(s): ${removedFields.join(', ')}. Migrate to evidence.evidenceChecks[].command, requiredEvidenceCheckIds, defaultEvidenceCheckIds, and evidenceCheckRoutes; see docs/reference/artifacts-and-schemas.md#adapter-evidence-check-migration.`,
+      `Veritas Repo Map evidence config uses removed field(s): ${removedFields.join(', ')}. Migrate to evidence.evidenceChecks[].command, requiredEvidenceCheckIds, defaultEvidenceCheckIds, and evidenceCheckRoutes; see docs/reference/artifacts-and-schemas.md#repo-map-evidence-check-migration.`,
     );
   }
 
   if (!Array.isArray(evidence.evidenceChecks) || evidence.evidenceChecks.length === 0) {
-    throw new Error('Veritas adapter evidence.evidenceChecks must contain evidenceCheck objects with id, runner-specific execution fields, and method.');
+    throw new Error('Veritas Repo Map evidence.evidenceChecks must contain evidenceCheck objects with id, runner-specific execution fields, and method.');
   }
 
   const evidenceCheckIds = new Set();
   for (const evidenceCheck of evidence.evidenceChecks) {
     assertEvidenceCheckObject(evidenceCheck);
-    if (evidenceCheckIds.has(evidenceCheck.id)) throw new Error(`Veritas adapter evidence.evidenceChecks contains duplicate id: ${evidenceCheck.id}`);
+    if (evidenceCheckIds.has(evidenceCheck.id)) throw new Error(`Veritas Repo Map evidence.evidenceChecks contains duplicate id: ${evidenceCheck.id}`);
     evidenceCheckIds.add(evidenceCheck.id);
   }
 
   for (const field of ['requiredEvidenceCheckIds', 'defaultEvidenceCheckIds']) {
     for (const id of uniqueStrings(evidence[field] ?? [])) {
-      if (!evidenceCheckIds.has(id)) throw new Error(`Veritas adapter evidence.${field} references unknown evidenceCheck id: ${id}`);
+      if (!evidenceCheckIds.has(id)) throw new Error(`Veritas Repo Map evidence.${field} references unknown evidenceCheck id: ${id}`);
     }
   }
 
   for (const route of evidence.evidenceCheckRoutes ?? []) {
     if (!Array.isArray(route.evidenceCheckIds)) {
-      throw new Error('Veritas adapter evidence.evidenceCheckRoutes[].evidenceCheckIds must reference evidenceCheck ids.');
+      throw new Error('Veritas Repo Map evidence.evidenceCheckRoutes[].evidenceCheckIds must reference evidenceCheck ids.');
     }
     for (const id of uniqueStrings(route.evidenceCheckIds)) {
-      if (!evidenceCheckIds.has(id)) throw new Error(`Veritas adapter evidenceCheck route references unknown evidenceCheck id: ${id}`);
+      if (!evidenceCheckIds.has(id)) throw new Error(`Veritas Repo Map evidenceCheck route references unknown evidenceCheck id: ${id}`);
     }
   }
 
   for (const manifestPath of readEvidenceInventoryManifestPaths(config)) {
     if (manifestPath.startsWith('/') || manifestPath.includes('..')) {
-      throw new Error('Veritas adapter evidence.evidenceInventoryManifests must contain repo-local paths inside .veritas/.');
+      throw new Error('Veritas Repo Map evidence.evidenceInventoryManifests must contain repo-local paths inside .veritas/.');
     }
     if (!manifestPath.startsWith('.veritas/')) {
-      throw new Error('Veritas adapter evidence.evidenceInventoryManifests paths must start with .veritas/.');
+      throw new Error('Veritas Repo Map evidence.evidenceInventoryManifests paths must start with .veritas/.');
     }
   }
 }
 
 export function assertEvidenceCheckObject(evidenceCheck) {
   if (!evidenceCheck || typeof evidenceCheck !== 'object' || Array.isArray(evidenceCheck)) {
-    throw new Error('Veritas adapter evidence.evidenceChecks entries must be objects.');
+    throw new Error('Veritas Repo Map evidence.evidenceChecks entries must be objects.');
   }
   for (const field of ['id', 'method']) {
     if (typeof evidenceCheck[field] !== 'string' || evidenceCheck[field].length === 0) {
-      throw new Error(`Veritas adapter evidence.evidenceChecks[].${field} must be a non-empty string.`);
+      throw new Error(`Veritas Repo Map evidence.evidenceChecks[].${field} must be a non-empty string.`);
     }
   }
   const runner = evidenceCheck.runner ?? 'bash';
   if (!['bash', 'mcp'].includes(runner)) {
-    throw new Error(`Veritas adapter evidence.evidenceChecks[].runner contains unsupported value: ${evidenceCheck.runner}`);
+    throw new Error(`Veritas Repo Map evidence.evidenceChecks[].runner contains unsupported value: ${evidenceCheck.runner}`);
   }
   if (runner === 'bash') {
     if (typeof evidenceCheck.command !== 'string' || evidenceCheck.command.length === 0) {
-      throw new Error('Veritas adapter evidence.evidenceChecks[].command must be a non-empty string for bash evidenceChecks.');
+      throw new Error('Veritas Repo Map evidence.evidenceChecks[].command must be a non-empty string for bash evidenceChecks.');
     }
   } else {
     if (!evidenceCheck.server || typeof evidenceCheck.server !== 'object' || Array.isArray(evidenceCheck.server)) {
-      throw new Error('Veritas adapter evidence.evidenceChecks[].server must be an object for MCP evidenceChecks.');
+      throw new Error('Veritas Repo Map evidence.evidenceChecks[].server must be an object for MCP evidenceChecks.');
     }
     if (typeof evidenceCheck.server.command !== 'string' || evidenceCheck.server.command.length === 0) {
-      throw new Error('Veritas adapter evidence.evidenceChecks[].server.command must be a non-empty string for MCP evidenceChecks.');
+      throw new Error('Veritas Repo Map evidence.evidenceChecks[].server.command must be a non-empty string for MCP evidenceChecks.');
     }
     if (!Array.isArray(evidenceCheck.server.args)) {
-      throw new Error('Veritas adapter evidence.evidenceChecks[].server.args must be an array for MCP evidenceChecks.');
+      throw new Error('Veritas Repo Map evidence.evidenceChecks[].server.args must be an array for MCP evidenceChecks.');
     }
     if (evidenceCheck.server.args.some((arg) => typeof arg !== 'string')) {
-      throw new Error('Veritas adapter evidence.evidenceChecks[].server.args must contain only strings.');
+      throw new Error('Veritas Repo Map evidence.evidenceChecks[].server.args must contain only strings.');
     }
     if (evidenceCheck.server.env !== undefined && (!evidenceCheck.server.env || typeof evidenceCheck.server.env !== 'object' || Array.isArray(evidenceCheck.server.env))) {
-      throw new Error('Veritas adapter evidence.evidenceChecks[].server.env must be an object when provided.');
+      throw new Error('Veritas Repo Map evidence.evidenceChecks[].server.env must be an object when provided.');
     }
     if (typeof evidenceCheck.tool !== 'string' || evidenceCheck.tool.length === 0) {
-      throw new Error('Veritas adapter evidence.evidenceChecks[].tool must be a non-empty string for MCP evidenceChecks.');
+      throw new Error('Veritas Repo Map evidence.evidenceChecks[].tool must be a non-empty string for MCP evidenceChecks.');
     }
     if (evidenceCheck.input !== undefined && (!evidenceCheck.input || typeof evidenceCheck.input !== 'object' || Array.isArray(evidenceCheck.input))) {
-      throw new Error('Veritas adapter evidence.evidenceChecks[].input must be an object when provided.');
+      throw new Error('Veritas Repo Map evidence.evidenceChecks[].input must be an object when provided.');
     }
   }
   if (!['observation', 'extraction', 'validation', 'corroboration', 'attestation', 'auditability', 'anchoring', 'monitoring'].includes(evidenceCheck.method)) {
-    throw new Error(`Veritas adapter evidence.evidenceChecks[].method contains unsupported value: ${evidenceCheck.method}`);
+    throw new Error(`Veritas Repo Map evidence.evidenceChecks[].method contains unsupported value: ${evidenceCheck.method}`);
   }
   if (evidenceCheck.surfaceClaimIds !== undefined && !Array.isArray(evidenceCheck.surfaceClaimIds)) {
-    throw new Error('Veritas adapter evidence.evidenceChecks[].surfaceClaimIds must be an array of strings.');
+    throw new Error('Veritas Repo Map evidence.evidenceChecks[].surfaceClaimIds must be an array of strings.');
   }
   if (evidenceCheck.externalTool !== undefined) {
     assertExternalToolConfig(evidenceCheck.externalTool);

@@ -2,22 +2,22 @@
 
 This repo was bootstrapped for `veritas` with a conservative starter kit for agent-guided development.
 
-This copy is intentionally tracked and slightly tightened for the Veritas product repo itself, so self-hosting covers `bin/`, `schemas/`, adapters, Repo Standards, and examples instead of sending those areas straight to manual review.
+This copy is intentionally tracked and slightly tightened for the Veritas product repo itself, so self-hosting covers `bin/`, `schemas/`, repo-maps, Repo Standards, and examples instead of sending those areas straight to manual review.
 
-The repo-level check-in commands live in `package.json`:
+The repo-level repo conformance commands live in `package.json`:
 
-- `npm run veritas:checkin:report`
-- `npm run veritas:checkin:readiness`
-- `npm run veritas:checkin`
-- `npm run veritas:checkin:examples`
-- `npm run veritas:checkin:verify`
+- `npm run veritas:conformance:report`
+- `npm run veritas:conformance:readiness`
+- `npm run veritas:conformance`
+- `npm run veritas:conformance:examples`
+- `npm run veritas:conformance:verify`
 
 ## Generated Files
 
 - `.veritas/GOVERNANCE.md`
-- `.veritas/repo.adapter.json`
+- `.veritas/repo-map.json`
 - `.veritas/repo-standards/default.repo-standards.json`
-- `.veritas/team/default.team-profile.json`
+- `.veritas/authority/default.authority-settings.json`
 
 ## Inferred Repo Shape
 
@@ -47,7 +47,7 @@ If you prefer explicit paths:
 
 ```bash
 npx @kontourai/veritas readiness --check evidence \
-  --adapter ./.veritas/repo.adapter.json \
+  --repo-map ./.veritas/repo-map.json \
   --repo-standards ./.veritas/repo-standards/default.repo-standards.json \
   package.json
 ```

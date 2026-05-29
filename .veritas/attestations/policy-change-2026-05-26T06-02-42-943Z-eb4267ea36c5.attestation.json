@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "id": "policy-change-2026-05-26T06-02-42-943Z-eb4267ea36c5",
+  "kind": "policy-change",
+  "actor": {
+    "id": "brian",
+    "displayName": "Veritas Tests",
+    "identityEvidence": {
+      "gitEmail": "veritas-tests@example.com",
+      "signingKeyFingerprint": null
+    }
+  },
+  "attestedAt": "2026-05-26T06:02:42.943Z",
+  "repoStandardsHash": "sha256:5dcb4248ccbd00b99f45942b394c798604de0e7e6585e5b9eccfff8736f05dbf",
+  "repoMapHash": "sha256:77b4d33eedbecb2573355e8ab1fbaf7c49cebcfbe0c05d2da1be43a536197f09",
+  "authoritySettingsHash": "sha256:2e8eabf7e55a00d3afbe940bd7cec8c4d36c6a23eabf6317384d12683aa88c05",
+  "priorAttestationId": "policy-change-2026-05-26T05-18-15-704Z-2a5058768096",
+  "validUntilDays": 90,
+  "notes": "Add primitive-first governance requirement for Veritas dogfooding.",
+  "metadata": {
+    "protectedStandardsPaths": {
+      "repoStandardsPath": ".veritas/repo-standards/default.repo-standards.json",
+      "repoMapPath": ".veritas/repo-map.json",
+      "authoritySettingsPath": ".veritas/authority/default.authority-settings.json"
+    },
+    "supersedes": "policy-change-2026-05-26T05-18-15-704Z-2a5058768096"
+  },
+  "surface": {
+    "claim": {
+      "id": "veritas.attestation.policy-change-2026-05-26T06-02-42-943Z-eb4267ea36c5",
+      "subjectType": "veritas-protected-standards",
+      "subjectId": "protected-standards",
+      "surface": "veritas.attestations",
+      "claimType": "veritas-human-attestation",
+      "fieldOrBehavior": "policy-change",
+      "value": {
+        "contentHash": "bd087a3830b00da67706aa2c88c1a3c6d8c44847979cc91f7a7b7b199b0fa1e3",
+        "validUntil": "2026-08-24T06:02:42.943Z"
+      },
+      "createdAt": "2026-05-26T06:02:42.943Z",
+      "updatedAt": "2026-05-26T06:02:42.943Z",
+      "status": "verified",
+      "impactLevel": "high",
+      "confidenceBasis": {
+        "sourceQuality": "strong",
+        "reviewerAuthority": "human",
+        "evidenceStrength": "strong",
+        "impactLevel": "high"
+      }
+    },
+    "evidence": {
+      "id": "evidence.attestation.veritas.attestation.policy-change-2026-05-26T06-02-42-943Z-eb4267ea36c5",
+      "claimId": "veritas.attestation.policy-change-2026-05-26T06-02-42-943Z-eb4267ea36c5",
+      "evidenceType": "attestation",
+      "method": "attestation",
+      "sourceRef": "veritas:protected-standards",
+      "excerptOrSummary": "Add primitive-first governance requirement for Veritas dogfooding.",
+      "observedAt": "2026-05-26T06:02:42.943Z",
+      "collectedBy": "brian",
+      "integrityRef": "bd087a3830b00da67706aa2c88c1a3c6d8c44847979cc91f7a7b7b199b0fa1e3",
+      "metadata": {
+        "actor": {
+          "id": "brian",
+          "displayName": "Veritas Tests"
+        },
+        "attestedAt": "2026-05-26T06:02:42.943Z",
+        "validUntil": "2026-08-24T06:02:42.943Z",
+        "contentHash": "bd087a3830b00da67706aa2c88c1a3c6d8c44847979cc91f7a7b7b199b0fa1e3"
+      },
+      "sourceLocator": ".veritas/attestations"
+    },
+    "event": {
+      "id": "veritas.attestation.policy-change-2026-05-26T06-02-42-943Z-eb4267ea36c5.verified",
+      "claimId": "veritas.attestation.policy-change-2026-05-26T06-02-42-943Z-eb4267ea36c5",
+      "status": "verified",
+      "actor": "brian",
+      "method": "human attestation",
+      "evidenceIds": [
+        "evidence.attestation.veritas.attestation.policy-change-2026-05-26T06-02-42-943Z-eb4267ea36c5"
+      ],
+      "createdAt": "2026-05-26T06:02:42.943Z",
+      "verifiedAt": "2026-05-26T06:02:42.943Z"
+    }
+  }
+}

@@ -4,15 +4,14 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
-  buildSurfaceTrustInput,
-  buildSurfaceTrustReportSummary,
-} from '../../src/surface/projection.mjs';
+  produceSurfaceStateForVeritasRecord,
+} from '../../src/surface/producer.mjs';
 import { buildFeedbackSummary } from '../../src/report/format.mjs';
 import { SURFACE_TRUST_POLICIES } from '../../src/surface/policies.mjs';
 
-function baseRecord(overrides = {}) {
+function baseRecord(exceptions = {}) {
   return {
-    framework_version: 1,
+    record_schema_version: 1,
     run_id: 'surface-report-consumption-test',
     timestamp: '2026-05-10T12:00:00.000Z',
     source_ref: 'test-ref',
@@ -34,9 +33,9 @@ function baseRecord(overrides = {}) {
     uncovered_path_result: 'clear',
     files: ['src/example.mjs'],
     unresolved_files: [],
-    adapter: {
+    repoMap: {
       name: 'veritas',
-      kind: 'repo-adapter',
+      kind: 'repo-map',
       report_transport: 'local-json',
     },
     repo_standards: {
@@ -45,7 +44,7 @@ function baseRecord(overrides = {}) {
       rule_count: 1,
     },
     recommendations: [],
-    ...overrides,
+    ...exceptions,
   };
 }
 
@@ -114,8 +113,8 @@ test('Surface trust report summary is persisted with stale and disputed statuses
     policies: [SURFACE_TRUST_POLICIES.policyResult, SURFACE_TRUST_POLICIES.evidenceInventory],
   }, null, 2)}\n`);
 
-  const input = await buildSurfaceTrustInput(record, { rootDir });
-  const report = buildSurfaceTrustReportSummary({ input, record });
+  const surface = await produceSurfaceStateForVeritasRecord(record, { rootDir });
+  const { input, report } = surface;
   const statuses = Object.fromEntries(report.claims.map((claim) => [claim.id, claim.status]));
   const readinessClaim = input.claims.find((claim) => claim.claimType === 'software-readiness-verdict');
   assert.ok(readinessClaim);
@@ -129,7 +128,7 @@ test('Surface trust report summary is persisted with stale and disputed statuses
   const feedback = buildFeedbackSummary({
     record: {
       ...record,
-      surface: { input, report },
+      surface,
     },
   });
   assert.match(feedback, /WARN  surface-status: claim "veritas\.surface-report-consumption-test\.policy\.warn-rule" is DISPUTED/);

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://kontour.ai/schemas/veritas-attestation.schema.json",
+  "$id": "https://kontourai.io/schemas/veritas-attestation.schema.json",
   "title": "Veritas Attestation",
   "type": "object",
   "required": [
@@ -9,8 +9,8 @@
     "actor",
     "attestedAt",
     "repoStandardsHash",
-    "adapterHash",
-    "teamProfileHash",
+    "repoMapHash",
+    "authoritySettingsHash",
     "priorAttestationId",
     "validUntilDays",
     "notes"
@@ -39,8 +39,8 @@
     },
     "attestedAt": { "type": "string", "format": "date-time" },
     "repoStandardsHash": { "type": "string" },
-    "adapterHash": { "type": "string" },
-    "teamProfileHash": { "type": "string" },
+    "repoMapHash": { "type": "string" },
+    "authoritySettingsHash": { "type": "string" },
     "priorAttestationId": { "type": ["string", "null"] },
     "validUntilDays": { "type": "integer", "minimum": 1 },
     "notes": { "type": "string" },
