@@ -119,6 +119,7 @@ export function parseAttestArgs(argv) {
       '--actor': { type: 'string', key: 'actor' },
       '--display-name': { type: 'string', key: 'displayName' },
       '--message': { type: 'string', key: 'message' },
+      '--approval-ref': { type: 'string', key: 'approvalRef' },
       '--valid-until-days': { type: 'number', key: 'validUntilDays' },
       '--non-interactive': { type: 'flag', key: 'nonInteractive' },
     },

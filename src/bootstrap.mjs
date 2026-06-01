@@ -522,6 +522,10 @@ export function buildStarterAuthoritySettings({ projectName, evidenceCheck = 'np
       reviewer_confidence_scale: ['low', 'medium', 'high'],
       major_rewrite_definition:
         'A major rewrite replaces the main structure or requirement flow instead of making local edits.',
+      attestation_approval_ref_policy: {
+        mode: 'reference-only',
+        allowed_prefixes: [],
+      },
     },
     promotion_preferences: {
       evidence_checks_required_before_require: [evidenceCheck],
@@ -604,7 +608,7 @@ ${
 npx @kontourai/veritas readiness --working-tree
 npx @kontourai/veritas readiness --check coverage --working-tree
 npx @kontourai/veritas integrations codex status
-npx @kontourai/veritas attest bootstrap --actor <authority-id> --non-interactive
+npx @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
 \`\`\`
 
 If you prefer explicit paths:
@@ -641,6 +645,10 @@ Protected Standards require authority-backed review. Do not modify without a fre
 - \`.veritas/repo-map.json\`
 - \`.veritas/repo-standards/\`
 - \`.veritas/authority/\`
+
+Authority-backed attestations require an explicit human approval reference. Agents may prepare
+\`veritas attest ... --approval-ref <ref>\` commands, but must not invent the reference or record
+the attestation without a durable approval artifact from the human authority.
 
 Standards Growth is additive. Developers and agents may propose:
 - new work areas for new feature directories

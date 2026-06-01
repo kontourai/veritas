@@ -44,7 +44,21 @@
     "priorAttestationId": { "type": ["string", "null"] },
     "validUntilDays": { "type": "integer", "minimum": 1 },
     "notes": { "type": "string" },
-    "metadata": { "type": "object" }
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "approvalRef": { "type": ["string", "null"] },
+        "approvalRefPolicy": {
+          "type": "object",
+          "properties": {
+            "mode": { "type": "string" },
+            "matchedPrefix": { "type": ["string", "null"] }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
   },
   "additionalProperties": false
 }

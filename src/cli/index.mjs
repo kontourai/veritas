@@ -299,7 +299,7 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
   } else {
     result.attestation = {
       status: 'not-recorded',
-    suggestedCommand: `veritas attest bootstrap --actor <authority-id> --non-interactive --root ${rootDir}`,
+      suggestedCommand: `veritas attest bootstrap --actor <authority-id> --approval-ref <approval-reference> --non-interactive --root ${rootDir}`,
     };
   }
 
@@ -325,6 +325,7 @@ export function runAttestCli(kind, argv = process.argv.slice(2), defaults = {}) 
     actor: options.actor,
     displayName: options.displayName,
     notes: options.message ?? '',
+    approvalRef: options.approvalRef,
     validUntilDays: options.validUntilDays,
   });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
@@ -701,6 +702,7 @@ export function runRecommendationCli(kind, argv = process.argv.slice(2), default
     '--accept': { type: 'flag', key: 'accept' },
     '--reject': { type: 'flag', key: 'reject' },
     '--message': { type: 'string', key: 'message' },
+    '--approval-ref': { type: 'string', key: 'approvalRef' },
   });
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   if (kind === 'list') {
@@ -723,6 +725,7 @@ export function runRecommendationCli(kind, argv = process.argv.slice(2), default
       accept: options.accept ?? false,
       reject: options.reject ?? false,
       message: options.message ?? '',
+      approvalRef: options.approvalRef,
     }), null, 2)}\n`);
     return;
   }

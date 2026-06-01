@@ -58,6 +58,40 @@ function rejectNonHumanActor(actorId) {
   }
 }
 
+function requireHumanApprovalReference({ kind, approvalRef }) {
+  if (typeof approvalRef === 'string' && approvalRef.trim()) return;
+  throw new Error(
+    `veritas attest ${kind} requires --approval-ref <reference> from an explicit human approval. ` +
+    'Agents may prepare changes, but must not record authority-backed attestations without a human approval reference.',
+  );
+}
+
+function validateApprovalReferencePolicy({ approvalRef, authoritySettingsPath }) {
+  const authoritySettings = loadJson(authoritySettingsPath, 'authority settings');
+  const policy = authoritySettings.review_preferences?.attestation_approval_ref_policy;
+  const allowedPrefixes = policy?.allowed_prefixes;
+  if (!Array.isArray(allowedPrefixes) || allowedPrefixes.length === 0) {
+    return {
+      mode: policy?.mode ?? 'reference-only',
+      matchedPrefix: null,
+    };
+  }
+
+  const trimmedRef = approvalRef.trim();
+  const matchedPrefix = allowedPrefixes.find((prefix) =>
+    typeof prefix === 'string' && prefix.length > 0 && trimmedRef.startsWith(prefix)
+  );
+  if (!matchedPrefix) {
+    throw new Error(
+      `veritas attest approval reference must start with one of: ${allowedPrefixes.join(', ')}`,
+    );
+  }
+  return {
+    mode: policy?.mode ?? 'prefix',
+    matchedPrefix,
+  };
+}
+
 export function resolveProtectedStandardsPaths(rootDir, options = {}) {
   return {
     repoStandardsPath: resolve(rootDir, options.repoStandardsPath ?? '.veritas/repo-standards/default.repo-standards.json'),
@@ -203,6 +237,7 @@ export function createAttestation({
   notes = '',
   validUntilDays = DEFAULT_VALID_UNTIL_DAYS,
   attestedAt,
+  approvalRef,
   repoStandardsPath,
   repoMapPath,
   authoritySettingsPath,
@@ -214,6 +249,7 @@ export function createAttestation({
     throw new Error('veritas attest requires --actor <id>');
   }
   rejectNonHumanActor(actor);
+  requireHumanApprovalReference({ kind, approvalRef });
   const timestamp = nowIso({ attestedAt });
   const priorAttestationId = readAttestationHead(rootDir);
   if (kind === 'bootstrap' && priorAttestationId) {
@@ -227,6 +263,10 @@ export function createAttestation({
   }
 
   const hashes = hashProtectedStandards(rootDir, { repoStandardsPath, repoMapPath, authoritySettingsPath });
+  const approvalRefPolicy = validateApprovalReferencePolicy({
+    approvalRef,
+    authoritySettingsPath: resolve(rootDir, authoritySettingsPath ?? '.veritas/authority/default.authority-settings.json'),
+  });
   const actorRecord = buildActor(rootDir, actor, displayName);
   const validUntil = new Date(new Date(timestamp).getTime() + validUntilDays * 86_400_000).toISOString();
   const surfaceClaimId = `veritas.attestation.${nextAttestationId(kind, timestamp, hashes)}`;
@@ -245,6 +285,8 @@ export function createAttestation({
     metadata: {
       protectedStandardsPaths: hashes.paths,
       supersedes: priorAttestationId ?? null,
+      approvalRef: approvalRef?.trim() ?? null,
+      approvalRefPolicy,
     },
     surface: buildAttestationSurfaceProjection({
       claimId: surfaceClaimId,
@@ -359,7 +401,7 @@ export function buildAttestationPolicyResult(status) {
         artifact: item.field,
         attested: item.attested,
         current: item.current,
-        remediation: 'Run veritas attest policy-change --message <text> --actor <authority-id> after authority review.',
+        remediation: 'Run veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference> after authority review.',
       })),
     };
   }
@@ -378,7 +420,7 @@ export function buildAttestationPolicyResult(status) {
       findings: [{
         kind: 'missing-attestation',
         artifact: ATTESTATIONS_DIR,
-        remediation: 'Run veritas attest bootstrap --actor <authority-id> --non-interactive.',
+        remediation: 'Run veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive.',
       }],
     };
   }
@@ -397,7 +439,7 @@ export function buildAttestationPolicyResult(status) {
       findings: [{
         kind: 'expired-attestation',
         artifact: status.currentAttestationId,
-        remediation: 'Run veritas attest policy-change --message <text> --actor <authority-id> to refresh attestation.',
+        remediation: 'Run veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference> to refresh attestation.',
       }],
     };
   }
