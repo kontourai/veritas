@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "id": "policy-change-2026-06-01T15-54-18-119Z-feeadc5fe777",
+  "kind": "policy-change",
+  "actor": {
+    "id": "brian",
+    "displayName": "Brian Anderson",
+    "identityEvidence": {
+      "gitEmail": "brian.anderson1222@gmail.com",
+      "signingKeyFingerprint": null
+    }
+  },
+  "attestedAt": "2026-06-01T15:54:18.119Z",
+  "repoStandardsHash": "sha256:28de1ed3b5ac4d8d5168366902579815c6b390b4831eac928a16f82c4e3b37f3",
+  "repoMapHash": "sha256:53c43b4fa3e0621ac0602a3876221a4d722716dbe2a2cbb80ea0e188f0c46e37",
+  "authoritySettingsHash": "sha256:2e8eabf7e55a00d3afbe940bd7cec8c4d36c6a23eabf6317384d12683aa88c05",
+  "priorAttestationId": "policy-change-2026-05-28T15-51-42-775Z-dfef1bab3c5b",
+  "validUntilDays": 90,
+  "notes": "Classify restored root setup files in repo map coverage.",
+  "metadata": {
+    "protectedStandardsPaths": {
+      "repoStandardsPath": ".veritas/repo-standards/default.repo-standards.json",
+      "repoMapPath": ".veritas/repo-map.json",
+      "authoritySettingsPath": ".veritas/authority/default.authority-settings.json"
+    },
+    "supersedes": "policy-change-2026-05-28T15-51-42-775Z-dfef1bab3c5b"
+  },
+  "surface": {
+    "claim": {
+      "id": "veritas.attestation.policy-change-2026-06-01T15-54-18-119Z-feeadc5fe777",
+      "subjectType": "veritas-protected-standards",
+      "subjectId": "protected-standards",
+      "surface": "veritas.attestations",
+      "claimType": "veritas-human-attestation",
+      "fieldOrBehavior": "policy-change",
+      "value": {
+        "contentHash": "91d99ba28f1443ee2fff352a6d11614634b1f46a6f0aff61dcd5ad252ea99b2d",
+        "validUntil": "2026-08-30T15:54:18.119Z"
+      },
+      "createdAt": "2026-06-01T15:54:18.119Z",
+      "updatedAt": "2026-06-01T15:54:18.119Z",
+      "status": "verified",
+      "impactLevel": "high",
+      "confidenceBasis": {
+        "sourceQuality": "strong",
+        "reviewerAuthority": "human",
+        "evidenceStrength": "strong",
+        "impactLevel": "high"
+      }
+    },
+    "evidence": {
+      "id": "evidence.attestation.veritas.attestation.policy-change-2026-06-01T15-54-18-119Z-feeadc5fe777",
+      "claimId": "veritas.attestation.policy-change-2026-06-01T15-54-18-119Z-feeadc5fe777",
+      "evidenceType": "attestation",
+      "method": "attestation",
+      "sourceRef": "veritas:protected-standards",
+      "excerptOrSummary": "Classify restored root setup files in repo map coverage.",
+      "observedAt": "2026-06-01T15:54:18.119Z",
+      "collectedBy": "brian",
+      "integrityRef": "91d99ba28f1443ee2fff352a6d11614634b1f46a6f0aff61dcd5ad252ea99b2d",
+      "metadata": {
+        "actor": {
+          "id": "brian",
+          "displayName": "Brian Anderson"
+        },
+        "attestedAt": "2026-06-01T15:54:18.119Z",
+        "validUntil": "2026-08-30T15:54:18.119Z",
+        "contentHash": "91d99ba28f1443ee2fff352a6d11614634b1f46a6f0aff61dcd5ad252ea99b2d"
+      },
+      "sourceLocator": ".veritas/attestations"
+    },
+    "event": {
+      "id": "veritas.attestation.policy-change-2026-06-01T15-54-18-119Z-feeadc5fe777.verified",
+      "claimId": "veritas.attestation.policy-change-2026-06-01T15-54-18-119Z-feeadc5fe777",
+      "status": "verified",
+      "actor": "brian",
+      "method": "human attestation",
+      "evidenceIds": [
+        "evidence.attestation.veritas.attestation.policy-change-2026-06-01T15-54-18-119Z-feeadc5fe777"
+      ],
+      "createdAt": "2026-06-01T15:54:18.119Z",
+      "verifiedAt": "2026-06-01T15:54:18.119Z"
+    }
+  }
+}
