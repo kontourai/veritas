@@ -1,0 +1,103 @@
+{
+  "name": "demo-docs-site",
+  "kind": "repo-map",
+  "policy": {
+    "defaultFalsePositiveReview": "unknown",
+    "defaultPromotionCandidate": false,
+    "defaultExceptionAllowed": false
+  },
+  "graph": {
+    "version": 1,
+    "defaultResolution": {
+      "phase": "Phase 0 (Bootstrap)",
+      "workstream": "Docs Navigation Hardening",
+      "matchedArtifacts": [
+        "docs/adr/0001-navigation.md"
+      ]
+    },
+    "nonSliceableInvariants": [
+      "navigation/content parity",
+      "search index integrity",
+      "build output consistency"
+    ],
+    "resolverPrecedence": [
+      "explicit task reference",
+      "matching ADR under docs/adr/**",
+      "active roadmap item",
+      "multi-workstream fallback suppresses promotion"
+    ],
+    "resolutionRules": [
+      {
+        "id": "adr-doc",
+        "match": {
+          "patterns": [
+            "docs/adr/"
+          ]
+        },
+        "resolution": {
+          "phase": "Phase 0 (Bootstrap)",
+          "workstream": "Docs Navigation Hardening",
+          "matchedArtifacts": [
+            "docs/adr/**"
+          ]
+        }
+      }
+    ],
+    "nodes": [
+      {
+        "id": "docs.content",
+        "kind": "product-area",
+        "label": "docs/content",
+        "patterns": [
+          "content/"
+        ]
+      },
+      {
+        "id": "docs.theme",
+        "kind": "product-area",
+        "label": "docs/theme",
+        "patterns": [
+          "src/theme/"
+        ]
+      },
+      {
+        "id": "docs.nav",
+        "kind": "product-area",
+        "label": "docs/navigation",
+        "patterns": [
+          "src/navigation/"
+        ]
+      },
+      {
+        "id": "docs.governance",
+        "kind": "protected-area",
+        "label": "docs/adr",
+        "patterns": [
+          "docs/adr/"
+        ]
+      }
+    ]
+  },
+  "evidence": {
+    "artifactDir": ".omx/evidence/demo-docs-site",
+    "reportTransport": "local-json",
+    "evidenceChecks": [
+      {
+        "id": "required-evidence-check",
+        "command": "npm run docs:build",
+        "method": "validation",
+        "summary": "Runs npm run docs:build."
+      },
+      {
+        "id": "evidenceCheck-2",
+        "command": "npm test",
+        "method": "validation",
+        "summary": "Runs npm test."
+      }
+    ],
+    "requiredEvidenceCheckIds": [
+      "required-evidence-check",
+      "evidenceCheck-2"
+    ]
+  }
+}

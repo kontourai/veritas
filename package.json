@@ -1,5 +1,86 @@
 {
+  "name": "@kontourai/veritas",
+  "version": "0.4.0",
+  "description": "Merge autonomy for AI-authored code. Turn your repo's standards into evidence-backed readiness reports the agent reads back.",
+  "private": false,
+  "license": "Apache-2.0",
+  "type": "module",
+  "author": "kontourai",
+  "homepage": "https://kontourai.github.io/veritas/",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kontourai/veritas.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kontourai/veritas/issues"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "cli",
+    "codex",
+    "claude-code",
+    "cursor",
+    "developer-tools",
+    "standards-feedback",
+    "governance",
+    "policy",
+    "veritas"
+  ],
+  "files": [
+    "LICENSE",
+    "README.md",
+    "bin/",
+    "src/",
+    "schemas/",
+    "repo-maps/",
+    "repo-standards/",
+    "docs/",
+    "examples/"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "bin": {
+    "veritas": "bin/veritas.mjs",
+    "veritas-report": "bin/veritas-report.mjs"
+  },
   "scripts": {
-    "verify": "npm test"
+    "docs:pages:build": "node scripts/build-pages-site.mjs",
+    "verify": "node scripts/verify.mjs",
+    "test": "node --test tests/*.test.mjs tests/**/*.test.mjs",
+    "test:coverage": "node --experimental-test-coverage --test tests/*.test.mjs tests/**/*.test.mjs",
+    "test:coverage:check": "node scripts/check-coverage.mjs",
+    "prepublishOnly": "npm run verify && npm pack --dry-run",
+    "veritas:init": "npm exec -- veritas init",
+    "veritas:status:codex": "npm exec -- veritas integrations codex status",
+    "veritas:check": "npm exec -- veritas readiness --run-id local-smoke package.json",
+    "veritas:check:working-tree": "npm exec -- veritas readiness --working-tree",
+    "veritas:check:diff": "npm exec -- veritas readiness --changed-from main --changed-to HEAD",
+    "veritas:coverage": "npm exec -- veritas readiness --check coverage --working-tree",
+    "veritas:evidence-check": "npm run verify",
+    "veritas:vocab:check": "node scripts/check-veritas-vocabulary.mjs",
+    "veritas:fallow:advisory": "node scripts/run-fallow-audit.mjs",
+    "veritas:redact:check": "node scripts/check-redaction.mjs",
+    "lint:governance": "npm exec -- veritas readiness --format feedback --working-tree",
+    "veritas:readiness": "npm exec -- veritas readiness",
+    "veritas:conformance:report": "node bin/veritas.mjs readiness --working-tree --run-id conformance-local --force",
+    "veritas:conformance:readiness": "node bin/veritas.mjs readiness --working-tree --force",
+    "veritas:conformance": "node scripts/repo-conformance-status.mjs",
+    "veritas:conformance:examples": "node scripts/build-conformance-examples.mjs",
+    "veritas:conformance:verify": "npm run veritas:evidence-check && npm run veritas:conformance:examples && npm run veritas:conformance",
+    "veritas:ci:conformance": "npm run veritas:conformance:verify",
+    "veritas:console": "surface console --config surface.config.json"
+  },
+  "dependencies": {
+    "@kontourai/surface": "^0.5.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "picomatch": "^4.0.4"
   }
 }

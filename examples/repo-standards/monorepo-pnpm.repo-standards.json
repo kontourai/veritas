@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "name": "monorepo-pnpm",
+  "description": "Starter repo standards for a pnpm workspace.",
+  "rules": [
+    {
+      "id": "required-monorepo-artifacts",
+      "kind": "required-artifacts",
+      "classification": "hard-invariant",
+      "stage": "block",
+      "message": "Workspace governance and package manager artifacts must stay present.",
+      "owner": "platform-team",
+      "rollback_switch": null,
+      "match": {
+        "artifacts": [
+          "pnpm-workspace.yaml",
+          "CODEOWNERS",
+          "CHANGELOG.md",
+          ".veritas/README.md",
+          ".veritas/GOVERNANCE.md",
+          ".veritas/repo-map.json",
+          ".veritas/repo-standards/default.repo-standards.json",
+          ".veritas/authority/default.authority-settings.json"
+        ]
+      }
+    },
+    {
+      "id": "ai-instruction-files-synced",
+      "kind": "governance-block",
+      "classification": "hard-invariant",
+      "stage": "warn",
+      "message": "AI instruction files should carry the Veritas governance block.",
+      "owner": "platform-team",
+      "rollback_switch": null,
+      "match": {
+        "governance-block": ["AGENTS.md", "CLAUDE.md"]
+      }
+    },
+    {
+      "id": "package-changes-require-changelog",
+      "kind": "diff-required",
+      "classification": "promotable-policy",
+      "stage": "warn",
+      "message": "Package changes should update the root changelog when they affect release behavior.",
+      "owner": "platform-team",
+      "rollback_switch": "soften-changelog-companion-rule",
+      "match": {
+        "if-changed": "packages/**",
+        "then-require": "CHANGELOG.md"
+      }
+    },
+    {
+      "id": "strict-package-boundaries",
+      "kind": "work-area-boundary",
+      "classification": "promotable-policy",
+      "stage": "warn",
+      "message": "Package boundary writes should match surface ownership or explicit allowlists.",
+      "owner": "platform-team",
+      "rollback_switch": "soften-package-boundaries",
+      "match": {}
+    }
+  ]
+}

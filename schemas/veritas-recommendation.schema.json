@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veritas.dev/schemas/veritas-recommendation.schema.json",
+  "title": "Veritas Recommendation",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion", "id", "type", "status", "target", "createdAt", "updatedAt", "rationale", "evidenceRunIds", "surface", "diff"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string" },
+    "type": {
+      "enum": ["rule-enforcement-relaxation", "rule-stage-downgrade", "rule-retirement", "surface-node-addition"]
+    },
+    "status": { "enum": ["proposed", "accepted", "rejected"] },
+    "target": { "type": "string" },
+    "createdAt": { "type": "string" },
+    "updatedAt": { "type": "string" },
+    "rationale": { "type": "string" },
+    "evidenceRunIds": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "surface": {
+      "type": "object",
+      "required": ["claimId", "status"],
+      "properties": {
+        "claimId": { "type": "string" },
+        "status": { "const": "proposed" }
+      }
+    },
+    "diff": { "type": "object" }
+  }
+}

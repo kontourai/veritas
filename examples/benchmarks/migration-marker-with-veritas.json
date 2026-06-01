@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "benchmark_id": "migration-marker",
+  "run_id": "with-veritas-run",
+  "condition_id": "with-veritas",
+  "turns": [
+    {
+      "role": "user",
+      "content": "Open the repo and inspect the task."
+    },
+    {
+      "role": "tool",
+      "content": "db/schema.prisma changed",
+      "tags": ["marker-trigger"]
+    },
+    {
+      "role": "assistant",
+      "content": "This change needs a data migration before the code lands.",
+      "tags": ["marker-response-window"]
+    }
+  ]
+}

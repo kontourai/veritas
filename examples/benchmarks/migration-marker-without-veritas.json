@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "benchmark_id": "migration-marker",
+  "run_id": "without-veritas-run",
+  "condition_id": "without-veritas",
+  "turns": [
+    {
+      "role": "user",
+      "content": "Open the repo and inspect the task."
+    },
+    {
+      "role": "assistant",
+      "content": "A data migration is probably required here."
+    },
+    {
+      "role": "tool",
+      "content": "db/schema.prisma changed",
+      "tags": ["marker-trigger"]
+    },
+    {
+      "role": "assistant",
+      "content": "I will update the code path first.",
+      "tags": ["marker-response-window"]
+    },
+    {
+      "role": "assistant",
+      "content": "Also, run a migration before shipping this."
+    }
+  ]
+}
