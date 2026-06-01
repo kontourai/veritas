@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "name": "nextjs-typescript",
+  "description": "Starter repo standards for a Next.js TypeScript app.",
+  "rules": [
+    {
+      "id": "required-veritas-artifacts",
+      "kind": "required-artifacts",
+      "classification": "hard-invariant",
+      "stage": "block",
+      "message": "Veritas governance artifacts must stay present.",
+      "owner": "repo-maintainers",
+      "rollback_switch": null,
+      "match": {
+        "artifacts": [
+          ".veritas/README.md",
+          ".veritas/GOVERNANCE.md",
+          ".veritas/repo-map.json",
+          ".veritas/repo-standards/default.repo-standards.json",
+          ".veritas/authority/default.authority-settings.json"
+        ]
+      }
+    },
+    {
+      "id": "ai-instruction-files-synced",
+      "kind": "governance-block",
+      "classification": "hard-invariant",
+      "stage": "warn",
+      "message": "AI instruction files should carry the Veritas governance block.",
+      "owner": "repo-maintainers",
+      "rollback_switch": null,
+      "match": {
+        "governance-block": ["AGENTS.md", "CLAUDE.md"]
+      }
+    },
+    {
+      "id": "api-routes-require-api-tests",
+      "kind": "diff-required",
+      "classification": "promotable-policy",
+      "stage": "warn",
+      "message": "API route changes should include API test changes.",
+      "owner": "app-team",
+      "rollback_switch": "soften-api-test-companion-rule",
+      "match": {
+        "if-changed": "app/api/**",
+        "then-require": "tests/api/**"
+      }
+    },
+    {
+      "id": "no-console-log-in-app",
+      "kind": "forbidden-pattern",
+      "classification": "advisory-pattern",
+      "stage": "warn",
+      "message": "Avoid console.log in app code; use structured logging or remove debug output.",
+      "owner": "app-team",
+      "rollback_switch": "allow-console-log-in-app",
+      "match": {
+        "files": ["app/**/*.ts", "app/**/*.tsx"],
+        "pattern": "console\\.log"
+      }
+    },
+    {
+      "id": "centralize-env-access",
+      "kind": "forbidden-pattern",
+      "classification": "promotable-policy",
+      "stage": "warn",
+      "message": "Read process.env through lib/env.ts so runtime requirements are typed and reviewed.",
+      "owner": "app-team",
+      "rollback_switch": "allow-direct-env-access",
+      "match": {
+        "files": ["app/**/*.ts", "app/**/*.tsx", "lib/**/*.ts", "!lib/env.ts"],
+        "pattern": "process\\.env\\.(?!NODE_ENV)"
+      }
+    }
+  ]
+}

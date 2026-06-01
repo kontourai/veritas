@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veritas.dev/schemas/veritas-marker-benchmark.schema.json",
+  "title": "Veritas Marker Benchmark Scenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "id", "title", "marker", "scoring"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "description": { "type": "string" },
+    "marker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "required_phrases"],
+      "properties": {
+        "id": { "type": "string" },
+        "required_phrases": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "scoring": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trigger_tag", "max_assistant_turns_after_trigger", "allow_early"],
+      "properties": {
+        "trigger_tag": { "type": "string" },
+        "response_tag": { "type": "string" },
+        "max_assistant_turns_after_trigger": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "allow_early": { "type": "boolean" },
+        "case_sensitive": { "type": "boolean" }
+      }
+    }
+  }
+}

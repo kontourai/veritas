@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veritas.dev/schemas/veritas-marker-suite-report.schema.json",
+  "title": "Veritas Marker Benchmark Suite Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["suite_id", "title", "scenario_count", "pair_count", "metrics", "benchmarks"],
+  "properties": {
+    "suite_id": { "type": "string" },
+    "title": { "type": "string" },
+    "scenario_count": { "type": "integer", "minimum": 1 },
+    "pair_count": { "type": "integer", "minimum": 1 },
+    "metrics": { "$ref": "#/$defs/metrics" },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "benchmark_id",
+          "title",
+          "marker_class",
+          "repo_surface",
+          "trial_count",
+          "metrics",
+          "trials"
+        ],
+        "properties": {
+          "benchmark_id": { "type": "string" },
+          "title": { "type": "string" },
+          "marker_class": { "type": "string" },
+          "repo_surface": { "type": "string" },
+          "trial_count": { "type": "integer", "minimum": 1 },
+          "metrics": { "$ref": "#/$defs/metrics" },
+          "trials": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["trial_id", "comparison"],
+              "properties": {
+                "trial_id": { "type": "string" },
+                "comparison": { "$ref": "./veritas-marker-score.schema.json#" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseline_pass_rate",
+        "treatment_pass_rate",
+        "improvement_rate",
+        "baseline_false_positive_rate",
+        "treatment_false_positive_rate",
+        "median_treatment_latency",
+        "p95_treatment_latency",
+        "pass_at_1",
+        "pass_at_k",
+        "pass_pow_k"
+      ],
+      "properties": {
+        "baseline_pass_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "treatment_pass_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "improvement_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "baseline_false_positive_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "treatment_false_positive_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "median_treatment_latency": { "type": ["number", "null"], "minimum": 0 },
+        "p95_treatment_latency": { "type": ["number", "null"], "minimum": 0 },
+        "pass_at_1": { "type": "number", "minimum": 0, "maximum": 1 },
+        "pass_at_k": { "type": "number", "minimum": 0, "maximum": 1 },
+        "pass_pow_k": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "benchmark_id": "auth-boundary-marker",
+  "run_id": "auth-without-2",
+  "condition_id": "without-veritas",
+  "turns": [
+    {
+      "role": "assistant",
+      "content": "Permission checks are usually where this kind of bug comes from."
+    },
+    {
+      "role": "tool",
+      "content": "src/auth/policy.ts changed",
+      "tags": ["marker-trigger"]
+    },
+    {
+      "role": "assistant",
+      "content": "I will update the helper shape.",
+      "tags": ["marker-response-window"]
+    }
+  ]
+}

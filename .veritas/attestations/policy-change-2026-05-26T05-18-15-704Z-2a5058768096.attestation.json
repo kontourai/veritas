@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "id": "policy-change-2026-05-26T05-18-15-704Z-2a5058768096",
+  "kind": "policy-change",
+  "actor": {
+    "id": "brian",
+    "displayName": "Veritas Tests",
+    "identityEvidence": {
+      "gitEmail": "veritas-tests@example.com",
+      "signingKeyFingerprint": null
+    }
+  },
+  "attestedAt": "2026-05-26T05:18:15.704Z",
+  "repoStandardsHash": "sha256:1cd78ea91659ed36ed532ec4a46beb6f2d3cae0384a5944a1330cc885fc16832",
+  "repoMapHash": "sha256:77b4d33eedbecb2573355e8ab1fbaf7c49cebcfbe0c05d2da1be43a536197f09",
+  "authoritySettingsHash": "sha256:2e8eabf7e55a00d3afbe940bd7cec8c4d36c6a23eabf6317384d12683aa88c05",
+  "priorAttestationId": "policy-change-2026-05-23T14-32-41-329Z-971b646fad45",
+  "validUntilDays": 90,
+  "notes": "Add vocabulary consistency as a dogfooded Veritas requirement and evidence check.",
+  "metadata": {
+    "protectedStandardsPaths": {
+      "repoStandardsPath": ".veritas/repo-standards/default.repo-standards.json",
+      "repoMapPath": ".veritas/repo-map.json",
+      "authoritySettingsPath": ".veritas/authority/default.authority-settings.json"
+    },
+    "supersedes": "policy-change-2026-05-23T14-32-41-329Z-971b646fad45"
+  },
+  "surface": {
+    "claim": {
+      "id": "veritas.attestation.policy-change-2026-05-26T05-18-15-704Z-2a5058768096",
+      "subjectType": "veritas-protected-standards",
+      "subjectId": "protected-standards",
+      "surface": "veritas.attestations",
+      "claimType": "veritas-human-attestation",
+      "fieldOrBehavior": "policy-change",
+      "value": {
+        "contentHash": "f5d3c63845a45794415e65839d6c086803340fb3a21d5a2493cc64a71e0cd05f",
+        "validUntil": "2026-08-24T05:18:15.704Z"
+      },
+      "createdAt": "2026-05-26T05:18:15.704Z",
+      "updatedAt": "2026-05-26T05:18:15.704Z",
+      "status": "verified",
+      "impactLevel": "high",
+      "confidenceBasis": {
+        "sourceQuality": "strong",
+        "reviewerAuthority": "human",
+        "evidenceStrength": "strong",
+        "impactLevel": "high"
+      }
+    },
+    "evidence": {
+      "id": "evidence.attestation.veritas.attestation.policy-change-2026-05-26T05-18-15-704Z-2a5058768096",
+      "claimId": "veritas.attestation.policy-change-2026-05-26T05-18-15-704Z-2a5058768096",
+      "evidenceType": "attestation",
+      "method": "attestation",
+      "sourceRef": "veritas:protected-standards",
+      "excerptOrSummary": "Add vocabulary consistency as a dogfooded Veritas requirement and evidence check.",
+      "observedAt": "2026-05-26T05:18:15.704Z",
+      "collectedBy": "brian",
+      "integrityRef": "f5d3c63845a45794415e65839d6c086803340fb3a21d5a2493cc64a71e0cd05f",
+      "metadata": {
+        "actor": {
+          "id": "brian",
+          "displayName": "Veritas Tests"
+        },
+        "attestedAt": "2026-05-26T05:18:15.704Z",
+        "validUntil": "2026-08-24T05:18:15.704Z",
+        "contentHash": "f5d3c63845a45794415e65839d6c086803340fb3a21d5a2493cc64a71e0cd05f"
+      },
+      "sourceLocator": ".veritas/attestations"
+    },
+    "event": {
+      "id": "veritas.attestation.policy-change-2026-05-26T05-18-15-704Z-2a5058768096.verified",
+      "claimId": "veritas.attestation.policy-change-2026-05-26T05-18-15-704Z-2a5058768096",
+      "status": "verified",
+      "actor": "brian",
+      "method": "human attestation",
+      "evidenceIds": [
+        "evidence.attestation.veritas.attestation.policy-change-2026-05-26T05-18-15-704Z-2a5058768096"
+      ],
+      "createdAt": "2026-05-26T05:18:15.704Z",
+      "verifiedAt": "2026-05-26T05:18:15.704Z"
+    }
+  }
+}

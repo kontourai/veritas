@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veritas.dev/schemas/veritas-marker-score.schema.json",
+  "title": "Veritas Marker Benchmark Comparison",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["benchmark_id", "title", "conditions", "comparison"],
+  "properties": {
+    "benchmark_id": { "type": "string" },
+    "title": { "type": "string" },
+    "scoring_window_assistant_turns": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "conditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["without_veritas", "with_veritas"],
+      "properties": {
+        "without_veritas": { "$ref": "#/$defs/conditionScore" },
+        "with_veritas": { "$ref": "#/$defs/conditionScore" }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timely_recall_delta",
+        "false_positive_improvement",
+        "latency_improvement_turns",
+        "treatment_beats_baseline"
+      ],
+      "properties": {
+        "timely_recall_delta": { "type": "integer" },
+        "false_positive_improvement": { "type": "integer" },
+        "latency_improvement_turns": { "type": ["integer", "null"] },
+        "treatment_beats_baseline": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "conditionScore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "condition_id",
+        "trigger_seen",
+        "trigger_turn",
+        "response_window_tag_used",
+        "first_response_window_turn",
+        "first_surface_turn",
+        "assistant_turn_latency",
+        "surfaced",
+        "timely",
+        "false_positive",
+        "matched_phrase",
+        "pass"
+      ],
+      "properties": {
+        "run_id": { "type": "string" },
+        "condition_id": { "type": "string" },
+        "trigger_seen": { "type": "boolean" },
+        "trigger_turn": { "type": "integer", "minimum": 1 },
+        "response_window_tag_used": { "type": "boolean" },
+        "first_response_window_turn": { "type": ["integer", "null"], "minimum": 1 },
+        "first_surface_turn": { "type": ["integer", "null"], "minimum": 1 },
+        "assistant_turn_latency": { "type": ["integer", "null"], "minimum": 1 },
+        "surfaced": { "type": "boolean" },
+        "timely": { "type": "boolean" },
+        "false_positive": { "type": "boolean" },
+        "matched_phrase": { "type": ["string", "null"] },
+        "pass": { "type": "boolean" }
+      }
+    }
+  }
+}

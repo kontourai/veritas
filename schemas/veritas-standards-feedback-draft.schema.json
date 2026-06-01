@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veritas.dev/schemas/veritas-standards-feedback-draft.schema.json",
+  "title": "Veritas Standards Feedback Draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "run_id",
+    "authority_settings_id",
+    "mode",
+    "evidence",
+    "governance",
+    "reviewer_confidence_scale",
+    "prefilled_outcome",
+    "prefilled_measurements",
+    "notes",
+    "missing_confirmation_fields"
+  ],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "run_id": { "type": "string" },
+    "authority_settings_id": { "type": "string" },
+    "mode": {
+      "type": "string",
+      "enum": ["observe", "assist", "gate"]
+    },
+    "evidence": { "$ref": "./veritas-standards-feedback.schema.json#/properties/evidence" },
+    "governance": { "$ref": "./veritas-standards-feedback.schema.json#/properties/governance" },
+    "reviewer_confidence_scale": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "prefilled_outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reviewer_confidence"],
+      "properties": {
+        "accepted_without_major_rewrite": {
+          "oneOf": [
+            { "type": "boolean" },
+            { "$ref": "#/$defs/missingHeuristic" }
+          ]
+        },
+        "reviewer_confidence": { "type": "string" }
+      }
+    },
+    "prefilled_measurements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "time_to_green_minutes",
+        "exception_count",
+        "false_positive_rules",
+        "missed_issues"
+      ],
+      "properties": {
+        "time_to_green_minutes": {
+          "oneOf": [
+            { "type": "number", "minimum": 0 },
+            { "$ref": "#/$defs/missingHeuristic" },
+            { "type": "null" }
+          ]
+        },
+        "exception_count": { "type": "integer", "minimum": 0 },
+        "false_positive_rules": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "missed_issues": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "missing_confirmation_fields": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "missingHeuristic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "reason"],
+      "properties": {
+        "value": { "type": "null" },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "session_log_schema_unrecognized",
+            "no_failing_run_observed",
+            "no_passing_run_observed",
+            "churn_threshold_not_applicable"
+          ]
+        }
+      }
+    }
+  }
+}

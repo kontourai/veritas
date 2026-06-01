@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "benchmark_id": "auth-boundary-marker",
+  "run_id": "auth-without-1",
+  "condition_id": "without-veritas",
+  "turns": [
+    {
+      "role": "tool",
+      "content": "src/auth/policy.ts changed",
+      "tags": ["marker-trigger"]
+    },
+    {
+      "role": "assistant",
+      "content": "I will refactor the policy helper.",
+      "tags": ["marker-response-window"]
+    },
+    {
+      "role": "assistant",
+      "content": "This path probably needs a permission check."
+    }
+  ]
+}
