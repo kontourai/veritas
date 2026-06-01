@@ -67,9 +67,15 @@
           "CHANGELOG.md",
           "CONTEXT.md",
           "CLAUDE.md",
+          "CODE_OF_CONDUCT.md",
           "CONTRIBUTING.md",
+          "LICENSE",
+          "SECURITY.md",
+          ".cursorrules",
+          ".editorconfig",
           ".gitignore",
           "AGENTS.md",
+          "surface.config.json",
           "veritas.claims.json"
         ],
         "owners": ["repo-core"],
@@ -93,6 +99,17 @@
         "label": ".github/**",
         "patterns": [
           ".github/"
+        ],
+        "owners": ["delivery-team"],
+        "boundary": "strict",
+        "boundaryAllow": ["repo-core"]
+      },
+      {
+        "id": "delivery.git-hooks",
+        "kind": "delivery-area",
+        "label": ".githooks/**",
+        "patterns": [
+          ".githooks/"
         ],
         "owners": ["delivery-team"],
         "boundary": "strict",
