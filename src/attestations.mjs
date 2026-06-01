@@ -5,6 +5,12 @@ import { execFileSync } from 'node:child_process';
 import { loadJson } from './load.mjs';
 import { relativeRepoPath } from './paths.mjs';
 import * as Surface from '@kontourai/surface';
+import {
+  approvalResolverRejectionReason,
+  isApprovalResolverResultAccepted,
+  normalizeApprovalRefPolicy,
+  summarizeApprovalResolverResult,
+} from './approval-resolvers.mjs';
 
 const DEFAULT_VALID_UNTIL_DAYS = 90;
 const ATTESTATIONS_DIR = '.veritas/attestations';
@@ -66,29 +72,44 @@ function requireHumanApprovalReference({ kind, approvalRef }) {
   );
 }
 
-function validateApprovalReferencePolicy({ approvalRef, authoritySettingsPath }) {
+function validateApprovalReferencePolicy({ approvalRef, authoritySettingsPath, approvalResolverResult }) {
   const authoritySettings = loadJson(authoritySettingsPath, 'authority settings');
-  const policy = authoritySettings.review_preferences?.attestation_approval_ref_policy;
-  const allowedPrefixes = policy?.allowed_prefixes;
-  if (!Array.isArray(allowedPrefixes) || allowedPrefixes.length === 0) {
+  const policy = normalizeApprovalRefPolicy(
+    authoritySettings.review_preferences?.attestation_approval_ref_policy,
+  );
+  if (policy.requiresResolution) {
+    if (!approvalResolverResult) {
+      throw new Error(
+        `veritas attest approval reference policy ${policy.mode} requires a resolver-backed approval result.`,
+      );
+    }
+    if (!isApprovalResolverResultAccepted(approvalResolverResult)) {
+      throw new Error(
+        `veritas attest approval reference was not accepted by resolver: ${approvalResolverRejectionReason(approvalResolverResult)}`,
+      );
+    }
+  }
+  if (policy.allowedPrefixes.length === 0) {
     return {
-      mode: policy?.mode ?? 'reference-only',
+      mode: policy.mode,
       matchedPrefix: null,
+      requiresResolution: policy.requiresResolution,
     };
   }
 
   const trimmedRef = approvalRef.trim();
-  const matchedPrefix = allowedPrefixes.find((prefix) =>
-    typeof prefix === 'string' && prefix.length > 0 && trimmedRef.startsWith(prefix)
+  const matchedPrefix = policy.allowedPrefixes.find((prefix) =>
+    trimmedRef.startsWith(prefix)
   );
   if (!matchedPrefix) {
     throw new Error(
-      `veritas attest approval reference must start with one of: ${allowedPrefixes.join(', ')}`,
+      `veritas attest approval reference must start with one of: ${policy.allowedPrefixes.join(', ')}`,
     );
   }
   return {
-    mode: policy?.mode ?? 'prefix',
+    mode: policy.mode,
     matchedPrefix,
+    requiresResolution: policy.requiresResolution,
   };
 }
 
@@ -238,6 +259,7 @@ export function createAttestation({
   validUntilDays = DEFAULT_VALID_UNTIL_DAYS,
   attestedAt,
   approvalRef,
+  approvalResolverResult,
   repoStandardsPath,
   repoMapPath,
   authoritySettingsPath,
@@ -266,7 +288,11 @@ export function createAttestation({
   const approvalRefPolicy = validateApprovalReferencePolicy({
     approvalRef,
     authoritySettingsPath: resolve(rootDir, authoritySettingsPath ?? '.veritas/authority/default.authority-settings.json'),
+    approvalResolverResult,
   });
+  const approvalResolution = approvalResolverResult
+    ? summarizeApprovalResolverResult(approvalResolverResult)
+    : null;
   const actorRecord = buildActor(rootDir, actor, displayName);
   const validUntil = new Date(new Date(timestamp).getTime() + validUntilDays * 86_400_000).toISOString();
   const surfaceClaimId = `veritas.attestation.${nextAttestationId(kind, timestamp, hashes)}`;
@@ -287,6 +313,7 @@ export function createAttestation({
       supersedes: priorAttestationId ?? null,
       approvalRef: approvalRef?.trim() ?? null,
       approvalRefPolicy,
+      approvalResolution,
     },
     surface: buildAttestationSurfaceProjection({
       claimId: surfaceClaimId,

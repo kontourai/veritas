@@ -112,7 +112,9 @@ The active pointer lives at `.veritas/attestations/HEAD` as JSON with `currentAt
 
 New attestation write paths require `metadata.approvalRef`, supplied through `--approval-ref`, to point at the explicit human approval that authorized the record. Existing historical attestations without this field remain readable, but agents must not create new authority-backed attestations without a durable approval reference.
 
-Authority settings may also constrain approval references with `review_preferences.attestation_approval_ref_policy.allowed_prefixes`. This lets a repo require references such as `servicenow:change/CHG12345` or `github:pull-request/123` before an attestation can be recorded, and leaves room for resolver-backed approval validation without changing the attestation shape.
+Authority settings may also constrain approval references with `review_preferences.attestation_approval_ref_policy`. Supported modes are `reference-only`, `prefix`, `resolved`, and `resolved-strict`. Prefix policies let a repo require references such as `servicenow:change/CHG12345` or `github:pull-request/123` before an attestation can be recorded. Resolved policies require a resolver-backed approved result before Veritas writes the attestation.
+
+Resolver-backed approval metadata lives under `metadata.approvalResolution`. Veritas records the normalized resolver result so later readers can inspect provider, authority reference, status, approver, approval time, expiry, scope, evidence hash, resolution time, and failure reason. The external approval system remains the source of authority; Veritas records the resolver observation and binds it to the attestation.
 
 ### Repo Standards Schema
 

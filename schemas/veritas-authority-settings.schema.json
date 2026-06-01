@@ -53,7 +53,7 @@
           "properties": {
             "mode": {
               "type": "string",
-              "enum": ["reference-only", "prefix"]
+              "enum": ["reference-only", "prefix", "resolved", "resolved-strict"]
             },
             "allowed_prefixes": {
               "type": "array",

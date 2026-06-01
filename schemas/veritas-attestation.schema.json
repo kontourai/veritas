@@ -52,7 +52,30 @@
           "type": "object",
           "properties": {
             "mode": { "type": "string" },
-            "matchedPrefix": { "type": ["string", "null"] }
+            "matchedPrefix": { "type": ["string", "null"] },
+            "requiresResolution": { "type": "boolean" }
+          },
+          "additionalProperties": true
+        },
+        "approvalResolution": {
+          "type": ["object", "null"],
+          "properties": {
+            "schemaVersion": { "type": "integer" },
+            "status": {
+              "type": "string",
+              "enum": ["approved", "rejected", "unresolved", "expired", "out-of-scope", "error"]
+            },
+            "approved": { "type": "boolean" },
+            "approvalRef": { "type": ["string", "null"] },
+            "provider": { "type": ["string", "null"] },
+            "authorityRef": { "type": ["string", "null"] },
+            "approvedBy": { "type": ["string", "null"] },
+            "approvedAt": { "type": ["string", "null"] },
+            "expiresAt": { "type": ["string", "null"] },
+            "scope": { "type": ["object", "null"] },
+            "evidenceHash": { "type": ["string", "null"] },
+            "resolvedAt": { "type": "string" },
+            "failureReason": { "type": ["string", "null"] }
           },
           "additionalProperties": true
         }
