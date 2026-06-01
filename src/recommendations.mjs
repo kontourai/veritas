@@ -3,7 +3,7 @@ import { dirname, relative, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { loadRepoMap, loadRepoStandards } from './load.mjs';
 import { resolveVeritasPaths } from './report.mjs';
-import { createAttestation } from './attestations.mjs';
+import { assertAttestationApprovalReference, createAttestation } from './attestations.mjs';
 
 export const RECOMMENDATION_STATUS = {
   proposed: 'proposed',
@@ -249,6 +249,12 @@ export function applyRecommendation({ rootDir, id, actor, accept, reject, messag
   };
 
   if (accept && recommendation.diff?.ruleId && recommendation.diff?.repoStandardsPath) {
+    assertAttestationApprovalReference({
+      rootDir,
+      kind: 'recommendation-acceptance',
+      actor,
+      approvalRef,
+    });
     const repoStandardsPath = resolve(rootDir, recommendation.diff.repoStandardsPath);
     const repoStandards = JSON.parse(readFileSync(repoStandardsPath, 'utf8'));
     const rule = (repoStandards.rules ?? []).find((item) => item.id === recommendation.diff.ruleId);
