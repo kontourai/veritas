@@ -19,6 +19,36 @@ npx @kontourai/veritas attest bootstrap \
 
 Teams can tighten this in authority settings with `review_preferences.attestation_approval_ref_policy.allowed_prefixes`. For example, a team can require all approval references to start with `servicenow:change/` before Veritas will record an attestation. That local policy is the foundation for resolver-backed checks where Veritas can later validate the referenced approval against an external system before writing the record.
 
+## Approval Resolver Contract
+
+Approval references are provider-neutral. Veritas treats external approval systems as the source of authority and records the resolver result as evidence about that source, not as a replacement for it.
+
+A resolver receives:
+
+- the approval reference
+- attestation kind
+- actor
+- repo identity
+- Protected Standards hashes
+- request timestamp
+
+A resolver returns a normalized result with:
+
+- `status`: `approved`, `rejected`, `unresolved`, `expired`, `out-of-scope`, or `error`
+- provider and authority reference
+- approver identity and approval timestamp when available
+- expiry, scope, and evidence hash when available
+- a stable failure reason when not approved
+
+Authority settings can use these policy modes:
+
+- `reference-only`: require a durable approval reference
+- `prefix`: require one of the configured approval reference prefixes
+- `resolved`: require a resolver-backed approved result
+- `resolved-strict`: reserved for stricter scope/actor matching on top of resolver approval
+
+Current built-in CLI behavior supports `reference-only` and `prefix`. Resolver-backed modes are part of the core contract and will be usable by provider or offline resolvers.
+
 The current implementation records hashes for the files that hold protected standards state:
 
 - `.veritas/repo-map.json`

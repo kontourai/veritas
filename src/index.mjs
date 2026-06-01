@@ -406,6 +406,7 @@ export {
   runClaimCli,
 };
 export * from './attestations.mjs';
+export * from './approval-resolvers.mjs';
 export * from './integrations/contract.mjs';
 export * from './integrations/session-logs.mjs';
 export * from './integrations/runtime-integrations.mjs';

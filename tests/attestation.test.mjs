@@ -287,6 +287,79 @@ test('attestation approval reference can be constrained by authority settings', 
   assert.equal(result.attestation.metadata.approvalRefPolicy.matchedPrefix, 'servicenow:change/');
 });
 
+test('attestation records normalized resolver-backed approval metadata', () => {
+  const rootDir = bootstrapVeritasRepo();
+  const authorityPath = join(rootDir, '.veritas/authority/default.authority-settings.json');
+  const authoritySettings = JSON.parse(readFileSync(authorityPath, 'utf8'));
+  authoritySettings.review_preferences.attestation_approval_ref_policy = {
+    mode: 'resolved',
+    allowed_prefixes: ['servicenow:change/'],
+  };
+  writeFileSync(authorityPath, `${JSON.stringify(authoritySettings, null, 2)}\n`);
+
+  const result = createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Initial human approval.',
+    approvalRef: 'servicenow:change/CHG12345',
+    approvalResolverResult: {
+      status: 'approved',
+      approvalRef: 'servicenow:change/CHG12345',
+      provider: 'servicenow',
+      authorityRef: 'CHG12345',
+      approvedBy: 'change-manager',
+      approvedAt: '2026-05-10T00:00:00.000Z',
+      evidenceHash: 'sha256:approval',
+      resolvedAt: '2026-05-10T00:05:00.000Z',
+    },
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+
+  assert.equal(result.attestation.metadata.approvalRefPolicy.requiresResolution, true);
+  assert.equal(result.attestation.metadata.approvalResolution.status, 'approved');
+  assert.equal(result.attestation.metadata.approvalResolution.provider, 'servicenow');
+  assert.equal(result.attestation.metadata.approvalResolution.failureReason, null);
+});
+
+test('resolved approval reference policy rejects unresolved resolver results', () => {
+  const rootDir = bootstrapVeritasRepo();
+  const authorityPath = join(rootDir, '.veritas/authority/default.authority-settings.json');
+  const authoritySettings = JSON.parse(readFileSync(authorityPath, 'utf8'));
+  authoritySettings.review_preferences.attestation_approval_ref_policy = {
+    mode: 'resolved',
+  };
+  writeFileSync(authorityPath, `${JSON.stringify(authoritySettings, null, 2)}\n`);
+
+  assert.throws(
+    () => createAttestation({
+      rootDir,
+      kind: 'bootstrap',
+      actor: 'brian',
+      notes: 'Initial human approval.',
+      approvalRef: 'servicenow:change/CHG12345',
+    }),
+    /requires a resolver-backed approval result/,
+  );
+
+  assert.throws(
+    () => createAttestation({
+      rootDir,
+      kind: 'bootstrap',
+      actor: 'brian',
+      notes: 'Initial human approval.',
+      approvalRef: 'servicenow:change/CHG12345',
+      approvalResolverResult: {
+        status: 'rejected',
+        approvalRef: 'servicenow:change/CHG12345',
+        provider: 'servicenow',
+        failureReason: 'change is not approved',
+      },
+    }),
+    /approval reference was not accepted by resolver: rejected/,
+  );
+});
+
 test('CLI bootstrap writes tracked attestation and readiness check fails on protected standards drift until policy-change attestation', () => {
   const rootDir = bootstrapVeritasRepo();
   const cli = join(repoRootDir, 'bin/veritas.mjs');
