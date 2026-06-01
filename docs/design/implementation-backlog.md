@@ -48,7 +48,7 @@ This backlog turns the current roadmap and integration plans into executable wor
 ### Repo Map templates and pilots
 
 - Start Repo Map templates inside `repo-maps/`, then promote to packages once the shape is proven.
-- Use Taxes as the MCP monorepo pilot and Campfit as the Next.js + Prisma confirmation pass.
+- Use one monorepo pilot and one Next.js + Prisma confirmation pass from outside the Veritas repo.
 
 ### Longitudinal evidence
 
