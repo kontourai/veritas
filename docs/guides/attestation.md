@@ -49,6 +49,37 @@ Authority settings can use these policy modes:
 
 Current built-in CLI behavior supports `reference-only` and `prefix`. Resolver-backed modes are part of the core contract and will be usable by provider or offline resolvers.
 
+## Offline Approval Records
+
+Veritas includes a deterministic offline resolver for teams that want resolver-backed attestations without network providers or secrets. Store approval records under:
+
+```text
+.veritas/authority/approval-records/
+```
+
+Use `veritas-approval:<id>` to load `.veritas/authority/approval-records/<id>.approval.json`, or `file:.veritas/authority/approval-records/<file>` for an explicit repo-local record path. File references must stay inside the approval-records directory.
+
+Example record:
+
+```json
+{
+  "schemaVersion": 1,
+  "id": "chg-123",
+  "status": "approved",
+  "approvalRef": "veritas-approval:chg-123",
+  "provider": "veritas-offline",
+  "authorityRef": "chg-123",
+  "approvedBy": "change-manager",
+  "approvedAt": "2026-06-01T00:00:00.000Z",
+  "expiresAt": "2026-07-01T00:00:00.000Z",
+  "scope": {
+    "attestationKinds": ["bootstrap", "policy-change"]
+  }
+}
+```
+
+When authority settings use `mode: "resolved"` or `mode: "resolved-strict"`, Veritas blocks attestation writes unless the approval ref resolves to an approved, unexpired, in-scope record. Failed resolution happens before attestation files are written. Recommendation acceptance uses the same approval path before applying standards changes.
+
 The current implementation records hashes for the files that hold protected standards state:
 
 - `.veritas/repo-map.json`

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kontourai.io/schemas/veritas-approval-record.schema.json",
+  "title": "Veritas Approval Record",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion", "id", "status", "approvalRef"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "id": { "type": "string", "minLength": 1 },
+    "status": {
+      "type": "string",
+      "enum": ["approved", "rejected", "unresolved", "expired", "out-of-scope", "error"]
+    },
+    "approvalRef": { "type": "string", "minLength": 1 },
+    "provider": { "type": "string" },
+    "authorityRef": { "type": "string" },
+    "approvedBy": { "type": "string" },
+    "approvedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "failureReason": { "type": "string" },
+    "evidenceHash": { "type": "string" },
+    "scope": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "attestationKinds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["bootstrap", "policy-change", "recommendation-acceptance"]
+          },
+          "uniqueItems": true
+        },
+        "protectedStandardsHashes": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "repoStandardsHash": { "type": "string" },
+            "repoMapHash": { "type": "string" },
+            "authoritySettingsHash": { "type": "string" }
+          }
+        }
+      }
+    },
+    "metadata": { "type": "object" }
+  }
+}

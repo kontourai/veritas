@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildTrustReport } from '@kontourai/surface';
 import {
@@ -61,6 +61,34 @@ function governanceClaim(claims) {
 }
 
 const HUMAN_APPROVAL_REF = 'test://human-approved-attestation';
+
+function configureResolvedApprovalPolicy(rootDir, options = {}) {
+  const authorityPath = join(rootDir, '.veritas/authority/default.authority-settings.json');
+  const authoritySettings = JSON.parse(readFileSync(authorityPath, 'utf8'));
+  authoritySettings.review_preferences.attestation_approval_ref_policy = {
+    mode: 'resolved',
+    allowed_prefixes: options.allowedPrefixes ?? ['veritas-approval:'],
+  };
+  writeFileSync(authorityPath, `${JSON.stringify(authoritySettings, null, 2)}\n`);
+}
+
+function writeOfflineApprovalRecord(rootDir, id, record) {
+  const dir = join(rootDir, '.veritas/authority/approval-records');
+  mkdirSync(dir, { recursive: true });
+  const path = join(dir, `${id}.approval.json`);
+  writeFileSync(path, `${JSON.stringify({
+    schemaVersion: 1,
+    id,
+    status: 'approved',
+    approvalRef: `veritas-approval:${id}`,
+    provider: 'veritas-offline',
+    authorityRef: id,
+    approvedBy: 'change-manager',
+    approvedAt: '2026-05-10T00:00:00.000Z',
+    ...record,
+  }, null, 2)}\n`);
+  return path;
+}
 
 test('bootstrap attestation records protected standards hashes and status detects drift', () => {
   const rootDir = bootstrapVeritasRepo();
@@ -339,7 +367,7 @@ test('resolved approval reference policy rejects unresolved resolver results', (
       notes: 'Initial human approval.',
       approvalRef: 'servicenow:change/CHG12345',
     }),
-    /requires a resolver-backed approval result/,
+    /approval reference was not accepted by resolver: unresolved/,
   );
 
   assert.throws(
@@ -358,6 +386,94 @@ test('resolved approval reference policy rejects unresolved resolver results', (
     }),
     /approval reference was not accepted by resolver: rejected/,
   );
+});
+
+test('resolved approval reference policy uses offline approval records', () => {
+  const rootDir = bootstrapVeritasRepo();
+  configureResolvedApprovalPolicy(rootDir);
+  writeOfflineApprovalRecord(rootDir, 'chg-123', {
+    scope: {
+      attestationKinds: ['bootstrap'],
+    },
+  });
+
+  const result = createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Initial human approval.',
+    approvalRef: 'veritas-approval:chg-123',
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+
+  assert.equal(result.attestation.metadata.approvalResolution.status, 'approved');
+  assert.equal(result.attestation.metadata.approvalResolution.provider, 'veritas-offline');
+  assert.equal(result.attestation.metadata.approvalResolution.authorityRef, 'chg-123');
+  assert.match(result.attestation.metadata.approvalResolution.evidenceHash, /^sha256:/);
+});
+
+test('resolved approval reference policy blocks missing, rejected, expired, and out-of-scope offline records before write', () => {
+  const rootDir = bootstrapVeritasRepo();
+  configureResolvedApprovalPolicy(rootDir);
+  writeOfflineApprovalRecord(rootDir, 'rejected', {
+    status: 'rejected',
+    failureReason: 'change was rejected',
+  });
+  writeOfflineApprovalRecord(rootDir, 'expired', {
+    expiresAt: '2026-05-09T00:00:00.000Z',
+  });
+  writeOfflineApprovalRecord(rootDir, 'wrong-kind', {
+    scope: {
+      attestationKinds: ['policy-change'],
+    },
+  });
+
+  for (const [approvalRef, pattern] of [
+    ['veritas-approval:missing', /not accepted by resolver: unresolved/],
+    ['veritas-approval:rejected', /not accepted by resolver: rejected/],
+    ['veritas-approval:expired', /not accepted by resolver: expired/],
+    ['veritas-approval:wrong-kind', /not accepted by resolver: out-of-scope/],
+  ]) {
+    assert.throws(
+      () => createAttestation({
+        rootDir,
+        kind: 'bootstrap',
+        actor: 'brian',
+        notes: 'Initial human approval.',
+        approvalRef,
+        attestedAt: '2026-05-10T00:00:00.000Z',
+      }),
+      pattern,
+    );
+  }
+
+  assert.equal(existsSync(join(rootDir, '.veritas/attestations/HEAD')), false);
+});
+
+test('CLI bootstrap can satisfy resolved policy with an offline approval record', () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-offline-cli-');
+  configureResolvedApprovalPolicy(rootDir);
+  writeOfflineApprovalRecord(rootDir, 'cli-approved', {
+    scope: {
+      attestationKinds: ['bootstrap'],
+    },
+  });
+  const cli = join(repoRootDir, 'bin/veritas.mjs');
+  const output = execFileSync('node', [
+    cli,
+    'attest',
+    'bootstrap',
+    '--root',
+    rootDir,
+    '--actor',
+    'brian',
+    '--approval-ref',
+    'veritas-approval:cli-approved',
+    '--non-interactive',
+  ], { cwd: rootDir, encoding: 'utf8' });
+  const result = parseCliJson(output);
+  assert.equal(result.attestation.metadata.approvalResolution.status, 'approved');
+  assert.equal(result.attestation.metadata.approvalResolution.authorityRef, 'cli-approved');
 });
 
 test('CLI bootstrap writes tracked attestation and readiness check fails on protected standards drift until policy-change attestation', () => {

@@ -17,6 +17,30 @@ function writeJson(path, value) {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
+function configureResolvedApprovalPolicy(rootDir) {
+  const authorityPath = join(rootDir, '.veritas/authority/default.authority-settings.json');
+  const authoritySettings = JSON.parse(readFileSync(authorityPath, 'utf8'));
+  authoritySettings.review_preferences.attestation_approval_ref_policy = {
+    mode: 'resolved',
+    allowed_prefixes: ['veritas-approval:'],
+  };
+  writeJson(authorityPath, authoritySettings);
+}
+
+function writeOfflineApprovalRecord(rootDir, id, record) {
+  writeJson(join(rootDir, '.veritas/authority/approval-records', `${id}.approval.json`), {
+    schemaVersion: 1,
+    id,
+    status: 'approved',
+    approvalRef: `veritas-approval:${id}`,
+    provider: 'veritas-offline',
+    authorityRef: id,
+    approvedBy: 'change-manager',
+    approvedAt: '2026-05-10T00:00:00.000Z',
+    ...record,
+  });
+}
+
 function setupRepo() {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-recommendations-'));
   writeJson(join(rootDir, '.veritas/repo-map.json'), {
@@ -207,4 +231,40 @@ test('recommendation rejection records decision and suppresses immediate regener
     now: '2026-05-11T00:00:00.000Z',
   });
   assert.equal(regenerated.some((item) => item.id === recommendation.id), false);
+});
+
+test('recommendation acceptance blocks invalid resolved approval before mutating standards', () => {
+  const rootDir = setupRepo();
+  createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'bootstrap',
+    approvalRef: 'test://recommendation-bootstrap-human-approval',
+  });
+  configureResolvedApprovalPolicy(rootDir);
+  writeOfflineApprovalRecord(rootDir, 'rejected', {
+    status: 'rejected',
+    failureReason: 'change was rejected',
+  });
+  const recommendation = generateRuleRecommendations({ rootDir }).find((item) => item.type === 'rule-enforcement-relaxation');
+  writeGeneratedRecommendations({ rootDir, recommendations: [recommendation] });
+
+  assert.throws(
+    () => applyRecommendation({
+      rootDir,
+      id: recommendation.id,
+      actor: 'brian',
+      accept: true,
+      reject: false,
+      message: 'accept recommendation',
+      approvalRef: 'veritas-approval:rejected',
+    }),
+    /approval reference was not accepted by resolver: rejected/,
+  );
+
+  const policy = JSON.parse(readFileSync(join(rootDir, '.veritas/repo-standards/default.repo-standards.json'), 'utf8'));
+  const rule = policy.rules.find((item) => item.id === 'strict-rule');
+  assert.equal(rule.enforcement, 'deny');
+  assert.equal(rule.stage, 'block');
 });

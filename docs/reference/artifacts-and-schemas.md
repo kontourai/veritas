@@ -116,6 +116,8 @@ Authority settings may also constrain approval references with `review_preferenc
 
 Resolver-backed approval metadata lives under `metadata.approvalResolution`. Veritas records the normalized resolver result so later readers can inspect provider, authority reference, status, approver, approval time, expiry, scope, evidence hash, resolution time, and failure reason. The external approval system remains the source of authority; Veritas records the resolver observation and binds it to the attestation.
 
+Offline approval records live under `.veritas/authority/approval-records/` and are defined by [schemas/veritas-approval-record.schema.json](../../schemas/veritas-approval-record.schema.json). The built-in offline resolver supports `veritas-approval:<id>` refs, which resolve to `<id>.approval.json`, and `file:.veritas/authority/approval-records/<file>` refs for explicit repo-local paths. Resolved policy modes reject missing, rejected, expired, or out-of-scope records before Veritas writes attestation files.
+
 ### Repo Standards Schema
 
 Defined by [schemas/veritas-repo-standards.schema.json](../../schemas/veritas-repo-standards.schema.json).

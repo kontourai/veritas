@@ -1,13 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import {
   approvalResolverRejectionReason,
   buildApprovalResolverRequest,
   isApprovalResolverResultAccepted,
   normalizeApprovalRefPolicy,
   normalizeApprovalResolverResult,
+  resolveOfflineApprovalReference,
   summarizeApprovalResolverResult,
 } from '../src/index.mjs';
+
+function writeOfflineApprovalRecord(rootDir, id, record) {
+  const dir = join(rootDir, '.veritas/authority/approval-records');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, `${id}.approval.json`), `${JSON.stringify({
+    schemaVersion: 1,
+    id,
+    status: 'approved',
+    approvalRef: `veritas-approval:${id}`,
+    provider: 'veritas-offline',
+    authorityRef: id,
+    approvedBy: 'change-manager',
+    approvedAt: '2026-06-01T00:00:00.000Z',
+    ...record,
+  }, null, 2)}\n`);
+}
 
 test('approval resolver contract builds a provider-neutral request', () => {
   const request = buildApprovalResolverRequest({
@@ -85,4 +105,60 @@ test('approval reference policy modes classify resolution requirements', () => {
     () => normalizeApprovalRefPolicy({ mode: 'anything-goes' }),
     /Unsupported attestation approval reference policy mode/,
   );
+});
+
+test('offline approval resolver reads repo-local approval records', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-offline-approval-'));
+  writeOfflineApprovalRecord(rootDir, 'chg-123', {
+    scope: {
+      attestationKinds: ['bootstrap'],
+    },
+  });
+  const request = buildApprovalResolverRequest({
+    approvalRef: 'veritas-approval:chg-123',
+    attestationKind: 'bootstrap',
+    requestedAt: '2026-06-01T00:00:00.000Z',
+  });
+
+  const result = resolveOfflineApprovalReference({
+    rootDir,
+    approvalRef: 'veritas-approval:chg-123',
+    request,
+    resolvedAt: '2026-06-01T00:00:00.000Z',
+  });
+
+  assert.equal(result.status, 'approved');
+  assert.equal(result.provider, 'veritas-offline');
+  assert.equal(result.authorityRef, 'chg-123');
+  assert.match(result.evidenceHash, /^sha256:/);
+});
+
+test('offline approval resolver rejects escaped file references and out-of-scope records', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-offline-approval-'));
+  writeOfflineApprovalRecord(rootDir, 'wrong-kind', {
+    scope: {
+      attestationKinds: ['policy-change'],
+    },
+  });
+
+  assert.throws(
+    () => resolveOfflineApprovalReference({
+      rootDir,
+      approvalRef: 'file:../outside.json',
+    }),
+    /approval record path must stay inside/,
+  );
+
+  const result = resolveOfflineApprovalReference({
+    rootDir,
+    approvalRef: 'veritas-approval:wrong-kind',
+    request: buildApprovalResolverRequest({
+      approvalRef: 'veritas-approval:wrong-kind',
+      attestationKind: 'bootstrap',
+      requestedAt: '2026-06-01T00:00:00.000Z',
+    }),
+    resolvedAt: '2026-06-01T00:00:00.000Z',
+  });
+  assert.equal(result.status, 'out-of-scope');
+  assert.equal(approvalResolverRejectionReason(result), 'out-of-scope');
 });

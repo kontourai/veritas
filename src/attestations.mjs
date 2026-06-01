@@ -7,8 +7,10 @@ import { relativeRepoPath } from './paths.mjs';
 import * as Surface from '@kontourai/surface';
 import {
   approvalResolverRejectionReason,
+  buildApprovalResolverRequest,
   isApprovalResolverResultAccepted,
   normalizeApprovalRefPolicy,
+  resolveOfflineApprovalReference,
   summarizeApprovalResolverResult,
 } from './approval-resolvers.mjs';
 
@@ -72,20 +74,34 @@ function requireHumanApprovalReference({ kind, approvalRef }) {
   );
 }
 
-function validateApprovalReferencePolicy({ approvalRef, authoritySettingsPath, approvalResolverResult }) {
+function validateApprovalReferencePolicy({
+  rootDir,
+  approvalRef,
+  authoritySettingsPath,
+  approvalResolverResult,
+  resolverRequest,
+}) {
   const authoritySettings = loadJson(authoritySettingsPath, 'authority settings');
   const policy = normalizeApprovalRefPolicy(
     authoritySettings.review_preferences?.attestation_approval_ref_policy,
   );
+  const resolvedApproval = policy.requiresResolution && !approvalResolverResult
+    ? resolveOfflineApprovalReference({
+      rootDir,
+      approvalRef,
+      request: resolverRequest,
+      resolvedAt: resolverRequest?.requestedAt,
+    })
+    : approvalResolverResult;
   if (policy.requiresResolution) {
-    if (!approvalResolverResult) {
+    if (!resolvedApproval) {
       throw new Error(
         `veritas attest approval reference policy ${policy.mode} requires a resolver-backed approval result.`,
       );
     }
-    if (!isApprovalResolverResultAccepted(approvalResolverResult)) {
+    if (!isApprovalResolverResultAccepted(resolvedApproval, { now: resolverRequest?.requestedAt })) {
       throw new Error(
-        `veritas attest approval reference was not accepted by resolver: ${approvalResolverRejectionReason(approvalResolverResult)}`,
+        `veritas attest approval reference was not accepted by resolver: ${approvalResolverRejectionReason(resolvedApproval, { now: resolverRequest?.requestedAt })}`,
       );
     }
   }
@@ -94,6 +110,7 @@ function validateApprovalReferencePolicy({ approvalRef, authoritySettingsPath, a
       mode: policy.mode,
       matchedPrefix: null,
       requiresResolution: policy.requiresResolution,
+      approvalResolverResult: resolvedApproval ?? null,
     };
   }
 
@@ -110,6 +127,7 @@ function validateApprovalReferencePolicy({ approvalRef, authoritySettingsPath, a
     mode: policy.mode,
     matchedPrefix,
     requiresResolution: policy.requiresResolution,
+    approvalResolverResult: resolvedApproval ?? null,
   };
 }
 
@@ -285,13 +303,28 @@ export function createAttestation({
   }
 
   const hashes = hashProtectedStandards(rootDir, { repoStandardsPath, repoMapPath, authoritySettingsPath });
+  const resolverRequest = buildApprovalResolverRequest({
+    approvalRef,
+    attestationKind: kind,
+    actor,
+    protectedStandards: {
+      repoStandardsHash: hashes.repoStandardsHash,
+      repoMapHash: hashes.repoMapHash,
+      authoritySettingsHash: hashes.authoritySettingsHash,
+    },
+    requestedAt: timestamp,
+  });
   const approvalRefPolicy = validateApprovalReferencePolicy({
+    rootDir,
     approvalRef,
     authoritySettingsPath: resolve(rootDir, authoritySettingsPath ?? '.veritas/authority/default.authority-settings.json'),
     approvalResolverResult,
+    resolverRequest,
   });
-  const approvalResolution = approvalResolverResult
-    ? summarizeApprovalResolverResult(approvalResolverResult)
+  const resolvedApproval = approvalRefPolicy.approvalResolverResult;
+  delete approvalRefPolicy.approvalResolverResult;
+  const approvalResolution = resolvedApproval
+    ? summarizeApprovalResolverResult(resolvedApproval)
     : null;
   const actorRecord = buildActor(rootDir, actor, displayName);
   const validUntil = new Date(new Date(timestamp).getTime() + validUntilDays * 86_400_000).toISOString();
@@ -338,6 +371,46 @@ export function createAttestation({
     attestation,
     path: relativeRepoPath(rootDir, path),
     headPath: relativeRepoPath(rootDir, headPath(rootDir)),
+  };
+}
+
+export function assertAttestationApprovalReference({
+  rootDir,
+  kind,
+  actor,
+  approvalRef,
+  approvalResolverResult,
+  attestedAt,
+  repoStandardsPath,
+  repoMapPath,
+  authoritySettingsPath,
+} = {}) {
+  requireHumanApprovalReference({ kind, approvalRef });
+  const timestamp = nowIso({ attestedAt });
+  const hashes = hashProtectedStandards(rootDir, { repoStandardsPath, repoMapPath, authoritySettingsPath });
+  const resolverRequest = buildApprovalResolverRequest({
+    approvalRef,
+    attestationKind: kind,
+    actor,
+    protectedStandards: {
+      repoStandardsHash: hashes.repoStandardsHash,
+      repoMapHash: hashes.repoMapHash,
+      authoritySettingsHash: hashes.authoritySettingsHash,
+    },
+    requestedAt: timestamp,
+  });
+  const approvalRefPolicy = validateApprovalReferencePolicy({
+    rootDir,
+    approvalRef,
+    authoritySettingsPath: resolve(rootDir, authoritySettingsPath ?? '.veritas/authority/default.authority-settings.json'),
+    approvalResolverResult,
+    resolverRequest,
+  });
+  const resolvedApproval = approvalRefPolicy.approvalResolverResult;
+  delete approvalRefPolicy.approvalResolverResult;
+  return {
+    approvalRefPolicy,
+    approvalResolution: resolvedApproval ? summarizeApprovalResolverResult(resolvedApproval) : null,
   };
 }
 
