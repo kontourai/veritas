@@ -60,6 +60,8 @@ function governanceClaim(claims) {
   return claims.find((claim) => claim.claimType === 'veritas-governance-artifact');
 }
 
+const HUMAN_APPROVAL_REF = 'test://human-approved-attestation';
+
 test('bootstrap attestation records protected standards hashes and status detects drift', () => {
   const rootDir = bootstrapVeritasRepo();
   const result = createAttestation({
@@ -67,6 +69,7 @@ test('bootstrap attestation records protected standards hashes and status detect
     kind: 'bootstrap',
     actor: 'brian',
     notes: 'Initial human approval.',
+    approvalRef: HUMAN_APPROVAL_REF,
     attestedAt: '2026-05-10T00:00:00.000Z',
   });
 
@@ -92,6 +95,7 @@ test('policy-change attestation chains to prior attestation and refreshes drift'
     kind: 'bootstrap',
     actor: 'brian',
     notes: 'Initial human approval.',
+    approvalRef: HUMAN_APPROVAL_REF,
     attestedAt: '2026-05-10T00:00:00.000Z',
   });
   const policyPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
@@ -103,6 +107,7 @@ test('policy-change attestation chains to prior attestation and refreshes drift'
     kind: 'policy-change',
     actor: 'brian',
     notes: 'Reviewed policy description change.',
+    approvalRef: HUMAN_APPROVAL_REF,
     attestedAt: '2026-05-12T00:00:00.000Z',
   });
 
@@ -117,6 +122,7 @@ test('expired attestation is warned but not drifted', () => {
     kind: 'bootstrap',
     actor: 'brian',
     notes: 'Short validity.',
+    approvalRef: HUMAN_APPROVAL_REF,
     validUntilDays: 1,
     attestedAt: '2026-05-10T00:00:00.000Z',
   });
@@ -132,6 +138,7 @@ test('surface input projects current governance artifact claims distinctly from 
     kind: 'bootstrap',
     actor: 'brian',
     notes: 'Initial human approval.',
+    approvalRef: HUMAN_APPROVAL_REF,
     attestedAt: '2026-05-10T00:00:00.000Z',
   });
 
@@ -159,6 +166,7 @@ test('surface input projects missing, drifted, and expired governance attestatio
     kind: 'bootstrap',
     actor: 'brian',
     notes: 'Initial human approval.',
+    approvalRef: HUMAN_APPROVAL_REF,
     attestedAt: '2026-05-10T00:00:00.000Z',
   });
   const policyPath = join(driftRoot, '.veritas/repo-standards/default.repo-standards.json');
@@ -174,6 +182,7 @@ test('surface input projects missing, drifted, and expired governance attestatio
     kind: 'bootstrap',
     actor: 'brian',
     notes: 'Short validity.',
+    approvalRef: HUMAN_APPROVAL_REF,
     validUntilDays: 1,
     attestedAt: '2026-05-10T00:00:00.000Z',
   });
@@ -191,6 +200,7 @@ test('readiness check prints a warning for expired attestation', () => {
     kind: 'bootstrap',
     actor: 'brian',
     notes: 'Short validity.',
+    approvalRef: HUMAN_APPROVAL_REF,
     validUntilDays: 1,
     attestedAt: '2020-01-01T00:00:00.000Z',
   });
@@ -222,9 +232,59 @@ test('attestation rule is visible to explain context', () => {
 test('attestation refuses CI or bot actors', () => {
   const rootDir = bootstrapVeritasRepo();
   assert.throws(
-    () => createAttestation({ rootDir, kind: 'bootstrap', actor: 'github-actions[bot]' }),
+    () => createAttestation({
+      rootDir,
+      kind: 'bootstrap',
+      actor: 'github-actions[bot]',
+      approvalRef: HUMAN_APPROVAL_REF,
+    }),
     /non-human actor/,
   );
+});
+
+test('attestation requires an explicit human approval reference', () => {
+  const rootDir = bootstrapVeritasRepo();
+  assert.throws(
+    () => createAttestation({
+      rootDir,
+      kind: 'bootstrap',
+      actor: 'brian',
+      notes: 'Initial human approval.',
+    }),
+    /requires --approval-ref/,
+  );
+});
+
+test('attestation approval reference can be constrained by authority settings', () => {
+  const rootDir = bootstrapVeritasRepo();
+  const authorityPath = join(rootDir, '.veritas/authority/default.authority-settings.json');
+  const authoritySettings = JSON.parse(readFileSync(authorityPath, 'utf8'));
+  authoritySettings.review_preferences.attestation_approval_ref_policy = {
+    mode: 'prefix',
+    allowed_prefixes: ['servicenow:change/'],
+  };
+  writeFileSync(authorityPath, `${JSON.stringify(authoritySettings, null, 2)}\n`);
+
+  assert.throws(
+    () => createAttestation({
+      rootDir,
+      kind: 'bootstrap',
+      actor: 'brian',
+      notes: 'Initial human approval.',
+      approvalRef: 'github:pull-request/123',
+    }),
+    /approval reference must start with one of: servicenow:change\//,
+  );
+
+  const result = createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Initial human approval.',
+    approvalRef: 'servicenow:change/CHG12345',
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+  assert.equal(result.attestation.metadata.approvalRefPolicy.matchedPrefix, 'servicenow:change/');
 });
 
 test('CLI bootstrap writes tracked attestation and readiness check fails on protected standards drift until policy-change attestation', () => {
@@ -238,10 +298,13 @@ test('CLI bootstrap writes tracked attestation and readiness check fails on prot
     rootDir,
     '--actor',
     'brian',
+    '--approval-ref',
+    HUMAN_APPROVAL_REF,
     '--non-interactive',
   ], { cwd: rootDir, encoding: 'utf8' });
   const bootstrap = parseCliJson(bootstrapOutput);
   assert.equal(readJsonFromAbsolute(join(rootDir, '.veritas/attestations/HEAD')).currentAttestationId, bootstrap.attestation.id);
+  assert.equal(bootstrap.attestation.metadata.approvalRef, HUMAN_APPROVAL_REF);
 
   const policyPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
   const policy = JSON.parse(readFileSync(policyPath, 'utf8'));
@@ -273,6 +336,8 @@ test('CLI bootstrap writes tracked attestation and readiness check fails on prot
     'brian',
     '--message',
     'Reviewed policy drift.',
+    '--approval-ref',
+    HUMAN_APPROVAL_REF,
   ], { cwd: rootDir, encoding: 'utf8' });
   const readinessOutput = execFileSync('node', [
     cli,

@@ -12,7 +12,7 @@ Define what good looks like for your repo. Veritas checks each change against th
 ```bash
 npm install -D @kontourai/veritas
 npx veritas init
-npx veritas attest bootstrap --actor <authority-id> --non-interactive
+npx veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
 npx veritas readiness --working-tree
 ```
 

@@ -9,8 +9,15 @@ In Veritas, attestations protect the parts of the repo standards and repo map th
 After `veritas init`, review the generated standards and map, then record the first attestation:
 
 ```bash
-npx @kontourai/veritas attest bootstrap --actor <authority-id> --non-interactive
+npx @kontourai/veritas attest bootstrap \
+  --actor <authority-id> \
+  --approval-ref <human-approval-reference> \
+  --non-interactive
 ```
+
+`--approval-ref` is required for every authority-backed attestation. Use a durable reference to the explicit human approval, such as a pull request review, issue comment, change ticket, signed approval record, or other review artifact. Agents may prepare the command, but they should stop and ask for that reference instead of inventing one.
+
+Teams can tighten this in authority settings with `review_preferences.attestation_approval_ref_policy.allowed_prefixes`. For example, a team can require all approval references to start with `servicenow:change/` before Veritas will record an attestation. That local policy is the foundation for resolver-backed checks where Veritas can later validate the referenced approval against an external system before writing the record.
 
 The current implementation records hashes for the files that hold protected standards state:
 
@@ -27,6 +34,7 @@ When protected standards change, record a successor attestation:
 ```bash
 npx @kontourai/veritas attest policy-change \
   --actor <authority-id> \
+  --approval-ref <human-approval-reference> \
   --message "Reviewed standards change for contract boundary requirements"
 ```
 

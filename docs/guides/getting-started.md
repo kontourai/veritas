@@ -55,7 +55,7 @@ npx @kontourai/veritas init --apply --plan .veritas/init-plans/guided.json
 After reviewing the generated standards and map, record the first attestation:
 
 ```bash
-npx @kontourai/veritas attest bootstrap --actor <authority-id> --non-interactive
+npx @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
 ```
 
 This records authority-backed evidence for the current protected standards. If the standards or map change later, Veritas reports that fresh authority is needed before those changes can be trusted.

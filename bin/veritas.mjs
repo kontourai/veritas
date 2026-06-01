@@ -22,9 +22,9 @@ const MAIN_USAGE = `Usage:
   veritas init [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--template <name>] [--force]
   veritas readiness [--check evidence|boundaries|coverage] [--root <path>] [--working-tree] [--actor <id>]
   veritas explain <ruleId|workArea|filePath> [--file <path>] [--work-area <id>] [--root <path>]
-  veritas attest bootstrap --actor <id> [--root <path>] [--non-interactive] [--valid-until-days <days>]
-  veritas attest policy-change --actor <id> --message <text> [--root <path>] [--valid-until-days <days>]
-  veritas attest recommendation <id> --accept|--reject --actor <id> [--message <text>] [--root <path>]
+  veritas attest bootstrap --actor <id> --approval-ref <ref> [--root <path>] [--non-interactive] [--valid-until-days <days>]
+  veritas attest policy-change --actor <id> --approval-ref <ref> --message <text> [--root <path>] [--valid-until-days <days>]
+  veritas attest recommendation <id> --accept|--reject --actor <id> [--approval-ref <ref>] [--message <text>] [--root <path>]
   veritas attest status [--root <path>]
   veritas claim init|list|add|edit|remove|scaffold|validate [--root <path>]
   veritas plugin list [--root <path>]
@@ -36,7 +36,7 @@ const MAIN_USAGE = `Usage:
   veritas feedback marker-suite --suite <path>
   veritas feedback recommend [--root <path>] [--force] [--dry-run]
   veritas feedback summary [--root <path>]
-  veritas recommendation list|show <id>|decide <id> [--accept|--reject] [--actor <id>] [--message <text>]
+  veritas recommendation list|show <id>|decide <id> [--accept|--reject] [--actor <id>] [--approval-ref <ref>] [--message <text>]
   veritas integrations codex|claude-code|cursor|copilot install|status|uninstall [--root <path>] [--force]
 `;
 
@@ -75,13 +75,13 @@ const FEEDBACK_USAGE = `Usage:
 const PROPOSAL_USAGE = `Usage:
   veritas recommendation list [--root <path>] [--status proposed|accepted|rejected|all]
   veritas recommendation show <id> [--root <path>]
-  veritas recommendation decide <id> --accept|--reject --actor <id> [--message <text>] [--root <path>]
+  veritas recommendation decide <id> --accept|--reject --actor <id> [--approval-ref <ref>] [--message <text>] [--root <path>]
 `;
 
 const ATTEST_USAGE = `Usage:
-  veritas attest bootstrap --actor <id> [--root <path>] [--non-interactive] [--valid-until-days <days>]
-  veritas attest policy-change --actor <id> --message <text> [--root <path>] [--valid-until-days <days>]
-  veritas attest recommendation <id> --accept|--reject --actor <id> [--message <text>] [--root <path>]
+  veritas attest bootstrap --actor <id> --approval-ref <ref> [--root <path>] [--non-interactive] [--valid-until-days <days>]
+  veritas attest policy-change --actor <id> --approval-ref <ref> --message <text> [--root <path>] [--valid-until-days <days>]
+  veritas attest recommendation <id> --accept|--reject --actor <id> [--approval-ref <ref>] [--message <text>] [--root <path>]
   veritas attest status [--root <path>]
 `;
 

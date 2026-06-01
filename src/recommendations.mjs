@@ -231,7 +231,7 @@ export function generateAndWriteRecommendations(options = {}, defaults = {}) {
   return { rootDir, recommendations, written };
 }
 
-export function applyRecommendation({ rootDir, id, actor, accept, reject, message = '' } = {}) {
+export function applyRecommendation({ rootDir, id, actor, accept, reject, message = '', approvalRef } = {}) {
   const recommendation = loadRecommendation(rootDir, id);
   if (recommendation.status !== RECOMMENDATION_STATUS.proposed) {
     throw new Error(`Recommendation ${id} is already ${recommendation.status}`);
@@ -260,6 +260,7 @@ export function applyRecommendation({ rootDir, id, actor, accept, reject, messag
       kind: 'recommendation-acceptance',
       actor,
       notes: message || `Accepted recommendation ${id}`,
+      approvalRef,
     }).attestation;
   }
 

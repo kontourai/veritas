@@ -46,7 +46,22 @@
           "items": { "type": "string" },
           "minItems": 3
         },
-        "major_rewrite_definition": { "type": "string" }
+        "major_rewrite_definition": { "type": "string" },
+        "attestation_approval_ref_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": ["reference-only", "prefix"]
+            },
+            "allowed_prefixes": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 },
+              "uniqueItems": true
+            }
+          }
+        }
       }
     },
     "promotion_preferences": {

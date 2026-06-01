@@ -62,11 +62,12 @@ function syntheticPolicyRules() {
     explain: {
       summary: 'Veritas hashes the Repo Map, Repo Standards, and authority settings as Protected Standards. Readiness checks fail on drift until a valid authority records a fresh attestation.',
       mustDo: [
-        'Run `veritas attest bootstrap --actor <authority-id>` after first installing Veritas governance.',
-        'Run `veritas attest policy-change --actor <authority-id> --message <reason>` after changing Protected Standards files.',
+        'Run `veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference>` after first installing Veritas governance.',
+        'Run `veritas attest policy-change --actor <authority-id> --approval-ref <human-approval-reference> --message <reason>` after changing Protected Standards files.',
       ],
       mustNotDo: [
         'Do not treat generated evidence or agent edits as a substitute for authority-backed standards review.',
+        'Do not invent an approval reference; stop and request explicit human approval when no durable approval artifact exists.',
       ],
       contextLinks: [
         'docs/guides/attestation.md',

@@ -65,7 +65,7 @@ Use the enforcement ladder:
 For protected standards, record an attestation after the generated files have been reviewed:
 
 ```bash
-npx @kontourai/veritas attest bootstrap --actor <authority-id> --non-interactive
+npx @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
 ```
 
 ## What To Do Today

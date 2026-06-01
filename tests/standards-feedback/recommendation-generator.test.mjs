@@ -98,6 +98,7 @@ test('recommendation artifacts can be accepted and surface as proposed claims be
     kind: 'bootstrap',
     actor: 'brian',
     notes: 'bootstrap',
+    approvalRef: 'test://recommendation-bootstrap-human-approval',
   });
   const recommendation = generateRuleRecommendations({ rootDir }).find((item) => item.type === 'rule-enforcement-relaxation');
   const [path] = writeGeneratedRecommendations({ rootDir, recommendations: [recommendation] });
@@ -169,6 +170,7 @@ test('recommendation artifacts can be accepted and surface as proposed claims be
     accept: true,
     reject: false,
     message: 'accept recommendation',
+    approvalRef: 'test://recommendation-accepted-by-human',
   });
   assert.equal(accepted.status, 'accepted');
   const policy = JSON.parse(readFileSync(join(rootDir, '.veritas/repo-standards/default.repo-standards.json'), 'utf8'));

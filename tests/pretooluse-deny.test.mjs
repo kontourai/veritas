@@ -33,6 +33,7 @@ function bootstrapRepo() {
     kind: 'bootstrap',
     actor: 'brian',
     notes: 'Initial human approval.',
+    approvalRef: 'test://pretool-human-approval',
     attestedAt: '2026-05-10T00:00:00.000Z',
   });
   return rootDir;

@@ -110,6 +110,10 @@ Attestations are immutable authority-backed records for protected standards hash
 
 The active pointer lives at `.veritas/attestations/HEAD` as JSON with `currentAttestationId`. New `policy-change` attestations supersede older records by setting `priorAttestationId`; old records stay tracked for auditability.
 
+New attestation write paths require `metadata.approvalRef`, supplied through `--approval-ref`, to point at the explicit human approval that authorized the record. Existing historical attestations without this field remain readable, but agents must not create new authority-backed attestations without a durable approval reference.
+
+Authority settings may also constrain approval references with `review_preferences.attestation_approval_ref_policy.allowed_prefixes`. This lets a repo require references such as `servicenow:change/CHG12345` or `github:pull-request/123` before an attestation can be recorded, and leaves room for resolver-backed approval validation without changing the attestation shape.
+
 ### Repo Standards Schema
 
 Defined by [schemas/veritas-repo-standards.schema.json](../../schemas/veritas-repo-standards.schema.json).

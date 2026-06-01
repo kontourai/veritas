@@ -25,7 +25,7 @@ The shortest current path is:
 ```bash
 npm install -D @kontourai/veritas
 npx @kontourai/veritas init
-npx @kontourai/veritas attest bootstrap --actor <authority-id> --non-interactive
+npx @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
 npx @kontourai/veritas readiness --working-tree
 ```
 
@@ -97,12 +97,12 @@ Guided initialization splits setup into a reviewed artifact flow:
 Records or inspects attestations for protected standards.
 
 ```bash
-npx @kontourai/veritas attest bootstrap --actor <id> [--root <path>] [--non-interactive] [--valid-until-days <days>]
-npx @kontourai/veritas attest policy-change --actor <id> --message <text> [--root <path>] [--valid-until-days <days>]
+npx @kontourai/veritas attest bootstrap --actor <id> --approval-ref <ref> [--root <path>] [--non-interactive] [--valid-until-days <days>]
+npx @kontourai/veritas attest policy-change --actor <id> --approval-ref <ref> --message <text> [--root <path>] [--valid-until-days <days>]
 npx @kontourai/veritas attest status [--root <path>]
 ```
 
-`bootstrap` records the first reviewed hashes for the current protected standards files: `.veritas/repo-map.json`, `.veritas/repo-standards/default.repo-standards.json`, and `.veritas/authority/default.authority-settings.json`. `policy-change` records a reviewed successor and requires an explanation in `--message`. `status` reports the current attestation, age, expiry, and hash drift.
+`bootstrap` records the first reviewed hashes for the current protected standards files: `.veritas/repo-map.json`, `.veritas/repo-standards/default.repo-standards.json`, and `.veritas/authority/default.authority-settings.json`. `policy-change` records a reviewed successor and requires an explanation in `--message`. Both write paths require `--approval-ref`, a durable reference to the explicit human approval that authorized the attestation. `status` reports the current attestation, age, expiry, and hash drift.
 
 The built-in requirement `policy-changes-require-attestation` fails when the active attestation no longer matches protected standards.
 
@@ -389,10 +389,10 @@ Review recommendation artifacts.
 ```bash
 npx @kontourai/veritas recommendation list [--root <path>] [--status proposed|accepted|rejected|all]
 npx @kontourai/veritas recommendation show <id> [--root <path>]
-npx @kontourai/veritas recommendation decide <id> --accept|--reject --actor <id> [--message <text>] [--root <path>]
+npx @kontourai/veritas recommendation decide <id> --accept|--reject --actor <id> [--approval-ref <ref>] [--message <text>] [--root <path>]
 ```
 
-`veritas attest recommendation <id> --accept|--reject --actor <id>` is the authority-loop alias. Accepting a recommendation applies the recorded standards diff and creates a recommendation-acceptance attestation. Rejecting records the decision without changing standards files.
+`veritas attest recommendation <id> --accept|--reject --actor <id>` is the authority-loop alias. Accepting a recommendation applies the recorded standards diff and creates a recommendation-acceptance attestation, so accepted recommendations also require `--approval-ref`. Rejecting records the decision without changing standards files.
 
 ### `print`
 

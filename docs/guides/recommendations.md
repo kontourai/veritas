@@ -31,7 +31,7 @@ These commands inspect generated evidence and feedback history, then write revie
 Accept or reject a recommendation explicitly:
 
 ```bash
-npx @kontourai/veritas recommendation decide <id> --accept --actor <authority-id> --message "Evidence supports requiring this check"
+npx @kontourai/veritas recommendation decide <id> --accept --actor <authority-id> --approval-ref <human-approval-reference> --message "Evidence supports requiring this check"
 npx @kontourai/veritas recommendation decide <id> --reject --actor <authority-id> --message "Keep this requirement advisory for now"
 ```
 
