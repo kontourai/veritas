@@ -32,6 +32,10 @@ _Avoid_: Trust by label, untraceable approval
 Evidence from a verification authority asserting that something was verified, accepted, approved, or reviewed. An attestation should identify the authority, the subject, the integrity scope, and any validity window that affects merge readiness.
 _Avoid_: Approval in general, waiver, signature as the only form
 
+**Kontour Resource Shape**:
+The shared convention for new portable Kontour records: `apiVersion`, `kind`, `metadata`, `spec`, optional `status`, and optional `proof`. Canonical doc: https://github.com/kontourai/kontourai.io/blob/main/docs/kontour-resource-shape.md. Veritas-specific use: readiness reports, evidence records, attestations, repo conformance outputs, and standards recommendations may adopt the shape when they need to be exported, inspected by agents, or projected into Surface. `proof` should anchor the report, standards version, commit or diff scope, authority, and validity window; it does not prove the code is correct.
+_Avoid_: Replacing repo standards with generated resources, hiding merge-readiness semantics in metadata, treating proof as guaranteed correctness
+
 **Evidence**:
 A traceable result, observation, artifact, attestation, or record that supports, challenges, or qualifies whether a requirement is satisfied. Evidence can pass, fail, warn, be missing, be stale, or require recheck.
 _Avoid_: Evidence Check as the canonical term, source as a synonym
