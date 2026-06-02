@@ -18,6 +18,8 @@ Use Veritas when you want to:
 
 Veritas may emit Surface-format trust state underneath, but that is an implementation and interoperability detail for normal repo governance workflows.
 
+In readiness reports, merge readiness can be explained as a verdict that comes from the evaluated requirements, evidenceChecks, attestations, exceptions, and evidence freshness for the change. If a blocking Requirement is rejected, stale, or disputed, the readiness verdict should reflect that weaker underlying result rather than stand as an unrelated status.
+
 ## Use Surface For Product Transparency
 
 Use [Surface](https://github.com/kontourai/surface) directly when you are building a different product that needs to expose claims, evidence, freshness, conflicts, transparency gaps, trust panels, or portable trust snapshots.
@@ -51,6 +53,8 @@ Surface owns portable transparency primitives:
 
 At the boundary, Veritas acts as a Surface producer. It turns requirement evaluations, evidenceChecks, attestations, exceptions, and readiness outcomes into Surface-format claims and evidence. Surface can then derive status, freshness, conflicts, and gaps without importing Veritas readiness runtime code.
 
-For readiness integrations, the stable artifact path is the `reportArtifactPath` returned by `veritas readiness --format json`. Consumers should query the artifact's `surface.input.claims[]` or generated `surface.report.claims[]` for `claimType: "software-readiness-verdict"` rather than parse Veritas readiness internals. Authority trace and integrity scope live in Surface trust state when supported and are mirrored in claim/evidence metadata for older Surface 0.4 consumers, with readiness events linked to that evidence, so Flow and other consumers can attach the portable trust state without importing Veritas code.
+For readiness integrations, the stable artifact path is the `reportArtifactPath` returned by `veritas readiness --format json`. Consumers should query the artifact's `surface.input.claims[]` or generated `surface.report.claims[]` for `claimType: "software-readiness-verdict"` rather than parse Veritas readiness internals. That readiness verdict may use `derivedFrom` and `derivationEdges` to point at blocking requirement or policy-result claims that shaped the merge readiness outcome, and Surface's generated report can apply the weakest underlying blocking result to the verdict. Advisory requirements remain visible as claims and requirement metadata, but do not cap the readiness verdict through Surface derivation. Authority trace and integrity scope live in Surface trust state when supported and are mirrored in claim/evidence metadata for older Surface 0.4 consumers, with readiness events linked to that evidence, so Flow and other consumers can attach the portable trust state without importing Veritas code.
+
+The derived readiness behavior is covered by test-local passing and blocked fixtures. The passing fixture has verified requirement claims and a verified readiness verdict; the blocked fixture starts with a producer-verified readiness verdict but includes a rejected blocking Requirement, so Surface report generation downgrades the verdict through the derivation links. There is no durable JSON fixture path to consume.
 
 The public product signal is **Built with Surface**. The Veritas product experience should still use Veritas vocabulary.
