@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { TrustInputBuilder, buildTrustReport, validateTrustInput } from '@kontourai/surface';
-import { generateVeritasReport, initClaimStore } from '../src/index.mjs';
+import { buildSurfaceTrustInput, generateVeritasReport, initClaimStore } from '../src/index.mjs';
 import { repoRootDir } from './helpers.mjs';
 
 test('Veritas surface.input validates against Surface and has policy coverage', async () => {
@@ -80,6 +80,89 @@ test('Veritas surface.input validates against Surface and has policy coverage', 
       `expected policy coverage for ${claim.id}`,
     );
   }
+});
+
+test('buildSurfaceTrustInput projects readiness derivation links to blocking policy result claims', async () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-surface-derived-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  await initClaimStore({ rootDir, repoName: 'surface-derived-projection-test', force: true });
+
+  const input = validateTrustInput(await buildSurfaceTrustInput({
+    run_id: 'surface-derived-projection-test',
+    timestamp: '2026-06-02T12:00:00.000Z',
+    source_ref: 'derived-projection-source',
+    source_kind: 'explicit-files',
+    source_scope: ['package.json'],
+    resolved_phase: 'Implementation',
+    resolved_workstream: 'Derived readiness projection',
+    components: [],
+    triggered_evidence_checks: [],
+    selected_evidence_checks: [],
+    policy_results: [
+      {
+        rule_id: 'required-tests-pass',
+        passed: true,
+        stage: 'block',
+        classification: 'hard-invariant',
+        implemented: true,
+        summary: 'Required tests passed.',
+        message: 'Required tests passed.',
+      },
+      {
+        rule_id: 'docs-advisory-present',
+        passed: false,
+        stage: 'warn',
+        classification: 'advisory',
+        implemented: true,
+        summary: 'Advisory documentation check failed.',
+        message: 'Advisory documentation check failed.',
+      },
+    ],
+    evidence_inventory_results: [],
+    external_tool_results: [],
+    readiness_coverage: null,
+    selected_evidence_check_ids: [],
+    selected_evidence_check_labels: [],
+    evidence_check_resolution_source: 'default',
+    baseline_ci_fast_passed: null,
+    uncovered_path_result: 'clear',
+    promotion_allowed: true,
+    files: ['package.json'],
+    unresolved_files: [],
+    repo_map: { name: 'surface-derived-map', kind: 'repo-map', report_transport: 'local-json' },
+    repo_standards: { name: 'surface-derived-standards', version: '1', rule_count: 2 },
+    integrity: {
+      sourceRef: 'derived-projection-source',
+      fileRefs: [{ path: 'package.json', sha256: 'test-sha' }],
+      configRefs: [],
+    },
+  }, { rootDir }));
+
+  const readinessClaim = input.claims.find((claim) => claim.claimType === 'software-readiness-verdict');
+  assert.ok(readinessClaim, 'expected projected readiness verdict claim');
+  assert.ok(Array.isArray(readinessClaim.derivedFrom), 'expected readiness derivedFrom links');
+  assert.equal(readinessClaim.derivedFrom.length, 1);
+  assert.ok(Array.isArray(readinessClaim.derivationEdges), 'expected readiness derivationEdges');
+  assert.deepEqual(
+    readinessClaim.derivationEdges.map((edge) => edge.inputClaimId),
+    readinessClaim.derivedFrom,
+  );
+
+  const policyResultClaims = input.claims.filter((claim) => claim.claimType === 'veritas-policy-result');
+  const policyResultIds = new Set(policyResultClaims.map((claim) => claim.id));
+  const advisoryPolicyResult = policyResultClaims.find((claim) => claim.metadata?.ruleId === 'docs-advisory-present');
+  assert.ok(advisoryPolicyResult, 'expected advisory policy result claim to remain visible');
+  assert.equal(readinessClaim.derivedFrom.includes(advisoryPolicyResult.id), false);
+  for (const inputClaimId of readinessClaim.derivedFrom) {
+    assert.equal(
+      policyResultIds.has(inputClaimId),
+      true,
+      `expected derivation input ${inputClaimId} to exist as a projected veritas-policy-result claim`,
+    );
+  }
+  assert.deepEqual(readinessClaim.metadata.policyCoverage.derivedRequirementClaimIds, readinessClaim.derivedFrom);
+  assert.equal(readinessClaim.derivationEdges.some((edge) => edge.role === 'blocking-requirement'), true);
+  assert.equal(readinessClaim.derivationEdges.some((edge) => edge.role === 'advisory-requirement'), false);
 });
 
 test('Surface validation failure writes rejected input artifact and uses config exit code', async () => {
