@@ -53,7 +53,7 @@
   },
   "scripts": {
     "docs:pages:build": "node scripts/build-pages-site.mjs",
-    "verify": "node scripts/verify.mjs",
+    "verify": "node scripts/check-content-boundary.cjs && node scripts/verify.mjs",
     "test": "node --test tests/*.test.mjs tests/**/*.test.mjs",
     "test:coverage": "node --experimental-test-coverage --test tests/*.test.mjs tests/**/*.test.mjs",
     "test:coverage:check": "node scripts/check-coverage.mjs",
@@ -76,7 +76,8 @@
     "veritas:conformance:examples": "node scripts/build-conformance-examples.mjs",
     "veritas:conformance:verify": "npm run veritas:evidence-check && npm run veritas:conformance:examples && npm run veritas:conformance",
     "veritas:ci:conformance": "npm run veritas:conformance:verify",
-    "veritas:console": "surface console --config surface.config.json"
+    "veritas:console": "surface console --config surface.config.json",
+    "check:content-boundary": "node scripts/check-content-boundary.cjs"
   },
   "dependencies": {
     "@kontourai/surface": "^0.5.0",
