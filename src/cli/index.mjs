@@ -8,6 +8,7 @@ import {
   parseAttestArgs,
   parsePrintArgs,
   parseApplyArgs,
+  parseSetupArgs,
   parsePreToolUseArgs,
   parseStandardsFeedbackArgs,
   parseMarkerStandardsFeedbackArgs,
@@ -35,6 +36,7 @@ import {
   applyPackageScripts,
   applyCiSnippet,
   applyGitHook,
+  setupRepoHooks,
   applyRuntimeHook,
   applyStopHook,
   applyClaudeCodePreToolUseHook,
@@ -560,6 +562,17 @@ export function runApplyGitHookCli(argv = process.argv.slice(2), defaults = {}) 
     outputPath: options.outputPath ?? `.githooks/${hook}`,
     force: options.force ?? false,
     configureGit: options.configureGit ?? false,
+  });
+
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+}
+
+export function runSetupRepoHooksCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseSetupArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const result = setupRepoHooks({
+    rootDir,
+    force: options.force ?? false,
   });
 
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

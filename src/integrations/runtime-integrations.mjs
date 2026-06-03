@@ -19,6 +19,9 @@ import {
 import { assertWithinDir, relativeRepoPath } from '../paths.mjs';
 import { shellQuote } from '../shell.mjs';
 
+const REPO_HOOKS_SETUP_COMMAND = 'npm exec -- veritas setup repo-hooks';
+const REPO_HOOKS_REPAIR_COMMAND = 'npm exec -- veritas setup repo-hooks --force';
+
 // TODO: replace placeholder uninstall results with integration-specific removal behavior
 // or remove uninstall from the public integration action set before stabilizing it.
 
@@ -258,6 +261,8 @@ export function inspectRuntimeIntegrationStatus(rootDir, options = {}) {
       executable: isExecutable(postCommitHookPath),
       configuredHooksPath,
       configured: configuredHooksPath === '.githooks',
+      setupCommand: REPO_HOOKS_SETUP_COMMAND,
+      repairCommand: REPO_HOOKS_REPAIR_COMMAND,
     },
     prePushHook: {
       path: '.githooks/pre-push',
@@ -265,6 +270,8 @@ export function inspectRuntimeIntegrationStatus(rootDir, options = {}) {
       executable: isExecutable(prePushHookPath),
       configuredHooksPath,
       configured: configuredHooksPath === '.githooks',
+      setupCommand: REPO_HOOKS_SETUP_COMMAND,
+      repairCommand: REPO_HOOKS_REPAIR_COMMAND,
     },
     runtimeHook: {
       path: '.veritas/hooks/agent-runtime.sh',
@@ -279,38 +286,38 @@ export function inspectRuntimeIntegrationStatus(rootDir, options = {}) {
     nextCommands: [],
   };
 
+  const pushNextCommand = (command) => {
+    if (!status.nextCommands.includes(command)) status.nextCommands.push(command);
+  };
+
   if (!status.gitHook.exists || !status.gitHook.configured) {
-    status.nextCommands.push(
-      `npm exec -- veritas integrations codex install${status.gitHook.exists ? ' --force' : ''}`,
-    );
+    pushNextCommand(REPO_HOOKS_SETUP_COMMAND);
   } else if (!status.gitHook.executable) {
-    status.nextCommands.push('npm exec -- veritas integrations codex install --force');
+    pushNextCommand(REPO_HOOKS_REPAIR_COMMAND);
   }
   if (!status.prePushHook.exists || !status.prePushHook.configured) {
-    status.nextCommands.push(
-      `npm exec -- veritas apply git-hook --hook pre-push --configure-git${status.prePushHook.exists ? ' --force' : ''}`,
-    );
+    pushNextCommand(REPO_HOOKS_SETUP_COMMAND);
   } else if (!status.prePushHook.executable) {
-    status.nextCommands.push('npm exec -- veritas apply git-hook --hook pre-push --configure-git --force');
+    pushNextCommand(REPO_HOOKS_REPAIR_COMMAND);
   }
   if (!status.runtimeHook.exists) {
-    status.nextCommands.push('npm exec -- veritas integrations codex install');
+    pushNextCommand('npm exec -- veritas integrations codex install');
   } else if (!status.runtimeHook.executable) {
-    status.nextCommands.push('npm exec -- veritas integrations codex install --force');
+    pushNextCommand('npm exec -- veritas integrations codex install --force');
   }
   if (!status.codexArtifact.exists) {
-    status.nextCommands.push('npm exec -- veritas integrations codex install');
+    pushNextCommand('npm exec -- veritas integrations codex install');
   }
   if (!codexTarget.checked) {
-    status.nextCommands.push(
+    pushNextCommand(
       'npm exec -- veritas integrations codex status --codex-home /path/to/.codex',
     );
   } else if (options.codexHome && !codexTarget.integrationInstalled) {
-    status.nextCommands.push(
+    pushNextCommand(
       `npm exec -- veritas integrations codex install --codex-home ${shellQuote(options.codexHome)}${status.codexArtifact.exists ? ' --force' : ''}`,
     );
   } else if (options.targetHooksFile && !codexTarget.integrationInstalled) {
-    status.nextCommands.push(
+    pushNextCommand(
       `npm exec -- veritas integrations codex install --target-hooks-file ${shellQuote(options.targetHooksFile)}${status.codexArtifact.exists ? ' --force' : ''}`,
     );
   }
