@@ -63,6 +63,8 @@ import {
 import { SURFACE_TRUST_POLICIES } from '../src/surface/policies.mjs';
 import {
   repoRootDir,
+  cleanGitEnv,
+  execGitFixture,
   initCommittedRepo,
   installLocalVeritasBin,
   commitAll,
@@ -4029,6 +4031,8 @@ test('package script suggestions use the consolidated readiness surface', () => 
     scripts['veritas:check:diff'],
     'npm exec -- veritas readiness --changed-from main --changed-to HEAD',
   );
+  assert.equal(scripts['test:prepush'], 'npm run veritas:evidence-check');
+  assert.equal(scripts.prepush, 'npm run test:prepush');
 });
 
 test('print ci-snippet returns a copy-paste starter snippet', () => {
@@ -4052,6 +4056,96 @@ test('print git-hook returns a tracked post-commit runtime integration', () => {
   assert.match(hookBody, /veritas readiness --changed-from HEAD~1 --changed-to HEAD/);
 
   assert.match(hookBody, /VERITAS_HOOK_SKIP/);
+});
+
+test('print git-hook returns a tracked pre-push push-safe integration', () => {
+  const hookBody = buildSuggestedGitHook({ hook: 'pre-push' });
+  assert.match(hookBody, /^#!\/bin\/sh/m);
+  assert.match(hookBody, /\bnpm\s+run\s+--if-present\s+prepush\b/);
+  assert.match(hookBody, /package\.json not found; skipping/);
+  assert.match(hookBody, /VERITAS_HOOK_SKIP/);
+  assert.doesNotMatch(hookBody, /(^|[;&|])\s*npm\s+(run\s+)?test(\s|$)/);
+  assert.doesNotMatch(hookBody, /node\s+--test/);
+});
+
+test('generated pre-push hook skips safely without package prepush support', () => {
+  const hookBody = buildSuggestedGitHook({ hook: 'pre-push' });
+  const noPackageDir = mkdtempSync(join(tmpdir(), 'veritas-pre-push-no-package-'));
+  const noPackageHook = join(noPackageDir, 'pre-push');
+  writeFileSync(noPackageHook, hookBody, 'utf8');
+  chmodSync(noPackageHook, 0o755);
+
+  const noPackageOutput = execFileSync(noPackageHook, {
+    cwd: noPackageDir,
+    encoding: 'utf8',
+  });
+  assert.match(noPackageOutput, /package\.json not found; skipping/);
+
+  const noPrepushDir = mkdtempSync(join(tmpdir(), 'veritas-pre-push-no-script-'));
+  const noPrepushHook = join(noPrepushDir, 'pre-push');
+  writeFileSync(noPrepushHook, hookBody, 'utf8');
+  chmodSync(noPrepushHook, 0o755);
+  writeFileSync(
+    join(noPrepushDir, 'package.json'),
+    JSON.stringify({ scripts: { test: 'node -e "process.exit(99)"' } }, null, 2),
+  );
+
+  execFileSync(noPrepushHook, {
+    cwd: noPrepushDir,
+    encoding: 'utf8',
+  });
+});
+
+test('git fixture helper strips inherited caller git environment', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-clean-git-env-'));
+  const poisonedEnv = {
+    ...process.env,
+    GIT_DIR: join(repoRootDir, '.git'),
+    GIT_WORK_TREE: repoRootDir,
+    GIT_INDEX_FILE: join(repoRootDir, '.git/index'),
+  };
+
+  assert.equal(cleanGitEnv(poisonedEnv).GIT_DIR, undefined);
+  assert.equal(cleanGitEnv(poisonedEnv).GIT_WORK_TREE, undefined);
+  assert.equal(cleanGitEnv(poisonedEnv).GIT_INDEX_FILE, undefined);
+
+  execGitFixture(['init', '-b', 'main'], { cwd: rootDir, env: poisonedEnv, encoding: 'utf8' });
+  const gitDir = execGitFixture(['rev-parse', '--git-dir'], {
+    cwd: rootDir,
+    env: poisonedEnv,
+    encoding: 'utf8',
+  }).trim();
+
+  assert.equal(gitDir, '.git');
+});
+
+test('package scripts expose a push-safe pre-push command that avoids the full test suite', () => {
+  const pkg = readJsonFromAbsolute(join(repoRootDir, 'package.json'));
+
+  assert.equal(pkg.scripts['test:prepush'], 'npm run verify');
+  assert.equal(pkg.scripts.prepush, 'npm run test:prepush');
+  assert.equal(
+    pkg.scripts.test,
+    'node --test tests/*.test.mjs tests/**/*.test.mjs',
+  );
+
+  for (const scriptName of ['test:prepush', 'prepush']) {
+    assert.doesNotMatch(pkg.scripts[scriptName], /(^|[;&|])\s*npm\s+(run\s+)?test(\s|$)/);
+    assert.doesNotMatch(pkg.scripts[scriptName], /node\s+--test/);
+    assert.doesNotMatch(pkg.scripts[scriptName], /tests\/\*\*\/\*\.test\.mjs/);
+  }
+});
+
+test('tracked pre-push hook runs the push-safe script instead of the full test suite', () => {
+  const hookPath = join(repoRootDir, '.githooks/pre-push');
+  const hookBody = readFileSync(hookPath, 'utf8');
+
+  assert.match(hookBody, /^#!\/bin\/sh/m);
+  assert.match(hookBody, /\bnpm\s+run\s+--if-present\s+prepush\b/);
+  assert.match(hookBody, /package\.json not found; skipping/);
+  assert.doesNotMatch(hookBody, /(^|[;&|])\s*npm\s+(run\s+)?test(\s|$)/);
+  assert.doesNotMatch(hookBody, /node\s+--test/);
+  assert.doesNotMatch(hookBody, /tests\/\*\*\/\*\.test\.mjs/);
 });
 
 test('print runtime-hook returns a tracked agent runtime integration', () => {
@@ -4224,6 +4318,35 @@ test('apply git-hook writes a tracked executable hook file', () => {
   assert.equal(result.outputPath, '.githooks/post-commit');
   assert.equal(result.hook, 'post-commit');
   assert.match(contents, /veritas readiness --changed-from HEAD~1 --changed-to HEAD/);
+});
+
+test('apply git-hook writes a tracked executable pre-push hook file', () => {
+  const rootDir = initCommittedRepo('veritas-apply-pre-push-hook-');
+  const result = applyGitHook({
+    rootDir,
+    hook: 'pre-push',
+  });
+  const contents = readFileSync(join(rootDir, '.githooks/pre-push'), 'utf8');
+
+  assert.equal(result.outputPath, '.githooks/pre-push');
+  assert.equal(result.hook, 'pre-push');
+  assert.match(contents, /\bnpm\s+run\s+--if-present\s+prepush\b/);
+  assert.doesNotMatch(contents, /(^|[;&|])\s*npm\s+(run\s+)?test(\s|$)/);
+});
+
+test('apply git-hook rejects symlinked .githooks directory', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-hook-symlink-'));
+  const externalDir = mkdtempSync(join(tmpdir(), 'veritas-external-githooks-'));
+  symlinkSync(externalDir, join(rootDir, '.githooks'));
+
+  assert.throws(
+    () =>
+      applyGitHook({
+        rootDir,
+        hook: 'pre-push',
+      }),
+    /refuses to write through a symlinked \.githooks directory/,
+  );
 });
 
 test('apply git-hook can configure the local hooks path explicitly', () => {
@@ -4450,18 +4573,18 @@ test('apply git-hook rejects unsupported hook kinds', () => {
   assert.throws(
     () =>
       buildSuggestedGitHook({
-        hook: 'pre-push',
+        hook: 'pre-rebase',
       }),
-    /Unsupported git hook kind: pre-push/,
+    /Unsupported git hook kind: pre-rebase/,
   );
 
   assert.throws(
     () =>
       applyGitHook({
         rootDir,
-        hook: 'pre-push',
+        hook: 'pre-rebase',
       }),
-    /Unsupported git hook kind: pre-push/,
+    /Unsupported git hook kind: pre-rebase/,
   );
 });
 
@@ -4526,6 +4649,7 @@ test('runtime status reports missing integration state and next commands', () =>
   const status = inspectRuntimeIntegrationStatus(rootDir);
 
   assert.equal(status.gitHook.exists, false);
+  assert.equal(status.prePushHook.exists, false);
   assert.equal(status.runtimeHook.exists, false);
   assert.equal(status.codexArtifact.exists, false);
   assert.equal(status.codexTarget.checked, false);
@@ -4536,6 +4660,24 @@ test('runtime status reports missing integration state and next commands', () =>
       'npm exec -- veritas integrations codex status --codex-home /path/to/.codex',
     ),
   );
+});
+
+test('runtime status treats inherited hooksPath as unconfigured for repo-owned hooks', () => {
+  const rootDir = initCommittedRepo('veritas-runtime-status-global-hooks-');
+  applyGitHook({ rootDir });
+  applyGitHook({ rootDir, hook: 'pre-push' });
+  execFileSync('git', ['config', '--global', 'core.hooksPath', '.githooks'], {
+    cwd: rootDir,
+    env: { ...process.env, HOME: rootDir },
+    encoding: 'utf8',
+  });
+
+  const status = inspectRuntimeIntegrationStatus(rootDir);
+
+  assert.equal(status.gitHook.exists, true);
+  assert.equal(status.gitHook.configured, false);
+  assert.equal(status.prePushHook.exists, true);
+  assert.equal(status.prePushHook.configured, false);
 });
 
 test('integrations codex install owns git, runtime, and codex hook wiring', () => {
@@ -4559,6 +4701,7 @@ test('integrations codex install owns git, runtime, and codex hook wiring', () =
   const codexHooks = readJsonFromAbsolute(join(codexHome, 'hooks.json'));
 
   assert.equal(result.stop.gitHook.outputPath, '.githooks/post-commit');
+  assert.equal(result.stop.prePushHook.outputPath, '.githooks/pre-push');
   assert.equal(result.stop.runtimeHook.outputPath, '.veritas/hooks/agent-runtime.sh');
   assert.equal(result.stop.codexHooks.outputPath, '.veritas/runtime/codex-hooks.json');
   assert.equal(configuredHooksPath, '.githooks');
@@ -4569,6 +4712,7 @@ test('integrations codex install owns git, runtime, and codex hook wiring', () =
 test('runtime status reports installed integration state including codex target', () => {
   const rootDir = initCommittedRepo('veritas-runtime-status-installed-');
   applyGitHook({ rootDir, configureGit: true });
+  applyGitHook({ rootDir, hook: 'pre-push', configureGit: true });
   applyRuntimeHook({ rootDir });
   const codexHome = join(rootDir, 'tmp-codex-home');
   mkdirp(codexHome);
@@ -4579,6 +4723,8 @@ test('runtime status reports installed integration state including codex target'
 
   assert.equal(status.gitHook.exists, true);
   assert.equal(status.gitHook.configured, true);
+  assert.equal(status.prePushHook.exists, true);
+  assert.equal(status.prePushHook.configured, true);
   assert.equal(status.runtimeHook.exists, true);
   assert.equal(status.codexArtifact.exists, true);
   assert.equal(status.codexTarget.checked, true);
@@ -4962,5 +5108,7 @@ test('script suggestion helper returns the expected keys', () => {
     'veritas:evidence-check',
     'lint:governance',
     'veritas:readiness',
+    'test:prepush',
+    'prepush',
   ]);
 });

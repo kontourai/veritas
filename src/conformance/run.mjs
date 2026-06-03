@@ -52,6 +52,25 @@ export function buildConformanceAlerts(report, runtimeStatus, isCi) {
       message: 'The tracked post-commit hook is present, but git is not configured to use .githooks.',
     });
   }
+  if (!runtimeStatus.prePushHook?.exists) {
+    alerts.push({
+      severity: 'error',
+      code: 'missing-pre-push-hook',
+      message: 'The tracked pre-push hook is missing.',
+    });
+  } else if (!runtimeStatus.prePushHook.executable) {
+    alerts.push({
+      severity: 'error',
+      code: 'pre-push-hook-not-executable',
+      message: 'The tracked pre-push hook exists but is not executable.',
+    });
+  } else if (!runtimeStatus.prePushHook.configured && !isCi) {
+    alerts.push({
+      severity: 'warning',
+      code: 'pre-push-hook-not-configured',
+      message: 'The tracked pre-push hook is present, but git is not configured to use .githooks.',
+    });
+  }
   if (!runtimeStatus.runtimeHook.exists) {
     alerts.push({
       severity: 'error',

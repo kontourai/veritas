@@ -2,6 +2,7 @@ import {
   appendFileSync,
   chmodSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   writeFileSync,
 } from 'node:fs';
@@ -15,8 +16,25 @@ import { evaluateWorkAreaBoundaryRule, evaluateRepoStandards } from './rules/eva
 import { readCurrentAttestation } from './attestations.mjs';
 
 export function buildSuggestedGitHook({ hook = 'post-commit' } = {}) {
-  if (hook !== 'post-commit') {
+  if (!['post-commit', 'pre-push'].includes(hook)) {
     throw new Error(`Unsupported git hook kind: ${hook}`);
+  }
+
+  if (hook === 'pre-push') {
+    return `#!/bin/sh
+set -eu
+
+if [ "\${VERITAS_HOOK_SKIP:-\${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
+  exit 0
+fi
+
+if [ ! -f package.json ]; then
+  echo "Veritas pre-push: package.json not found; skipping."
+  exit 0
+fi
+
+npm run --if-present prepush
+`;
   }
 
   return `#!/bin/sh
@@ -411,12 +429,20 @@ export function applyGitHook({
   configureGit = false,
 }) {
   const resolvedOutputPath = resolve(rootDir, outputPath);
+  const hooksDir = resolve(rootDir, '.githooks');
   assertWithinDir(
     resolvedOutputPath,
-    resolve(rootDir, '.githooks'),
+    hooksDir,
     'apply git-hook only supports writing inside .githooks/',
   );
   const relativeOutputPath = relativeRepoPath(rootDir, resolvedOutputPath);
+
+  if (existsSync(hooksDir) && lstatSync(hooksDir).isSymbolicLink()) {
+    throw new Error('apply git-hook refuses to write through a symlinked .githooks directory');
+  }
+  if (existsSync(dirname(resolvedOutputPath)) && lstatSync(dirname(resolvedOutputPath)).isSymbolicLink()) {
+    throw new Error('apply git-hook refuses to write through a symlinked hook directory');
+  }
 
   if (existsSync(resolvedOutputPath) && !force) {
     throw new Error(

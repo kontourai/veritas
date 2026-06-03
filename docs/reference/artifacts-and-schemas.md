@@ -48,6 +48,7 @@ These are the paths the current CLI writes into a target repo.
 
 - `.veritas/snippets/ci-snippet.yml`
 - `.githooks/post-commit`
+- `.githooks/pre-push`
 - `.veritas/hooks/agent-runtime.sh`
 - `.veritas/hooks/stop.sh`
 - `.veritas/runtime/codex-hooks.json`

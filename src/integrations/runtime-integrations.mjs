@@ -174,7 +174,7 @@ function isExecutable(path) {
 
 function readGitConfigValue(rootDir, key) {
   try {
-    return execFileSync('git', ['config', '--get', key], {
+    return execFileSync('git', ['config', '--local', '--get', key], {
       cwd: rootDir,
       encoding: 'utf8',
       windowsHide: true,
@@ -244,7 +244,8 @@ function inspectGenericStopRuntimeIntegrationStatus(name, rootDir) {
 }
 
 export function inspectRuntimeIntegrationStatus(rootDir, options = {}) {
-  const gitHookPath = resolve(rootDir, '.githooks/post-commit');
+  const postCommitHookPath = resolve(rootDir, '.githooks/post-commit');
+  const prePushHookPath = resolve(rootDir, '.githooks/pre-push');
   const runtimeHookPath = resolve(rootDir, '.veritas/hooks/agent-runtime.sh');
   const codexArtifactPath = resolve(rootDir, '.veritas/runtime/codex-hooks.json');
   const configuredHooksPath = readGitConfigValue(rootDir, 'core.hooksPath');
@@ -253,8 +254,15 @@ export function inspectRuntimeIntegrationStatus(rootDir, options = {}) {
   const status = {
     gitHook: {
       path: '.githooks/post-commit',
-      exists: existsSync(gitHookPath),
-      executable: isExecutable(gitHookPath),
+      exists: existsSync(postCommitHookPath),
+      executable: isExecutable(postCommitHookPath),
+      configuredHooksPath,
+      configured: configuredHooksPath === '.githooks',
+    },
+    prePushHook: {
+      path: '.githooks/pre-push',
+      exists: existsSync(prePushHookPath),
+      executable: isExecutable(prePushHookPath),
       configuredHooksPath,
       configured: configuredHooksPath === '.githooks',
     },
@@ -277,6 +285,13 @@ export function inspectRuntimeIntegrationStatus(rootDir, options = {}) {
     );
   } else if (!status.gitHook.executable) {
     status.nextCommands.push('npm exec -- veritas integrations codex install --force');
+  }
+  if (!status.prePushHook.exists || !status.prePushHook.configured) {
+    status.nextCommands.push(
+      `npm exec -- veritas apply git-hook --hook pre-push --configure-git${status.prePushHook.exists ? ' --force' : ''}`,
+    );
+  } else if (!status.prePushHook.executable) {
+    status.nextCommands.push('npm exec -- veritas apply git-hook --hook pre-push --configure-git --force');
   }
   if (!status.runtimeHook.exists) {
     status.nextCommands.push('npm exec -- veritas integrations codex install');
@@ -364,6 +379,12 @@ export function CodexRuntimeIntegration(rootDir, options = {}) {
         force: options.force ?? false,
         configureGit: true,
       });
+      const prePushHook = applyGitHook({
+        rootDir,
+        hook: 'pre-push',
+        force: options.force ?? false,
+        configureGit: true,
+      });
       const runtimeHook = applyRuntimeHook({
         rootDir,
         force: options.force ?? false,
@@ -374,7 +395,7 @@ export function CodexRuntimeIntegration(rootDir, options = {}) {
         targetHooksFile: options.targetHooksFile,
         codexHome: options.codexHome,
       });
-      return { gitHook, runtimeHook, codexHooks };
+      return { gitHook, prePushHook, runtimeHook, codexHooks };
     },
     installPostSessionHook() {
       return {
