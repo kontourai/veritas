@@ -15,6 +15,7 @@ import {
   runBoundariesCheckCli,
   runAttestCli,
   runIntegrationsCli,
+  runSetupRepoHooksCli,
   runClaimCli,
 } from '../src/index.mjs';
 
@@ -27,6 +28,7 @@ const MAIN_USAGE = `Usage:
   veritas attest recommendation <id> --accept|--reject --actor <id> [--approval-ref <ref>] [--message <text>] [--root <path>]
   veritas attest status [--root <path>]
   veritas claim init|list|add|edit|remove|scaffold|validate [--root <path>]
+  veritas setup repo-hooks [--root <path>] [--force]
   veritas plugin list [--root <path>]
   veritas feedback draft --evidence <path> [--authority-settings <path>] [--output <path>] [--force]
   veritas feedback observe [--session-log <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>]
@@ -95,6 +97,10 @@ const CLAIM_USAGE = `Usage:
   veritas claim validate
 `;
 
+const SETUP_USAGE = `Usage:
+  veritas setup repo-hooks [--root <path>] [--force]
+`;
+
 function isHelpToken(token) {
   return token === '--help' || token === '-h' || token === 'help';
 }
@@ -144,6 +150,16 @@ if (!subcommand || isHelpToken(subcommand)) {
     writeStdout(CLAIM_USAGE);
   } else {
     await runClaimCli(args, { rootDir: cwd });
+  }
+} else if (subcommand === 'setup') {
+  const [kind, ...setupArgs] = args;
+  if (!kind || isHelpToken(kind) || setupArgs.some(isHelpToken)) {
+    writeStdout(SETUP_USAGE);
+  } else if (kind === 'repo-hooks') {
+    runSetupRepoHooksCli(setupArgs, { rootDir: cwd });
+  } else {
+    writeStderr(SETUP_USAGE);
+    process.exitCode = 1;
   }
 } else if (subcommand === 'plugin') {
   if (args.some(isHelpToken)) {

@@ -7,6 +7,8 @@ import { inspectRuntimeIntegrationStatus } from '../integrations/runtime-integra
 import { runMergeReadiness } from '../readiness/run.mjs';
 
 const governanceRoots = ['.veritas/repo-map.json', '.veritas/repo-standards', '.veritas/authority'];
+const REPO_HOOKS_SETUP_COMMAND = 'npm exec -- veritas setup repo-hooks';
+const REPO_HOOKS_REPAIR_COMMAND = 'npm exec -- veritas setup repo-hooks --force';
 
 export function summarizePolicyResults(policyResults) {
   return {
@@ -38,18 +40,21 @@ export function buildConformanceAlerts(report, runtimeStatus, isCi) {
       severity: 'error',
       code: 'missing-git-hook',
       message: 'The tracked post-commit hook is missing.',
+      nextCommand: REPO_HOOKS_SETUP_COMMAND,
     });
   } else if (!runtimeStatus.gitHook.executable) {
     alerts.push({
       severity: 'error',
       code: 'git-hook-not-executable',
       message: 'The tracked post-commit hook exists but is not executable.',
+      nextCommand: REPO_HOOKS_REPAIR_COMMAND,
     });
   } else if (!runtimeStatus.gitHook.configured && !isCi) {
     alerts.push({
       severity: 'warning',
       code: 'git-hook-not-configured',
       message: 'The tracked post-commit hook is present, but git is not configured to use .githooks.',
+      nextCommand: REPO_HOOKS_SETUP_COMMAND,
     });
   }
   if (!runtimeStatus.prePushHook?.exists) {
@@ -57,18 +62,21 @@ export function buildConformanceAlerts(report, runtimeStatus, isCi) {
       severity: 'error',
       code: 'missing-pre-push-hook',
       message: 'The tracked pre-push hook is missing.',
+      nextCommand: REPO_HOOKS_SETUP_COMMAND,
     });
   } else if (!runtimeStatus.prePushHook.executable) {
     alerts.push({
       severity: 'error',
       code: 'pre-push-hook-not-executable',
       message: 'The tracked pre-push hook exists but is not executable.',
+      nextCommand: REPO_HOOKS_REPAIR_COMMAND,
     });
   } else if (!runtimeStatus.prePushHook.configured && !isCi) {
     alerts.push({
       severity: 'warning',
       code: 'pre-push-hook-not-configured',
       message: 'The tracked pre-push hook is present, but git is not configured to use .githooks.',
+      nextCommand: REPO_HOOKS_SETUP_COMMAND,
     });
   }
   if (!runtimeStatus.runtimeHook.exists) {

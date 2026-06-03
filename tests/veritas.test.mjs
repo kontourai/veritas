@@ -5,7 +5,9 @@ import {
   existsSync,
   mkdtempSync,
   readFileSync,
+  statSync,
   symlinkSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { join } from 'node:path';
@@ -17,6 +19,7 @@ import {
   applyCodexHook,
   applyGovernanceBlocks,
   applyGitHook,
+  setupRepoHooks,
   inspectCodexHookTarget,
   inspectRuntimeIntegrationStatus,
   applyRuntimeHook,
@@ -36,6 +39,7 @@ import {
   buildSuggestedCiSnippet,
   buildSuggestedPackageScripts,
   buildBootstrapStarterKitPlan,
+  buildConformanceAlerts,
   compareMarkerBenchmarkRuns,
   classifyNodes,
   checkBoundaries,
@@ -78,6 +82,10 @@ import {
 
 const testBinDir = mkdtempSync(join(tmpdir(), 'veritas-test-bin-'));
 const realNpmPath = execFileSync('which', ['npm'], { encoding: 'utf8' }).trim();
+
+function executableBits(path) {
+  return statSync(path).mode & 0o111;
+}
 writeFileSync(
   join(testBinDir, 'npm'),
   `#!/bin/sh
@@ -4349,6 +4357,40 @@ test('apply git-hook rejects symlinked .githooks directory', () => {
   );
 });
 
+test('apply git-hook refuses symlinked hook files even when forced', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-hook-file-symlink-'));
+  mkdirp(join(rootDir, '.githooks'));
+  const externalHook = join(
+    mkdtempSync(join(tmpdir(), 'veritas-external-hook-file-')),
+    'post-commit',
+  );
+  writeFileSync(externalHook, '#!/bin/sh\necho external\n', 'utf8');
+  symlinkSync(externalHook, join(rootDir, '.githooks/post-commit'));
+
+  assert.throws(
+    () =>
+      applyGitHook({
+        rootDir,
+        hook: 'post-commit',
+        force: true,
+      }),
+    /apply git-hook only supports writing inside \.githooks\/|refuses to write through a symlinked hook file: \.githooks\/post-commit/,
+  );
+  assert.equal(readFileSync(externalHook, 'utf8'), '#!/bin/sh\necho external\n');
+
+  unlinkSync(join(rootDir, '.githooks/post-commit'));
+  symlinkSync(join(rootDir, 'missing-external-hook'), join(rootDir, '.githooks/post-commit'));
+  assert.throws(
+    () =>
+      applyGitHook({
+        rootDir,
+        hook: 'post-commit',
+        force: true,
+      }),
+    /refuses to write through a symlinked hook file: \.githooks\/post-commit/,
+  );
+});
+
 test('apply git-hook can configure the local hooks path explicitly', () => {
   const rootDir = initCommittedRepo('veritas-apply-hook-config-');
   const result = applyGitHook({
@@ -4364,6 +4406,132 @@ test('apply git-hook can configure the local hooks path explicitly', () => {
 
   assert.equal(result.configuredHooksPath, '.githooks');
   assert.equal(configuredHooksPath, '.githooks');
+});
+
+test('setup repo-hooks installs both hooks idempotently and configures local hooksPath', () => {
+  const rootDir = initCommittedRepo('veritas-setup-repo-hooks-');
+  const first = setupRepoHooks({ rootDir });
+  chmodSync(join(rootDir, '.githooks/pre-push'), 0o644);
+  const second = setupRepoHooks({ rootDir });
+  const configuredHooksPath = execFileSync(
+    'git',
+    ['config', '--local', '--get', 'core.hooksPath'],
+    { cwd: rootDir, encoding: 'utf8' },
+  ).trim();
+
+  assert.deepEqual(
+    first.hooks.map((hook) => hook.outputPath),
+    ['.githooks/post-commit', '.githooks/pre-push'],
+  );
+  assert.equal(second.configuredHooksPath, '.githooks');
+  assert.equal(configuredHooksPath, '.githooks');
+  assert.equal(existsSync(join(rootDir, '.githooks/post-commit')), true);
+  assert.equal(existsSync(join(rootDir, '.githooks/pre-push')), true);
+  assert.notEqual(
+    executableBits(join(rootDir, '.githooks/pre-push')),
+    0,
+  );
+});
+
+test('setup repo-hooks writes repo-local config without relying on global hooksPath', () => {
+  const rootDir = initCommittedRepo('veritas-setup-local-config-');
+  const homeDir = mkdtempSync(join(tmpdir(), 'veritas-setup-home-'));
+  execFileSync('git', ['config', '--global', 'core.hooksPath', '.other-hooks'], {
+    cwd: rootDir,
+    env: { ...cleanGitEnv(), HOME: homeDir },
+    encoding: 'utf8',
+  });
+
+  setupRepoHooks({ rootDir });
+  const localHooksPath = execFileSync(
+    'git',
+    ['config', '--local', '--get', 'core.hooksPath'],
+    { cwd: rootDir, env: { ...cleanGitEnv(), HOME: homeDir }, encoding: 'utf8' },
+  ).trim();
+  const globalHooksPath = execFileSync(
+    'git',
+    ['config', '--global', '--get', 'core.hooksPath'],
+    { cwd: rootDir, env: { ...cleanGitEnv(), HOME: homeDir }, encoding: 'utf8' },
+  ).trim();
+
+  assert.equal(localHooksPath, '.githooks');
+  assert.equal(globalHooksPath, '.other-hooks');
+});
+
+test('setup repo-hooks CLI installs hooks and returns JSON', () => {
+  const rootDir = initCommittedRepo('veritas-setup-cli-');
+  installLocalVeritasBin(rootDir);
+  const stdout = execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'setup', 'repo-hooks', '--root', rootDir],
+    { cwd: rootDir, encoding: 'utf8' },
+  );
+  const result = JSON.parse(stdout);
+  const configuredHooksPath = execFileSync(
+    'git',
+    ['config', '--local', '--get', 'core.hooksPath'],
+    { cwd: rootDir, encoding: 'utf8' },
+  ).trim();
+
+  assert.equal(result.rootDir, rootDir);
+  assert.equal(result.configuredHooksPath, '.githooks');
+  assert.equal(result.setupCommand, 'npm exec -- veritas setup repo-hooks');
+  assert.deepEqual(
+    result.hooks.map((hook) => hook.outputPath),
+    ['.githooks/post-commit', '.githooks/pre-push'],
+  );
+  assert.equal(configuredHooksPath, '.githooks');
+});
+
+test('setup repo-hooks refuses symlinked hook files in idempotent repair mode', () => {
+  for (const hook of ['post-commit', 'pre-push']) {
+    const rootDir = initCommittedRepo(`veritas-setup-symlink-${hook}-`);
+    mkdirp(join(rootDir, '.githooks'));
+    const externalHook = join(
+      mkdtempSync(join(tmpdir(), 'veritas-external-hook-')),
+      hook,
+    );
+    writeFileSync(externalHook, buildSuggestedGitHook({ hook }), 'utf8');
+    symlinkSync(externalHook, join(rootDir, '.githooks', hook));
+
+    assert.throws(
+      () => setupRepoHooks({ rootDir }),
+      new RegExp(`apply git-hook only supports writing inside \\.githooks/|refuses to write through a symlinked hook file: \\.githooks/${hook}`),
+    );
+    assert.throws(
+      () => setupRepoHooks({ rootDir, force: true }),
+      new RegExp(`apply git-hook only supports writing inside \\.githooks/|refuses to write through a symlinked hook file: \\.githooks/${hook}`),
+    );
+
+    unlinkSync(join(rootDir, '.githooks', hook));
+    symlinkSync(join(rootDir, `missing-${hook}`), join(rootDir, '.githooks', hook));
+    assert.throws(
+      () => setupRepoHooks({ rootDir, force: true }),
+      new RegExp(`refuses to write through a symlinked hook file: \\.githooks/${hook}`),
+    );
+  }
+});
+
+test('setup repo-hooks refuses custom hooks unless forced', () => {
+  const rootDir = initCommittedRepo('veritas-setup-custom-hook-');
+  mkdirp(join(rootDir, '.githooks'));
+  writeFileSync(join(rootDir, '.githooks/post-commit'), '#!/bin/sh\necho custom\n', 'utf8');
+
+  assert.throws(
+    () => setupRepoHooks({ rootDir }),
+    /Refusing to overwrite existing file: \.githooks\/post-commit/,
+  );
+
+  setupRepoHooks({ rootDir, force: true });
+
+  assert.equal(
+    readFileSync(join(rootDir, '.githooks/post-commit'), 'utf8'),
+    buildSuggestedGitHook({ hook: 'post-commit' }),
+  );
+  assert.notEqual(
+    executableBits(join(rootDir, '.githooks/post-commit')),
+    0,
+  );
 });
 
 test('apply runtime-hook writes a tracked executable runtime hook file', () => {
@@ -4654,11 +4822,44 @@ test('runtime status reports missing integration state and next commands', () =>
   assert.equal(status.codexArtifact.exists, false);
   assert.equal(status.codexTarget.checked, false);
   assert.equal(status.codexTarget.resolvedTargetPath, null);
+  assert.ok(status.nextCommands.includes('npm exec -- veritas setup repo-hooks'));
+  assert.equal(
+    status.nextCommands.filter((command) => command === 'npm exec -- veritas setup repo-hooks').length,
+    1,
+  );
   assert.ok(status.nextCommands.includes('npm exec -- veritas integrations codex install'));
   assert.ok(
     status.nextCommands.includes(
       'npm exec -- veritas integrations codex status --codex-home /path/to/.codex',
     ),
+  );
+});
+
+test('conformance alerts point repo hook issues to setup repo-hooks', () => {
+  const report = {
+    record: {
+      policy_results: [],
+      unresolved_files: [],
+    },
+  };
+  const runtimeStatus = {
+    gitHook: { exists: false, executable: false, configured: false },
+    prePushHook: { exists: true, executable: false, configured: true },
+    runtimeHook: { exists: true, executable: true },
+    codexArtifact: { exists: true },
+    codexTarget: { checked: false, integrationInstalled: false },
+  };
+
+  const alerts = buildConformanceAlerts(report, runtimeStatus, false);
+  const byCode = new Map(alerts.map((alert) => [alert.code, alert]));
+
+  assert.equal(
+    byCode.get('missing-git-hook').nextCommand,
+    'npm exec -- veritas setup repo-hooks',
+  );
+  assert.equal(
+    byCode.get('pre-push-hook-not-executable').nextCommand,
+    'npm exec -- veritas setup repo-hooks --force',
   );
 });
 
@@ -4678,6 +4879,7 @@ test('runtime status treats inherited hooksPath as unconfigured for repo-owned h
   assert.equal(status.gitHook.configured, false);
   assert.equal(status.prePushHook.exists, true);
   assert.equal(status.prePushHook.configured, false);
+  assert.ok(status.nextCommands.includes('npm exec -- veritas setup repo-hooks'));
 });
 
 test('integrations codex install owns git, runtime, and codex hook wiring', () => {
@@ -4773,9 +4975,7 @@ test('runtime status recommends repair commands for non-executable managed hooks
   assert.equal(status.runtimeHook.exists, true);
   assert.equal(status.runtimeHook.executable, false);
   assert.ok(
-    status.nextCommands.includes(
-      'npm exec -- veritas integrations codex install --force',
-    ),
+    status.nextCommands.includes('npm exec -- veritas setup repo-hooks --force'),
   );
   assert.ok(
     status.nextCommands.includes('npm exec -- veritas integrations codex install --force'),

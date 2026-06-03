@@ -157,6 +157,17 @@ export function parseApplyArgs(argv) {
   ).options;
 }
 
+export function parseSetupArgs(argv) {
+  const { options, rest } = parseTokens(argv, {
+    '--root': { type: 'string', key: 'rootDir' },
+    '--force': { type: 'flag', key: 'force' },
+  });
+  if (rest.length > 0) {
+    throw new Error(`Unknown setup argument(s): ${rest.join(', ')}`);
+  }
+  return options;
+}
+
 export function parsePreToolUseArgs(argv) {
   return parseTokens(
     argv,

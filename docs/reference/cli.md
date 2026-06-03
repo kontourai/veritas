@@ -2,7 +2,7 @@
 
 This page documents the CLI surface that currently ships in this repo.
 
-The primary CLI surface is seven verbs: `init`, `readiness`, `explain`, `attest`, `recommendation`, `feedback`, `integrations`. Most commands print JSON to stdout. The developer- and agent-facing readiness feedback path prints lint-style text by default; use `--format json` when you need machine-readable orchestration output.
+The primary CLI surface is eight verbs: `init`, `readiness`, `explain`, `attest`, `recommendation`, `feedback`, `setup`, `integrations`. Most commands print JSON to stdout. The developer- and agent-facing readiness feedback path prints lint-style text by default; use `--format json` when you need machine-readable orchestration output.
 
 ## Entry Points
 
@@ -420,6 +420,23 @@ Printed helper surfaces:
 - a tracked Codex hooks config plus optional target inspection status
 - a Claude Code PreToolUse hook that injects `veritas explain` context before file edits
 
+### `setup`
+
+Installs or repairs first-class repo setup.
+
+```bash
+npx @kontourai/veritas setup repo-hooks [--root <path>] [--force]
+```
+
+`setup repo-hooks` installs or repairs:
+
+- `.githooks/post-commit`
+- `.githooks/pre-push`
+- executable bits for both hook files
+- repo-local `core.hooksPath=.githooks`
+
+This is the recommended command for local Git hook repair. Developers do not need to run raw `git config` commands. By default, setup is idempotent for Veritas-generated hook bodies and refuses to overwrite custom hook files; pass `--force` to replace existing hook files with the generated Veritas versions.
+
 ### `apply`
 
 Write the suggested assets into the repo.
@@ -444,6 +461,8 @@ Write restrictions are intentional:
 - standards feedback artifacts must stay under `.veritas/standards-feedback/`
 - git hooks must stay under `.githooks/`
 
+`apply git-hook` remains available for lower-level scripting, custom output-path control inside `.githooks/`, and installing one hook at a time. For normal repository setup or repair, prefer `setup repo-hooks`.
+
 ### `runtime status`
 
 Inspects the installed state of tracked runtime integrations.
@@ -461,6 +480,12 @@ It reports:
 - whether `.veritas/runtime/codex-hooks.json` exists
 - whether the target Codex hooks file already contains the Veritas command
 - the next repair or install commands to run
+
+Git hook setup or repair suggestions point to:
+
+```bash
+npx @kontourai/veritas setup repo-hooks
+```
 
 ## Generated Hook Behavior
 
