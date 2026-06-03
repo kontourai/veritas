@@ -4060,10 +4060,12 @@ test('print ci-snippet returns a copy-paste starter snippet', () => {
 
 test('print git-hook returns a tracked post-commit runtime integration', () => {
   const hookBody = buildSuggestedGitHook({ hook: 'post-commit' });
+  const trackedHookBody = readFileSync(join(repoRootDir, '.githooks/post-commit'), 'utf8');
   assert.match(hookBody, /^#!\/bin\/sh/m);
   assert.match(hookBody, /veritas readiness --changed-from HEAD~1 --changed-to HEAD/);
-
   assert.match(hookBody, /VERITAS_HOOK_SKIP/);
+  assert.match(hookBody, /AI_GUIDANCE_HOOK_SKIP/);
+  assert.equal(hookBody, trackedHookBody);
 });
 
 test('print git-hook returns a tracked pre-push push-safe integration', () => {
