@@ -813,6 +813,8 @@ export function buildSuggestedPackageScripts({
     'veritas:evidence-check': evidenceCheck,
     'lint:governance': 'npm exec -- veritas readiness --format feedback --working-tree',
     'veritas:readiness': 'npm exec -- veritas readiness',
+    'test:prepush': 'npm run veritas:evidence-check',
+    'prepush': 'npm run test:prepush',
   };
 }
 

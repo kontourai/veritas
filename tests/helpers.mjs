@@ -24,6 +24,34 @@ export function parseCliJson(output) {
 
 export const repoRootDir = fileURLToPath(new URL('..', import.meta.url));
 
+const GIT_ENV_KEYS = [
+  'GIT_DIR',
+  'GIT_WORK_TREE',
+  'GIT_INDEX_FILE',
+  'GIT_OBJECT_DIRECTORY',
+  'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+  'GIT_CONFIG',
+  'GIT_CONFIG_GLOBAL',
+  'GIT_CONFIG_SYSTEM',
+  'GIT_PREFIX',
+  'GIT_COMMON_DIR',
+];
+
+export function cleanGitEnv(env = process.env) {
+  const nextEnv = { ...env };
+  for (const key of GIT_ENV_KEYS) delete nextEnv[key];
+  return nextEnv;
+}
+
+for (const key of GIT_ENV_KEYS) delete process.env[key];
+
+export function execGitFixture(args, options = {}) {
+  return execFileSync('git', args, {
+    ...options,
+    env: cleanGitEnv(options.env),
+  });
+}
+
 export function readJsonFromAbsolute(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
 }
@@ -46,12 +74,12 @@ export function mkdirp(path) {
 
 export function initCommittedRepo(prefix) {
   const rootDir = mkdtempSync(join(tmpdir(), prefix));
-  execFileSync('git', ['init', '-b', 'main'], { cwd: rootDir, encoding: 'utf8' });
-  execFileSync('git', ['config', 'user.name', 'Veritas Tests'], {
+  execGitFixture(['init', '-b', 'main'], { cwd: rootDir, encoding: 'utf8' });
+  execGitFixture(['config', 'user.name', 'Veritas Tests'], {
     cwd: rootDir,
     encoding: 'utf8',
   });
-  execFileSync('git', ['config', 'user.email', 'tests@example.com'], {
+  execGitFixture(['config', 'user.email', 'tests@example.com'], {
     cwd: rootDir,
     encoding: 'utf8',
   });
@@ -61,8 +89,8 @@ export function initCommittedRepo(prefix) {
 }
 
 export function commitAll(rootDir, message) {
-  execFileSync('git', ['add', '.'], { cwd: rootDir, encoding: 'utf8' });
-  execFileSync('git', ['commit', '-m', message], { cwd: rootDir, encoding: 'utf8' });
+  execGitFixture(['add', '.'], { cwd: rootDir, encoding: 'utf8' });
+  execGitFixture(['commit', '-m', message], { cwd: rootDir, encoding: 'utf8' });
 }
 
 export function installLocalVeritasBin(rootDir) {

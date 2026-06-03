@@ -9,12 +9,16 @@ The `.veritas/` directory contains the live governance configuration for this re
 ## Key commands
 
 ```bash
+npm run test:prepush
+npm run prepush
 npm test
 npm run veritas:evidence-check
 npm run veritas:conformance
 npm run veritas:conformance:report
 node scripts/build-pages-site.mjs
 ```
+
+The tracked repo hook is `.githooks/pre-push`; local checkouts must set `core.hooksPath=.githooks` to use it.
 
 After making code changes, run `npm run veritas:conformance:report` to generate an evidence artifact for the working tree.
 

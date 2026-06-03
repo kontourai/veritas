@@ -401,7 +401,7 @@ Print-only helpers return suggested content without changing the repo.
 ```bash
 npx @kontourai/veritas print package-scripts [--root <path>] [--evidence-check <cmd>]
 npx @kontourai/veritas print ci-snippet [--root <path>] [--evidence-check <cmd>]
-npx @kontourai/veritas print git-hook [--root <path>] [--hook post-commit]
+npx @kontourai/veritas print git-hook [--root <path>] [--hook post-commit|pre-push]
 npx @kontourai/veritas print runtime-hook [--root <path>]
 npx @kontourai/veritas print stop-hook [--root <path>] [--tool generic|claude-code|cursor]
 npx @kontourai/veritas print governance-block
@@ -427,7 +427,7 @@ Write the suggested assets into the repo.
 ```bash
 npx @kontourai/veritas apply package-scripts [--root <path>] [--evidence-check <cmd>] [--force]
 npx @kontourai/veritas apply ci-snippet [--root <path>] [--output <path>] [--evidence-check <cmd>] [--force]
-npx @kontourai/veritas apply git-hook [--root <path>] [--hook post-commit] [--output <path>] [--configure-git] [--force]
+npx @kontourai/veritas apply git-hook [--root <path>] [--hook post-commit|pre-push] [--output <path>] [--configure-git] [--force]
 npx @kontourai/veritas apply runtime-hook [--root <path>] [--output <path>] [--force]
 npx @kontourai/veritas apply stop-hook [--root <path>] [--tool generic|claude-code|cursor] [--output <path>] [--force]
 npx @kontourai/veritas apply governance-blocks [--root <path>] [--force]
@@ -455,6 +455,7 @@ npx @kontourai/veritas integrations codex status [--root <path>] [--target-hooks
 It reports:
 
 - whether `.githooks/post-commit` exists and is executable
+- whether `.githooks/pre-push` exists and is executable
 - whether `core.hooksPath` points at `.githooks`
 - whether `.veritas/hooks/agent-runtime.sh` exists and is executable
 - whether `.veritas/runtime/codex-hooks.json` exists
@@ -469,6 +470,12 @@ It reports:
 - compares `HEAD~1..HEAD` on normal commits
 - uses the empty tree for the first commit
 - calls `veritas readiness`
+
+They can also produce a `pre-push` hook that:
+
+- skips itself when `VERITAS_HOOK_SKIP=1`
+- calls `npm run --if-present prepush`
+- relies on the repo's push-safe `prepush` script instead of the full test suite
 
 `print runtime-hook` and `apply runtime-hook` produce a shell wrapper that:
 
