@@ -51,6 +51,7 @@ Find what you need by what you're trying to do.
 
 ### Work on Veritas itself
 
+- [Developer Architecture](architecture/developer-architecture.md) for the local product, evidence, and ownership map
 - [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md) for the Veritas product boundary and Surface projection rules
 - [Product Core And Repo Map](design/product-core-and-repo-map.md) for architecture notes
 - [Schema Evolution](design/schema-evolution.md) for schema change policy
@@ -84,6 +85,7 @@ Find what you need by what you're trying to do.
 
 ### Design
 
+- [Developer Architecture](architecture/developer-architecture.md)
 - [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md)
 - [Agent Activation](design/agent-activation.md)
 - [Repo Standards Schema](design/repo-standards.md)
