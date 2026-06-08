@@ -53,6 +53,7 @@
   },
   "scripts": {
     "docs:pages:build": "node scripts/build-pages-site.mjs",
+    "docs:pages:test:browser": "playwright test --config tests/browser/playwright.config.ts",
     "verify": "node scripts/check-content-boundary.cjs && node scripts/verify.mjs",
     "test:prepush": "npm run verify",
     "prepush": "npm run test:prepush",
@@ -85,5 +86,8 @@
     "@kontourai/surface": "^0.5.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "picomatch": "^4.0.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
   }
 }

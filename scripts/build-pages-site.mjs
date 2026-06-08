@@ -178,6 +178,7 @@ writeFileSync(
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ page.title }} | {{ site.title }}</title>
+    <link rel="icon" href="data:,">
     <link rel="stylesheet" href="{{ '/assets/site.css' | relative_url }}">
     <script>
       (function () {
