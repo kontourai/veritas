@@ -18,6 +18,8 @@ dist/
 .site-src/
 .site-dist/
 coverage/
+test-results/
+playwright-report/
 .nyc_output/
 *.log
 .env

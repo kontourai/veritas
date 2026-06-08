@@ -38,3 +38,34 @@ jobs:
 
       - name: Coverage Gate
         run: npm run test:coverage:check
+
+  docs-browser:
+    name: Docs browser
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci --no-fund --no-audit
+
+      - name: Build Pages Source
+        run: npm run docs:pages:build
+
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: .site-src
+          destination: .site-dist
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser test rendered docs
+        run: npm run docs:pages:test:browser
