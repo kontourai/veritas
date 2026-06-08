@@ -171,7 +171,16 @@ jobs:
               try {
                 await github.rest.issues.createLabel({ owner, repo, name, color, description });
               } catch (error) {
-                if (error.status !== 422) throw error;
+                if (![401, 403, 422].includes(error.status)) throw error;
+              }
+            }
+
+            async function trySetLabels(issue_number, labels) {
+              try {
+                await github.rest.issues.setLabels({ owner, repo, issue_number, labels });
+              } catch (error) {
+                if (![401, 403, 422].includes(error.status)) throw error;
+                core.warning(`Unable to set Veritas health labels: ${error.message}`);
               }
             }
 
@@ -206,12 +215,7 @@ jobs:
                   body: issueBody,
                   state: 'closed',
                 });
-                await github.rest.issues.setLabels({
-                  owner,
-                  repo,
-                  issue_number: existing.number,
-                  labels: [healthLabel, clearLabel],
-                });
+                await trySetLabels(existing.number, [healthLabel, clearLabel]);
               }
               return;
             }
@@ -224,12 +228,7 @@ jobs:
                 title,
                 body: issueBody,
               });
-              await github.rest.issues.setLabels({
-                owner,
-                repo,
-                issue_number: existing.number,
-                labels: [healthLabel, activeLabel],
-              });
+              await trySetLabels(existing.number, [healthLabel, activeLabel]);
               await github.rest.issues.createComment({
                 owner,
                 repo,
@@ -245,12 +244,7 @@ jobs:
                 state: 'open',
                 body: issueBody,
               });
-              await github.rest.issues.setLabels({
-                owner,
-                repo,
-                issue_number: existing.number,
-                labels: [healthLabel, activeLabel],
-              });
+              await trySetLabels(existing.number, [healthLabel, activeLabel]);
             } else {
               const created = await github.rest.issues.create({
                 owner,
@@ -258,12 +252,7 @@ jobs:
                 title,
                 body: issueBody,
               });
-              await github.rest.issues.setLabels({
-                owner,
-                repo,
-                issue_number: created.data.number,
-                labels: [healthLabel, activeLabel],
-              });
+              await trySetLabels(created.data.number, [healthLabel, activeLabel]);
             }
 
   fail-on-red-health:
