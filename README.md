@@ -83,6 +83,7 @@ That is the point: the agent gets the missing requirement before it declares don
 - [Concepts Overview](docs/concepts.md)
 - [Glossary](docs/reference/glossary.md)
 - [Veritas and Surface](docs/veritas-and-surface.md)
+- [Developer Architecture](docs/architecture/developer-architecture.md)
 - [Human Attestation](docs/guides/attestation.md)
 - [Standards Recommendations](docs/guides/recommendations.md)
 - [CLI Reference](docs/reference/cli.md)
