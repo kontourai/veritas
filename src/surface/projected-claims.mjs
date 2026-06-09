@@ -1,8 +1,6 @@
 import { SURFACE_TRUST_POLICIES } from './policies.mjs';
-import {
-  buildReadinessAuthorityTrace,
-  surfacePolicyImpact,
-} from './evidence-projection.mjs';
+import { surfacePolicyImpact } from './evidence-projection.mjs';
+import { buildReadinessAuthorityTrace } from './readiness-authority.mjs';
 import {
   readinessIntegrityScope,
   readinessSurfaceStatus,
