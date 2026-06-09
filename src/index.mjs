@@ -1,14 +1,4 @@
-import {
-  appendFileSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
-import { createHash } from 'node:crypto';
-import { basename, dirname, relative, resolve } from 'node:path';
-import { execFileSync } from 'node:child_process';
-import {
+export {
   loadJson,
   loadRepoMap,
   loadRepoStandards,
@@ -19,7 +9,7 @@ import {
   loadMarkerBenchmarkSessionLog,
   loadMarkerBenchmarkSuite,
 } from './load.mjs';
-import {
+export {
   parseTokens,
   parseArgs,
   parseCoverageArgs,
@@ -34,8 +24,9 @@ import {
   parseMarkerSuiteStandardsFeedbackArgs,
   parseReadinessArgs,
 } from './args.mjs';
-import { assertWithinDir, normalizeRepoPath, relativeRepoPath } from './paths.mjs';
-import {
+export { normalizeRepoPath } from './paths.mjs';
+
+export {
   slugifyProjectName,
   inferBootstrapRepoInsights,
   buildStarterRepoMap,
@@ -47,12 +38,16 @@ import {
   buildSuggestedPackageScripts,
   buildSuggestedCiSnippet,
 } from './bootstrap.mjs';
-import {
+export {
   buildInitRecommendation,
   applyInitRecommendation,
 } from './bootstrap/recommendation.mjs';
-import { shellQuote, runEvidenceCheckCommand, resolveGitHead, stagedDiffSha256 } from './shell.mjs';
-import {
+export {
+  buildGovernanceBlock,
+  applyGovernanceBlocks,
+} from './governance.mjs';
+
+export {
   buildSuggestedGitHook,
   buildSuggestedRuntimeHook,
   buildSuggestedStopHook,
@@ -68,30 +63,21 @@ import {
   applyClaudeCodePostSessionHook,
   evaluatePreToolUse,
 } from './hooks.mjs';
-import {
-  applyGovernanceBlocks,
-  buildGovernanceBlock,
-} from './governance.mjs';
-import {
-  produceSurfaceStateForVeritasRecord,
-} from './surface/producer.mjs';
-import {
-  scoreMarkerBenchmarkCondition,
-  compareMarkerBenchmarkRuns,
-  buildMarkerBenchmarkSuiteReport,
-  generateMarkerBenchmarkComparison,
-  generateMarkerBenchmarkSuiteReport,
-} from './standards-feedback/marker-benchmark.mjs';
-import {
-  buildStandardsFeedbackRecord,
-  buildStandardsFeedbackDraft,
-  buildStandardsFeedbackRecordCommand,
-  validateStandardsFeedbackDraftContext,
-  writeStandardsFeedbackArtifact,
-  appendStandardsFeedbackHistory,
-  writeStandardsFeedbackDraftArtifact,
-} from './standards-feedback/loop.mjs';
-import {
+export {
+  applyCodexHook,
+  buildSuggestedCodexHookConfig,
+  inspectCodexHookTarget,
+  inspectRuntimeIntegrationStatus,
+} from './integrations/runtime-integrations.mjs';
+export {
+  buildCodexStandardsFeedbackDraft,
+  observeCodexStandardsFeedback,
+} from './integrations/codex/standards-feedback-capture.mjs';
+export * from './integrations/contract.mjs';
+export * from './integrations/session-logs.mjs';
+export * from './integrations/runtime-integrations.mjs';
+
+export {
   readEvidenceCheckRoutes,
   readEvidenceChecks,
   readDefaultEvidenceCheckIds,
@@ -105,20 +91,7 @@ import {
   routeMatchesAnyComponent,
   serializeEvidenceCheckRoutes,
 } from './evidence/index.mjs';
-import {
-  buildCodexStandardsFeedbackDraft,
-  observeCodexStandardsFeedback,
-} from './integrations/codex/standards-feedback-capture.mjs';
-import {
-  applyCodexHook,
-  buildSuggestedCodexHookConfig,
-  inspectCodexHookTarget,
-  inspectRuntimeIntegrationStatus,
-} from './integrations/runtime-integrations.mjs';
-import { classifyNodes } from './repo/classify.mjs';
-import { matchesPatterns, matchesPatternsForAnyFile } from './util/patterns.mjs';
-import { uniqueStrings } from './util/strings.mjs';
-import {
+export {
   resolveEvidenceCheckPlan,
   resolveWorkstream,
   parseBaselineCiFastStatus,
@@ -140,7 +113,8 @@ import {
   generateVeritasReport,
   resolveEvidenceCheckCommands,
 } from './report/index.mjs';
-import {
+
+export {
   evaluateRequiredArtifactsRule,
   evaluateGovernanceBlockRule,
   evaluateDiffRequiredRule,
@@ -153,22 +127,17 @@ import {
   evaluateRepoStandards,
   RULE_EVALUATORS,
 } from './rules/evaluate.mjs';
-import {
+export {
   buildExplainText,
   runExplainCli,
   checkBoundaries,
   runBoundariesCheckCli,
 } from './explain.mjs';
-import {
-  generateStandardsFeedbackDraft,
-  generateStandardsFeedbackRecord,
-  generateStandardsFeedbackSummary,
-} from './standards-feedback/records.mjs';
-import {
+export {
   hasReadinessOutcomeInputs,
   runMergeReadiness,
 } from './readiness/run.mjs';
-import {
+export {
   affectedEvidenceCheckLabels,
   affectedNodeIds,
   buildConformanceAlerts,
@@ -182,14 +151,49 @@ import {
   summarizeHealth,
   summarizePolicyResults,
 } from './conformance/run.mjs';
-import {
+
+export {
+  produceSurfaceStateForVeritasRecord,
+} from './surface/producer.mjs';
+export * from './surface/projection.mjs';
+export * from './surface/console.mjs';
+export * from './surface/extension.mjs';
+export * from './surface/producer.mjs';
+
+export {
+  buildStandardsFeedbackRecord,
+  buildStandardsFeedbackDraft,
+  buildStandardsFeedbackRecordCommand,
+  validateStandardsFeedbackDraftContext,
+  writeStandardsFeedbackArtifact,
+  appendStandardsFeedbackHistory,
+  writeStandardsFeedbackDraftArtifact,
+} from './standards-feedback/loop.mjs';
+export {
+  scoreMarkerBenchmarkCondition,
+  compareMarkerBenchmarkRuns,
+  buildMarkerBenchmarkSuiteReport,
+  generateMarkerBenchmarkComparison,
+  generateMarkerBenchmarkSuiteReport,
+} from './standards-feedback/marker-benchmark.mjs';
+export {
+  generateStandardsFeedbackDraft,
+  generateStandardsFeedbackRecord,
+  generateStandardsFeedbackSummary,
+} from './standards-feedback/records.mjs';
+export * from './standards-feedback/filesystem-observer.mjs';
+export * from './standards-feedback/run-history.mjs';
+
+export {
   generateRuleRecommendations,
   generateAndWriteRecommendations,
   listRecommendations,
   loadRecommendation,
   applyRecommendation,
 } from './recommendations.mjs';
-import {
+export * from './recommendations.mjs';
+
+export {
   runVeritasReportCli,
   runReadinessCoverageCli,
   runInitCli,
@@ -225,201 +229,18 @@ import {
   runReadinessCheckCli,
   runClaimCli,
 } from './cli/index.mjs';
-export * from './surface/projection.mjs';
-export * from './surface/console.mjs';
-export * from './surface/extension.mjs';
+export * from './cli/plugins.mjs';
+
+export { classifyNodes } from './repo/classify.mjs';
+export {
+  matchesPatterns,
+  matchesPatternsForAnyFile,
+} from './util/patterns.mjs';
+export { uniqueStrings } from './util/strings.mjs';
 export * from './claims/store.mjs';
 export * from './claims/templates.mjs';
 export * from './claims/init.mjs';
-
-export {
-  loadJson,
-  loadRepoMap,
-  loadRepoStandards,
-  loadAuthoritySettings,
-  loadEvidenceArtifact,
-  loadStandardsFeedbackDraftArtifact,
-  loadMarkerBenchmarkScenario,
-  loadMarkerBenchmarkSessionLog,
-  loadMarkerBenchmarkSuite,
-  parseTokens,
-  parseArgs,
-  parseCoverageArgs,
-  parseInitArgs,
-  parseAttestArgs,
-  parsePrintArgs,
-  parseApplyArgs,
-  parseSetupArgs,
-  parsePreToolUseArgs,
-  parseStandardsFeedbackArgs,
-  parseMarkerStandardsFeedbackArgs,
-  parseMarkerSuiteStandardsFeedbackArgs,
-  parseReadinessArgs,
-  normalizeRepoPath,
-  slugifyProjectName,
-  inferBootstrapRepoInsights,
-  buildStarterRepoMap,
-  buildStarterRepoStandards,
-  buildStarterAuthoritySettings,
-  buildBootstrapReadme,
-  buildBootstrapStarterKitPlan,
-  buildInitRecommendation,
-  writeBootstrapStarterKit,
-  applyInitRecommendation,
-  buildSuggestedPackageScripts,
-  buildSuggestedCiSnippet,
-  buildSuggestedGitHook,
-  buildSuggestedRuntimeHook,
-  buildSuggestedStopHook,
-  buildSuggestedCodexHookConfig,
-  buildSuggestedClaudeCodePreToolUseHook,
-  buildSuggestedClaudeCodePostSessionHook,
-  inspectCodexHookTarget,
-  buildGovernanceBlock,
-  applyGovernanceBlocks,
-  applyPackageScripts,
-  applyCiSnippet,
-  applyGitHook,
-  setupRepoHooks,
-  applyRuntimeHook,
-  applyStopHook,
-  inspectRuntimeIntegrationStatus,
-  applyCodexHook,
-  applyClaudeCodePreToolUseHook,
-  applyClaudeCodePostSessionHook,
-  evaluatePreToolUse,
-  produceSurfaceStateForVeritasRecord,
-  classifyNodes,
-  matchesPatterns,
-  matchesPatternsForAnyFile,
-  uniqueStrings,
-  evaluateRequiredArtifactsRule,
-  evaluateGovernanceBlockRule,
-  evaluateDiffRequiredRule,
-  evaluateForbiddenPatternRule,
-  evaluateRequiredPatternRule,
-  evaluateHeaderRequiredRule,
-  evaluatePrimitiveFirstGovernanceRule,
-  evaluateWorkAreaBoundaryRule,
-  evaluatePolicyRule,
-  evaluateRepoStandards,
-  RULE_EVALUATORS,
-  scoreMarkerBenchmarkCondition,
-  compareMarkerBenchmarkRuns,
-  buildMarkerBenchmarkSuiteReport,
-  generateMarkerBenchmarkComparison,
-  generateMarkerBenchmarkSuiteReport,
-  buildStandardsFeedbackRecord,
-  buildStandardsFeedbackDraft,
-  buildStandardsFeedbackRecordCommand,
-  validateStandardsFeedbackDraftContext,
-  writeStandardsFeedbackArtifact,
-  appendStandardsFeedbackHistory,
-  writeStandardsFeedbackDraftArtifact,
-  readEvidenceCheckRoutes,
-  readEvidenceChecks,
-  readDefaultEvidenceCheckIds,
-  readRequiredEvidenceCheckIds,
-  commandsForEvidenceCheckIds,
-  evidenceCheckRecordsForCommands,
-  loadEvidenceInventoryResults,
-  buildReadinessCoverage,
-  buildExternalToolResults,
-  readUncoveredPathPolicy,
-  routeMatchesAnyComponent,
-  serializeEvidenceCheckRoutes,
-  buildCodexStandardsFeedbackDraft,
-  observeCodexStandardsFeedback,
-  resolveEvidenceCheckPlan,
-  resolveWorkstream,
-  parseBaselineCiFastStatus,
-  formatTriState,
-  buildEvidenceRecord,
-  writeEvidenceArtifact,
-  writeSurfaceClaimInputs,
-  listChangedFiles,
-  listWorkingTreeFiles,
-  resolveReportInputs,
-  buildMarkdownSummary,
-  feedbackStatusForPolicyResult,
-  buildFeedbackSummary,
-  feedbackHasFailures,
-  buildStandardsFeedbackMarkdownSummary,
-  buildStandardsFeedbackDraftMarkdownSummary,
-  mergeStandardsFeedbackRecordOptions,
-  resolveVeritasPaths,
-  generateVeritasReport,
-  resolveEvidenceCheckCommands,
-  buildExplainText,
-  runExplainCli,
-  checkBoundaries,
-  runBoundariesCheckCli,
-  generateStandardsFeedbackDraft,
-  generateStandardsFeedbackRecord,
-  generateStandardsFeedbackSummary,
-  hasReadinessOutcomeInputs,
-  runMergeReadiness,
-  affectedEvidenceCheckLabels,
-  affectedNodeIds,
-  buildConformanceAlerts,
-  buildRepoConformanceSnapshot,
-  classifyGovernanceSurface,
-  healthLabel,
-  renderGovernanceSurfaceLine,
-  selectedEvidenceCheckLabels,
-  summarizeAlertCounts,
-  summarizeGovernanceTrend,
-  summarizeHealth,
-  summarizePolicyResults,
-  generateRuleRecommendations,
-  generateAndWriteRecommendations,
-  listRecommendations,
-  loadRecommendation,
-  applyRecommendation,
-  runVeritasReportCli,
-  runReadinessCoverageCli,
-  runInitCli,
-  runPrintPackageScriptsCli,
-  runPrintCiSnippetCli,
-  runPrintGitHookCli,
-  runPrintRuntimeHookCli,
-  runPrintStopHookCli,
-  runPrintClaudeCodePreToolUseHookCli,
-  runPrintGovernanceBlockCli,
-  runPrintCodexHookCli,
-  runRuntimeStatusCli,
-  runApplyPackageScriptsCli,
-  runApplyCiSnippetCli,
-  runApplyGitHookCli,
-  runSetupRepoHooksCli,
-  runApplyRuntimeHookCli,
-  runApplyStopHookCli,
-  runApplyClaudeCodePreToolUseHookCli,
-  runApplyGovernanceBlocksCli,
-  runApplyCodexHookCli,
-  runStandardsFeedbackRecordCli,
-  runStandardsFeedbackSummaryCli,
-  runStandardsFeedbackMarkerCli,
-  runStandardsFeedbackMarkerSuiteCli,
-  runStandardsFeedbackRecommendCli,
-  runStandardsFeedbackDraftCli,
-  runStandardsFeedbackObserveCli,
-  runRecommendationCli,
-  runAttestCli,
-  runClaudeCodePreToolUseCli,
-  runIntegrationsCli,
-  runReadinessCheckCli,
-  runClaimCli,
-};
-export * from './attestations.mjs';
-export * from './approval-resolvers.mjs';
-export * from './integrations/contract.mjs';
-export * from './integrations/session-logs.mjs';
-export * from './integrations/runtime-integrations.mjs';
-export * from './surface/producer.mjs';
-export * from './standards-feedback/filesystem-observer.mjs';
-export * from './standards-feedback/run-history.mjs';
-export * from './recommendations.mjs';
-export * from './cli/plugins.mjs';
 export * from './plugins/registry.mjs';
 export * from './plugins/loader.mjs';
+export * from './attestations.mjs';
+export * from './approval-resolvers.mjs';
