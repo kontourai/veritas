@@ -329,9 +329,9 @@ Scores a deterministic marker-surfacing benchmark by comparing one `without Veri
 
 ```bash
 npx @kontourai/veritas feedback marker \
-  --scenario examples/benchmarks/migration-marker-scenario.json \
-  --without-veritas-session-log examples/benchmarks/migration-marker-without-veritas.json \
-  --with-veritas-session-log examples/benchmarks/migration-marker-with-veritas.json
+  --scenario examples/benchmarks/migration/scenario.json \
+  --without-veritas-session-log examples/benchmarks/migration/without-veritas.json \
+  --with-veritas-session-log examples/benchmarks/migration/with-veritas.json
 ```
 
 Important behaviors:
@@ -348,7 +348,7 @@ Scores a suite of marker benchmarks and reports aggregate reliability metrics ac
 
 ```bash
 npx @kontourai/veritas feedback marker-suite \
-  --suite examples/benchmarks/marker-suite.json
+  --suite examples/benchmarks/suites/context-surfacing-suite.json
 ```
 
 Important behaviors:

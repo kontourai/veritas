@@ -17,7 +17,7 @@ import {
   buildStandardsFeedbackDraftMarkdownSummary,
   mergeStandardsFeedbackRecordOptions,
   resolveVeritasPaths,
-} from '../report.mjs';
+} from '../report/index.mjs';
 
 export function generateStandardsFeedbackDraft(options = {}, defaults = {}) {
   const { rootDir, authoritySettingsPath } = resolveVeritasPaths(options, defaults);

@@ -2212,6 +2212,52 @@ test('report writes one trimmed Surface claim input per claim', async () => {
   }
 });
 
+test('report rejects run ids that would escape output directories', async () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-unsafe-run-id-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  const repoMapPath = writeTempRepoMap(rootDir, {
+    graph: {
+      defaultResolution: {
+        phase: 'Phase 0',
+        workstream: 'Demo',
+        matchedArtifacts: ['package.json'],
+      },
+      nodes: [
+        { id: 'root.manifest', kind: 'tooling-area', label: 'package.json', patterns: ['package.json'] },
+      ],
+    },
+    evidence: {
+      artifactDir: '.veritas/evidence',
+      reportTransport: 'local-json',
+      evidenceChecks: [
+        { id: 'unit', command: 'npm test', method: 'validation' },
+      ],
+    },
+  });
+  const repoStandardsPath = writeTempJson(rootDir, '.veritas-repo-standards.json', {
+    name: 'unsafe-run-id-policy',
+    version: 1,
+    rules: [],
+  });
+  writeClaimStoreForRepoMap(
+    rootDir,
+    readJsonFromAbsolute(repoMapPath),
+    readJsonFromAbsolute(repoStandardsPath),
+  );
+
+  await assert.rejects(
+    () => generateVeritasReport({
+      rootDir,
+      repoMapPath,
+      repoStandardsPath,
+      runId: '../../outside',
+      sourceRef: 'unsafe-run-id',
+    }, {}, ['package.json']),
+    /Veritas evidence run id may only contain letters, numbers, dot, underscore, and hyphen/,
+  );
+  assert.equal(existsSync(join(rootDir, 'outside.json')), false);
+});
+
 test('standards feedback record CLI writes a repo-local observe standards feedback artifact from report output', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-feedback-cli-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
@@ -3361,7 +3407,7 @@ test('feedback marker CLI compares without-veritas and with-veritas session logs
 test('feedback marker-suite CLI returns aggregate benchmark metrics', () => {
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'veritas', 'feedback', 'marker-suite', '--suite', 'examples/benchmarks/marker-suite.json'],
+    ['exec', '--', 'veritas', 'feedback', 'marker-suite', '--suite', 'examples/benchmarks/suites/context-surfacing-suite.json'],
     { cwd: repoRootDir, encoding: 'utf8' },
   );
   const parsed = parseCliJson(stdout);
@@ -3374,7 +3420,7 @@ test('feedback marker-suite CLI returns aggregate benchmark metrics', () => {
   assert.equal(parsed.metrics.pass_pow_k, 5 / 6);
 
   const helperResult = generateMarkerBenchmarkSuiteReport({
-    suitePath: 'examples/benchmarks/marker-suite.json',
+    suitePath: 'examples/benchmarks/suites/context-surfacing-suite.json',
   });
   assert.equal(helperResult.metrics.improvement_rate, 7 / 8);
 });

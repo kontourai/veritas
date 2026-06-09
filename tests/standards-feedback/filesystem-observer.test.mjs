@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   appendRunHistory,
@@ -117,4 +117,30 @@ test('filesystem observer scopes time to green to the active run transition', ()
     evidencePath: '.veritas/evidence/current-pass.json',
   });
   assert.equal(result.draft.prefilled_measurements.time_to_green_minutes, 4);
+});
+
+test('filesystem observer rejects draft run ids that would escape output directories', () => {
+  const rootDir = bootstrapRepo();
+  mkdirSync(join(rootDir, '.veritas/evidence'), { recursive: true });
+  const evidence = {
+    record_schema_version: 1,
+    run_id: '../../outside',
+    timestamp: '2026-05-10T00:04:00.000Z',
+    source_ref: 'working-tree:test',
+    source_kind: 'working-tree',
+    source_scope: ['staged'],
+    components: ['app.src'],
+    triggered_evidence_checks: ['src/**'],
+    files: ['src/app.mjs'],
+  };
+  writeFileSync(join(rootDir, '.veritas/evidence/unsafe.json'), `${JSON.stringify(evidence, null, 2)}\n`);
+
+  assert.throws(
+    () => observeFilesystemStandardsFeedback({
+      rootDir,
+      evidencePath: '.veritas/evidence/unsafe.json',
+    }),
+    /Standards feedback draft run id may only contain letters, numbers, dot, underscore, and hyphen/,
+  );
+  assert.equal(existsSync(join(rootDir, 'outside.json')), false);
 });

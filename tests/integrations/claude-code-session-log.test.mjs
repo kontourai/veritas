@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   ClaudeCodeSessionLogReader,
@@ -86,6 +86,28 @@ test('feedback observe derives Claude Code parity fields from session log reader
   assert.equal(result.draft.prefilled_measurements.time_to_green_minutes, 3);
   assert.equal(result.draft.prefilled_measurements.exception_count, 1);
   assert.equal(result.draft.prefilled_outcome.accepted_without_major_rewrite, true);
+});
+
+test('feedback observe rejects session-log run ids that would escape output directories', () => {
+  const rootDir = bootstrapRepo('veritas-unsafe-session-log-');
+  const sessionLogPath = join(rootDir, 'codex.json');
+  writeFileSync(sessionLogPath, JSON.stringify({
+    session_id: '../../outside',
+    events: [
+      { timestamp: '2026-05-10T00:00:00.000Z', command: 'veritas readiness', status: 'failed', files: ['src/app.mjs'] },
+      { timestamp: '2026-05-10T00:01:00.000Z', command: 'veritas readiness', status: 'passed', files: ['src/app.mjs'] },
+    ],
+  }, null, 2));
+
+  assert.throws(
+    () => observeSessionLogStandardsFeedback({
+      rootDir,
+      sessionLogPath,
+      tool: 'codex',
+    }),
+    /Standards feedback draft run id may only contain letters, numbers, dot, underscore, and hyphen/,
+  );
+  assert.equal(existsSync(join(rootDir, 'outside.json')), false);
 });
 
 test('CodexSessionLogReader reads legacy JSON session log shape through the registry contract', () => {

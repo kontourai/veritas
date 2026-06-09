@@ -11,7 +11,7 @@ import {
   loadPluginsFromConfig,
   registerPlugin,
 } from '../src/index.mjs';
-import npmAuditPlugin from '../examples/veritas-plugins/npm-audit.mjs';
+import npmAuditPlugin from '../examples/plugins/npm-audit.mjs';
 import { repoRootDir } from './helpers.mjs';
 
 function plugin(name = `test-plugin-${Date.now()}`) {

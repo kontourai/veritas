@@ -6,7 +6,7 @@
 // Surface's `buildTrustReport` to produce a portable trust report.
 //
 // Usage:
-//   node examples/surface-handoff.mjs [path-to-evidence.json]
+//   node examples/surface/surface-handoff.mjs [path-to-evidence.json]
 //
 // Defaults to .veritas/evidence/conformance-local.json if no path is given.
 

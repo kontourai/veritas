@@ -139,7 +139,7 @@ import {
   resolveVeritasPaths,
   generateVeritasReport,
   resolveEvidenceCheckCommands,
-} from './report.mjs';
+} from './report/index.mjs';
 import {
   evaluateRequiredArtifactsRule,
   evaluateGovernanceBlockRule,

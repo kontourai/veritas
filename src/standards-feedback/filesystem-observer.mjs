@@ -3,7 +3,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { loadEvidenceArtifact } from '../load.mjs';
-import { relativeRepoPath } from '../paths.mjs';
+import { assertWithinDir, relativeRepoPath } from '../paths.mjs';
+import { resolveRunArtifactPath } from '../util/run-id.mjs';
 import { readRunHistory } from './run-history.mjs';
 
 function digest(value) {
@@ -134,7 +135,20 @@ export function observeFilesystemStandardsFeedback({ rootDir, evidencePath, outp
     evidencePath: resolvedEvidencePath,
     churnThreshold,
   });
-  const artifactPath = resolve(rootDir, outputPath ?? `.veritas/standards-feedback-drafts/${draft.run_id}.json`);
+  const draftsDir = resolve(rootDir, '.veritas/standards-feedback-drafts');
+  const artifactPath = outputPath
+    ? resolve(rootDir, outputPath)
+    : resolveRunArtifactPath({
+        dir: draftsDir,
+        runId: draft.run_id,
+        suffix: '.json',
+        label: 'Standards feedback draft run id',
+      });
+  assertWithinDir(
+    artifactPath,
+    draftsDir,
+    'standards feedback drafts may only be written inside .veritas/standards-feedback-drafts/',
+  );
   mkdirSync(dirname(artifactPath), { recursive: true });
   writeFileSync(artifactPath, `${JSON.stringify(draft, null, 2)}\n`, 'utf8');
   return {
