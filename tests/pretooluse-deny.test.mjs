@@ -67,6 +67,18 @@ test('Claude Code PreToolUse allows edits when checks pass', () => {
   assert.equal(result.decision, 'approve');
 });
 
+test('Claude Code PreToolUse blocks malformed payloads', () => {
+  const rootDir = bootstrapRepo();
+  const result = evaluatePreToolUse({
+    rootDir,
+    stdinText: '{not-json',
+  });
+
+  assert.equal(result.actor, 'brian');
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /Malformed PreToolUse payload/);
+});
+
 test('Claude Code PreToolUse exception allows and records a rule bypass', () => {
   const rootDir = bootstrapRepo();
   const previousRule = process.env.VERITAS_EXCEPTION_RULE;
