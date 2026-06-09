@@ -2,14 +2,14 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { basename, dirname, resolve } from 'node:path';
 import { buildGovernanceBlock, replaceGovernanceBlock } from '../governance.mjs';
+import { inferBootstrapRepoInsights } from './insights.mjs';
+import { buildBootstrapReadme } from './readme.mjs';
 import {
   buildAdaptiveNodes,
   buildStarterRepoMap,
   buildStarterRepoStandards,
   buildStarterAuthoritySettings,
-  buildBootstrapReadme,
-  inferBootstrapRepoInsights,
-} from '../bootstrap.mjs';
+} from './starter-artifacts.mjs';
 import {
   OPTIONAL_INSTRUCTION_TARGETS,
   buildGovernanceInstructions,
