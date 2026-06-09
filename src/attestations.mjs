@@ -1,31 +1,31 @@
-import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { loadJson } from './load.mjs';
 import { relativeRepoPath } from './paths.mjs';
 import * as Surface from '@kontourai/surface';
 import {
-  approvalResolverRejectionReason,
   buildApprovalResolverRequest,
-  isApprovalResolverResultAccepted,
-  normalizeApprovalRefPolicy,
-  resolveOfflineApprovalReference,
   summarizeApprovalResolverResult,
 } from './approval-resolvers.mjs';
+import {
+  rejectNonHumanActor,
+  requireHumanApprovalReference,
+  validateApprovalReferencePolicy,
+} from './attestations/approval.mjs';
+export {
+  hashProtectedStandards,
+  resolveProtectedStandardsPaths,
+} from './attestations/protected-standards.mjs';
+import {
+  hashProtectedStandards,
+  sha256Hex,
+} from './attestations/protected-standards.mjs';
 
 const DEFAULT_VALID_UNTIL_DAYS = 90;
 const ATTESTATIONS_DIR = '.veritas/attestations';
 const HEAD_FILE = 'HEAD';
 const PENDING_FILE = 'PENDING';
-
-function sha256Hex(value) {
-  return createHash('sha256').update(value).digest('hex');
-}
-
-function hashFile(path) {
-  return `sha256:${sha256Hex(readFileSync(path))}`;
-}
 
 function readGitConfig(rootDir, key) {
   try {
@@ -58,99 +58,6 @@ function pendingPath(rootDir) {
 
 function nowIso(options = {}) {
   return options.attestedAt ?? new Date().toISOString();
-}
-
-function rejectNonHumanActor(actorId) {
-  if (/(\bbot\b|ci|github-actions|dependabot|buildkite|circleci|jenkins)/i.test(actorId)) {
-    throw new Error(`Refusing to create a human attestation for non-human actor: ${actorId}`);
-  }
-}
-
-function requireHumanApprovalReference({ kind, approvalRef }) {
-  if (typeof approvalRef === 'string' && approvalRef.trim()) return;
-  throw new Error(
-    `veritas attest ${kind} requires --approval-ref <reference> from an explicit human approval. ` +
-    'Agents may prepare changes, but must not record authority-backed attestations without a human approval reference.',
-  );
-}
-
-function validateApprovalReferencePolicy({
-  rootDir,
-  approvalRef,
-  authoritySettingsPath,
-  approvalResolverResult,
-  resolverRequest,
-}) {
-  const authoritySettings = loadJson(authoritySettingsPath, 'authority settings');
-  const policy = normalizeApprovalRefPolicy(
-    authoritySettings.review_preferences?.attestation_approval_ref_policy,
-  );
-  const resolvedApproval = policy.requiresResolution && !approvalResolverResult
-    ? resolveOfflineApprovalReference({
-      rootDir,
-      approvalRef,
-      request: resolverRequest,
-      resolvedAt: resolverRequest?.requestedAt,
-    })
-    : approvalResolverResult;
-  if (policy.requiresResolution) {
-    if (!resolvedApproval) {
-      throw new Error(
-        `veritas attest approval reference policy ${policy.mode} requires a resolver-backed approval result.`,
-      );
-    }
-    if (!isApprovalResolverResultAccepted(resolvedApproval, { now: resolverRequest?.requestedAt })) {
-      throw new Error(
-        `veritas attest approval reference was not accepted by resolver: ${approvalResolverRejectionReason(resolvedApproval, { now: resolverRequest?.requestedAt })}`,
-      );
-    }
-  }
-  if (policy.allowedPrefixes.length === 0) {
-    return {
-      mode: policy.mode,
-      matchedPrefix: null,
-      requiresResolution: policy.requiresResolution,
-      approvalResolverResult: resolvedApproval ?? null,
-    };
-  }
-
-  const trimmedRef = approvalRef.trim();
-  const matchedPrefix = policy.allowedPrefixes.find((prefix) =>
-    trimmedRef.startsWith(prefix)
-  );
-  if (!matchedPrefix) {
-    throw new Error(
-      `veritas attest approval reference must start with one of: ${policy.allowedPrefixes.join(', ')}`,
-    );
-  }
-  return {
-    mode: policy.mode,
-    matchedPrefix,
-    requiresResolution: policy.requiresResolution,
-    approvalResolverResult: resolvedApproval ?? null,
-  };
-}
-
-export function resolveProtectedStandardsPaths(rootDir, options = {}) {
-  return {
-    repoStandardsPath: resolve(rootDir, options.repoStandardsPath ?? '.veritas/repo-standards/default.repo-standards.json'),
-    repoMapPath: resolve(rootDir, options.repoMapPath ?? '.veritas/repo-map.json'),
-    authoritySettingsPath: resolve(rootDir, options.authoritySettingsPath ?? '.veritas/authority/default.authority-settings.json'),
-  };
-}
-
-export function hashProtectedStandards(rootDir, options = {}) {
-  const paths = resolveProtectedStandardsPaths(rootDir, options);
-  return {
-    repoStandardsHash: hashFile(paths.repoStandardsPath),
-    repoMapHash: hashFile(paths.repoMapPath),
-    authoritySettingsHash: hashFile(paths.authoritySettingsPath),
-    paths: {
-      repoStandardsPath: relativeRepoPath(rootDir, paths.repoStandardsPath),
-      repoMapPath: relativeRepoPath(rootDir, paths.repoMapPath),
-      authoritySettingsPath: relativeRepoPath(rootDir, paths.authoritySettingsPath),
-    },
-  };
 }
 
 export function readAttestationHead(rootDir) {
