@@ -4817,6 +4817,22 @@ test('apply runtime-hook rejects paths outside the reviewable hook area', () => 
   );
 });
 
+test('non-git hook installers reject symlinked .veritas hooks directory', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-hook-symlink-dir-'));
+  mkdirp(join(rootDir, '.veritas'));
+  const externalHooksDir = mkdtempSync(join(tmpdir(), 'external-veritas-hooks-'));
+  symlinkSync(externalHooksDir, join(rootDir, '.veritas/hooks'), 'dir');
+
+  assert.throws(
+    () => applyRuntimeHook({ rootDir, force: true }),
+    /refuses to write through a symlinked \.veritas\/hooks directory/,
+  );
+  assert.throws(
+    () => applyStopHook({ rootDir, force: true }),
+    /refuses to write through a symlinked \.veritas\/hooks directory/,
+  );
+});
+
 test('apply runtime-hook rejects symlinked targets that escape the hook area', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-runtime-hook-symlink-'));
   const externalDir = mkdtempSync(join(tmpdir(), 'veritas-external-hook-target-'));
