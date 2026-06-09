@@ -1,9 +1,14 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { inspectGovernanceBlockFile } from '../governance.mjs';
 import { classifyNodes } from '../repo/classify.mjs';
 import { matchedFilesForRule, matchesPatterns, readRepoTextFile, lineForMatch } from '../util/patterns.mjs';
 import { uniqueStrings } from '../util/strings.mjs';
+import { evaluatePrimitiveFirstGovernanceRule } from './primitive-first.mjs';
+import { buildRuleResult } from './result.mjs';
+
+export { buildRuleResult } from './result.mjs';
+export { evaluatePrimitiveFirstGovernanceRule } from './primitive-first.mjs';
 
 /**
  * @typedef {Object} RuleContext
@@ -13,26 +18,6 @@ import { uniqueStrings } from '../util/strings.mjs';
  * @property {object} [repoStandards] Active Repo Standards config; required for primitive references.
  * @property {string|null} [actor] Resolved actor for boundary rules.
  */
-
-export function buildRuleResult(rule, exceptions = {}) {
-  const enforcement =
-    rule.enforcement ?? (rule.classification === 'hard-invariant' ? 'deny' : 'lint');
-  return {
-    rule_id: rule.id,
-    classification: rule.classification,
-    stage: rule.stage,
-    enforcement,
-    message: rule.message,
-    owner: rule.owner ?? null,
-    rollback_switch: rule.rollback_switch ?? null,
-    implemented: false,
-    passed: null,
-    status: 'info',
-    summary: `Rule ${rule.id} is metadata-only in the current product core.`,
-    findings: [],
-    ...exceptions,
-  };
-}
 
 /** @param {RuleContext} context */
 export function evaluateRequiredArtifactsRule(rule, { rootDir }) {
@@ -242,142 +227,6 @@ export function evaluateVocabularyConsistencyRule(rule, context) {
       findings.length === 0
         ? 'All matched files use canonical Veritas vocabulary.'
         : 'Some matched files use pre-glossary or ambiguous Veritas vocabulary.',
-    findings,
-  });
-}
-
-function primitiveExists(reference, rule, context) {
-  if (reference.kind === 'repo-standards-rule') {
-    return (context.repoStandards?.rules ?? []).some((candidateRule) =>
-      candidateRule.id === reference.id && candidateRule.id !== rule.id
-    );
-  }
-  if (reference.kind === 'evidence-check') {
-    return (context.config?.evidence?.evidenceChecks ?? []).some((check) => check.id === reference.id);
-  }
-  return false;
-}
-
-function readJsonFile(rootDir, filePath) {
-  try {
-    return JSON.parse(readFileSync(resolve(rootDir, filePath), 'utf8'));
-  } catch {
-    return null;
-  }
-}
-
-function regexMatches(value, patterns = []) {
-  return patterns.some((pattern) => new RegExp(pattern).test(value));
-}
-
-function escapeRegexLiteral(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function evidenceCheckRunsPackageScript(check, scriptName) {
-  if (typeof check.command !== 'string') return false;
-  const escapedScriptName = escapeRegexLiteral(scriptName);
-  const npmRunPattern = new RegExp(
-    `(?:^|&&|\\|\\||;|\\s)npm\\s+run(?:-script)?\\s+${escapedScriptName}(?:\\s|$)`,
-  );
-  return npmRunPattern.test(check.command);
-}
-
-function packageScriptRepresented(scriptName, packageScripts, rule, context) {
-  const evidenceChecks = context.config?.evidence?.evidenceChecks ?? [];
-  if (evidenceChecks.some((check) => evidenceCheckRunsPackageScript(check, scriptName))) {
-    return true;
-  }
-  return (packageScripts.representedBy ?? []).some((reference) =>
-    primitiveExists(reference, rule, context)
-  );
-}
-
-function packageScriptExemption(scriptName, packageScripts) {
-  return (packageScripts.helperExemptions ?? []).find(
-    (exemption) => exemption.name === scriptName
-  );
-}
-
-function evaluatePrimitiveFirstPackageScripts(rule, context) {
-  const packageScripts = rule.match?.packageScripts;
-  if (!packageScripts) return [];
-
-  const filePath = packageScripts.file ?? 'package.json';
-  const packageJson = readJsonFile(context.rootDir, filePath);
-  const scripts =
-    packageJson && typeof packageJson.scripts === 'object' && packageJson.scripts !== null
-      ? packageJson.scripts
-      : {};
-  const namePatterns = packageScripts.namePatterns ?? [];
-  const commandPatterns = packageScripts.commandPatterns ?? [];
-  const findings = [];
-
-  for (const [scriptName, command] of Object.entries(scripts)) {
-    if (typeof command !== 'string') continue;
-    const matchesInventory =
-      regexMatches(scriptName, namePatterns) || regexMatches(command, commandPatterns);
-    if (!matchesInventory) continue;
-
-    const exemption = packageScriptExemption(scriptName, packageScripts);
-    if (exemption) continue;
-    if (packageScriptRepresented(scriptName, packageScripts, rule, context)) continue;
-
-    findings.push({
-      kind: 'primitive-first-governance',
-      artifact: filePath,
-      package_script: scriptName,
-      command,
-      name_patterns: namePatterns,
-      command_patterns: commandPatterns,
-      required_primitives: [
-        {
-          kind: 'evidence-check',
-          command: `npm run ${scriptName}`,
-        },
-        ...(packageScripts.representedBy ?? []),
-      ],
-    });
-  }
-
-  return findings;
-}
-
-/** @param {RuleContext} context */
-export function evaluatePrimitiveFirstGovernanceRule(rule, context) {
-  const candidates = Array.isArray(rule.match?.candidates) ? rule.match.candidates : [];
-  const findings = [];
-
-  for (const candidate of candidates) {
-    const files = matchedFilesForRule({ match: { files: candidate.files ?? [] } }, context);
-    const regex = new RegExp(candidate.pattern, 'm');
-    const represented = (candidate.representedBy ?? []).some((reference) =>
-      primitiveExists(reference, rule, context)
-    );
-
-    for (const file of files) {
-      const content = readRepoTextFile(context.rootDir, file);
-      const match = regex.exec(content);
-      if (!match || represented) continue;
-      findings.push({
-        kind: 'primitive-first-governance',
-        artifact: file,
-        line: lineForMatch(content, match.index),
-        pattern: candidate.pattern,
-        required_primitives: candidate.representedBy ?? [],
-      });
-    }
-  }
-
-  findings.push(...evaluatePrimitiveFirstPackageScripts(rule, context));
-
-  return buildRuleResult(rule, {
-    implemented: true,
-    passed: findings.length === 0,
-    summary:
-      findings.length === 0
-        ? 'Repeatable governance checks are represented by Veritas primitives.'
-        : 'Some repeatable governance checks bypass Veritas primitives.',
     findings,
   });
 }
