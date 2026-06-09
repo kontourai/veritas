@@ -10,7 +10,6 @@ import { basename, dirname, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { loadJson } from '../load.mjs';
 import { assertWithinDir, relativeRepoPath } from '../paths.mjs';
-import { buildSuggestedCiSnippet, buildSuggestedPackageScripts } from '../bootstrap.mjs';
 import {
   buildSuggestedClaudeCodePostSessionHook,
   buildSuggestedClaudeCodePreToolUseHook,
@@ -18,6 +17,8 @@ import {
   buildSuggestedRuntimeHook,
   buildSuggestedStopHook,
 } from './suggestions.mjs';
+
+export { applyCiSnippet, applyPackageScripts } from './project-setup.mjs';
 
 function isSymlinkPath(path) {
   try {
@@ -41,77 +42,6 @@ function assertWritableHookPath({ rootDir, resolvedOutputPath, messagePrefix }) 
     throw new Error(`${messagePrefix} refuses to write through a symlinked hook file: ${relativeOutputPath}`);
   }
   return relativeOutputPath;
-}
-
-export function applyPackageScripts({
-  rootDir,
-  evidenceCheck = 'npm test',
-  baseRef = '<base-ref>',
-  force = false,
-}) {
-  const packageJsonPath = resolve(rootDir, 'package.json');
-  if (!existsSync(packageJsonPath)) {
-    throw new Error('apply package-scripts requires package.json at the repo root');
-  }
-
-  const packageJson = loadJson(packageJsonPath, 'package.json');
-  const nextScripts = buildSuggestedPackageScripts({ evidenceCheck, baseRef });
-  const currentScripts = packageJson.scripts ?? {};
-
-  for (const [key, value] of Object.entries(nextScripts)) {
-    if (!force && key in currentScripts && currentScripts[key] !== value) {
-      throw new Error(
-        `Refusing to overwrite existing script ${key}; rerun with --force if you want to replace it`,
-      );
-    }
-  }
-
-  packageJson.scripts = { ...currentScripts, ...nextScripts };
-  writeFileSync(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf8');
-
-  return {
-    rootDir,
-    packageJsonPath: relativeRepoPath(rootDir, packageJsonPath),
-    evidenceCheck,
-    baseRef,
-    appliedScripts: Object.keys(nextScripts),
-  };
-}
-
-export function applyCiSnippet({
-  rootDir,
-  evidenceCheck = 'npm test',
-  baseRef = '<base-ref>',
-  outputPath = '.veritas/snippets/ci-snippet.yml',
-  force = false,
-}) {
-  const resolvedOutputPath = resolve(rootDir, outputPath);
-  assertWithinDir(
-    resolvedOutputPath,
-    resolve(rootDir, '.veritas/snippets'),
-    'apply ci-snippet only supports writing inside .veritas/snippets/',
-  );
-  const relativeOutputPath = relativeRepoPath(rootDir, resolvedOutputPath);
-
-  if (existsSync(resolvedOutputPath) && !force) {
-    throw new Error(
-      `Refusing to overwrite existing file: ${outputPath} (use --force to replace it)`,
-    );
-  }
-
-  mkdirSync(resolve(rootDir, '.veritas/snippets'), { recursive: true });
-  writeFileSync(
-    resolvedOutputPath,
-    buildSuggestedCiSnippet({ evidenceCheck, baseRef }),
-    'utf8',
-  );
-
-  return {
-    rootDir,
-    outputPath: relativeOutputPath,
-    evidenceCheck,
-    baseRef,
-  };
 }
 
 export function applyGitHook({

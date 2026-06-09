@@ -4428,6 +4428,28 @@ test('apply package-scripts surfaces script conflicts without force', () => {
   );
 });
 
+test('apply package-scripts refuses symlinked package.json', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-scripts-symlink-'));
+  const externalPackageJson = join(
+    mkdtempSync(join(tmpdir(), 'veritas-external-package-json-')),
+    'package.json',
+  );
+  writeFileSync(
+    externalPackageJson,
+    JSON.stringify({ scripts: { test: 'external' } }, null, 2),
+  );
+  symlinkSync(externalPackageJson, join(rootDir, 'package.json'));
+
+  assert.throws(
+    () => applyPackageScripts({ rootDir, force: true }),
+    /refuses to write through a symlinked package\.json/,
+  );
+  assert.equal(
+    readFileSync(externalPackageJson, 'utf8'),
+    `${JSON.stringify({ scripts: { test: 'external' } }, null, 2)}`,
+  );
+});
+
 test('apply ci-snippet writes a stable snippet file', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-ci-'));
   const result = applyCiSnippet({
@@ -4863,6 +4885,44 @@ test('apply ci-snippet rejects paths outside the reviewable snippet area', () =>
       }),
     /only supports writing inside \.veritas\/snippets\//,
   );
+});
+
+test('apply ci-snippet rejects symlinked snippet directories and files', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-ci-symlink-'));
+  mkdirp(join(rootDir, '.veritas'));
+  const externalSnippetsDir = mkdtempSync(join(tmpdir(), 'veritas-external-snippets-'));
+  symlinkSync(externalSnippetsDir, join(rootDir, '.veritas/snippets'), 'dir');
+
+  assert.throws(
+    () => applyCiSnippet({ rootDir, force: true }),
+    /refuses to write through a symlinked \.veritas\/snippets directory/,
+  );
+
+  unlinkSync(join(rootDir, '.veritas/snippets'));
+  mkdirp(join(rootDir, '.veritas/snippets'));
+  const externalSnippetFile = join(
+    mkdtempSync(join(tmpdir(), 'veritas-external-snippet-file-')),
+    'ci-snippet.yml',
+  );
+  writeFileSync(externalSnippetFile, 'external\n', 'utf8');
+  symlinkSync(externalSnippetFile, join(rootDir, '.veritas/snippets/ci-snippet.yml'));
+
+  assert.throws(
+    () => applyCiSnippet({ rootDir, force: true }),
+    /only supports writing inside \.veritas\/snippets\/|refuses to write through a symlinked snippet file: \.veritas\/snippets\/ci-snippet\.yml/,
+  );
+  assert.equal(readFileSync(externalSnippetFile, 'utf8'), 'external\n');
+
+  unlinkSync(join(rootDir, '.veritas/snippets/ci-snippet.yml'));
+  const internalSnippetFile = join(rootDir, '.veritas/snippets/internal.yml');
+  writeFileSync(internalSnippetFile, 'internal\n', 'utf8');
+  symlinkSync(internalSnippetFile, join(rootDir, '.veritas/snippets/ci-snippet.yml'));
+
+  assert.throws(
+    () => applyCiSnippet({ rootDir, force: true }),
+    /refuses to write through a symlinked snippet file: \.veritas\/snippets\/ci-snippet\.yml/,
+  );
+  assert.equal(readFileSync(internalSnippetFile, 'utf8'), 'internal\n');
 });
 
 test('apply git-hook rejects unsupported hook kinds', () => {
