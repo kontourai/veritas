@@ -1,10 +1,23 @@
-import { dirname, resolve } from 'node:path';
+import { dirname, isAbsolute, resolve } from 'node:path';
 import {
   loadMarkerBenchmarkScenario,
   loadMarkerBenchmarkSessionLog,
   loadMarkerBenchmarkSuite,
 } from '../load.mjs';
+import { assertWithinDir } from '../paths.mjs';
 import { uniqueStrings } from '../util/strings.mjs';
+import {
+  validateMarkerBenchmarkPair,
+  validateMarkerBenchmarkScenario,
+  validateMarkerBenchmarkSessionLog,
+  validateMarkerBenchmarkSuite,
+} from './marker-benchmark/validation.mjs';
+import {
+  buildBenchmarkPassMetrics,
+  buildMarkerBenchmarkAggregateMetrics,
+  buildMarkerBenchmarkComparisonMetrics,
+  compareLatencyImprovement,
+} from './marker-benchmark/metrics.mjs';
 
 function lowerIfNeeded(value, caseSensitive) {
   return caseSensitive ? value : value.toLowerCase();
@@ -28,186 +41,6 @@ function findMatchedPhrase(content, phrases, caseSensitive) {
 
 function hasTag(turn, tag) {
   return typeof tag === 'string' && Array.isArray(turn.tags) && turn.tags.includes(tag);
-}
-
-function validateAllowedKeys(record, allowedKeys, label) {
-  if (!record || typeof record !== 'object' || Array.isArray(record)) {
-    throw new Error(`${label} must be an object`);
-  }
-  for (const key of Object.keys(record)) {
-    if (!allowedKeys.includes(key)) {
-      throw new Error(`${label} contains unsupported key: ${key}`);
-    }
-  }
-}
-
-function validateIntegerField(value, label, { minimum = null } = {}) {
-  if (!Number.isInteger(value)) {
-    throw new Error(`${label} must be an integer`);
-  }
-  if (minimum !== null && value < minimum) {
-    throw new Error(`${label} must be greater than or equal to ${minimum}`);
-  }
-}
-
-function validateStringField(value, label) {
-  if (typeof value !== 'string' || value.length === 0) {
-    throw new Error(`${label} must be a non-empty string`);
-  }
-}
-
-function validateOptionalStringField(value, label) {
-  if (value !== undefined && typeof value !== 'string') {
-    throw new Error(`${label} must be a string when provided`);
-  }
-}
-
-function validateBooleanField(value, label) {
-  if (typeof value !== 'boolean') {
-    throw new Error(`${label} must be a boolean`);
-  }
-}
-
-function validateMarkerBenchmarkScenario(scenario) {
-  validateAllowedKeys(scenario, ['version', 'id', 'title', 'description', 'marker', 'scoring'], 'marker benchmark scenario');
-  const requiredKeys = ['version', 'id', 'title', 'marker', 'scoring'];
-  for (const key of requiredKeys) {
-    if (!(key in scenario)) {
-      throw new Error(`marker benchmark scenario is missing required key: ${key}`);
-    }
-  }
-  validateIntegerField(scenario.version, 'marker benchmark scenario version', { minimum: 1 });
-  validateStringField(scenario.id, 'marker benchmark scenario id');
-  validateStringField(scenario.title, 'marker benchmark scenario title');
-  validateOptionalStringField(
-    scenario.description,
-    'marker benchmark scenario description',
-  );
-  validateAllowedKeys(
-    scenario.marker,
-    ['id', 'required_phrases'],
-    'marker benchmark scenario marker',
-  );
-  validateStringField(scenario.marker.id, 'marker benchmark scenario marker.id');
-  if (!Array.isArray(scenario.marker?.required_phrases) || scenario.marker.required_phrases.length === 0) {
-    throw new Error(
-      'marker benchmark scenario requires marker.required_phrases with at least one phrase',
-    );
-  }
-  for (const phrase of scenario.marker.required_phrases) {
-    validateStringField(phrase, 'marker benchmark scenario marker.required_phrases item');
-  }
-  validateAllowedKeys(
-    scenario.scoring,
-    [
-      'trigger_tag',
-      'response_tag',
-      'max_assistant_turns_after_trigger',
-      'allow_early',
-      'case_sensitive',
-    ],
-    'marker benchmark scenario scoring',
-  );
-  const requiredScoringKeys = [
-    'trigger_tag',
-    'max_assistant_turns_after_trigger',
-    'allow_early',
-  ];
-  for (const key of requiredScoringKeys) {
-    if (!(key in scenario.scoring)) {
-      throw new Error(`marker benchmark scenario scoring is missing required key: ${key}`);
-    }
-  }
-  validateStringField(
-    scenario.scoring.trigger_tag,
-    'marker benchmark scenario scoring.trigger_tag',
-  );
-  validateIntegerField(
-    scenario.scoring.max_assistant_turns_after_trigger,
-    'marker benchmark scenario scoring.max_assistant_turns_after_trigger',
-    { minimum: 1 },
-  );
-  validateBooleanField(
-    scenario.scoring.allow_early,
-    'marker benchmark scenario scoring.allow_early',
-  );
-  if (
-    'response_tag' in scenario.scoring &&
-    (typeof scenario.scoring.response_tag !== 'string' ||
-      scenario.scoring.response_tag.length === 0)
-  ) {
-    throw new Error(
-      'marker benchmark scenario scoring.response_tag must be a non-empty string when provided',
-    );
-  }
-  if (scenario.scoring.response_tag === scenario.scoring.trigger_tag) {
-    throw new Error(
-      'marker benchmark scenario scoring.response_tag must differ from scoring.trigger_tag',
-    );
-  }
-  if ('case_sensitive' in scenario.scoring) {
-    validateBooleanField(
-      scenario.scoring.case_sensitive,
-      'marker benchmark scenario scoring.case_sensitive',
-    );
-  }
-}
-
-function validateMarkerBenchmarkSessionLog(sessionLog, label) {
-  validateAllowedKeys(
-    sessionLog,
-    ['version', 'benchmark_id', 'run_id', 'condition_id', 'turns'],
-    `${label} session log`,
-  );
-  const requiredKeys = ['version', 'benchmark_id', 'run_id', 'condition_id', 'turns'];
-  for (const key of requiredKeys) {
-    if (!(key in sessionLog)) {
-      throw new Error(`${label} session log is missing required key: ${key}`);
-    }
-  }
-  validateIntegerField(sessionLog.version, `${label} session log version`, { minimum: 1 });
-  validateStringField(sessionLog.benchmark_id, `${label} session log benchmark_id`);
-  validateStringField(sessionLog.run_id, `${label} session log run_id`);
-  validateStringField(sessionLog.condition_id, `${label} session log condition_id`);
-  if (!['without-veritas', 'with-veritas'].includes(sessionLog.condition_id)) {
-    throw new Error(
-      `${label} session log condition_id must be without-veritas or with-veritas`,
-    );
-  }
-  if (!Array.isArray(sessionLog.turns) || sessionLog.turns.length === 0) {
-    throw new Error(`${label} session log requires at least one turn`);
-  }
-  for (const turn of sessionLog.turns) {
-    validateAllowedKeys(turn, ['role', 'content', 'tags'], `${label} session log turn`);
-    if (!['system', 'user', 'assistant', 'tool'].includes(turn.role)) {
-      throw new Error(`${label} session log turn role must be one of system, user, assistant, tool`);
-    }
-    if (typeof turn.content !== 'string') {
-      throw new Error(`${label} session log turn content must be a string`);
-    }
-    if ('tags' in turn && !Array.isArray(turn.tags)) {
-      throw new Error(`${label} session log turn tags must be an array when provided`);
-    }
-    if (Array.isArray(turn.tags)) {
-      for (const tag of turn.tags) {
-        validateStringField(tag, `${label} session log turn tag`);
-      }
-    }
-  }
-}
-
-function validateMarkerBenchmarkPair({ scenario, sessionLog, label, expectedConditionId }) {
-  validateMarkerBenchmarkSessionLog(sessionLog, label);
-  if (sessionLog.benchmark_id !== scenario.id) {
-    throw new Error(
-      `${label} session log benchmark_id must match scenario id ${scenario.id}`,
-    );
-  }
-  if (sessionLog.condition_id !== expectedConditionId) {
-    throw new Error(
-      `${label} session log condition_id must be ${expectedConditionId}`,
-    );
-  }
 }
 
 function collectTaggedTurnIndices(turns, tag, role = null) {
@@ -315,17 +148,6 @@ export function scoreMarkerBenchmarkCondition({
   };
 }
 
-function toBinaryFlag(value) {
-  return value ? 1 : 0;
-}
-
-function compareLatencyImprovement(baselineLatency, treatmentLatency) {
-  if (typeof baselineLatency !== 'number' || typeof treatmentLatency !== 'number') {
-    return null;
-  }
-  return baselineLatency - treatmentLatency;
-}
-
 export function compareMarkerBenchmarkRuns({
   scenario,
   withoutVeritas,
@@ -362,11 +184,6 @@ export function compareMarkerBenchmarkRuns({
     withoutVeritasScore.assistant_turn_latency,
     withVeritasScore.assistant_turn_latency,
   );
-  const treatmentBeatsBaseline =
-    (withVeritasScore.pass &&
-      (!withoutVeritasScore.pass ||
-        (withoutVeritasScore.false_positive && !withVeritasScore.false_positive))) ||
-    (withVeritasScore.pass && withoutVeritasScore.pass && latencyImprovementTurns > 0);
 
   return {
     benchmark_id: scenario.id,
@@ -377,221 +194,27 @@ export function compareMarkerBenchmarkRuns({
       without_veritas: withoutVeritasScore,
       with_veritas: withVeritasScore,
     },
-    comparison: {
-      timely_recall_delta:
-        toBinaryFlag(withVeritasScore.timely) - toBinaryFlag(withoutVeritasScore.timely),
-      false_positive_improvement:
-        toBinaryFlag(withoutVeritasScore.false_positive) -
-        toBinaryFlag(withVeritasScore.false_positive),
-      latency_improvement_turns: latencyImprovementTurns,
-      treatment_beats_baseline: treatmentBeatsBaseline,
-    },
+    comparison: buildMarkerBenchmarkComparisonMetrics({
+      withoutVeritasScore,
+      withVeritasScore,
+      latencyImprovementTurns,
+    }),
   };
-}
-
-function validateMarkerBenchmarkSuite(suite) {
-  validateAllowedKeys(
-    suite,
-    ['version', 'id', 'title', 'description', 'benchmarks'],
-    'marker benchmark suite',
-  );
-  const requiredKeys = ['version', 'id', 'title', 'benchmarks'];
-  for (const key of requiredKeys) {
-    if (!(key in suite)) {
-      throw new Error(`marker benchmark suite is missing required key: ${key}`);
-    }
-  }
-  validateIntegerField(suite.version, 'marker benchmark suite version', { minimum: 1 });
-  validateStringField(suite.id, 'marker benchmark suite id');
-  validateStringField(suite.title, 'marker benchmark suite title');
-  validateOptionalStringField(suite.description, 'marker benchmark suite description');
-  if (!Array.isArray(suite.benchmarks) || suite.benchmarks.length === 0) {
-    throw new Error('marker benchmark suite requires at least one benchmark entry');
-  }
-
-  const benchmarkIds = new Set();
-  const trialIds = new Set();
-
-  for (const benchmark of suite.benchmarks) {
-    validateAllowedKeys(
-      benchmark,
-      [
-        'benchmark_id',
-        'title',
-        'description',
-        'marker_class',
-        'repo_surface',
-        'scenario_path',
-        'trials',
-      ],
-      'marker benchmark suite benchmark',
-    );
-    const requiredBenchmarkKeys = [
-      'benchmark_id',
-      'title',
-      'marker_class',
-      'repo_surface',
-      'scenario_path',
-      'trials',
-    ];
-    for (const key of requiredBenchmarkKeys) {
-      if (!(key in benchmark)) {
-        throw new Error(`marker benchmark suite benchmark is missing required key: ${key}`);
-      }
-    }
-    validateStringField(
-      benchmark.benchmark_id,
-      'marker benchmark suite benchmark benchmark_id',
-    );
-    validateStringField(benchmark.title, 'marker benchmark suite benchmark title');
-    validateOptionalStringField(
-      benchmark.description,
-      'marker benchmark suite benchmark description',
-    );
-    validateStringField(
-      benchmark.marker_class,
-      'marker benchmark suite benchmark marker_class',
-    );
-    validateStringField(
-      benchmark.repo_surface,
-      'marker benchmark suite benchmark repo_surface',
-    );
-    validateStringField(
-      benchmark.scenario_path,
-      'marker benchmark suite benchmark scenario_path',
-    );
-    if (benchmarkIds.has(benchmark.benchmark_id)) {
-      throw new Error(
-        `marker benchmark suite benchmark_id must be unique: ${benchmark.benchmark_id}`,
-      );
-    }
-    benchmarkIds.add(benchmark.benchmark_id);
-    if (!Array.isArray(benchmark.trials) || benchmark.trials.length === 0) {
-      throw new Error(
-        `marker benchmark suite benchmark ${benchmark.benchmark_id} requires at least one trial`,
-      );
-    }
-    for (const trial of benchmark.trials) {
-      validateAllowedKeys(
-        trial,
-        ['trial_id', 'without_veritas_session_log_path', 'with_veritas_session_log_path'],
-        'marker benchmark suite trial',
-      );
-      const requiredTrialKeys = [
-        'trial_id',
-        'without_veritas_session_log_path',
-        'with_veritas_session_log_path',
-      ];
-      for (const key of requiredTrialKeys) {
-        if (!(key in trial)) {
-          throw new Error(`marker benchmark suite trial is missing required key: ${key}`);
-        }
-      }
-      validateStringField(trial.trial_id, 'marker benchmark suite trial trial_id');
-      validateStringField(
-        trial.without_veritas_session_log_path,
-        'marker benchmark suite trial without_veritas_session_log_path',
-      );
-      validateStringField(
-        trial.with_veritas_session_log_path,
-        'marker benchmark suite trial with_veritas_session_log_path',
-      );
-      if (trialIds.has(trial.trial_id)) {
-        throw new Error(
-          `marker benchmark suite trial_id must be unique: ${trial.trial_id}`,
-        );
-      }
-      trialIds.add(trial.trial_id);
-    }
-  }
 }
 
 function resolveSuiteArtifactPath(suitePath, artifactPath) {
-  return resolve(dirname(suitePath), artifactPath);
-}
-
-function safeRate(numerator, denominator) {
-  return denominator === 0 ? 0 : numerator / denominator;
-}
-
-function sortNumbers(values) {
-  return [...values].sort((left, right) => left - right);
-}
-
-function medianNumber(values) {
-  if (values.length === 0) return null;
-  const sorted = sortNumbers(values);
-  const midpoint = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 === 1) {
-    return sorted[midpoint];
+  const suiteDir = dirname(suitePath);
+  const benchmarkRootDir = dirname(suiteDir);
+  if (isAbsolute(artifactPath)) {
+    throw new Error('marker benchmark suite artifact paths must be relative');
   }
-  return (sorted[midpoint - 1] + sorted[midpoint]) / 2;
-}
-
-function percentileNumber(values, percentile) {
-  if (values.length === 0) return null;
-  const sorted = sortNumbers(values);
-  const index = Math.ceil((percentile / 100) * sorted.length) - 1;
-  return sorted[Math.max(0, index)];
-}
-
-function collectLatencyValues(trials) {
-  return trials
-    .map((trial) => trial.comparison.conditions.with_veritas.assistant_turn_latency)
-    .filter((value) => typeof value === 'number');
-}
-
-function buildBenchmarkPassMetrics(trialComparisons) {
-  return {
-    pass_at_1: trialComparisons[0]?.comparison.conditions.with_veritas.pass ? 1 : 0,
-    pass_at_k: trialComparisons.some((trial) => trial.comparison.conditions.with_veritas.pass)
-      ? 1
-      : 0,
-    pass_pow_k: trialComparisons.every((trial) => trial.comparison.conditions.with_veritas.pass)
-      ? 1
-      : 0,
-  };
-}
-
-function buildMarkerBenchmarkAggregateMetrics(trials, benchmarkSummaries = []) {
-  const baselinePassCount = trials.filter(
-    (trial) => trial.comparison.conditions.without_veritas.pass,
-  ).length;
-  const treatmentPassCount = trials.filter(
-    (trial) => trial.comparison.conditions.with_veritas.pass,
-  ).length;
-  const baselineFalsePositiveCount = trials.filter(
-    (trial) => trial.comparison.conditions.without_veritas.false_positive,
-  ).length;
-  const treatmentFalsePositiveCount = trials.filter(
-    (trial) => trial.comparison.conditions.with_veritas.false_positive,
-  ).length;
-  const improvementCount = trials.filter(
-    (trial) => trial.comparison.comparison.treatment_beats_baseline,
-  ).length;
-  const latencies = collectLatencyValues(trials);
-
-  return {
-    baseline_pass_rate: safeRate(baselinePassCount, trials.length),
-    treatment_pass_rate: safeRate(treatmentPassCount, trials.length),
-    improvement_rate: safeRate(improvementCount, trials.length),
-    baseline_false_positive_rate: safeRate(baselineFalsePositiveCount, trials.length),
-    treatment_false_positive_rate: safeRate(treatmentFalsePositiveCount, trials.length),
-    median_treatment_latency: medianNumber(latencies),
-    p95_treatment_latency: percentileNumber(latencies, 95),
-    pass_at_1: safeRate(
-      benchmarkSummaries.filter((summary) => summary.metrics.pass_at_1 === 1).length,
-      benchmarkSummaries.length,
-    ),
-    pass_at_k: safeRate(
-      benchmarkSummaries.filter((summary) => summary.metrics.pass_at_k === 1).length,
-      benchmarkSummaries.length,
-    ),
-    pass_pow_k: safeRate(
-      benchmarkSummaries.filter((summary) => summary.metrics.pass_pow_k === 1).length,
-      benchmarkSummaries.length,
-    ),
-  };
+  const resolvedArtifactPath = resolve(suiteDir, artifactPath);
+  assertWithinDir(
+    resolvedArtifactPath,
+    benchmarkRootDir,
+    'marker benchmark suite artifact paths must stay inside the benchmark directory',
+  );
+  return resolvedArtifactPath;
 }
 
 function buildMarkerBenchmarkSummary(benchmark, trialComparisons) {
@@ -702,4 +325,3 @@ export function generateMarkerBenchmarkComparison(options = {}, defaults = {}) {
     withVeritas,
   });
 }
-

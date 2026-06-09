@@ -3507,6 +3507,63 @@ test('feedback marker-suite CLI returns aggregate benchmark metrics', () => {
   assert.equal(helperResult.metrics.improvement_rate, 7 / 8);
 });
 
+test('feedback marker-suite rejects artifact paths outside the benchmark directory', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-marker-suite-paths-'));
+  mkdirp(join(rootDir, 'suite'));
+  writeFileSync(
+    join(rootDir, 'suite/suite.json'),
+    JSON.stringify({
+      version: 1,
+      id: 'unsafe-suite',
+      title: 'Unsafe suite',
+      benchmarks: [
+        {
+          benchmark_id: 'unsafe-marker',
+          title: 'Unsafe marker',
+          marker_class: 'safety',
+          repo_surface: 'tests',
+          scenario_path: '../../scenario.json',
+          trials: [
+            {
+              trial_id: 'trial-1',
+              without_veritas_session_log_path: 'without.json',
+              with_veritas_session_log_path: 'with.json',
+            },
+          ],
+        },
+      ],
+    }),
+    'utf8',
+  );
+  writeFileSync(
+    join(rootDir, 'scenario.json'),
+    JSON.stringify({
+      version: 1,
+      id: 'unsafe-marker',
+      title: 'Unsafe marker',
+      marker: {
+        id: 'unsafe',
+        required_phrases: ['unsafe'],
+      },
+      scoring: {
+        trigger_tag: 'trigger',
+        max_assistant_turns_after_trigger: 1,
+        allow_early: false,
+      },
+    }),
+    'utf8',
+  );
+
+  assert.throws(
+    () =>
+      generateMarkerBenchmarkSuiteReport({
+        rootDir,
+        suitePath: 'suite/suite.json',
+      }),
+    /marker benchmark suite artifact paths must stay inside the benchmark directory/,
+  );
+});
+
 test('marker benchmark comparison rejects mismatched benchmark ids and condition ids', () => {
   assert.throws(
     () =>
