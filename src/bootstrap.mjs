@@ -1,4 +1,4 @@
-import { basename, relative, resolve } from 'node:path';
+import { basename, isAbsolute, relative, resolve } from 'node:path';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { buildGovernanceBlock, replaceGovernanceBlock } from './governance.mjs';
 import { buildBaselineClaims } from './claims/templates.mjs';
@@ -21,6 +21,7 @@ import {
   buildSuggestedPackageScripts,
   normalizeInstructionTargets,
 } from './bootstrap/guidance.mjs';
+import { assertWithinDir } from './paths.mjs';
 
 export {
   buildAdaptiveNodes,
@@ -38,6 +39,19 @@ export {
   slugifyProjectName,
 };
 
+function validateInstructionTargetPaths(rootDir, selectedInstructionTargets) {
+  for (const target of selectedInstructionTargets) {
+    if (isAbsolute(target.path)) {
+      throw new Error(`bootstrap instruction target path must be repo-relative: ${target.path}`);
+    }
+    assertWithinDir(
+      resolve(rootDir, target.path),
+      rootDir,
+      `bootstrap instruction target path escapes target root: ${target.path}`,
+    );
+  }
+}
+
 export function buildBootstrapStarterKitPlan({
   rootDir,
   projectName = basename(resolve(rootDir)),
@@ -48,6 +62,7 @@ export function buildBootstrapStarterKitPlan({
   const repoInsights = inferBootstrapRepoInsights(rootDir);
   const resolvedEvidenceCheck = evidenceCheck ?? repoInsights.evidenceCheck;
   const selectedInstructionTargets = normalizeInstructionTargets(instructionTargets ?? DEFAULT_SELECTED_INSTRUCTION_TARGETS);
+  validateInstructionTargetPaths(rootDir, selectedInstructionTargets);
   const repoMapPath = resolve(rootDir, '.veritas/repo-map.json');
   const repoStandardsPath = resolve(rootDir, '.veritas/repo-standards/default.repo-standards.json');
   const authoritySettingsPath = resolve(rootDir, '.veritas/authority/default.authority-settings.json');

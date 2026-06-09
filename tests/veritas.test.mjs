@@ -10,10 +10,11 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import {
   applyCiSnippet,
   applyCodexHook,
@@ -1686,6 +1687,46 @@ test('init guided answers drive the reviewed apply artifact', () => {
   assert.match(readme, /Prefer small ESM modules/);
 });
 
+test('init guided rejects instruction targets outside the target root before reading', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-guided-escape-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  const secretPath = resolve(rootDir, '../veritas-init-guided-secret.md');
+  writeFileSync(secretPath, '# Secret\n');
+  writeFileSync(
+    join(rootDir, 'answers.json'),
+    JSON.stringify(
+      {
+        selectedInstructionTargets: ['../veritas-init-guided-secret.md'],
+      },
+      null,
+      2,
+    ),
+  );
+
+  assert.throws(
+    () =>
+      execFileSync(
+        'npm',
+        [
+          'exec',
+          '--',
+          'veritas',
+          'init',
+          '--guided',
+          '--answers',
+          'answers.json',
+          '--root',
+          rootDir,
+          '--output',
+          '.veritas/init-plans/escape.json',
+        ],
+        { cwd: repoRootDir, encoding: 'utf8', stdio: 'pipe' },
+      ),
+    /instruction target path escapes target root/,
+  );
+  assert.equal(existsSync(join(rootDir, '.veritas/init-plans/escape.json')), false);
+});
+
 test('init apply requires an untampered plan artifact', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-apply-plan-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
@@ -1730,6 +1771,47 @@ test('init apply requires an untampered plan artifact', () => {
       ),
     /payload hash mismatch/,
   );
+  assert.equal(existsSync(join(rootDir, '.veritas/repo-map.json')), false);
+});
+
+test('init apply rejects plan artifact paths outside the target root', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-apply-escape-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  const planPath = join(rootDir, '.veritas/init-plans/plan.json');
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'veritas',
+      'init',
+      '--explore',
+      '--root',
+      rootDir,
+      '--output',
+      '.veritas/init-plans/plan.json',
+    ],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  );
+
+  const escapedPath = '../veritas-init-apply-escaped.txt';
+  const tampered = readJsonFromAbsolute(planPath);
+  tampered.artifact_payloads[escapedPath] = 'escaped\n';
+  tampered.artifact_hashes[escapedPath] = createHash('sha256').update('escaped\n').digest('hex');
+  const tamperedPath = join(rootDir, '.veritas/init-plans/escape.json');
+  writeFileSync(tamperedPath, `${JSON.stringify(tampered, null, 2)}\n`, 'utf8');
+
+  assert.throws(
+    () =>
+      execFileSync(
+        'npm',
+        ['exec', '--', 'veritas', 'init', '--apply', '--plan', tamperedPath, '--root', rootDir],
+        { cwd: repoRootDir, encoding: 'utf8', stdio: 'pipe' },
+      ),
+    /artifact path escapes target root/,
+  );
+  assert.equal(existsSync(resolve(rootDir, escapedPath)), false);
   assert.equal(existsSync(join(rootDir, '.veritas/repo-map.json')), false);
 });
 
@@ -5338,6 +5420,25 @@ test('starter kit helper refuses to overwrite without force', () => {
       }),
     /Refusing to overwrite existing file/,
   );
+});
+
+test('starter kit helper rejects instruction targets outside the target root before reading', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-starter-escape-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}');
+  const secretPath = resolve(rootDir, '../veritas-starter-secret.md');
+  writeFileSync(secretPath, '# Secret\n');
+
+  assert.throws(
+    () =>
+      writeBootstrapStarterKit({
+        rootDir,
+        projectName: 'Escape Demo',
+        instructionTargets: ['../veritas-starter-secret.md'],
+      }),
+    /bootstrap instruction target path escapes target root/,
+  );
+  assert.equal(existsSync(join(rootDir, '.veritas/repo-map.json')), false);
+  assert.equal(readFileSync(secretPath, 'utf8'), '# Secret\n');
 });
 
 test('starter kit planning separates inference from writing', () => {

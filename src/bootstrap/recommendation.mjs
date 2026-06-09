@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { basename, dirname, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, resolve } from 'node:path';
 import { buildGovernanceBlock, replaceGovernanceBlock } from '../governance.mjs';
 import { inferBootstrapRepoInsights } from './insights.mjs';
 import { buildBootstrapReadme } from './readme.mjs';
@@ -17,6 +17,7 @@ import {
   selectedInstructionTargetsFromAnswers,
   validateOwnerAnswers,
 } from './guidance.mjs';
+import { assertWithinDir } from '../paths.mjs';
 
 const INIT_RECOMMENDATION_SCHEMA_VERSION = 1;
 
@@ -66,6 +67,19 @@ function recommendedSurfaces(repoInsights) {
     risk: node.kind === 'protected-area' ? 'high' : 'medium',
     reason: `Detected ${node.label} as ${node.kind}.`,
   }));
+}
+
+function validateInstructionTargetPaths(rootDir, selectedInstructionTargets) {
+  for (const target of selectedInstructionTargets) {
+    if (isAbsolute(target.path)) {
+      throw new Error(`init instruction target path must be repo-relative: ${target.path}`);
+    }
+    assertWithinDir(
+      resolve(rootDir, target.path),
+      rootDir,
+      `init instruction target path escapes target root: ${target.path}`,
+    );
+  }
 }
 
 function ownerQuestions(repoInsights) {
@@ -184,6 +198,7 @@ export function buildInitRecommendation({
   const repoInsights = inferBootstrapRepoInsights(rootDir);
   const resolvedEvidenceCheck = ownerAnswers.evidenceCheck ?? evidenceCheck ?? repoInsights.evidenceCheck;
   const selectedInstructionTargets = selectedInstructionTargetsFromAnswers(ownerAnswers);
+  validateInstructionTargetPaths(rootDir, selectedInstructionTargets);
   const artifactPayloads = buildArtifactPayloads({
     rootDir,
     projectName,
@@ -239,6 +254,14 @@ function validateInitRecommendation(recommendation, rootDir) {
     throw new Error('init recommendation missing artifact_hashes');
   }
   for (const [path, payload] of Object.entries(recommendation.artifact_payloads)) {
+    if (isAbsolute(path)) {
+      throw new Error(`init recommendation artifact path must be repo-relative: ${path}`);
+    }
+    assertWithinDir(
+      resolve(rootDir, path),
+      rootDir,
+      `init recommendation artifact path escapes target root: ${path}`,
+    );
     if (typeof payload !== 'string') throw new Error(`init recommendation payload must be a string: ${path}`);
     const expectedHash = recommendation.artifact_hashes[path];
     if (expectedHash !== sha256Hex(payload)) {
