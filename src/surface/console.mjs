@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { relativeRepoPath } from '../paths.mjs';
+import { resolveRunArtifactPath } from '../util/run-id.mjs';
 
 const CONSOLE_DIR = '.surface/runs';
 
@@ -382,7 +383,12 @@ export function writeSurfaceConsoleReadModel(record, rootDir, options = {}) {
   const readModel = buildSurfaceConsoleReadModel(record, options);
   const consoleDir = resolve(rootDir, CONSOLE_DIR);
   mkdirSync(consoleDir, { recursive: true });
-  const path = resolve(consoleDir, `${record.run_id}.console.json`);
+  const path = resolveRunArtifactPath({
+    dir: consoleDir,
+    runId: record.run_id,
+    suffix: '.console.json',
+    label: 'Surface console run id',
+  });
   writeFileSync(path, `${JSON.stringify(readModel, null, 2)}\n`, 'utf8');
   const indexPath = resolve(consoleDir, 'latest.json');
   writeFileSync(indexPath, `${JSON.stringify({
@@ -401,7 +407,12 @@ export function writeSurfaceConsoleReadModel(record, rootDir, options = {}) {
  * Called by generateStandardsFeedbackRecord after the standards feedback record is written.
  */
 export function updateRunStandardsFeedbackSummary(rootDir, runId, standardsFeedbackSummary) {
-  const runPath = resolve(rootDir, CONSOLE_DIR, `${runId}.console.json`);
+  const runPath = resolveRunArtifactPath({
+    dir: resolve(rootDir, CONSOLE_DIR),
+    runId,
+    suffix: '.console.json',
+    label: 'Surface console run id',
+  });
   if (!existsSync(runPath)) return false;
   try {
     const data = JSON.parse(readFileSync(runPath, 'utf8'));

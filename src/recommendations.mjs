@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { dirname, relative, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { loadRepoMap, loadRepoStandards } from './load.mjs';
-import { resolveVeritasPaths } from './report.mjs';
+import { resolveVeritasPaths } from './report/index.mjs';
 import { assertAttestationApprovalReference, createAttestation } from './attestations.mjs';
 
 export const RECOMMENDATION_STATUS = {

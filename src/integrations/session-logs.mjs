@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, extname, resolve } from 'node:path';
-import { relativeRepoPath } from '../paths.mjs';
+import { assertWithinDir, relativeRepoPath } from '../paths.mjs';
+import { resolveRunArtifactPath } from '../util/run-id.mjs';
 import { defineSessionLogReader } from './contract.mjs';
 
 const REASON_CODES = {
@@ -283,7 +284,20 @@ export function observeSessionLogStandardsFeedback({ sessionLogPath, evidencePat
     source: reader.name,
     churnThreshold,
   });
-  const artifactPath = resolve(rootDir, outputPath ?? `.veritas/standards-feedback-drafts/${draft.run_id}.json`);
+  const draftsDir = resolve(rootDir, '.veritas/standards-feedback-drafts');
+  const artifactPath = outputPath
+    ? resolve(rootDir, outputPath)
+    : resolveRunArtifactPath({
+        dir: draftsDir,
+        runId: draft.run_id,
+        suffix: '.json',
+        label: 'Standards feedback draft run id',
+      });
+  assertWithinDir(
+    artifactPath,
+    draftsDir,
+    'standards feedback drafts may only be written inside .veritas/standards-feedback-drafts/',
+  );
   mkdirSync(dirname(artifactPath), { recursive: true });
   writeFileSync(artifactPath, `${JSON.stringify(draft, null, 2)}\n`, 'utf8');
   return {

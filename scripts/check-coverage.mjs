@@ -1,11 +1,19 @@
-import { readdirSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 
 const minimumLineCoverage = Number(process.env.VERITAS_MIN_LINE_COVERAGE ?? '80');
-const testFiles = readdirSync('tests')
-  .filter((entry) => entry.endsWith('.test.mjs'))
-  .sort()
-  .map((entry) => `tests/${entry}`);
+
+function collectTrackedTestFiles() {
+  return execFileSync('git', ['ls-files', 'tests/**/*.test.mjs', 'tests/*.test.mjs'], {
+    encoding: 'utf8',
+    windowsHide: true,
+  })
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .sort();
+}
+
+const testFiles = collectTrackedTestFiles();
 
 const result = spawnSync(
   process.execPath,

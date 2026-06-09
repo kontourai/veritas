@@ -240,12 +240,12 @@ test('standards feedback fixtures explain outcome measurement and team tuning', 
 });
 
 test('marker benchmark fixtures explain timely surfacing scoring', () => {
-  const scenario = readJson('../examples/benchmarks/migration-marker-scenario.json');
-  const withoutVeritas = readJson('../examples/benchmarks/migration-marker-without-veritas.json');
-  const withVeritas = readJson('../examples/benchmarks/migration-marker-with-veritas.json');
-  const comparison = readJson('../examples/benchmarks/migration-marker-comparison.json');
-  const suite = readJson('../examples/benchmarks/marker-suite.json');
-  const suiteReport = readJson('../examples/benchmarks/marker-suite-report.json');
+  const scenario = readJson('../examples/benchmarks/migration/scenario.json');
+  const withoutVeritas = readJson('../examples/benchmarks/migration/without-veritas.json');
+  const withVeritas = readJson('../examples/benchmarks/migration/with-veritas.json');
+  const comparison = readJson('../examples/benchmarks/migration/comparison.json');
+  const suite = readJson('../examples/benchmarks/suites/context-surfacing-suite.json');
+  const suiteReport = readJson('../examples/benchmarks/suites/context-surfacing-suite-report.json');
   const scenarioSchema = readJson('../schemas/veritas-marker-benchmark.schema.json');
   const sessionLogSchema = readJson('../schemas/veritas-marker-session-log.schema.json');
   const comparisonSchema = readJson('../schemas/veritas-marker-score.schema.json');
@@ -283,7 +283,7 @@ test('marker benchmark fixtures explain timely surfacing scoring', () => {
   );
   assert.deepEqual(
     generateMarkerBenchmarkSuiteReport({
-      suitePath: 'examples/benchmarks/marker-suite.json',
+      suitePath: 'examples/benchmarks/suites/context-surfacing-suite.json',
       rootDir: repoRootDir,
     }),
     suiteReport,
