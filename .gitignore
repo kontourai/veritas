@@ -2,7 +2,6 @@ node_modules/
 dist/
 .DS_Store
 .omx/
-.agents/
 .surface/
 
 # Veritas generated run state. Keep durable governance config trackable:
@@ -26,3 +25,5 @@ playwright-report/
 .env.local
 .vscode/
 .idea/
+
+.flow-agents/

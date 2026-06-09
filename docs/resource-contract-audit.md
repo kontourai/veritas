@@ -5,9 +5,9 @@ Issue: [kontourai/veritas#18](https://github.com/kontourai/veritas/issues/18)
 ## Sources
 
 - Resource Contract decision: [`docs/adr/0005-kubernetes-inspired-resource-contracts.md`](https://github.com/kontourai/flow-agents/blob/main/docs/adr/0005-kubernetes-inspired-resource-contracts.md) in `kontourai/flow-agents`.
-- Pickup Probe: local sidecar artifact reference at `/Users/brian/dev/github/kontourai/flow-agents/.agents/flow-agents/veritas-contract-audit-pickup/veritas-contract-audit-pickup--pickup-probe.md`; on-disk workflow context, not a GitHub-clickable source.
-- Execution plan: local sidecar artifact reference at `/Users/brian/dev/github/kontourai/flow-agents/.agents/flow-agents/veritas-contract-resource-audit/veritas-contract-resource-audit--plan.md`; on-disk workflow context, not a GitHub-clickable source.
-- Named idea-to-backlog source: `.agents/kagents/kontour-resource-contract-audits/kontour-resource-contract-audits--idea-to-backlog.md` in `kontourai/flow-agents`.
+- Pickup Probe: local sidecar artifact reference at `/Users/brian/dev/github/kontourai/flow-agents/.flow-agents/veritas-contract-audit-pickup/veritas-contract-audit-pickup--pickup-probe.md`; on-disk workflow context, not a GitHub-clickable source.
+- Execution plan: local sidecar artifact reference at `/Users/brian/dev/github/kontourai/flow-agents/.flow-agents/veritas-contract-resource-audit/veritas-contract-resource-audit--plan.md`; on-disk workflow context, not a GitHub-clickable source.
+- Named idea-to-backlog source: `.flow-agents/kagents/kontour-resource-contract-audits/kontour-resource-contract-audits--idea-to-backlog.md` in `kontourai/flow-agents`.
   - Re-check result on 2026-06-02: `NOT_VERIFIED`; the path was not present locally.
 - Veritas source references: [`CONTEXT.md`](../CONTEXT.md), [`docs/reference/artifacts-and-schemas.md`](reference/artifacts-and-schemas.md), [`docs/reference/cli.md`](reference/cli.md), [`docs/veritas-and-surface.md`](veritas-and-surface.md), [`docs/architecture/surface-veritas-boundary.md`](architecture/surface-veritas-boundary.md), [`schemas/`](../schemas/), [`src/`](../src/), [`repo-maps/`](../repo-maps/), [`repo-standards/`](../repo-standards/), and [`examples/`](../examples/).
 
