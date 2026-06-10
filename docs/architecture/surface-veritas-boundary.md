@@ -66,7 +66,7 @@ Current Veritas evidence artifacts include a `surface.input` block, which is a S
 {
   "surface": {
     "input": {
-      "schemaVersion": 2,
+      "schemaVersion": 3,
       "source": "veritas:<run_id>",
       "claims": [],
       "evidence": [],
