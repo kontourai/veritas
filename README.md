@@ -12,11 +12,24 @@ Define what good looks like for your repo. Veritas checks each change against th
 ```bash
 npm install -D @kontourai/veritas
 npx veritas init
-npx veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
 npx veritas readiness --working-tree
 ```
 
-That bootstraps repo standards, a repo map, and AI instruction guidance under `.veritas/`, records the first authority-backed attestation for protected standards, then checks the current working tree.
+That bootstraps repo standards, a repo map, and AI instruction guidance under `.veritas/`, then checks the current working tree. You'll see output like:
+
+```text
+veritas: 0 files changed ->
+PASS  required-veritas-artifacts: All required repository artifacts are present.
+PASS  ai-instruction-files-synced: All required AI instruction files contain the canonical governance block.
+
+0 failures · 0 warnings
+```
+
+Once you've reviewed the generated standards, protect them with an authority-backed attestation:
+
+```bash
+npx veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
+```
 
 ## What You Get
 
@@ -31,15 +44,15 @@ That bootstraps repo standards, a repo map, and AI instruction guidance under `.
 
 ## Caught In The Wild
 
-For a repo requirement like:
+For a repo requirement like (from the shipped [`nextjs-typescript` template](examples/repo-standards/nextjs-typescript.repo-standards.json)):
 
 ```json
 {
-  "id": "api-changes-need-api-tests",
+  "id": "api-routes-require-api-tests",
   "kind": "diff-required",
   "match": {
-    "if-changed": "src-server/api/",
-    "then-require": "tests/api/"
+    "if-changed": "app/api/**",
+    "then-require": "tests/api/**"
   }
 }
 ```
@@ -48,8 +61,8 @@ An agent that edits only the API gets immediate feedback:
 
 ```text
 $ npx veritas readiness --working-tree
-FAIL  api-changes-need-api-tests: Changed files matched src-server/api/ but no companion changes matched tests/api/.
-      -> src-server/api/projects.ts
+FAIL  api-routes-require-api-tests: Changed files matched app/api/** but no companion changes matched tests/api/**.
+      -> app/api/projects/route.ts
 
 1 failure · 0 warnings · run `veritas readiness --check evidence` for full evidence
 ```
@@ -58,7 +71,7 @@ After adding the missing API test and rerunning:
 
 ```text
 $ npx veritas readiness --working-tree
-PASS  api-changes-need-api-tests: Changed files matched src-server/api/ and included required companion changes under tests/api/.
+PASS  api-routes-require-api-tests: Changed files matched app/api/** and included required companion changes under tests/api/**.
 
 0 failures · 0 warnings · run `veritas readiness --check evidence` for full evidence
 ```

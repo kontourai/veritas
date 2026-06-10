@@ -47,6 +47,8 @@ Run Veritas:
 npx veritas readiness --working-tree --skip-evidence-check
 ```
 
+`--skip-evidence-check` skips the configured evidence-check command (e.g. `npm test`) so this walkthrough can focus on the standards output. In a real repo, omit this flag and let Veritas run the project tests.
+
 The starter standards report the missing companion test requirement:
 
 ```text

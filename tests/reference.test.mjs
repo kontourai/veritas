@@ -94,8 +94,8 @@ test('first-contact docs preserve the Surface foundation boundary', () => {
   assert.match(readme, /earn merge autonomy/);
   assert.match(readme, /built with \[Surface\]/);
   assert.match(concepts, /## Built With Surface/);
-  assert.match(concepts, /Veritas owns the repo-native workflow/);
-  assert.match(concepts, /Surface powers the portable transparency layer/);
+  assert.match(concepts, /The detailed mapping between Veritas concepts and Surface primitives is in \[Surface-Veritas Boundary\]/);
+  assert.match(concepts, /The user-facing Veritas product should still use Veritas vocabulary/);
   assert.match(siteIndex, /Surface-Veritas Boundary/);
   assert.match(siteIndex, /Built With Surface/);
   assert.match(cliReference, /surface\.input/);

@@ -45,7 +45,7 @@ Implementation names that predate this glossary are not canonical Veritas vocabu
 
 ## Surface Mapping
 
-Veritas emits Surface-format trust state as a producer. The mapping is intentionally one-way: Veritas owns repo governance language and Surface owns portable transparency primitives.
+Veritas emits Surface-format trust state as a producer. The mapping is intentionally one-way: Veritas owns repo governance language and Surface owns portable transparency primitives. The canonical mapping with artifact contract details is in [Surface-Veritas Boundary](../architecture/surface-veritas-boundary.md).
 
 | Veritas concept | Surface projection |
 |------------------|--------------------|
