@@ -1,3 +1,9 @@
+import {
+  buildConsoleActionQueues,
+  claimQueueItem,
+  transparencyGapQueueItem,
+} from './console-action-queues.mjs';
+
 export function buildSurfaceCompatibleAnalyticsProjection({ input, report, claims }) {
   const claimItems = claims.map((claim) => claimQueueItem(claim));
   const transparencyGapItems = (report.transparencyGaps ?? []).map((transparencyGap) =>
@@ -14,7 +20,6 @@ export function buildSurfaceCompatibleAnalyticsProjection({ input, report, claim
   });
   const attestationGaps = buildAttestationGaps({ attestationValidity, claims });
   const evidenceRequirementGaps = sortGaps([...evidenceGaps, ...attestationGaps]);
-  const resolveConflicts = transparencyGapItems.filter((item) => item.type === 'contradiction');
   return {
     reportId: report.id,
     generatedAt: report.generatedAt,
@@ -43,20 +48,11 @@ export function buildSurfaceCompatibleAnalyticsProjection({ input, report, claim
     evidenceGaps,
     evidenceRequirementGaps,
     confidenceBasis: report.summary?.confidenceBasis ?? {},
-    actionQueues: {
-      reviewNow: claimItems.filter((item) =>
-        item.status === 'disputed' ||
-        ((item.impactLevel === 'high' || item.impactLevel === 'critical') &&
-          (item.status === 'unknown' || item.status === 'proposed')) ||
-        transparencyGapItems.some((transparencyGap) =>
-          transparencyGap.claimId === item.claimId &&
-          (transparencyGap.severity === 'high' || transparencyGap.severity === 'critical')
-        )
-      ),
-      reverifyStale: claimItems.filter((item) => item.status === 'stale'),
-      resolveConflicts,
-      strengthenEvidence: evidenceRequirementGaps,
-    },
+    actionQueues: buildConsoleActionQueues({
+      claimItems,
+      transparencyGapItems,
+      evidenceRequirementGaps,
+    }),
     attestationValidity,
   };
 }
@@ -86,35 +82,6 @@ function buildCoverageBySurface(claims) {
       verificationCoverage: item.totalClaims === 0 ? 0 : item.verifiedClaims / item.totalClaims,
     }))
     .sort((a, b) => a.surface.localeCompare(b.surface));
-}
-
-function claimQueueItem(claim) {
-  const item = {
-    claimId: claim.id,
-    surface: claim.surface,
-    status: claim.status,
-    impactLevel: claim.impactLevel ?? 'medium',
-    claimType: claim.claimType,
-    subject: {
-      subjectType: claim.subjectType,
-      subjectId: claim.subjectId,
-    },
-  };
-  if (claim.verificationPolicyId) item.policyId = claim.verificationPolicyId;
-  return item;
-}
-
-function transparencyGapQueueItem(transparencyGap) {
-  const item = {
-    transparencyGapId: transparencyGap.id,
-    claimId: transparencyGap.claimId,
-    type: transparencyGap.type,
-    severity: transparencyGap.severity,
-    message: transparencyGap.message,
-    evidenceIds: transparencyGap.evidenceIds ?? [],
-  };
-  if (transparencyGap.policyId) item.policyId = transparencyGap.policyId;
-  return item;
 }
 
 function buildEvidenceGaps({ claims, transparencyGaps }) {
