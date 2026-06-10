@@ -8,6 +8,11 @@ import {
   buildAttestationValidityProjection,
   sortGaps,
 } from './console-attestations.mjs';
+import {
+  buildEvidenceGaps,
+  countBy,
+  countTransparencyGapsBySeverity,
+} from './console-gaps.mjs';
 
 export function buildSurfaceCompatibleAnalyticsProjection({ input, report, claims }) {
   const claimItems = claims.map((claim) => claimQueueItem(claim));
@@ -87,48 +92,4 @@ function buildCoverageBySurface(claims) {
       verificationCoverage: item.totalClaims === 0 ? 0 : item.verifiedClaims / item.totalClaims,
     }))
     .sort((a, b) => a.surface.localeCompare(b.surface));
-}
-
-function buildEvidenceGaps({ claims, transparencyGaps }) {
-  const claimsById = new Map(claims.map((claim) => [claim.id, claim]));
-  const gapTypes = new Set([
-    'provenance_gap',
-    'policy_violation',
-    'corroboration_absent',
-    'unsupported_inference',
-    'freshness_breach',
-  ]);
-  return sortGaps(transparencyGaps
-    .filter((transparencyGap) => gapTypes.has(transparencyGap.type))
-    .map((transparencyGap) => {
-      const claim = claimsById.get(transparencyGap.claimId);
-      const gap = {
-        claimId: transparencyGap.claimId,
-        surface: claim?.surface ?? 'unknown',
-        impactLevel: claim?.impactLevel ?? transparencyGap.severity,
-        gapType: transparencyGap.type,
-        message: transparencyGap.message,
-        evidenceIds: transparencyGap.evidenceIds ?? [],
-      };
-      if (transparencyGap.policyId) gap.policyId = transparencyGap.policyId;
-      return gap;
-    }));
-}
-
-function countTransparencyGapsBySeverity(transparencyGaps) {
-  return {
-    low: transparencyGaps.filter((item) => item.severity === 'low').length,
-    medium: transparencyGaps.filter((item) => item.severity === 'medium').length,
-    high: transparencyGaps.filter((item) => item.severity === 'high').length,
-    critical: transparencyGaps.filter((item) => item.severity === 'critical').length,
-  };
-}
-
-function countBy(items, keyFn) {
-  const counts = {};
-  for (const item of items) {
-    const key = String(keyFn(item) ?? 'unknown');
-    counts[key] = (counts[key] ?? 0) + 1;
-  }
-  return counts;
 }
