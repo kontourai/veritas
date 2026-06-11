@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "id": "policy-change-2026-06-11T21-29-14-664Z-5c1c8368769f",
+  "kind": "policy-change",
+  "actor": {
+    "id": "brian",
+    "displayName": "Brian Anderson",
+    "identityEvidence": {
+      "gitEmail": "brian.anderson1222@gmail.com",
+      "signingKeyFingerprint": null
+    }
+  },
+  "attestedAt": "2026-06-11T21:29:14.664Z",
+  "repoStandardsHash": "sha256:28de1ed3b5ac4d8d5168366902579815c6b390b4831eac928a16f82c4e3b37f3",
+  "repoMapHash": "sha256:6b4a8af5783eb91b8f37ba61a1efbd9f997b4474507b5c55606f034cb10f02ee",
+  "authoritySettingsHash": "sha256:2e8eabf7e55a00d3afbe940bd7cec8c4d36c6a23eabf6317384d12683aa88c05",
+  "priorAttestationId": "policy-change-2026-06-11T17-12-23-745Z-517ff3a9e1dc",
+  "validUntilDays": 90,
+  "notes": "Additive Standards Growth: cover release-please root config files (release-please-config.json, .release-please-manifest.json) under governance.root-manifests. Release automation rollout delegated to agent session by Brian in working session.",
+  "metadata": {
+    "protectedStandardsPaths": {
+      "repoStandardsPath": ".veritas/repo-standards/default.repo-standards.json",
+      "repoMapPath": ".veritas/repo-map.json",
+      "authoritySettingsPath": ".veritas/authority/default.authority-settings.json"
+    },
+    "supersedes": "policy-change-2026-06-11T17-12-23-745Z-517ff3a9e1dc",
+    "approvalRef": "direct-owner-review-2026-06-11-chat-attestation",
+    "approvalRefPolicy": {
+      "mode": "reference-only",
+      "matchedPrefix": null,
+      "requiresResolution": false
+    },
+    "approvalResolution": null
+  },
+  "surface": {
+    "claim": {
+      "id": "veritas.attestation.policy-change-2026-06-11T21-29-14-664Z-5c1c8368769f",
+      "subjectType": "veritas-protected-standards",
+      "subjectId": "protected-standards",
+      "surface": "veritas.attestations",
+      "claimType": "veritas-human-attestation",
+      "fieldOrBehavior": "policy-change",
+      "value": {
+        "contentHash": "3ba821db76073cc2ff410394d19b8aecb5c6089b6406739c9f266aae31e9e4f9",
+        "validUntil": "2026-09-09T21:29:14.664Z"
+      },
+      "createdAt": "2026-06-11T21:29:14.664Z",
+      "updatedAt": "2026-06-11T21:29:14.664Z",
+      "status": "verified",
+      "impactLevel": "high",
+      "confidenceBasis": {
+        "sourceQuality": "strong",
+        "reviewerAuthority": "human",
+        "evidenceStrength": "strong",
+        "impactLevel": "high"
+      }
+    },
+    "evidence": {
+      "id": "evidence.attestation.veritas.attestation.policy-change-2026-06-11T21-29-14-664Z-5c1c8368769f",
+      "claimId": "veritas.attestation.policy-change-2026-06-11T21-29-14-664Z-5c1c8368769f",
+      "evidenceType": "attestation",
+      "method": "attestation",
+      "sourceRef": "veritas:protected-standards",
+      "excerptOrSummary": "Additive Standards Growth: cover release-please root config files (release-please-config.json, .release-please-manifest.json) under governance.root-manifests. Release automation rollout delegated to agent session by Brian in working session.",
+      "observedAt": "2026-06-11T21:29:14.664Z",
+      "collectedBy": "brian",
+      "integrityRef": "3ba821db76073cc2ff410394d19b8aecb5c6089b6406739c9f266aae31e9e4f9",
+      "metadata": {
+        "actor": {
+          "id": "brian",
+          "displayName": "Brian Anderson"
+        },
+        "attestedAt": "2026-06-11T21:29:14.664Z",
+        "validUntil": "2026-09-09T21:29:14.664Z",
+        "contentHash": "3ba821db76073cc2ff410394d19b8aecb5c6089b6406739c9f266aae31e9e4f9"
+      },
+      "sourceLocator": ".veritas/attestations"
+    },
+    "event": {
+      "id": "veritas.attestation.policy-change-2026-06-11T21-29-14-664Z-5c1c8368769f.verified",
+      "claimId": "veritas.attestation.policy-change-2026-06-11T21-29-14-664Z-5c1c8368769f",
+      "status": "verified",
+      "actor": "brian",
+      "method": "human attestation",
+      "evidenceIds": [
+        "evidence.attestation.veritas.attestation.policy-change-2026-06-11T21-29-14-664Z-5c1c8368769f"
+      ],
+      "createdAt": "2026-06-11T21:29:14.664Z",
+      "verifiedAt": "2026-06-11T21:29:14.664Z"
+    }
+  }
+}
