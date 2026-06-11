@@ -5,7 +5,7 @@ Veritas is the product context for repo and AI-agent governance. This glossary d
 ## Language
 
 **Veritas**:
-A repo and AI-agent governance product for earning trust in AI-authored code changes. Veritas is not a generic lint framework; it helps teams define repo standards, evaluate changes against them, and inspect why a change is or is not ready to merge.
+A repo and AI-agent governance product for earning trust in AI-authored code changes. Veritas is not a generic lint framework; it helps teams define repo standards, evaluate changes against them, and inspect why a change is or is not ready to merge. Veritas is a product built on the Surface primitive.
 _Avoid_: Generic lint framework, Surface module, trust substrate
 
 **Repo Standards**:
