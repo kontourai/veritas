@@ -9,6 +9,8 @@ Define what good looks like for your repo. Veritas checks each change against th
 
 ## Quickstart
 
+Inside a git repository:
+
 ```bash
 npm install -D @kontourai/veritas
 npx veritas init
@@ -122,4 +124,18 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Apache-2.0
 
-*Veritas is built with [Surface](https://github.com/kontourai/surface). Users don't need to configure Surface — it's the shared shape under the readiness state.*
+*Veritas is built with [Surface](https://kontourai.io/surface). Users don't need to configure Surface — it's the shared shape under the readiness state.*
+
+## Where Veritas fits
+
+Kontour AI shows the work behind AI:
+
+| Product | Owns |
+| --- | --- |
+| **Veritas** | Code/change transparency: repo standards, merge readiness |
+| **[Surface](https://kontourai.io/surface)** | Portable trust state: claims, evidence, policies, trust snapshots |
+| **[Survey](https://kontourai.io/survey)** | Producer evidence: source → extraction → candidate → review → claim |
+| **[Flow](https://kontourai.io/flow)** | Process transparency: steps, gates, transitions, runs, exceptions |
+| **[Flow Agents](https://kontourai.io/flow-agents)** | Agent-facing distribution: skills, kits, runtime adapters, hooks |
+
+Each product stands alone. When they're together: Veritas readiness can appear as evidence behind a [Flow](https://kontourai.github.io/flow/) gate, and [Flow Agents](https://kontourai.github.io/flow-agents/) attaches Veritas reports as optional governance evidence.
