@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [0.5.0](https://github.com/kontourai/veritas/compare/v0.4.0...v0.5.0) (2026-06-11)
+
+
+### Features
+
+* emit surface readiness claims ([82e3e10](https://github.com/kontourai/veritas/commit/82e3e10064c43a3647500a0dc619d617f9c17211))
+* TrustBundle rename + neutral trust block on surface 0.9 ([#83](https://github.com/kontourai/veritas/issues/83)) ([26847f0](https://github.com/kontourai/veritas/commit/26847f0354ce2c7b06aaafbdec80ca160c1ec82e))
+
+
+### Fixes
+
+* allow veritas checkin PR comments ([e5b892a](https://github.com/kontourai/veritas/commit/e5b892adfda03f080abc9707483f3b422a275a1c))
+
+
+### Documentation
+
+* audit and fix documentation accuracy and intuitiveness ([#79](https://github.com/kontourai/veritas/issues/79)) ([a23de7b](https://github.com/kontourai/veritas/commit/a23de7b9ac263a6510863a842652964c1f16c8f8))
+* mark shipped landing-path backlog items ([#82](https://github.com/kontourai/veritas/issues/82)) ([28d7a68](https://github.com/kontourai/veritas/commit/28d7a6865dd4853652db805a95f3f6dce3dc7124))
+
 ## [Unreleased]
 
 ## Prior Pre-Alignment Release - 2026-04-26
