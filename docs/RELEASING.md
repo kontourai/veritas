@@ -1,5 +1,7 @@
 # Releasing Veritas
 
+Releases are automated with release-please: merges to main accumulate into a release PR; merging it tags the version, and the release workflow then triggers the publish workflow via `workflow_dispatch` at that tag (tags created with `GITHUB_TOKEN` do not fire tag-push workflows). The publish job itself remains tag-gated — dispatch at a non-tag ref publishes nothing. Use conventional commit prefixes (feat:, fix:, docs:, chore:) so version inference works. The manual tag flow below remains valid for exceptional releases.
+
 This document is the operator checklist for cutting a release of `@kontourai/veritas`.
 
 ## Preconditions

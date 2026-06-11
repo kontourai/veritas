@@ -80,7 +80,9 @@
           ".gitignore",
           "AGENTS.md",
           "surface.config.json",
-          "veritas.claims.json"
+          "veritas.claims.json",
+          "release-please-config.json",
+          ".release-please-manifest.json"
         ],
         "owners": [
           "repo-core"
