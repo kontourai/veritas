@@ -6,9 +6,9 @@ Veritas environment variables are intended for automation and emergency escape h
 
 ### `VERITAS_SKIP_SURFACE_VALIDATION=1`
 
-Skips Surface `TrustInput` validation when Veritas emits `surface.input`.
+Skips Surface `TrustBundle` validation when Veritas emits `trust.bundle`.
 
-This is intended as a short-lived escape hatch while repairing a broken fixture or projection. Veritas prints a warning on every invocation when this variable is set.
+This is intended as a short-lived escape hatch while repairing a broken example or projection. Veritas prints a warning on every invocation when this variable is set.
 
 ### `VERITAS_SKIP_STANDARDS_FEEDBACK_VALIDATION=1`
 

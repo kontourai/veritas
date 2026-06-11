@@ -10,7 +10,7 @@ The `.veritas/` directory contains the live governance configuration for this re
 
 ```bash
 npm run prepush                 # command used by .githooks/pre-push
-npm run test:prepush            # push-safe verifier; excludes git-mutating fixture tests
+npm run test:prepush            # push-safe verifier; excludes git-mutating test helpers
 npm test                        # run the full test suite
 npm run veritas:evidence-check  # run the evidenceCheck
 npm run veritas:conformance         # full readiness check + repo conformance report

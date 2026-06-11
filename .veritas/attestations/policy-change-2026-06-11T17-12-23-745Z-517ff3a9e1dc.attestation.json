@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "id": "policy-change-2026-06-11T17-12-23-745Z-517ff3a9e1dc",
+  "kind": "policy-change",
+  "actor": {
+    "id": "brian",
+    "displayName": "Brian Anderson",
+    "identityEvidence": {
+      "gitEmail": "brian.anderson1222@gmail.com",
+      "signingKeyFingerprint": null
+    }
+  },
+  "attestedAt": "2026-06-11T17:12:23.745Z",
+  "repoStandardsHash": "sha256:28de1ed3b5ac4d8d5168366902579815c6b390b4831eac928a16f82c4e3b37f3",
+  "repoMapHash": "sha256:de53ebef5a145a057f9b7ca23bb110f0af109391d196e66a736613182ba77f81",
+  "authoritySettingsHash": "sha256:2e8eabf7e55a00d3afbe940bd7cec8c4d36c6a23eabf6317384d12683aa88c05",
+  "priorAttestationId": "policy-change-2026-06-01T15-54-18-119Z-feeadc5fe777",
+  "validUntilDays": 90,
+  "notes": "Rename repo-map node examples.fixtures to examples.example-data for clearer vocabulary alignment (example-area kind, not test fixtures). Approved verbally by Brian in working session.",
+  "metadata": {
+    "protectedStandardsPaths": {
+      "repoStandardsPath": ".veritas/repo-standards/default.repo-standards.json",
+      "repoMapPath": ".veritas/repo-map.json",
+      "authoritySettingsPath": ".veritas/authority/default.authority-settings.json"
+    },
+    "supersedes": "policy-change-2026-06-01T15-54-18-119Z-feeadc5fe777",
+    "approvalRef": "direct-owner-review-2026-06-11-chat-attestation",
+    "approvalRefPolicy": {
+      "mode": "reference-only",
+      "matchedPrefix": null,
+      "requiresResolution": false
+    },
+    "approvalResolution": null
+  },
+  "surface": {
+    "claim": {
+      "id": "veritas.attestation.policy-change-2026-06-11T17-12-23-745Z-517ff3a9e1dc",
+      "subjectType": "veritas-protected-standards",
+      "subjectId": "protected-standards",
+      "surface": "veritas.attestations",
+      "claimType": "veritas-human-attestation",
+      "fieldOrBehavior": "policy-change",
+      "value": {
+        "contentHash": "6347e881413e34b2baee6878aeecd3b76c88bf09e07f1895b94b1b52a7d39582",
+        "validUntil": "2026-09-09T17:12:23.745Z"
+      },
+      "createdAt": "2026-06-11T17:12:23.745Z",
+      "updatedAt": "2026-06-11T17:12:23.745Z",
+      "status": "verified",
+      "impactLevel": "high",
+      "confidenceBasis": {
+        "sourceQuality": "strong",
+        "reviewerAuthority": "human",
+        "evidenceStrength": "strong",
+        "impactLevel": "high"
+      }
+    },
+    "evidence": {
+      "id": "evidence.attestation.veritas.attestation.policy-change-2026-06-11T17-12-23-745Z-517ff3a9e1dc",
+      "claimId": "veritas.attestation.policy-change-2026-06-11T17-12-23-745Z-517ff3a9e1dc",
+      "evidenceType": "attestation",
+      "method": "attestation",
+      "sourceRef": "veritas:protected-standards",
+      "excerptOrSummary": "Rename repo-map node examples.fixtures to examples.example-data for clearer vocabulary alignment (example-area kind, not test fixtures). Approved verbally by Brian in working session.",
+      "observedAt": "2026-06-11T17:12:23.745Z",
+      "collectedBy": "brian",
+      "integrityRef": "6347e881413e34b2baee6878aeecd3b76c88bf09e07f1895b94b1b52a7d39582",
+      "metadata": {
+        "actor": {
+          "id": "brian",
+          "displayName": "Brian Anderson"
+        },
+        "attestedAt": "2026-06-11T17:12:23.745Z",
+        "validUntil": "2026-09-09T17:12:23.745Z",
+        "contentHash": "6347e881413e34b2baee6878aeecd3b76c88bf09e07f1895b94b1b52a7d39582"
+      },
+      "sourceLocator": ".veritas/attestations"
+    },
+    "event": {
+      "id": "veritas.attestation.policy-change-2026-06-11T17-12-23-745Z-517ff3a9e1dc.verified",
+      "claimId": "veritas.attestation.policy-change-2026-06-11T17-12-23-745Z-517ff3a9e1dc",
+      "status": "verified",
+      "actor": "brian",
+      "method": "human attestation",
+      "evidenceIds": [
+        "evidence.attestation.veritas.attestation.policy-change-2026-06-11T17-12-23-745Z-517ff3a9e1dc"
+      ],
+      "createdAt": "2026-06-11T17:12:23.745Z",
+      "verifiedAt": "2026-06-11T17:12:23.745Z"
+    }
+  }
+}

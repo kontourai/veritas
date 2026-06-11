@@ -1,6 +1,6 @@
 # Implementation Backlog
 
-This backlog turns the current roadmap and integration plans into executable work. It excludes restoring a Veritas-specific Surface integration: Veritas now emits `surface.input` directly, and Surface should not import Veritas readiness runtime code unless a real external product needs it.
+This backlog turns the current roadmap and integration plans into executable work. It excludes restoring a Veritas-specific Surface integration: Veritas now emits `trust.bundle` directly, and Surface should not import Veritas readiness runtime code unless a real external product needs it.
 
 ## Now
 

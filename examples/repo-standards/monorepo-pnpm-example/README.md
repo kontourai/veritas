@@ -1,4 +1,4 @@
-# pnpm Monorepo Fixture Snippet
+# pnpm Monorepo Example Snippet
 
 This snippet demonstrates the intended failure:
 

@@ -123,16 +123,16 @@
       "updatedAt": "2026-05-19T13:38:14.077Z"
     },
     {
-      "id": "veritas.surface.examples.fixtures",
+      "id": "veritas.surface.examples.example-data",
       "surface": "veritas.affected-surface",
       "claimType": "veritas-affected-surface",
-      "fieldOrBehavior": "examples.fixtures",
+      "fieldOrBehavior": "examples.example-data",
       "subjectType": "repo-surface",
-      "subjectId": "veritas:examples.fixtures",
+      "subjectId": "veritas:examples.example-data",
       "impactLevel": "medium",
       "verificationPolicyId": "veritas.surface",
       "metadata": {
-        "nodeId": "examples.fixtures"
+        "nodeId": "examples.example-data"
       },
       "createdAt": "2026-05-19T13:38:14.077Z",
       "updatedAt": "2026-05-19T13:38:14.077Z"

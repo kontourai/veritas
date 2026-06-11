@@ -2,7 +2,7 @@
 // Demonstrates the Veritas → Surface handoff.
 //
 // Reads a Veritas evidence artifact (the kind produced by `veritas readiness`
-// or `veritas report`), extracts its `surface.input` block, and feeds it to
+// or `veritas report`), extracts its `trust.bundle` block, and feeds it to
 // Surface's `buildTrustReport` to produce a portable trust report.
 //
 // Usage:
@@ -15,7 +15,7 @@ import { resolve } from "node:path";
 import {
   buildTrustReport,
   formatTrustReportSummary,
-  validateTrustInput,
+  validateTrustBundle,
 } from "@kontourai/surface";
 
 const evidencePath = resolve(
@@ -23,22 +23,22 @@ const evidencePath = resolve(
 );
 
 const evidence = JSON.parse(await readFile(evidencePath, "utf8"));
-const trustInput = evidence?.surface?.input;
+const trustBundle = evidence?.trust?.bundle;
 
-if (!trustInput) {
+if (!trustBundle) {
   console.error(
-    `No surface.input block found in ${evidencePath}. Run \`veritas report\` to produce one.`,
+    `No trust.bundle block found in ${evidencePath}. Run \`veritas report\` to produce one.`,
   );
   process.exit(2);
 }
 
 // Validate at the boundary. Surface owns the schema; Veritas only emits.
-// `validateTrustInput` returns the input on success or throws on failure.
+// `validateTrustBundle` returns the bundle on success or throws on failure.
 let validated;
 try {
-  validated = validateTrustInput(trustInput);
+  validated = validateTrustBundle(trustBundle);
 } catch (err) {
-  console.error("surface.input failed Surface validation:");
+  console.error("trust.bundle failed Surface validation:");
   console.error(`  ${err instanceof Error ? err.message : String(err)}`);
   process.exit(2);
 }

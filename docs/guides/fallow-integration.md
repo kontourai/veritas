@@ -7,7 +7,7 @@ Fallow and Veritas should stay separate:
 - Fallow finds codebase facts: unused code, duplicate logic, circular dependencies, complexity hotspots, architecture boundary violations, and optional runtime hot/cold-path evidence.
 - Veritas governs whether those facts were checked, baselined, promoted, and shown to agents before they finish work.
 - Veritas records Fallow results as an external-tool evidenceCheck (advisory or blocking).
-- Surface receives the normalized `surface.input` projection from Veritas evidence; Veritas does not become a second trust report generator.
+- Surface receives the normalized `trust.bundle` projection from Veritas evidence; Veritas does not become a second trust report generator.
 
 ## Start Advisory
 

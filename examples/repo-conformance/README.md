@@ -21,7 +21,7 @@ Refresh the report/standards feedback examples with:
 npm run veritas:conformance:examples
 ```
 
-The red repo conformance fixtures are maintained as a curated regression snapshot for the unhealthy path.
+The red repo conformance examples are maintained as a curated regression snapshot for the unhealthy path.
 
 Generate an untracked point-in-time self-hosting snapshot with:
 

@@ -23,29 +23,29 @@ function safeClaimFilename(claimId) {
   return `${claimId.replace(/[^A-Za-z0-9._-]+/g, '-')}.input.json`;
 }
 
-function buildSingleClaimInput(input, claim) {
-  const evidenceForClaim = input.evidence.filter((item) => item.claimId === claim.id);
-  const eventsForClaim = input.events.filter((item) => item.claimId === claim.id);
+function buildSingleClaimInput(bundle, claim) {
+  const evidenceForClaim = bundle.evidence.filter((item) => item.claimId === claim.id);
+  const eventsForClaim = bundle.events.filter((item) => item.claimId === claim.id);
   return {
-    schemaVersion: input.schemaVersion,
-    source: input.source,
+    schemaVersion: bundle.schemaVersion,
+    source: bundle.source,
     generatedAt: new Date().toISOString(),
     claim,
     evidence: evidenceForClaim,
     events: eventsForClaim,
-    policy: input.policies.find((policy) => policy.id === claim.verificationPolicyId) ?? null,
+    policy: bundle.policies.find((policy) => policy.id === claim.verificationPolicyId) ?? null,
   };
 }
 
 export function writeSurfaceClaimInputs(record, rootDir) {
-  const input = record.surface?.input;
-  if (!input?.claims?.length) return [];
+  const bundle = record.trust?.bundle;
+  if (!bundle?.claims?.length) return [];
   const claimsDir = resolve(rootDir, '.veritas/claims');
   mkdirSync(claimsDir, { recursive: true });
   const written = [];
-  for (const claim of input.claims) {
+  for (const claim of bundle.claims) {
     const path = resolve(claimsDir, safeClaimFilename(claim.id));
-    writeFileSync(path, `${JSON.stringify(buildSingleClaimInput(input, claim), null, 2)}\n`, 'utf8');
+    writeFileSync(path, `${JSON.stringify(buildSingleClaimInput(bundle, claim), null, 2)}\n`, 'utf8');
     written.push(relativeRepoPath(rootDir, path));
   }
   return written;

@@ -114,12 +114,10 @@ test('Surface trust report summary is persisted with stale and disputed statuses
   }, null, 2)}\n`);
 
   const surface = await produceSurfaceStateForVeritasRecord(record, { rootDir });
-  const { input, report } = surface;
+  const { bundle, report } = surface;
   const statuses = Object.fromEntries(report.claims.map((claim) => [claim.id, claim.status]));
-  const readinessClaim = input.claims.find((claim) => claim.claimType === 'software-readiness-verdict');
+  const readinessClaim = bundle.claims.find((claim) => claim.claimType === 'software-readiness-verdict');
   assert.ok(readinessClaim);
-  assert.equal(readinessClaim.metadata.authorityTrace.kind, 'producer-fallback');
-  assert.equal(input.evidence.find((item) => item.claimId === readinessClaim.id).metadata.authorityTrace.kind, 'producer-fallback');
 
   assert.equal(statuses['veritas.surface-report-consumption-test.policy.warn-rule'], 'disputed');
   assert.equal(statuses['veritas.surface-report-consumption-test.evidence-inventory.stale-inventory'], 'stale');
@@ -128,7 +126,7 @@ test('Surface trust report summary is persisted with stale and disputed statuses
   const feedback = buildFeedbackSummary({
     record: {
       ...record,
-      surface,
+      trust: surface,
     },
   });
   assert.match(feedback, /WARN  surface-status: claim "veritas\.surface-report-consumption-test\.policy\.warn-rule" is DISPUTED/);

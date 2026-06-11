@@ -262,6 +262,6 @@ export async function buildEvidenceRecord({
   });
   return {
     ...record,
-    surface,
+    trust: surface,
   };
 }

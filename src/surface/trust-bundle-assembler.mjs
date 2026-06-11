@@ -3,11 +3,11 @@ import {
   SURFACE_SUPPORTS_AUTHORITY_TRACE,
 } from './capabilities.mjs';
 
-export function buildSurfaceTrustInputWithPublicApi(input) {
-  if (typeof Surface.TrustInputBuilder !== 'function') {
-    throw new Error('Surface TrustInputBuilder public API is required by Veritas projection.');
+export function buildSurfaceTrustBundleWithPublicApi(input) {
+  if (typeof Surface.TrustBundleBuilder !== 'function') {
+    throw new Error('Surface TrustBundleBuilder public API is required by Veritas projection.');
   }
-  const builder = new Surface.TrustInputBuilder({
+  const builder = new Surface.TrustBundleBuilder({
     source: input.source,
     schemaVersion: input.schemaVersion,
   });
@@ -22,11 +22,11 @@ export function buildSurfaceTrustInputWithPublicApi(input) {
   return builder.build();
 }
 
-export function createSurfaceTrustInputAssembler({ source, schemaVersion }) {
-  if (typeof Surface.TrustInputBuilder !== 'function') {
-    throw new Error('Surface TrustInputBuilder public API is required by Veritas projection.');
+export function createSurfaceTrustBundleAssembler({ source, schemaVersion }) {
+  if (typeof Surface.TrustBundleBuilder !== 'function') {
+    throw new Error('Surface TrustBundleBuilder public API is required by Veritas projection.');
   }
-  const builder = new Surface.TrustInputBuilder({ source, schemaVersion });
+  const builder = new Surface.TrustBundleBuilder({ source, schemaVersion });
   const draft = {
     schemaVersion,
     source,
@@ -88,16 +88,16 @@ export function createSurfaceTrustInputAssembler({ source, schemaVersion }) {
         builder.addPolicy(policy);
       }
       try {
-        const input = builder.build();
+        const bundle = builder.build();
         if (SURFACE_SUPPORTS_AUTHORITY_TRACE && draft.authorityTrace.length > 0) {
-          return Surface.validateTrustInput({
-            ...input,
+          return Surface.validateTrustBundle({
+            ...bundle,
             authorityTrace: [...draft.authorityTrace],
           });
         }
-        return input;
+        return bundle;
       } catch (error) {
-        error.trustInputDraft = {
+        error.trustBundleDraft = {
           ...draft,
           claims: [...draft.claims],
           evidence: [...draft.evidence],

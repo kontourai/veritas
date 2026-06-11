@@ -1,10 +1,10 @@
-# Example Fixtures
+# Examples
 
-The files in `examples/` are canonical fixtures for the current schemas. They are read by tests, so docs can point at them without drifting.
+The files in `examples/` are canonical examples for the current schemas. They are read by tests, so docs can point at them without drifting.
 
-Some example paths and fields predate the current product vocabulary. Treat them as exact fixture references, not naming guidance.
+Some example paths and fields predate the current product vocabulary. Treat them as exact example references, not naming guidance.
 
-## Evidence Fixtures
+## Evidence Examples
 
 These live under `examples/evidence/` and demonstrate generated evidence in realistic states.
 
@@ -36,7 +36,7 @@ Use it to see:
 
 Use it to see a case where the change stayed inside known work areas, but Veritas still records that the standards are missing coverage.
 
-## Standards Feedback Fixtures
+## Standards Feedback Examples
 
 These live under `examples/standards-feedback/` and demonstrate standards feedback.
 
@@ -52,9 +52,9 @@ Use them to inspect:
 - time-to-green and exception/exception counts
 - false positives and missed issues
 
-## Benchmark Fixtures
+## Benchmark Examples
 
-These live under `examples/benchmarks/` and show deterministic benchmark fixtures for whether change guidance surfaced at the right time.
+These live under `examples/benchmarks/` and show deterministic benchmark examples for whether change guidance surfaced at the right time.
 
 Use them to inspect:
 
@@ -64,14 +64,14 @@ Use them to inspect:
 - baseline vs Veritas comparisons
 - grouped reliability metrics
 
-## Operational Summary Fixtures
+## Operational Summary Examples
 
 These examples demonstrate generated readiness, conformance, or standards-feedback summaries.
 
 - [examples/repo-conformance/veritas-repo-report.json](../../examples/repo-conformance/veritas-repo-report.json)
 - [examples/repo-conformance/veritas-repo-conformance-red.json](../../examples/repo-conformance/veritas-repo-conformance-red.json)
 
-## Specific Benchmark Fixtures
+## Specific Benchmark Examples
 
 - [examples/benchmarks/migration/scenario.json](../../examples/benchmarks/migration/scenario.json)
 - [examples/benchmarks/migration/comparison.json](../../examples/benchmarks/migration/comparison.json)
@@ -80,7 +80,7 @@ These examples demonstrate generated readiness, conformance, or standards-feedba
 - [examples/benchmarks/governance-protected-standards/scenario.json](../../examples/benchmarks/governance-protected-standards/scenario.json)
 - [examples/benchmarks/governance-standards-growth/scenario.json](../../examples/benchmarks/governance-standards-growth/scenario.json)
 
-## Classification Fixture
+## Classification Example
 
 - [examples/classification/work-agent-convergence-rule-groups.json](../../examples/classification/work-agent-convergence-rule-groups.json)
 

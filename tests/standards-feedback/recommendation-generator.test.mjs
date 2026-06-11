@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
   applyRecommendation,
-  buildSurfaceTrustInput,
+  buildSurfaceTrustBundle,
   createAttestation,
   generateRuleRecommendations,
   initClaimStore,
@@ -159,7 +159,7 @@ test('recommendation artifacts can be accepted and surface as proposed claims be
   });
   writeJson(storePath, store);
 
-  const input = await buildSurfaceTrustInput({
+  const input = await buildSurfaceTrustBundle({
     run_id: 'recommendation-surface-test',
     timestamp: '2026-05-10T00:00:00.000Z',
     source_ref: 'test-ref',

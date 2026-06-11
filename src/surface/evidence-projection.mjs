@@ -24,7 +24,6 @@ import {
   surfacePolicyResultStatus,
 } from './evidence-status.mjs';
 import {
-  buildReadinessAuthorityTrace,
   buildReadinessAuthorityTraceRecord,
 } from './readiness-authority.mjs';
 
@@ -350,7 +349,6 @@ export function collectReadinessVerdictEvidence(record, claimStore, evidence, ev
   if (!claim) return;
   const status = readinessSurfaceStatus(record);
   const evidenceId = `${record.run_id}.readiness-verdict.evidence`;
-  const authorityTrace = buildReadinessAuthorityTrace(record);
   const firstClassAuthorityTrace = buildReadinessAuthorityTraceRecord(record, claim, evidenceId);
   authorityTraceRecords.push(firstClassAuthorityTrace);
   evidence.push(surfaceEvidence({
@@ -371,7 +369,6 @@ export function collectReadinessVerdictEvidence(record, claimStore, evidence, ev
       policyResults: readinessPolicyResultSummary(record),
       evidenceChecks: readinessEvidenceCheckSummary(record),
       integrity: readinessIntegrityScope(record),
-      authorityTrace,
       transparencyGapHints: readinessTransparencyGapHints(record),
     },
   }));

@@ -106,6 +106,42 @@ npx @kontourai/veritas attest status [--root <path>]
 
 The built-in requirement `policy-changes-require-attestation` fails when the active attestation no longer matches protected standards.
 
+#### Collection Provenance
+
+Every attestation can carry an optional structured `authorizing` block that records how the act of attestation was authorized. Three kinds are supported:
+
+- **`explicit-statement`** — a standalone text statement naming the authorizing act.
+
+  ```bash
+  --authorizing-statement "Reviewed and approved the policy change"
+  ```
+
+- **`exchange`** — a prompt/response pair capturing a delegated approval conversation. Both `--authorizing-prompt` and `--authorizing-response` are required; omitting either is a hard CLI error. `--excerpt-source` is optional and maps to the `source` field.
+
+  ```bash
+  --authorizing-prompt "Did you review the policy?" --authorizing-response "Yes, approved." [--excerpt-source slack://team-channel]
+  ```
+
+- **`authorized-action`** — a UI-driven control action. All four fields are required: `--prompt-ref`, `--rendered-prompt`, `--action` (`affirmed-control` or `typed`), and `--authority-ref`. Primary use is programmatic.
+
+  ```bash
+  --prompt-ref <ref> --rendered-prompt "Confirm the policy change" --action affirmed-control --authority-ref <session-ref>
+  ```
+
+**Channel mapping:**
+
+| Channel | Authorizing kind |
+|---------|-----------------|
+| cli-interactive | `explicit-statement` auto-built from the command itself |
+| delegated (chat/agent) | `exchange` or `explicit-statement` |
+| UI | `authorized-action` |
+
+When `--executed-by <id>` is specified, it acts as a delegated-channel marker that requires either `--authorizing-statement` OR the `--authorizing-prompt` + `--authorizing-response` pair.
+
+**Admissibility transparency annotation:**
+
+When `kind=explicit-statement` and the statement shares no token overlap with the changed protected-standard node IDs or the attestation notes, Veritas records `admissibilityWarning: true` with a reason on the attestation. This is a transparency annotation — it never blocks readiness. The warning appears in `attest status` output and as an annotation on the PASS line in the readiness check output (e.g. "PASS ... (1 admissibility warning)").
+
 ### `hooks claude-code`
 
 Prints, installs, or runs the Claude Code PreToolUse hook.
@@ -168,7 +204,7 @@ Important behaviors:
 Every report also includes an `integrity` block. `integrity.sourceRef` mirrors the source anchor used for staleness decisions, `integrity.fileRefs` records readable changed-file fingerprints, and `integrity.configRefs` records hashes for Repo Map, Repo Standards, and settings files when those paths are available. Surface Console views use this to explain what a verified claim was actually verified against.
 - the Repo Map selects evidenceCheck commands through explicit evidenceCheck definitions, required check ids, default check ids, and optional routes
 - the artifact is written to the Repo Map-defined `artifactDir`
-- every artifact includes `surface.input`, a Surface `TrustInput` projection with claims, evidence, policies, and events
+- every artifact includes `trust.bundle`, a Surface `TrustBundle` projection with claims, evidence, policies, and events
 - Veritas owns repo-native claimGroup and Surface owns generic validation and report generation
 - JSON is the default output; `--format feedback` prints the same lint-style findings used by hooks
 - `--trend` prints the standards-feedback trend with sparklines and MTTR instead of generating a new report
@@ -201,15 +237,15 @@ To turn a Veritas readiness artifact into a Surface trust report, use the `repor
 
 ```bash
 artifact_path="$(npx @kontourai/veritas readiness --working-tree --format json | node -e 'let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", () => { const parsed = JSON.parse(data); if (!parsed.reportArtifactPath) throw new Error("missing reportArtifactPath"); console.log(parsed.reportArtifactPath); });')"
-node -e 'const fs = require("node:fs"); const artifact = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write(JSON.stringify(artifact.surface.input, null, 2));' "$artifact_path" > .veritas/external/surface-input.json
-surface report --repo-map surface --input .veritas/external/surface-input.json --format summary
+node -e 'const fs = require("node:fs"); const artifact = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write(JSON.stringify(artifact.trust.bundle, null, 2));' "$artifact_path" > .veritas/external/surface-bundle.json
+surface report --repo-map surface --input .veritas/external/surface-bundle.json --format summary
 ```
 
-Portable consumers can find merge readiness by selecting `surface.input.claims[]` or generated `surface.report.claims[]` where `claimType` is `software-readiness-verdict` and `subjectType` is `repository-change`. Integrity scope is available in claim/evidence metadata; authority trace is available as first-class `surface.input.authorityTrace` when the installed Surface package supports it and mirrored in claim/evidence metadata for older Surface 0.4 consumers.
+Portable consumers can find merge readiness by selecting `trust.bundle.claims[]` or generated `trust.report.claims[]` where `claimType` is `software-readiness-verdict` and `subjectType` is `repository-change`. Integrity scope is available in claim/evidence metadata; authority trace is available as first-class `trust.bundle.authorityTrace`.
 
 Surface generates report-only fields such as `id`, `generatedAt`, `summary`, `transparencyGaps`, and `evidenceRequirementsByClaimId`. Veritas owns repo-native evidence collection and projection; Surface owns generic validation and report generation.
 
-Current evidence artifacts also include `surface.report`, a compact summary generated by Surface's `buildTrustReport`. `veritas readiness` emits WARN lines for Surface-derived stale or disputed claims, and `veritas explain <rule-id>` includes the latest Surface claim status and transparency gaps for the matching policy claim.
+Current evidence artifacts also include `trust.report`, a compact summary generated by Surface's `buildTrustReport`. `veritas readiness` emits WARN lines for Surface-derived stale or disputed claims, and `veritas explain <rule-id>` includes the latest Surface claim status and transparency gaps for the matching policy claim.
 
 ### `coverage`
 

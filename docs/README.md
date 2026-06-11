@@ -33,7 +33,7 @@ Find what you need by what you're trying to do.
 ### Understand readiness and evidence
 
 - [Artifacts and Schemas](reference/artifacts-and-schemas.md) for current generated artifact shapes
-- [Example Fixtures](reference/examples.md) for sample evidence and feedback payloads
+- [Examples](reference/examples.md) for sample evidence and feedback payloads
 - [Telemetry and Read Models](reference/telemetry-and-read-models.md) for derived artifacts and trend data
 - [Environment Variables](reference/env-vars.md) for hook requirements and emergency validation escape hatches
 
@@ -77,7 +77,7 @@ Find what you need by what you're trying to do.
 - [CLI Reference](reference/cli.md)
 - [Artifacts and Schemas](reference/artifacts-and-schemas.md)
 - [Glossary](reference/glossary.md)
-- [Example Fixtures](reference/examples.md)
+- [Examples](reference/examples.md)
 - [Telemetry and Read Models](reference/telemetry-and-read-models.md)
 - [Benchmarking](reference/benchmarking.md)
 - [Environment Variables](reference/env-vars.md)

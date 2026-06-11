@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { TrustInputBuilder, buildTrustReport, validateTrustInput } from '@kontourai/surface';
-import { buildSurfaceTrustInput, generateVeritasReport, initClaimStore } from '../src/index.mjs';
+import { TrustBundleBuilder, buildTrustReport, validateTrustBundle } from '@kontourai/surface';
+import { buildSurfaceTrustBundle, generateVeritasReport, initClaimStore } from '../src/index.mjs';
 import { repoRootDir } from './helpers.mjs';
 
-test('Veritas surface.input validates against Surface and has policy coverage', async () => {
+test('Veritas trust.bundle validates against Surface and has policy coverage', async () => {
   const claimsPath = join(repoRootDir, 'veritas.claims.json');
   const originalClaims = existsSync(claimsPath) ? readFileSync(claimsPath, 'utf8') : null;
   await initClaimStore({ rootDir: repoRootDir, repoName: 'veritas-framework', force: true });
@@ -29,7 +29,7 @@ test('Veritas surface.input validates against Surface and has policy coverage', 
     }
   }
 
-  const input = validateTrustInput(result.record.surface.input);
+  const input = validateTrustBundle(result.record.trust.bundle);
   const report = buildTrustReport(input, {
     id: 'surface-projection-test',
     now: new Date(result.record.timestamp),
@@ -55,21 +55,15 @@ test('Veritas surface.input validates against Surface and has policy coverage', 
   assert.ok(readinessClaim.metadata.integrity.sourceRef);
   assert.ok(Array.isArray(readinessClaim.metadata.integrity.fileRefs));
   assert.ok(readinessClaim.metadata.integrity.configRefs);
-  assert.ok(readinessClaim.metadata.authorityTrace);
-  assert.equal(
-    ['governance-attestation', 'producer-fallback'].includes(readinessClaim.metadata.authorityTrace.kind),
-    true,
-  );
   const readinessEvidence = input.evidence.find((item) => item.claimId === readinessClaim.id);
   assert.ok(readinessEvidence, 'expected readiness verdict evidence');
-  assert.ok(readinessEvidence.metadata.authorityTrace);
   assert.ok(readinessEvidence.metadata.integrity.sourceRef);
   assert.ok(input.events.some((event) =>
     event.claimId === readinessClaim.id &&
     event.evidenceIds.includes(readinessEvidence.id)
   ));
   assert.ok(report.claims.some((claim) => claim.id === readinessClaim.id));
-  if (typeof TrustInputBuilder.prototype.addClaimGroup === 'function') {
+  if (typeof TrustBundleBuilder.prototype.addClaimGroup === 'function') {
     assert.ok(input.claimGroups?.some((claimGroup) => claimGroup.kind === 'requirement-set'));
     assert.ok(report.claimGroupRollups.some((claimGroup) => claimGroup.id.startsWith('veritas.requirements.')));
   }
@@ -82,12 +76,12 @@ test('Veritas surface.input validates against Surface and has policy coverage', 
   }
 });
 
-test('buildSurfaceTrustInput projects readiness derivation links to blocking policy result claims', async () => {
+test('buildSurfaceTrustBundle projects readiness derivation links to blocking policy result claims', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-surface-derived-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   await initClaimStore({ rootDir, repoName: 'surface-derived-projection-test', force: true });
 
-  const input = validateTrustInput(await buildSurfaceTrustInput({
+  const input = validateTrustBundle(await buildSurfaceTrustBundle({
     run_id: 'surface-derived-projection-test',
     timestamp: '2026-06-02T12:00:00.000Z',
     source_ref: 'derived-projection-source',
@@ -187,7 +181,7 @@ test('Surface validation failure writes rejected input artifact and uses config 
     ),
     (error) => {
       assert.equal(error.exitCode, 2);
-      assert.match(error.message, /Surface TrustInput validation failed/);
+      assert.match(error.message, /Surface TrustBundle validation failed/);
       assert.match(error.message, /Rejected input: \.veritas\/external\/surface-validation-failures\/invalid-surface-projection-test\.json/);
       return true;
     },

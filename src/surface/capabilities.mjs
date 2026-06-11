@@ -3,9 +3,9 @@ import * as Surface from '@kontourai/surface';
 export const SURFACE_SUPPORTS_EVIDENCE_EVALUATION = typeof Surface.loadClaimStore === 'function';
 
 export const SURFACE_SUPPORTS_EVIDENCE_EXECUTION = (() => {
-  if (typeof Surface.validateTrustInput !== 'function') return false;
+  if (typeof Surface.validateTrustBundle !== 'function') return false;
   try {
-    Surface.validateTrustInput({
+    Surface.validateTrustBundle({
       schemaVersion: 3,
       source: 'veritas-capability-detect',
       claims: [{
@@ -40,9 +40,9 @@ export const SURFACE_SUPPORTS_EVIDENCE_EXECUTION = (() => {
 })();
 
 export const SURFACE_SUPPORTS_AUTHORITY_TRACE = (() => {
-  if (typeof Surface.validateTrustInput !== 'function') return false;
+  if (typeof Surface.validateTrustBundle !== 'function') return false;
   try {
-    Surface.validateTrustInput({
+    Surface.validateTrustBundle({
       schemaVersion: 3,
       source: 'veritas-authority-trace-capability-detect',
       claims: [{

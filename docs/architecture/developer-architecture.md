@@ -36,7 +36,7 @@ flowchart LR
   end
 
   subgraph Surface["Surface: portable transparency"]
-    SI["Surface TrustInput\nclaims, evidence, policies, events"]
+    SI["Surface TrustBundle\nclaims, evidence, policies, events"]
     TR["Trust Report / Trust Snapshot"]
     SI --> TR
   end

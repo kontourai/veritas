@@ -27,7 +27,7 @@ Veritas is the product for repo and AI-agent governance. Surface is the transpar
 | **Recheck** | An action that verifies evidence, authority, freshness, or integrity again for the current change. |
 | **Verification Authority** | A person, system, tool, environment, or policy source trusted to verify a specific requirement. |
 | **Authority Evidence** | Evidence explaining why a verification authority was allowed to count for a requirement. |
-| **Attestation** | Evidence from a verification authority asserting that something was verified, accepted, approved, or reviewed. |
+| **Attestation** | Evidence from a verification authority asserting that something was verified, accepted, approved, or reviewed. Every attestation may carry an `authorizing` block (collection provenance) recording how the act was authorized: `explicit-statement` (standalone named act), `exchange` (prompt/response pair from a delegated approval conversation), or `authorized-action` (UI-driven control action with prompt ref, rendered prompt, action type, and authority ref). Old records without an `authorizing` block remain valid. |
 | **Exception** | An authority-backed decision to accept an unmet or failing requirement for a specific change. |
 | **Change Guidance** | Just-in-time instructions for a developer or agent when a requirement, work area, boundary, or evidence result matters. |
 | **Merge Readiness** | The per-change trust state that says whether a change has enough current evidence to merge under the repo standards. |
@@ -61,4 +61,4 @@ Veritas emits Surface-format trust state as a producer. The mapping is intention
 | Protected Standards | Claims and evidence about standards/map integrity and authority |
 | Standards Recommendation | Proposed claim and evidence supporting a standards change |
 
-Surface terms such as Claim, Evidence, Policy, TrustInput, TrustReport, and Transparency Gap are valid when documenting the Surface boundary or API. They should not replace Veritas' user-facing terms in normal product docs.
+Surface terms such as Claim, Evidence, Policy, TrustBundle, TrustReport, and Transparency Gap are valid when documenting the Surface boundary or API. They should not replace Veritas' user-facing terms in normal product docs.

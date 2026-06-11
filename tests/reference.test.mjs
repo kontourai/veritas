@@ -46,8 +46,8 @@ test('evidence schema requires current producer metadata sections', () => {
   assert.ok(evidenceSchema.required.includes('selected_evidence_checks'));
   assert.ok(evidenceSchema.required.includes('evidence_check_resolution_source'));
   assert.ok(evidenceSchema.required.includes('policy_results'));
-  assert.ok(evidenceSchema.required.includes('surface'));
-  assert.ok(evidenceSchema.properties.surface);
+  assert.ok(evidenceSchema.required.includes('trust'));
+  assert.ok(evidenceSchema.properties.trust);
   assert.ok(evidenceSchema.properties.evidence_inventory_results);
   assert.ok(evidenceSchema.properties.readiness_coverage);
   assert.ok(
@@ -98,7 +98,7 @@ test('first-contact docs preserve the Surface foundation boundary', () => {
   assert.match(concepts, /The user-facing Veritas product should still use Veritas vocabulary/);
   assert.match(siteIndex, /Surface-Veritas Boundary/);
   assert.match(siteIndex, /Built With Surface/);
-  assert.match(cliReference, /surface\.input/);
+  assert.match(cliReference, /trust\.bundle/);
   assert.match(cliReference, /Repo Standards/);
   assert.match(boundary, /## Boundary Rule/);
   assert.match(boundary, /Surface does not depend on Veritas readiness runtime code/);
@@ -152,7 +152,7 @@ test('Repo Map and Repo Standards schemas declare activation and lint requiremen
   assert.ok(matchDefs.primitiveFirstGovernanceMatch.properties.packageScripts.properties.helperExemptions);
 });
 
-test('fixture Repo Maps and evidence examples stay readable', () => {
+test('example Repo Maps and evidence examples stay readable', () => {
   const repoMap = readJson('../.veritas/repo-map.json');
   const docsRepoMap = readJson('../repo-maps/demo-docs-site.repo-map.json');
   const fallowLane = repoMap.evidence.evidenceChecks.find((lane) => lane.id === 'fallow-advisory');
@@ -181,13 +181,13 @@ test('fixture Repo Maps and evidence examples stay readable', () => {
   assert.equal(fallowAdvisoryExample.external_tool_results[0].tool, 'fallow');
   assert.equal(fallowAdvisoryExample.external_tool_results[0].blocking, false);
   assert.ok(
-    fallowAdvisoryExample.surface.input.claims.some(
+    fallowAdvisoryExample.trust.bundle.claims.some(
       (claim) => claim.surface === 'veritas.external-tool-results',
     ),
   );
 });
 
-test('standards feedback fixtures explain outcome measurement and team tuning', () => {
+test('standards feedback examples explain outcome measurement and team tuning', () => {
   const feedbackRecord = readJson('../examples/standards-feedback/work-agent-observe-standards-feedback.json');
   const feedbackDraft = readJson('../examples/standards-feedback/work-agent-observe-standards-feedback-draft.json');
   const authoritySettings = readJson('../examples/standards-feedback/work-agent-authority-settings.json');
@@ -239,7 +239,7 @@ test('standards feedback fixtures explain outcome measurement and team tuning', 
   assert.equal(redConformance.governance_trend.summary, 'no prior governance history');
 });
 
-test('marker benchmark fixtures explain timely surfacing scoring', () => {
+test('marker benchmark examples explain timely surfacing scoring', () => {
   const scenario = readJson('../examples/benchmarks/migration/scenario.json');
   const withoutVeritas = readJson('../examples/benchmarks/migration/without-veritas.json');
   const withVeritas = readJson('../examples/benchmarks/migration/with-veritas.json');
@@ -296,7 +296,7 @@ test('repo-local operational config covers the Veritas repo work areas', () => {
   assert.ok(nodeIds.has('tooling.bin'));
   assert.ok(nodeIds.has('governance.schemas'));
   assert.ok(nodeIds.has('governance.repo-standards'));
-  assert.ok(nodeIds.has('examples.fixtures'));
+  assert.ok(nodeIds.has('examples.example-data'));
 
   const repoStandards = readJson('../.veritas/repo-standards/default.repo-standards.json');
   assert.ok(repoStandards.rules.length >= 3);
