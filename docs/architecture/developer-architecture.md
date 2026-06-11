@@ -57,7 +57,7 @@ flowchart LR
 
 **Current implementation:** Veritas can be used without starting Flow Agents or Builder Kit. The stable Veritas integration artifact is the readiness output, including the `reportArtifactPath` from `veritas readiness --format json` and the generated evidence record described in [Artifacts and Schemas](../reference/artifacts-and-schemas.md).
 
-**Future Resource Contract alignment:** Flow or Builder Kit may eventually consume Resource-shaped Veritas records rather than current Veritas-native JSON. That alignment must preserve ownership: Veritas remains the source of repo governance evidence, and Flow remains the owner of gate/process semantics.
+**Future Resource Contract alignment:** Flow or Builder Kit may consume Resource-shaped Veritas records rather than current Veritas-native JSON when Resource Contract migration slices land. That alignment must preserve ownership: Veritas remains the source of repo governance evidence, and Flow remains the owner of gate/process semantics.
 
 ## Ownership Boundaries
 

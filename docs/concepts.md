@@ -33,7 +33,21 @@ Requirements can be triggered by:
 - stale or missing standing evidence
 - changes to the repo standards themselves
 
-The implementation still has rule kinds such as `required-artifacts`, `governance-block`, `diff-required`, `forbidden-pattern`, `required-pattern`, `header-required`, and `work-area-boundary`. Those are executable requirement types. Product language should say requirement unless it is describing schema internals.
+The implementation uses the following requirement kinds (from `veritas-repo-standards.schema.json`):
+
+| Kind | What it checks | Example |
+| --- | --- | --- |
+| `required-artifacts` | Named files or directories must exist in the repo | `AGENTS.md`, `.veritas/repo-standards/` |
+| `governance-block` | Commits that change protected areas must carry governance metadata | PR modifies `.veritas/` without an authority-backed attestation |
+| `diff-required` | Changing one path must be accompanied by a change to another | Edit `app/api/**` → require `tests/api/**` |
+| `forbidden-pattern` | Files must not contain a given text pattern | No hardcoded API keys in source |
+| `required-pattern` | Files must contain a given text pattern | Every service entrypoint must declare a version header |
+| `header-required` | Files must begin with a specific header block | License header in all `.ts` source files |
+| `work-area-boundary` | Changes that cross a work area boundary add evidence or authority requirements | Touching `packages/shared/` flags a cross-area boundary crossing |
+| `vocabulary-consistency` | Docs must not use deprecated or forbidden vocabulary | Replaced terms from previous product names |
+| `primitive-first-governance` | Package scripts and rules must be represented by a canonical governance primitive | CI steps wired to a repo-standards rule or evidence-check |
+
+Product language should say "requirement" unless describing schema internals.
 
 ## Evidence
 

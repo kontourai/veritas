@@ -38,7 +38,7 @@ Audience and durability:
 Recommendations:
 
 - `migrate`: adopt Resource Contract shape in a future slice.
-- `map`: keep the current external contract for now, but document and test an explicit Resource Contract mapping.
+- `map`: the current external contract is documented and tested; an explicit Resource Contract mapping is backlogged.
 - `exception`: keep product-native shape because wrapping it would make this specific contract less clear.
 - `defer/observe`: revisit after adjacent product work or dependency alignment.
 - `internal/not-a-contract`: do not publish as a Resource Contract.
