@@ -61,4 +61,4 @@ Veritas emits Surface-format trust state as a producer. The mapping is intention
 | Protected Standards | Claims and evidence about standards/map integrity and authority |
 | Standards Recommendation | Proposed claim and evidence supporting a standards change |
 
-Surface terms such as Claim, Evidence, Policy, TrustInput, TrustReport, and Transparency Gap are valid when documenting the Surface boundary or API. They should not replace Veritas' user-facing terms in normal product docs.
+Surface terms such as Claim, Evidence, Policy, TrustBundle, TrustReport, and Transparency Gap are valid when documenting the Surface boundary or API. They should not replace Veritas' user-facing terms in normal product docs.

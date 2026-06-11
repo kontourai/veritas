@@ -90,7 +90,7 @@ function latestSurfaceReportForRule(rootDir, ruleId) {
   for (const candidate of candidates) {
     try {
       const record = JSON.parse(readFileSync(candidate.path, 'utf8'));
-      const report = record.surface?.report;
+      const report = record.trust?.report;
       const claim = report?.claims?.find((item) => {
         return item.value?.ruleId === ruleId || item.subjectId?.endsWith(`:${ruleId}`);
       });

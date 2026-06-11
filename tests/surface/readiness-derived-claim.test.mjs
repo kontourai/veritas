@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildTrustReport, validateTrustInput } from '@kontourai/surface';
+import { buildTrustReport, validateTrustBundle } from '@kontourai/surface';
 import { SURFACE_TRUST_POLICIES } from '../../src/surface/policies.mjs';
 
 const OBSERVED_AT = '2026-06-02T12:00:00.000Z';
@@ -127,8 +127,8 @@ function readinessDerivedFixture({ blocked = false, advisoryFailed = false } = {
 
   return {
     name: runId,
-    surface: {
-      input: {
+    trust: {
+      bundle: {
         schemaVersion: 3,
         source: `veritas:${runId}`,
         claims,
@@ -183,7 +183,7 @@ function policyResultEvidence({ claim, passing, blocking }) {
 }
 
 function buildReportFromFixture(fixture) {
-  const input = validateTrustInput(fixture.surface.input);
+  const input = validateTrustBundle(fixture.trust.bundle);
   const report = buildTrustReport(input, {
     id: `${fixture.name}-surface-report`,
     now: new Date(OBSERVED_AT),

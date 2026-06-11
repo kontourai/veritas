@@ -46,8 +46,8 @@ test('evidence schema requires current producer metadata sections', () => {
   assert.ok(evidenceSchema.required.includes('selected_evidence_checks'));
   assert.ok(evidenceSchema.required.includes('evidence_check_resolution_source'));
   assert.ok(evidenceSchema.required.includes('policy_results'));
-  assert.ok(evidenceSchema.required.includes('surface'));
-  assert.ok(evidenceSchema.properties.surface);
+  assert.ok(evidenceSchema.required.includes('trust'));
+  assert.ok(evidenceSchema.properties.trust);
   assert.ok(evidenceSchema.properties.evidence_inventory_results);
   assert.ok(evidenceSchema.properties.readiness_coverage);
   assert.ok(
@@ -98,7 +98,7 @@ test('first-contact docs preserve the Surface foundation boundary', () => {
   assert.match(concepts, /The user-facing Veritas product should still use Veritas vocabulary/);
   assert.match(siteIndex, /Surface-Veritas Boundary/);
   assert.match(siteIndex, /Built With Surface/);
-  assert.match(cliReference, /surface\.input/);
+  assert.match(cliReference, /trust\.bundle/);
   assert.match(cliReference, /Repo Standards/);
   assert.match(boundary, /## Boundary Rule/);
   assert.match(boundary, /Surface does not depend on Veritas readiness runtime code/);
@@ -181,7 +181,7 @@ test('fixture Repo Maps and evidence examples stay readable', () => {
   assert.equal(fallowAdvisoryExample.external_tool_results[0].tool, 'fallow');
   assert.equal(fallowAdvisoryExample.external_tool_results[0].blocking, false);
   assert.ok(
-    fallowAdvisoryExample.surface.input.claims.some(
+    fallowAdvisoryExample.trust.bundle.claims.some(
       (claim) => claim.surface === 'veritas.external-tool-results',
     ),
   );

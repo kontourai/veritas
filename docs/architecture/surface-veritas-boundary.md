@@ -60,12 +60,12 @@ Normal Veritas users should think in Veritas terms: repo standards, repo maps, r
 
 ## Artifact Contract
 
-Current Veritas evidence artifacts include a `surface.input` block, which is a Surface `TrustInput` projection:
+Current Veritas evidence artifacts include a `trust.bundle` block, which is a Surface `TrustBundle` projection:
 
 ```json
 {
-  "surface": {
-    "input": {
+  "trust": {
+    "bundle": {
       "schemaVersion": 3,
       "source": "veritas:<run_id>",
       "claims": [],
@@ -78,9 +78,11 @@ Current Veritas evidence artifacts include a `surface.input` block, which is a S
 }
 ```
 
-`surface.input` must not contain generated Surface report fields such as `id`, `generatedAt`, `summary`, `transparencyGaps`, or `evidenceRequirementsByClaimId`. Surface generates those fields when it builds a trust report.
+The `trust` block name is product-neutral by design: Surface is the reference implementation of the trust format, not its namespace.
 
-Veritas validates this projection with Surface's public validation API. Validation failures are runtime/configuration errors. `VERITAS_SKIP_SURFACE_VALIDATION=1` exists only as an emergency bypass.
+`trust.bundle` must not contain generated Surface report fields such as `id`, `generatedAt`, `summary`, `transparencyGaps`, or `evidenceRequirementsByClaimId`. Surface generates those fields when it builds a trust report.
+
+Veritas validates this projection with Surface's public validation API (`validateTrustBundle`). Validation failures are runtime/configuration errors. `VERITAS_SKIP_SURFACE_VALIDATION=1` exists only as an emergency bypass.
 
 Readiness runs also project merge readiness as a portable Surface claim:
 
@@ -92,15 +94,15 @@ Readiness runs also project merge readiness as a portable Surface claim:
 
 The Veritas meaning is still merge readiness: the verdict summarizes whether the change satisfies the applicable Requirements with the available evidence, authority, exceptions, and freshness. At the Surface boundary, that verdict can be represented as a claim derived from requirement or policy-result claims. Blocking Requirements should be linked as blocking inputs, so a rejected, stale, or disputed blocking result can limit the generated readiness verdict instead of being hidden behind a producer summary.
 
-Interoperability fields such as `derivedFrom`, `derivationEdges`, `TrustInput`, and `buildTrustReport` belong in this boundary contract, not in first-contact Veritas guidance. Readiness derivation links only include blocking policy-result claims; advisory results remain represented as claims and requirement metadata without capping the readiness verdict. Tests currently exercise this behavior with in-code passing, advisory-failed, and blocked fixtures: the passing fixture keeps merge readiness verified, the advisory-failed fixture keeps readiness verified while preserving the rejected advisory claim, and the blocked fixture includes a rejected blocking Requirement and Surface report generation downgrades the readiness verdict. No durable JSON fixture path exists for those fixtures.
+Interoperability fields such as `derivedFrom`, `derivationEdges`, `TrustBundle`, and `buildTrustReport` belong in this boundary contract, not in first-contact Veritas guidance. Readiness derivation links only include blocking policy-result claims; advisory results remain represented as claims and requirement metadata without capping the readiness verdict. Tests currently exercise this behavior with in-code passing, advisory-failed, and blocked fixtures: the passing fixture keeps merge readiness verified, the advisory-failed fixture keeps readiness verified while preserving the rejected advisory claim, and the blocked fixture includes a rejected blocking Requirement and Surface report generation downgrades the readiness verdict. No durable JSON fixture path exists for those fixtures.
 
-Downstream systems, including Flow, should locate readiness by querying `surface.input.claims[]` or generated `surface.report.claims[]` for that claim type, subject, producer metadata, integrity scope, and authority trace. They must not import Veritas source modules or parse Veritas-only readiness fields as their integration contract.
+Downstream systems, including Flow, should locate readiness by querying `trust.bundle.claims[]` or generated `trust.report.claims[]` for that claim type, subject, producer metadata, integrity scope, and authority trace. They must not import Veritas source modules or parse Veritas-only readiness fields as their integration contract.
 
-When the installed Surface package supports first-class `authorityTrace`, Veritas emits readiness authority as top-level Surface trust state. For older Surface 0.4 runtimes, Veritas also keeps the same authority context under claim and evidence `metadata.authorityTrace`: governance attestation, actor, Protected Standards hashes, and attestation state when available, or an explicit Veritas producer fallback when governance is absent. Readiness events link to that authority-traced evidence by `evidenceIds`.
+Surface `^0.6.0` supports first-class top-level `authorityTrace`. Veritas emits readiness authority as top-level `TrustBundle` state. Readiness events link to the authority-traced evidence by `evidenceIds`.
 
 ## Product Language Rule
 
-First-contact Veritas docs should not lead with `surface.input`, TrustInput, TrustReport, transparency gaps, claimGroups, or pre-glossary implementation names for standards, maps, checks, feedback, recommendations, readiness coverage, operational summaries, or protected standards.
+First-contact Veritas docs should not lead with `trust.bundle`, TrustBundle, TrustReport, transparency gaps, claimGroups, or pre-glossary implementation names for standards, maps, checks, feedback, recommendations, readiness coverage, operational summaries, or protected standards.
 
 Use the canonical terms from the glossary: Repo Standards, Repo Map, Work Area, Requirement, Evidence Check, Readiness Coverage, Standards Feedback, Standards Recommendation, Protected Standards, Standards Growth, and Generated Evidence.
 

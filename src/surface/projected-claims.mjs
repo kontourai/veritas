@@ -1,6 +1,5 @@
 import { SURFACE_TRUST_POLICIES } from './policies.mjs';
 import { surfacePolicyImpact } from './evidence-projection.mjs';
-import { buildReadinessAuthorityTrace } from './readiness-authority.mjs';
 import {
   readinessIntegrityScope,
   readinessSurfaceStatus,
@@ -113,7 +112,6 @@ function buildReadinessVerdictClaim(record, policyResultClaimItems = []) {
         readinessCoveragePresent: Boolean(record.readiness_coverage),
       },
       integrity: readinessIntegrityScope(record),
-      authorityTrace: buildReadinessAuthorityTrace(record),
     },
   };
 }

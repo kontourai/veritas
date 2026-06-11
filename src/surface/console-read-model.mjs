@@ -5,10 +5,10 @@ export function buildSurfaceConsoleReadModel(record, {
   evidenceArtifactPath,
   claimInputPaths = [],
 } = {}) {
-  const input = record.surface?.input;
-  const report = record.surface?.report;
+  const input = record.trust?.bundle;
+  const report = record.trust?.report;
   if (!input || !report) {
-    throw new Error('Surface console read model requires record.surface.input and record.surface.report.');
+    throw new Error('Surface console read model requires record.trust.bundle and record.trust.report.');
   }
 
   const reportClaimsById = new Map((report.claims ?? []).map((claim) => [claim.id, claim]));

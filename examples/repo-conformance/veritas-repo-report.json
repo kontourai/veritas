@@ -479,7 +479,7 @@
         },
         {
           "type": "apply-refactoring",
-          "description": "Split high-impact file (483 LOC) — 5 dependents amplify every change",
+          "description": "Split high-impact file (483 LOC) \u2014 5 dependents amplify every change",
           "auto_fixable": false,
           "paths": [
             "src/rules/evaluate.mjs"
@@ -503,7 +503,7 @@
         },
         {
           "type": "apply-refactoring",
-          "description": "Split high-impact file (4 LOC) — 7 dependents amplify every change",
+          "description": "Split high-impact file (4 LOC) \u2014 7 dependents amplify every change",
           "auto_fixable": false,
           "paths": [
             "src/util/strings.mjs"
@@ -511,7 +511,7 @@
         },
         {
           "type": "apply-refactoring",
-          "description": "Split high-impact file (65 LOC) — 5 dependents amplify every change",
+          "description": "Split high-impact file (65 LOC) \u2014 5 dependents amplify every change",
           "auto_fixable": false,
           "paths": [
             "src/util/patterns.mjs"
@@ -583,7 +583,7 @@
         },
         {
           "type": "apply-refactoring",
-          "description": "Split high-impact file (59 LOC) — 4 dependents amplify every change",
+          "description": "Split high-impact file (59 LOC) \u2014 4 dependents amplify every change",
           "auto_fixable": false,
           "paths": [
             "src/plugins/loader.mjs"
@@ -591,7 +591,7 @@
         },
         {
           "type": "apply-refactoring",
-          "description": "Split high-impact file (75 LOC) — 4 dependents amplify every change",
+          "description": "Split high-impact file (75 LOC) \u2014 4 dependents amplify every change",
           "auto_fixable": false,
           "paths": [
             "src/claims/store.mjs"
@@ -835,8 +835,1115 @@
       "findings": []
     }
   ],
-  "surface": {
-    "input": {
+  "trust": {
+    "report": {
+      "id": "veritas.veritas-repo-conformance.surface-report",
+      "generatedAt": "2026-04-21T22:00:00.000Z",
+      "source": "veritas:veritas-repo-conformance",
+      "summary": {
+        "totalClaims": 25,
+        "byStatus": {
+          "unknown": 6,
+          "proposed": 1,
+          "verified": 18,
+          "stale": 0,
+          "disputed": 0,
+          "superseded": 0,
+          "rejected": 0
+        },
+        "bySurface": {
+          "veritas.affected-surface": 12,
+          "veritas.governance": 1,
+          "veritas.evidence-check": 2,
+          "veritas.readiness": 1,
+          "veritas.policy-results": 9
+        },
+        "confidenceBasis": {
+          "sourceQuality": {},
+          "reviewerAuthority": {},
+          "evidenceStrength": {},
+          "corroboratedClaims": 0,
+          "averageExtractionConfidence": null,
+          "freshnessAtRisk": [],
+          "conflictedClaims": []
+        },
+        "transparencyGapsByType": {
+          "contradiction": 0,
+          "provenance_gap": 7,
+          "policy_violation": 7,
+          "freshness_breach": 0,
+          "corroboration_absent": 0,
+          "unsupported_inference": 0
+        },
+        "highImpactUnsupported": [
+          "veritas.governance",
+          "veritas.evidence-check.npm-run-veritas-fallow-advisory"
+        ],
+        "staleClaims": [],
+        "disputedClaims": []
+      },
+      "claims": [
+        {
+          "id": "veritas.surface.governance.guidance",
+          "status": "verified",
+          "subjectType": "repo-surface",
+          "subjectId": "veritas:governance.guidance",
+          "surface": "veritas.affected-surface",
+          "claimType": "veritas-affected-surface",
+          "fieldOrBehavior": "governance.guidance",
+          "value": "governance.guidance",
+          "verificationPolicyId": "veritas.surface",
+          "createdAt": "2026-05-19T13:38:14.077Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.surface.governance.root-manifests",
+          "status": "verified",
+          "subjectType": "repo-surface",
+          "subjectId": "veritas:governance.root-manifests",
+          "surface": "veritas.affected-surface",
+          "claimType": "veritas-affected-surface",
+          "fieldOrBehavior": "governance.root-manifests",
+          "value": "governance.root-manifests",
+          "verificationPolicyId": "veritas.surface",
+          "createdAt": "2026-05-19T13:38:14.077Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.surface.tooling.bin",
+          "status": "verified",
+          "subjectType": "repo-surface",
+          "subjectId": "veritas:tooling.bin",
+          "surface": "veritas.affected-surface",
+          "claimType": "veritas-affected-surface",
+          "fieldOrBehavior": "tooling.bin",
+          "value": "tooling.bin",
+          "verificationPolicyId": "veritas.surface",
+          "createdAt": "2026-05-19T13:38:14.077Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.surface.delivery.github",
+          "status": "unknown",
+          "subjectType": "repo-surface",
+          "subjectId": "veritas:delivery.github",
+          "surface": "veritas.affected-surface",
+          "claimType": "veritas-affected-surface",
+          "fieldOrBehavior": "delivery.github",
+          "value": "delivery.github",
+          "verificationPolicyId": "veritas.surface",
+          "createdAt": "2026-05-19T13:38:14.077Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.surface.tooling.scripts",
+          "status": "unknown",
+          "subjectType": "repo-surface",
+          "subjectId": "veritas:tooling.scripts",
+          "surface": "veritas.affected-surface",
+          "claimType": "veritas-affected-surface",
+          "fieldOrBehavior": "tooling.scripts",
+          "value": "tooling.scripts",
+          "verificationPolicyId": "veritas.surface",
+          "createdAt": "2026-05-19T13:38:14.077Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.surface.governance.schemas",
+          "status": "verified",
+          "subjectType": "repo-surface",
+          "subjectId": "veritas:governance.schemas",
+          "surface": "veritas.affected-surface",
+          "claimType": "veritas-affected-surface",
+          "fieldOrBehavior": "governance.schemas",
+          "value": "governance.schemas",
+          "verificationPolicyId": "veritas.surface",
+          "createdAt": "2026-05-19T13:38:14.077Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.surface.governance.repo-maps",
+          "status": "unknown",
+          "subjectType": "repo-surface",
+          "subjectId": "veritas:governance.repo-maps",
+          "surface": "veritas.affected-surface",
+          "claimType": "veritas-affected-surface",
+          "fieldOrBehavior": "governance.repo-maps",
+          "value": "governance.repo-maps",
+          "verificationPolicyId": "veritas.surface",
+          "createdAt": "2026-05-19T13:38:14.077Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.surface.governance.repo-standards",
+          "status": "unknown",
+          "subjectType": "repo-surface",
+          "subjectId": "veritas:governance.repo-standards",
+          "surface": "veritas.affected-surface",
+          "claimType": "veritas-affected-surface",
+          "fieldOrBehavior": "governance.repo-standards",
+          "value": "governance.repo-standards",
+          "verificationPolicyId": "veritas.surface",
+          "createdAt": "2026-05-19T13:38:14.077Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.surface.examples.fixtures",
+          "status": "unknown",
+          "subjectType": "repo-surface",
+          "subjectId": "veritas:examples.fixtures",
+          "surface": "veritas.affected-surface",
+          "claimType": "veritas-affected-surface",
+          "fieldOrBehavior": "examples.fixtures",
+          "value": "examples.fixtures",
+          "verificationPolicyId": "veritas.surface",
+          "createdAt": "2026-05-19T13:38:14.077Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.surface.app.src",
+          "status": "verified",
+          "subjectType": "repo-surface",
+          "subjectId": "veritas:app.src",
+          "surface": "veritas.affected-surface",
+          "claimType": "veritas-affected-surface",
+          "fieldOrBehavior": "app.src",
+          "value": "app.src",
+          "verificationPolicyId": "veritas.surface",
+          "createdAt": "2026-05-19T13:38:14.077Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.surface.docs.docs",
+          "status": "verified",
+          "subjectType": "repo-surface",
+          "subjectId": "veritas:docs.docs",
+          "surface": "veritas.affected-surface",
+          "claimType": "veritas-affected-surface",
+          "fieldOrBehavior": "docs.docs",
+          "value": "docs.docs",
+          "verificationPolicyId": "veritas.surface",
+          "createdAt": "2026-05-19T13:38:14.077Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.surface.verification.tests",
+          "status": "verified",
+          "subjectType": "repo-surface",
+          "subjectId": "veritas:verification.tests",
+          "surface": "veritas.affected-surface",
+          "claimType": "veritas-affected-surface",
+          "fieldOrBehavior": "verification.tests",
+          "value": "verification.tests",
+          "verificationPolicyId": "veritas.surface",
+          "createdAt": "2026-05-19T13:38:14.077Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.governance",
+          "status": "unknown",
+          "subjectType": "repository",
+          "subjectId": "veritas",
+          "surface": "veritas.governance",
+          "claimType": "veritas-governance-artifact",
+          "fieldOrBehavior": "governance artifact integrity",
+          "value": "governance artifact integrity",
+          "verificationPolicyId": "veritas.governance-artifact",
+          "createdAt": "2026-05-19T13:38:14.077Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.evidence-check.npm-run-verify",
+          "status": "verified",
+          "subjectType": "repository",
+          "subjectId": "veritas",
+          "surface": "veritas.evidence-check",
+          "claimType": "software-evidence-check",
+          "fieldOrBehavior": "npm run verify",
+          "value": "all checks pass",
+          "verificationPolicyId": "veritas.evidence-check",
+          "createdAt": "2026-05-19T13:38:14.077Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.evidence-check.npm-run-veritas-fallow-advisory",
+          "status": "proposed",
+          "subjectType": "repository",
+          "subjectId": "veritas",
+          "surface": "veritas.evidence-check",
+          "claimType": "software-evidence-check",
+          "fieldOrBehavior": "npm run veritas:fallow:advisory",
+          "value": "all checks pass",
+          "verificationPolicyId": "veritas.evidence-check",
+          "createdAt": "2026-05-19T13:38:14.077Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main",
+          "status": "verified",
+          "subjectType": "repository-change",
+          "subjectId": "veritas-default:refs-heads-main",
+          "surface": "veritas.readiness",
+          "claimType": "software-readiness-verdict",
+          "fieldOrBehavior": "mergeReadiness",
+          "value": {
+            "verdict": "ready",
+            "promotionAllowed": true,
+            "uncoveredPathResult": "clear",
+            "sourceRef": "refs/heads/main"
+          },
+          "verificationPolicyId": "veritas.readiness-verdict",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.policy.veritas.veritas-default.required-veritas-operational-artifacts",
+          "status": "verified",
+          "subjectType": "policy-rule",
+          "subjectId": "veritas:veritas-default:required-veritas-operational-artifacts",
+          "surface": "veritas.policy-results",
+          "claimType": "veritas-policy-result",
+          "fieldOrBehavior": "required-veritas-operational-artifacts",
+          "value": "required-veritas-operational-artifacts",
+          "verificationPolicyId": "veritas.policy-result",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.policy.veritas.veritas-default.required-veritas-cli-artifacts",
+          "status": "verified",
+          "subjectType": "policy-rule",
+          "subjectId": "veritas:veritas-default:required-veritas-cli-artifacts",
+          "surface": "veritas.policy-results",
+          "claimType": "veritas-policy-result",
+          "fieldOrBehavior": "required-veritas-cli-artifacts",
+          "value": "required-veritas-cli-artifacts",
+          "verificationPolicyId": "veritas.policy-result",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.policy.veritas.veritas-default.required-veritas-reference-artifacts",
+          "status": "verified",
+          "subjectType": "policy-rule",
+          "subjectId": "veritas:veritas-default:required-veritas-reference-artifacts",
+          "surface": "veritas.policy-results",
+          "claimType": "veritas-policy-result",
+          "fieldOrBehavior": "required-veritas-reference-artifacts",
+          "value": "required-veritas-reference-artifacts",
+          "verificationPolicyId": "veritas.policy-result",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.policy.veritas.veritas-default.required-veritas-schema-artifacts",
+          "status": "verified",
+          "subjectType": "policy-rule",
+          "subjectId": "veritas:veritas-default:required-veritas-schema-artifacts",
+          "surface": "veritas.policy-results",
+          "claimType": "veritas-policy-result",
+          "fieldOrBehavior": "required-veritas-schema-artifacts",
+          "value": "required-veritas-schema-artifacts",
+          "verificationPolicyId": "veritas.policy-result",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.policy.veritas.veritas-default.ai-instruction-files-synced",
+          "status": "verified",
+          "subjectType": "policy-rule",
+          "subjectId": "veritas:veritas-default:ai-instruction-files-synced",
+          "surface": "veritas.policy-results",
+          "claimType": "veritas-policy-result",
+          "fieldOrBehavior": "ai-instruction-files-synced",
+          "value": "ai-instruction-files-synced",
+          "verificationPolicyId": "veritas.policy-result",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.policy.veritas.veritas-default.prefer-veritas-routed-delivery",
+          "status": "verified",
+          "subjectType": "policy-rule",
+          "subjectId": "veritas:veritas-default:prefer-veritas-routed-delivery",
+          "surface": "veritas.policy-results",
+          "claimType": "veritas-policy-result",
+          "fieldOrBehavior": "prefer-veritas-routed-delivery",
+          "value": "prefer-veritas-routed-delivery",
+          "verificationPolicyId": "veritas.policy-result",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.policy.veritas.veritas-default.no-console-log-in-src",
+          "status": "verified",
+          "subjectType": "policy-rule",
+          "subjectId": "veritas:veritas-default:no-console-log-in-src",
+          "surface": "veritas.policy-results",
+          "claimType": "veritas-policy-result",
+          "fieldOrBehavior": "no-console-log-in-src",
+          "value": "no-console-log-in-src",
+          "verificationPolicyId": "veritas.policy-result",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.policy.veritas.veritas-default.canonical-veritas-vocabulary",
+          "status": "verified",
+          "subjectType": "policy-rule",
+          "subjectId": "veritas:veritas-default:canonical-veritas-vocabulary",
+          "surface": "veritas.policy-results",
+          "claimType": "veritas-policy-result",
+          "fieldOrBehavior": "canonical-veritas-vocabulary",
+          "value": "canonical-veritas-vocabulary",
+          "verificationPolicyId": "veritas.policy-result",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        },
+        {
+          "id": "veritas.policy.veritas.veritas-default.repeatable-governance-uses-veritas-primitives",
+          "status": "verified",
+          "subjectType": "policy-rule",
+          "subjectId": "veritas:veritas-default:repeatable-governance-uses-veritas-primitives",
+          "surface": "veritas.policy-results",
+          "claimType": "veritas-policy-result",
+          "fieldOrBehavior": "repeatable-governance-uses-veritas-primitives",
+          "value": "repeatable-governance-uses-veritas-primitives",
+          "verificationPolicyId": "veritas.policy-result",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "updatedAt": "2026-04-21T22:00:00.000Z",
+          "currentIntegrityRef": "refs/heads/main"
+        }
+      ],
+      "transparencyGaps": [
+        {
+          "id": "veritas.surface.delivery.github.gap.provenance-gap",
+          "claimId": "veritas.surface.delivery.github",
+          "type": "provenance_gap",
+          "severity": "medium",
+          "message": "Missing required evidence: policy_rule.",
+          "policyId": "veritas.surface",
+          "createdAt": "2026-04-21T22:00:00.000Z"
+        },
+        {
+          "id": "veritas.surface.delivery.github.gap.policy-violation",
+          "claimId": "veritas.surface.delivery.github",
+          "type": "policy_violation",
+          "severity": "medium",
+          "message": "Missing required verification method: auditability.",
+          "policyId": "veritas.surface",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "evidenceIds": []
+        },
+        {
+          "id": "veritas.surface.tooling.scripts.gap.provenance-gap",
+          "claimId": "veritas.surface.tooling.scripts",
+          "type": "provenance_gap",
+          "severity": "medium",
+          "message": "Missing required evidence: policy_rule.",
+          "policyId": "veritas.surface",
+          "createdAt": "2026-04-21T22:00:00.000Z"
+        },
+        {
+          "id": "veritas.surface.tooling.scripts.gap.policy-violation",
+          "claimId": "veritas.surface.tooling.scripts",
+          "type": "policy_violation",
+          "severity": "medium",
+          "message": "Missing required verification method: auditability.",
+          "policyId": "veritas.surface",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "evidenceIds": []
+        },
+        {
+          "id": "veritas.surface.governance.repo-maps.gap.provenance-gap",
+          "claimId": "veritas.surface.governance.repo-maps",
+          "type": "provenance_gap",
+          "severity": "medium",
+          "message": "Missing required evidence: policy_rule.",
+          "policyId": "veritas.surface",
+          "createdAt": "2026-04-21T22:00:00.000Z"
+        },
+        {
+          "id": "veritas.surface.governance.repo-maps.gap.policy-violation",
+          "claimId": "veritas.surface.governance.repo-maps",
+          "type": "policy_violation",
+          "severity": "medium",
+          "message": "Missing required verification method: auditability.",
+          "policyId": "veritas.surface",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "evidenceIds": []
+        },
+        {
+          "id": "veritas.surface.governance.repo-standards.gap.provenance-gap",
+          "claimId": "veritas.surface.governance.repo-standards",
+          "type": "provenance_gap",
+          "severity": "medium",
+          "message": "Missing required evidence: policy_rule.",
+          "policyId": "veritas.surface",
+          "createdAt": "2026-04-21T22:00:00.000Z"
+        },
+        {
+          "id": "veritas.surface.governance.repo-standards.gap.policy-violation",
+          "claimId": "veritas.surface.governance.repo-standards",
+          "type": "policy_violation",
+          "severity": "medium",
+          "message": "Missing required verification method: auditability.",
+          "policyId": "veritas.surface",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "evidenceIds": []
+        },
+        {
+          "id": "veritas.surface.examples.fixtures.gap.provenance-gap",
+          "claimId": "veritas.surface.examples.fixtures",
+          "type": "provenance_gap",
+          "severity": "medium",
+          "message": "Missing required evidence: policy_rule.",
+          "policyId": "veritas.surface",
+          "createdAt": "2026-04-21T22:00:00.000Z"
+        },
+        {
+          "id": "veritas.surface.examples.fixtures.gap.policy-violation",
+          "claimId": "veritas.surface.examples.fixtures",
+          "type": "policy_violation",
+          "severity": "medium",
+          "message": "Missing required verification method: auditability.",
+          "policyId": "veritas.surface",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "evidenceIds": []
+        },
+        {
+          "id": "veritas.governance.gap.provenance-gap",
+          "claimId": "veritas.governance",
+          "type": "provenance_gap",
+          "severity": "high",
+          "message": "Missing required evidence: attestation, policy_rule.",
+          "policyId": "veritas.governance-artifact",
+          "createdAt": "2026-04-21T22:00:00.000Z"
+        },
+        {
+          "id": "veritas.governance.gap.policy-violation",
+          "claimId": "veritas.governance",
+          "type": "policy_violation",
+          "severity": "high",
+          "message": "Missing required verification method: auditability, attestation.",
+          "policyId": "veritas.governance-artifact",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "evidenceIds": []
+        },
+        {
+          "id": "veritas.evidence-check.npm-run-veritas-fallow-advisory.gap.policy-violation",
+          "claimId": "veritas.evidence-check.npm-run-veritas-fallow-advisory",
+          "type": "policy_violation",
+          "severity": "high",
+          "message": "Missing required verification method: validation.",
+          "policyId": "veritas.evidence-check",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "evidenceIds": [
+            "veritas-repo-conformance.evidence-check.fallow-advisory.evidence"
+          ]
+        },
+        {
+          "id": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main.gap.hint-1",
+          "claimId": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main",
+          "type": "provenance_gap",
+          "severity": "medium",
+          "message": "No active governance attestation was available; Veritas used producer authority fallback.",
+          "policyId": "veritas.readiness-verdict",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "evidenceIds": [
+            "veritas-repo-conformance.readiness-verdict.evidence"
+          ]
+        }
+      ],
+      "transparencyGapsByClaimId": {
+        "veritas.surface.delivery.github": [
+          {
+            "id": "veritas.surface.delivery.github.gap.provenance-gap",
+            "type": "provenance_gap",
+            "severity": "medium",
+            "message": "Missing required evidence: policy_rule.",
+            "policyId": "veritas.surface"
+          },
+          {
+            "id": "veritas.surface.delivery.github.gap.policy-violation",
+            "type": "policy_violation",
+            "severity": "medium",
+            "message": "Missing required verification method: auditability.",
+            "policyId": "veritas.surface"
+          }
+        ],
+        "veritas.surface.tooling.scripts": [
+          {
+            "id": "veritas.surface.tooling.scripts.gap.provenance-gap",
+            "type": "provenance_gap",
+            "severity": "medium",
+            "message": "Missing required evidence: policy_rule.",
+            "policyId": "veritas.surface"
+          },
+          {
+            "id": "veritas.surface.tooling.scripts.gap.policy-violation",
+            "type": "policy_violation",
+            "severity": "medium",
+            "message": "Missing required verification method: auditability.",
+            "policyId": "veritas.surface"
+          }
+        ],
+        "veritas.surface.governance.repo-maps": [
+          {
+            "id": "veritas.surface.governance.repo-maps.gap.provenance-gap",
+            "type": "provenance_gap",
+            "severity": "medium",
+            "message": "Missing required evidence: policy_rule.",
+            "policyId": "veritas.surface"
+          },
+          {
+            "id": "veritas.surface.governance.repo-maps.gap.policy-violation",
+            "type": "policy_violation",
+            "severity": "medium",
+            "message": "Missing required verification method: auditability.",
+            "policyId": "veritas.surface"
+          }
+        ],
+        "veritas.surface.governance.repo-standards": [
+          {
+            "id": "veritas.surface.governance.repo-standards.gap.provenance-gap",
+            "type": "provenance_gap",
+            "severity": "medium",
+            "message": "Missing required evidence: policy_rule.",
+            "policyId": "veritas.surface"
+          },
+          {
+            "id": "veritas.surface.governance.repo-standards.gap.policy-violation",
+            "type": "policy_violation",
+            "severity": "medium",
+            "message": "Missing required verification method: auditability.",
+            "policyId": "veritas.surface"
+          }
+        ],
+        "veritas.surface.examples.fixtures": [
+          {
+            "id": "veritas.surface.examples.fixtures.gap.provenance-gap",
+            "type": "provenance_gap",
+            "severity": "medium",
+            "message": "Missing required evidence: policy_rule.",
+            "policyId": "veritas.surface"
+          },
+          {
+            "id": "veritas.surface.examples.fixtures.gap.policy-violation",
+            "type": "policy_violation",
+            "severity": "medium",
+            "message": "Missing required verification method: auditability.",
+            "policyId": "veritas.surface"
+          }
+        ],
+        "veritas.governance": [
+          {
+            "id": "veritas.governance.gap.provenance-gap",
+            "type": "provenance_gap",
+            "severity": "high",
+            "message": "Missing required evidence: attestation, policy_rule.",
+            "policyId": "veritas.governance-artifact"
+          },
+          {
+            "id": "veritas.governance.gap.policy-violation",
+            "type": "policy_violation",
+            "severity": "high",
+            "message": "Missing required verification method: auditability, attestation.",
+            "policyId": "veritas.governance-artifact"
+          }
+        ],
+        "veritas.evidence-check.npm-run-veritas-fallow-advisory": [
+          {
+            "id": "veritas.evidence-check.npm-run-veritas-fallow-advisory.gap.policy-violation",
+            "type": "policy_violation",
+            "severity": "high",
+            "message": "Missing required verification method: validation.",
+            "policyId": "veritas.evidence-check"
+          }
+        ],
+        "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main": [
+          {
+            "id": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main.gap.hint-1",
+            "type": "provenance_gap",
+            "severity": "medium",
+            "message": "No active governance attestation was available; Veritas used producer authority fallback.",
+            "policyId": "veritas.readiness-verdict"
+          }
+        ]
+      },
+      "claimGroupRollups": [
+        {
+          "id": "veritas.requirements.veritas-default",
+          "title": "veritas-default",
+          "kind": "requirement-set",
+          "status": "verified",
+          "claimIds": [
+            "veritas.policy.veritas.veritas-default.required-veritas-operational-artifacts",
+            "veritas.policy.veritas.veritas-default.required-veritas-cli-artifacts",
+            "veritas.policy.veritas.veritas-default.required-veritas-reference-artifacts",
+            "veritas.policy.veritas.veritas-default.required-veritas-schema-artifacts",
+            "veritas.policy.veritas.veritas-default.ai-instruction-files-synced",
+            "veritas.policy.veritas.veritas-default.prefer-veritas-routed-delivery",
+            "veritas.policy.veritas.veritas-default.no-console-log-in-src",
+            "veritas.policy.veritas.veritas-default.canonical-veritas-vocabulary",
+            "veritas.policy.veritas.veritas-default.repeatable-governance-uses-veritas-primitives"
+          ],
+          "requirements": [
+            {
+              "id": "veritas.requirement.required-veritas-operational-artifacts",
+              "title": "required-veritas-operational-artifacts",
+              "claimIds": [
+                "veritas.policy.veritas.veritas-default.required-veritas-operational-artifacts"
+              ],
+              "required": true,
+              "severity": "high",
+              "status": "verified",
+              "verifiedClaims": [
+                "veritas.policy.veritas.veritas-default.required-veritas-operational-artifacts"
+              ],
+              "staleClaims": [],
+              "disputedClaims": [],
+              "unsupportedClaims": [],
+              "missingClaimIds": [],
+              "validationStrategy": {
+                "requiredEvidence": [
+                  "policy_rule"
+                ],
+                "requiredMethods": [
+                  "validation"
+                ],
+                "acceptanceCriteria": [
+                  "requirements evaluation"
+                ],
+                "reviewAuthority": "veritas requirements",
+                "metadata": {
+                  "ruleId": "required-veritas-operational-artifacts",
+                  "stage": "block",
+                  "classification": "hard-invariant"
+                }
+              },
+              "metadata": {
+                "implemented": true,
+                "stage": "block",
+                "classification": "hard-invariant"
+              }
+            },
+            {
+              "id": "veritas.requirement.required-veritas-cli-artifacts",
+              "title": "required-veritas-cli-artifacts",
+              "claimIds": [
+                "veritas.policy.veritas.veritas-default.required-veritas-cli-artifacts"
+              ],
+              "required": true,
+              "severity": "high",
+              "status": "verified",
+              "verifiedClaims": [
+                "veritas.policy.veritas.veritas-default.required-veritas-cli-artifacts"
+              ],
+              "staleClaims": [],
+              "disputedClaims": [],
+              "unsupportedClaims": [],
+              "missingClaimIds": [],
+              "validationStrategy": {
+                "requiredEvidence": [
+                  "policy_rule"
+                ],
+                "requiredMethods": [
+                  "validation"
+                ],
+                "acceptanceCriteria": [
+                  "requirements evaluation"
+                ],
+                "reviewAuthority": "veritas requirements",
+                "metadata": {
+                  "ruleId": "required-veritas-cli-artifacts",
+                  "stage": "block",
+                  "classification": "hard-invariant"
+                }
+              },
+              "metadata": {
+                "implemented": true,
+                "stage": "block",
+                "classification": "hard-invariant"
+              }
+            },
+            {
+              "id": "veritas.requirement.required-veritas-reference-artifacts",
+              "title": "required-veritas-reference-artifacts",
+              "claimIds": [
+                "veritas.policy.veritas.veritas-default.required-veritas-reference-artifacts"
+              ],
+              "required": true,
+              "severity": "high",
+              "status": "verified",
+              "verifiedClaims": [
+                "veritas.policy.veritas.veritas-default.required-veritas-reference-artifacts"
+              ],
+              "staleClaims": [],
+              "disputedClaims": [],
+              "unsupportedClaims": [],
+              "missingClaimIds": [],
+              "validationStrategy": {
+                "requiredEvidence": [
+                  "policy_rule"
+                ],
+                "requiredMethods": [
+                  "validation"
+                ],
+                "acceptanceCriteria": [
+                  "requirements evaluation"
+                ],
+                "reviewAuthority": "veritas requirements",
+                "metadata": {
+                  "ruleId": "required-veritas-reference-artifacts",
+                  "stage": "block",
+                  "classification": "hard-invariant"
+                }
+              },
+              "metadata": {
+                "implemented": true,
+                "stage": "block",
+                "classification": "hard-invariant"
+              }
+            },
+            {
+              "id": "veritas.requirement.required-veritas-schema-artifacts",
+              "title": "required-veritas-schema-artifacts",
+              "claimIds": [
+                "veritas.policy.veritas.veritas-default.required-veritas-schema-artifacts"
+              ],
+              "required": true,
+              "severity": "high",
+              "status": "verified",
+              "verifiedClaims": [
+                "veritas.policy.veritas.veritas-default.required-veritas-schema-artifacts"
+              ],
+              "staleClaims": [],
+              "disputedClaims": [],
+              "unsupportedClaims": [],
+              "missingClaimIds": [],
+              "validationStrategy": {
+                "requiredEvidence": [
+                  "policy_rule"
+                ],
+                "requiredMethods": [
+                  "validation"
+                ],
+                "acceptanceCriteria": [
+                  "requirements evaluation"
+                ],
+                "reviewAuthority": "veritas requirements",
+                "metadata": {
+                  "ruleId": "required-veritas-schema-artifacts",
+                  "stage": "block",
+                  "classification": "hard-invariant"
+                }
+              },
+              "metadata": {
+                "implemented": true,
+                "stage": "block",
+                "classification": "hard-invariant"
+              }
+            },
+            {
+              "id": "veritas.requirement.ai-instruction-files-synced",
+              "title": "ai-instruction-files-synced",
+              "claimIds": [
+                "veritas.policy.veritas.veritas-default.ai-instruction-files-synced"
+              ],
+              "required": false,
+              "severity": "high",
+              "status": "verified",
+              "verifiedClaims": [
+                "veritas.policy.veritas.veritas-default.ai-instruction-files-synced"
+              ],
+              "staleClaims": [],
+              "disputedClaims": [],
+              "unsupportedClaims": [],
+              "missingClaimIds": [],
+              "validationStrategy": {
+                "requiredEvidence": [
+                  "policy_rule"
+                ],
+                "requiredMethods": [
+                  "validation"
+                ],
+                "acceptanceCriteria": [
+                  "requirements evaluation"
+                ],
+                "reviewAuthority": "veritas requirements",
+                "metadata": {
+                  "ruleId": "ai-instruction-files-synced",
+                  "stage": "warn",
+                  "classification": "hard-invariant"
+                }
+              },
+              "metadata": {
+                "implemented": true,
+                "stage": "warn",
+                "classification": "hard-invariant"
+              }
+            },
+            {
+              "id": "veritas.requirement.prefer-veritas-routed-delivery",
+              "title": "prefer-veritas-routed-delivery",
+              "claimIds": [
+                "veritas.policy.veritas.veritas-default.prefer-veritas-routed-delivery"
+              ],
+              "required": false,
+              "severity": "low",
+              "status": "verified",
+              "verifiedClaims": [
+                "veritas.policy.veritas.veritas-default.prefer-veritas-routed-delivery"
+              ],
+              "staleClaims": [],
+              "disputedClaims": [],
+              "unsupportedClaims": [],
+              "missingClaimIds": [],
+              "validationStrategy": {
+                "requiredEvidence": [
+                  "policy_rule"
+                ],
+                "requiredMethods": [
+                  "validation"
+                ],
+                "acceptanceCriteria": [
+                  "requirements evaluation"
+                ],
+                "reviewAuthority": "veritas requirements",
+                "metadata": {
+                  "ruleId": "prefer-veritas-routed-delivery",
+                  "stage": "recommend",
+                  "classification": "promotable-policy"
+                }
+              },
+              "metadata": {
+                "implemented": true,
+                "stage": "recommend",
+                "classification": "promotable-policy"
+              }
+            },
+            {
+              "id": "veritas.requirement.no-console-log-in-src",
+              "title": "no-console-log-in-src",
+              "claimIds": [
+                "veritas.policy.veritas.veritas-default.no-console-log-in-src"
+              ],
+              "required": false,
+              "severity": "medium",
+              "status": "verified",
+              "verifiedClaims": [
+                "veritas.policy.veritas.veritas-default.no-console-log-in-src"
+              ],
+              "staleClaims": [],
+              "disputedClaims": [],
+              "unsupportedClaims": [],
+              "missingClaimIds": [],
+              "validationStrategy": {
+                "requiredEvidence": [
+                  "policy_rule"
+                ],
+                "requiredMethods": [
+                  "validation"
+                ],
+                "acceptanceCriteria": [
+                  "requirements evaluation"
+                ],
+                "reviewAuthority": "veritas requirements",
+                "metadata": {
+                  "ruleId": "no-console-log-in-src",
+                  "stage": "warn",
+                  "classification": "advisory-pattern"
+                }
+              },
+              "metadata": {
+                "implemented": true,
+                "stage": "warn",
+                "classification": "advisory-pattern"
+              }
+            },
+            {
+              "id": "veritas.requirement.canonical-veritas-vocabulary",
+              "title": "canonical-veritas-vocabulary",
+              "claimIds": [
+                "veritas.policy.veritas.veritas-default.canonical-veritas-vocabulary"
+              ],
+              "required": false,
+              "severity": "medium",
+              "status": "verified",
+              "verifiedClaims": [
+                "veritas.policy.veritas.veritas-default.canonical-veritas-vocabulary"
+              ],
+              "staleClaims": [],
+              "disputedClaims": [],
+              "unsupportedClaims": [],
+              "missingClaimIds": [],
+              "validationStrategy": {
+                "requiredEvidence": [
+                  "policy_rule"
+                ],
+                "requiredMethods": [
+                  "validation"
+                ],
+                "acceptanceCriteria": [
+                  "requirements evaluation"
+                ],
+                "reviewAuthority": "veritas requirements",
+                "metadata": {
+                  "ruleId": "canonical-veritas-vocabulary",
+                  "stage": "warn",
+                  "classification": "advisory-pattern"
+                }
+              },
+              "metadata": {
+                "implemented": true,
+                "stage": "warn",
+                "classification": "advisory-pattern"
+              }
+            },
+            {
+              "id": "veritas.requirement.repeatable-governance-uses-veritas-primitives",
+              "title": "repeatable-governance-uses-veritas-primitives",
+              "claimIds": [
+                "veritas.policy.veritas.veritas-default.repeatable-governance-uses-veritas-primitives"
+              ],
+              "required": false,
+              "severity": "medium",
+              "status": "verified",
+              "verifiedClaims": [
+                "veritas.policy.veritas.veritas-default.repeatable-governance-uses-veritas-primitives"
+              ],
+              "staleClaims": [],
+              "disputedClaims": [],
+              "unsupportedClaims": [],
+              "missingClaimIds": [],
+              "validationStrategy": {
+                "requiredEvidence": [
+                  "policy_rule"
+                ],
+                "requiredMethods": [
+                  "validation"
+                ],
+                "acceptanceCriteria": [
+                  "requirements evaluation"
+                ],
+                "reviewAuthority": "veritas requirements",
+                "metadata": {
+                  "ruleId": "repeatable-governance-uses-veritas-primitives",
+                  "stage": "warn",
+                  "classification": "promotable-policy"
+                }
+              },
+              "metadata": {
+                "implemented": true,
+                "stage": "warn",
+                "classification": "promotable-policy"
+              }
+            }
+          ],
+          "summary": {
+            "totalRequirements": 9,
+            "requiredRequirements": 4,
+            "verifiedRequirements": 9,
+            "staleRequirements": 0,
+            "disputedRequirements": 0,
+            "unsupportedRequirements": 0,
+            "missingClaims": 0,
+            "verificationCoverage": 1
+          },
+          "description": "Veritas requirements projected as Surface trust claims.",
+          "metadata": {
+            "producer": "veritas",
+            "repoStandards": {
+              "name": "veritas-default",
+              "version": 1,
+              "rule_count": 9
+            },
+            "repoMap": {
+              "name": "veritas",
+              "kind": "repo-map",
+              "report_transport": "local-json",
+              "default_resolution": {
+                "phase": "Phase 0 (Bootstrap)",
+                "workstream": "Initial Project Setup",
+                "matchedArtifacts": [
+                  "README.md"
+                ]
+              },
+              "non_sliceable_invariants": [
+                "baseline evidenceCheck",
+                "repo-local guidance",
+                "tracked policy artifacts"
+              ],
+              "evidenceChecks": [
+                {
+                  "id": "required-evidence-check",
+                  "runner": "bash",
+                  "label": "npm run verify",
+                  "command": "npm run verify",
+                  "method": "validation",
+                  "surface_claim_ids": [],
+                  "summary": "Runs npm run verify."
+                },
+                {
+                  "id": "fallow-advisory",
+                  "runner": "bash",
+                  "label": "npm run veritas:fallow:advisory",
+                  "command": "npm run veritas:fallow:advisory",
+                  "method": "auditability",
+                  "surface_claim_ids": [],
+                  "summary": "Runs Fallow as advisory codebase-intelligence evidence."
+                },
+                {
+                  "id": "vocabulary-consistency",
+                  "runner": "bash",
+                  "label": "npm run veritas:vocab:check",
+                  "command": "npm run veritas:vocab:check",
+                  "method": "validation",
+                  "surface_claim_ids": [],
+                  "summary": "Checks first-contact Veritas docs for canonical product vocabulary."
+                }
+              ],
+              "required_evidence_check_ids": [
+                "required-evidence-check"
+              ],
+              "default_evidence_check_ids": [
+                "required-evidence-check",
+                "vocabulary-consistency",
+                "fallow-advisory"
+              ],
+              "evidence_check_routes": [],
+              "uncovered_path_policy": "warn"
+            }
+          }
+        }
+      ]
+    },
+    "bundle": {
       "schemaVersion": 2,
       "source": "veritas:veritas-repo-conformance",
       "claims": [
@@ -5298,1113 +6405,6 @@
               "veritas.requirement.repeatable-governance-uses-veritas-primitives"
             ]
           },
-          "metadata": {
-            "producer": "veritas",
-            "repoStandards": {
-              "name": "veritas-default",
-              "version": 1,
-              "rule_count": 9
-            },
-            "repoMap": {
-              "name": "veritas",
-              "kind": "repo-map",
-              "report_transport": "local-json",
-              "default_resolution": {
-                "phase": "Phase 0 (Bootstrap)",
-                "workstream": "Initial Project Setup",
-                "matchedArtifacts": [
-                  "README.md"
-                ]
-              },
-              "non_sliceable_invariants": [
-                "baseline evidenceCheck",
-                "repo-local guidance",
-                "tracked policy artifacts"
-              ],
-              "evidenceChecks": [
-                {
-                  "id": "required-evidence-check",
-                  "runner": "bash",
-                  "label": "npm run verify",
-                  "command": "npm run verify",
-                  "method": "validation",
-                  "surface_claim_ids": [],
-                  "summary": "Runs npm run verify."
-                },
-                {
-                  "id": "fallow-advisory",
-                  "runner": "bash",
-                  "label": "npm run veritas:fallow:advisory",
-                  "command": "npm run veritas:fallow:advisory",
-                  "method": "auditability",
-                  "surface_claim_ids": [],
-                  "summary": "Runs Fallow as advisory codebase-intelligence evidence."
-                },
-                {
-                  "id": "vocabulary-consistency",
-                  "runner": "bash",
-                  "label": "npm run veritas:vocab:check",
-                  "command": "npm run veritas:vocab:check",
-                  "method": "validation",
-                  "surface_claim_ids": [],
-                  "summary": "Checks first-contact Veritas docs for canonical product vocabulary."
-                }
-              ],
-              "required_evidence_check_ids": [
-                "required-evidence-check"
-              ],
-              "default_evidence_check_ids": [
-                "required-evidence-check",
-                "vocabulary-consistency",
-                "fallow-advisory"
-              ],
-              "evidence_check_routes": [],
-              "uncovered_path_policy": "warn"
-            }
-          }
-        }
-      ]
-    },
-    "report": {
-      "id": "veritas.veritas-repo-conformance.surface-report",
-      "generatedAt": "2026-04-21T22:00:00.000Z",
-      "source": "veritas:veritas-repo-conformance",
-      "summary": {
-        "totalClaims": 25,
-        "byStatus": {
-          "unknown": 6,
-          "proposed": 1,
-          "verified": 18,
-          "stale": 0,
-          "disputed": 0,
-          "superseded": 0,
-          "rejected": 0
-        },
-        "bySurface": {
-          "veritas.affected-surface": 12,
-          "veritas.governance": 1,
-          "veritas.evidence-check": 2,
-          "veritas.readiness": 1,
-          "veritas.policy-results": 9
-        },
-        "confidenceBasis": {
-          "sourceQuality": {},
-          "reviewerAuthority": {},
-          "evidenceStrength": {},
-          "corroboratedClaims": 0,
-          "averageExtractionConfidence": null,
-          "freshnessAtRisk": [],
-          "conflictedClaims": []
-        },
-        "transparencyGapsByType": {
-          "contradiction": 0,
-          "provenance_gap": 7,
-          "policy_violation": 7,
-          "freshness_breach": 0,
-          "corroboration_absent": 0,
-          "unsupported_inference": 0
-        },
-        "highImpactUnsupported": [
-          "veritas.governance",
-          "veritas.evidence-check.npm-run-veritas-fallow-advisory"
-        ],
-        "staleClaims": [],
-        "disputedClaims": []
-      },
-      "claims": [
-        {
-          "id": "veritas.surface.governance.guidance",
-          "status": "verified",
-          "subjectType": "repo-surface",
-          "subjectId": "veritas:governance.guidance",
-          "surface": "veritas.affected-surface",
-          "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "governance.guidance",
-          "value": "governance.guidance",
-          "verificationPolicyId": "veritas.surface",
-          "createdAt": "2026-05-19T13:38:14.077Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.surface.governance.root-manifests",
-          "status": "verified",
-          "subjectType": "repo-surface",
-          "subjectId": "veritas:governance.root-manifests",
-          "surface": "veritas.affected-surface",
-          "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "governance.root-manifests",
-          "value": "governance.root-manifests",
-          "verificationPolicyId": "veritas.surface",
-          "createdAt": "2026-05-19T13:38:14.077Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.surface.tooling.bin",
-          "status": "verified",
-          "subjectType": "repo-surface",
-          "subjectId": "veritas:tooling.bin",
-          "surface": "veritas.affected-surface",
-          "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "tooling.bin",
-          "value": "tooling.bin",
-          "verificationPolicyId": "veritas.surface",
-          "createdAt": "2026-05-19T13:38:14.077Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.surface.delivery.github",
-          "status": "unknown",
-          "subjectType": "repo-surface",
-          "subjectId": "veritas:delivery.github",
-          "surface": "veritas.affected-surface",
-          "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "delivery.github",
-          "value": "delivery.github",
-          "verificationPolicyId": "veritas.surface",
-          "createdAt": "2026-05-19T13:38:14.077Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.surface.tooling.scripts",
-          "status": "unknown",
-          "subjectType": "repo-surface",
-          "subjectId": "veritas:tooling.scripts",
-          "surface": "veritas.affected-surface",
-          "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "tooling.scripts",
-          "value": "tooling.scripts",
-          "verificationPolicyId": "veritas.surface",
-          "createdAt": "2026-05-19T13:38:14.077Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.surface.governance.schemas",
-          "status": "verified",
-          "subjectType": "repo-surface",
-          "subjectId": "veritas:governance.schemas",
-          "surface": "veritas.affected-surface",
-          "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "governance.schemas",
-          "value": "governance.schemas",
-          "verificationPolicyId": "veritas.surface",
-          "createdAt": "2026-05-19T13:38:14.077Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.surface.governance.repo-maps",
-          "status": "unknown",
-          "subjectType": "repo-surface",
-          "subjectId": "veritas:governance.repo-maps",
-          "surface": "veritas.affected-surface",
-          "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "governance.repo-maps",
-          "value": "governance.repo-maps",
-          "verificationPolicyId": "veritas.surface",
-          "createdAt": "2026-05-19T13:38:14.077Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.surface.governance.repo-standards",
-          "status": "unknown",
-          "subjectType": "repo-surface",
-          "subjectId": "veritas:governance.repo-standards",
-          "surface": "veritas.affected-surface",
-          "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "governance.repo-standards",
-          "value": "governance.repo-standards",
-          "verificationPolicyId": "veritas.surface",
-          "createdAt": "2026-05-19T13:38:14.077Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.surface.examples.fixtures",
-          "status": "unknown",
-          "subjectType": "repo-surface",
-          "subjectId": "veritas:examples.fixtures",
-          "surface": "veritas.affected-surface",
-          "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "examples.fixtures",
-          "value": "examples.fixtures",
-          "verificationPolicyId": "veritas.surface",
-          "createdAt": "2026-05-19T13:38:14.077Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.surface.app.src",
-          "status": "verified",
-          "subjectType": "repo-surface",
-          "subjectId": "veritas:app.src",
-          "surface": "veritas.affected-surface",
-          "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "app.src",
-          "value": "app.src",
-          "verificationPolicyId": "veritas.surface",
-          "createdAt": "2026-05-19T13:38:14.077Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.surface.docs.docs",
-          "status": "verified",
-          "subjectType": "repo-surface",
-          "subjectId": "veritas:docs.docs",
-          "surface": "veritas.affected-surface",
-          "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "docs.docs",
-          "value": "docs.docs",
-          "verificationPolicyId": "veritas.surface",
-          "createdAt": "2026-05-19T13:38:14.077Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.surface.verification.tests",
-          "status": "verified",
-          "subjectType": "repo-surface",
-          "subjectId": "veritas:verification.tests",
-          "surface": "veritas.affected-surface",
-          "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "verification.tests",
-          "value": "verification.tests",
-          "verificationPolicyId": "veritas.surface",
-          "createdAt": "2026-05-19T13:38:14.077Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.governance",
-          "status": "unknown",
-          "subjectType": "repository",
-          "subjectId": "veritas",
-          "surface": "veritas.governance",
-          "claimType": "veritas-governance-artifact",
-          "fieldOrBehavior": "governance artifact integrity",
-          "value": "governance artifact integrity",
-          "verificationPolicyId": "veritas.governance-artifact",
-          "createdAt": "2026-05-19T13:38:14.077Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.evidence-check.npm-run-verify",
-          "status": "verified",
-          "subjectType": "repository",
-          "subjectId": "veritas",
-          "surface": "veritas.evidence-check",
-          "claimType": "software-evidence-check",
-          "fieldOrBehavior": "npm run verify",
-          "value": "all checks pass",
-          "verificationPolicyId": "veritas.evidence-check",
-          "createdAt": "2026-05-19T13:38:14.077Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.evidence-check.npm-run-veritas-fallow-advisory",
-          "status": "proposed",
-          "subjectType": "repository",
-          "subjectId": "veritas",
-          "surface": "veritas.evidence-check",
-          "claimType": "software-evidence-check",
-          "fieldOrBehavior": "npm run veritas:fallow:advisory",
-          "value": "all checks pass",
-          "verificationPolicyId": "veritas.evidence-check",
-          "createdAt": "2026-05-19T13:38:14.077Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main",
-          "status": "verified",
-          "subjectType": "repository-change",
-          "subjectId": "veritas-default:refs-heads-main",
-          "surface": "veritas.readiness",
-          "claimType": "software-readiness-verdict",
-          "fieldOrBehavior": "mergeReadiness",
-          "value": {
-            "verdict": "ready",
-            "promotionAllowed": true,
-            "uncoveredPathResult": "clear",
-            "sourceRef": "refs/heads/main"
-          },
-          "verificationPolicyId": "veritas.readiness-verdict",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.policy.veritas.veritas-default.required-veritas-operational-artifacts",
-          "status": "verified",
-          "subjectType": "policy-rule",
-          "subjectId": "veritas:veritas-default:required-veritas-operational-artifacts",
-          "surface": "veritas.policy-results",
-          "claimType": "veritas-policy-result",
-          "fieldOrBehavior": "required-veritas-operational-artifacts",
-          "value": "required-veritas-operational-artifacts",
-          "verificationPolicyId": "veritas.policy-result",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.policy.veritas.veritas-default.required-veritas-cli-artifacts",
-          "status": "verified",
-          "subjectType": "policy-rule",
-          "subjectId": "veritas:veritas-default:required-veritas-cli-artifacts",
-          "surface": "veritas.policy-results",
-          "claimType": "veritas-policy-result",
-          "fieldOrBehavior": "required-veritas-cli-artifacts",
-          "value": "required-veritas-cli-artifacts",
-          "verificationPolicyId": "veritas.policy-result",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.policy.veritas.veritas-default.required-veritas-reference-artifacts",
-          "status": "verified",
-          "subjectType": "policy-rule",
-          "subjectId": "veritas:veritas-default:required-veritas-reference-artifacts",
-          "surface": "veritas.policy-results",
-          "claimType": "veritas-policy-result",
-          "fieldOrBehavior": "required-veritas-reference-artifacts",
-          "value": "required-veritas-reference-artifacts",
-          "verificationPolicyId": "veritas.policy-result",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.policy.veritas.veritas-default.required-veritas-schema-artifacts",
-          "status": "verified",
-          "subjectType": "policy-rule",
-          "subjectId": "veritas:veritas-default:required-veritas-schema-artifacts",
-          "surface": "veritas.policy-results",
-          "claimType": "veritas-policy-result",
-          "fieldOrBehavior": "required-veritas-schema-artifacts",
-          "value": "required-veritas-schema-artifacts",
-          "verificationPolicyId": "veritas.policy-result",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.policy.veritas.veritas-default.ai-instruction-files-synced",
-          "status": "verified",
-          "subjectType": "policy-rule",
-          "subjectId": "veritas:veritas-default:ai-instruction-files-synced",
-          "surface": "veritas.policy-results",
-          "claimType": "veritas-policy-result",
-          "fieldOrBehavior": "ai-instruction-files-synced",
-          "value": "ai-instruction-files-synced",
-          "verificationPolicyId": "veritas.policy-result",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.policy.veritas.veritas-default.prefer-veritas-routed-delivery",
-          "status": "verified",
-          "subjectType": "policy-rule",
-          "subjectId": "veritas:veritas-default:prefer-veritas-routed-delivery",
-          "surface": "veritas.policy-results",
-          "claimType": "veritas-policy-result",
-          "fieldOrBehavior": "prefer-veritas-routed-delivery",
-          "value": "prefer-veritas-routed-delivery",
-          "verificationPolicyId": "veritas.policy-result",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.policy.veritas.veritas-default.no-console-log-in-src",
-          "status": "verified",
-          "subjectType": "policy-rule",
-          "subjectId": "veritas:veritas-default:no-console-log-in-src",
-          "surface": "veritas.policy-results",
-          "claimType": "veritas-policy-result",
-          "fieldOrBehavior": "no-console-log-in-src",
-          "value": "no-console-log-in-src",
-          "verificationPolicyId": "veritas.policy-result",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.policy.veritas.veritas-default.canonical-veritas-vocabulary",
-          "status": "verified",
-          "subjectType": "policy-rule",
-          "subjectId": "veritas:veritas-default:canonical-veritas-vocabulary",
-          "surface": "veritas.policy-results",
-          "claimType": "veritas-policy-result",
-          "fieldOrBehavior": "canonical-veritas-vocabulary",
-          "value": "canonical-veritas-vocabulary",
-          "verificationPolicyId": "veritas.policy-result",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        },
-        {
-          "id": "veritas.policy.veritas.veritas-default.repeatable-governance-uses-veritas-primitives",
-          "status": "verified",
-          "subjectType": "policy-rule",
-          "subjectId": "veritas:veritas-default:repeatable-governance-uses-veritas-primitives",
-          "surface": "veritas.policy-results",
-          "claimType": "veritas-policy-result",
-          "fieldOrBehavior": "repeatable-governance-uses-veritas-primitives",
-          "value": "repeatable-governance-uses-veritas-primitives",
-          "verificationPolicyId": "veritas.policy-result",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "updatedAt": "2026-04-21T22:00:00.000Z",
-          "currentIntegrityRef": "refs/heads/main"
-        }
-      ],
-      "transparencyGaps": [
-        {
-          "id": "veritas.surface.delivery.github.gap.provenance-gap",
-          "claimId": "veritas.surface.delivery.github",
-          "type": "provenance_gap",
-          "severity": "medium",
-          "message": "Missing required evidence: policy_rule.",
-          "policyId": "veritas.surface",
-          "createdAt": "2026-04-21T22:00:00.000Z"
-        },
-        {
-          "id": "veritas.surface.delivery.github.gap.policy-violation",
-          "claimId": "veritas.surface.delivery.github",
-          "type": "policy_violation",
-          "severity": "medium",
-          "message": "Missing required verification method: auditability.",
-          "policyId": "veritas.surface",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "evidenceIds": []
-        },
-        {
-          "id": "veritas.surface.tooling.scripts.gap.provenance-gap",
-          "claimId": "veritas.surface.tooling.scripts",
-          "type": "provenance_gap",
-          "severity": "medium",
-          "message": "Missing required evidence: policy_rule.",
-          "policyId": "veritas.surface",
-          "createdAt": "2026-04-21T22:00:00.000Z"
-        },
-        {
-          "id": "veritas.surface.tooling.scripts.gap.policy-violation",
-          "claimId": "veritas.surface.tooling.scripts",
-          "type": "policy_violation",
-          "severity": "medium",
-          "message": "Missing required verification method: auditability.",
-          "policyId": "veritas.surface",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "evidenceIds": []
-        },
-        {
-          "id": "veritas.surface.governance.repo-maps.gap.provenance-gap",
-          "claimId": "veritas.surface.governance.repo-maps",
-          "type": "provenance_gap",
-          "severity": "medium",
-          "message": "Missing required evidence: policy_rule.",
-          "policyId": "veritas.surface",
-          "createdAt": "2026-04-21T22:00:00.000Z"
-        },
-        {
-          "id": "veritas.surface.governance.repo-maps.gap.policy-violation",
-          "claimId": "veritas.surface.governance.repo-maps",
-          "type": "policy_violation",
-          "severity": "medium",
-          "message": "Missing required verification method: auditability.",
-          "policyId": "veritas.surface",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "evidenceIds": []
-        },
-        {
-          "id": "veritas.surface.governance.repo-standards.gap.provenance-gap",
-          "claimId": "veritas.surface.governance.repo-standards",
-          "type": "provenance_gap",
-          "severity": "medium",
-          "message": "Missing required evidence: policy_rule.",
-          "policyId": "veritas.surface",
-          "createdAt": "2026-04-21T22:00:00.000Z"
-        },
-        {
-          "id": "veritas.surface.governance.repo-standards.gap.policy-violation",
-          "claimId": "veritas.surface.governance.repo-standards",
-          "type": "policy_violation",
-          "severity": "medium",
-          "message": "Missing required verification method: auditability.",
-          "policyId": "veritas.surface",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "evidenceIds": []
-        },
-        {
-          "id": "veritas.surface.examples.fixtures.gap.provenance-gap",
-          "claimId": "veritas.surface.examples.fixtures",
-          "type": "provenance_gap",
-          "severity": "medium",
-          "message": "Missing required evidence: policy_rule.",
-          "policyId": "veritas.surface",
-          "createdAt": "2026-04-21T22:00:00.000Z"
-        },
-        {
-          "id": "veritas.surface.examples.fixtures.gap.policy-violation",
-          "claimId": "veritas.surface.examples.fixtures",
-          "type": "policy_violation",
-          "severity": "medium",
-          "message": "Missing required verification method: auditability.",
-          "policyId": "veritas.surface",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "evidenceIds": []
-        },
-        {
-          "id": "veritas.governance.gap.provenance-gap",
-          "claimId": "veritas.governance",
-          "type": "provenance_gap",
-          "severity": "high",
-          "message": "Missing required evidence: attestation, policy_rule.",
-          "policyId": "veritas.governance-artifact",
-          "createdAt": "2026-04-21T22:00:00.000Z"
-        },
-        {
-          "id": "veritas.governance.gap.policy-violation",
-          "claimId": "veritas.governance",
-          "type": "policy_violation",
-          "severity": "high",
-          "message": "Missing required verification method: auditability, attestation.",
-          "policyId": "veritas.governance-artifact",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "evidenceIds": []
-        },
-        {
-          "id": "veritas.evidence-check.npm-run-veritas-fallow-advisory.gap.policy-violation",
-          "claimId": "veritas.evidence-check.npm-run-veritas-fallow-advisory",
-          "type": "policy_violation",
-          "severity": "high",
-          "message": "Missing required verification method: validation.",
-          "policyId": "veritas.evidence-check",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "evidenceIds": [
-            "veritas-repo-conformance.evidence-check.fallow-advisory.evidence"
-          ]
-        },
-        {
-          "id": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main.gap.hint-1",
-          "claimId": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main",
-          "type": "provenance_gap",
-          "severity": "medium",
-          "message": "No active governance attestation was available; Veritas used producer authority fallback.",
-          "policyId": "veritas.readiness-verdict",
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "evidenceIds": [
-            "veritas-repo-conformance.readiness-verdict.evidence"
-          ]
-        }
-      ],
-      "transparencyGapsByClaimId": {
-        "veritas.surface.delivery.github": [
-          {
-            "id": "veritas.surface.delivery.github.gap.provenance-gap",
-            "type": "provenance_gap",
-            "severity": "medium",
-            "message": "Missing required evidence: policy_rule.",
-            "policyId": "veritas.surface"
-          },
-          {
-            "id": "veritas.surface.delivery.github.gap.policy-violation",
-            "type": "policy_violation",
-            "severity": "medium",
-            "message": "Missing required verification method: auditability.",
-            "policyId": "veritas.surface"
-          }
-        ],
-        "veritas.surface.tooling.scripts": [
-          {
-            "id": "veritas.surface.tooling.scripts.gap.provenance-gap",
-            "type": "provenance_gap",
-            "severity": "medium",
-            "message": "Missing required evidence: policy_rule.",
-            "policyId": "veritas.surface"
-          },
-          {
-            "id": "veritas.surface.tooling.scripts.gap.policy-violation",
-            "type": "policy_violation",
-            "severity": "medium",
-            "message": "Missing required verification method: auditability.",
-            "policyId": "veritas.surface"
-          }
-        ],
-        "veritas.surface.governance.repo-maps": [
-          {
-            "id": "veritas.surface.governance.repo-maps.gap.provenance-gap",
-            "type": "provenance_gap",
-            "severity": "medium",
-            "message": "Missing required evidence: policy_rule.",
-            "policyId": "veritas.surface"
-          },
-          {
-            "id": "veritas.surface.governance.repo-maps.gap.policy-violation",
-            "type": "policy_violation",
-            "severity": "medium",
-            "message": "Missing required verification method: auditability.",
-            "policyId": "veritas.surface"
-          }
-        ],
-        "veritas.surface.governance.repo-standards": [
-          {
-            "id": "veritas.surface.governance.repo-standards.gap.provenance-gap",
-            "type": "provenance_gap",
-            "severity": "medium",
-            "message": "Missing required evidence: policy_rule.",
-            "policyId": "veritas.surface"
-          },
-          {
-            "id": "veritas.surface.governance.repo-standards.gap.policy-violation",
-            "type": "policy_violation",
-            "severity": "medium",
-            "message": "Missing required verification method: auditability.",
-            "policyId": "veritas.surface"
-          }
-        ],
-        "veritas.surface.examples.fixtures": [
-          {
-            "id": "veritas.surface.examples.fixtures.gap.provenance-gap",
-            "type": "provenance_gap",
-            "severity": "medium",
-            "message": "Missing required evidence: policy_rule.",
-            "policyId": "veritas.surface"
-          },
-          {
-            "id": "veritas.surface.examples.fixtures.gap.policy-violation",
-            "type": "policy_violation",
-            "severity": "medium",
-            "message": "Missing required verification method: auditability.",
-            "policyId": "veritas.surface"
-          }
-        ],
-        "veritas.governance": [
-          {
-            "id": "veritas.governance.gap.provenance-gap",
-            "type": "provenance_gap",
-            "severity": "high",
-            "message": "Missing required evidence: attestation, policy_rule.",
-            "policyId": "veritas.governance-artifact"
-          },
-          {
-            "id": "veritas.governance.gap.policy-violation",
-            "type": "policy_violation",
-            "severity": "high",
-            "message": "Missing required verification method: auditability, attestation.",
-            "policyId": "veritas.governance-artifact"
-          }
-        ],
-        "veritas.evidence-check.npm-run-veritas-fallow-advisory": [
-          {
-            "id": "veritas.evidence-check.npm-run-veritas-fallow-advisory.gap.policy-violation",
-            "type": "policy_violation",
-            "severity": "high",
-            "message": "Missing required verification method: validation.",
-            "policyId": "veritas.evidence-check"
-          }
-        ],
-        "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main": [
-          {
-            "id": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main.gap.hint-1",
-            "type": "provenance_gap",
-            "severity": "medium",
-            "message": "No active governance attestation was available; Veritas used producer authority fallback.",
-            "policyId": "veritas.readiness-verdict"
-          }
-        ]
-      },
-      "claimGroupRollups": [
-        {
-          "id": "veritas.requirements.veritas-default",
-          "title": "veritas-default",
-          "kind": "requirement-set",
-          "status": "verified",
-          "claimIds": [
-            "veritas.policy.veritas.veritas-default.required-veritas-operational-artifacts",
-            "veritas.policy.veritas.veritas-default.required-veritas-cli-artifacts",
-            "veritas.policy.veritas.veritas-default.required-veritas-reference-artifacts",
-            "veritas.policy.veritas.veritas-default.required-veritas-schema-artifacts",
-            "veritas.policy.veritas.veritas-default.ai-instruction-files-synced",
-            "veritas.policy.veritas.veritas-default.prefer-veritas-routed-delivery",
-            "veritas.policy.veritas.veritas-default.no-console-log-in-src",
-            "veritas.policy.veritas.veritas-default.canonical-veritas-vocabulary",
-            "veritas.policy.veritas.veritas-default.repeatable-governance-uses-veritas-primitives"
-          ],
-          "requirements": [
-            {
-              "id": "veritas.requirement.required-veritas-operational-artifacts",
-              "title": "required-veritas-operational-artifacts",
-              "claimIds": [
-                "veritas.policy.veritas.veritas-default.required-veritas-operational-artifacts"
-              ],
-              "required": true,
-              "severity": "high",
-              "status": "verified",
-              "verifiedClaims": [
-                "veritas.policy.veritas.veritas-default.required-veritas-operational-artifacts"
-              ],
-              "staleClaims": [],
-              "disputedClaims": [],
-              "unsupportedClaims": [],
-              "missingClaimIds": [],
-              "validationStrategy": {
-                "requiredEvidence": [
-                  "policy_rule"
-                ],
-                "requiredMethods": [
-                  "validation"
-                ],
-                "acceptanceCriteria": [
-                  "requirements evaluation"
-                ],
-                "reviewAuthority": "veritas requirements",
-                "metadata": {
-                  "ruleId": "required-veritas-operational-artifacts",
-                  "stage": "block",
-                  "classification": "hard-invariant"
-                }
-              },
-              "metadata": {
-                "implemented": true,
-                "stage": "block",
-                "classification": "hard-invariant"
-              }
-            },
-            {
-              "id": "veritas.requirement.required-veritas-cli-artifacts",
-              "title": "required-veritas-cli-artifacts",
-              "claimIds": [
-                "veritas.policy.veritas.veritas-default.required-veritas-cli-artifacts"
-              ],
-              "required": true,
-              "severity": "high",
-              "status": "verified",
-              "verifiedClaims": [
-                "veritas.policy.veritas.veritas-default.required-veritas-cli-artifacts"
-              ],
-              "staleClaims": [],
-              "disputedClaims": [],
-              "unsupportedClaims": [],
-              "missingClaimIds": [],
-              "validationStrategy": {
-                "requiredEvidence": [
-                  "policy_rule"
-                ],
-                "requiredMethods": [
-                  "validation"
-                ],
-                "acceptanceCriteria": [
-                  "requirements evaluation"
-                ],
-                "reviewAuthority": "veritas requirements",
-                "metadata": {
-                  "ruleId": "required-veritas-cli-artifacts",
-                  "stage": "block",
-                  "classification": "hard-invariant"
-                }
-              },
-              "metadata": {
-                "implemented": true,
-                "stage": "block",
-                "classification": "hard-invariant"
-              }
-            },
-            {
-              "id": "veritas.requirement.required-veritas-reference-artifacts",
-              "title": "required-veritas-reference-artifacts",
-              "claimIds": [
-                "veritas.policy.veritas.veritas-default.required-veritas-reference-artifacts"
-              ],
-              "required": true,
-              "severity": "high",
-              "status": "verified",
-              "verifiedClaims": [
-                "veritas.policy.veritas.veritas-default.required-veritas-reference-artifacts"
-              ],
-              "staleClaims": [],
-              "disputedClaims": [],
-              "unsupportedClaims": [],
-              "missingClaimIds": [],
-              "validationStrategy": {
-                "requiredEvidence": [
-                  "policy_rule"
-                ],
-                "requiredMethods": [
-                  "validation"
-                ],
-                "acceptanceCriteria": [
-                  "requirements evaluation"
-                ],
-                "reviewAuthority": "veritas requirements",
-                "metadata": {
-                  "ruleId": "required-veritas-reference-artifacts",
-                  "stage": "block",
-                  "classification": "hard-invariant"
-                }
-              },
-              "metadata": {
-                "implemented": true,
-                "stage": "block",
-                "classification": "hard-invariant"
-              }
-            },
-            {
-              "id": "veritas.requirement.required-veritas-schema-artifacts",
-              "title": "required-veritas-schema-artifacts",
-              "claimIds": [
-                "veritas.policy.veritas.veritas-default.required-veritas-schema-artifacts"
-              ],
-              "required": true,
-              "severity": "high",
-              "status": "verified",
-              "verifiedClaims": [
-                "veritas.policy.veritas.veritas-default.required-veritas-schema-artifacts"
-              ],
-              "staleClaims": [],
-              "disputedClaims": [],
-              "unsupportedClaims": [],
-              "missingClaimIds": [],
-              "validationStrategy": {
-                "requiredEvidence": [
-                  "policy_rule"
-                ],
-                "requiredMethods": [
-                  "validation"
-                ],
-                "acceptanceCriteria": [
-                  "requirements evaluation"
-                ],
-                "reviewAuthority": "veritas requirements",
-                "metadata": {
-                  "ruleId": "required-veritas-schema-artifacts",
-                  "stage": "block",
-                  "classification": "hard-invariant"
-                }
-              },
-              "metadata": {
-                "implemented": true,
-                "stage": "block",
-                "classification": "hard-invariant"
-              }
-            },
-            {
-              "id": "veritas.requirement.ai-instruction-files-synced",
-              "title": "ai-instruction-files-synced",
-              "claimIds": [
-                "veritas.policy.veritas.veritas-default.ai-instruction-files-synced"
-              ],
-              "required": false,
-              "severity": "high",
-              "status": "verified",
-              "verifiedClaims": [
-                "veritas.policy.veritas.veritas-default.ai-instruction-files-synced"
-              ],
-              "staleClaims": [],
-              "disputedClaims": [],
-              "unsupportedClaims": [],
-              "missingClaimIds": [],
-              "validationStrategy": {
-                "requiredEvidence": [
-                  "policy_rule"
-                ],
-                "requiredMethods": [
-                  "validation"
-                ],
-                "acceptanceCriteria": [
-                  "requirements evaluation"
-                ],
-                "reviewAuthority": "veritas requirements",
-                "metadata": {
-                  "ruleId": "ai-instruction-files-synced",
-                  "stage": "warn",
-                  "classification": "hard-invariant"
-                }
-              },
-              "metadata": {
-                "implemented": true,
-                "stage": "warn",
-                "classification": "hard-invariant"
-              }
-            },
-            {
-              "id": "veritas.requirement.prefer-veritas-routed-delivery",
-              "title": "prefer-veritas-routed-delivery",
-              "claimIds": [
-                "veritas.policy.veritas.veritas-default.prefer-veritas-routed-delivery"
-              ],
-              "required": false,
-              "severity": "low",
-              "status": "verified",
-              "verifiedClaims": [
-                "veritas.policy.veritas.veritas-default.prefer-veritas-routed-delivery"
-              ],
-              "staleClaims": [],
-              "disputedClaims": [],
-              "unsupportedClaims": [],
-              "missingClaimIds": [],
-              "validationStrategy": {
-                "requiredEvidence": [
-                  "policy_rule"
-                ],
-                "requiredMethods": [
-                  "validation"
-                ],
-                "acceptanceCriteria": [
-                  "requirements evaluation"
-                ],
-                "reviewAuthority": "veritas requirements",
-                "metadata": {
-                  "ruleId": "prefer-veritas-routed-delivery",
-                  "stage": "recommend",
-                  "classification": "promotable-policy"
-                }
-              },
-              "metadata": {
-                "implemented": true,
-                "stage": "recommend",
-                "classification": "promotable-policy"
-              }
-            },
-            {
-              "id": "veritas.requirement.no-console-log-in-src",
-              "title": "no-console-log-in-src",
-              "claimIds": [
-                "veritas.policy.veritas.veritas-default.no-console-log-in-src"
-              ],
-              "required": false,
-              "severity": "medium",
-              "status": "verified",
-              "verifiedClaims": [
-                "veritas.policy.veritas.veritas-default.no-console-log-in-src"
-              ],
-              "staleClaims": [],
-              "disputedClaims": [],
-              "unsupportedClaims": [],
-              "missingClaimIds": [],
-              "validationStrategy": {
-                "requiredEvidence": [
-                  "policy_rule"
-                ],
-                "requiredMethods": [
-                  "validation"
-                ],
-                "acceptanceCriteria": [
-                  "requirements evaluation"
-                ],
-                "reviewAuthority": "veritas requirements",
-                "metadata": {
-                  "ruleId": "no-console-log-in-src",
-                  "stage": "warn",
-                  "classification": "advisory-pattern"
-                }
-              },
-              "metadata": {
-                "implemented": true,
-                "stage": "warn",
-                "classification": "advisory-pattern"
-              }
-            },
-            {
-              "id": "veritas.requirement.canonical-veritas-vocabulary",
-              "title": "canonical-veritas-vocabulary",
-              "claimIds": [
-                "veritas.policy.veritas.veritas-default.canonical-veritas-vocabulary"
-              ],
-              "required": false,
-              "severity": "medium",
-              "status": "verified",
-              "verifiedClaims": [
-                "veritas.policy.veritas.veritas-default.canonical-veritas-vocabulary"
-              ],
-              "staleClaims": [],
-              "disputedClaims": [],
-              "unsupportedClaims": [],
-              "missingClaimIds": [],
-              "validationStrategy": {
-                "requiredEvidence": [
-                  "policy_rule"
-                ],
-                "requiredMethods": [
-                  "validation"
-                ],
-                "acceptanceCriteria": [
-                  "requirements evaluation"
-                ],
-                "reviewAuthority": "veritas requirements",
-                "metadata": {
-                  "ruleId": "canonical-veritas-vocabulary",
-                  "stage": "warn",
-                  "classification": "advisory-pattern"
-                }
-              },
-              "metadata": {
-                "implemented": true,
-                "stage": "warn",
-                "classification": "advisory-pattern"
-              }
-            },
-            {
-              "id": "veritas.requirement.repeatable-governance-uses-veritas-primitives",
-              "title": "repeatable-governance-uses-veritas-primitives",
-              "claimIds": [
-                "veritas.policy.veritas.veritas-default.repeatable-governance-uses-veritas-primitives"
-              ],
-              "required": false,
-              "severity": "medium",
-              "status": "verified",
-              "verifiedClaims": [
-                "veritas.policy.veritas.veritas-default.repeatable-governance-uses-veritas-primitives"
-              ],
-              "staleClaims": [],
-              "disputedClaims": [],
-              "unsupportedClaims": [],
-              "missingClaimIds": [],
-              "validationStrategy": {
-                "requiredEvidence": [
-                  "policy_rule"
-                ],
-                "requiredMethods": [
-                  "validation"
-                ],
-                "acceptanceCriteria": [
-                  "requirements evaluation"
-                ],
-                "reviewAuthority": "veritas requirements",
-                "metadata": {
-                  "ruleId": "repeatable-governance-uses-veritas-primitives",
-                  "stage": "warn",
-                  "classification": "promotable-policy"
-                }
-              },
-              "metadata": {
-                "implemented": true,
-                "stage": "warn",
-                "classification": "promotable-policy"
-              }
-            }
-          ],
-          "summary": {
-            "totalRequirements": 9,
-            "requiredRequirements": 4,
-            "verifiedRequirements": 9,
-            "staleRequirements": 0,
-            "disputedRequirements": 0,
-            "unsupportedRequirements": 0,
-            "missingClaims": 0,
-            "verificationCoverage": 1
-          },
-          "description": "Veritas requirements projected as Surface trust claims.",
           "metadata": {
             "producer": "veritas",
             "repoStandards": {

@@ -6,7 +6,7 @@ This plan was superseded by the current Veritas vocabulary in [CONTEXT.md](../..
 
 Veritas should help teams earn merge autonomy by evaluating changes against Repo Standards, Repo Maps, evidenceChecks, verification authorities, attestations, exceptions, and readiness coverage.
 
-Surface remains the portable transparency layer. Veritas emits `surface.input` at the boundary, but normal Veritas users should not need Surface configuration or Surface vocabulary.
+Surface remains the portable transparency layer. Veritas emits `trust.bundle` at the boundary, but normal Veritas users should not need Surface configuration or Surface vocabulary.
 
 ## Remaining Work
 

@@ -316,17 +316,17 @@ test('core classifies nodes and builds evidence from a Repo Map', async () => {
   assert.equal(record.policy_results[0].rule_id, 'required-repo-artifacts');
   assert.equal(record.policy_results[0].implemented, true);
   assert.equal(record.policy_results[0].passed, false);
-  assert.equal(record.surface.input.schemaVersion, 2);
-  assert.equal(record.surface.input.source, `veritas:${record.run_id}`);
-  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.affected-surface'));
-  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.evidence-check'));
-  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.policy-results'));
-  assert.ok(record.surface.input.evidence.some((item) =>
+  assert.equal(record.trust.bundle.schemaVersion, 2);
+  assert.equal(record.trust.bundle.source, `veritas:${record.run_id}`);
+  assert.ok(record.trust.bundle.claims.some((claim) => claim.surface === 'veritas.affected-surface'));
+  assert.ok(record.trust.bundle.claims.some((claim) => claim.surface === 'veritas.evidence-check'));
+  assert.ok(record.trust.bundle.claims.some((claim) => claim.surface === 'veritas.policy-results'));
+  assert.ok(record.trust.bundle.evidence.some((item) =>
     item.integrityRef === record.source_ref &&
     item.metadata.integrity?.fileRefs?.some((ref) => ref.path === 'package.json' && ref.hash)
   ));
-  assert.equal(record.surface.input.transparencyGaps, undefined);
-  assert.equal(record.surface.input.evidenceRequirementsByClaimId, undefined);
+  assert.equal(record.trust.bundle.transparencyGaps, undefined);
+  assert.equal(record.trust.bundle.evidenceRequirementsByClaimId, undefined);
   assert.deepEqual(repoMap.policy, {
     defaultFalsePositiveReview: 'unknown',
     defaultPromotionCandidate: false,
@@ -421,9 +421,9 @@ test('evidence records include native evidence inventory coverage when configure
   assert.equal(record.readiness_coverage.required_inventory_count, 1);
   assert.equal(record.readiness_coverage.advisory_inventory_count, 0);
   assert.equal(record.readiness_coverage.retire_inventory_count, 1);
-  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.evidence-inventories'));
-  assert.ok(record.surface.input.claims.some((claim) => claim.surface === 'veritas.readiness-coverage'));
-  assert.ok(record.surface.input.events.some((event) => event.status === 'stale' || event.status === 'superseded'));
+  assert.ok(record.trust.bundle.claims.some((claim) => claim.surface === 'veritas.evidence-inventories'));
+  assert.ok(record.trust.bundle.claims.some((claim) => claim.surface === 'veritas.readiness-coverage'));
+  assert.ok(record.trust.bundle.events.some((event) => event.status === 'stale' || event.status === 'superseded'));
   assert.deepEqual(record.readiness_coverage.unknown_catch_evidence_inventory_ids, [
     'refactor-tombstones',
   ]);
@@ -515,21 +515,21 @@ test('evidence records include advisory external tool results in Surface input',
   assert.equal(record.external_tool_results[0].blocking, false);
   assert.equal(record.external_tool_results[0].summary.dead_code_issues, 0);
   assert.ok(
-    record.surface.input.claims.some(
+    record.trust.bundle.claims.some(
       (claim) => claim.surface === 'veritas.external-tools',
     ),
   );
-  const evidenceCheckClaim = record.surface.input.claims.find(
+  const evidenceCheckClaim = record.trust.bundle.claims.find(
     (claim) => claim.surface === 'veritas.evidence-check' && claim.metadata.command === 'node scripts/run-fallow-audit.mjs',
   );
-  const externalToolClaim = record.surface.input.claims.find(
+  const externalToolClaim = record.trust.bundle.claims.find(
     (claim) => claim.surface === 'veritas.external-tools',
   );
   assert.ok(evidenceCheckClaim);
   assert.ok(externalToolClaim);
   assert.equal(externalToolClaim.derivedFrom, undefined);
   assert.ok(
-    record.surface.input.events.some(
+    record.trust.bundle.events.some(
       (event) => event.notes === 'fallow fallow-audit-json verdict: warn',
     ),
   );
@@ -2109,13 +2109,12 @@ test('report CLI can measure the full working tree', () => {
   assert.equal(parsed.source_kind, 'working-tree');
   assert.deepEqual(parsed.source_scope, ['staged', 'unstaged', 'untracked']);
   assert.deepEqual(parsed.files, ['README.md', 'notes.txt', 'package.json']);
-  const readinessInputClaim = parsed.surface.input.claims.find((claim) => claim.claimType === 'software-readiness-verdict');
-  assert.ok(readinessInputClaim, 'expected readiness verdict claim under surface.input.claims');
+  const readinessInputClaim = parsed.trust.bundle.claims.find((claim) => claim.claimType === 'software-readiness-verdict');
+  assert.ok(readinessInputClaim, 'expected readiness verdict claim under trust.bundle.claims');
   assert.equal(['ready', 'not-ready', 'needs-review'].includes(readinessInputClaim.value.verdict), true);
-  assert.equal(parsed.surface.report.claims.some((claim) => claim.id === readinessInputClaim.id), true);
-  assert.equal(parsed.surface.input.generatedAt, undefined);
+  assert.equal(parsed.trust.report.claims.some((claim) => claim.id === readinessInputClaim.id), true);
+  assert.equal(parsed.trust.bundle.generatedAt, undefined);
   assert.ok(readinessInputClaim.metadata.integrity.sourceRef);
-  assert.ok(readinessInputClaim.metadata.authorityTrace);
 });
 
 test('report CLI can emit an empty current-state artifact for a clean working tree', () => {
@@ -2262,20 +2261,20 @@ test('report writes one trimmed Surface claim input per claim', async () => {
     sourceRef: 'test-source-ref',
   }, {}, ['package.json']);
 
-  assert.equal(result.claimInputPaths.length, result.record.surface.input.claims.length);
+  assert.equal(result.claimInputPaths.length, result.record.trust.bundle.claims.length);
   assert.match(result.consoleReadModelPath, /^\.surface\/runs\/claim-input-smoke\.console\.json$/);
   const console = readJsonFromAbsolute(join(rootDir, result.consoleReadModelPath));
   assert.equal(console.kind, 'surface-console-read-model');
   assert.equal(console.source, 'veritas:claim-input-smoke');
   assert.equal(console.producer.evidenceArtifactPath, result.artifactPath);
   assert.deepEqual(console.producer.claimInputPaths, result.claimInputPaths);
-  assert.equal(console.summary.claimCount, result.record.surface.input.claims.length);
+  assert.equal(console.summary.claimCount, result.record.trust.bundle.claims.length);
   assert.equal(console.contract, 'surface.analytics-compatible');
-  assert.equal(console.analytics.reportId, result.record.surface.report.id);
-  assert.equal(console.analytics.totals.claims, result.record.surface.input.claims.length);
+  assert.equal(console.analytics.reportId, result.record.trust.report.id);
+  assert.equal(console.analytics.totals.claims, result.record.trust.bundle.claims.length);
   assert.ok(Array.isArray(console.analytics.coverageBySurface));
   assert.ok(Array.isArray(console.analytics.actionQueues.reviewNow));
-  assert.equal(console.claims.length, result.record.surface.input.claims.length);
+  assert.equal(console.claims.length, result.record.trust.bundle.claims.length);
   assert.ok(console.claims.every((claim) => claim.status));
   assert.ok(console.policies.some((policy) => policy.id === 'veritas.policy-result'));
   assert.ok(console.graph.nodes.some((node) => node.kind === 'claim'));

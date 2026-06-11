@@ -365,7 +365,7 @@ Evidence Checks are the adapter boundary for runnable governance behavior. If a 
 
 Do not confuse that with ordinary helper scripts. A command that only builds the docs site, formats files, runs a local convenience workflow, or wraps a test runner is not automatically a governance primitive. It needs Evidence Check routing when it is the thing Veritas relies on to decide whether a Requirement is satisfied, missing, stale, failing, advisory, or accepted by exception.
 
-Evidence Checks may optionally declare an external tool artifact. Veritas reads the artifact after the check has run, records a normalized `external_tool_results` entry, and maps the verdict into `surface.input`.
+Evidence Checks may optionally declare an external tool artifact. Veritas reads the artifact after the check has run, records a normalized `external_tool_results` entry, and maps the verdict into `trust.bundle`.
 
 ```json
 {
@@ -415,17 +415,17 @@ Evidence-check inventory results include freshness fields:
 
 `veritas readiness --check coverage` is the shortest current command to inspect readiness coverage without opening the full report artifact.
 
-#### Surface TrustInput and report blocks
+#### Surface TrustBundle and report blocks
 
-Every new evidence artifact also includes a `surface.input` block. That block is the portable Surface `TrustInput` projection of the Veritas readiness check, not a generated Surface `TrustReport`.
+Every new evidence artifact also includes a `trust.bundle` block. That block is the portable Surface `TrustBundle` projection of the Veritas readiness check, not a generated Surface `TrustReport`.
 
-Veritas owns the repo-specific producer fields. Surface owns generated report fields such as `id`, `generatedAt`, `summary`, `transparencyGaps`, and `evidenceRequirementsByClaimId`. Those report-only fields must not appear under `surface.input`.
+Veritas owns the repo-specific producer fields. Surface owns generated report fields such as `id`, `generatedAt`, `summary`, `transparencyGaps`, and `evidenceRequirementsByClaimId`. Those report-only fields must not appear under `trust.bundle`.
 
 When the attestation gate runs, the evidence record includes `governance_state`. This maps protected-standards integrity, Repo Map applicability, authority currency, and freshness into Surface-format state. The raw Repo Map object remains Veritas-local producer metadata.
 
-Readiness verdicts are exposed through a Surface claim with `claimType: "software-readiness-verdict"` on `surface: "veritas.readiness"` and `subjectType: "repository-change"`. The claim and its evidence include `metadata.integrity` with `sourceRef`, `sourceKind`, `sourceScope`, changed file refs, and protected config refs. The verdict may also include `derivedFrom` and `derivationEdges` that reference the blocking requirement or policy-result claims used to decide merge readiness, allowing Surface report generation to cap the verdict at the weakest blocking Requirement result. Advisory policy results remain visible as claims, claim-group requirements, and metadata, but are not readiness derivation inputs. When the installed Surface package supports first-class `authorityTrace`, the artifact includes top-level `surface.input.authorityTrace`; Veritas also mirrors the same authority context in claim/evidence `metadata.authorityTrace` for older Surface 0.4 consumers. Readiness events carry authority by linking to the authority-traced evidence ids.
+Readiness verdicts are exposed through a Surface claim with `claimType: "software-readiness-verdict"` on `surface: "veritas.readiness"` and `subjectType: "repository-change"`. The claim and its evidence include `metadata.integrity` with `sourceRef`, `sourceKind`, `sourceScope`, changed file refs, and protected config refs. The verdict may also include `derivedFrom` and `derivationEdges` that reference the blocking requirement or policy-result claims used to decide merge readiness, allowing Surface report generation to cap the verdict at the weakest blocking Requirement result. Advisory policy results remain visible as claims, claim-group requirements, and metadata, but are not readiness derivation inputs. When the installed Surface package supports first-class `authorityTrace`, the artifact includes top-level `trust.bundle.authorityTrace`. Readiness events carry authority by linking to the authority-traced evidence ids.
 
-After validation, Veritas calls Surface's public `buildTrustReport` API and persists a compact `surface.report` summary beside the input. The report summary includes per-claim derived status, summary counts, and transparency gaps. `veritas readiness` prints WARN feedback for Surface-derived `stale` and `disputed` claims, and `veritas explain <rule>` includes the latest Surface status and gaps for that rule when an evidence record is available.
+After validation, Veritas calls Surface's public `buildTrustReport` API and persists a compact `trust.report` summary beside the input. The report summary includes per-claim derived status, summary counts, and transparency gaps. `veritas readiness` prints WARN feedback for Surface-derived `stale` and `disputed` claims, and `veritas explain <rule>` includes the latest Surface status and gaps for that rule when an evidence record is available.
 
 | Evidence field | Surface mapping | Classification |
 | --- | --- | --- |
@@ -444,15 +444,15 @@ After validation, Veritas calls Surface's public `buildTrustReport` API and pers
 | `governance_state` | Governance artifact and attestation-currency claims, evidence, and events | Surface-mapped |
 | `recommendations`, `false_positive_review`, `promotion_candidate`, `override_or_bypass`, `owner`, `promotion_allowed` | Surface metadata and confidence context | Surface-mapped |
 | `producer`, `repo_map`, `record_schema_version` | Veritas-local producer/runtime metadata | Veritas-local |
-| `surface` | Embedded Surface projection and generated compact report summary | Surface-mapped |
-| `surface.input` | Embedded Surface `TrustInput` projection consumed by Surface repo-maps and tests | Surface-mapped |
-| `surface.report` | Compact Surface `TrustReport` summary generated from `surface.input` | Surface-generated |
+| `trust` | Embedded Surface projection and generated compact report summary | Surface-mapped |
+| `trust.bundle` | Embedded Surface `TrustBundle` projection consumed by Surface repo-maps and tests | Surface-mapped |
+| `trust.report` | Compact Surface `TrustReport` summary generated from `trust.bundle` | Surface-generated |
 
 The schema enforces this boundary with `x_surface_mapping` metadata on top-level evidence properties. Allowed classifications are `mapped`, `veritas-local`, `transitional`, and `deprecated`. Fields marked `mapped` must also declare `x_surface_targets`, such as `claim`, `evidence`, `policy`, `event`, `metadata`, or `report-input`.
 
 #### Per-Claim Surface Input Slices
 
-When `surface.input` is present, Veritas also writes one local slice per claim under `.veritas/claims/*.input.json`. These files are derived and gitignored. They are intentionally not Surface `TrustReport` files.
+When `trust.bundle` is present, Veritas also writes one local slice per claim under `.veritas/claims/*.input.json`. These files are derived and gitignored. They are intentionally not Surface `TrustReport` files.
 
 Each slice has this shape:
 
@@ -472,7 +472,7 @@ The `evidence` and `events` arrays are filtered to the single `claim.id`, and `p
 
 #### Surface Console Read Model
 
-When `surface.input` and `surface.report` are present, Veritas writes `.surface/runs/<run-id>.console.json` plus `.surface/runs/latest.json`. These files are derived and gitignored. They are the Veritas-side integration contract for the Surface Console and analytics layer.
+When `trust.bundle` and `trust.report` are present, Veritas writes `.surface/runs/<run-id>.console.json` plus `.surface/runs/latest.json`. These files are derived and gitignored. They are the Veritas-side integration contract for the Surface Console and analytics layer.
 
 The read model has `kind: "surface-console-read-model"` and `contract: "surface.analytics-compatible"`. Those are current implementation values. It includes:
 
@@ -480,7 +480,7 @@ The read model has `kind: "surface-console-read-model"` and `contract: "surface.
 - `summary`: claim/evidence/policy/event/gap counts and Console aggregates by status, claim type, producer namespace, domain, policy, evidence type, method, reviewer authority, impact level, and gap type
 - `analytics`: a Surface-format analytics projection shaped like Surface's `buildTrustAnalyticsProjection(report)` output, including coverage, stale/disputed queues, requirement gaps, action queues, and attestation validity
 - `standardsFeedbackSummary`: populated by `veritas feedback record`; carries the generic Surface `StandardsFeedbackSummary` shape (`reviewed`, `outcome`, `confidence`, `falsePositiveCount`, `missedIssueCount`, `timeToResolutionMinutes`, `notes`, `metadata`). `null` until a standards feedback record is written for the run.
-- `claims`: one Console row per Surface claim with derived status from `surface.report`, provenance ids, confidence fields, gap ids, evidence methods, and metadata
+- `claims`: one Console row per Surface claim with derived status from `trust.report`, provenance ids, confidence fields, gap ids, evidence methods, and metadata
 - `policies`: policy summaries with claim counts, status counts, required evidence/methods, review authority, and gap counts
 - `graph`: normalized nodes and edges for subjects, claims, policies, evidence, events, derived-from links, and transparency gaps
 

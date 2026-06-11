@@ -134,7 +134,7 @@ function summarizeFeedbackCounts(record, evidenceCheckFailure = null) {
     }
   }
 
-  for (const claim of record?.surface?.report?.claims ?? []) {
+  for (const claim of record?.trust?.report?.claims ?? []) {
     if (claim.status === 'stale' || claim.status === 'disputed') warnings += 1;
   }
 
@@ -203,9 +203,9 @@ export function buildFeedbackSummary({
     lines.push(`      -> ${result.artifact_path}`);
   }
 
-  for (const claim of record?.surface?.report?.claims ?? []) {
+  for (const claim of record?.trust?.report?.claims ?? []) {
     if (claim.status !== 'stale' && claim.status !== 'disputed') continue;
-    const transparencyGaps = record.surface.report.transparencyGapsByClaimId?.[claim.id] ?? [];
+    const transparencyGaps = record.trust.report.transparencyGapsByClaimId?.[claim.id] ?? [];
     const reason = transparencyGaps[0]?.message ?? `Surface derived status is ${claim.status}.`;
     lines.push(
       `WARN  surface-status: claim "${claim.id}" is ${claim.status.toUpperCase()} (${reason})`,
@@ -218,7 +218,7 @@ export function buildFeedbackSummary({
     `${counts.warnings} ${counts.warnings === 1 ? 'warning' : 'warnings'}`,
   ];
   lines.push('', `${nouns.join(' · ')} · run \`veritas readiness --check evidence\` for full generated evidence`);
-  const openRecommendationCount = (record?.surface?.report?.claims ?? [])
+  const openRecommendationCount = (record?.trust?.report?.claims ?? [])
     .filter((claim) => claim.claimType === 'veritas-recommendation' && claim.status === 'proposed')
     .length;
   if (openRecommendationCount > 0) {

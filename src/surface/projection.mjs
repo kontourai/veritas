@@ -36,9 +36,9 @@ import {
   summarizeSurfaceTrustReport,
 } from './trust-report.mjs';
 import {
-  buildSurfaceTrustInputWithPublicApi,
-  createSurfaceTrustInputAssembler,
-} from './trust-input-assembler.mjs';
+  buildSurfaceTrustBundleWithPublicApi,
+  createSurfaceTrustBundleAssembler,
+} from './trust-bundle-assembler.mjs';
 
 export {
   isoDateTimeOrUndefined,
@@ -55,8 +55,8 @@ export {
 export {
   buildGovernanceArtifactClaims,
   buildSurfaceTrustReportSummary,
-  buildSurfaceTrustInputWithPublicApi,
-  createSurfaceTrustInputAssembler,
+  buildSurfaceTrustBundleWithPublicApi,
+  createSurfaceTrustBundleAssembler,
   policyResultClaimId,
   summarizeSurfaceTrustReport,
   surfaceClaimId,
@@ -65,12 +65,12 @@ export {
   surfaceSafeId,
 };
 
-export async function buildSurfaceTrustInput(record, { rootDir = process.cwd(), repoMapConfig = null } = {}) {
+export async function buildSurfaceTrustBundle(record, { rootDir = process.cwd(), repoMapConfig = null } = {}) {
   registerVeritasExtension();
   if (repoMapConfig) await loadPluginsFromConfig(repoMapConfig, rootDir);
   const claimStore = loadVeritasClaimStore(rootDir);
   const effectiveClaimStore = withProjectedPolicyClaims(claimStore, record);
-  const assembler = createSurfaceTrustInputAssembler({
+  const assembler = createSurfaceTrustBundleAssembler({
     source: `veritas:${record.run_id}`,
     schemaVersion: 2,
   });
@@ -104,34 +104,34 @@ export async function buildSurfaceTrustInput(record, { rootDir = process.cwd(), 
   try {
     return assembler.build(effectiveClaimStore.policies);
   } catch (error) {
-    return throwSurfaceTrustInputValidationError({
+    return throwSurfaceTrustBundleValidationError({
       error,
-      input: error.trustInputDraft,
+      input: error.trustBundleDraft,
       record,
       rootDir,
     });
   }
 }
 
-export function validateSurfaceTrustInputAtBoundary({ input, record, rootDir }) {
+export function validateSurfaceTrustBundleAtBoundary({ input, record, rootDir }) {
   if (process.env.VERITAS_SKIP_SURFACE_VALIDATION === '1') {
     process.stderr.write('WARN: VERITAS_SKIP_SURFACE_VALIDATION=1 — this is intended as a short-lived escape hatch; remove once the underlying fixture is fixed.\n');
     return input;
   }
   try {
-    return Surface.validateTrustInput(input);
+    return Surface.validateTrustBundle(input);
   } catch (error) {
-    return throwSurfaceTrustInputValidationError({ error, input, record, rootDir });
+    return throwSurfaceTrustBundleValidationError({ error, input, record, rootDir });
   }
 }
 
-export function throwSurfaceTrustInputValidationError({ error, input, record, rootDir }) {
+export function throwSurfaceTrustBundleValidationError({ error, input, record, rootDir }) {
   const failureDir = resolve(rootDir, '.veritas/external/surface-validation-failures');
   mkdirSync(failureDir, { recursive: true });
   const failurePath = resolve(failureDir, `${surfaceSafeId(record.run_id)}.json`);
   writeFileSync(failurePath, `${JSON.stringify(input ?? {}, null, 2)}\n`, 'utf8');
   const validationError = new Error(
-    `Surface TrustInput validation failed: ${error.message}. Rejected input: ${relativeRepoPath(rootDir, failurePath)}`,
+    `Surface TrustBundle validation failed: ${error.message}. Rejected input: ${relativeRepoPath(rootDir, failurePath)}`,
   );
   validationError.exitCode = 2;
   throw validationError;

@@ -1,24 +1,24 @@
 import {
-  buildSurfaceTrustInput,
+  buildSurfaceTrustBundle,
   buildSurfaceTrustReportSummary,
-  throwSurfaceTrustInputValidationError,
-  validateSurfaceTrustInputAtBoundary,
+  throwSurfaceTrustBundleValidationError,
+  validateSurfaceTrustBundleAtBoundary,
 } from './projection.mjs';
 
 export async function produceSurfaceStateForVeritasRecord(record, {
   rootDir = process.cwd(),
   repoMapConfig = null,
 } = {}) {
-  const input = await buildSurfaceTrustInput(record, { rootDir, repoMapConfig });
-  const validatedInput = validateSurfaceTrustInputAtBoundary({ input, record, rootDir });
+  const bundle = await buildSurfaceTrustBundle(record, { rootDir, repoMapConfig });
+  const validatedBundle = validateSurfaceTrustBundleAtBoundary({ input: bundle, record, rootDir });
   let report;
   try {
-    report = buildSurfaceTrustReportSummary({ input: validatedInput, record });
+    report = buildSurfaceTrustReportSummary({ input: validatedBundle, record });
   } catch (error) {
-    throwSurfaceTrustInputValidationError({ error, input: validatedInput, record, rootDir });
+    throwSurfaceTrustBundleValidationError({ error, input: validatedBundle, record, rootDir });
   }
   return {
-    input: validatedInput,
+    bundle: validatedBundle,
     report,
   };
 }

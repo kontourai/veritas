@@ -43,7 +43,7 @@ async function attestationSurfaceClaims(rootDir, options = {}) {
     timestamp: options.timestamp ?? '2026-05-11T00:00:00.000Z',
     attestationNow: options.attestationNow,
   }, { rootDir }, ['package.json']);
-  return buildTrustReport(result.record.surface.input, {
+  return buildTrustReport(result.record.trust.bundle, {
     id: options.runId ?? 'attestation-surface-report',
     now: new Date(result.record.timestamp),
   }).claims;

@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { runClaimCli } from '../src/index.mjs';
-import { buildSurfaceTrustInput } from '../src/surface/projection.mjs';
+import { buildSurfaceTrustBundle } from '../src/surface/projection.mjs';
 import { SURFACE_TRUST_POLICIES } from '../src/surface/policies.mjs';
 
 function tempRoot(prefix = 'veritas-claims-') {
@@ -53,7 +53,7 @@ test('Surface projection reads authored claims from veritas.claims.json', async 
       }],
       policies: [SURFACE_TRUST_POLICIES.evidenceCheck],
     }, null, 2)}\n`);
-    const input = await buildSurfaceTrustInput({
+    const input = await buildSurfaceTrustBundle({
       run_id: 'claim-store-projection',
       timestamp: '2026-05-19T00:00:00.000Z',
       source_ref: 'abc123',
@@ -96,7 +96,7 @@ test('Surface projection requires an authored claim store', async () => {
   const rootDir = tempRoot();
   try {
     await assert.rejects(
-      () => buildSurfaceTrustInput({
+      () => buildSurfaceTrustBundle({
         run_id: 'missing-claim-store',
         timestamp: '2026-05-19T00:00:00.000Z',
         source_ref: 'abc123',

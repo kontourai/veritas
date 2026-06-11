@@ -124,8 +124,8 @@
     "rule_count": 0
   },
   "policy_results": [],
-  "surface": {
-    "input": {
+  "trust": {
+    "bundle": {
       "schemaVersion": 2,
       "source": "veritas:fallow-advisory-example",
       "claims": [
