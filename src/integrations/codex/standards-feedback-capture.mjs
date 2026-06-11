@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { relativeRepoPath } from '../../paths.mjs';
+import { assertWithinDir, relativeRepoPath } from '../../paths.mjs';
+import { resolveRunArtifactPath } from '../../util/run-id.mjs';
 
 const REASON_CODES = {
   sessionLogSchemaUnrecognized: 'session_log_schema_unrecognized',
@@ -179,7 +180,13 @@ function feedbackDraftValidationError(draft) {
 }
 
 function writeValidationFailure({ rootDir, runId, draft, error }) {
-  const failurePath = resolve(rootDir, `.veritas/external/standards-feedback-draft-validation-failures/${runId}.json`);
+  const failureDir = resolve(rootDir, '.veritas/external/standards-feedback-draft-validation-failures');
+  const failurePath = resolveRunArtifactPath({
+    dir: failureDir,
+    runId,
+    suffix: '.json',
+    label: 'Standards feedback validation failure run id',
+  });
   mkdirSync(dirname(failurePath), { recursive: true });
   writeFileSync(failurePath, `${JSON.stringify({ error, draft }, null, 2)}\n`, 'utf8');
   return relativeRepoPath(rootDir, failurePath);
@@ -211,7 +218,20 @@ export function observeCodexStandardsFeedback({ sessionLogPath, evidencePath, ro
   }
   if (process.env.VERITAS_SKIP_STANDARDS_FEEDBACK_VALIDATION === '1') warnStandardsFeedbackValidationSkipped();
 
-  const artifactPath = resolve(rootDir, outputPath ?? `.veritas/standards-feedback-drafts/${draft.run_id}.json`);
+  const draftsDir = resolve(rootDir, '.veritas/standards-feedback-drafts');
+  const artifactPath = outputPath
+    ? resolve(rootDir, outputPath)
+    : resolveRunArtifactPath({
+        dir: draftsDir,
+        runId: draft.run_id,
+        suffix: '.json',
+        label: 'Standards feedback draft run id',
+      });
+  assertWithinDir(
+    artifactPath,
+    draftsDir,
+    'standards feedback drafts may only be written inside .veritas/standards-feedback-drafts/',
+  );
   mkdirSync(dirname(artifactPath), { recursive: true });
   writeFileSync(artifactPath, `${JSON.stringify(draft, null, 2)}\n`, 'utf8');
   const heuristics = {

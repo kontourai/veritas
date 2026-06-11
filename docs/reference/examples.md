@@ -73,12 +73,12 @@ These examples demonstrate generated readiness, conformance, or standards-feedba
 
 ## Specific Benchmark Fixtures
 
-- [examples/benchmarks/migration-marker-scenario.json](../../examples/benchmarks/migration-marker-scenario.json)
-- [examples/benchmarks/migration-marker-comparison.json](../../examples/benchmarks/migration-marker-comparison.json)
-- [examples/benchmarks/marker-suite.json](../../examples/benchmarks/marker-suite.json)
-- [examples/benchmarks/marker-suite-report.json](../../examples/benchmarks/marker-suite-report.json)
-- [examples/benchmarks/governance-protected-standards-marker-scenario.json](../../examples/benchmarks/governance-protected-standards-marker-scenario.json)
-- [examples/benchmarks/governance-standards-growth-marker-scenario.json](../../examples/benchmarks/governance-standards-growth-marker-scenario.json)
+- [examples/benchmarks/migration/scenario.json](../../examples/benchmarks/migration/scenario.json)
+- [examples/benchmarks/migration/comparison.json](../../examples/benchmarks/migration/comparison.json)
+- [examples/benchmarks/suites/context-surfacing-suite.json](../../examples/benchmarks/suites/context-surfacing-suite.json)
+- [examples/benchmarks/suites/context-surfacing-suite-report.json](../../examples/benchmarks/suites/context-surfacing-suite-report.json)
+- [examples/benchmarks/governance-protected-standards/scenario.json](../../examples/benchmarks/governance-protected-standards/scenario.json)
+- [examples/benchmarks/governance-standards-growth/scenario.json](../../examples/benchmarks/governance-standards-growth/scenario.json)
 
 ## Classification Fixture
 

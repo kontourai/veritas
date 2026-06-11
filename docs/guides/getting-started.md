@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide gets Veritas readiness checkning in a repository so developers and agents can check changes against repo standards.
+This guide gets Veritas readiness checking in a repository so developers and agents can check changes against repo standards.
 
 The goal is simple:
 
@@ -68,7 +68,24 @@ Run a readiness check:
 npx @kontourai/veritas readiness --working-tree
 ```
 
-The output gives developer- and agent-facing feedback, writes generated evidence, and records enough context for standards feedback.
+The output gives developer- and agent-facing feedback, writes generated evidence, and records enough context for standards feedback. For a repo that satisfies all its standards, the output looks like:
+
+```text
+veritas: 0 files changed ->
+PASS  required-veritas-artifacts: All required repository artifacts are present.
+PASS  ai-instruction-files-synced: All required AI instruction files contain the canonical governance block.
+
+0 failures · 0 warnings · run `veritas readiness --check evidence` for full generated evidence
+```
+
+When a requirement is not satisfied, the output shows the failure with the affected file:
+
+```text
+FAIL  api-routes-require-api-tests: Changed files matched app/api/** but no companion changes matched tests/api/**.
+      -> app/api/projects/route.ts
+
+1 failure · 0 warnings · run `veritas readiness --check evidence` for full generated evidence
+```
 
 For a lower-level evidence artifact without the full orchestration path:
 

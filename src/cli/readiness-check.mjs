@@ -3,7 +3,7 @@ import { parseReadinessArgs } from '../args.mjs';
 import {
   buildFeedbackSummary,
   feedbackHasFailures,
-} from '../report.mjs';
+} from '../report/index.mjs';
 import { hasReadinessOutcomeInputs, runMergeReadiness } from '../readiness/run.mjs';
 
 function normalizeOutputFormat(format, defaultFormat) {

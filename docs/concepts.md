@@ -138,26 +138,4 @@ The current CLI exposes this area through feedback and recommendation commands d
 
 Veritas projects its requirement and evidence model into Surface trust state at the boundary. Veritas users do not need to configure Surface.
 
-Veritas owns the repo-native workflow:
-
-- repo standards
-- repo maps
-- requirements
-- evidenceChecks
-- verification authorities
-- readiness reports
-- repo conformance
-- standards feedback
-
-Surface powers the portable transparency layer:
-
-- claims
-- evidence
-- policies
-- events
-- freshness
-- conflicts
-- transparency gaps
-- trust snapshots
-
-At the boundary, Veritas emits Surface-format trust state and can use Surface-derived status, freshness, and gap analysis in its reports and console. The user-facing Veritas product should still use Veritas vocabulary.
+The detailed mapping between Veritas concepts and Surface primitives is in [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md). The user-facing Veritas product should still use Veritas vocabulary.

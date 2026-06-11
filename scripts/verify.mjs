@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { dirname } from 'node:path';
+import { dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const rootUrl = new URL('../', import.meta.url);
@@ -29,6 +29,22 @@ function assertNoAbsoluteFilesystemLinks(markdown, label) {
   }
 }
 
+function isExternalLink(target) {
+  return (
+    target.startsWith('http://') ||
+    target.startsWith('https://') ||
+    target.startsWith('mailto:')
+  );
+}
+
+function isAbsoluteFilesystemTarget(target) {
+  return (
+    target.startsWith('/') ||
+    target.startsWith('file://') ||
+    /^[A-Za-z]:[\\/]/.test(target)
+  );
+}
+
 function* iterDocFiles(relativeDir) {
   const dirUrl = new URL(`${relativeDir}/`, rootUrl);
   for (const entry of readdirSync(dirUrl, { withFileTypes: true })) {
@@ -51,12 +67,7 @@ function assertMarkdownLinksResolve(relativePath) {
   const hrefLinks = [...text.matchAll(/href="([^"]+)"/g)].map((match) => match[1]);
 
   for (const rawTarget of [...markdownLinks, ...hrefLinks]) {
-    if (
-      rawTarget.startsWith('http://') ||
-      rawTarget.startsWith('https://') ||
-      rawTarget.startsWith('mailto:') ||
-      rawTarget.startsWith('#')
-    ) {
+    if (isExternalLink(rawTarget) || rawTarget.startsWith('#')) {
       continue;
     }
 
@@ -64,7 +75,21 @@ function assertMarkdownLinksResolve(relativePath) {
     const [targetPath] = targetWithoutFragment.split('?');
     if (!targetPath) continue;
 
+    if (isAbsoluteFilesystemTarget(targetPath)) {
+      throw new Error(
+        `${relativePath} must not contain filesystem-style local links: ${rawTarget}`,
+      );
+    }
+
     const resolvedUrl = new URL(targetPath, sourceUrl);
+    const resolvedPath = fileURLToPath(resolvedUrl);
+    const relativeToRoot = relative(rootDir, resolvedPath);
+    if (relativeToRoot.startsWith('..') || relativeToRoot === '..') {
+      throw new Error(
+        `${relativePath} contains a local link outside the repo: ${rawTarget}`,
+      );
+    }
+
     if (!existsSync(resolvedUrl)) {
       throw new Error(
         `${relativePath} contains a broken local link: ${rawTarget}`,
@@ -305,27 +330,27 @@ assert(
   'Examples reference must include the red conformance example.',
 );
 assert(
-  examplesReference.includes('examples/benchmarks/migration-marker-scenario.json'),
+  examplesReference.includes('examples/benchmarks/migration/scenario.json'),
   'Examples reference must include the marker benchmark scenario fixture.',
 );
 assert(
-  examplesReference.includes('examples/benchmarks/migration-marker-comparison.json'),
+  examplesReference.includes('examples/benchmarks/migration/comparison.json'),
   'Examples reference must include the marker benchmark comparison fixture.',
 );
 assert(
-  examplesReference.includes('examples/benchmarks/marker-suite.json'),
+  examplesReference.includes('examples/benchmarks/suites/context-surfacing-suite.json'),
   'Examples reference must include the marker benchmark suite fixture.',
 );
 assert(
-  examplesReference.includes('examples/benchmarks/marker-suite-report.json'),
+  examplesReference.includes('examples/benchmarks/suites/context-surfacing-suite-report.json'),
   'Examples reference must include the marker benchmark suite report fixture.',
 );
 assert(
-  examplesReference.includes('examples/benchmarks/governance-protected-standards-marker-scenario.json'),
+  examplesReference.includes('examples/benchmarks/governance-protected-standards/scenario.json'),
   'Examples reference must include the protected-standards governance benchmark fixture.',
 );
 assert(
-  examplesReference.includes('examples/benchmarks/governance-standards-growth-marker-scenario.json'),
+  examplesReference.includes('examples/benchmarks/governance-standards-growth/scenario.json'),
   'Examples reference must include the standards-growth governance benchmark fixture.',
 );
 
@@ -516,7 +541,23 @@ for (const relativePath of [
   assertMarkdownLinksResolve(relativePath);
 }
 
-const benchmarkFixtures = readdirSync(new URL('examples/benchmarks/', rootUrl));
-assert(benchmarkFixtures.length >= 10, 'Expected a richer set of benchmark fixtures.');
+const requiredBenchmarkFixtures = [
+  'examples/benchmarks/auth-boundary/scenario.json',
+  'examples/benchmarks/auth-boundary/with-veritas-trial-1.json',
+  'examples/benchmarks/auth-boundary/without-veritas-trial-1.json',
+  'examples/benchmarks/breaking-api/scenario.json',
+  'examples/benchmarks/governance-protected-standards/scenario.json',
+  'examples/benchmarks/governance-protected-standards/comparison.json',
+  'examples/benchmarks/governance-standards-growth/scenario.json',
+  'examples/benchmarks/governance-standards-growth/comparison.json',
+  'examples/benchmarks/migration/scenario.json',
+  'examples/benchmarks/migration/comparison.json',
+  'examples/benchmarks/pii/scenario.json',
+  'examples/benchmarks/suites/context-surfacing-suite.json',
+  'examples/benchmarks/suites/context-surfacing-suite-report.json',
+];
+for (const fixturePath of requiredBenchmarkFixtures) {
+  assert(fileExists(fixturePath), `Missing required benchmark fixture: ${fixturePath}`);
+}
 
 console.log('Veritas verification passed.');

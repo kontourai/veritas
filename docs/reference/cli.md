@@ -185,13 +185,12 @@ npx @kontourai/veritas explain --work-area app.src
 
 Output is capped to fit an agent context window and includes the local governance excerpt plus matching rule `explain` blocks.
 
-### `boundaries check`
+### `boundaries check` (legacy)
 
-Checks strict work area ownership for a working tree or diff.
+Checks strict work area ownership for a working tree or diff. Prefer `readiness --check boundaries` instead; `boundaries check` remains available for backward compatibility.
 
 ```bash
-npx @kontourai/veritas boundaries check --actor cli-team --diff main
-npx @kontourai/veritas boundaries check --actor product-core-team
+npx @kontourai/veritas readiness --check boundaries --actor cli-team [--working-tree | --diff main]
 ```
 
 `--actor` is required unless `VERITAS_ACTOR` is set. Veritas intentionally does not fall back to the operating-system user, because CI runner names and shell usernames are not governance actors. If no actor is supplied, the command exits non-zero with a missing-actor failure.
@@ -329,9 +328,9 @@ Scores a deterministic marker-surfacing benchmark by comparing one `without Veri
 
 ```bash
 npx @kontourai/veritas feedback marker \
-  --scenario examples/benchmarks/migration-marker-scenario.json \
-  --without-veritas-session-log examples/benchmarks/migration-marker-without-veritas.json \
-  --with-veritas-session-log examples/benchmarks/migration-marker-with-veritas.json
+  --scenario examples/benchmarks/migration/scenario.json \
+  --without-veritas-session-log examples/benchmarks/migration/without-veritas.json \
+  --with-veritas-session-log examples/benchmarks/migration/with-veritas.json
 ```
 
 Important behaviors:
@@ -348,7 +347,7 @@ Scores a suite of marker benchmarks and reports aggregate reliability metrics ac
 
 ```bash
 npx @kontourai/veritas feedback marker-suite \
-  --suite examples/benchmarks/marker-suite.json
+  --suite examples/benchmarks/suites/context-surfacing-suite.json
 ```
 
 Important behaviors:

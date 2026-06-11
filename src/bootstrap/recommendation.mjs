@@ -1,26 +1,23 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { basename, dirname, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, resolve } from 'node:path';
 import { buildGovernanceBlock, replaceGovernanceBlock } from '../governance.mjs';
+import { inferBootstrapRepoInsights } from './insights.mjs';
+import { buildBootstrapReadme } from './readme.mjs';
 import {
   buildAdaptiveNodes,
   buildStarterRepoMap,
   buildStarterRepoStandards,
   buildStarterAuthoritySettings,
-  buildBootstrapReadme,
+} from './starter-artifacts.mjs';
+import {
+  OPTIONAL_INSTRUCTION_TARGETS,
   buildGovernanceInstructions,
   buildSuggestedCodeownersBlock,
-  inferBootstrapRepoInsights,
-} from '../bootstrap.mjs';
-
-const OPTIONAL_INSTRUCTION_TARGETS = [
-  { path: '.cursorrules', tool: 'cursor', required: false },
-  {
-    path: '.github/copilot-instructions.md',
-    tool: 'github-copilot',
-    required: false,
-  },
-];
+  selectedInstructionTargetsFromAnswers,
+  validateOwnerAnswers,
+} from './guidance.mjs';
+import { assertWithinDir } from '../paths.mjs';
 
 const INIT_RECOMMENDATION_SCHEMA_VERSION = 1;
 
@@ -32,76 +29,6 @@ function jsonPayload(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-function toolForInstructionPath(path) {
-  if (path === 'AGENTS.md') return 'codex';
-  if (path === 'CLAUDE.md') return 'claude-code';
-  if (path === '.cursorrules') return 'cursor';
-  if (path === '.github/copilot-instructions.md') return 'github-copilot';
-  return 'agent';
-}
-
-function normalizeInstructionTargets(targets) {
-  if (!Array.isArray(targets)) {
-    return [
-      { path: 'AGENTS.md', tool: 'codex', required: true },
-      { path: 'CLAUDE.md', tool: 'claude-code', required: true },
-    ];
-  }
-  return targets.map((target) => {
-    if (typeof target === 'string') {
-      return {
-        path: target,
-        tool: toolForInstructionPath(target),
-        required: target === 'AGENTS.md' || target === 'CLAUDE.md',
-      };
-    }
-    if (!target || typeof target !== 'object' || Array.isArray(target)) {
-      throw new Error('selectedInstructionTargets must contain strings or target objects');
-    }
-    if (typeof target.path !== 'string' || target.path.length === 0) {
-      throw new Error('selectedInstructionTargets entries require a path');
-    }
-    return {
-      path: target.path,
-      tool: typeof target.tool === 'string' && target.tool.length > 0 ? target.tool : toolForInstructionPath(target.path),
-      required: typeof target.required === 'boolean' ? target.required : target.path === 'AGENTS.md' || target.path === 'CLAUDE.md',
-    };
-  });
-}
-
-function selectedInstructionTargetsFromAnswers(answers) {
-  return normalizeInstructionTargets(answers?.selectedInstructionTargets ?? answers?.selected_instruction_targets);
-}
-
-function validateOwnerAnswers(answers) {
-  if (answers === undefined || answers === null) return {};
-  if (!answers || typeof answers !== 'object' || Array.isArray(answers)) {
-    throw new Error('init answers must be an object');
-  }
-  const allowedKeys = new Set([
-    'evidenceCheck',
-    'selectedInstructionTargets',
-    'selected_instruction_targets',
-    'boundaries',
-    'codingStyle',
-    'coding_style',
-    'releaseExpectations',
-    'release_expectations',
-    'reviewRules',
-    'review_rules',
-    'protectedPaths',
-    'protected_paths',
-    'notes',
-  ]);
-  for (const key of Object.keys(answers)) {
-    if (!allowedKeys.has(key)) throw new Error(`init answers contain unsupported key: ${key}`);
-  }
-  const selected = answers.selectedInstructionTargets ?? answers.selected_instruction_targets;
-  if (selected !== undefined && !Array.isArray(selected)) {
-    throw new Error('init answers selectedInstructionTargets must be an array');
-  }
-  return answers;
-}
 function recommendedInstructionTargets(rootDir, selectedInstructionTargets) {
   const selectedPaths = new Set(selectedInstructionTargets.map((target) => target.path));
   return [...selectedInstructionTargets, ...OPTIONAL_INSTRUCTION_TARGETS.filter((target) => !selectedPaths.has(target.path))].map((target) => {
@@ -140,6 +67,19 @@ function recommendedSurfaces(repoInsights) {
     risk: node.kind === 'protected-area' ? 'high' : 'medium',
     reason: `Detected ${node.label} as ${node.kind}.`,
   }));
+}
+
+function validateInstructionTargetPaths(rootDir, selectedInstructionTargets) {
+  for (const target of selectedInstructionTargets) {
+    if (isAbsolute(target.path)) {
+      throw new Error(`init instruction target path must be repo-relative: ${target.path}`);
+    }
+    assertWithinDir(
+      resolve(rootDir, target.path),
+      rootDir,
+      `init instruction target path escapes target root: ${target.path}`,
+    );
+  }
 }
 
 function ownerQuestions(repoInsights) {
@@ -258,6 +198,7 @@ export function buildInitRecommendation({
   const repoInsights = inferBootstrapRepoInsights(rootDir);
   const resolvedEvidenceCheck = ownerAnswers.evidenceCheck ?? evidenceCheck ?? repoInsights.evidenceCheck;
   const selectedInstructionTargets = selectedInstructionTargetsFromAnswers(ownerAnswers);
+  validateInstructionTargetPaths(rootDir, selectedInstructionTargets);
   const artifactPayloads = buildArtifactPayloads({
     rootDir,
     projectName,
@@ -313,6 +254,14 @@ function validateInitRecommendation(recommendation, rootDir) {
     throw new Error('init recommendation missing artifact_hashes');
   }
   for (const [path, payload] of Object.entries(recommendation.artifact_payloads)) {
+    if (isAbsolute(path)) {
+      throw new Error(`init recommendation artifact path must be repo-relative: ${path}`);
+    }
+    assertWithinDir(
+      resolve(rootDir, path),
+      rootDir,
+      `init recommendation artifact path escapes target root: ${path}`,
+    );
     if (typeof payload !== 'string') throw new Error(`init recommendation payload must be a string: ${path}`);
     const expectedHash = recommendation.artifact_hashes[path];
     if (expectedHash !== sha256Hex(payload)) {

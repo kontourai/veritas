@@ -4,7 +4,7 @@ import { loadRepoMap, loadRepoStandards } from './load.mjs';
 import { normalizeRepoPath } from './paths.mjs';
 import { matchesPatterns } from './util/patterns.mjs';
 import { evaluateWorkAreaBoundaryRule } from './rules/evaluate.mjs';
-import { resolveVeritasPaths, listChangedFiles, listWorkingTreeFiles } from './report.mjs';
+import { resolveVeritasPaths, listChangedFiles, listWorkingTreeFiles } from './report/index.mjs';
 import { parseTokens } from './args.mjs';
 
 function ruleMatchesFile(rule, filePath) {

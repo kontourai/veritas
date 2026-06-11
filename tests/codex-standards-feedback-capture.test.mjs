@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
-import { buildCodexStandardsFeedbackDraft } from '../src/index.mjs';
+import { buildCodexStandardsFeedbackDraft, observeCodexStandardsFeedback } from '../src/index.mjs';
 import { repoRootDir, readJson } from './helpers.mjs';
 
 function tempRoot() {
@@ -107,6 +107,38 @@ test('Codex standards feedback capture marks major rewrites and CLI writes a dra
   assert.equal(result.prefilled_measurements.exception_count, 1);
   assert.equal(existsSync(artifactPath), true);
   assert.equal(readJson(artifactPath).run_id, 'codex-rewrite');
+});
+
+test('Codex standards feedback capture rejects draft run ids that would escape output directories', () => {
+  const rootDir = tempRoot();
+  const sessionLogPath = join(rootDir, 'session.json');
+  const sessionLog = {
+    session_id: '../../outside',
+    events: [
+      {
+        timestamp: '2026-05-09T10:00:00.000Z',
+        command: 'veritas readiness',
+        exit_code: 1,
+        files: ['src/index.mjs'],
+      },
+      {
+        timestamp: '2026-05-09T10:03:00.000Z',
+        command: 'veritas readiness',
+        exit_code: 0,
+        files: ['src/index.mjs'],
+      },
+    ],
+  };
+  writeFileSync(sessionLogPath, `${JSON.stringify(sessionLog, null, 2)}\n`, 'utf8');
+
+  assert.throws(
+    () => observeCodexStandardsFeedback({
+      rootDir,
+      sessionLogPath,
+    }),
+    /Standards feedback draft run id may only contain letters, numbers, dot, underscore, and hyphen/,
+  );
+  assert.equal(existsSync(join(rootDir, 'outside.json')), false);
 });
 
 test('Codex standards feedback capture records reason when session log schema is unrecognized', () => {

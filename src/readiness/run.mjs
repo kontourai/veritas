@@ -7,7 +7,7 @@ import {
   resolveVeritasPaths,
   resolveReportInputs,
   resolveEvidenceCheckCommands,
-} from '../report.mjs';
+} from '../report/index.mjs';
 import { generateStandardsFeedbackDraft, generateStandardsFeedbackRecord } from '../standards-feedback/records.mjs';
 import { appendRunHistory, deriveTimeToGreenFromRunHistory } from '../standards-feedback/run-history.mjs';
 

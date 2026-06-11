@@ -10,10 +10,11 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import {
   applyCiSnippet,
   applyCodexHook,
@@ -1686,6 +1687,46 @@ test('init guided answers drive the reviewed apply artifact', () => {
   assert.match(readme, /Prefer small ESM modules/);
 });
 
+test('init guided rejects instruction targets outside the target root before reading', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-guided-escape-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  const secretPath = resolve(rootDir, '../veritas-init-guided-secret.md');
+  writeFileSync(secretPath, '# Secret\n');
+  writeFileSync(
+    join(rootDir, 'answers.json'),
+    JSON.stringify(
+      {
+        selectedInstructionTargets: ['../veritas-init-guided-secret.md'],
+      },
+      null,
+      2,
+    ),
+  );
+
+  assert.throws(
+    () =>
+      execFileSync(
+        'npm',
+        [
+          'exec',
+          '--',
+          'veritas',
+          'init',
+          '--guided',
+          '--answers',
+          'answers.json',
+          '--root',
+          rootDir,
+          '--output',
+          '.veritas/init-plans/escape.json',
+        ],
+        { cwd: repoRootDir, encoding: 'utf8', stdio: 'pipe' },
+      ),
+    /instruction target path escapes target root/,
+  );
+  assert.equal(existsSync(join(rootDir, '.veritas/init-plans/escape.json')), false);
+});
+
 test('init apply requires an untampered plan artifact', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-apply-plan-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
@@ -1730,6 +1771,47 @@ test('init apply requires an untampered plan artifact', () => {
       ),
     /payload hash mismatch/,
   );
+  assert.equal(existsSync(join(rootDir, '.veritas/repo-map.json')), false);
+});
+
+test('init apply rejects plan artifact paths outside the target root', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-apply-escape-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+
+  const planPath = join(rootDir, '.veritas/init-plans/plan.json');
+  execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'veritas',
+      'init',
+      '--explore',
+      '--root',
+      rootDir,
+      '--output',
+      '.veritas/init-plans/plan.json',
+    ],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  );
+
+  const escapedPath = '../veritas-init-apply-escaped.txt';
+  const tampered = readJsonFromAbsolute(planPath);
+  tampered.artifact_payloads[escapedPath] = 'escaped\n';
+  tampered.artifact_hashes[escapedPath] = createHash('sha256').update('escaped\n').digest('hex');
+  const tamperedPath = join(rootDir, '.veritas/init-plans/escape.json');
+  writeFileSync(tamperedPath, `${JSON.stringify(tampered, null, 2)}\n`, 'utf8');
+
+  assert.throws(
+    () =>
+      execFileSync(
+        'npm',
+        ['exec', '--', 'veritas', 'init', '--apply', '--plan', tamperedPath, '--root', rootDir],
+        { cwd: repoRootDir, encoding: 'utf8', stdio: 'pipe' },
+      ),
+    /artifact path escapes target root/,
+  );
+  assert.equal(existsSync(resolve(rootDir, escapedPath)), false);
   assert.equal(existsSync(join(rootDir, '.veritas/repo-map.json')), false);
 });
 
@@ -2210,6 +2292,52 @@ test('report writes one trimmed Surface claim input per claim', async () => {
     assert.equal('claims' in claimInput, false);
     assert.equal('summary' in claimInput, false);
   }
+});
+
+test('report rejects run ids that would escape output directories', async () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-unsafe-run-id-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  const repoMapPath = writeTempRepoMap(rootDir, {
+    graph: {
+      defaultResolution: {
+        phase: 'Phase 0',
+        workstream: 'Demo',
+        matchedArtifacts: ['package.json'],
+      },
+      nodes: [
+        { id: 'root.manifest', kind: 'tooling-area', label: 'package.json', patterns: ['package.json'] },
+      ],
+    },
+    evidence: {
+      artifactDir: '.veritas/evidence',
+      reportTransport: 'local-json',
+      evidenceChecks: [
+        { id: 'unit', command: 'npm test', method: 'validation' },
+      ],
+    },
+  });
+  const repoStandardsPath = writeTempJson(rootDir, '.veritas-repo-standards.json', {
+    name: 'unsafe-run-id-policy',
+    version: 1,
+    rules: [],
+  });
+  writeClaimStoreForRepoMap(
+    rootDir,
+    readJsonFromAbsolute(repoMapPath),
+    readJsonFromAbsolute(repoStandardsPath),
+  );
+
+  await assert.rejects(
+    () => generateVeritasReport({
+      rootDir,
+      repoMapPath,
+      repoStandardsPath,
+      runId: '../../outside',
+      sourceRef: 'unsafe-run-id',
+    }, {}, ['package.json']),
+    /Veritas evidence run id may only contain letters, numbers, dot, underscore, and hyphen/,
+  );
+  assert.equal(existsSync(join(rootDir, 'outside.json')), false);
 });
 
 test('standards feedback record CLI writes a repo-local observe standards feedback artifact from report output', async () => {
@@ -3361,7 +3489,7 @@ test('feedback marker CLI compares without-veritas and with-veritas session logs
 test('feedback marker-suite CLI returns aggregate benchmark metrics', () => {
   const stdout = execFileSync(
     'npm',
-    ['exec', '--', 'veritas', 'feedback', 'marker-suite', '--suite', 'examples/benchmarks/marker-suite.json'],
+    ['exec', '--', 'veritas', 'feedback', 'marker-suite', '--suite', 'examples/benchmarks/suites/context-surfacing-suite.json'],
     { cwd: repoRootDir, encoding: 'utf8' },
   );
   const parsed = parseCliJson(stdout);
@@ -3374,9 +3502,66 @@ test('feedback marker-suite CLI returns aggregate benchmark metrics', () => {
   assert.equal(parsed.metrics.pass_pow_k, 5 / 6);
 
   const helperResult = generateMarkerBenchmarkSuiteReport({
-    suitePath: 'examples/benchmarks/marker-suite.json',
+    suitePath: 'examples/benchmarks/suites/context-surfacing-suite.json',
   });
   assert.equal(helperResult.metrics.improvement_rate, 7 / 8);
+});
+
+test('feedback marker-suite rejects artifact paths outside the benchmark directory', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-marker-suite-paths-'));
+  mkdirp(join(rootDir, 'suite'));
+  writeFileSync(
+    join(rootDir, 'suite/suite.json'),
+    JSON.stringify({
+      version: 1,
+      id: 'unsafe-suite',
+      title: 'Unsafe suite',
+      benchmarks: [
+        {
+          benchmark_id: 'unsafe-marker',
+          title: 'Unsafe marker',
+          marker_class: 'safety',
+          repo_surface: 'tests',
+          scenario_path: '../../scenario.json',
+          trials: [
+            {
+              trial_id: 'trial-1',
+              without_veritas_session_log_path: 'without.json',
+              with_veritas_session_log_path: 'with.json',
+            },
+          ],
+        },
+      ],
+    }),
+    'utf8',
+  );
+  writeFileSync(
+    join(rootDir, 'scenario.json'),
+    JSON.stringify({
+      version: 1,
+      id: 'unsafe-marker',
+      title: 'Unsafe marker',
+      marker: {
+        id: 'unsafe',
+        required_phrases: ['unsafe'],
+      },
+      scoring: {
+        trigger_tag: 'trigger',
+        max_assistant_turns_after_trigger: 1,
+        allow_early: false,
+      },
+    }),
+    'utf8',
+  );
+
+  assert.throws(
+    () =>
+      generateMarkerBenchmarkSuiteReport({
+        rootDir,
+        suitePath: 'suite/suite.json',
+      }),
+    /marker benchmark suite artifact paths must stay inside the benchmark directory/,
+  );
 });
 
 test('marker benchmark comparison rejects mismatched benchmark ids and condition ids', () => {
@@ -4300,6 +4485,28 @@ test('apply package-scripts surfaces script conflicts without force', () => {
   );
 });
 
+test('apply package-scripts refuses symlinked package.json', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-scripts-symlink-'));
+  const externalPackageJson = join(
+    mkdtempSync(join(tmpdir(), 'veritas-external-package-json-')),
+    'package.json',
+  );
+  writeFileSync(
+    externalPackageJson,
+    JSON.stringify({ scripts: { test: 'external' } }, null, 2),
+  );
+  symlinkSync(externalPackageJson, join(rootDir, 'package.json'));
+
+  assert.throws(
+    () => applyPackageScripts({ rootDir, force: true }),
+    /refuses to write through a symlinked package\.json/,
+  );
+  assert.equal(
+    readFileSync(externalPackageJson, 'utf8'),
+    `${JSON.stringify({ scripts: { test: 'external' } }, null, 2)}`,
+  );
+});
+
 test('apply ci-snippet writes a stable snippet file', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-ci-'));
   const result = applyCiSnippet({
@@ -4737,6 +4944,44 @@ test('apply ci-snippet rejects paths outside the reviewable snippet area', () =>
   );
 });
 
+test('apply ci-snippet rejects symlinked snippet directories and files', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-ci-symlink-'));
+  mkdirp(join(rootDir, '.veritas'));
+  const externalSnippetsDir = mkdtempSync(join(tmpdir(), 'veritas-external-snippets-'));
+  symlinkSync(externalSnippetsDir, join(rootDir, '.veritas/snippets'), 'dir');
+
+  assert.throws(
+    () => applyCiSnippet({ rootDir, force: true }),
+    /refuses to write through a symlinked \.veritas\/snippets directory/,
+  );
+
+  unlinkSync(join(rootDir, '.veritas/snippets'));
+  mkdirp(join(rootDir, '.veritas/snippets'));
+  const externalSnippetFile = join(
+    mkdtempSync(join(tmpdir(), 'veritas-external-snippet-file-')),
+    'ci-snippet.yml',
+  );
+  writeFileSync(externalSnippetFile, 'external\n', 'utf8');
+  symlinkSync(externalSnippetFile, join(rootDir, '.veritas/snippets/ci-snippet.yml'));
+
+  assert.throws(
+    () => applyCiSnippet({ rootDir, force: true }),
+    /only supports writing inside \.veritas\/snippets\/|refuses to write through a symlinked snippet file: \.veritas\/snippets\/ci-snippet\.yml/,
+  );
+  assert.equal(readFileSync(externalSnippetFile, 'utf8'), 'external\n');
+
+  unlinkSync(join(rootDir, '.veritas/snippets/ci-snippet.yml'));
+  const internalSnippetFile = join(rootDir, '.veritas/snippets/internal.yml');
+  writeFileSync(internalSnippetFile, 'internal\n', 'utf8');
+  symlinkSync(internalSnippetFile, join(rootDir, '.veritas/snippets/ci-snippet.yml'));
+
+  assert.throws(
+    () => applyCiSnippet({ rootDir, force: true }),
+    /refuses to write through a symlinked snippet file: \.veritas\/snippets\/ci-snippet\.yml/,
+  );
+  assert.equal(readFileSync(internalSnippetFile, 'utf8'), 'internal\n');
+});
+
 test('apply git-hook rejects unsupported hook kinds', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-hook-unsupported-'));
 
@@ -4768,6 +5013,22 @@ test('apply runtime-hook rejects paths outside the reviewable hook area', () => 
         outputPath: '../outside.sh',
       }),
     /only supports writing inside \.veritas\/hooks\//,
+  );
+});
+
+test('non-git hook installers reject symlinked .veritas hooks directory', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-apply-hook-symlink-dir-'));
+  mkdirp(join(rootDir, '.veritas'));
+  const externalHooksDir = mkdtempSync(join(tmpdir(), 'external-veritas-hooks-'));
+  symlinkSync(externalHooksDir, join(rootDir, '.veritas/hooks'), 'dir');
+
+  assert.throws(
+    () => applyRuntimeHook({ rootDir, force: true }),
+    /refuses to write through a symlinked \.veritas\/hooks directory/,
+  );
+  assert.throws(
+    () => applyStopHook({ rootDir, force: true }),
+    /refuses to write through a symlinked \.veritas\/hooks directory/,
   );
 });
 
@@ -5276,6 +5537,25 @@ test('starter kit helper refuses to overwrite without force', () => {
       }),
     /Refusing to overwrite existing file/,
   );
+});
+
+test('starter kit helper rejects instruction targets outside the target root before reading', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-starter-escape-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}');
+  const secretPath = resolve(rootDir, '../veritas-starter-secret.md');
+  writeFileSync(secretPath, '# Secret\n');
+
+  assert.throws(
+    () =>
+      writeBootstrapStarterKit({
+        rootDir,
+        projectName: 'Escape Demo',
+        instructionTargets: ['../veritas-starter-secret.md'],
+      }),
+    /bootstrap instruction target path escapes target root/,
+  );
+  assert.equal(existsSync(join(rootDir, '.veritas/repo-map.json')), false);
+  assert.equal(readFileSync(secretPath, 'utf8'), '# Secret\n');
 });
 
 test('starter kit planning separates inference from writing', () => {
