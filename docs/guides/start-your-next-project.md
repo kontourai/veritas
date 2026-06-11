@@ -80,4 +80,4 @@ npx @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <h
 
 Use `--changed-from <ref> --changed-to <ref>` when you want branch-diff evidence instead of current working-tree evidence.
 
-If you want concrete payload examples before generating your own repo-local artifacts, inspect [Example Fixtures](../reference/examples.md).
+If you want concrete payload examples before generating your own repo-local artifacts, inspect [Examples](../reference/examples.md).

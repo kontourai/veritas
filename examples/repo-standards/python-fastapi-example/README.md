@@ -1,4 +1,4 @@
-# Python FastAPI Fixture Snippet
+# Python FastAPI Example Snippet
 
 This snippet demonstrates the intended failure:
 

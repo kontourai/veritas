@@ -190,7 +190,7 @@ assert(
 );
 assert(
   docsIndex.includes('reference/examples.md'),
-  'Docs index must link to the example fixtures reference.',
+  'Docs index must link to the examples reference.',
 );
 assert(
   docsIndex.includes('guides/repo-conformance.md'),
@@ -300,26 +300,26 @@ assert(
 );
 assert(
   artifactsReference.includes('examples/'),
-  'Artifacts reference must mention example fixtures.',
+  'Artifacts reference must mention examples.',
 );
 
 const examplesReference = readText('docs/reference/examples.md');
 assertMarkdownLinksResolve('docs/reference/examples.md');
 assert(
   examplesReference.includes('examples/evidence/work-agent-pass.json'),
-  'Examples reference must include the pass evidence fixture.',
+  'Examples reference must include the pass evidence example.',
 );
 assert(
   examplesReference.includes('examples/evidence/work-agent-fail.json'),
-  'Examples reference must include the fail evidence fixture.',
+  'Examples reference must include the fail evidence example.',
 );
 assert(
   examplesReference.includes('examples/standards-feedback/work-agent-observe-standards-feedback-draft.json'),
-  'Examples reference must include the standards feedback draft fixture.',
+  'Examples reference must include the standards feedback draft example.',
 );
 assert(
   examplesReference.includes('examples/classification/work-agent-convergence-rule-groups.json'),
-  'Examples reference must include the classification fixture.',
+  'Examples reference must include the classification example.',
 );
 assert(
   examplesReference.includes('examples/repo-conformance/veritas-repo-report.json'),
@@ -331,34 +331,34 @@ assert(
 );
 assert(
   examplesReference.includes('examples/benchmarks/migration/scenario.json'),
-  'Examples reference must include the marker benchmark scenario fixture.',
+  'Examples reference must include the marker benchmark scenario example.',
 );
 assert(
   examplesReference.includes('examples/benchmarks/migration/comparison.json'),
-  'Examples reference must include the marker benchmark comparison fixture.',
+  'Examples reference must include the marker benchmark comparison example.',
 );
 assert(
   examplesReference.includes('examples/benchmarks/suites/context-surfacing-suite.json'),
-  'Examples reference must include the marker benchmark suite fixture.',
+  'Examples reference must include the marker benchmark suite example.',
 );
 assert(
   examplesReference.includes('examples/benchmarks/suites/context-surfacing-suite-report.json'),
-  'Examples reference must include the marker benchmark suite report fixture.',
+  'Examples reference must include the marker benchmark suite report example.',
 );
 assert(
   examplesReference.includes('examples/benchmarks/governance-protected-standards/scenario.json'),
-  'Examples reference must include the protected-standards governance benchmark fixture.',
+  'Examples reference must include the protected-standards governance benchmark example.',
 );
 assert(
   examplesReference.includes('examples/benchmarks/governance-standards-growth/scenario.json'),
-  'Examples reference must include the standards-growth governance benchmark fixture.',
+  'Examples reference must include the standards-growth governance benchmark example.',
 );
 
 const benchmarkingReference = readText('docs/reference/benchmarking.md');
 assertMarkdownLinksResolve('docs/reference/benchmarking.md');
 assert(
   benchmarkingReference.includes('examples/benchmarks/'),
-  'Benchmarking reference must explain the benchmark fixtures directory.',
+  'Benchmarking reference must explain the benchmark examples directory.',
 );
 assert(
   benchmarkingReference.includes('veritas feedback marker-suite'),
@@ -541,7 +541,7 @@ for (const relativePath of [
   assertMarkdownLinksResolve(relativePath);
 }
 
-const requiredBenchmarkFixtures = [
+const requiredBenchmarkExamples = [
   'examples/benchmarks/auth-boundary/scenario.json',
   'examples/benchmarks/auth-boundary/with-veritas-trial-1.json',
   'examples/benchmarks/auth-boundary/without-veritas-trial-1.json',
@@ -556,8 +556,8 @@ const requiredBenchmarkFixtures = [
   'examples/benchmarks/suites/context-surfacing-suite.json',
   'examples/benchmarks/suites/context-surfacing-suite-report.json',
 ];
-for (const fixturePath of requiredBenchmarkFixtures) {
-  assert(fileExists(fixturePath), `Missing required benchmark fixture: ${fixturePath}`);
+for (const examplePath of requiredBenchmarkExamples) {
+  assert(fileExists(examplePath), `Missing required benchmark example: ${examplePath}`);
 }
 
 console.log('Veritas verification passed.');

@@ -4,7 +4,7 @@ This page ties current files and schemas to the Veritas product model.
 
 Some schema and path names predate the current product vocabulary. This reference keeps exact current file and field names where accuracy requires them. Planned renames are tracked in [Migration Guide](../MIGRATING.md).
 
-If you want command syntax, use [CLI Reference](cli.md). If you want sample payloads, use [Example Fixtures](examples.md).
+If you want command syntax, use [CLI Reference](cli.md). If you want sample payloads, use [Examples](examples.md).
 
 ## Repo Areas
 
@@ -566,9 +566,9 @@ Use these when you want concrete, current examples instead of abstract schema de
 
 - Repo Map examples: [repo-maps/work-agent.repo-map.json](../../repo-maps/work-agent.repo-map.json), [repo-maps/demo-docs-site.repo-map.json](../../repo-maps/demo-docs-site.repo-map.json)
 - Repo Standards example: [repo-standards/work-agent-convergence.repo-standards.json](../../repo-standards/work-agent-convergence.repo-standards.json)
-- evidence fixtures: [examples/evidence/work-agent-pass.json](../../examples/evidence/work-agent-pass.json), [examples/evidence/work-agent-fail.json](../../examples/evidence/work-agent-fail.json), [examples/evidence/work-agent-policy-gap.json](../../examples/evidence/work-agent-policy-gap.json)
-- external tool fixture: [examples/evidence/fallow-advisory.json](../../examples/evidence/fallow-advisory.json)
-- standards-feedback fixtures: [examples/standards-feedback/work-agent-authority-settings.json](../../examples/standards-feedback/work-agent-authority-settings.json), [examples/standards-feedback/work-agent-observe-standards-feedback-draft.json](../../examples/standards-feedback/work-agent-observe-standards-feedback-draft.json), [examples/standards-feedback/work-agent-observe-standards-feedback.json](../../examples/standards-feedback/work-agent-observe-standards-feedback.json)
-- benchmark fixtures: [examples/benchmarks/migration/scenario.json](../../examples/benchmarks/migration/scenario.json), [examples/benchmarks/migration/without-veritas.json](../../examples/benchmarks/migration/without-veritas.json), [examples/benchmarks/migration/with-veritas.json](../../examples/benchmarks/migration/with-veritas.json), [examples/benchmarks/migration/comparison.json](../../examples/benchmarks/migration/comparison.json)
-- suite fixtures: [examples/benchmarks/suites/context-surfacing-suite.json](../../examples/benchmarks/suites/context-surfacing-suite.json), [examples/benchmarks/suites/context-surfacing-suite-report.json](../../examples/benchmarks/suites/context-surfacing-suite-report.json)
-- classification fixture: [examples/classification/work-agent-convergence-rule-groups.json](../../examples/classification/work-agent-convergence-rule-groups.json)
+- evidence examples: [examples/evidence/work-agent-pass.json](../../examples/evidence/work-agent-pass.json), [examples/evidence/work-agent-fail.json](../../examples/evidence/work-agent-fail.json), [examples/evidence/work-agent-policy-gap.json](../../examples/evidence/work-agent-policy-gap.json)
+- external tool example: [examples/evidence/fallow-advisory.json](../../examples/evidence/fallow-advisory.json)
+- standards-feedback examples: [examples/standards-feedback/work-agent-authority-settings.json](../../examples/standards-feedback/work-agent-authority-settings.json), [examples/standards-feedback/work-agent-observe-standards-feedback-draft.json](../../examples/standards-feedback/work-agent-observe-standards-feedback-draft.json), [examples/standards-feedback/work-agent-observe-standards-feedback.json](../../examples/standards-feedback/work-agent-observe-standards-feedback.json)
+- benchmark examples: [examples/benchmarks/migration/scenario.json](../../examples/benchmarks/migration/scenario.json), [examples/benchmarks/migration/without-veritas.json](../../examples/benchmarks/migration/without-veritas.json), [examples/benchmarks/migration/with-veritas.json](../../examples/benchmarks/migration/with-veritas.json), [examples/benchmarks/migration/comparison.json](../../examples/benchmarks/migration/comparison.json)
+- suite examples: [examples/benchmarks/suites/context-surfacing-suite.json](../../examples/benchmarks/suites/context-surfacing-suite.json), [examples/benchmarks/suites/context-surfacing-suite-report.json](../../examples/benchmarks/suites/context-surfacing-suite-report.json)
+- classification example: [examples/classification/work-agent-convergence-rule-groups.json](../../examples/classification/work-agent-convergence-rule-groups.json)

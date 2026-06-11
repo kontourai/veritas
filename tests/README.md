@@ -43,9 +43,9 @@ npm run veritas:conformance:report
 
 The repo hook delegates to `npm run test:prepush`, which currently delegates to `npm run verify`.
 
-## Fixture References
+## Example References
 
-Many tests read tracked fixtures from `examples/`. Before moving or renaming any example file, search for direct path references:
+Many tests read tracked examples from `examples/`. Before moving or renaming any example file, search for direct path references:
 
 ```bash
 rg -n "examples/path-or-file" tests docs scripts README.md package.json

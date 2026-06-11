@@ -1,6 +1,6 @@
 # Benchmarking Methodology
 
-The benchmark fixtures under `examples/benchmarks/` are deterministic comparisons for one question:
+The benchmark examples under `examples/benchmarks/` are deterministic comparisons for one question:
 
 Does Veritas surface the right repo-specific warning or context at the right time?
 
@@ -47,9 +47,9 @@ It means the model answered with the relevant Veritas context in place, so the b
 - treatment latency summaries
 - grouped reliability metrics such as `pass_at_1`, `pass_at_k`, and `pass_pow_k`
 
-## Interpreting The Fixtures
+## Interpreting The Examples
 
-The shipped fixtures are examples, not claims about universal model behavior. They are meant to show:
+The shipped examples are not claims about universal model behavior. They are meant to show:
 
 - the scoring contract
 - the expected session log tagging pattern

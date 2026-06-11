@@ -1,4 +1,4 @@
-# Next.js TypeScript Fixture Snippet
+# Next.js TypeScript Example Snippet
 
 This snippet demonstrates the intended failure:
 

@@ -20,10 +20,10 @@ The current publish surface is defined in [package.json](../../package.json) and
 - `repo-maps/` for current Repo Map examples
 - `repo-standards/` for current Repo Standards examples
 - `docs/` for packaged documentation
-- `examples/` for canonical fixtures
+- `examples/` for canonical examples
 - `README.md` and `LICENSE`
 
-That means the npm package is not only the CLI binary. It also publishes the schema and fixture material needed to understand and extend Veritas.
+That means the npm package is not only the CLI binary. It also publishes the schema and example material needed to understand and extend Veritas.
 
 ## What GitHub Actions Already Does
 

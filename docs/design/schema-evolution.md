@@ -1,6 +1,6 @@
 # Schema Evolution Policy
 
-Veritas ships multiple JSON schemas because Repo Maps, Repo Standards, evidence artifacts, standards-feedback artifacts, and benchmark fixtures are all part of the product contract.
+Veritas ships multiple JSON schemas because Repo Maps, Repo Standards, evidence artifacts, standards-feedback artifacts, and benchmark examples are all part of the product contract.
 
 This document defines how those contracts evolve.
 

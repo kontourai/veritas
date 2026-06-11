@@ -152,7 +152,7 @@ test('Repo Map and Repo Standards schemas declare activation and lint requiremen
   assert.ok(matchDefs.primitiveFirstGovernanceMatch.properties.packageScripts.properties.helperExemptions);
 });
 
-test('fixture Repo Maps and evidence examples stay readable', () => {
+test('example Repo Maps and evidence examples stay readable', () => {
   const repoMap = readJson('../.veritas/repo-map.json');
   const docsRepoMap = readJson('../repo-maps/demo-docs-site.repo-map.json');
   const fallowLane = repoMap.evidence.evidenceChecks.find((lane) => lane.id === 'fallow-advisory');
@@ -187,7 +187,7 @@ test('fixture Repo Maps and evidence examples stay readable', () => {
   );
 });
 
-test('standards feedback fixtures explain outcome measurement and team tuning', () => {
+test('standards feedback examples explain outcome measurement and team tuning', () => {
   const feedbackRecord = readJson('../examples/standards-feedback/work-agent-observe-standards-feedback.json');
   const feedbackDraft = readJson('../examples/standards-feedback/work-agent-observe-standards-feedback-draft.json');
   const authoritySettings = readJson('../examples/standards-feedback/work-agent-authority-settings.json');
@@ -239,7 +239,7 @@ test('standards feedback fixtures explain outcome measurement and team tuning', 
   assert.equal(redConformance.governance_trend.summary, 'no prior governance history');
 });
 
-test('marker benchmark fixtures explain timely surfacing scoring', () => {
+test('marker benchmark examples explain timely surfacing scoring', () => {
   const scenario = readJson('../examples/benchmarks/migration/scenario.json');
   const withoutVeritas = readJson('../examples/benchmarks/migration/without-veritas.json');
   const withVeritas = readJson('../examples/benchmarks/migration/with-veritas.json');
