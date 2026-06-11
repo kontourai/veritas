@@ -106,6 +106,42 @@ npx @kontourai/veritas attest status [--root <path>]
 
 The built-in requirement `policy-changes-require-attestation` fails when the active attestation no longer matches protected standards.
 
+#### Collection Provenance
+
+Every attestation can carry an optional structured `authorizing` block that records how the act of attestation was authorized. Three kinds are supported:
+
+- **`explicit-statement`** — a standalone text statement naming the authorizing act.
+
+  ```bash
+  --authorizing-statement "Reviewed and approved the policy change"
+  ```
+
+- **`exchange`** — a prompt/response pair capturing a delegated approval conversation. Both `--authorizing-prompt` and `--authorizing-response` are required; omitting either is a hard CLI error. `--excerpt-source` is optional and maps to the `source` field.
+
+  ```bash
+  --authorizing-prompt "Did you review the policy?" --authorizing-response "Yes, approved." [--excerpt-source slack://team-channel]
+  ```
+
+- **`authorized-action`** — a UI-driven control action. All four fields are required: `--prompt-ref`, `--rendered-prompt`, `--action` (`affirmed-control` or `typed`), and `--authority-ref`. Primary use is programmatic.
+
+  ```bash
+  --prompt-ref <ref> --rendered-prompt "Confirm the policy change" --action affirmed-control --authority-ref <session-ref>
+  ```
+
+**Channel mapping:**
+
+| Channel | Authorizing kind |
+|---------|-----------------|
+| cli-interactive | `explicit-statement` auto-built from the command itself |
+| delegated (chat/agent) | `exchange` or `explicit-statement` |
+| UI | `authorized-action` |
+
+When `--executed-by <id>` is specified, it acts as a delegated-channel marker that requires either `--authorizing-statement` OR the `--authorizing-prompt` + `--authorizing-response` pair.
+
+**Admissibility transparency annotation:**
+
+When `kind=explicit-statement` and the statement shares no token overlap with the changed protected-standard node IDs or the attestation notes, Veritas records `admissibilityWarning: true` with a reason on the attestation. This is a transparency annotation — it never blocks readiness. The warning appears in `attest status` output and as an annotation on the PASS line in the readiness check output (e.g. "PASS ... (1 admissibility warning)").
+
 ### `hooks claude-code`
 
 Prints, installs, or runs the Claude Code PreToolUse hook.

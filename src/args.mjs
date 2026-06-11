@@ -122,6 +122,16 @@ export function parseAttestArgs(argv) {
       '--approval-ref': { type: 'string', key: 'approvalRef' },
       '--valid-until-days': { type: 'number', key: 'validUntilDays' },
       '--non-interactive': { type: 'flag', key: 'nonInteractive' },
+      // Authorizing block fields
+      '--executed-by': { type: 'string', key: 'executedBy' },
+      '--authorizing-statement': { type: 'string', key: 'authorizingStatement' },
+      '--authorizing-prompt': { type: 'string', key: 'authorizingPrompt' },
+      '--authorizing-response': { type: 'string', key: 'authorizingResponse' },
+      '--excerpt-source': { type: 'string', key: 'excerptSource' },
+      '--prompt-ref': { type: 'string', key: 'promptRef' },
+      '--rendered-prompt': { type: 'string', key: 'renderedPrompt' },
+      '--action': { type: 'string', key: 'action' },
+      '--authority-ref': { type: 'string', key: 'authorityRef' },
     },
   ).options;
 }

@@ -538,3 +538,374 @@ test('CLI bootstrap writes tracked attestation and readiness check fails on prot
   ], { cwd: rootDir, encoding: 'utf8' });
   assert.match(readinessOutput, /PASS\s+policy-changes-require-attestation/);
 });
+
+// ─── Testimony Admissibility Tests ────────────────────────────────────────
+
+import { buildAuthorizing, computeAdmissibilityWarning } from '../src/attestations/collection.mjs';
+
+// --- buildAuthorizing unit tests ---
+
+test('buildAuthorizing returns null when no authorizing options provided', () => {
+  assert.equal(buildAuthorizing({}), null);
+  assert.equal(buildAuthorizing(), null);
+});
+
+test('buildAuthorizing builds explicit-statement block', () => {
+  const block = buildAuthorizing({ statement: 'Reviewed policy update' });
+  assert.deepEqual(block, { kind: 'explicit-statement', statement: 'Reviewed policy update' });
+});
+
+test('buildAuthorizing trims statement whitespace', () => {
+  const block = buildAuthorizing({ statement: '  approved  ' });
+  assert.equal(block.statement, 'approved');
+});
+
+test('buildAuthorizing builds exchange block with source', () => {
+  const block = buildAuthorizing({
+    prompt: 'Did you review the change?',
+    response: 'Yes, I approved it.',
+    excerptSource: 'slack://channel/123',
+  });
+  assert.equal(block.kind, 'exchange');
+  assert.equal(block.prompt, 'Did you review the change?');
+  assert.equal(block.response, 'Yes, I approved it.');
+  assert.equal(block.source, 'slack://channel/123');
+});
+
+test('buildAuthorizing builds exchange block without source', () => {
+  const block = buildAuthorizing({
+    prompt: 'Approve?',
+    response: 'Approved.',
+  });
+  assert.equal(block.kind, 'exchange');
+  assert.equal(block.source, undefined);
+});
+
+test('buildAuthorizing exchange throws when prompt missing', () => {
+  assert.throws(
+    () => buildAuthorizing({ response: 'Approved.' }),
+    /kind=exchange requires --authorizing-prompt/,
+  );
+});
+
+test('buildAuthorizing exchange throws when response missing', () => {
+  assert.throws(
+    () => buildAuthorizing({ prompt: 'Approve?' }),
+    /kind=exchange requires --authorizing-response/,
+  );
+});
+
+test('buildAuthorizing builds authorized-action block', () => {
+  const block = buildAuthorizing({
+    promptRef: 'prompt://abc',
+    renderedPrompt: 'Confirm policy change',
+    action: 'affirmed-control',
+    authorityRef: 'ui://session/42',
+  });
+  assert.equal(block.kind, 'authorized-action');
+  assert.equal(block.promptRef, 'prompt://abc');
+  assert.equal(block.renderedPrompt, 'Confirm policy change');
+  assert.equal(block.action, 'affirmed-control');
+  assert.equal(block.authorityRef, 'ui://session/42');
+});
+
+test('buildAuthorizing authorized-action throws when fields missing', () => {
+  assert.throws(
+    () => buildAuthorizing({ promptRef: 'x', renderedPrompt: 'y', action: 'typed' }),
+    /kind=authorized-action requires all four fields.*--authority-ref/,
+  );
+  assert.throws(
+    () => buildAuthorizing({ promptRef: 'x', renderedPrompt: 'y', authorityRef: 'z' }),
+    /kind=authorized-action requires all four fields.*--action/,
+  );
+});
+
+test('buildAuthorizing authorized-action throws for invalid action value', () => {
+  assert.throws(
+    () => buildAuthorizing({
+      promptRef: 'x',
+      renderedPrompt: 'y',
+      action: 'invalid-action',
+      authorityRef: 'z',
+    }),
+    /action must be one of: affirmed-control, typed/,
+  );
+});
+
+test('buildAuthorizing throws on ambiguous mixed fields', () => {
+  assert.throws(
+    () => buildAuthorizing({
+      statement: 'approved',
+      prompt: 'Did you approve?',
+    }),
+    /conflicting or ambiguous/,
+  );
+});
+
+// --- computeAdmissibilityWarning unit tests ---
+
+test('computeAdmissibilityWarning returns no warning for null authorizing', () => {
+  const result = computeAdmissibilityWarning({ authorizing: null, changedFields: [], notes: '' });
+  assert.equal(result.admissibilityWarning, false);
+  assert.equal(result.admissibilityWarningReason, null);
+});
+
+test('computeAdmissibilityWarning returns no warning for non-explicit-statement kind', () => {
+  const result = computeAdmissibilityWarning({
+    authorizing: { kind: 'exchange', prompt: 'x', response: 'y' },
+    changedFields: ['repoStandardsHash'],
+    notes: 'policy update',
+  });
+  assert.equal(result.admissibilityWarning, false);
+});
+
+test('computeAdmissibilityWarning warns when explicit-statement has no token overlap', () => {
+  const result = computeAdmissibilityWarning({
+    authorizing: { kind: 'explicit-statement', statement: 'banana orange grape' },
+    changedFields: ['repoStandardsHash'],
+    notes: 'Updated governance rules',
+  });
+  assert.equal(result.admissibilityWarning, true);
+  assert.match(result.admissibilityWarningReason, /no token overlap/);
+});
+
+test('computeAdmissibilityWarning no warning when statement overlaps with notes', () => {
+  const result = computeAdmissibilityWarning({
+    authorizing: { kind: 'explicit-statement', statement: 'Reviewed policy update' },
+    changedFields: ['repoStandardsHash'],
+    notes: 'Reviewed the policy change with team',
+  });
+  assert.equal(result.admissibilityWarning, false);
+});
+
+test('computeAdmissibilityWarning no warning when statement overlaps with field names', () => {
+  const result = computeAdmissibilityWarning({
+    authorizing: { kind: 'explicit-statement', statement: 'Approved standards change' },
+    changedFields: ['repoStandardsHash'],
+    notes: '',
+  });
+  assert.equal(result.admissibilityWarning, false);
+});
+
+// --- Integration tests: createAttestation with authorizing ---
+
+test('createAttestation persists explicit-statement authorizing block', () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-authorizing-explicit-');
+  const result = createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Reviewed policy.',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+    authorizing: { kind: 'explicit-statement', statement: 'Reviewed policy.' },
+  });
+  assert.equal(result.attestation.authorizing.kind, 'explicit-statement');
+  assert.equal(result.attestation.authorizing.statement, 'Reviewed policy.');
+});
+
+test('createAttestation persists exchange authorizing block', () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-authorizing-exchange-');
+  const result = createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Delegated approval.',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+    authorizing: {
+      kind: 'exchange',
+      prompt: 'Do you approve this policy?',
+      response: 'Yes, approved.',
+      source: 'slack://team-channel',
+    },
+  });
+  assert.equal(result.attestation.authorizing.kind, 'exchange');
+  assert.equal(result.attestation.authorizing.prompt, 'Do you approve this policy?');
+  assert.equal(result.attestation.authorizing.response, 'Yes, approved.');
+  assert.equal(result.attestation.authorizing.source, 'slack://team-channel');
+});
+
+test('createAttestation persists authorized-action authorizing block', () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-authorizing-action-');
+  const result = createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'UI approval.',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+    authorizing: {
+      kind: 'authorized-action',
+      promptRef: 'prompt://ui/confirm',
+      renderedPrompt: 'Confirm the policy change',
+      action: 'affirmed-control',
+      authorityRef: 'ui://session/99',
+    },
+  });
+  assert.equal(result.attestation.authorizing.kind, 'authorized-action');
+  assert.equal(result.attestation.authorizing.action, 'affirmed-control');
+});
+
+test('createAttestation without authorizing is still valid (old-record compat)', () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-no-authorizing-');
+  const result = createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'No authorizing block.',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+  assert.equal(result.attestation.authorizing, undefined);
+  // Status should still read fine
+  const status = inspectAttestationStatus(rootDir, { now: '2026-05-11T00:00:00.000Z' });
+  assert.equal(status.state, 'current');
+  assert.equal(status.admissibilityWarning, false);
+});
+
+test('admissibility warning is set when explicit-statement has no overlap', () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-admis-warn-');
+  const result = createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Initial setup',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+    authorizing: { kind: 'explicit-statement', statement: 'banana orange grape fruit' },
+  });
+  assert.equal(result.attestation.admissibilityWarning, true);
+  assert.match(result.attestation.admissibilityWarningReason, /no token overlap/);
+  const status = inspectAttestationStatus(rootDir, { now: '2026-05-11T00:00:00.000Z' });
+  assert.equal(status.admissibilityWarning, true);
+  assert.equal(status.state, 'current');
+});
+
+test('admissibility warning is NOT set when explicit-statement overlaps with notes', () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-admis-pass-');
+  const result = createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Reviewed standards change with team',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+    authorizing: { kind: 'explicit-statement', statement: 'Reviewed standards change' },
+  });
+  assert.equal(result.attestation.admissibilityWarning, undefined);
+  const status = inspectAttestationStatus(rootDir, { now: '2026-05-11T00:00:00.000Z' });
+  assert.equal(status.admissibilityWarning, false);
+});
+
+test('admissibility warning does not fail readiness (PASS with annotation)', () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-admis-readiness-');
+  createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Setup',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2020-01-01T00:00:00.000Z',
+    authorizing: { kind: 'explicit-statement', statement: 'banana orange grape' },
+    validUntilDays: 36500,
+  });
+  const cli = join(repoRootDir, 'bin/veritas.mjs');
+  const output = execFileSync('node', [
+    cli,
+    'readiness',
+    '--root',
+    rootDir,
+    '--skip-evidence-check',
+    '--working-tree',
+  ], { cwd: rootDir, encoding: 'utf8' });
+  // Should PASS (not fail) and contain admissibility warning annotation
+  assert.match(output, /PASS\s+policy-changes-require-attestation/);
+  assert.match(output, /admissibility warning/);
+});
+
+test('CLI --executed-by requires --authorizing-statement or exchange pair', () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-execby-err-');
+  const cli = join(repoRootDir, 'bin/veritas.mjs');
+  assert.throws(
+    () => execFileSync('node', [
+      cli,
+      'attest',
+      'bootstrap',
+      '--root', rootDir,
+      '--actor', 'brian',
+      '--approval-ref', HUMAN_APPROVAL_REF,
+      '--executed-by', 'brian',
+      '--non-interactive',
+    ], { cwd: rootDir, encoding: 'utf8', stdio: 'pipe' }),
+    (error) => {
+      const combined = (error.stdout ?? '') + (error.stderr ?? '');
+      assert.match(combined, /--executed-by requires either --authorizing-statement/);
+      return true;
+    },
+  );
+});
+
+test('CLI --executed-by with --authorizing-statement creates explicit-statement block', () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-execby-stmt-');
+  const cli = join(repoRootDir, 'bin/veritas.mjs');
+  const output = execFileSync('node', [
+    cli,
+    'attest',
+    'bootstrap',
+    '--root', rootDir,
+    '--actor', 'brian',
+    '--approval-ref', HUMAN_APPROVAL_REF,
+    '--executed-by', 'brian',
+    '--authorizing-statement', 'Reviewed and approved the initial standards',
+    '--non-interactive',
+  ], { cwd: rootDir, encoding: 'utf8' });
+  const result = parseCliJson(output);
+  assert.equal(result.attestation.authorizing.kind, 'explicit-statement');
+  assert.equal(result.attestation.authorizing.statement, 'Reviewed and approved the initial standards');
+});
+
+test('CLI exchange flags require both prompt and response', () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-exchange-err-');
+  const cli = join(repoRootDir, 'bin/veritas.mjs');
+  assert.throws(
+    () => execFileSync('node', [
+      cli,
+      'attest',
+      'bootstrap',
+      '--root', rootDir,
+      '--actor', 'brian',
+      '--approval-ref', HUMAN_APPROVAL_REF,
+      '--authorizing-prompt', 'Did you approve?',
+      '--non-interactive',
+    ], { cwd: rootDir, encoding: 'utf8', stdio: 'pipe' }),
+    (error) => {
+      const combined = (error.stdout ?? '') + (error.stderr ?? '');
+      assert.match(combined, /kind=exchange requires --authorizing-response/);
+      return true;
+    },
+  );
+});
+
+test('CLI attest status shows admissibility warning', () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-status-admis-');
+  createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Setup',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+    authorizing: { kind: 'explicit-statement', statement: 'banana orange grape' },
+  });
+  const cli = join(repoRootDir, 'bin/veritas.mjs');
+  const output = execFileSync('node', [
+    cli,
+    'attest',
+    'status',
+    '--root', rootDir,
+  ], { cwd: rootDir, encoding: 'utf8' });
+  const statusResult = parseCliJson(output);
+  assert.equal(statusResult.admissibilityWarning, true);
+  assert.match(statusResult.admissibilityWarningReason, /no token overlap/);
+});

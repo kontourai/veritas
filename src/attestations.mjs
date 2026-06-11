@@ -21,6 +21,7 @@ import {
   hashProtectedStandards,
   sha256Hex,
 } from './attestations/protected-standards.mjs';
+import { computeAdmissibilityWarning } from './attestations/collection.mjs';
 
 const DEFAULT_VALID_UNTIL_DAYS = 90;
 const ATTESTATIONS_DIR = '.veritas/attestations';
@@ -188,6 +189,7 @@ export function createAttestation({
   repoStandardsPath,
   repoMapPath,
   authoritySettingsPath,
+  authorizing = null,
 } = {}) {
   if (!['bootstrap', 'policy-change', 'recommendation-acceptance'].includes(kind)) {
     throw new Error(`Unsupported attestation kind: ${kind}`);
@@ -236,6 +238,11 @@ export function createAttestation({
   const actorRecord = buildActor(rootDir, actor, displayName);
   const validUntil = new Date(new Date(timestamp).getTime() + validUntilDays * 86_400_000).toISOString();
   const surfaceClaimId = `veritas.attestation.${nextAttestationId(kind, timestamp, hashes)}`;
+  const { admissibilityWarning, admissibilityWarningReason } = computeAdmissibilityWarning({
+    authorizing,
+    changedFields: ['repoStandardsHash', 'repoMapHash', 'authoritySettingsHash'],
+    notes,
+  });
   const attestation = {
     schemaVersion: 1,
     id: surfaceClaimId.replace(/^veritas\.attestation\./, ''),
@@ -248,6 +255,8 @@ export function createAttestation({
     priorAttestationId: priorAttestationId ?? null,
     validUntilDays,
     notes,
+    ...(authorizing ? { authorizing } : {}),
+    ...(admissibilityWarning ? { admissibilityWarning, admissibilityWarningReason } : {}),
     metadata: {
       protectedStandardsPaths: hashes.paths,
       supersedes: priorAttestationId ?? null,
@@ -387,6 +396,8 @@ export function inspectAttestationStatus(rootDir, options = {}) {
     ageDays,
     validUntil: validUntil.toISOString(),
     protectedStandards,
+    admissibilityWarning: current.admissibilityWarning ?? false,
+    admissibilityWarningReason: current.admissibilityWarningReason ?? null,
   };
 }
 
@@ -450,6 +461,10 @@ export function buildAttestationPolicyResult(status) {
       }],
     };
   }
+  const admissibilityWarningCount = status.admissibilityWarning ? 1 : 0;
+  const passAnnotation = admissibilityWarningCount > 0
+    ? ` (${admissibilityWarningCount} admissibility ${admissibilityWarningCount === 1 ? 'warning' : 'warnings'})`
+    : '';
   return {
     rule_id: 'policy-changes-require-attestation',
     classification: 'hard-invariant',
@@ -460,7 +475,11 @@ export function buildAttestationPolicyResult(status) {
     implemented: true,
     passed: true,
     status: 'pass',
-    summary: `Active attestation ${status.currentAttestationId} matches current protected standards hashes.`,
-    findings: [],
+    summary: `Active attestation ${status.currentAttestationId} matches current protected standards hashes${passAnnotation}.`,
+    findings: admissibilityWarningCount > 0 ? [{
+      kind: 'admissibility-warning',
+      artifact: status.currentAttestationId,
+      reason: status.admissibilityWarningReason,
+    }] : [],
   };
 }
