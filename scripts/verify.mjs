@@ -464,10 +464,13 @@ assert(
   publishWorkflow.includes('Verify Tag Matches Package Version'),
   'Publish workflow must verify the pushed tag matches package.json version.',
 );
-assert(
-  publishWorkflow.includes('workflow_dispatch') === false,
-  'Publish workflow should stay tag-driven unless the docs explicitly describe a manual publish path.',
-);
+{
+  const releasingDoc = readFileSync(new URL('../docs/RELEASING.md', import.meta.url), 'utf8');
+  assert(
+    publishWorkflow.includes('workflow_dispatch') === false || releasingDoc.includes('workflow_dispatch'),
+    'Publish workflow should stay tag-driven unless docs/RELEASING.md explicitly describes the dispatch path.',
+  );
+}
 assert(
   publishWorkflow.includes('id-token: write'),
   'Publish workflow must request OIDC token minting for npm trusted publishing.',
