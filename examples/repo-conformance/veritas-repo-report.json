@@ -996,14 +996,14 @@
           "currentIntegrityRef": "refs/heads/main"
         },
         {
-          "id": "veritas.surface.examples.fixtures",
+          "id": "veritas.surface.examples.example-data",
           "status": "unknown",
           "subjectType": "repo-surface",
-          "subjectId": "veritas:examples.fixtures",
+          "subjectId": "veritas:examples.example-data",
           "surface": "veritas.affected-surface",
           "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "examples.fixtures",
-          "value": "examples.fixtures",
+          "fieldOrBehavior": "examples.example-data",
+          "value": "examples.example-data",
           "verificationPolicyId": "veritas.surface",
           "createdAt": "2026-05-19T13:38:14.077Z",
           "updatedAt": "2026-04-21T22:00:00.000Z",
@@ -1317,8 +1317,8 @@
           "evidenceIds": []
         },
         {
-          "id": "veritas.surface.examples.fixtures.gap.provenance-gap",
-          "claimId": "veritas.surface.examples.fixtures",
+          "id": "veritas.surface.examples.example-data.gap.provenance-gap",
+          "claimId": "veritas.surface.examples.example-data",
           "type": "provenance_gap",
           "severity": "medium",
           "message": "Missing required evidence: policy_rule.",
@@ -1326,8 +1326,8 @@
           "createdAt": "2026-04-21T22:00:00.000Z"
         },
         {
-          "id": "veritas.surface.examples.fixtures.gap.policy-violation",
-          "claimId": "veritas.surface.examples.fixtures",
+          "id": "veritas.surface.examples.example-data.gap.policy-violation",
+          "claimId": "veritas.surface.examples.example-data",
           "type": "policy_violation",
           "severity": "medium",
           "message": "Missing required verification method: auditability.",
@@ -1444,16 +1444,16 @@
             "policyId": "veritas.surface"
           }
         ],
-        "veritas.surface.examples.fixtures": [
+        "veritas.surface.examples.example-data": [
           {
-            "id": "veritas.surface.examples.fixtures.gap.provenance-gap",
+            "id": "veritas.surface.examples.example-data.gap.provenance-gap",
             "type": "provenance_gap",
             "severity": "medium",
             "message": "Missing required evidence: policy_rule.",
             "policyId": "veritas.surface"
           },
           {
-            "id": "veritas.surface.examples.fixtures.gap.policy-violation",
+            "id": "veritas.surface.examples.example-data.gap.policy-violation",
             "type": "policy_violation",
             "severity": "medium",
             "message": "Missing required verification method: auditability.",
@@ -2084,20 +2084,20 @@
           "currentIntegrityRef": "refs/heads/main"
         },
         {
-          "id": "veritas.surface.examples.fixtures",
+          "id": "veritas.surface.examples.example-data",
           "surface": "veritas.affected-surface",
           "claimType": "veritas-affected-surface",
-          "fieldOrBehavior": "examples.fixtures",
+          "fieldOrBehavior": "examples.example-data",
           "subjectType": "repo-surface",
-          "subjectId": "veritas:examples.fixtures",
+          "subjectId": "veritas:examples.example-data",
           "impactLevel": "medium",
           "verificationPolicyId": "veritas.surface",
           "metadata": {
-            "nodeId": "examples.fixtures"
+            "nodeId": "examples.example-data"
           },
           "createdAt": "2026-05-19T13:38:14.077Z",
           "updatedAt": "2026-04-21T22:00:00.000Z",
-          "value": "examples.fixtures",
+          "value": "examples.example-data",
           "currentIntegrityRef": "refs/heads/main"
         },
         {

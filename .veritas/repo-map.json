@@ -52,9 +52,13 @@
         "patterns": [
           ".veritas/"
         ],
-        "owners": ["governance-team"],
+        "owners": [
+          "governance-team"
+        ],
         "boundary": "strict",
-        "boundaryAllow": ["repo-core"]
+        "boundaryAllow": [
+          "repo-core"
+        ]
       },
       {
         "id": "governance.root-manifests",
@@ -78,9 +82,13 @@
           "surface.config.json",
           "veritas.claims.json"
         ],
-        "owners": ["repo-core"],
+        "owners": [
+          "repo-core"
+        ],
         "boundary": "strict",
-        "boundaryAllow": ["docs-team"]
+        "boundaryAllow": [
+          "docs-team"
+        ]
       },
       {
         "id": "tooling.bin",
@@ -89,9 +97,13 @@
         "patterns": [
           "bin/"
         ],
-        "owners": ["cli-team"],
+        "owners": [
+          "cli-team"
+        ],
         "boundary": "strict",
-        "boundaryAllow": ["repo-core"]
+        "boundaryAllow": [
+          "repo-core"
+        ]
       },
       {
         "id": "delivery.github",
@@ -100,9 +112,13 @@
         "patterns": [
           ".github/"
         ],
-        "owners": ["delivery-team"],
+        "owners": [
+          "delivery-team"
+        ],
         "boundary": "strict",
-        "boundaryAllow": ["repo-core"]
+        "boundaryAllow": [
+          "repo-core"
+        ]
       },
       {
         "id": "delivery.git-hooks",
@@ -111,9 +127,13 @@
         "patterns": [
           ".githooks/"
         ],
-        "owners": ["delivery-team"],
+        "owners": [
+          "delivery-team"
+        ],
         "boundary": "strict",
-        "boundaryAllow": ["repo-core"]
+        "boundaryAllow": [
+          "repo-core"
+        ]
       },
       {
         "id": "tooling.scripts",
@@ -122,9 +142,13 @@
         "patterns": [
           "scripts/"
         ],
-        "owners": ["tooling-team"],
+        "owners": [
+          "tooling-team"
+        ],
         "boundary": "advisory",
-        "boundaryAllow": ["repo-core"]
+        "boundaryAllow": [
+          "repo-core"
+        ]
       },
       {
         "id": "governance.schemas",
@@ -133,9 +157,13 @@
         "patterns": [
           "schemas/"
         ],
-        "owners": ["schema-team"],
+        "owners": [
+          "schema-team"
+        ],
         "boundary": "strict",
-        "boundaryAllow": ["repo-core"]
+        "boundaryAllow": [
+          "repo-core"
+        ]
       },
       {
         "id": "governance.repo-maps",
@@ -144,9 +172,13 @@
         "patterns": [
           "repo-maps/"
         ],
-        "owners": ["repo-map-team"],
+        "owners": [
+          "repo-map-team"
+        ],
         "boundary": "strict",
-        "boundaryAllow": ["repo-core"]
+        "boundaryAllow": [
+          "repo-core"
+        ]
       },
       {
         "id": "governance.repo-standards",
@@ -155,18 +187,24 @@
         "patterns": [
           "repo-standards/"
         ],
-        "owners": ["governance-team"],
+        "owners": [
+          "governance-team"
+        ],
         "boundary": "strict",
-        "boundaryAllow": ["repo-core"]
+        "boundaryAllow": [
+          "repo-core"
+        ]
       },
       {
-        "id": "examples.fixtures",
+        "id": "examples.example-data",
         "kind": "example-area",
         "label": "examples/**",
         "patterns": [
           "examples/"
         ],
-        "owners": ["shared"],
+        "owners": [
+          "shared"
+        ],
         "boundary": "advisory",
         "boundaryAllow": []
       },
@@ -177,9 +215,14 @@
         "patterns": [
           "src/"
         ],
-        "owners": ["product-core-team"],
+        "owners": [
+          "product-core-team"
+        ],
         "boundary": "strict",
-        "boundaryAllow": ["repo-core", "cli-team"]
+        "boundaryAllow": [
+          "repo-core",
+          "cli-team"
+        ]
       },
       {
         "id": "docs.docs",
@@ -188,9 +231,13 @@
         "patterns": [
           "docs/"
         ],
-        "owners": ["docs-team"],
+        "owners": [
+          "docs-team"
+        ],
         "boundary": "advisory",
-        "boundaryAllow": ["repo-core"]
+        "boundaryAllow": [
+          "repo-core"
+        ]
       },
       {
         "id": "verification.tests",
@@ -199,7 +246,9 @@
         "patterns": [
           "tests/"
         ],
-        "owners": ["shared"],
+        "owners": [
+          "shared"
+        ],
         "boundary": "advisory",
         "boundaryAllow": []
       }

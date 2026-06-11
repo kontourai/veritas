@@ -296,7 +296,7 @@ test('repo-local operational config covers the Veritas repo work areas', () => {
   assert.ok(nodeIds.has('tooling.bin'));
   assert.ok(nodeIds.has('governance.schemas'));
   assert.ok(nodeIds.has('governance.repo-standards'));
-  assert.ok(nodeIds.has('examples.fixtures'));
+  assert.ok(nodeIds.has('examples.example-data'));
 
   const repoStandards = readJson('../.veritas/repo-standards/default.repo-standards.json');
   assert.ok(repoStandards.rules.length >= 3);
