@@ -4,11 +4,11 @@ This backlog turns the current roadmap and integration plans into executable wor
 
 ## Now
 
-### Landing path cleanup
+### Landing path cleanup (done)
 
-- Trim the README so the first path is install, init, readiness coverage, and generated evidence.
+- ~~Trim the README so the first path is install, init, readiness coverage, and generated evidence.~~ Shipped: the README quickstart leads with install → init → readiness inside a git repository.
 - Explain Veritas in three jobs: enforce repo boundaries, deliver just-in-time context, and help agents self-correct before review.
-- Cross-link Surface early: every Veritas evidence artifact projects a portable `surface.input`, but Veritas can be used alone.
+- ~~Cross-link Surface early~~ Shipped: the README's "Where Veritas fits" table and Surface footnote link the family.
 
 ### Deep integration documentation
 
