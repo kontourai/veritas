@@ -32,7 +32,7 @@ Accept or reject a recommendation explicitly:
 
 ```bash
 npx @kontourai/veritas recommendation decide <id> --accept --actor <authority-id> --approval-ref <human-approval-reference> --message "Evidence supports requiring this check"
-npx @kontourai/veritas recommendation decide <id> --reject --actor <authority-id> --message "Keep this requirement advisory for now"
+npx @kontourai/veritas recommendation decide <id> --reject --actor <authority-id> --message "Keep this requirement advisory until feedback shows it reliably catches issues"
 ```
 
 Accepting a recommendation may change protected standards. When it does, Veritas records or requires an attestation so the standards cannot change silently.

@@ -124,7 +124,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Apache-2.0
 
-*Veritas is built with [Surface](https://kontourai.io/surface). Users don't need to configure Surface — it's the shared shape under the readiness state.*
+*Veritas is built with [Surface](https://kontourai.io/surface). Veritas projects readiness evidence into Surface format so downstream tools — [Flow](https://kontourai.io/flow) gates, the Surface Console, and MCP-connected agents — can inspect claims and gaps without importing Veritas runtime code.*
 
 ## Where Veritas fits
 

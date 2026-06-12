@@ -24,7 +24,7 @@ Schema field names still use `rules` for the requirement list:
 - `hard-invariant`: a requirement the repo cannot silently drift from
 - `promotable-policy`: a strong preference that may later become required
 - `advisory-pattern`: useful guidance worth surfacing without hard blocking
-- `brittle-implementation-check`: a temporary source-shape rail that should eventually be replaced with stronger evidence
+- `brittle-implementation-check`: the current source-shape validation rail, replaceable when stronger evidence kinds land
 
 ## Product Enforcement Ladder
 
