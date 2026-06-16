@@ -196,3 +196,49 @@ test('Surface validation failure writes rejected input artifact and uses config 
   assert.equal(rejectedInput.source, 'veritas:invalid-surface-projection-test');
   assert.equal(Array.isArray(rejectedInput.claims), true);
 });
+
+test('emitted trust.bundle validates against hachure@0.4.0 schema (schemaVersion 3)', async () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-hachure-schema-'));
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  await initClaimStore({ rootDir, repoName: 'hachure-schema-test', force: true });
+
+  const bundle = await buildSurfaceTrustBundle({
+    run_id: 'hachure-schema-test',
+    timestamp: '2026-06-15T12:00:00.000Z',
+    source_ref: 'hachure-schema-source',
+    source_kind: 'explicit-files',
+    source_scope: ['package.json'],
+    resolved_phase: 'Implementation',
+    resolved_workstream: 'Hachure schema validation test',
+    components: [],
+    triggered_evidence_checks: [],
+    selected_evidence_checks: [],
+    policy_results: [],
+    evidence_inventory_results: [],
+    external_tool_results: [],
+    readiness_coverage: null,
+    selected_evidence_check_ids: [],
+    selected_evidence_check_labels: [],
+    evidence_check_resolution_source: 'default',
+    baseline_ci_fast_passed: null,
+    uncovered_path_result: 'clear',
+    promotion_allowed: true,
+    files: ['package.json'],
+    unresolved_files: [],
+    repo_map: { name: 'hachure-schema-test-map', kind: 'repo-map', report_transport: 'local-json' },
+    repo_standards: { name: 'hachure-schema-test-standards', version: '1', rule_count: 0 },
+    integrity: {
+      sourceRef: 'hachure-schema-source',
+      fileRefs: [{ path: 'package.json', sha256: 'test-sha' }],
+      configRefs: [],
+    },
+  }, { rootDir });
+
+  // Import the Hachure validator directly to confirm the bundle passes
+  const { validateTrustBundleSchema } = await import('../src/surface/trust-bundle-validator.mjs');
+  const result = validateTrustBundleSchema(bundle);
+  assert.equal(result.valid, true, `Hachure schema validation failed: ${result.errors.join('; ')}`);
+  assert.equal(bundle.schemaVersion, 3, 'emitted bundle must use schemaVersion 3');
+
+  rmSync(rootDir, { recursive: true, force: true });
+});

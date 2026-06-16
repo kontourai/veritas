@@ -316,7 +316,7 @@ test('core classifies nodes and builds evidence from a Repo Map', async () => {
   assert.equal(record.policy_results[0].rule_id, 'required-repo-artifacts');
   assert.equal(record.policy_results[0].implemented, true);
   assert.equal(record.policy_results[0].passed, false);
-  assert.equal(record.trust.bundle.schemaVersion, 2);
+  assert.equal(record.trust.bundle.schemaVersion, 3);
   assert.equal(record.trust.bundle.source, `veritas:${record.run_id}`);
   assert.ok(record.trust.bundle.claims.some((claim) => claim.surface === 'veritas.affected-surface'));
   assert.ok(record.trust.bundle.claims.some((claim) => claim.surface === 'veritas.evidence-check'));
