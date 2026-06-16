@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.0.0](https://github.com/kontourai/veritas/compare/v0.5.1...v1.0.0) (2026-06-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* require Node >= 22; verify on current LTS (22, 24) ([#90](https://github.com/kontourai/veritas/issues/90))
+
+### Features
+
+* require Node &gt;= 22; verify on current LTS (22, 24) ([#90](https://github.com/kontourai/veritas/issues/90)) ([6ca8869](https://github.com/kontourai/veritas/commit/6ca8869235e82d986537f41f78d596f1e1205f50))
+
+
+### Fixes
+
+* **ci:** author release PRs via kontour-release-bot app token ([#89](https://github.com/kontourai/veritas/issues/89)) ([4b80089](https://github.com/kontourai/veritas/commit/4b80089acf6dcdd276be7f193128c91b9ae01be3))
+
+## [0.5.1](https://github.com/kontourai/veritas/compare/v0.5.0...v0.5.1) (2026-06-12)
+
+
+### Documentation
+
+* Kontour Veritas branding and tagline, requirement kinds table, decision-language cleanups ([#87](https://github.com/kontourai/veritas/issues/87)) ([7671cce](https://github.com/kontourai/veritas/commit/7671cce21b1261d187eef9ced153cd4824c20941))
+
 ## [0.5.0](https://github.com/kontourai/veritas/compare/v0.4.0...v0.5.0) (2026-06-11)
 
 

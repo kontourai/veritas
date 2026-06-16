@@ -1,6 +1,6 @@
 {
   "name": "@kontourai/veritas",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "description": "Merge autonomy for AI-authored code. Turn your repo's standards into evidence-backed readiness reports the agent reads back.",
   "private": false,
   "license": "Apache-2.0",
@@ -8,7 +8,7 @@
   "author": "kontourai",
   "homepage": "https://kontourai.github.io/veritas/",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "repository": {
     "type": "git",
