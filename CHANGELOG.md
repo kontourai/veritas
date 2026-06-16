@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.1.0](https://github.com/kontourai/veritas/compare/v1.0.0...v1.1.0) (2026-06-16)
+
+
+### Maintenance
+
+* release 1.1.0 — ship Hachure trust-format alignment ([#95](https://github.com/kontourai/veritas/issues/95)) ([186668c](https://github.com/kontourai/veritas/commit/186668c16c2608caf06aca392719b9287156a2ca))
+
 ## [1.0.0](https://github.com/kontourai/veritas/compare/v0.5.1...v1.0.0) (2026-06-12)
 
 
