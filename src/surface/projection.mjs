@@ -39,6 +39,7 @@ import {
   buildSurfaceTrustBundleWithPublicApi,
   createSurfaceTrustBundleAssembler,
 } from './trust-bundle-assembler.mjs';
+import { validateTrustBundleSchema } from './trust-bundle-validator.mjs';
 
 export {
   isoDateTimeOrUndefined,
@@ -72,7 +73,7 @@ export async function buildSurfaceTrustBundle(record, { rootDir = process.cwd(),
   const effectiveClaimStore = withProjectedPolicyClaims(claimStore, record);
   const assembler = createSurfaceTrustBundleAssembler({
     source: `veritas:${record.run_id}`,
-    schemaVersion: 2,
+    schemaVersion: 3,
   });
   const { claims, evidence, events, claimGroups, authorityTrace } = assembler;
 
@@ -118,11 +119,20 @@ export function validateSurfaceTrustBundleAtBoundary({ input, record, rootDir })
     process.stderr.write('WARN: VERITAS_SKIP_SURFACE_VALIDATION=1 — this is intended as a short-lived escape hatch; remove once the underlying example is fixed.\n');
     return input;
   }
+  let validated;
   try {
-    return Surface.validateTrustBundle(input);
+    validated = Surface.validateTrustBundle(input);
   } catch (error) {
     return throwSurfaceTrustBundleValidationError({ error, input, record, rootDir });
   }
+  // Also validate against the normative Hachure JSON Schema (schemaVersion 3, ajv 2020-12)
+  const hachureResult = validateTrustBundleSchema(validated);
+  if (!hachureResult.valid) {
+    const detail = hachureResult.errors.slice(0, 5).join('; ');
+    const error = new Error(`Hachure schema validation failed: ${detail}`);
+    return throwSurfaceTrustBundleValidationError({ error, input: validated, record, rootDir });
+  }
+  return validated;
 }
 
 export function throwSurfaceTrustBundleValidationError({ error, input, record, rootDir }) {
