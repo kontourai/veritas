@@ -194,3 +194,26 @@ test('integrations cursor install wires generic stop hook and reports config sta
   assert.equal(status.toolConfig.stopConfigured, true);
   assert.equal(status.sessionLogReader, null);
 });
+
+test('integrations uninstall reports manual capability state for public tools', () => {
+  const rootDir = bootstrapRepo('veritas-integrations-uninstall-');
+  const cli = join(repoRootDir, 'bin/veritas.mjs');
+
+  for (const tool of ['codex', 'claude-code', 'cursor', 'copilot']) {
+    const output = execFileSync('node', [
+      cli,
+      'integrations',
+      tool,
+      'uninstall',
+      '--root',
+      rootDir,
+    ], { cwd: rootDir, encoding: 'utf8' });
+    const parsed = parseCliJson(output);
+
+    assert.equal(parsed.tool, tool);
+    assert.equal(parsed.action, 'uninstall');
+    assert.equal(parsed.removed, false);
+    assert.equal(parsed.capabilityState, 'manual');
+    assert.match(parsed.reason, /manual/);
+  }
+});

@@ -160,12 +160,15 @@ Installs or inspects runtime integrations through the tool-agnostic integration 
 
 ```bash
 npx @kontourai/veritas integrations codex status
+npx @kontourai/veritas integrations codex uninstall [--root <path>]
 npx @kontourai/veritas integrations claude-code install [--root <path>] [--force]
 npx @kontourai/veritas integrations cursor install [--root <path>] [--force]
 npx @kontourai/veritas integrations copilot status [--root <path>]
 ```
 
 Codex and Claude Code have session log readers. Claude Code install wires PreToolUse, Stop, and PostSession hooks. Cursor and Copilot currently install generic stop-hook wiring and report `sessionLogReader: null`.
+
+`uninstall` is available for Codex, Claude Code, Cursor, and Copilot, but it is manual guidance only. The JSON response reports `removed: false` and `capabilityState: "manual"`; Veritas does not remove files, hooks, or tool configuration automatically yet.
 
 Answers are JSON and may include:
 
@@ -504,6 +507,7 @@ Inspects the installed state of tracked runtime integrations.
 
 ```bash
 npx @kontourai/veritas integrations codex status [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
+npx @kontourai/veritas integrations codex uninstall [--root <path>]
 ```
 
 It reports:
@@ -515,6 +519,18 @@ It reports:
 - whether `.veritas/runtime/codex-hooks.json` exists
 - whether the target Codex hooks file already contains the Veritas command
 - the next repair or install commands to run
+
+`integrations <tool> uninstall` currently reports manual uninstall state for `codex`, `claude-code`, `cursor`, and `copilot`:
+
+```json
+{
+  "removed": false,
+  "capabilityState": "manual",
+  "reason": "Uninstall is intentionally manual for now."
+}
+```
+
+This command is non-destructive. Remove generated hooks or tool configuration manually until automated uninstall support is implemented.
 
 Git hook setup or repair suggestions point to:
 
