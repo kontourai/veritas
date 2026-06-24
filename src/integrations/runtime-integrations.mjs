@@ -30,8 +30,13 @@ export {
 const REPO_HOOKS_SETUP_COMMAND = 'npm exec -- veritas setup repo-hooks';
 const REPO_HOOKS_REPAIR_COMMAND = 'npm exec -- veritas setup repo-hooks --force';
 
-// TODO: replace placeholder uninstall results with integration-specific removal behavior
-// or remove uninstall from the public integration action set before stabilizing it.
+function manualUninstallResult() {
+  return {
+    removed: false,
+    capabilityState: 'manual',
+    reason: 'Uninstall is intentionally manual for now.',
+  };
+}
 
 function isExecutable(path) {
   try {
@@ -229,7 +234,7 @@ export function CodexRuntimeIntegration(rootDir, options = {}) {
       };
     },
     uninstall() {
-      return { removed: false, reason: 'Uninstall is intentionally manual for now.' };
+      return manualUninstallResult();
     },
     status() {
       return inspectRuntimeIntegrationStatus(rootDir, options);
@@ -250,7 +255,7 @@ export function ClaudeCodeRuntimeIntegration(rootDir, options = {}) {
       return applyClaudeCodePostSessionHook({ rootDir });
     },
     uninstall() {
-      return { removed: false, reason: 'Uninstall is intentionally manual for now.' };
+      return manualUninstallResult();
     },
     status() {
       return inspectClaudeCodeRuntimeIntegrationStatus(rootDir);
@@ -271,7 +276,7 @@ export function GenericStopRuntimeIntegration(name, rootDir, options = {}) {
       return { installed: false, reason: `${name} has no session log reader yet.` };
     },
     uninstall() {
-      return { removed: false, reason: 'Uninstall is intentionally manual for now.' };
+      return manualUninstallResult();
     },
     status() {
       return inspectGenericStopRuntimeIntegrationStatus(name, rootDir);

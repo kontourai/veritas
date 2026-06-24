@@ -18,7 +18,7 @@ export function defineSessionLogReader(reader) {
 
 /**
  * @param {object} integration
- * @returns {{ name: string, installPreToolUseHook(opts: object): object, installStopHook(opts: object): object, installPostSessionHook(opts: object): object, uninstall(): object, status(): object }}
+ * @returns {{ name: string, installPreToolUseHook(opts: object): object, installStopHook(opts: object): object, installPostSessionHook(opts: object): object, uninstall(): { removed: boolean, capabilityState?: "shipped"|"preview"|"manual"|"structural-only"|"unavailable", reason?: string }, status(): object }}
  */
 export function defineRuntimeIntegration(integration) {
   return integration;

@@ -14,7 +14,7 @@ Deep means:
 Each deep integration has two pieces:
 
 - `SessionLogReader`: `{ name, canRead(sessionLogPath), readEvents(sessionLogPath) }`, returning normalized events with `kind`, `timestamp`, `files`, `commandText`, `exitCode`, and `raw`.
-- `RuntimeIntegration`: `{ name, installPreToolUseHook(opts), installStopHook(opts), installPostSessionHook(opts), uninstall(), status() }`.
+- `RuntimeIntegration`: `{ name, installPreToolUseHook(opts), installStopHook(opts), installPostSessionHook(opts), uninstall(), status() }`. Public uninstall responses must report their capability state; current integrations return `removed: false` and `capabilityState: "manual"` because automated removal is not implemented.
 
 `veritas feedback observe --tool <tool> --session-log <path>` chooses a session log reader from the registry, or auto-detects by session log shape. New runtimes should implement this contract instead of adding tool-specific logic to the feedback command.
 
@@ -47,5 +47,7 @@ Claude Code now has a full runtime integration and session log reader:
 Cursor and Copilot are supported through generic governance-block plus stop-hook wiring. Their `sessionLogReader` is explicitly `null` until those products expose a durable session log shape Veritas can read.
 
 Copilot and generic agents can integrate deeply through any durable command log that includes timestamps, tool calls, file paths, and command outcomes, but Veritas does not ship those readers today.
+
+`veritas integrations <tool> uninstall` is non-destructive for Codex, Claude Code, Cursor, and Copilot. It reports manual uninstall state instead of removing generated hooks or tool configuration.
 
 Surface is not involved in agent-runtime depth. Veritas owns these integrations because they are repo and agent workflow behavior built on top of Surface's trust primitives.
