@@ -7,7 +7,7 @@ import {
 } from '../approval-resolvers.mjs';
 
 export function rejectNonHumanActor(actorId) {
-  if (/(\bbot\b|ci|github-actions|dependabot|buildkite|circleci|jenkins)/i.test(actorId)) {
+  if (/(\bbot\b|\bci\b|github-actions|dependabot|buildkite|circleci|jenkins)/i.test(actorId)) {
     throw new Error(`Refusing to create a human attestation for non-human actor: ${actorId}`);
   }
 }
