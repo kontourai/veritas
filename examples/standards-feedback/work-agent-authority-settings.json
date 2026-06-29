@@ -5,7 +5,7 @@
   "description": "A conservative starting profile: learn in observe mode first, then tighten rules after repeated evidence.",
   "defaults": {
     "mode": "observe",
-    "new_rule_stage": "recommend"
+    "new_rule_enforcement_level": "Observe"
   },
   "review_preferences": {
     "human_signoff_required_for_stage_promotion": true,

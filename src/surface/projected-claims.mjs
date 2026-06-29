@@ -33,7 +33,7 @@ export function withProjectedPolicyClaims(claimStore, record) {
       metadata: {
         projected: true,
         ruleId: result.rule_id,
-        stage: result.stage,
+        enforcementLevel: result.enforcementLevel,
         classification: result.classification,
         repoStandards: record.repo_standards?.name,
         repoMap: record.repo_map?.name,
@@ -48,7 +48,7 @@ export function withProjectedPolicyClaims(claimStore, record) {
     existingPolicyIds.add(SURFACE_TRUST_POLICIES.policyResult.id);
   }
   const readinessPolicyResultClaims = (record.policy_results ?? [])
-    .filter((result) => result.stage === 'block')
+    .filter((result) => result.enforcementLevel === 'Require')
     .map((result) => ({ result, claim: findPolicyResultClaim(claims, result) }))
     .filter((item) => item.claim);
   const readinessClaim = buildReadinessVerdictClaim(record, readinessPolicyResultClaims);
@@ -151,7 +151,7 @@ export function buildRepoStandardsClaimGroup(record, claimStore) {
       id: `veritas.requirement.${surfaceSafeId(result.rule_id)}`,
       title: result.rule_id,
       claimIds: [claim.id],
-      required: result.stage === 'block',
+      required: result.enforcementLevel === 'Require',
       severity: surfacePolicyImpact(result),
       validationStrategy: {
         requiredEvidence: ['policy_rule'],
@@ -160,13 +160,13 @@ export function buildRepoStandardsClaimGroup(record, claimStore) {
         reviewAuthority: 'veritas requirements',
         metadata: {
           ruleId: result.rule_id,
-          stage: result.stage,
+          enforcementLevel: result.enforcementLevel,
           classification: result.classification,
         },
       },
       metadata: {
         implemented: result.implemented,
-        stage: result.stage,
+        enforcementLevel: result.enforcementLevel,
         classification: result.classification,
       },
     };

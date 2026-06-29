@@ -200,9 +200,9 @@ export function collectPolicyResultEvidence(record, claimStore, evidence, events
       locator: `policy_results.${result.rule_id}`,
       summary: result.summary ?? result.message ?? `Policy ${result.rule_id} evaluated.`,
       passing: result.passed,
-      blocking: result.stage === 'block',
+      blocking: result.enforcementLevel === 'Require',
       metadata: {
-        stage: result.stage,
+        enforcementLevel: result.enforcementLevel,
         classification: result.classification,
         implemented: result.implemented,
         passed: result.passed,
@@ -210,7 +210,7 @@ export function collectPolicyResultEvidence(record, claimStore, evidence, events
           type: 'policy_violation',
           severity: impactLevel,
           message: result.message,
-          blocking: result.stage === 'block',
+          blocking: result.enforcementLevel === 'Require',
         }] : [],
       },
     }));

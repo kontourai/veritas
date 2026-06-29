@@ -120,7 +120,7 @@ export function appendStandardsFeedbackHistory(record, rootDir) {
     policy_results: (record.evidence.policy_results ?? []).map((result) => ({
       rule_id: result.rule_id,
       passed: result.passed,
-      stage: result.stage,
+      enforcementLevel: result.enforcementLevel,
     })),
   };
   appendFileSync(historyPath, `${JSON.stringify(historyRecord)}\n`, 'utf8');

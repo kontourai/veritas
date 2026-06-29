@@ -101,7 +101,7 @@ export function buildMarkdownSummary(record, artifactPath) {
 export function feedbackStatusForPolicyResult(result) {
   if (result.status === 'error') return 'FAIL';
   if (result.passed === true) return 'PASS';
-  if (result.passed === false && result.stage === 'block') return 'FAIL';
+  if (result.passed === false && result.enforcementLevel === 'Require') return 'FAIL';
   if (result.passed === false) return 'WARN';
   return 'INFO';
 }

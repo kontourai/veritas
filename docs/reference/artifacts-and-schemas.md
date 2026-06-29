@@ -123,7 +123,7 @@ Offline approval records live under `.veritas/authority/approval-records/` and a
 
 Defined by [schemas/veritas-repo-standards.schema.json](../../schemas/veritas-repo-standards.schema.json).
 
-Requirements may include `enforcement: "deny"` or `enforcement: "lint"` in the current schema. If omitted, `hard-invariant` requirements default to deny and all other classifications default to lint. Deny requirements are eligible for PreToolUse blocking in supported runtime integrations; lint requirements remain generated evidence feedback.
+Each Requirement carries a canonical `enforcementLevel` (the Enforcement Level from CONTEXT.md): `"Observe"` records evidence only, `"Guide"` adds just-in-time agent-facing correction without blocking merge readiness, and `"Require"` must be satisfied or accepted by exception. A derived `enforcement` flag (`"deny"` or `"advisory"`) controls only the runtime PreToolUse hard gate: it is not authored, and defaults from classification (`hard-invariant` → `deny`, otherwise `advisory`). Deny requirements are eligible for PreToolUse blocking in supported runtime integrations; advisory requirements remain generated evidence feedback. The content evidence checks (`forbidden-pattern`, `required-pattern`, `header-required`, `vocabulary-consistency`) emit findings as readiness evidence; they are governed Requirements, not a generic-lint surface.
 
 ### Graph
 
@@ -160,7 +160,7 @@ Defined by [schemas/veritas-repo-standards.schema.json](../../schemas/veritas-re
 
 A current Repo Standards file provides:
 
-- staged requirement metadata
+- Enforcement Level metadata (`Observe`/`Guide`/`Require`)
 - requirement classification (via required `kind` discriminator)
 - match payloads used by the current evaluator
 - per-requirement `explain` blocks (`summary`, `mustDo`, `mustNotDo`, `exampleGood`, `exampleBad`, `contextLinks`)
@@ -231,7 +231,7 @@ The match shape is explicit: each candidate selects files, looks for a JavaScrip
   "id": "repeatable-governance-uses-veritas-primitives",
   "kind": "primitive-first-governance",
   "classification": "promotable-policy",
-  "stage": "warn",
+  "enforcementLevel": "Guide",
   "message": "Repeatable repo governance checks should be represented by Veritas primitives before they become local helper scripts.",
   "match": {
     "candidates": [
@@ -269,7 +269,7 @@ The match shape is explicit: each candidate selects files, looks for a JavaScrip
 
 `packageScripts.file` points to the package manifest to inspect. `namePatterns[]` and `commandPatterns[]` are JavaScript regular expressions that identify scripts likely to enforce quality or governance. Matching scripts are represented when the current Repo Map has an Evidence Check whose `command` runs `npm run <script-name>`, or when the script is covered by a configured primitive reference. `helperExemptions[]` names scripts that are intentionally not governance primitives; each exemption should include a terse rationale that explains why the command does not decide Requirement satisfaction, merge readiness, Repo Conformance, Protected Standards integrity, authority, evidence freshness, or Change Guidance.
 
-When a candidate pattern is present but none of its `representedBy` references exists in the current Repo Map or Repo Standards file, or when a matching package script is not routed or exempted, the policy result fails or warns according to the Requirement's stage and enforcement. Findings use `kind: "primitive-first-governance"` and include the artifact path, line, matched pattern or script name, and required primitive references. This makes the bypass visible in Generated Evidence and Readiness Reports without promoting the Requirement to Require before Standards Feedback shows the signal is reliable.
+When a candidate pattern is present but none of its `representedBy` references exists in the current Repo Map or Repo Standards file, or when a matching package script is not routed or exempted, the policy result fails or warns according to the Requirement's Enforcement Level. Findings use `kind: "primitive-first-governance"` and include the artifact path, line, matched pattern or script name, and required primitive references. This makes the bypass visible in Generated Evidence and Readiness Reports without promoting the Requirement to Require before Standards Feedback shows the signal is reliable.
 
 This kind is for governance-enforcing behavior, not for every script. Ordinary helper scripts may build docs, run tests, format code, publish packages, or support developer convenience without becoming governance primitives. A script becomes governance-enforcing when it decides whether repo standards, merge readiness, repo conformance, protected standards integrity, authority, evidence freshness, or change guidance are satisfied. Governance-enforcing scripts should be expressed directly as Repo Standards Requirements when possible; when the behavior must run as a command, route it as an Evidence Check adapter behind the Repo Map so Veritas can select it, record evidence, and explain the result.
 
@@ -493,7 +493,7 @@ Defined by [schemas/veritas-authority-settings.schema.json](../../schemas/verita
 The current file controls settings that belong to Repo Standards:
 
 - default rollout mode
-- default stage for new requirements
+- default Enforcement Level for new requirements
 - reviewer confidence scale
 - signoff expectations
 - evidence requirements before a requirement becomes mandatory

@@ -12,7 +12,7 @@ export function readinessSurfaceStatus(record) {
 
 export function readinessHasBlockingFailure(record) {
   if (record.uncovered_path_result === 'fail') return true;
-  if ((record.policy_results ?? []).some((result) => result.passed === false && result.stage === 'block')) return true;
+  if ((record.policy_results ?? []).some((result) => result.passed === false && result.enforcementLevel === 'Require')) return true;
   if ((record.selected_evidence_checks ?? []).some((check) => check.evidence_check_result?.passed === false)) return true;
   if ((record.external_tool_results ?? []).some((result) => result.blocking !== false && ['fail', 'missing'].includes(result.verdict))) return true;
   return false;
@@ -29,8 +29,8 @@ export function readinessPolicyResultSummary(record) {
   const results = record.policy_results ?? [];
   return {
     total: results.length,
-    failedBlocking: results.filter((result) => result.passed === false && result.stage === 'block').map((result) => result.rule_id),
-    warnings: results.filter((result) => result.passed === false && result.stage !== 'block').map((result) => result.rule_id),
+    failedBlocking: results.filter((result) => result.passed === false && result.enforcementLevel === 'Require').map((result) => result.rule_id),
+    warnings: results.filter((result) => result.passed === false && result.enforcementLevel !== 'Require').map((result) => result.rule_id),
   };
 }
 

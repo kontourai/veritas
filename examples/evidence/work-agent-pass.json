@@ -95,7 +95,7 @@
     {
       "rule_id": "required-repo-artifacts",
       "classification": "hard-invariant",
-      "stage": "block",
+      "enforcementLevel": "Require",
       "message": "Required repository governance and CI artifacts must exist.",
       "owner": "repo-core",
       "rollback_switch": null,
@@ -107,7 +107,7 @@
     {
       "rule_id": "baseline-evidence-check",
       "classification": "hard-invariant",
-      "stage": "block",
+      "enforcementLevel": "Require",
       "message": "The primary PR workflow must execute the baseline evidenceCheck and the connected-agents suite.",
       "owner": "repo-core",
       "rollback_switch": null,
@@ -119,7 +119,7 @@
     {
       "rule_id": "forbid-shared-root-imports",
       "classification": "promotable-policy",
-      "stage": "block",
+      "enforcementLevel": "Require",
       "message": "New code should not import from the @stallion-ai/shared root; use contracts or explicit helper subpaths.",
       "owner": "repo-architecture",
       "rollback_switch": "disable-shared-root-import-check",
@@ -131,7 +131,7 @@
     {
       "rule_id": "extracted-transport-helper-shape",
       "classification": "brittle-implementation-check",
-      "stage": "recommend",
+      "enforcementLevel": "Observe",
       "message": "Certain files currently assert exact extracted-helper source shapes; these should be reviewed for eventual replacement with stronger semantic checks.",
       "owner": "repo-architecture",
       "rollback_switch": "soften-source-shape-checks",

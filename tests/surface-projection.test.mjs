@@ -96,7 +96,7 @@ test('buildSurfaceTrustBundle projects readiness derivation links to blocking po
       {
         rule_id: 'required-tests-pass',
         passed: true,
-        stage: 'block',
+        enforcementLevel: 'Require',
         classification: 'hard-invariant',
         implemented: true,
         summary: 'Required tests passed.',
@@ -105,7 +105,7 @@ test('buildSurfaceTrustBundle projects readiness derivation links to blocking po
       {
         rule_id: 'docs-advisory-present',
         passed: false,
-        stage: 'warn',
+        enforcementLevel: 'Guide',
         classification: 'advisory',
         implemented: true,
         summary: 'Advisory documentation check failed.',

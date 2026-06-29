@@ -206,7 +206,7 @@ export function buildStarterRepoStandards({ projectName, instructionTargets = DE
         id: 'required-veritas-artifacts',
         kind: 'required-artifacts',
         classification: 'hard-invariant',
-        stage: 'block',
+        enforcementLevel: 'Require',
         message:
           'The bootstrap Veritas artifacts must stay present so agents and reviewers share the same baseline.',
         owner: 'repo-core',
@@ -225,7 +225,7 @@ export function buildStarterRepoStandards({ projectName, instructionTargets = DE
         id: 'ai-instruction-files-synced',
         kind: 'governance-block',
         classification: 'hard-invariant',
-        stage: 'warn',
+        enforcementLevel: 'Guide',
         message:
           'All required AI tool instruction files must contain the Veritas guidance block.',
         owner: 'repo-maintainers',
@@ -238,7 +238,7 @@ export function buildStarterRepoStandards({ projectName, instructionTargets = DE
         id: 'prefer-veritas-routed-delivery',
         kind: 'required-artifacts',
         classification: 'promotable-policy',
-        stage: 'recommend',
+        enforcementLevel: 'Observe',
         message:
           'Prefer running new AI-guided changes through Veritas readiness checks and the documented evidenceCheck before review.',
         owner: 'repo-maintainers',
@@ -276,7 +276,7 @@ export function buildStarterAuthoritySettings({ projectName, evidenceCheck = 'np
       'Conservative starter settings: observe first, learn from evidence, and only require what has earned trust.',
     defaults: {
       mode: 'observe',
-      new_rule_stage: 'recommend',
+      new_rule_enforcement_level: 'Observe',
     },
     review_preferences: {
       human_signoff_required_for_stage_promotion: true,

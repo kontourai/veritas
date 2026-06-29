@@ -1152,7 +1152,7 @@
       "required": [
         "rule_id",
         "classification",
-        "stage",
+        "enforcementLevel",
         "message",
         "owner",
         "rollback_switch",
@@ -1168,7 +1168,10 @@
         "classification": {
           "type": "string"
         },
-        "stage": {
+        "enforcementLevel": {
+          "type": "string"
+        },
+        "enforcement": {
           "type": "string"
         },
         "message": {

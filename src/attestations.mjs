@@ -406,7 +406,7 @@ export function buildAttestationPolicyResult(status) {
     return {
       rule_id: 'policy-changes-require-attestation',
       classification: 'hard-invariant',
-      stage: 'block',
+      enforcementLevel: 'Require',
       message: 'Protected standards changes require a fresh authority-backed attestation.',
       owner: 'repo-core',
       rollback_switch: null,
@@ -427,7 +427,7 @@ export function buildAttestationPolicyResult(status) {
     return {
       rule_id: 'policy-changes-require-attestation',
       classification: 'hard-invariant',
-      stage: 'warn',
+      enforcementLevel: 'Guide',
       message: 'No authority-backed attestation has activated the protected standards yet.',
       owner: 'repo-core',
       rollback_switch: null,
@@ -446,7 +446,7 @@ export function buildAttestationPolicyResult(status) {
     return {
       rule_id: 'policy-changes-require-attestation',
       classification: 'hard-invariant',
-      stage: 'warn',
+      enforcementLevel: 'Guide',
       message: 'The active protected-standards attestation has expired.',
       owner: 'repo-core',
       rollback_switch: null,
@@ -468,7 +468,7 @@ export function buildAttestationPolicyResult(status) {
   return {
     rule_id: 'policy-changes-require-attestation',
     classification: 'hard-invariant',
-    stage: 'block',
+    enforcementLevel: 'Require',
     message: 'Protected standards changes require a fresh authority-backed attestation.',
     owner: 'repo-core',
     rollback_switch: null,

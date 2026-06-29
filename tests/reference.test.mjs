@@ -209,7 +209,7 @@ test('standards feedback examples explain outcome measurement and team tuning', 
   assert.equal(feedbackDraft.prefilled_outcome.reviewer_confidence, 'unknown');
   assert.equal(feedbackDraft.governance.protected_standards_touched, true);
   assert.equal(feedbackRecord.outcome.accepted_without_major_rewrite, true);
-  assert.equal(authoritySettings.defaults.new_rule_stage, 'recommend');
+  assert.equal(authoritySettings.defaults.new_rule_enforcement_level, 'Observe');
   assert.equal(authoritySettings.promotion_preferences.warnings_block_in_ci, false);
   assert.equal(
     authoritySettings.promotion_preferences.require_consistent_feedback_before_promotion,
