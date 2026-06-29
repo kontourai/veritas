@@ -8,7 +8,6 @@ dist/
 # .veritas/repo-map.json, .veritas/repo-standards/**, and .veritas/authority/**.
 .veritas/evidence/
 .veritas/claims/
-.veritas/surface-console/
 .veritas/external/
 .veritas/standards-feedback-drafts/
 .veritas/standards-feedback/

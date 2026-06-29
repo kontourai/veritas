@@ -1,6 +1,6 @@
 {
   "port": 4242,
-  "readModelPath": ".veritas/surface-console/latest.json",
+  "readModelPath": ".surface/runs/latest.json",
   "vocab": {
     "projectName": "Veritas repo governance",
     "projectKind": "repo governance"
