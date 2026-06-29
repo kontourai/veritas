@@ -74,3 +74,18 @@ await server.connect(new StdioServerTransport());
     await pool.close();
   }
 });
+
+test('runBash kills a hanging command at timeoutMs and flags timedOut', async () => {
+  const result = await runBash('sleep 30', { timeoutMs: 100 });
+
+  assert.equal(result.passed, false);
+  assert.equal(result.timedOut, true);
+  assert.notEqual(result.signal, null, 'killed via signal, not a clean exit');
+});
+
+test('runBash leaves timedOut false for a command that finishes in time', async () => {
+  const result = await runBash('printf "ok"', { timeoutMs: 5000 });
+
+  assert.equal(result.passed, true);
+  assert.equal(result.timedOut, false);
+});

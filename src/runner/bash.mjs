@@ -18,6 +18,7 @@ export function runBash(command, { cwd, env, timeoutMs, signal } = {}) {
 
     let timer = null;
     let killed = false;
+    let timedOut = false;
 
     function kill() {
       if (killed) return;
@@ -29,7 +30,7 @@ export function runBash(command, { cwd, env, timeoutMs, signal } = {}) {
     }
 
     if (timeoutMs) {
-      timer = setTimeout(() => { kill(); }, timeoutMs);
+      timer = setTimeout(() => { timedOut = true; kill(); }, timeoutMs);
     }
 
     const onAbort = () => { if (timer) { clearTimeout(timer); timer = null; } kill(); };
@@ -62,6 +63,7 @@ export function runBash(command, { cwd, env, timeoutMs, signal } = {}) {
         stdout,
         stderr,
         durationMs: Date.now() - startedAt,
+        timedOut,
       });
     });
   });
