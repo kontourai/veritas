@@ -2293,6 +2293,18 @@ test('report writes one trimmed Surface claim input per claim', async () => {
   }
 });
 
+test('surface.config.json readModelPath points at the location the console writer actually writes (ops#18)', () => {
+  // Regression guard: writeSurfaceConsoleReadModel writes its index to
+  // .surface/runs/latest.json (CONSOLE_DIR + 'latest.json'), the same file the
+  // claim-input-smoke test reads above. The `surface console` reader consumes
+  // surface.config.json#readModelPath, so it must point at that exact file —
+  // previously it referenced .veritas/surface-console/latest.json, which nothing
+  // writes, leaving `npm run veritas:console` reading a non-existent read-model.
+  const configPath = fileURLToPath(new URL('../surface.config.json', import.meta.url));
+  const config = JSON.parse(readFileSync(configPath, 'utf8'));
+  assert.equal(config.readModelPath, '.surface/runs/latest.json');
+});
+
 test('report rejects run ids that would escape output directories', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-unsafe-run-id-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
