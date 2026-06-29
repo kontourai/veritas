@@ -11,6 +11,14 @@ import {
 import { generateStandardsFeedbackDraft, generateStandardsFeedbackRecord } from '../standards-feedback/records.mjs';
 import { appendRunHistory, deriveTimeToGreenFromRunHistory } from '../standards-feedback/run-history.mjs';
 
+/**
+ * Default per-evidence-check timeout (ms). Without it, a bash check waiting on
+ * stdin/network hangs `veritas readiness` until manual SIGINT. Override per check
+ * via `evidenceCheck.timeoutMs`, or globally via the `evidenceCheckTimeoutMs`
+ * option. Generous so legitimately slow checks are not killed.
+ */
+export const DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS = 10 * 60_000;
+
 export function hasReadinessOutcomeInputs(options) {
   return (
     typeof options.acceptedWithoutMajorRewrite === 'boolean' &&
@@ -20,7 +28,7 @@ export function hasReadinessOutcomeInputs(options) {
   );
 }
 
-async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput }) {
+async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, evidenceCheckTimeoutMs = DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS }) {
   let evidenceCheckFailure = null;
   const evidenceCheckResults = [];
   const pool = createMcpServerPool({ signal });
@@ -28,10 +36,11 @@ async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput }) 
     for (const evidenceCheck of evidenceChecks) {
       const runner = evidenceCheck.runner ?? 'bash';
       const label = evidenceCheckLabel(evidenceCheck);
+      const checkTimeoutMs = evidenceCheck.timeoutMs ?? evidenceCheckTimeoutMs;
       try {
         const result = runner === 'mcp'
           ? await pool.call(evidenceCheck.server, evidenceCheck.tool, evidenceCheck.input ?? {}, { signal })
-          : await runBash(evidenceCheck.command, { cwd: rootDir, signal });
+          : await runBash(evidenceCheck.command, { cwd: rootDir, signal, timeoutMs: checkTimeoutMs });
         const evidenceCheckResult = {
           id: evidenceCheck.id,
           runner,
@@ -43,6 +52,7 @@ async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput }) 
           stderr: runner === 'bash' ? result.stderr ?? '' : '',
           content: runner === 'mcp' ? result.content ?? [] : [],
           isError: runner === 'mcp' ? result.isError ?? false : false,
+          timedOut: runner === 'bash' ? result.timedOut ?? false : false,
           durationMs: result.durationMs ?? 0,
         };
         evidenceCheckResults.push(evidenceCheckResult);
@@ -50,7 +60,9 @@ async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput }) 
         if (!evidenceCheckResult.passed) {
           const status = runner === 'mcp'
             ? 'MCP tool returned an error'
-            : (evidenceCheckResult.exitCode ?? evidenceCheckResult.signal ?? 'unknown status');
+            : evidenceCheckResult.timedOut
+              ? `timed out after ${checkTimeoutMs}ms`
+              : (evidenceCheckResult.exitCode ?? evidenceCheckResult.signal ?? 'unknown status');
           evidenceCheckFailure = {
             id: evidenceCheck.id,
             runner,
@@ -130,6 +142,7 @@ export async function runMergeReadiness(
         rootDir,
         signal: controller.signal,
         onOutput: runtime.onEvidenceCheckOutput,
+        evidenceCheckTimeoutMs: options.evidenceCheckTimeoutMs,
       });
       evidenceCheckFailure = result.evidenceCheckFailure;
       evidenceCheckResults = result.evidenceCheckResults;
