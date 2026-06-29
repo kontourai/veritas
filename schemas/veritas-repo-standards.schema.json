@@ -14,10 +14,11 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "kind", "classification", "stage", "message", "match"],
+        "required": ["id", "kind", "classification", "enforcementLevel", "message", "match"],
         "properties": {
           "id": { "type": "string" },
           "kind": {
+            "description": "The evidence-check primitive that produces readiness evidence for this requirement. forbidden-pattern / required-pattern / header-required / vocabulary-consistency are content evidence checks (they emit findings as readiness evidence), NOT a generic-lint surface.",
             "type": "string",
             "enum": [
               "required-artifacts",
@@ -40,13 +41,15 @@
               "brittle-implementation-check"
             ]
           },
-          "stage": {
+          "enforcementLevel": {
+            "description": "How strongly Veritas applies the requirement (the canonical Enforcement Level, CONTEXT.md). Observe: record evidence only. Guide: give just-in-time agent-facing correction without blocking merge readiness. Require: must be satisfied or accepted by exception.",
             "type": "string",
-            "enum": ["recommend", "warn", "block"]
+            "enum": ["Observe", "Guide", "Require"]
           },
           "enforcement": {
+            "description": "Derived runtime hard-gate flag (not authored): 'deny' makes the PreToolUse hook block on a failing hard-invariant; 'advisory' records only. Defaulted from classification in src/rules/result.mjs.",
             "type": "string",
-            "enum": ["deny", "lint"]
+            "enum": ["deny", "advisory"]
           },
           "message": { "type": "string" },
           "owner": { "type": ["string", "null"] },

@@ -54,7 +54,7 @@ test('Surface trust report summary is persisted with stale and disputed statuses
     policy_results: [{
       rule_id: 'warn-rule',
       classification: 'promotable-policy',
-      stage: 'warn',
+      enforcementLevel: 'Guide',
       implemented: true,
       passed: false,
       summary: 'Warn rule failed.',

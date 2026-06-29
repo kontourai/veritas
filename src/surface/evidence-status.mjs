@@ -1,13 +1,13 @@
 export function surfacePolicyResultStatus(result) {
   if (result.passed === true) return 'verified';
-  if (result.passed === false && result.stage === 'block') return 'rejected';
+  if (result.passed === false && result.enforcementLevel === 'Require') return 'rejected';
   if (result.passed === false) return 'disputed';
   return 'proposed';
 }
 
 export function surfacePolicyImpact(result) {
-  if (result.stage === 'block' || result.classification === 'hard-invariant') return 'high';
-  if (result.stage === 'warn') return 'medium';
+  if (result.enforcementLevel === 'Require' || result.classification === 'hard-invariant') return 'high';
+  if (result.enforcementLevel === 'Guide') return 'medium';
   return 'low';
 }
 

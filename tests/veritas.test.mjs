@@ -118,7 +118,7 @@ function writeClaimStoreForRepoMap(rootDir, repoMap, repoStandards, options = {}
       fieldOrBehavior: rule.id,
       subjectType: 'veritas-policy-rule',
       subjectId: `${repoStandards.name}:${rule.id}`,
-      impactLevel: rule.stage === 'block' ? 'high' : 'medium',
+      impactLevel: rule.enforcementLevel === 'Require' ? 'high' : 'medium',
       verificationPolicyId: SURFACE_TRUST_POLICIES.policyResult.id,
       metadata: { ruleId: rule.id },
       createdAt: '2026-05-19T00:00:00.000Z',
@@ -656,7 +656,7 @@ test('Repo Standards evaluates governance blocks and diff-required rules', () =>
         id: 'ai-instruction-files-synced',
         kind: 'governance-block',
         classification: 'hard-invariant',
-        stage: 'warn',
+        enforcementLevel: 'Guide',
         message: 'Instruction files must include the Veritas block.',
         match: {
           'governance-block': ['AGENTS.md', 'CLAUDE.md'],
@@ -666,7 +666,7 @@ test('Repo Standards evaluates governance blocks and diff-required rules', () =>
         id: 'api-changes-require-test-changes',
         kind: 'diff-required',
         classification: 'promotable-policy',
-        stage: 'block',
+        enforcementLevel: 'Require',
         message: 'API changes require API tests.',
         match: {
           'if-changed': 'src/api/',
@@ -707,7 +707,7 @@ test('Repo Standards flags repeatable governance checks without Veritas primitiv
     id: 'repeatable-governance-uses-veritas-primitives',
     kind: 'primitive-first-governance',
     classification: 'promotable-policy',
-    stage: 'warn',
+    enforcementLevel: 'Guide',
     message: 'Repeatable governance checks should use Veritas primitives.',
     match: {
       candidates: [
@@ -787,7 +787,7 @@ test('Repo Standards flags package quality scripts without Evidence Check routin
         id: 'repeatable-governance-uses-veritas-primitives',
         kind: 'primitive-first-governance',
         classification: 'promotable-policy',
-        stage: 'warn',
+        enforcementLevel: 'Guide',
         message: 'Repeatable governance checks should use Veritas primitives.',
         match: {
           packageScripts: {
@@ -811,7 +811,7 @@ test('Repo Standards flags package quality scripts without Evidence Check routin
   );
   assert.equal(failedResult.implemented, true);
   assert.equal(failedResult.passed, false);
-  assert.equal(failedResult.stage, 'warn');
+  assert.equal(failedResult.enforcementLevel, 'Guide');
   assert.equal(failedResult.findings[0].kind, 'primitive-first-governance');
   assert.equal(failedResult.findings[0].artifact, 'package.json');
   assert.equal(failedResult.findings[0].package_script, 'quality:check');
@@ -855,7 +855,7 @@ test('Repo Standards accepts explicit non-governance package helper exemptions',
         id: 'repeatable-governance-uses-veritas-primitives',
         kind: 'primitive-first-governance',
         classification: 'promotable-policy',
-        stage: 'warn',
+        enforcementLevel: 'Guide',
         message: 'Repeatable governance checks should use Veritas primitives.',
         match: {
           packageScripts: {
@@ -900,7 +900,7 @@ test('Repo Standards fails closed for unknown rule kinds', () => {
         id: 'invented-rule',
         kind: 'frobnicate',
         classification: 'hard-invariant',
-        stage: 'block',
+        enforcementLevel: 'Require',
         message: 'Invented rules must not silently pass.',
         match: {
           artifacts: ['package.json'],
@@ -953,7 +953,7 @@ test('content-level policy rules report file and line findings', () => {
         id: 'no-console',
         kind: 'forbidden-pattern',
         classification: 'advisory-pattern',
-        stage: 'warn',
+        enforcementLevel: 'Guide',
         message: 'No console logging.',
         match: { files: ['src/**/*.mjs'], pattern: 'console\\.log' },
       },
@@ -961,7 +961,7 @@ test('content-level policy rules report file and line findings', () => {
         id: 'requires-const',
         kind: 'required-pattern',
         classification: 'advisory-pattern',
-        stage: 'warn',
+        enforcementLevel: 'Guide',
         message: 'Requires const.',
         match: { files: ['src/**/*.mjs'], pattern: 'const x' },
       },
@@ -969,7 +969,7 @@ test('content-level policy rules report file and line findings', () => {
         id: 'header',
         kind: 'header-required',
         classification: 'advisory-pattern',
-        stage: 'warn',
+        enforcementLevel: 'Guide',
         message: 'Requires header.',
         match: { files: ['src/**/*.mjs'], pattern: '^// Copyright' },
       },
@@ -977,7 +977,7 @@ test('content-level policy rules report file and line findings', () => {
         id: 'vocabulary',
         kind: 'vocabulary-consistency',
         classification: 'advisory-pattern',
-        stage: 'warn',
+        enforcementLevel: 'Guide',
         message: 'Use canonical vocabulary.',
         match: {
           files: ['docs/**/*.md'],
@@ -1024,7 +1024,7 @@ test('explain selects only file-matching rule context and stays concise', () => 
         id: 'src-rule',
         kind: 'forbidden-pattern',
         classification: 'advisory-pattern',
-        stage: 'warn',
+        enforcementLevel: 'Guide',
         message: 'No debug output.',
         explain: { summary: 'Source rule only.', mustDo: ['Remove debug output.'] },
         match: { files: ['src/**/*.mjs'], pattern: 'console\\.log' },
@@ -1033,7 +1033,7 @@ test('explain selects only file-matching rule context and stays concise', () => 
         id: 'docs-rule',
         kind: 'required-artifacts',
         classification: 'advisory-pattern',
-        stage: 'warn',
+        enforcementLevel: 'Guide',
         message: 'Docs required.',
         explain: { summary: 'Docs rule only.' },
         match: { artifacts: ['docs/README.md'] },
@@ -1118,7 +1118,7 @@ test('work-area boundary fails closed without actor and reports owner outcomes',
     id: 'work-area-boundary',
     kind: 'work-area-boundary',
     classification: 'hard-invariant',
-    stage: 'block',
+    enforcementLevel: 'Require',
     message: 'Actors may only edit owned surfaces.',
     match: {},
   };
@@ -2241,7 +2241,7 @@ test('report writes one trimmed Surface claim input per claim', async () => {
         id: 'package-json-required',
         kind: 'required-artifacts',
         classification: 'hard-invariant',
-        stage: 'block',
+        enforcementLevel: 'Require',
         message: 'package.json is required.',
         match: { artifacts: ['package.json'] },
       },
@@ -2667,7 +2667,7 @@ test('standards feedback record CLI rejects draft/authority-settings rebinding',
         id: 'alt-team',
         name: 'Alt Team',
         description: 'Alt scale',
-        defaults: { mode: 'observe', new_rule_stage: 'recommend' },
+        defaults: { mode: 'observe', new_rule_enforcement_level: 'Observe' },
         review_preferences: {
           human_signoff_required_for_stage_promotion: true,
           reviewer_confidence_scale: ['red', 'yellow', 'green'],
@@ -3039,7 +3039,7 @@ test('readiness check reports primitive-first governance findings as policy resu
     id: 'repeatable-governance-uses-veritas-primitives',
     kind: 'primitive-first-governance',
     classification: 'promotable-policy',
-    stage: 'warn',
+    enforcementLevel: 'Guide',
     message: 'Repeatable governance checks should use Veritas primitives.',
     owner: 'test',
     rollback_switch: null,
@@ -3087,7 +3087,7 @@ test('readiness check reports primitive-first governance findings as policy resu
       policyResult.rule_id === 'repeatable-governance-uses-veritas-primitives',
   );
   assert.equal(result.passed, false);
-  assert.equal(result.stage, 'warn');
+  assert.equal(result.enforcementLevel, 'Guide');
   assert.equal(result.findings[0].kind, 'primitive-first-governance');
   assert.equal(result.findings[0].package_script, 'governance:check');
   assert.equal(result.findings[0].command, 'node scripts/check-governance.js');
@@ -3159,7 +3159,7 @@ test('readiness check records run history and reuses fail-to-pass time to green'
     id: 'requires-fix-marker',
     kind: 'required-artifacts',
     classification: 'promotable-policy',
-    stage: 'block',
+    enforcementLevel: 'Require',
     message: 'A fix marker must exist for the run-history smoke test.',
     owner: 'test',
     rollback_switch: null,

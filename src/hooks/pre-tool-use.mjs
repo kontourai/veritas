@@ -43,7 +43,7 @@ function buildBuiltinWorkAreaBoundaryRule() {
     id: 'work-area-boundary',
     kind: 'work-area-boundary',
     classification: 'hard-invariant',
-    stage: 'block',
+    enforcementLevel: 'Require',
     enforcement: 'deny',
     message: 'Strict work areas cannot be edited by actors without ownership or explicit allowlist access.',
     owner: 'repo-core',

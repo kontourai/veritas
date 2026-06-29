@@ -60,7 +60,7 @@ function setupRepo() {
         id: 'strict-rule',
         kind: 'required-artifacts',
         classification: 'hard-invariant',
-        stage: 'block',
+        enforcementLevel: 'Require',
         enforcement: 'deny',
         message: 'Strict rule.',
         match: { artifacts: ['README.md'] },
@@ -69,7 +69,7 @@ function setupRepo() {
         id: 'quiet-rule',
         kind: 'required-artifacts',
         classification: 'advisory-pattern',
-        stage: 'warn',
+        enforcementLevel: 'Guide',
         message: 'Quiet rule.',
         match: { artifacts: ['QUIET.md'] },
       },
@@ -83,21 +83,21 @@ function setupRepo() {
   writeFileSync(join(rootDir, '.veritas/standards-feedback/history.jsonl'), [
     {
       run_id: 'run-1',
-      policy_results: [{ rule_id: 'strict-rule', passed: false, stage: 'block' }],
+      policy_results: [{ rule_id: 'strict-rule', passed: false, enforcementLevel: 'Require' }],
       exceptions: [{ ruleId: 'strict-rule', reason: 'too strict', actor: 'brian', timestamp: '2026-05-01T00:00:00.000Z' }],
       required_followup: true,
       unresolved_files: ['unknown/path.ts'],
     },
     {
       run_id: 'run-2',
-      policy_results: [{ rule_id: 'strict-rule', passed: false, stage: 'block' }],
+      policy_results: [{ rule_id: 'strict-rule', passed: false, enforcementLevel: 'Require' }],
       exceptions: [{ ruleId: 'strict-rule', reason: 'too strict', actor: 'brian', timestamp: '2026-05-02T00:00:00.000Z' }],
       required_followup: true,
       unresolved_files: ['unknown/path.ts'],
     },
     {
       run_id: 'run-3',
-      policy_results: [{ rule_id: 'quiet-rule', passed: true, stage: 'warn' }],
+      policy_results: [{ rule_id: 'quiet-rule', passed: true, enforcementLevel: 'Guide' }],
       exceptions: [],
       required_followup: false,
       unresolved_files: [],
@@ -199,8 +199,8 @@ test('recommendation artifacts can be accepted and surface as proposed claims be
   assert.equal(accepted.status, 'accepted');
   const policy = JSON.parse(readFileSync(join(rootDir, '.veritas/repo-standards/default.repo-standards.json'), 'utf8'));
   const rule = policy.rules.find((item) => item.id === 'strict-rule');
-  assert.equal(rule.enforcement, 'lint');
-  assert.equal(rule.stage, 'warn');
+  assert.equal(rule.enforcement, 'advisory');
+  assert.equal(rule.enforcementLevel, 'Guide');
 });
 
 test('recommendation rejection records decision and suppresses immediate regeneration', () => {
@@ -224,7 +224,7 @@ test('recommendation rejection records decision and suppresses immediate regener
   const policy = JSON.parse(readFileSync(join(rootDir, '.veritas/repo-standards/default.repo-standards.json'), 'utf8'));
   const rule = policy.rules.find((item) => item.id === 'strict-rule');
   assert.equal(rule.enforcement, 'deny');
-  assert.equal(rule.stage, 'block');
+  assert.equal(rule.enforcementLevel, 'Require');
 
   const regenerated = generateRuleRecommendations({
     rootDir,
@@ -266,5 +266,5 @@ test('recommendation acceptance blocks invalid resolved approval before mutating
   const policy = JSON.parse(readFileSync(join(rootDir, '.veritas/repo-standards/default.repo-standards.json'), 'utf8'));
   const rule = policy.rules.find((item) => item.id === 'strict-rule');
   assert.equal(rule.enforcement, 'deny');
-  assert.equal(rule.stage, 'block');
+  assert.equal(rule.enforcementLevel, 'Require');
 });

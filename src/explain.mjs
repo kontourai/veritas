@@ -40,7 +40,7 @@ function explainRuleBlock(rule) {
   const lines = [
     `Rule: ${rule.id}`,
     `Kind: ${rule.kind}`,
-    `Stage: ${rule.stage}`,
+    `Enforcement Level: ${rule.enforcementLevel}`,
     `Summary: ${explain.summary ?? rule.message}`,
   ];
   for (const item of explain.mustDo ?? []) lines.push(`Do: ${item}`);
@@ -56,7 +56,7 @@ function syntheticPolicyRules() {
     id: 'policy-changes-require-attestation',
     kind: 'human-attestation',
     classification: 'hard-invariant',
-    stage: 'block',
+    enforcementLevel: 'Require',
     enforcement: 'deny',
     message: 'Protected standards changes require a current authority-backed attestation.',
     explain: {
@@ -169,7 +169,7 @@ export function checkBoundaries({ rootDir, repoMap, actor, files }) {
     id: 'work-area-boundary',
     kind: 'work-area-boundary',
     classification: 'hard-invariant',
-    stage: 'block',
+    enforcementLevel: 'Require',
     message: 'Actors may only edit strict work areas they own or are explicitly allowed to cross.',
     match: {},
   };

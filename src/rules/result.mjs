@@ -1,10 +1,10 @@
 export function buildRuleResult(rule, exceptions = {}) {
   const enforcement =
-    rule.enforcement ?? (rule.classification === 'hard-invariant' ? 'deny' : 'lint');
+    rule.enforcement ?? (rule.classification === 'hard-invariant' ? 'deny' : 'advisory');
   return {
     rule_id: rule.id,
     classification: rule.classification,
-    stage: rule.stage,
+    enforcementLevel: rule.enforcementLevel,
     enforcement,
     message: rule.message,
     owner: rule.owner ?? null,

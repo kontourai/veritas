@@ -19,7 +19,7 @@ function readinessDerivedFixture({ blocked = false, advisoryFailed = false } = {
       value: {
         requirement: 'Required tests pass before merge readiness is granted.',
         passed: !blocked,
-        stage: 'block',
+        enforcementLevel: 'Require',
       },
     }),
     policyResultClaim({
@@ -28,7 +28,7 @@ function readinessDerivedFixture({ blocked = false, advisoryFailed = false } = {
       value: {
         requirement: 'Required review evidence is present before merge readiness is granted.',
         passed: true,
-        stage: 'block',
+        enforcementLevel: 'Require',
       },
     }),
   ];
@@ -40,7 +40,7 @@ function readinessDerivedFixture({ blocked = false, advisoryFailed = false } = {
           value: {
             requirement: 'Advisory documentation evidence can improve review confidence.',
             passed: false,
-            stage: 'warn',
+            enforcementLevel: 'Guide',
           },
         }),
       ]
@@ -86,7 +86,7 @@ function readinessDerivedFixture({ blocked = false, advisoryFailed = false } = {
     ...policyClaims.map((claim) => policyResultEvidence({
       claim,
       passing: claim.value.passed,
-      blocking: claim.value.stage === 'block',
+      blocking: claim.value.enforcementLevel === 'Require',
     })),
     {
       id: `${readinessClaim.id}.evidence`,
@@ -159,7 +159,7 @@ function policyResultClaim({ runId, ruleId, value }) {
     updatedAt: OBSERVED_AT,
     metadata: {
       ruleId,
-      stage: value.stage,
+      enforcementLevel: value.enforcementLevel,
       classification: 'promotable-policy',
     },
   };

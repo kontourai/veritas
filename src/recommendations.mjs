@@ -135,15 +135,15 @@ export function generateRuleRecommendations({
           repoStandardsPath: relative(rootDir, resolvedRepoStandardsPath).replaceAll('\\', '/'),
           ruleId: rule.id,
           changes: {
-            enforcement: 'lint',
-            stage: rule.stage === 'block' ? 'warn' : rule.stage,
+            enforcement: 'advisory',
+            enforcementLevel: rule.enforcementLevel === 'Require' ? 'Guide' : rule.enforcementLevel,
           },
         },
       }));
     }
 
     const warnFailures = failedRecords.filter((record) =>
-      (record.policy_results ?? []).some((result) => result.rule_id === rule.id && result.stage === 'warn') &&
+      (record.policy_results ?? []).some((result) => result.rule_id === rule.id && result.enforcementLevel === 'Guide') &&
       record.required_followup === false,
     );
     if (warnFailures.length > 0) {
@@ -156,7 +156,7 @@ export function generateRuleRecommendations({
         diff: {
           repoStandardsPath: relative(rootDir, resolvedRepoStandardsPath).replaceAll('\\', '/'),
           ruleId: rule.id,
-          changes: { stage: 'advise' },
+          changes: { enforcementLevel: 'Observe' },
         },
       }));
     }

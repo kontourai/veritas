@@ -20,15 +20,16 @@
     "defaults": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["mode", "new_rule_stage"],
+      "required": ["mode", "new_rule_enforcement_level"],
       "properties": {
         "mode": {
           "type": "string",
           "enum": ["observe", "assist", "gate"]
         },
-        "new_rule_stage": {
+        "new_rule_enforcement_level": {
+          "description": "Default Enforcement Level (Observe/Guide/Require) seeded onto a newly promoted requirement.",
           "type": "string",
-          "enum": ["recommend", "warn", "block"]
+          "enum": ["Observe", "Guide", "Require"]
         }
       }
     },
