@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.1.1](https://github.com/kontourai/veritas/compare/v1.1.0...v1.1.1) (2026-07-01)
+
+
+### Fixes
+
+* **veritas:** default per-evidence-check timeout so readiness can't hang (ops[#19](https://github.com/kontourai/veritas/issues/19)) ([#102](https://github.com/kontourai/veritas/issues/102)) ([051e8c8](https://github.com/kontourai/veritas/commit/051e8c8a9e5a2cc7428356c02155d5af50d4300b))
+* **veritas:** point Surface Console readModelPath at the path the writer actually writes (ops[#18](https://github.com/kontourai/veritas/issues/18)) ([#103](https://github.com/kontourai/veritas/issues/103)) ([5ef141d](https://github.com/kontourai/veritas/commit/5ef141d00536afde6fc5ac46bd254fb692da81fb))
+* **veritas:** word-boundary the 'ci' approval denylist token ([#99](https://github.com/kontourai/veritas/issues/99)) ([8be4aa9](https://github.com/kontourai/veritas/commit/8be4aa9f0331d4110a08425da4a7bf50a7a64e56))
+
+
+### Refactoring
+
+* **veritas:** reconcile repo-standards vocab to Observe/Guide/Require (ops[#17](https://github.com/kontourai/veritas/issues/17)) ([#104](https://github.com/kontourai/veritas/issues/104)) ([ffdd3d3](https://github.com/kontourai/veritas/commit/ffdd3d3008d8ea3b6b432f0782cea0e67d9ee4eb))
+
 ## [1.1.0](https://github.com/kontourai/veritas/compare/v1.0.0...v1.1.0) (2026-06-16)
 
 
