@@ -10,7 +10,7 @@ const artifactRepoPath = veritasArtifactRepoPath('external', 'fallow-audit.json'
 const artifactPath = veritasArtifactPath(rootDir, 'external', 'fallow-audit.json');
 const localFallowBin = resolve(rootDir, 'node_modules/.bin/fallow');
 const baseline = {
-  dead_code_issues: 37,
+  dead_code_issues: 0,
   duplication_clone_groups: 23,
   complexity_findings: 263,
 };

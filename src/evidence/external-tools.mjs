@@ -20,7 +20,7 @@ export function assertExternalToolConfig(externalTool) {
   }
 }
 
-export function readExternalToolPayload(rootDir, artifactPath) {
+function readExternalToolPayload(rootDir, artifactPath) {
   const resolvedPath = resolve(rootDir, artifactPath);
   assertWithinDir(
     resolvedPath,
@@ -35,7 +35,7 @@ export function readExternalToolPayload(rootDir, artifactPath) {
   }
 }
 
-export function normalizeExternalToolVerdict(payload) {
+function normalizeExternalToolVerdict(payload) {
   if (payload?.verdict === 'pass' || payload?.verdict === 'warn' || payload?.verdict === 'fail') {
     return payload.verdict;
   }
@@ -51,7 +51,7 @@ export function normalizeExternalToolVerdict(payload) {
   return 'unknown';
 }
 
-export function externalToolSummary(payload) {
+function externalToolSummary(payload) {
   const summary = {};
   if (payload?.summary && typeof payload.summary === 'object' && !Array.isArray(payload.summary)) {
     Object.assign(summary, payload.summary);
@@ -70,7 +70,7 @@ export function externalToolSummary(payload) {
   return summary;
 }
 
-export function externalToolActions(payload) {
+function externalToolActions(payload) {
   if (!Array.isArray(payload?.actions)) return [];
   return payload.actions
     .filter((action) => action && typeof action === 'object')

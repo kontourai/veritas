@@ -1,7 +1,6 @@
 import { existsSync, realpathSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 
-export const VERITAS_CONFIG_ROOT = '.veritas';
 export const VERITAS_ARTIFACT_ROOT = '.kontourai/veritas';
 
 function normalizeRelativePath(filePath) {

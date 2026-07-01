@@ -13,14 +13,13 @@ Fallow and Veritas should stay separate:
 
 Do not make Fallow blocking on the first day in an existing repo. A first run often reveals real cleanup debt that should be triaged before it becomes a gate.
 
-For example, a one-off Fallow smoke on this Veritas checkout reported:
+For this Veritas checkout, the advisory lane keeps dead code at zero while carrying an intentional duplication and complexity baseline:
 
-- 8 unused exports
-- 19 clone groups
-- 4.5% duplicated lines
-- 100 functions above threshold
+- 0 dead-code issues
+- 23 clone groups
+- 263 functions above threshold
 
-That is useful evidence, but it is not a reason to fail every Veritas readiness check before the repo has either cleaned up the issues or committed an intentional baseline.
+That keeps the low-risk cleanup fixed while leaving broader duplication and complexity reductions for deliberate refactor work.
 
 ## External-Tool Evidence Checks
 

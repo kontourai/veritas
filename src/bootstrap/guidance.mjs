@@ -14,7 +14,7 @@ export const OPTIONAL_INSTRUCTION_TARGETS = [
   },
 ];
 
-export function toolForInstructionPath(path) {
+function toolForInstructionPath(path) {
   if (path === 'AGENTS.md') return 'codex';
   if (path === 'CLAUDE.md') return 'claude-code';
   if (path === '.cursorrules') return 'cursor';

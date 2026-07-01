@@ -29,7 +29,7 @@ function assertEvidenceInventoryString(value, label, { required = true } = {}) {
   }
 }
 
-export function normalizeEvidenceInventoryDisposition(suite) {
+function normalizeEvidenceInventoryDisposition(suite) {
   const disposition = suite.defaultDisposition ?? suite.disposition ?? 'candidate';
   if (suite.currentBlockingStatus === 'required' || disposition === 'required') return 'required';
   if (disposition === 'retire') return 'retire';
@@ -39,7 +39,7 @@ export function normalizeEvidenceInventoryDisposition(suite) {
   return 'candidate';
 }
 
-export function validateEvidenceInventoryManifest(manifest, manifestPath) {
+function validateEvidenceInventoryManifest(manifest, manifestPath) {
   if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
     throw new Error(`evidence-inventory manifest must be an object: ${manifestPath}`);
   }
@@ -83,7 +83,7 @@ export function validateEvidenceInventoryManifest(manifest, manifestPath) {
   }
 }
 
-export function verificationWeightForDisposition(disposition) {
+function verificationWeightForDisposition(disposition) {
   if (disposition === 'required') return 'blocking';
   if (disposition === 'candidate' || disposition === 'move-to-test' || disposition === 'upstream-abstraction') {
     return 'advisory';

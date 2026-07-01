@@ -38,7 +38,6 @@ export {
   surfacePolicyImpact,
   surfacePolicyResultStatus,
 } from './evidence-status.mjs';
-export { buildReadinessAuthorityTrace } from './readiness-authority.mjs';
 
 function claimsByType(claimStore, claimType) {
   return claimStore.claims.filter((claim) => claim.claimType === claimType);

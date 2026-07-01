@@ -6,10 +6,10 @@ import {
   resolveReportInputs,
   resolveEvidenceCheckCommands,
 } from '../report/index.mjs';
-import { DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS, runEvidenceCheckPlan } from './evidence-check-runner.mjs';
+import { runEvidenceCheckPlan } from './evidence-check-runner.mjs';
 import { finalizeReadinessArtifacts, hasReadinessOutcomeInputs } from './feedback-artifacts.mjs';
 
-export { DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS, hasReadinessOutcomeInputs };
+export { hasReadinessOutcomeInputs };
 
 export async function runMergeReadiness(
   rawOptions = {},

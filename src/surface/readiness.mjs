@@ -10,7 +10,7 @@ export function readinessSurfaceStatus(record) {
   return 'disputed';
 }
 
-export function readinessHasBlockingFailure(record) {
+function readinessHasBlockingFailure(record) {
   if (record.uncovered_path_result === 'fail') return true;
   if ((record.policy_results ?? []).some((result) => result.passed === false && result.enforcementLevel === 'Require')) return true;
   if ((record.selected_evidence_checks ?? []).some((check) => check.evidence_check_result?.passed === false)) return true;

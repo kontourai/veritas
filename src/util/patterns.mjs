@@ -32,7 +32,7 @@ export function matchesPatternsForAnyFile(files, patterns) {
   return files.some((file) => matchesPatterns(file, patterns));
 }
 
-export function readAllTrackedFiles(rootDir) {
+function readAllTrackedFiles(rootDir) {
   try {
     return execFileSync('git', ['ls-files'], {
       cwd: rootDir,

@@ -7,7 +7,7 @@ import { evidenceCheckLabel } from '../evidence/index.mjs';
  * via `evidenceCheck.timeoutMs`, or globally via the `evidenceCheckTimeoutMs`
  * option. Generous so legitimately slow checks are not killed.
  */
-export const DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS = 10 * 60_000;
+const DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS = 10 * 60_000;
 
 function buildEvidenceCheckResult(evidenceCheck, runner, label, result) {
   return {

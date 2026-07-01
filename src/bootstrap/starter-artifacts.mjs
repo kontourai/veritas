@@ -252,7 +252,7 @@ export function buildStarterRepoStandards({ projectName, instructionTargets = DE
   };
 }
 
-export function listStarterRepoStandards() {
+function listStarterRepoStandards() {
   return [...STARTER_REPO_STANDARD_TEMPLATES.keys()];
 }
 

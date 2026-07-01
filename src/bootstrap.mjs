@@ -9,7 +9,6 @@ import {
   buildStarterAuthoritySettings,
   buildStarterRepoMap,
   buildStarterRepoStandards,
-  listStarterRepoStandards,
   loadStarterRepoStandards,
   slugifyProjectName,
 } from './bootstrap/starter-artifacts.mjs';
@@ -24,18 +23,13 @@ import {
 import { assertWithinDir, veritasArtifactPath } from './paths.mjs';
 
 export {
-  buildAdaptiveNodes,
   buildBootstrapReadme,
-  buildGovernanceInstructions,
   inferBootstrapRepoInsights,
   buildStarterAuthoritySettings,
   buildStarterRepoMap,
   buildStarterRepoStandards,
   buildSuggestedCiSnippet,
-  buildSuggestedCodeownersBlock,
   buildSuggestedPackageScripts,
-  listStarterRepoStandards,
-  loadStarterRepoStandards,
   slugifyProjectName,
 };
 
