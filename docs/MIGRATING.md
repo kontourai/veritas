@@ -31,6 +31,30 @@ Near-term rename targets:
 3. Rename CLI command groups from implementation names to readiness, feedback, and recommendations.
 4. Keep exact current implementation names only in migration notes, schema references, and code comments needed to explain an active rename.
 
+## Standards Recommendation Module Moved
+
+Standards Recommendation code now lives in the Standards Feedback subcontext.
+
+Before:
+
+```js
+import {
+  applyRecommendation,
+  generateRuleRecommendations,
+} from './src/recommendations.mjs';
+```
+
+After:
+
+```js
+import {
+  applyRecommendation,
+  generateRuleRecommendations,
+} from './src/standards-feedback/recommendations.mjs';
+```
+
+The old `src/recommendations.mjs` module is removed instead of re-exported. Update internal imports and external consumers to the new path.
+
 ## Run Snapshots Move to `.surface/runs/`
 
 Veritas writes run snapshots to `.surface/runs/`.

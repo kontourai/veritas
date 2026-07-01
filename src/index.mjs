@@ -190,8 +190,8 @@ export {
   listRecommendations,
   loadRecommendation,
   applyRecommendation,
-} from './recommendations.mjs';
-export * from './recommendations.mjs';
+} from './standards-feedback/recommendations.mjs';
+export * from './standards-feedback/recommendations.mjs';
 
 export {
   runVeritasReportCli,

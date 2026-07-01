@@ -4,13 +4,15 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
-  applyRecommendation,
   buildSurfaceTrustBundle,
   createAttestation,
-  generateRuleRecommendations,
   initClaimStore,
-  writeGeneratedRecommendations,
 } from '../../src/index.mjs';
+import {
+  applyRecommendation,
+  generateRuleRecommendations,
+  writeGeneratedRecommendations,
+} from '../../src/standards-feedback/recommendations.mjs';
 
 function writeJson(path, value) {
   mkdirSync(dirname(path), { recursive: true });

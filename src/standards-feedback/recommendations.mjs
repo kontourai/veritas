@@ -1,10 +1,10 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
-import { loadRepoMap, loadRepoStandards } from './load.mjs';
-import { resolveVeritasPaths } from './report/index.mjs';
-import { assertAttestationApprovalReference, createAttestation } from './attestations.mjs';
-import { veritasArtifactPath } from './paths.mjs';
+import { loadRepoMap, loadRepoStandards } from '../load.mjs';
+import { resolveVeritasPaths } from '../report/index.mjs';
+import { assertAttestationApprovalReference, createAttestation } from '../attestations.mjs';
+import { veritasArtifactPath } from '../paths.mjs';
 
 export const RECOMMENDATION_STATUS = {
   proposed: 'proposed',

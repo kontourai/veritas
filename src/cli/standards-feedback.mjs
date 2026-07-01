@@ -21,7 +21,7 @@ import {
   generateAndWriteRecommendations,
   listRecommendations,
   loadRecommendation,
-} from '../recommendations.mjs';
+} from '../standards-feedback/recommendations.mjs';
 
 export function runStandardsFeedbackRecordCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseStandardsFeedbackArgs(argv);
