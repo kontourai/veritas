@@ -3,9 +3,11 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { veritasArtifactPath, veritasArtifactRepoPath } from '../src/paths.mjs';
 
 const rootDir = process.cwd();
-const artifactPath = resolve(rootDir, '.veritas/external/fallow-audit.json');
+const artifactRepoPath = veritasArtifactRepoPath('external', 'fallow-audit.json');
+const artifactPath = veritasArtifactPath(rootDir, 'external', 'fallow-audit.json');
 const localFallowBin = resolve(rootDir, 'node_modules/.bin/fallow');
 
 function runFallow() {
@@ -78,7 +80,7 @@ const artifact = {
   actions: collectActions(payload),
 };
 
-mkdirSync(resolve(rootDir, '.veritas/external'), { recursive: true });
+mkdirSync(veritasArtifactPath(rootDir, 'external'), { recursive: true });
 writeFileSync(artifactPath, `${JSON.stringify(artifact, null, 2)}\n`, 'utf8');
 
-process.stdout.write(`${JSON.stringify({ artifactPath: '.veritas/external/fallow-audit.json', ...artifact })}\n`);
+process.stdout.write(`${JSON.stringify({ artifactPath: artifactRepoPath, ...artifact })}\n`);

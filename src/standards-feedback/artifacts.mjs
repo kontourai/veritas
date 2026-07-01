@@ -1,6 +1,6 @@
 import { appendFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { assertWithinDir, relativeRepoPath } from '../paths.mjs';
+import { assertWithinDir, relativeRepoPath, veritasArtifactPath, veritasArtifactRepoPath } from '../paths.mjs';
 import { shellQuote } from '../shell.mjs';
 
 export function buildStandardsFeedbackRecordCommand(draftPath, draft) {
@@ -43,8 +43,8 @@ export function buildStandardsFeedbackRecordCommand(draftPath, draft) {
 export function validateStandardsFeedbackDraftContext({ draftPath, draftRecord, rootDir, authoritySettings }) {
   assertWithinDir(
     draftPath,
-    resolve(rootDir, '.veritas/standards-feedback-drafts'),
-    'standards feedback record requires a repo-local draft artifact inside .veritas/standards-feedback-drafts/',
+    veritasArtifactPath(rootDir, 'standards-feedback-drafts'),
+    `standards feedback record requires a repo-local draft artifact inside ${veritasArtifactRepoPath('standards-feedback-drafts')}/`,
   );
   const requiredDraftKeys = [
     'version',
@@ -83,14 +83,14 @@ export function validateStandardsFeedbackDraftContext({ draftPath, draftRecord, 
 export function writeStandardsFeedbackArtifact(
   record,
   rootDir,
-  outputPath = `.veritas/standards-feedback/${record.run_id}.json`,
+  outputPath = veritasArtifactRepoPath('standards-feedback', `${record.run_id}.json`),
   force = false,
 ) {
   const artifactPath = resolve(rootDir, outputPath);
   assertWithinDir(
     artifactPath,
-    resolve(rootDir, '.veritas/standards-feedback'),
-    'standards feedback artifacts may only be written inside .veritas/standards-feedback/',
+    veritasArtifactPath(rootDir, 'standards-feedback'),
+    `standards feedback artifacts may only be written inside ${veritasArtifactRepoPath('standards-feedback')}/`,
   );
   const relativeArtifactPath = relativeRepoPath(rootDir, artifactPath);
   if (existsSync(artifactPath) && !force) {
@@ -104,7 +104,7 @@ export function writeStandardsFeedbackArtifact(
 }
 
 export function appendStandardsFeedbackHistory(record, rootDir) {
-  const historyPath = resolve(rootDir, '.veritas/standards-feedback/history.jsonl');
+  const historyPath = veritasArtifactPath(rootDir, 'standards-feedback', 'history.jsonl');
   mkdirSync(dirname(historyPath), { recursive: true });
   const historyRecord = {
     timestamp: record.timestamp,
@@ -130,14 +130,14 @@ export function appendStandardsFeedbackHistory(record, rootDir) {
 export function writeStandardsFeedbackDraftArtifact(
   record,
   rootDir,
-  outputPath = `.veritas/standards-feedback-drafts/${record.run_id}.json`,
+  outputPath = veritasArtifactRepoPath('standards-feedback-drafts', `${record.run_id}.json`),
   force = false,
 ) {
   const artifactPath = resolve(rootDir, outputPath);
   assertWithinDir(
     artifactPath,
-    resolve(rootDir, '.veritas/standards-feedback-drafts'),
-    'standards feedback drafts may only be written inside .veritas/standards-feedback-drafts/',
+    veritasArtifactPath(rootDir, 'standards-feedback-drafts'),
+    `standards feedback drafts may only be written inside ${veritasArtifactRepoPath('standards-feedback-drafts')}/`,
   );
   const relativeArtifactPath = relativeRepoPath(rootDir, artifactPath);
   if (existsSync(artifactPath) && !force) {

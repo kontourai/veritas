@@ -182,14 +182,14 @@ test('Surface validation failure writes rejected input artifact and uses config 
     (error) => {
       assert.equal(error.exitCode, 2);
       assert.match(error.message, /Surface TrustBundle validation failed/);
-      assert.match(error.message, /Rejected input: \.veritas\/external\/surface-validation-failures\/invalid-surface-projection-test\.json/);
+      assert.match(error.message, /Rejected input: \.kontourai\/veritas\/external\/surface-validation-failures\/invalid-surface-projection-test\.json/);
       return true;
     },
   );
 
   const failurePath = join(
     rootDir,
-    '.veritas/external/surface-validation-failures/invalid-surface-projection-test.json',
+    '.kontourai/veritas/external/surface-validation-failures/invalid-surface-projection-test.json',
   );
   assert.equal(existsSync(failurePath), true);
   const rejectedInput = JSON.parse(readFileSync(failurePath, 'utf8'));

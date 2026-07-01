@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { assertWithinDir } from '../paths.mjs';
+import { assertWithinDir, VERITAS_ARTIFACT_ROOT, veritasArtifactPath } from '../paths.mjs';
 
 export function assertExternalToolConfig(externalTool) {
   if (!externalTool || typeof externalTool !== 'object' || Array.isArray(externalTool)) {
@@ -15,8 +15,8 @@ export function assertExternalToolConfig(externalTool) {
     throw new Error('Veritas Repo Map evidence.evidenceChecks[].externalTool.blocking must be a boolean.');
   }
   const artifactPath = externalTool.artifactPath;
-  if (artifactPath.startsWith('/') || artifactPath.includes('..') || !artifactPath.startsWith('.veritas/')) {
-    throw new Error('Veritas Repo Map evidence.evidenceChecks[].externalTool.artifactPath must be a repo-local path inside .veritas/.');
+  if (artifactPath.startsWith('/') || artifactPath.includes('..') || !artifactPath.startsWith(`${VERITAS_ARTIFACT_ROOT}/`)) {
+    throw new Error(`Veritas Repo Map evidence.evidenceChecks[].externalTool.artifactPath must be a repo-local path inside ${VERITAS_ARTIFACT_ROOT}/.`);
   }
 }
 
@@ -24,8 +24,8 @@ export function readExternalToolPayload(rootDir, artifactPath) {
   const resolvedPath = resolve(rootDir, artifactPath);
   assertWithinDir(
     resolvedPath,
-    resolve(rootDir, '.veritas'),
-    'external tool artifacts may only be read from .veritas/',
+    veritasArtifactPath(rootDir),
+    `external tool artifacts may only be read from ${VERITAS_ARTIFACT_ROOT}/`,
   );
   if (!existsSync(resolvedPath)) return null;
   try {

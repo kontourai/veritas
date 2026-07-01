@@ -257,7 +257,7 @@
     ]
   },
   "evidence": {
-    "artifactDir": ".veritas/evidence",
+    "artifactDir": ".kontourai/veritas/evidence",
     "reportTransport": "local-json",
     "uncoveredPathPolicy": "warn",
     "evidenceChecks": [
@@ -276,7 +276,7 @@
           "tool": "fallow",
           "format": "veritas-fallow-advisory-v1",
           "blocking": false,
-          "artifactPath": ".veritas/external/fallow-audit.json"
+          "artifactPath": ".kontourai/veritas/external/fallow-audit.json"
         }
       },
       {

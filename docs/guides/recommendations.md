@@ -24,7 +24,7 @@ npx @kontourai/veritas recommendation list
 npx @kontourai/veritas recommendation show <id>
 ```
 
-These commands inspect generated evidence and feedback history, then write reviewable recommendation artifacts under `.veritas/recommendations/`.
+These commands inspect generated evidence and feedback history, then write reviewable recommendation artifacts under `.kontourai/veritas/recommendations/`.
 
 ## Decide A Recommendation
 

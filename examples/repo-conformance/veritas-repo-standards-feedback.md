@@ -3,8 +3,8 @@
 - **Run ID:** veritas-repo-conformance
 - **Mode:** observe
 - **Authority settings:** veritas-default
-- **Evidence artifact:** `.veritas/evidence/veritas-repo-conformance.json`
-- **Standards feedback artifact:** `.veritas/standards-feedback/veritas-repo-conformance.json`
+- **Evidence artifact:** `.kontourai/veritas/evidence/veritas-repo-conformance.json`
+- **Standards feedback artifact:** `.kontourai/veritas/standards-feedback/veritas-repo-conformance.json`
 - **Accepted without major rewrite:** yes
 - **Required follow-up:** no
 - **Reviewer confidence:** high

@@ -12,7 +12,7 @@ This file is the footnote for people developing the product itself.
 - avoid adding repo-specific assumptions to the core
 - update the relevant docs and examples whenever the operator surface changes
 - keep [README.md](README.md), [docs/README.md](docs/README.md), and the `docs/reference/` pages aligned with the shipped CLI and artifact surface
-- keep the tracked `.veritas/` dogfooding config current, but do not commit generated `.veritas/evidence/`, `.veritas/standards-feedback-drafts/`, or `.veritas/standards-feedback/`
+- keep the tracked `.veritas/` dogfooding config current, but do not commit generated `.kontourai/veritas/evidence/`, `.kontourai/veritas/standards-feedback-drafts/`, or `.kontourai/veritas/standards-feedback/`
 - no new dependencies without clear leverage
 
 ## Verification

@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import * as Surface from '@kontourai/surface';
-import { relativeRepoPath } from '../paths.mjs';
+import { relativeRepoPath, veritasArtifactPath } from '../paths.mjs';
 import { loadVeritasClaimStore } from '../claims/store.mjs';
 import { registerVeritasExtension } from './extension.mjs';
 import { loadPluginsFromConfig, collectPluginEvidence } from '../plugins/loader.mjs';
@@ -136,7 +136,7 @@ export function validateSurfaceTrustBundleAtBoundary({ input, record, rootDir })
 }
 
 export function throwSurfaceTrustBundleValidationError({ error, input, record, rootDir }) {
-  const failureDir = resolve(rootDir, '.veritas/external/surface-validation-failures');
+  const failureDir = veritasArtifactPath(rootDir, 'external', 'surface-validation-failures');
   mkdirSync(failureDir, { recursive: true });
   const failurePath = resolve(failureDir, `${surfaceSafeId(record.run_id)}.json`);
   writeFileSync(failurePath, `${JSON.stringify(input ?? {}, null, 2)}\n`, 'utf8');

@@ -438,10 +438,10 @@ test('evidence records include native evidence inventory coverage when configure
 
 test('evidence records include advisory external tool results in Surface input', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-external-tool-'));
-  mkdirp(join(rootDir, '.veritas/external'));
+  mkdirp(join(rootDir, '.kontourai/veritas/external'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
   writeFileSync(
-    join(rootDir, '.veritas/external/fallow-audit.json'),
+    join(rootDir, '.kontourai/veritas/external/fallow-audit.json'),
     JSON.stringify(
       {
         schema_version: '1',
@@ -479,7 +479,7 @@ test('evidence records include advisory external tool results in Surface input',
       ],
     },
     evidence: {
-      artifactDir: '.veritas/evidence',
+      artifactDir: '.kontourai/veritas/evidence',
       reportTransport: 'local-json',
       evidenceChecks: [
         {
@@ -491,7 +491,7 @@ test('evidence records include advisory external tool results in Surface input',
             tool: 'fallow',
             format: 'fallow-audit-json',
             blocking: false,
-            artifactPath: '.veritas/external/fallow-audit.json',
+            artifactPath: '.kontourai/veritas/external/fallow-audit.json',
           },
         },
       ],
@@ -559,7 +559,7 @@ test('blocking external tool results count as feedback failures', async () => {
       ],
     },
     evidence: {
-      artifactDir: '.veritas/evidence',
+      artifactDir: '.kontourai/veritas/evidence',
       reportTransport: 'local-json',
       evidenceChecks: [
         {
@@ -570,7 +570,7 @@ test('blocking external tool results count as feedback failures', async () => {
             tool: 'fallow',
             format: 'fallow-audit-json',
             blocking: true,
-            artifactPath: '.veritas/external/missing.json',
+            artifactPath: '.kontourai/veritas/external/missing.json',
           },
         },
       ],
@@ -1189,7 +1189,7 @@ test('work-area evidence routing prefers work-area routes, then default, then re
       ],
     },
     evidence: {
-      artifactDir: '.veritas/evidence',
+      artifactDir: '.kontourai/veritas/evidence',
       reportTransport: 'local-json',
       evidenceChecks: [
         { id: 'required-evidence-check', command: 'npm run required-evidence-check', method: 'validation' },
@@ -1833,9 +1833,9 @@ test('init rejects unknown flags before writing', () => {
 
 test('buildStandardsFeedbackRecord links a real evidence artifact to a authority settings', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-build-feedback-'));
-  mkdirp(join(rootDir, '.veritas/evidence'));
+  mkdirp(join(rootDir, '.kontourai/veritas/evidence'));
   writeFileSync(
-    join(rootDir, '.veritas/evidence/feedback-build-smoke.json'),
+    join(rootDir, '.kontourai/veritas/evidence/feedback-build-smoke.json'),
     JSON.stringify(
       {
         record_schema_version: 1,
@@ -1865,7 +1865,7 @@ test('buildStandardsFeedbackRecord links a real evidence artifact to a authority
 
   const record = buildStandardsFeedbackRecord({
     evidenceRecord,
-    evidencePath: join(rootDir, '.veritas/evidence/feedback-build-smoke.json'),
+    evidencePath: join(rootDir, '.kontourai/veritas/evidence/feedback-build-smoke.json'),
     authoritySettings,
     options: {
       acceptedWithoutMajorRewrite: true,
@@ -1888,7 +1888,7 @@ test('buildStandardsFeedbackRecord links a real evidence artifact to a authority
   assert.deepEqual(record.evidence.source_scope, ['staged', 'unstaged']);
   assert.equal(
     record.evidence.artifact_path,
-    '.veritas/evidence/feedback-build-smoke.json',
+    '.kontourai/veritas/evidence/feedback-build-smoke.json',
   );
   assert.match(record.evidence.artifact_digest, /^[a-f0-9]{64}$/);
   assert.equal(record.governance.protected_standards_touched, true);
@@ -1899,8 +1899,8 @@ test('buildStandardsFeedbackRecord links a real evidence artifact to a authority
 
 test('buildStandardsFeedbackRecord accepts reviewer confidence values from the authority settings scale', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-build-feedback-scale-'));
-  mkdirp(join(rootDir, '.veritas/evidence'));
-  const evidencePath = join(rootDir, '.veritas/evidence/feedback-scale-smoke.json');
+  mkdirp(join(rootDir, '.kontourai/veritas/evidence'));
+  const evidencePath = join(rootDir, '.kontourai/veritas/evidence/feedback-scale-smoke.json');
   writeFileSync(
     evidencePath,
     JSON.stringify(
@@ -1946,8 +1946,8 @@ test('buildStandardsFeedbackRecord accepts reviewer confidence values from the a
 
 test('buildStandardsFeedbackDraft captures prefilled context without fabricating judgment', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-build-feedback-draft-'));
-  mkdirp(join(rootDir, '.veritas/evidence'));
-  const evidencePath = join(rootDir, '.veritas/evidence/feedback-draft-smoke.json');
+  mkdirp(join(rootDir, '.kontourai/veritas/evidence'));
+  const evidencePath = join(rootDir, '.kontourai/veritas/evidence/feedback-draft-smoke.json');
   writeFileSync(
     evidencePath,
     JSON.stringify(
@@ -1994,11 +1994,11 @@ test('buildStandardsFeedbackDraft captures prefilled context without fabricating
 
 test('generateStandardsFeedbackRecord accepts programmatic options without CLI array defaults', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-generate-feedback-record-'));
-  mkdirp(join(rootDir, '.veritas/evidence'));
+  mkdirp(join(rootDir, '.kontourai/veritas/evidence'));
   mkdirp(join(rootDir, '.veritas/authority'));
 
   writeFileSync(
-    join(rootDir, '.veritas/evidence/programmatic-feedback.json'),
+    join(rootDir, '.kontourai/veritas/evidence/programmatic-feedback.json'),
     JSON.stringify(readJson('../examples/evidence/work-agent-pass.json'), null, 2),
   );
   writeFileSync(
@@ -2009,7 +2009,7 @@ test('generateStandardsFeedbackRecord accepts programmatic options without CLI a
   const result = generateStandardsFeedbackRecord(
     {
       rootDir,
-      evidencePath: '.veritas/evidence/programmatic-feedback.json',
+      evidencePath: '.kontourai/veritas/evidence/programmatic-feedback.json',
       authoritySettingsPath: '.veritas/authority/default.authority-settings.json',
       acceptedWithoutMajorRewrite: true,
       requiredFollowup: false,
@@ -2224,7 +2224,7 @@ test('report writes one trimmed Surface claim input per claim', async () => {
       ],
     },
     evidence: {
-      artifactDir: '.veritas/evidence',
+      artifactDir: '.kontourai/veritas/evidence',
       reportTransport: 'local-json',
       evidenceChecks: [
         { id: 'unit', command: 'npm test', method: 'validation' },
@@ -2320,7 +2320,7 @@ test('report rejects run ids that would escape output directories', async () => 
       ],
     },
     evidence: {
-      artifactDir: '.veritas/evidence',
+      artifactDir: '.kontourai/veritas/evidence',
       reportTransport: 'local-json',
       evidenceChecks: [
         { id: 'unit', command: 'npm test', method: 'validation' },
@@ -2402,7 +2402,7 @@ test('standards feedback record CLI writes a repo-local observe standards feedba
   const standardsFeedbackResult = JSON.parse(feedbackStdout);
   const feedbackArtifact = readJsonFromAbsolute(join(rootDir, standardsFeedbackResult.artifactPath));
 
-  assert.equal(standardsFeedbackResult.artifactPath, '.veritas/standards-feedback/feedback-cli-smoke.json');
+  assert.equal(standardsFeedbackResult.artifactPath, '.kontourai/veritas/standards-feedback/feedback-cli-smoke.json');
   assert.equal(standardsFeedbackResult.run_id, 'feedback-cli-smoke');
   assert.equal(standardsFeedbackResult.authority_settings_id, 'feedback-demo-default');
   assert.equal(standardsFeedbackResult.mode, 'observe');
@@ -2453,7 +2453,7 @@ test('standards feedback draft CLI writes a repo-local draft artifact and sugges
   const draftResult = JSON.parse(draftStdout);
   const draftArtifact = readJsonFromAbsolute(join(rootDir, draftResult.artifactPath));
 
-  assert.equal(draftResult.artifactPath, '.veritas/standards-feedback-drafts/feedback-draft-cli-smoke.json');
+  assert.equal(draftResult.artifactPath, '.kontourai/veritas/standards-feedback-drafts/feedback-draft-cli-smoke.json');
   assert.match(draftResult.suggestedRecordCommand, /veritas feedback record --draft/);
   assert.deepEqual(draftArtifact.missing_confirmation_fields, [
     'accepted_without_major_rewrite',
@@ -2599,7 +2599,7 @@ test('standards feedback record CLI rejects draft artifacts outside the repo-loc
         ],
         { cwd: repoRootDir, encoding: 'utf8' },
       ),
-    /repo-local draft artifact inside \.veritas\/standards-feedback-drafts/,
+    /repo-local draft artifact inside \.kontourai\/veritas\/standards-feedback-drafts/,
   );
 });
 
@@ -2613,10 +2613,10 @@ test('standards feedback draft CLI rejects symlinked external evidence under a r
     externalEvidencePath,
     JSON.stringify(readJson('../examples/evidence/work-agent-pass.json'), null, 2),
   );
-  mkdirp(join(rootDir, '.veritas/evidence'));
+  mkdirp(join(rootDir, '.kontourai/veritas/evidence'));
   symlinkSync(
     externalEvidencePath,
-    join(rootDir, '.veritas/evidence/symlinked-evidence.json'),
+    join(rootDir, '.kontourai/veritas/evidence/symlinked-evidence.json'),
   );
 
   assert.throws(
@@ -2632,11 +2632,11 @@ test('standards feedback draft CLI rejects symlinked external evidence under a r
           '--root',
           rootDir,
           '--evidence',
-          '.veritas/evidence/symlinked-evidence.json',
+          '.kontourai/veritas/evidence/symlinked-evidence.json',
         ],
         { cwd: repoRootDir, encoding: 'utf8' },
       ),
-    /repo-local evidence artifact inside \.veritas\/evidence/,
+    /repo-local evidence artifact inside \.kontourai\/veritas\/evidence/,
   );
 });
 
@@ -2753,7 +2753,7 @@ test('standards feedback record CLI supports explicit authority-settings and out
       '--authority-settings',
       initResult.generatedFiles.find((path) => path.endsWith('default.authority-settings.json')),
       '--output',
-      '.veritas/standards-feedback/custom-observe.json',
+      '.kontourai/veritas/standards-feedback/custom-observe.json',
       '--accepted-without-major-rewrite',
       'false',
       '--required-followup',
@@ -2773,7 +2773,7 @@ test('standards feedback record CLI supports explicit authority-settings and out
   );
   const standardsFeedbackResult = JSON.parse(feedbackStdout);
 
-  assert.equal(standardsFeedbackResult.artifactPath, '.veritas/standards-feedback/custom-observe.json');
+  assert.equal(standardsFeedbackResult.artifactPath, '.kontourai/veritas/standards-feedback/custom-observe.json');
   assert.equal(standardsFeedbackResult.outcome.accepted_without_major_rewrite, false);
   assert.equal(standardsFeedbackResult.outcome.required_followup, true);
   assert.equal(standardsFeedbackResult.outcome.reviewer_confidence, 'unknown');
@@ -2783,9 +2783,9 @@ test('standards feedback record CLI supports explicit authority-settings and out
   assert.deepEqual(standardsFeedbackResult.measurements.missed_issues, [
     'Return-package assembly still needed manual review.',
   ]);
-  assert.equal(standardsFeedbackResult.historyPath, '.veritas/standards-feedback/history.jsonl');
+  assert.equal(standardsFeedbackResult.historyPath, '.kontourai/veritas/standards-feedback/history.jsonl');
   const historyLine = JSON.parse(
-    readFileSync(join(rootDir, '.veritas/standards-feedback/history.jsonl'), 'utf8').trim(),
+    readFileSync(join(rootDir, '.kontourai/veritas/standards-feedback/history.jsonl'), 'utf8').trim(),
   );
   assert.equal(historyLine.run_id, 'feedback-cli-explicit-smoke');
   assert.equal(historyLine.accepted, false);
@@ -2800,7 +2800,7 @@ test('standards feedback record CLI supports explicit authority-settings and out
 
 test('standards feedback summary and trend CLI report rule trends', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-feedback-trend-'));
-  mkdirp(join(rootDir, '.veritas/standards-feedback'));
+  mkdirp(join(rootDir, '.kontourai/veritas/standards-feedback'));
   const records = [
     {
       run_id: 'run-1',
@@ -2828,7 +2828,7 @@ test('standards feedback summary and trend CLI report rule trends', () => {
     },
   ];
   writeFileSync(
-    join(rootDir, '.veritas/standards-feedback/history.jsonl'),
+    join(rootDir, '.kontourai/veritas/standards-feedback/history.jsonl'),
     `${records.map((record) => JSON.stringify(record)).join('\n')}\n`,
   );
 
@@ -2899,7 +2899,7 @@ test('standards feedback record CLI rejects evidence outside the repo-local evid
         ],
         { cwd: repoRootDir, encoding: 'utf8' },
       ),
-    /repo-local evidence artifact inside \.veritas\/evidence/,
+    /repo-local evidence artifact inside \.kontourai\/veritas\/evidence/,
   );
 });
 
@@ -3005,8 +3005,8 @@ test('readiness check CLI defaults to agent-readable feedback output', () => {
 
   assert.match(stdout, /^veritas: /);
   assert.match(stdout, /PASS\s+evidence-check/);
-  assert.match(stdout, /report: \.veritas\/evidence\//);
-  assert.match(stdout, /standards feedback draft: \.veritas\/standards-feedback-drafts\//);
+  assert.match(stdout, /report: \.kontourai\/veritas\/evidence\//);
+  assert.match(stdout, /standards feedback draft: \.kontourai\/veritas\/standards-feedback-drafts\//);
 });
 
 test('readiness check reports primitive-first governance findings as policy results', () => {
@@ -3078,7 +3078,7 @@ test('readiness check reports primitive-first governance findings as policy resu
   assert.match(stdout, /WARN\s+repeatable-governance-uses-veritas-primitives:/);
   assert.match(stdout, /package\.json/);
 
-  const reportPathMatch = stdout.match(/report: (\.veritas\/evidence\/[^\s]+)/);
+  const reportPathMatch = stdout.match(/report: (\.kontourai\/veritas\/evidence\/[^\s]+)/);
   assert.ok(reportPathMatch);
   const reportPath = join(rootDir, reportPathMatch[1]);
   const record = readJsonFromAbsolute(reportPath);
@@ -3185,7 +3185,7 @@ test('readiness check records run history and reuses fail-to-pass time to green'
       { cwd: repoRootDir, encoding: 'utf8', stdio: 'pipe' },
     ),
   );
-  const historyPath = join(rootDir, '.veritas/runs/history.jsonl');
+  const historyPath = join(rootDir, '.kontourai/veritas/runs/history.jsonl');
   const firstHistory = readFileSync(historyPath, 'utf8');
   assert.match(firstHistory, /run-history-fail/);
   writeFileSync(join(rootDir, 'fix-marker.txt'), 'fixed\n');
@@ -5324,7 +5324,7 @@ test('generated post-commit hook runs successfully after the initial commit boun
 
   assert.match(stdout, /^veritas: /);
   assert.match(stdout, /PASS\s+evidence-check: node -e "process\.exit\(0\)"/);
-  assert.match(stdout, /report: \.veritas\/evidence\//);
+  assert.match(stdout, /report: \.kontourai\/veritas\/evidence\//);
 });
 
 test('generated post-commit hook runs successfully on a normal subsequent commit path', () => {

@@ -443,7 +443,7 @@
         "complexity_findings": 261,
         "average_maintainability": 89
       },
-      "artifact_path": ".veritas/external/fallow-audit.json",
+      "artifact_path": ".kontourai/veritas/external/fallow-audit.json",
       "actions": [
         {
           "type": "apply-refactoring",

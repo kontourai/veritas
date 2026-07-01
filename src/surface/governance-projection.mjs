@@ -7,6 +7,7 @@ import {
   surfaceEvent,
   surfaceSafeId,
 } from './primitives.mjs';
+import { veritasArtifactPath, veritasArtifactRepoPath } from '../paths.mjs';
 
 function claimsByType(claimStore, claimType) {
   return (claimStore.claims ?? []).filter((claim) => claim.claimType === claimType);
@@ -66,7 +67,7 @@ export function collectRecommendationEvidence(record, claimStore, evidence, root
       type: 'policy_rule',
       method: 'auditability',
       record,
-      locator: `.veritas/recommendations/${recommendation.id}.recommendation.json`,
+      locator: veritasArtifactRepoPath('recommendations', `${recommendation.id}.recommendation.json`),
       summary: recommendation.rationale,
       metadata: {
         recommendationType: recommendation.type,
@@ -269,7 +270,7 @@ function governanceArtifactSummary(artifact, status, governanceState) {
 }
 
 function readOpenRecommendationSummaries(rootDir) {
-  const dir = resolve(rootDir, '.veritas/recommendations');
+  const dir = veritasArtifactPath(rootDir, 'recommendations');
   if (!existsSync(dir)) return [];
   return readdirSync(dir)
     .filter((file) => file.endsWith('.recommendation.json'))

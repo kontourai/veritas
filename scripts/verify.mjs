@@ -283,7 +283,7 @@ assert(
   'Artifacts reference must mention the governance instruction artifact.',
 );
 assert(
-  artifactsReference.includes('.veritas/evidence/<run-id>.json'),
+  artifactsReference.includes('.kontourai/veritas/evidence/<run-id>.json'),
   'Artifacts reference must include evidence output paths.',
 );
 assert(
@@ -393,7 +393,7 @@ assert(
   'CI workflow must run the coverage gate.',
 );
 assert(
-  ciWorkflow.includes('actions/checkout@v6'),
+  ciWorkflow.includes('actions/checkout@v7'),
   'CI workflow must use the current checkout action.',
 );
 assert(
@@ -419,7 +419,7 @@ assert(
   'Pages workflow must build the docs site through the local pages build script.',
 );
 assert(
-  pagesWorkflow.includes('actions/checkout@v6'),
+  pagesWorkflow.includes('actions/checkout@v7'),
   'Pages workflow must use the current checkout action.',
 );
 assert(
@@ -476,7 +476,7 @@ assert(
   'Publish workflow must request OIDC token minting for npm trusted publishing.',
 );
 assert(
-  publishWorkflow.includes('actions/checkout@v6'),
+  publishWorkflow.includes('actions/checkout@v7'),
   'Publish workflow must use the current checkout action.',
 );
 assert(
@@ -490,7 +490,7 @@ assert(
 
 const conformanceWorkflow = readText('.github/workflows/veritas-conformance.yml');
 assert(
-  conformanceWorkflow.includes('actions/checkout@v6'),
+  conformanceWorkflow.includes('actions/checkout@v7'),
   'Repo Conformance workflow must use the current checkout action.',
 );
 assert(

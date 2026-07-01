@@ -28,7 +28,7 @@ These are the paths the current CLI writes into a target repo.
 - `.veritas/repo-standards/default.repo-standards.json`
 - `.veritas/authority/default.authority-settings.json`
 - `.veritas/attestations/`
-- `.veritas/evidence/`
+- `.kontourai/veritas/evidence/`
 - `AGENTS.md` and `CLAUDE.md` governance blocks
 
 ### Evidence and standards feedback capture
@@ -36,13 +36,13 @@ These are the paths the current CLI writes into a target repo.
 - `.veritas/attestations/<id>.attestation.json`
 - `.veritas/attestations/HEAD`
 - `.veritas/attestations/PENDING`
-- `.veritas/evidence/<run-id>.json`
-- `.veritas/claims/<claim-id>.input.json`
+- `.kontourai/veritas/evidence/<run-id>.json`
+- `.kontourai/veritas/claims/<claim-id>.input.json`
 - `.surface/runs/<run-id>.console.json`
 - `.surface/runs/latest.json`
-- `.veritas/standards-feedback-drafts/<run-id>.json`
-- `.veritas/standards-feedback/<run-id>.json`
-- `.veritas/standards-feedback/history.jsonl`
+- `.kontourai/veritas/standards-feedback-drafts/<run-id>.json`
+- `.kontourai/veritas/standards-feedback/<run-id>.json`
+- `.kontourai/veritas/standards-feedback/history.jsonl`
 
 ### Suggested wiring from `apply`
 
@@ -59,13 +59,13 @@ The CLI intentionally refuses to write these artifacts outside their reviewable 
 
 Canonical records:
 
-- evidence/report artifacts under `.veritas/evidence/`
-- standards feedback drafts under `.veritas/standards-feedback-drafts/`
-- standards feedback records under `.veritas/standards-feedback/`
+- evidence/report artifacts under `.kontourai/veritas/evidence/`
+- standards feedback drafts under `.kontourai/veritas/standards-feedback-drafts/`
+- standards feedback records under `.kontourai/veritas/standards-feedback/`
 
 Derived read-model artifacts may exist on top of those records. Current example:
 
-- operational summaries under `.veritas/repo-conformance/`
+- operational summaries under `.kontourai/veritas/repo-conformance/`
 
 Derived artifacts are useful summaries, but they should not become second sources of truth.
 
@@ -290,7 +290,7 @@ When adding a new quality or governance script, choose one of these outcomes del
 - Use a Repo Map Evidence Check when the behavior must run a command; give the check a stable id and route it through the relevant Work Area evidence settings.
 - Add an explicit `helperExemptions[]` entry only for non-governance helpers, with rationale.
 
-Generated Evidence paths such as `.veritas/evidence/**` and `.veritas/repo-conformance/**` are outputs of readiness and conformance runs. They can show whether a Requirement passed, warned, failed, or produced a Standards Recommendation, but they are not governance source and should not be used to replace Repo Map or Repo Standards configuration.
+Generated Evidence paths such as `.kontourai/veritas/evidence/**` and `.kontourai/veritas/repo-conformance/**` are outputs of readiness and conformance runs. They can show whether a Requirement passed, warned, failed, or produced a Standards Recommendation, but they are not governance source and should not be used to replace Repo Map or Repo Standards configuration.
 
 ### Evidence record
 
@@ -377,7 +377,7 @@ Evidence Checks may optionally declare an external tool artifact. Veritas reads 
     "tool": "fallow",
     "format": "fallow-audit-json",
     "blocking": false,
-    "artifactPath": ".veritas/external/fallow-audit.json"
+    "artifactPath": ".kontourai/veritas/external/fallow-audit.json"
   }
 }
 ```
@@ -452,7 +452,7 @@ The schema enforces this boundary with `x_surface_mapping` metadata on top-level
 
 #### Per-Claim Surface Input Slices
 
-When `trust.bundle` is present, Veritas also writes one local slice per claim under `.veritas/claims/*.input.json`. These files are derived and gitignored. They are intentionally not Surface `TrustReport` files.
+When `trust.bundle` is present, Veritas also writes one local slice per claim under `.kontourai/veritas/claims/*.input.json`. These files are derived and gitignored. They are intentionally not Surface `TrustReport` files.
 
 Each slice has this shape:
 
@@ -553,9 +553,9 @@ The starter guidance surface also includes `.veritas/GOVERNANCE.md`, which is a 
 
 The shipped code currently enforces these boundaries:
 
-- evidence input for standards feedback must come from `.veritas/evidence/`
-- draft input for standards feedback completion must come from `.veritas/standards-feedback-drafts/`
-- standards feedback output must stay under `.veritas/standards-feedback/`
+- evidence input for standards feedback must come from `.kontourai/veritas/evidence/`
+- draft input for standards feedback completion must come from `.kontourai/veritas/standards-feedback-drafts/`
+- standards feedback output must stay under `.kontourai/veritas/standards-feedback/`
 - CI snippets, runtime hooks, and Codex hook artifacts are constrained to their reviewable subdirectories
 - git-hook generation is constrained to `.githooks/`
 - Codex hook merging accepts either `--target-hooks-file` or `--codex-home`, never both

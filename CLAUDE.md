@@ -40,7 +40,7 @@ See `.veritas/GOVERNANCE.md` for the terse agent-facing governance instructions.
 The test suite intentionally invokes the CLI with invalid inputs to test error handling. These produce error messages that look like:
 
 ```
-Error: standards feedback record requires a repo-local draft artifact inside .veritas/standards-feedback-drafts/
+Error: standards feedback record requires a repo-local draft artifact inside .kontourai/veritas/standards-feedback-drafts/
 ```
 
 These are expected. The messages are not failures.

@@ -79,8 +79,8 @@ function setupRepo() {
     id: 'recommendation-team',
     review_preferences: { reviewer_confidence_scale: ['low', 'medium', 'high'] },
   });
-  mkdirSync(join(rootDir, '.veritas/standards-feedback'), { recursive: true });
-  writeFileSync(join(rootDir, '.veritas/standards-feedback/history.jsonl'), [
+  mkdirSync(join(rootDir, '.kontourai/veritas/standards-feedback'), { recursive: true });
+  writeFileSync(join(rootDir, '.kontourai/veritas/standards-feedback/history.jsonl'), [
     {
       run_id: 'run-1',
       policy_results: [{ rule_id: 'strict-rule', passed: false, enforcementLevel: 'Require' }],
@@ -103,7 +103,7 @@ function setupRepo() {
       unresolved_files: [],
     },
   ].map((record) => JSON.stringify(record)).join('\n'));
-  writeFileSync(join(rootDir, '.veritas/standards-feedback/history.jsonl'), '\n', { flag: 'a' });
+  writeFileSync(join(rootDir, '.kontourai/veritas/standards-feedback/history.jsonl'), '\n', { flag: 'a' });
   return rootDir;
 }
 

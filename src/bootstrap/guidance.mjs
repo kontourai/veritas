@@ -1,3 +1,5 @@
+import { VERITAS_ARTIFACT_ROOT } from '../paths.mjs';
+
 export const DEFAULT_SELECTED_INSTRUCTION_TARGETS = [
   { path: 'AGENTS.md', tool: 'codex', required: true },
   { path: 'CLAUDE.md', tool: 'claude-code', required: true },
@@ -98,10 +100,10 @@ Standards Growth is additive. Developers and agents may propose:
 Do not weaken or delete existing standards without the required authority.
 
 Generated Evidence is output, not the source of standards:
-- \`.veritas/evidence/\`
-- \`.veritas/standards-feedback-drafts/\`
-- \`.veritas/standards-feedback/\`
-- \`.veritas/repo-conformance/\`
+- \`${VERITAS_ARTIFACT_ROOT}/evidence/\`
+- \`${VERITAS_ARTIFACT_ROOT}/standards-feedback-drafts/\`
+- \`${VERITAS_ARTIFACT_ROOT}/standards-feedback/\`
+- \`${VERITAS_ARTIFACT_ROOT}/repo-conformance/\`
 `;
 }
 

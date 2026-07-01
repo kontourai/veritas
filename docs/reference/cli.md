@@ -66,7 +66,7 @@ Writes:
 - `.veritas/repo-map.json`
 - `.veritas/repo-standards/default.repo-standards.json`
 - `.veritas/authority/default.authority-settings.json`
-- `.veritas/evidence/`
+- `.kontourai/veritas/evidence/`
 - `AGENTS.md` and `CLAUDE.md` governance blocks
 
 `--template` replaces generated starter standards with a named example template. Shipped templates currently include `nextjs-typescript`, `python-fastapi`, and `monorepo-pnpm`.
@@ -236,12 +236,12 @@ npx @kontourai/veritas readiness --check boundaries --actor cli-team [--working-
 
 Strict nodes fail when the actor is neither an owner nor listed in `boundaryAllow`. This means a working tree that spans several strict work areas may legitimately fail for one actor while passing for another owner or allowlisted actor.
 
-To turn a Veritas readiness artifact into a Surface trust report, use the `reportArtifactPath` returned by `veritas readiness --format json` as the stable path. Do not reconstruct `.veritas/evidence/<run-id>.json` in downstream tools.
+To turn a Veritas readiness artifact into a Surface trust report, use the `reportArtifactPath` returned by `veritas readiness --format json` as the stable path. Do not reconstruct `.kontourai/veritas/evidence/<run-id>.json` in downstream tools.
 
 ```bash
 artifact_path="$(npx @kontourai/veritas readiness --working-tree --format json | node -e 'let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", () => { const parsed = JSON.parse(data); if (!parsed.reportArtifactPath) throw new Error("missing reportArtifactPath"); console.log(parsed.reportArtifactPath); });')"
-node -e 'const fs = require("node:fs"); const artifact = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write(JSON.stringify(artifact.trust.bundle, null, 2));' "$artifact_path" > .veritas/external/surface-bundle.json
-surface report --repo-map surface --input .veritas/external/surface-bundle.json --format summary
+node -e 'const fs = require("node:fs"); const artifact = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write(JSON.stringify(artifact.trust.bundle, null, 2));' "$artifact_path" > .kontourai/veritas/external/surface-bundle.json
+surface report --repo-map surface --input .kontourai/veritas/external/surface-bundle.json --format summary
 ```
 
 Portable consumers can find merge readiness by selecting `trust.bundle.claims[]` or generated `trust.report.claims[]` where `claimType` is `software-readiness-verdict` and `subjectType` is `repository-change`. Integrity scope is available in claim/evidence metadata; authority trace is available as first-class `trust.bundle.authorityTrace`.
@@ -330,7 +330,7 @@ Filesystem fallback fields include `source: "filesystem-inferred"` so session-lo
 
 Guardrail:
 
-- evidence input must be under `.veritas/evidence/`
+- evidence input must be under `.kontourai/veritas/evidence/`
 - the generated draft now includes a derived `governance` object that records whether the evidence touched the Protected Standards and whether protected-standards review is required
 
 ### `standards feedback record`
@@ -355,8 +355,8 @@ npx @kontourai/veritas feedback record --draft <path> [--authority-settings <pat
 
 Guardrails:
 
-- evidence input must stay under `.veritas/evidence/`
-- draft input must stay under `.veritas/standards-feedback-drafts/`
+- evidence input must stay under `.kontourai/veritas/evidence/`
+- draft input must stay under `.kontourai/veritas/standards-feedback-drafts/`
 - a draft must be completed with the same standards settings that created it
 - the completed record keeps the same derived `governance` object so governance-touching feedback can be measured later
 - existing output is not overwritten without `--force`
@@ -402,7 +402,7 @@ Important behaviors:
 
 ### `standards feedback summary`
 
-Reads `.veritas/standards-feedback/history.jsonl` and prints recent local outcome metrics.
+Reads `.kontourai/veritas/standards-feedback/history.jsonl` and prints recent local outcome metrics.
 
 ```bash
 npx @kontourai/veritas feedback summary [--root <path>]
@@ -412,7 +412,7 @@ The summary includes acceptance count, required rewrites, average time to green,
 
 ### `feedback recommend`
 
-Reads `.veritas/standards-feedback/history.jsonl` and writes non-blocking recommendation artifacts under `.veritas/recommendations/`.
+Reads `.kontourai/veritas/standards-feedback/history.jsonl` and writes non-blocking recommendation artifacts under `.kontourai/veritas/recommendations/`.
 
 ```bash
 npx @kontourai/veritas feedback recommend [--root <path>] [--force] [--dry-run]
@@ -496,7 +496,7 @@ Write restrictions are intentional:
 - runtime hooks must stay under `.veritas/hooks/`
 - stop hooks must stay under `.veritas/hooks/`
 - Codex hook artifacts must stay under `.veritas/runtime/`
-- standards feedback artifacts must stay under `.veritas/standards-feedback/`
+- standards feedback artifacts must stay under `.kontourai/veritas/standards-feedback/`
 - git hooks must stay under `.githooks/`
 
 `apply git-hook` remains available for lower-level scripting, custom output-path control inside `.githooks/`, and installing one hook at a time. For normal repository setup or repair, prefer `setup repo-hooks`.

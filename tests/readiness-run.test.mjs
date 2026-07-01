@@ -36,5 +36,5 @@ test('Merge Readiness run coordinates evidence, report, and draft behind one int
   assert.equal(result.evidenceCheckResults[0].passed, true);
   assert.equal(result.reportResult.record.run_id, 'readiness-run-test');
   assert.equal(result.draftResult.record.run_id, 'readiness-run-test');
-  assert.equal(existsSync(join(rootDir, '.veritas/runs/history.jsonl')), false);
+  assert.equal(existsSync(join(rootDir, '.kontourai/veritas/runs/history.jsonl')), false);
 });

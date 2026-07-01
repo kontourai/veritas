@@ -158,7 +158,7 @@ test('example Repo Maps and evidence examples stay readable', () => {
   const fallowLane = repoMap.evidence.evidenceChecks.find((lane) => lane.id === 'fallow-advisory');
   assert.ok(fallowLane);
   assert.equal(fallowLane.externalTool.blocking, false);
-  assert.equal(fallowLane.externalTool.artifactPath, '.veritas/external/fallow-audit.json');
+  assert.equal(fallowLane.externalTool.artifactPath, '.kontourai/veritas/external/fallow-audit.json');
   assert.ok(repoMap.evidence.defaultEvidenceCheckIds.includes('fallow-advisory'));
   assert.equal(docsRepoMap.name, 'demo-docs-site');
   assert.deepEqual(docsRepoMap.evidence.evidenceChecks.map((lane) => lane.command), [

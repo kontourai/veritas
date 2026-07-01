@@ -24,7 +24,7 @@ jobs:
       governance_trend_summary: ${{ steps.conformance.outputs.governance_trend_summary }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 

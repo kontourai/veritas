@@ -40,7 +40,7 @@ Example Repo Map check:
     "tool": "fallow",
     "format": "fallow-audit-json",
     "blocking": false,
-    "artifactPath": ".veritas/external/fallow-audit.json"
+    "artifactPath": ".kontourai/veritas/external/fallow-audit.json"
   }
 }
 ```
@@ -51,7 +51,7 @@ Example script:
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-mkdirSync('.veritas/external', { recursive: true });
+mkdirSync('.kontourai/veritas/external', { recursive: true });
 
 let output = '';
 try {
@@ -79,7 +79,7 @@ const totalFindings =
   summary.dead_code_issues + summary.duplication_clone_groups + summary.complexity_findings;
 
 writeFileSync(
-  '.veritas/external/fallow-audit.json',
+  '.kontourai/veritas/external/fallow-audit.json',
   `${JSON.stringify({
     schema_version: 'veritas-fallow-advisory-v1',
     tool: 'fallow',

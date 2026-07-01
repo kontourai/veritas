@@ -56,7 +56,7 @@ Add plugin entries to `.veritas/repo-map.json`:
 ```json
 {
   "plugins": [
-    { "package": "@vendor/veritas-plugin", "inputFile": ".veritas/external/vendor-output.json" }
+    { "package": "@vendor/veritas-plugin", "inputFile": ".kontourai/veritas/external/vendor-output.json" }
   ]
 }
 ```

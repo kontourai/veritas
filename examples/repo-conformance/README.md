@@ -2,7 +2,7 @@
 
 These files are curated evidenceCheck artifacts generated from the `veritas` repo using its tracked `.veritas/` configuration.
 
-They are intentionally copied out of `.veritas/evidence/`, `.veritas/standards-feedback-drafts/`, and `.veritas/standards-feedback/` so the repo can demonstrate a self-hosted report and standards feedback flow without committing transient local state.
+They are intentionally copied out of `.kontourai/veritas/evidence/`, `.kontourai/veritas/standards-feedback-drafts/`, and `.kontourai/veritas/standards-feedback/` so the repo can demonstrate a self-hosted report and standards feedback flow without committing transient local state.
 
 Current example set:
 

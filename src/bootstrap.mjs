@@ -21,7 +21,7 @@ import {
   buildSuggestedPackageScripts,
   normalizeInstructionTargets,
 } from './bootstrap/guidance.mjs';
-import { assertWithinDir } from './paths.mjs';
+import { assertWithinDir, veritasArtifactPath } from './paths.mjs';
 
 export {
   buildAdaptiveNodes,
@@ -110,7 +110,7 @@ export function buildBootstrapStarterKitPlan({
     directories: [
       resolve(rootDir, '.veritas/repo-standards'),
       resolve(rootDir, '.veritas/authority'),
-      resolve(rootDir, '.veritas/evidence'),
+      veritasArtifactPath(rootDir, 'evidence'),
     ],
     codeownersBlock: buildSuggestedCodeownersBlock(),
     generatedFiles: [

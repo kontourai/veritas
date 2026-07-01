@@ -17,13 +17,13 @@ These file names currently hold the Repo Map, Repo Standards, and related protec
 
 Generated evidence and read models are local or CI artifacts:
 
-- `.veritas/evidence/`
-- `.veritas/claims/`
+- `.kontourai/veritas/evidence/`
+- `.kontourai/veritas/claims/`
 - `.surface/runs/`
-- `.veritas/external/`
-- `.veritas/standards-feedback-drafts/`
-- `.veritas/standards-feedback/`
-- `.veritas/repo-conformance/`
+- `.kontourai/veritas/external/`
+- `.kontourai/veritas/standards-feedback-drafts/`
+- `.kontourai/veritas/standards-feedback/`
+- `.kontourai/veritas/repo-conformance/`
 
 They should inform product work, not create distribution churn.
 

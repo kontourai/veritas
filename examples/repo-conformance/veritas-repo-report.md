@@ -14,7 +14,7 @@
 - **Baseline `ci:fast` passed:** yes
 - **Report transport:** local-json
 - **Policy results:** 9 passed, 0 failed, 0 metadata-only
-- **Artifact:** `.veritas/evidence/veritas-repo-conformance.json`
+- **Artifact:** `.kontourai/veritas/evidence/veritas-repo-conformance.json`
 
 ### Policy Results
 - required-veritas-operational-artifacts: pass — All required repository artifacts are present.
@@ -28,7 +28,7 @@
 - repeatable-governance-uses-veritas-primitives: pass — Repeatable governance checks are represented by Veritas primitives.
 
 ### External Tool Results
-- fallow:fallow-advisory: warn / advisory — .veritas/external/fallow-audit.json
+- fallow:fallow-advisory: warn / advisory — .kontourai/veritas/external/fallow-audit.json
 
 ### Readiness Coverage
 - Readiness coverage has owners, review triggers, and no unknown catch-evidence inventories.

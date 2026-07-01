@@ -1,7 +1,7 @@
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadRepoMap, loadRepoStandards } from '../load.mjs';
-import { relativeRepoPath } from '../paths.mjs';
+import { relativeRepoPath, veritasArtifactPath } from '../paths.mjs';
 import { evaluateWorkAreaBoundaryRule, evaluateRepoStandards } from '../rules/evaluate.mjs';
 import { readCurrentAttestation } from '../attestations.mjs';
 
@@ -69,7 +69,7 @@ function formatDenyReason(results) {
 }
 
 function writeExceptionRecord(rootDir, exception) {
-  const exceptionsDir = resolve(rootDir, '.veritas/standards-feedback');
+  const exceptionsDir = veritasArtifactPath(rootDir, 'standards-feedback');
   mkdirSync(exceptionsDir, { recursive: true });
   const path = resolve(exceptionsDir, 'exceptions.jsonl');
   appendFileSync(path, `${JSON.stringify(exception)}\n`, 'utf8');

@@ -8,7 +8,7 @@
 // Usage:
 //   node examples/surface/surface-handoff.mjs [path-to-evidence.json]
 //
-// Defaults to .veritas/evidence/conformance-local.json if no path is given.
+// Defaults to .kontourai/veritas/evidence/conformance-local.json if no path is given.
 
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -19,7 +19,7 @@ import {
 } from "@kontourai/surface";
 
 const evidencePath = resolve(
-  process.argv[2] ?? ".veritas/evidence/conformance-local.json",
+  process.argv[2] ?? ".kontourai/veritas/evidence/conformance-local.json",
 );
 
 const evidence = JSON.parse(await readFile(evidencePath, "utf8"));
