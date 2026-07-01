@@ -1,6 +1,4 @@
-import { resolve } from 'node:path';
 import { parseApplyArgs, parseSetupArgs } from '../args.mjs';
-import { inferBootstrapRepoInsights } from '../bootstrap.mjs';
 import { applyGovernanceBlocks } from '../governance.mjs';
 import {
   applyPackageScripts,
@@ -12,12 +10,14 @@ import {
   applyClaudeCodePreToolUseHook,
 } from '../hooks.mjs';
 import { applyCodexHook } from '../integrations/runtime-integrations.mjs';
+import { resolveSetupCliContext, writeJson } from './setup-context.mjs';
+
+function resolveApplyContext(argv, defaults) {
+  return resolveSetupCliContext({ argv, defaults, parseArgs: parseApplyArgs, inferRepoInsights: true });
+}
 
 export function runApplyPackageScriptsCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parseApplyArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const evidenceCheck = options.evidenceCheck ?? repoInsights.evidenceCheck;
+  const { options, rootDir, repoInsights, evidenceCheck } = resolveApplyContext(argv, defaults);
   const result = applyPackageScripts({
     rootDir,
     evidenceCheck,
@@ -25,23 +25,14 @@ export function runApplyPackageScriptsCli(argv = process.argv.slice(2), defaults
     force: options.force ?? false,
   });
 
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        ...result,
-        repoInsights,
-      },
-      null,
-      2,
-    )}\n`,
-  );
+  writeJson({
+    ...result,
+    repoInsights,
+  });
 }
 
 export function runApplyCiSnippetCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parseApplyArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const evidenceCheck = options.evidenceCheck ?? repoInsights.evidenceCheck;
+  const { options, rootDir, repoInsights, evidenceCheck } = resolveApplyContext(argv, defaults);
   const result = applyCiSnippet({
     rootDir,
     evidenceCheck,
@@ -50,21 +41,14 @@ export function runApplyCiSnippetCli(argv = process.argv.slice(2), defaults = {}
     force: options.force ?? false,
   });
 
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        ...result,
-        repoInsights,
-      },
-      null,
-      2,
-    )}\n`,
-  );
+  writeJson({
+    ...result,
+    repoInsights,
+  });
 }
 
 export function runApplyGitHookCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parseApplyArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const { options, rootDir } = resolveSetupCliContext({ argv, defaults, parseArgs: parseApplyArgs });
   const hook = options.hook ?? 'post-commit';
   const result = applyGitHook({
     rootDir,
@@ -74,35 +58,32 @@ export function runApplyGitHookCli(argv = process.argv.slice(2), defaults = {}) 
     configureGit: options.configureGit ?? false,
   });
 
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  writeJson(result);
 }
 
 export function runSetupRepoHooksCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parseSetupArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const { options, rootDir } = resolveSetupCliContext({ argv, defaults, parseArgs: parseSetupArgs });
   const result = setupRepoHooks({
     rootDir,
     force: options.force ?? false,
   });
 
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  writeJson(result);
 }
 
 export function runApplyRuntimeHookCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parseApplyArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const { options, rootDir } = resolveSetupCliContext({ argv, defaults, parseArgs: parseApplyArgs });
   const result = applyRuntimeHook({
     rootDir,
     outputPath: options.outputPath ?? '.veritas/hooks/agent-runtime.sh',
     force: options.force ?? false,
   });
 
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  writeJson(result);
 }
 
 export function runApplyStopHookCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parseApplyArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const { options, rootDir } = resolveSetupCliContext({ argv, defaults, parseArgs: parseApplyArgs });
   const result = applyStopHook({
     rootDir,
     tool: options.tool ?? 'generic',
@@ -110,35 +91,32 @@ export function runApplyStopHookCli(argv = process.argv.slice(2), defaults = {})
     force: options.force ?? false,
   });
 
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  writeJson(result);
 }
 
 export function runApplyClaudeCodePreToolUseHookCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parseApplyArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const { options, rootDir } = resolveSetupCliContext({ argv, defaults, parseArgs: parseApplyArgs });
   const result = applyClaudeCodePreToolUseHook({
     rootDir,
     outputPath: options.outputPath ?? '.veritas/hooks/pre-tool-use.sh',
     force: options.force ?? false,
   });
 
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  writeJson(result);
 }
 
 export function runApplyGovernanceBlocksCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parseApplyArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const { options, rootDir } = resolveSetupCliContext({ argv, defaults, parseArgs: parseApplyArgs });
   const result = applyGovernanceBlocks({
     rootDir,
     force: options.force ?? false,
   });
 
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  writeJson(result);
 }
 
 export function runApplyCodexHookCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parseApplyArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const { options, rootDir } = resolveSetupCliContext({ argv, defaults, parseArgs: parseApplyArgs });
   const result = applyCodexHook({
     rootDir,
     outputPath: options.outputPath ?? '.veritas/runtime/codex-hooks.json',
@@ -147,5 +125,5 @@ export function runApplyCodexHookCli(argv = process.argv.slice(2), defaults = {}
     codexHome: options.codexHome,
   });
 
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  writeJson(result);
 }

@@ -16,8 +16,8 @@ Do not make Fallow blocking on the first day in an existing repo. A first run of
 For this Veritas checkout, the advisory lane keeps dead code at zero while carrying an intentional duplication and complexity baseline:
 
 - 0 dead-code issues
-- 23 clone groups
-- 263 functions above threshold
+- 17 clone groups
+- 258 functions above threshold
 
 That keeps the low-risk cleanup fixed while leaving broader duplication and complexity reductions for deliberate refactor work.
 

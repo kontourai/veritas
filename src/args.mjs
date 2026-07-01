@@ -12,6 +12,39 @@ function cloneDefaults(defaults) {
   return options;
 }
 
+const FEEDBACK_JUDGMENT_TOKEN_SPEC = {
+  '--accepted-without-major-rewrite': {
+    type: 'boolean-string',
+    key: 'acceptedWithoutMajorRewrite',
+  },
+  '--required-followup': { type: 'boolean-string', key: 'requiredFollowup' },
+  '--reviewer-confidence': { type: 'string', key: 'reviewerConfidence' },
+  '--time-to-green-minutes': { type: 'number', key: 'timeToGreenMinutes' },
+  '--exception-count': { type: 'number', key: 'exceptionCount' },
+  '--false-positive-rule': { type: 'array', key: 'falsePositiveRules' },
+  '--missed-issue': { type: 'array', key: 'missedIssues' },
+  '--note': { type: 'array', key: 'notes' },
+};
+
+const FEEDBACK_JUDGMENT_DEFAULTS = {
+  falsePositiveRules: [],
+  missedIssues: [],
+  notes: [],
+};
+
+function parseFeedbackJudgmentTokens(argv, spec) {
+  return parseTokens(
+    argv,
+    {
+      ...spec,
+      ...FEEDBACK_JUDGMENT_TOKEN_SPEC,
+    },
+    {
+      defaults: FEEDBACK_JUDGMENT_DEFAULTS,
+    },
+  ).options;
+}
+
 export function parseTokens(argv, spec, { defaults = {} } = {}) {
   const options = cloneDefaults(defaults);
   const rest = [];
@@ -190,7 +223,7 @@ export function parsePreToolUseArgs(argv) {
 }
 
 export function parseStandardsFeedbackArgs(argv) {
-  return parseTokens(
+  return parseFeedbackJudgmentTokens(
     argv,
     {
       '--root': { type: 'string', key: 'rootDir' },
@@ -200,30 +233,12 @@ export function parseStandardsFeedbackArgs(argv) {
       '--authority-settings': { type: 'string', key: 'authoritySettingsPath' },
       '--draft': { type: 'string', key: 'draftPath' },
       '--output': { type: 'string', key: 'outputPath' },
-      '--accepted-without-major-rewrite': {
-        type: 'boolean-string',
-        key: 'acceptedWithoutMajorRewrite',
-      },
-      '--required-followup': { type: 'boolean-string', key: 'requiredFollowup' },
-      '--reviewer-confidence': { type: 'string', key: 'reviewerConfidence' },
-      '--time-to-green-minutes': { type: 'number', key: 'timeToGreenMinutes' },
-      '--exception-count': { type: 'number', key: 'exceptionCount' },
       '--rewrite-threshold': { type: 'number', key: 'rewriteThreshold' },
       '--verbose': { type: 'flag', key: 'verbose' },
-      '--false-positive-rule': { type: 'array', key: 'falsePositiveRules' },
-      '--missed-issue': { type: 'array', key: 'missedIssues' },
-      '--note': { type: 'array', key: 'notes' },
       '--force': { type: 'flag', key: 'force' },
       '--format': { type: 'string', key: 'format' },
     },
-    {
-      defaults: {
-        falsePositiveRules: [],
-        missedIssues: [],
-        notes: [],
-      },
-    },
-  ).options;
+  );
 }
 
 export function parseMarkerStandardsFeedbackArgs(argv) {
@@ -252,7 +267,7 @@ export function parseMarkerSuiteStandardsFeedbackArgs(argv) {
 }
 
 export function parseReadinessArgs(argv) {
-  return parseTokens(
+  return parseFeedbackJudgmentTokens(
     argv,
     {
       '--root': { type: 'string', key: 'rootDir' },
@@ -266,26 +281,8 @@ export function parseReadinessArgs(argv) {
       '--evidence-check-command': { type: 'string', key: 'evidenceCheckCommand' },
       '--skip-evidence-check': { type: 'flag', key: 'skipEvidenceCheck' },
       '--baseline-ci-fast-status': { type: 'string', key: 'baselineCiFastStatus' },
-      '--accepted-without-major-rewrite': {
-        type: 'boolean-string',
-        key: 'acceptedWithoutMajorRewrite',
-      },
-      '--required-followup': { type: 'boolean-string', key: 'requiredFollowup' },
-      '--reviewer-confidence': { type: 'string', key: 'reviewerConfidence' },
-      '--time-to-green-minutes': { type: 'number', key: 'timeToGreenMinutes' },
-      '--exception-count': { type: 'number', key: 'exceptionCount' },
-      '--false-positive-rule': { type: 'array', key: 'falsePositiveRules' },
-      '--missed-issue': { type: 'array', key: 'missedIssues' },
-      '--note': { type: 'array', key: 'notes' },
       '--force': { type: 'flag', key: 'force' },
       '--format': { type: 'string', key: 'format' },
     },
-    {
-      defaults: {
-        falsePositiveRules: [],
-        missedIssues: [],
-        notes: [],
-      },
-    },
-  ).options;
+  );
 }

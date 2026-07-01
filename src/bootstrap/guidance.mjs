@@ -1,4 +1,5 @@
-import { VERITAS_ARTIFACT_ROOT } from '../paths.mjs';
+import { isAbsolute, resolve } from 'node:path';
+import { assertWithinDir, VERITAS_ARTIFACT_ROOT } from '../paths.mjs';
 
 export const DEFAULT_SELECTED_INSTRUCTION_TARGETS = [
   { path: 'AGENTS.md', tool: 'codex', required: true },
@@ -48,6 +49,19 @@ export function normalizeInstructionTargets(targets) {
 
 export function selectedInstructionTargetsFromAnswers(answers) {
   return normalizeInstructionTargets(answers?.selectedInstructionTargets ?? answers?.selected_instruction_targets);
+}
+
+export function validateInstructionTargetPaths(rootDir, selectedInstructionTargets, label = 'instruction') {
+  for (const target of selectedInstructionTargets) {
+    if (isAbsolute(target.path)) {
+      throw new Error(`${label} instruction target path must be repo-relative: ${target.path}`);
+    }
+    assertWithinDir(
+      resolve(rootDir, target.path),
+      rootDir,
+      `${label} instruction target path escapes target root: ${target.path}`,
+    );
+  }
 }
 
 export function validateOwnerAnswers(answers) {

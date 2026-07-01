@@ -1,7 +1,5 @@
-import { resolve } from 'node:path';
 import { parsePrintArgs } from '../args.mjs';
 import {
-  inferBootstrapRepoInsights,
   buildSuggestedPackageScripts,
   buildSuggestedCiSnippet,
 } from '../bootstrap.mjs';
@@ -18,121 +16,80 @@ import {
   inspectCodexHookTarget,
   inspectRuntimeIntegrationStatus,
 } from '../integrations/runtime-integrations.mjs';
+import { resolveSetupCliContext, writeJson } from './setup-context.mjs';
+
+function resolvePrintContext(argv, defaults) {
+  return resolveSetupCliContext({ argv, defaults, parseArgs: parsePrintArgs, inferRepoInsights: true });
+}
 
 export function runPrintPackageScriptsCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parsePrintArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const evidenceCheck = options.evidenceCheck ?? repoInsights.evidenceCheck;
+  const { rootDir, repoInsights, evidenceCheck } = resolvePrintContext(argv, defaults);
 
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        rootDir,
-        evidenceCheck,
-        repoInsights,
-        scripts: buildSuggestedPackageScripts({
-          evidenceCheck,
-          baseRef: repoInsights.baseRef,
-        }),
-      },
-      null,
-      2,
-    )}\n`,
-  );
+  writeJson({
+    rootDir,
+    evidenceCheck,
+    repoInsights,
+    scripts: buildSuggestedPackageScripts({
+      evidenceCheck,
+      baseRef: repoInsights.baseRef,
+    }),
+  });
 }
 
 export function runPrintCiSnippetCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parsePrintArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  const repoInsights = inferBootstrapRepoInsights(rootDir);
-  const evidenceCheck = options.evidenceCheck ?? repoInsights.evidenceCheck;
+  const { rootDir, repoInsights, evidenceCheck } = resolvePrintContext(argv, defaults);
 
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        rootDir,
-        evidenceCheck,
-        repoInsights,
-        ciSnippet: buildSuggestedCiSnippet({
-          evidenceCheck,
-          baseRef: repoInsights.baseRef,
-        }),
-      },
-      null,
-      2,
-    )}\n`,
-  );
+  writeJson({
+    rootDir,
+    evidenceCheck,
+    repoInsights,
+    ciSnippet: buildSuggestedCiSnippet({
+      evidenceCheck,
+      baseRef: repoInsights.baseRef,
+    }),
+  });
 }
 
 export function runPrintGitHookCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parsePrintArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const { options, rootDir } = resolveSetupCliContext({ argv, defaults, parseArgs: parsePrintArgs });
   const hook = options.hook ?? 'post-commit';
 
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        rootDir,
-        hook,
-        hookBody: buildSuggestedGitHook({ hook }),
-        suggestedHooksPath: '.githooks',
-      },
-      null,
-      2,
-    )}\n`,
-  );
+  writeJson({
+    rootDir,
+    hook,
+    hookBody: buildSuggestedGitHook({ hook }),
+    suggestedHooksPath: '.githooks',
+  });
 }
 
 export function runPrintRuntimeHookCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parsePrintArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const { rootDir } = resolveSetupCliContext({ argv, defaults, parseArgs: parsePrintArgs });
 
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        rootDir,
-        outputPath: '.veritas/hooks/agent-runtime.sh',
-        hookBody: buildSuggestedRuntimeHook(),
-        defaultInvocation: '.veritas/hooks/agent-runtime.sh',
-      },
-      null,
-      2,
-    )}\n`,
-  );
+  writeJson({
+    rootDir,
+    outputPath: '.veritas/hooks/agent-runtime.sh',
+    hookBody: buildSuggestedRuntimeHook(),
+    defaultInvocation: '.veritas/hooks/agent-runtime.sh',
+  });
 }
 
 export function runPrintStopHookCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parsePrintArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const { options, rootDir } = resolveSetupCliContext({ argv, defaults, parseArgs: parsePrintArgs });
   const tool = options.tool ?? 'generic';
   const suggestion = buildSuggestedStopHook({ tool });
 
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        rootDir,
-        ...suggestion,
-      },
-      null,
-      2,
-    )}\n`,
-  );
+  writeJson({
+    rootDir,
+    ...suggestion,
+  });
 }
 
 export function runPrintClaudeCodePreToolUseHookCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parsePrintArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        rootDir,
-        ...buildSuggestedClaudeCodePreToolUseHook(),
-      },
-      null,
-      2,
-    )}\n`,
-  );
+  const { rootDir } = resolveSetupCliContext({ argv, defaults, parseArgs: parsePrintArgs });
+  writeJson({
+    rootDir,
+    ...buildSuggestedClaudeCodePreToolUseHook(),
+  });
 }
 
 export function runPrintGovernanceBlockCli() {
@@ -140,8 +97,7 @@ export function runPrintGovernanceBlockCli() {
 }
 
 export function runPrintCodexHookCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parsePrintArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const { options, rootDir } = resolveSetupCliContext({ argv, defaults, parseArgs: parsePrintArgs });
   const targetStatus = inspectCodexHookTarget(rootDir, {
     targetHooksFile: options.targetHooksFile,
     codexHome: options.codexHome,
@@ -152,39 +108,26 @@ export function runPrintCodexHookCli(argv = process.argv.slice(2), defaults = {}
       ? `npm exec -- veritas apply codex-hook --target-hooks-file ${shellQuote(options.targetHooksFile)}`
       : null;
 
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        rootDir,
-        outputPath: '.veritas/runtime/codex-hooks.json',
-        targetHooksFile: options.targetHooksFile ?? null,
-        codexHome: options.codexHome ?? null,
-        targetStatus,
-        suggestedApplyCommand,
-        hookConfig: buildSuggestedCodexHookConfig(),
-      },
-      null,
-      2,
-    )}\n`,
-  );
+  writeJson({
+    rootDir,
+    outputPath: '.veritas/runtime/codex-hooks.json',
+    targetHooksFile: options.targetHooksFile ?? null,
+    codexHome: options.codexHome ?? null,
+    targetStatus,
+    suggestedApplyCommand,
+    hookConfig: buildSuggestedCodexHookConfig(),
+  });
 }
 
 export function runRuntimeStatusCli(argv = process.argv.slice(2), defaults = {}) {
-  const options = parsePrintArgs(argv);
-  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const { options, rootDir } = resolveSetupCliContext({ argv, defaults, parseArgs: parsePrintArgs });
   const status = inspectRuntimeIntegrationStatus(rootDir, {
     targetHooksFile: options.targetHooksFile,
     codexHome: options.codexHome,
   });
 
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        rootDir,
-        ...status,
-      },
-      null,
-      2,
-    )}\n`,
-  );
+  writeJson({
+    rootDir,
+    ...status,
+  });
 }

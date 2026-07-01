@@ -15,6 +15,7 @@ import {
   buildGovernanceInstructions,
   buildSuggestedCodeownersBlock,
   selectedInstructionTargetsFromAnswers,
+  validateInstructionTargetPaths,
   validateOwnerAnswers,
 } from './guidance.mjs';
 import { assertWithinDir, veritasArtifactPath, veritasArtifactRepoPath } from '../paths.mjs';
@@ -67,19 +68,6 @@ function recommendedSurfaces(repoInsights) {
     risk: node.kind === 'protected-area' ? 'high' : 'medium',
     reason: `Detected ${node.label} as ${node.kind}.`,
   }));
-}
-
-function validateInstructionTargetPaths(rootDir, selectedInstructionTargets) {
-  for (const target of selectedInstructionTargets) {
-    if (isAbsolute(target.path)) {
-      throw new Error(`init instruction target path must be repo-relative: ${target.path}`);
-    }
-    assertWithinDir(
-      resolve(rootDir, target.path),
-      rootDir,
-      `init instruction target path escapes target root: ${target.path}`,
-    );
-  }
 }
 
 function ownerQuestions(repoInsights) {
