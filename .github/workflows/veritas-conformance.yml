@@ -24,7 +24,7 @@ jobs:
       governance_trend_summary: ${{ steps.conformance.outputs.governance_trend_summary }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -54,7 +54,7 @@ jobs:
         run: |
           node <<'EOF'
           const { appendFileSync, readFileSync } = require('node:fs');
-          const conformance = JSON.parse(readFileSync('.veritas/repo-conformance/latest.json', 'utf8'));
+          const conformance = JSON.parse(readFileSync('.kontourai/veritas/repo-conformance/latest.json', 'utf8'));
           const outputPath = process.env.GITHUB_OUTPUT;
           const sanitize = (value) => String(value ?? '').replace(/\r?\n/g, ' ');
           const outputs = {
@@ -78,10 +78,10 @@ jobs:
         with:
           name: veritas-conformance-${{ github.run_id }}
           path: |
-            .veritas/evidence/
-            .veritas/standards-feedback-drafts/
-            .veritas/standards-feedback/
-            .veritas/repo-conformance/
+            .kontourai/veritas/evidence/
+            .kontourai/veritas/standards-feedback-drafts/
+            .kontourai/veritas/standards-feedback/
+            .kontourai/veritas/repo-conformance/
             examples/repo-conformance/
 
   update-pr-comment:
@@ -103,7 +103,7 @@ jobs:
         with:
           script: |
             const fs = require('node:fs');
-            const body = fs.readFileSync('.veritas/repo-conformance/latest.md', 'utf8');
+            const body = fs.readFileSync('.kontourai/veritas/repo-conformance/latest.md', 'utf8');
             const marker = '<!-- veritas-conformance-comment -->';
             const { owner, repo } = context.repo;
             const issue_number = context.payload.pull_request.number;
@@ -150,8 +150,8 @@ jobs:
         with:
           script: |
             const fs = require('node:fs');
-            const conformance = JSON.parse(fs.readFileSync('.veritas/repo-conformance/latest.json', 'utf8'));
-            const body = fs.readFileSync('.veritas/repo-conformance/latest.md', 'utf8');
+            const conformance = JSON.parse(fs.readFileSync('.kontourai/veritas/repo-conformance/latest.json', 'utf8'));
+            const body = fs.readFileSync('.kontourai/veritas/repo-conformance/latest.md', 'utf8');
             const title = 'Veritas Health';
             const marker = '<!-- veritas-health -->';
             const legacyTitle = 'Veritas Dogfood Health';
@@ -267,5 +267,5 @@ jobs:
     steps:
       - name: Fail On Red Health
         run: |
-          echo "Veritas repo conformance health is red; see .veritas/repo-conformance/latest.md and uploaded artifacts."
+          echo "Veritas repo conformance health is red; see .kontourai/veritas/repo-conformance/latest.md and uploaded artifacts."
           exit 1

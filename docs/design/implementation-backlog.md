@@ -33,7 +33,7 @@ This backlog turns the current roadmap and integration plans into executable wor
 
 - Harden Codex standards feedback observation so uncomputed fields include reason codes instead of bare `null`.
 - Validate generated standards-feedback drafts against `schemas/veritas-standards-feedback-draft.schema.json`.
-- Add `.veritas/runs/history.jsonl` so pure CI fail-to-pass sequences can still produce `time_to_green_minutes`.
+- Add `.kontourai/veritas/runs/history.jsonl` so pure CI fail-to-pass sequences can still produce `time_to_green_minutes`.
 
 ### Evidence Check module maintainability
 

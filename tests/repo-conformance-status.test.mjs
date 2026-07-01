@@ -165,15 +165,15 @@ test('Protected Standards treats governance renames as protected standards modif
 
 test('governance trend summary includes recent classification counts', () => {
   const rootDir = createGovernanceRepo('veritas-conformance-trend-');
-  mkdirp(join(rootDir, '.veritas/repo-conformance'));
-  writeJsonFile(rootDir, '.veritas/repo-conformance/older-clean.json', {
+  mkdirp(join(rootDir, '.kontourai/veritas/repo-conformance'));
+  writeJsonFile(rootDir, '.kontourai/veritas/repo-conformance/older-clean.json', {
     run_id: 'older-clean',
     generated_at: '2026-04-20T00:00:00.000Z',
     governance_surface: {
       classification: 'clean',
     },
   });
-  writeJsonFile(rootDir, '.veritas/repo-conformance/older-protected-standards.json', {
+  writeJsonFile(rootDir, '.kontourai/veritas/repo-conformance/older-protected-standards.json', {
     run_id: 'older-protected-standards',
     generated_at: '2026-04-21T00:00:00.000Z',
     governance_surface: {

@@ -13,12 +13,10 @@ import {
 import { evaluatePrimitiveFirstGovernanceRule } from './primitive-first.mjs';
 import { buildRuleResult } from './result.mjs';
 
-export { buildRuleResult } from './result.mjs';
 export {
   evaluateForbiddenPatternRule,
   evaluateHeaderRequiredRule,
   evaluateRequiredPatternRule,
-  evaluateVocabularyConsistencyRule,
 } from './content-rules.mjs';
 export { evaluatePrimitiveFirstGovernanceRule } from './primitive-first.mjs';
 

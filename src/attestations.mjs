@@ -61,6 +61,41 @@ function nowIso(options = {}) {
   return options.attestedAt ?? new Date().toISOString();
 }
 
+function resolveApprovalReferencePolicy({
+  rootDir,
+  kind,
+  actor,
+  approvalRef,
+  approvalResolverResult,
+  timestamp,
+  repoStandardsPath,
+  repoMapPath,
+  authoritySettingsPath,
+}) {
+  const hashes = hashProtectedStandards(rootDir, { repoStandardsPath, repoMapPath, authoritySettingsPath });
+  const resolverRequest = buildApprovalResolverRequest({
+    approvalRef,
+    attestationKind: kind,
+    actor,
+    protectedStandards: {
+      repoStandardsHash: hashes.repoStandardsHash,
+      repoMapHash: hashes.repoMapHash,
+      authoritySettingsHash: hashes.authoritySettingsHash,
+    },
+    requestedAt: timestamp,
+  });
+  const approvalRefPolicy = validateApprovalReferencePolicy({
+    rootDir,
+    approvalRef,
+    authoritySettingsPath: resolve(rootDir, authoritySettingsPath ?? '.veritas/authority/default.authority-settings.json'),
+    approvalResolverResult,
+    resolverRequest,
+  });
+  const resolvedApproval = approvalRefPolicy.approvalResolverResult;
+  delete approvalRefPolicy.approvalResolverResult;
+  return { hashes, approvalRefPolicy, resolvedApproval };
+}
+
 export function readAttestationHead(rootDir) {
   const path = headPath(rootDir);
   if (!existsSync(path)) return null;
@@ -211,27 +246,17 @@ export function createAttestation({
     throw new Error('veritas attest policy-change requires --message <text>');
   }
 
-  const hashes = hashProtectedStandards(rootDir, { repoStandardsPath, repoMapPath, authoritySettingsPath });
-  const resolverRequest = buildApprovalResolverRequest({
-    approvalRef,
-    attestationKind: kind,
-    actor,
-    protectedStandards: {
-      repoStandardsHash: hashes.repoStandardsHash,
-      repoMapHash: hashes.repoMapHash,
-      authoritySettingsHash: hashes.authoritySettingsHash,
-    },
-    requestedAt: timestamp,
-  });
-  const approvalRefPolicy = validateApprovalReferencePolicy({
+  const { hashes, approvalRefPolicy, resolvedApproval } = resolveApprovalReferencePolicy({
     rootDir,
+    kind,
+    actor,
     approvalRef,
-    authoritySettingsPath: resolve(rootDir, authoritySettingsPath ?? '.veritas/authority/default.authority-settings.json'),
     approvalResolverResult,
-    resolverRequest,
+    timestamp,
+    repoStandardsPath,
+    repoMapPath,
+    authoritySettingsPath,
   });
-  const resolvedApproval = approvalRefPolicy.approvalResolverResult;
-  delete approvalRefPolicy.approvalResolverResult;
   const approvalResolution = resolvedApproval
     ? summarizeApprovalResolverResult(resolvedApproval)
     : null;
@@ -303,27 +328,17 @@ export function assertAttestationApprovalReference({
 } = {}) {
   requireHumanApprovalReference({ kind, approvalRef });
   const timestamp = nowIso({ attestedAt });
-  const hashes = hashProtectedStandards(rootDir, { repoStandardsPath, repoMapPath, authoritySettingsPath });
-  const resolverRequest = buildApprovalResolverRequest({
-    approvalRef,
-    attestationKind: kind,
-    actor,
-    protectedStandards: {
-      repoStandardsHash: hashes.repoStandardsHash,
-      repoMapHash: hashes.repoMapHash,
-      authoritySettingsHash: hashes.authoritySettingsHash,
-    },
-    requestedAt: timestamp,
-  });
-  const approvalRefPolicy = validateApprovalReferencePolicy({
+  const { approvalRefPolicy, resolvedApproval } = resolveApprovalReferencePolicy({
     rootDir,
+    kind,
+    actor,
     approvalRef,
-    authoritySettingsPath: resolve(rootDir, authoritySettingsPath ?? '.veritas/authority/default.authority-settings.json'),
     approvalResolverResult,
-    resolverRequest,
+    timestamp,
+    repoStandardsPath,
+    repoMapPath,
+    authoritySettingsPath,
   });
-  const resolvedApproval = approvalRefPolicy.approvalResolverResult;
-  delete approvalRefPolicy.approvalResolverResult;
   return {
     approvalRefPolicy,
     approvalResolution: resolvedApproval ? summarizeApprovalResolverResult(resolvedApproval) : null,

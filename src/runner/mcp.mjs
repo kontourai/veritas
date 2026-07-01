@@ -8,7 +8,7 @@ function serverKey(serverDef) {
     .digest('hex');
 }
 
-export class McpServerPool {
+class McpServerPool {
   #connections = new Map();
   #signal;
 
@@ -77,7 +77,7 @@ export function createMcpServerPool(options) {
   return new McpServerPool(options);
 }
 
-export async function runMcp(serverDef, toolName, input, options) {
+async function runMcp(serverDef, toolName, input, options) {
   const pool = new McpServerPool(options);
   try {
     return await pool.call(serverDef, toolName, input, options);

@@ -3,32 +3,17 @@
  *
  * Uses the normative trust-bundle.schema.json shipped by the `hachure` package.
  * Sub-schemas (claim.schema.json, evidence.schema.json, etc.) are loaded from
- * the same schemas directory and added to the Ajv instance so $ref resolution
- * works without HTTP access.
- *
- * Mirrors the pattern in flow/src/gates/trust-bundle-validator.ts, adapted to
- * Veritas's .mjs codebase.
+ * the same package export and added to the Ajv instance so $ref resolution works
+ * without HTTP access.
  */
-import { readFileSync, readdirSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-// Ajv 8 ships as CommonJS; import via createRequire to avoid type-level issues.
-// Use the 2020 draft validator since Hachure schemas use JSON Schema 2020-12.
-const _require = createRequire(import.meta.url);
-const Ajv = _require('ajv/dist/2020');
-
-// Resolve hachure dir from its main entry (package.json is not exported)
-const hachureDir = dirname(_require.resolve('hachure'));
-const schemasDir = join(hachureDir, 'schemas');
+import Ajv from 'ajv/dist/2020.js';
+import addFormats from 'ajv-formats';
+import { schemas as hachureSchemas } from 'hachure';
 
 function loadHachureSchemas() {
   const schemas = {};
-  for (const file of readdirSync(schemasDir)) {
-    if (!file.endsWith('.schema.json')) continue;
-    const content = readFileSync(join(schemasDir, file), 'utf8');
-    schemas[file] = JSON.parse(content);
+  for (const [name, schema] of hachureSchemas.entries()) {
+    schemas[`${name}.schema.json`] = schema;
   }
   return schemas;
 }
@@ -40,6 +25,7 @@ function getValidator() {
 
   const hachureSchemas = loadHachureSchemas();
   const ajv = new Ajv({ strict: false, allErrors: true });
+  addFormats(ajv);
 
   // Add all sub-schemas so $ref can resolve locally
   for (const [filename, schema] of Object.entries(hachureSchemas)) {

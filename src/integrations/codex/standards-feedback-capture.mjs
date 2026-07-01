@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { assertWithinDir, relativeRepoPath } from '../../paths.mjs';
+import { assertWithinDir, relativeRepoPath, veritasArtifactPath, veritasArtifactRepoPath } from '../../paths.mjs';
 import { resolveRunArtifactPath } from '../../util/run-id.mjs';
 
 const REASON_CODES = {
@@ -180,7 +180,7 @@ function feedbackDraftValidationError(draft) {
 }
 
 function writeValidationFailure({ rootDir, runId, draft, error }) {
-  const failureDir = resolve(rootDir, '.veritas/external/standards-feedback-draft-validation-failures');
+  const failureDir = veritasArtifactPath(rootDir, 'external', 'standards-feedback-draft-validation-failures');
   const failurePath = resolveRunArtifactPath({
     dir: failureDir,
     runId,
@@ -218,7 +218,7 @@ export function observeCodexStandardsFeedback({ sessionLogPath, evidencePath, ro
   }
   if (process.env.VERITAS_SKIP_STANDARDS_FEEDBACK_VALIDATION === '1') warnStandardsFeedbackValidationSkipped();
 
-  const draftsDir = resolve(rootDir, '.veritas/standards-feedback-drafts');
+  const draftsDir = veritasArtifactPath(rootDir, 'standards-feedback-drafts');
   const artifactPath = outputPath
     ? resolve(rootDir, outputPath)
     : resolveRunArtifactPath({
@@ -230,7 +230,7 @@ export function observeCodexStandardsFeedback({ sessionLogPath, evidencePath, ro
   assertWithinDir(
     artifactPath,
     draftsDir,
-    'standards feedback drafts may only be written inside .veritas/standards-feedback-drafts/',
+    `standards feedback drafts may only be written inside ${veritasArtifactRepoPath('standards-feedback-drafts')}/`,
   );
   mkdirSync(dirname(artifactPath), { recursive: true });
   writeFileSync(artifactPath, `${JSON.stringify(draft, null, 2)}\n`, 'utf8');

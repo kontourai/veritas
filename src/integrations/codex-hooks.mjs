@@ -80,7 +80,7 @@ function mergeCodexHooksConfig(existingConfig, integrationConfig) {
   return merged;
 }
 
-export function resolveCodexHooksTarget(rootDir, options = {}) {
+function resolveCodexHooksTarget(rootDir, options = {}) {
   if (options.targetHooksFile && options.codexHome) {
     throw new Error(
       'codex-hook accepts either --target-hooks-file or --codex-home, not both',
@@ -102,7 +102,7 @@ function codexHookIntegrationCommands() {
   );
 }
 
-export function formatTargetPath(rootDir, targetPath) {
+function formatTargetPath(rootDir, targetPath) {
   const relativeTargetPath = relativeRepoPath(rootDir, targetPath);
   return relativeTargetPath.startsWith('..')
     ? targetPath.replaceAll('\\', '/')

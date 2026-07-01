@@ -1,8 +1,9 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname } from 'node:path';
+import { veritasArtifactPath } from '../paths.mjs';
 
 function historyPath(rootDir) {
-  return resolve(rootDir, '.veritas/runs/history.jsonl');
+  return veritasArtifactPath(rootDir, 'runs', 'history.jsonl');
 }
 
 export function readRunHistory(rootDir) {

@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { veritasArtifactPath } from '../paths.mjs';
 
 function buildGovernanceTrendSummary(entries) {
   if (entries.length === 0) {
@@ -43,7 +44,7 @@ export function summarizeGovernanceTrend({
   currentRunId,
   currentGovernanceSurface,
 }) {
-  const conformanceDir = resolve(rootDir, '.veritas/repo-conformance');
+  const conformanceDir = veritasArtifactPath(rootDir, 'repo-conformance');
   if (!existsSync(conformanceDir) || !readdirSync(conformanceDir, { withFileTypes: false }).length) {
     return buildGovernanceTrendSummary([
       {

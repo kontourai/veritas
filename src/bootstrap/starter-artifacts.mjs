@@ -1,6 +1,7 @@
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadJson } from '../load.mjs';
+import { veritasArtifactRepoPath } from '../paths.mjs';
 import {
   DEFAULT_SELECTED_INSTRUCTION_TARGETS,
   OPTIONAL_INSTRUCTION_TARGETS,
@@ -106,7 +107,7 @@ export function buildAdaptiveNodes(repoInsights) {
 
 function buildStarterEvidenceConfig({ evidenceCheck, repoInsights }) {
   const evidence = {
-    artifactDir: '.veritas/evidence',
+    artifactDir: veritasArtifactRepoPath('evidence'),
     evidenceChecks: [
       {
         id: 'required-evidence-check',
@@ -251,7 +252,7 @@ export function buildStarterRepoStandards({ projectName, instructionTargets = DE
   };
 }
 
-export function listStarterRepoStandards() {
+function listStarterRepoStandards() {
   return [...STARTER_REPO_STANDARD_TEMPLATES.keys()];
 }
 

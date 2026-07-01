@@ -15,9 +15,10 @@ import {
   buildGovernanceInstructions,
   buildSuggestedCodeownersBlock,
   selectedInstructionTargetsFromAnswers,
+  validateInstructionTargetPaths,
   validateOwnerAnswers,
 } from './guidance.mjs';
-import { assertWithinDir } from '../paths.mjs';
+import { assertWithinDir, veritasArtifactPath, veritasArtifactRepoPath } from '../paths.mjs';
 
 const INIT_RECOMMENDATION_SCHEMA_VERSION = 1;
 
@@ -67,19 +68,6 @@ function recommendedSurfaces(repoInsights) {
     risk: node.kind === 'protected-area' ? 'high' : 'medium',
     reason: `Detected ${node.label} as ${node.kind}.`,
   }));
-}
-
-function validateInstructionTargetPaths(rootDir, selectedInstructionTargets) {
-  for (const target of selectedInstructionTargets) {
-    if (isAbsolute(target.path)) {
-      throw new Error(`init instruction target path must be repo-relative: ${target.path}`);
-    }
-    assertWithinDir(
-      resolve(rootDir, target.path),
-      rootDir,
-      `init instruction target path escapes target root: ${target.path}`,
-    );
-  }
 }
 
 function ownerQuestions(repoInsights) {
@@ -288,7 +276,7 @@ export function applyInitRecommendation({ rootDir, recommendation, force = false
 
   mkdirSync(resolve(rootDir, '.veritas/repo-standards'), { recursive: true });
   mkdirSync(resolve(rootDir, '.veritas/authority'), { recursive: true });
-  mkdirSync(resolve(rootDir, '.veritas/evidence'), { recursive: true });
+  mkdirSync(veritasArtifactPath(rootDir, 'evidence'), { recursive: true });
 
   for (const [path, payload] of Object.entries(recommendation.artifact_payloads)) {
     const absolutePath = resolve(rootDir, path);
@@ -304,7 +292,7 @@ export function applyInitRecommendation({ rootDir, recommendation, force = false
     codeownersBlock: buildSuggestedCodeownersBlock(),
     generatedFiles: [
       ...Object.keys(recommendation.artifact_payloads),
-      '.veritas/evidence/',
+      `${veritasArtifactRepoPath('evidence')}/`,
     ],
   };
 }

@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
-import { resolve } from 'node:path';
-import { assertWithinDir, relativeRepoPath } from '../paths.mjs';
+import { assertWithinDir, relativeRepoPath, veritasArtifactPath, veritasArtifactRepoPath } from '../paths.mjs';
 import { loadEvidenceArtifact } from '../load.mjs';
 
 export {
@@ -91,8 +90,8 @@ export function buildStandardsFeedbackRecord({
 function buildStandardsFeedbackEvidenceContext({ evidenceRecord, evidenceRaw, evidencePath, rootDir }) {
   assertWithinDir(
     evidencePath,
-    resolve(rootDir, '.veritas/evidence'),
-    'standards feedback record requires a repo-local evidence artifact inside .veritas/evidence/',
+    veritasArtifactPath(rootDir, 'evidence'),
+    `standards feedback record requires a repo-local evidence artifact inside ${veritasArtifactRepoPath('evidence')}/`,
   );
   const evidenceRelativePath = relativeRepoPath(rootDir, evidencePath);
   const requiredEvidenceKeys = [

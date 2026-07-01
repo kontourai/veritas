@@ -1,5 +1,11 @@
 import { existsSync, realpathSync } from 'node:fs';
-import { basename, dirname, isAbsolute, relative, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
+
+export const VERITAS_ARTIFACT_ROOT = '.kontourai/veritas';
+
+function normalizeRelativePath(filePath) {
+  return filePath.replaceAll('\\', '/').replace(/\/+$/u, '');
+}
 
 export function normalizeRepoPath(filePath, rootDir) {
   return relative(rootDir, resolve(rootDir, filePath)).replaceAll('\\', '/');
@@ -7,6 +13,21 @@ export function normalizeRepoPath(filePath, rootDir) {
 
 export function relativeRepoPath(rootDir, candidatePath) {
   return relative(rootDir, resolve(candidatePath)).replaceAll('\\', '/');
+}
+
+export function veritasArtifactRepoPath(...segments) {
+  return normalizeRelativePath(join(VERITAS_ARTIFACT_ROOT, ...segments));
+}
+
+export function veritasArtifactPath(rootDir, ...segments) {
+  return resolve(rootDir, veritasArtifactRepoPath(...segments));
+}
+
+export function resolveConfiguredArtifactDir(rootDir, configuredPath, fallbackSegment) {
+  if (!configuredPath) {
+    return veritasArtifactPath(rootDir, fallbackSegment);
+  }
+  return resolve(rootDir, configuredPath);
 }
 
 function realPath(path) {

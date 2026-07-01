@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadRepoMap, loadRepoStandards } from './load.mjs';
-import { normalizeRepoPath } from './paths.mjs';
+import { normalizeRepoPath, veritasArtifactPath } from './paths.mjs';
 import { matchesPatterns } from './util/patterns.mjs';
 import { evaluateWorkAreaBoundaryRule } from './rules/evaluate.mjs';
 import { resolveVeritasPaths, listChangedFiles, listWorkingTreeFiles } from './report/index.mjs';
@@ -78,7 +78,7 @@ function syntheticPolicyRules() {
 }
 
 function latestSurfaceReportForRule(rootDir, ruleId) {
-  const evidenceDir = resolve(rootDir, '.veritas/evidence');
+  const evidenceDir = veritasArtifactPath(rootDir, 'evidence');
   if (!ruleId || !existsSync(evidenceDir)) return null;
   const candidates = readdirSync(evidenceDir)
     .filter((file) => file.endsWith('.json'))

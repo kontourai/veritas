@@ -1,9 +1,10 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
-import { loadRepoMap, loadRepoStandards } from './load.mjs';
-import { resolveVeritasPaths } from './report/index.mjs';
-import { assertAttestationApprovalReference, createAttestation } from './attestations.mjs';
+import { loadRepoMap, loadRepoStandards } from '../load.mjs';
+import { resolveVeritasPaths } from '../report/index.mjs';
+import { assertAttestationApprovalReference, createAttestation } from '../attestations.mjs';
+import { veritasArtifactPath } from '../paths.mjs';
 
 export const RECOMMENDATION_STATUS = {
   proposed: 'proposed',
@@ -12,7 +13,7 @@ export const RECOMMENDATION_STATUS = {
 };
 
 function recommendationsDir(rootDir) {
-  return resolve(rootDir, '.veritas/recommendations');
+  return veritasArtifactPath(rootDir, 'recommendations');
 }
 
 function safeId(value) {
@@ -24,7 +25,7 @@ function digest(value) {
 }
 
 function readHistory(rootDir) {
-  const path = resolve(rootDir, '.veritas/standards-feedback/history.jsonl');
+  const path = veritasArtifactPath(rootDir, 'standards-feedback', 'history.jsonl');
   if (!existsSync(path)) return [];
   return readFileSync(path, 'utf8')
     .split('\n')

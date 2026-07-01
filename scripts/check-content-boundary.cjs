@@ -46,7 +46,7 @@ function lineNumberFor(content, index) {
 const findings = [];
 
 for (const filePath of trackedFiles()) {
-  if (filePath.startsWith(".flow-agents/")) {
+  if (filePath.startsWith(".kontourai/flow-agents/")) {
     findings.push({
       filePath,
       line: 1,

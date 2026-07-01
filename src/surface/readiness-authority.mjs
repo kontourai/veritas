@@ -1,6 +1,6 @@
 import { surfaceSafeId } from './primitives.mjs';
 
-export function buildReadinessAuthorityTrace(record) {
+function buildReadinessAuthorityTrace(record) {
   const governanceState = record.governance_state;
   const actor = governanceState?.attestation?.actor ?? process.env.VERITAS_ACTOR ?? record.owner ?? 'veritas';
   const protectedStandards = governanceState?.protectedStandards ?? null;

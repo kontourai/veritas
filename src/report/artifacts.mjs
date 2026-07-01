@@ -3,11 +3,11 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { resolve } from 'node:path';
-import { relativeRepoPath } from '../paths.mjs';
+import { relativeRepoPath, resolveConfiguredArtifactDir, veritasArtifactPath } from '../paths.mjs';
 import { resolveRunArtifactPath } from '../util/run-id.mjs';
 
 export function writeEvidenceArtifact(record, config, rootDir) {
-  const artifactDir = resolve(rootDir, config.evidence.artifactDir);
+  const artifactDir = resolveConfiguredArtifactDir(rootDir, config.evidence.artifactDir, 'evidence');
   mkdirSync(artifactDir, { recursive: true });
   const artifactPath = resolveRunArtifactPath({
     dir: artifactDir,
@@ -40,7 +40,7 @@ function buildSingleClaimInput(bundle, claim) {
 export function writeSurfaceClaimInputs(record, rootDir) {
   const bundle = record.trust?.bundle;
   if (!bundle?.claims?.length) return [];
-  const claimsDir = resolve(rootDir, '.veritas/claims');
+  const claimsDir = veritasArtifactPath(rootDir, 'claims');
   mkdirSync(claimsDir, { recursive: true });
   const written = [];
   for (const claim of bundle.claims) {

@@ -34,9 +34,9 @@ test('filesystem observer infers standards feedback fields without session log',
     status: 'pass',
     actor: 'unknown',
   });
-  mkdirSync(join(rootDir, '.veritas/evidence'), { recursive: true });
-  mkdirSync(join(rootDir, '.veritas/standards-feedback'), { recursive: true });
-  writeFileSync(join(rootDir, '.veritas/standards-feedback/exceptions.jsonl'), `${JSON.stringify({
+  mkdirSync(join(rootDir, '.kontourai/veritas/evidence'), { recursive: true });
+  mkdirSync(join(rootDir, '.kontourai/veritas/standards-feedback'), { recursive: true });
+  writeFileSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl'), `${JSON.stringify({
     ruleId: 'rule-a',
     reason: 'test',
     actor: 'brian',
@@ -53,13 +53,13 @@ test('filesystem observer infers standards feedback fields without session log',
     triggered_evidence_checks: ['src/**'],
     files: ['src/app.mjs'],
   };
-  writeFileSync(join(rootDir, '.veritas/evidence/pass-run.json'), `${JSON.stringify(evidence, null, 2)}\n`);
+  writeFileSync(join(rootDir, '.kontourai/veritas/evidence/pass-run.json'), `${JSON.stringify(evidence, null, 2)}\n`);
   execFileSync('git', ['add', '.'], { cwd: rootDir });
   execFileSync('git', ['commit', '-m', 'Evidence'], { cwd: rootDir });
 
   const result = observeFilesystemStandardsFeedback({
     rootDir,
-    evidencePath: '.veritas/evidence/pass-run.json',
+    evidencePath: '.kontourai/veritas/evidence/pass-run.json',
   });
 
   assert.equal(result.draft.source, 'filesystem-inferred');
@@ -99,7 +99,7 @@ test('filesystem observer scopes time to green to the active run transition', ()
     status: 'pass',
     actor: 'unknown',
   });
-  mkdirSync(join(rootDir, '.veritas/evidence'), { recursive: true });
+  mkdirSync(join(rootDir, '.kontourai/veritas/evidence'), { recursive: true });
   const evidence = {
     record_schema_version: 1,
     run_id: 'current-pass',
@@ -111,17 +111,17 @@ test('filesystem observer scopes time to green to the active run transition', ()
     triggered_evidence_checks: ['src/**'],
     files: ['src/app.mjs'],
   };
-  writeFileSync(join(rootDir, '.veritas/evidence/current-pass.json'), `${JSON.stringify(evidence, null, 2)}\n`);
+  writeFileSync(join(rootDir, '.kontourai/veritas/evidence/current-pass.json'), `${JSON.stringify(evidence, null, 2)}\n`);
   const result = observeFilesystemStandardsFeedback({
     rootDir,
-    evidencePath: '.veritas/evidence/current-pass.json',
+    evidencePath: '.kontourai/veritas/evidence/current-pass.json',
   });
   assert.equal(result.draft.prefilled_measurements.time_to_green_minutes, 4);
 });
 
 test('filesystem observer rejects draft run ids that would escape output directories', () => {
   const rootDir = bootstrapRepo();
-  mkdirSync(join(rootDir, '.veritas/evidence'), { recursive: true });
+  mkdirSync(join(rootDir, '.kontourai/veritas/evidence'), { recursive: true });
   const evidence = {
     record_schema_version: 1,
     run_id: '../../outside',
@@ -133,12 +133,12 @@ test('filesystem observer rejects draft run ids that would escape output directo
     triggered_evidence_checks: ['src/**'],
     files: ['src/app.mjs'],
   };
-  writeFileSync(join(rootDir, '.veritas/evidence/unsafe.json'), `${JSON.stringify(evidence, null, 2)}\n`);
+  writeFileSync(join(rootDir, '.kontourai/veritas/evidence/unsafe.json'), `${JSON.stringify(evidence, null, 2)}\n`);
 
   assert.throws(
     () => observeFilesystemStandardsFeedback({
       rootDir,
-      evidencePath: '.veritas/evidence/unsafe.json',
+      evidencePath: '.kontourai/veritas/evidence/unsafe.json',
     }),
     /Standards feedback draft run id may only contain letters, numbers, dot, underscore, and hyphen/,
   );

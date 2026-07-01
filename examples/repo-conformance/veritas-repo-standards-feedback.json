@@ -4,7 +4,7 @@
   "authority_settings_id": "veritas-default",
   "mode": "observe",
   "evidence": {
-    "artifact_path": ".veritas/evidence/veritas-repo-conformance.json",
+    "artifact_path": ".kontourai/veritas/evidence/veritas-repo-conformance.json",
     "artifact_digest": "95707371234312e6e6c8e7184a84c0d624d4203a7991ecb9dda8018aad469c52",
     "timestamp": "2026-04-21T22:00:00.000Z",
     "source_ref": "refs/heads/main",

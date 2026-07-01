@@ -60,7 +60,7 @@
         "duplication_clone_groups": 19,
         "complexity_findings": 100
       },
-      "artifact_path": ".veritas/external/fallow-audit.json",
+      "artifact_path": ".kontourai/veritas/external/fallow-audit.json",
       "actions": []
     }
   ],
@@ -147,7 +147,7 @@
           "claimId": "veritas.fallow-advisory-example.external-tool.fallow-fallow-advisory",
           "evidenceType": "test_output",
           "method": "auditability",
-          "sourceLocator": ".veritas/external/fallow-audit.json"
+          "sourceLocator": ".kontourai/veritas/external/fallow-audit.json"
         }
       ],
       "policies": [

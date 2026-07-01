@@ -13,7 +13,7 @@ Standards Growth is additive. Developers and agents may:
 Do not weaken or delete existing standards without the required authority.
 
 Generated Evidence is output, not the source of standards:
-- `.veritas/evidence/`
-- `.veritas/standards-feedback-drafts/`
-- `.veritas/standards-feedback/`
-- `.veritas/repo-conformance/`
+- `.kontourai/veritas/evidence/`
+- `.kontourai/veritas/standards-feedback-drafts/`
+- `.kontourai/veritas/standards-feedback/`
+- `.kontourai/veritas/repo-conformance/`

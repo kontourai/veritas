@@ -4,13 +4,15 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
-  applyRecommendation,
   buildSurfaceTrustBundle,
   createAttestation,
-  generateRuleRecommendations,
   initClaimStore,
-  writeGeneratedRecommendations,
 } from '../../src/index.mjs';
+import {
+  applyRecommendation,
+  generateRuleRecommendations,
+  writeGeneratedRecommendations,
+} from '../../src/standards-feedback/recommendations.mjs';
 
 function writeJson(path, value) {
   mkdirSync(dirname(path), { recursive: true });
@@ -79,8 +81,8 @@ function setupRepo() {
     id: 'recommendation-team',
     review_preferences: { reviewer_confidence_scale: ['low', 'medium', 'high'] },
   });
-  mkdirSync(join(rootDir, '.veritas/standards-feedback'), { recursive: true });
-  writeFileSync(join(rootDir, '.veritas/standards-feedback/history.jsonl'), [
+  mkdirSync(join(rootDir, '.kontourai/veritas/standards-feedback'), { recursive: true });
+  writeFileSync(join(rootDir, '.kontourai/veritas/standards-feedback/history.jsonl'), [
     {
       run_id: 'run-1',
       policy_results: [{ rule_id: 'strict-rule', passed: false, enforcementLevel: 'Require' }],
@@ -103,7 +105,7 @@ function setupRepo() {
       unresolved_files: [],
     },
   ].map((record) => JSON.stringify(record)).join('\n'));
-  writeFileSync(join(rootDir, '.veritas/standards-feedback/history.jsonl'), '\n', { flag: 'a' });
+  writeFileSync(join(rootDir, '.kontourai/veritas/standards-feedback/history.jsonl'), '\n', { flag: 'a' });
   return rootDir;
 }
 

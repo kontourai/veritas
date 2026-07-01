@@ -28,7 +28,7 @@ The generated Codex hook config now wires:
 - `PostSession`: normalizes runtime-specific session-log inputs into `VERITAS_SESSION_LOG_PATH`, then runs `veritas feedback observe --session-log "$VERITAS_SESSION_LOG_PATH"` when a session log path is available.
 - Fallback: when only `CODEX_SESSION_ID` is present, the hook reads `$HOME/.codex/sessions/$CODEX_SESSION_ID.json`.
 
-`veritas feedback observe` defensively reads session log events and fills a standards-feedback draft under `.veritas/standards-feedback-drafts/`:
+`veritas feedback observe` defensively reads session log events and fills a standards-feedback draft under `.kontourai/veritas/standards-feedback-drafts/`:
 
 - `time_to_green_minutes`: first failing `veritas readiness` to first later passing veritas readiness.
 - `accepted_without_major_rewrite`: based on post-Veritas churn against files Veritas reported on.

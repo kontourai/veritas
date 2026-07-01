@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "id": "policy-change-2026-07-01T03-36-48-637Z-6ce48338d05a",
+  "kind": "policy-change",
+  "actor": {
+    "id": "brian",
+    "displayName": "Brian Anderson",
+    "identityEvidence": {
+      "gitEmail": "brian.anderson1222@gmail.com",
+      "signingKeyFingerprint": null
+    }
+  },
+  "attestedAt": "2026-07-01T03:36:48.637Z",
+  "repoStandardsHash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
+  "repoMapHash": "sha256:bb1279cf0974edcb4b30e6a3a44d42151113ef499efcac14d7c0c92922d0274d",
+  "authoritySettingsHash": "sha256:192e1eeec727a0c18a372b76c4ed194eaa4faef0f6c6080f25a808aeeb660946",
+  "priorAttestationId": "policy-change-2026-07-01T01-56-01-735Z-928f47d6028a",
+  "validUntilDays": 90,
+  "notes": "Authorize routing CONTEXT-MAP.md as a root manifest so PR branch-diff conformance resolves the repo context map.",
+  "metadata": {
+    "protectedStandardsPaths": {
+      "repoStandardsPath": ".veritas/repo-standards/default.repo-standards.json",
+      "repoMapPath": ".veritas/repo-map.json",
+      "authoritySettingsPath": ".veritas/authority/default.authority-settings.json"
+    },
+    "supersedes": "policy-change-2026-07-01T01-56-01-735Z-928f47d6028a",
+    "approvalRef": "chat:2026-07-01-user-pipeline-fix",
+    "approvalRefPolicy": {
+      "mode": "reference-only",
+      "matchedPrefix": null,
+      "requiresResolution": false
+    },
+    "approvalResolution": null
+  },
+  "surface": {
+    "claim": {
+      "id": "veritas.attestation.policy-change-2026-07-01T03-36-48-637Z-6ce48338d05a",
+      "subjectType": "veritas-protected-standards",
+      "subjectId": "protected-standards",
+      "surface": "veritas.attestations",
+      "claimType": "veritas-human-attestation",
+      "fieldOrBehavior": "policy-change",
+      "value": {
+        "contentHash": "bf9eecd22cce007378c54a74bda643faa279274e32015f1481a50dab50afb18f",
+        "validUntil": "2026-09-29T03:36:48.637Z"
+      },
+      "createdAt": "2026-07-01T03:36:48.637Z",
+      "updatedAt": "2026-07-01T03:36:48.637Z",
+      "status": "verified",
+      "impactLevel": "high",
+      "confidenceBasis": {
+        "sourceQuality": "strong",
+        "reviewerAuthority": "human",
+        "evidenceStrength": "strong",
+        "impactLevel": "high"
+      }
+    },
+    "evidence": {
+      "id": "evidence.attestation.veritas.attestation.policy-change-2026-07-01T03-36-48-637Z-6ce48338d05a",
+      "claimId": "veritas.attestation.policy-change-2026-07-01T03-36-48-637Z-6ce48338d05a",
+      "evidenceType": "attestation",
+      "method": "attestation",
+      "sourceRef": "veritas:protected-standards",
+      "excerptOrSummary": "Authorize routing CONTEXT-MAP.md as a root manifest so PR branch-diff conformance resolves the repo context map.",
+      "observedAt": "2026-07-01T03:36:48.637Z",
+      "collectedBy": "brian",
+      "integrityRef": "bf9eecd22cce007378c54a74bda643faa279274e32015f1481a50dab50afb18f",
+      "metadata": {
+        "actor": {
+          "id": "brian",
+          "displayName": "Brian Anderson"
+        },
+        "attestedAt": "2026-07-01T03:36:48.637Z",
+        "validUntil": "2026-09-29T03:36:48.637Z",
+        "contentHash": "bf9eecd22cce007378c54a74bda643faa279274e32015f1481a50dab50afb18f"
+      },
+      "sourceLocator": ".veritas/attestations"
+    },
+    "event": {
+      "id": "veritas.attestation.policy-change-2026-07-01T03-36-48-637Z-6ce48338d05a.verified",
+      "claimId": "veritas.attestation.policy-change-2026-07-01T03-36-48-637Z-6ce48338d05a",
+      "status": "verified",
+      "actor": "brian",
+      "method": "human attestation",
+      "evidenceIds": [
+        "evidence.attestation.veritas.attestation.policy-change-2026-07-01T03-36-48-637Z-6ce48338d05a"
+      ],
+      "createdAt": "2026-07-01T03:36:48.637Z",
+      "verifiedAt": "2026-07-01T03:36:48.637Z"
+    }
+  }
+}

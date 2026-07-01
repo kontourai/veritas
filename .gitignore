@@ -6,13 +6,7 @@ dist/
 
 # Veritas generated run state. Keep durable governance config trackable:
 # .veritas/repo-map.json, .veritas/repo-standards/**, and .veritas/authority/**.
-.veritas/evidence/
-.veritas/claims/
-.veritas/external/
-.veritas/standards-feedback-drafts/
-.veritas/standards-feedback/
-.veritas/runs/
-.veritas/repo-conformance/
+.kontourai/
 .site-src/
 .site-dist/
 coverage/
@@ -24,5 +18,3 @@ playwright-report/
 .env.local
 .vscode/
 .idea/
-
-.flow-agents/

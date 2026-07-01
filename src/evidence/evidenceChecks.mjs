@@ -24,7 +24,7 @@ export function readRequiredEvidenceCheckIds(config) {
   return uniqueStrings(config.evidence?.requiredEvidenceCheckIds ?? []);
 }
 
-export function evidenceCheckById(config) {
+function evidenceCheckById(config) {
   return new Map(readEvidenceChecks(config).map((evidenceCheck) => [evidenceCheck.id, evidenceCheck]));
 }
 
@@ -64,7 +64,7 @@ export function evidenceCheckLabel(evidenceCheck) {
   return evidenceCheck.command;
 }
 
-export function assertEvidenceCheckConfig(config) {
+function assertEvidenceCheckConfig(config) {
   const evidence = config.evidence ?? {};
   const removedFields = [
     'requiredEvidenceCheckCommands',
@@ -116,7 +116,7 @@ export function assertEvidenceCheckConfig(config) {
   }
 }
 
-export function assertEvidenceCheckObject(evidenceCheck) {
+function assertEvidenceCheckObject(evidenceCheck) {
   if (!evidenceCheck || typeof evidenceCheck !== 'object' || Array.isArray(evidenceCheck)) {
     throw new Error('Veritas Repo Map evidence.evidenceChecks entries must be objects.');
   }

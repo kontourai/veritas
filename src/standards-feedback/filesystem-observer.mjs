@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { loadEvidenceArtifact } from '../load.mjs';
-import { assertWithinDir, relativeRepoPath } from '../paths.mjs';
+import { assertWithinDir, relativeRepoPath, veritasArtifactPath, veritasArtifactRepoPath } from '../paths.mjs';
 import { resolveRunArtifactPath } from '../util/run-id.mjs';
 import { readRunHistory } from './run-history.mjs';
 
@@ -42,7 +42,7 @@ function deriveTimeToGreen(rootDir, evidenceRecord) {
 }
 
 function readExceptionCount(rootDir, evidenceRecord) {
-  const exceptionPath = resolve(rootDir, '.veritas/standards-feedback/exceptions.jsonl');
+  const exceptionPath = veritasArtifactPath(rootDir, 'standards-feedback', 'exceptions.jsonl');
   const fileCount = existsSync(exceptionPath)
     ? readFileSync(exceptionPath, 'utf8').split('\n').filter(Boolean).length
     : 0;
@@ -135,7 +135,7 @@ export function observeFilesystemStandardsFeedback({ rootDir, evidencePath, outp
     evidencePath: resolvedEvidencePath,
     churnThreshold,
   });
-  const draftsDir = resolve(rootDir, '.veritas/standards-feedback-drafts');
+  const draftsDir = veritasArtifactPath(rootDir, 'standards-feedback-drafts');
   const artifactPath = outputPath
     ? resolve(rootDir, outputPath)
     : resolveRunArtifactPath({
@@ -147,7 +147,7 @@ export function observeFilesystemStandardsFeedback({ rootDir, evidencePath, outp
   assertWithinDir(
     artifactPath,
     draftsDir,
-    'standards feedback drafts may only be written inside .veritas/standards-feedback-drafts/',
+    `standards feedback drafts may only be written inside ${veritasArtifactRepoPath('standards-feedback-drafts')}/`,
   );
   mkdirSync(dirname(artifactPath), { recursive: true });
   writeFileSync(artifactPath, `${JSON.stringify(draft, null, 2)}\n`, 'utf8');

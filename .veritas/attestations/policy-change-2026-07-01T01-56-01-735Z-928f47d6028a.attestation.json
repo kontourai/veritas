@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "id": "policy-change-2026-07-01T01-56-01-735Z-928f47d6028a",
+  "kind": "policy-change",
+  "actor": {
+    "id": "brian",
+    "displayName": "Brian Anderson",
+    "identityEvidence": {
+      "gitEmail": "brian.anderson1222@gmail.com",
+      "signingKeyFingerprint": null
+    }
+  },
+  "attestedAt": "2026-07-01T01:56:01.735Z",
+  "repoStandardsHash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
+  "repoMapHash": "sha256:6ecc2d8571072cf7399c48a4b1ce4f8857c7e37926f9d4bb2a968e6d01358fb4",
+  "authoritySettingsHash": "sha256:192e1eeec727a0c18a372b76c4ed194eaa4faef0f6c6080f25a808aeeb660946",
+  "priorAttestationId": "policy-change-2026-06-29T21-20-13-933Z-616eac1fbb54",
+  "validUntilDays": 90,
+  "notes": "Authorize moving non-durable Veritas generated artifacts to .kontourai/veritas, keeping durable governance configuration in .veritas, and updating dependency/workflow versions.",
+  "metadata": {
+    "protectedStandardsPaths": {
+      "repoStandardsPath": ".veritas/repo-standards/default.repo-standards.json",
+      "repoMapPath": ".veritas/repo-map.json",
+      "authoritySettingsPath": ".veritas/authority/default.authority-settings.json"
+    },
+    "supersedes": "policy-change-2026-06-29T21-20-13-933Z-616eac1fbb54",
+    "approvalRef": "chat:2026-07-01-user-i-attest",
+    "approvalRefPolicy": {
+      "mode": "reference-only",
+      "matchedPrefix": null,
+      "requiresResolution": false
+    },
+    "approvalResolution": null
+  },
+  "surface": {
+    "claim": {
+      "id": "veritas.attestation.policy-change-2026-07-01T01-56-01-735Z-928f47d6028a",
+      "subjectType": "veritas-protected-standards",
+      "subjectId": "protected-standards",
+      "surface": "veritas.attestations",
+      "claimType": "veritas-human-attestation",
+      "fieldOrBehavior": "policy-change",
+      "value": {
+        "contentHash": "2de6882571e8556b541f36bf3aee0d1aefc3e339bfa27e4912fe8c0b2292be43",
+        "validUntil": "2026-09-29T01:56:01.735Z"
+      },
+      "createdAt": "2026-07-01T01:56:01.735Z",
+      "updatedAt": "2026-07-01T01:56:01.735Z",
+      "status": "verified",
+      "impactLevel": "high",
+      "confidenceBasis": {
+        "sourceQuality": "strong",
+        "reviewerAuthority": "human",
+        "evidenceStrength": "strong",
+        "impactLevel": "high"
+      }
+    },
+    "evidence": {
+      "id": "evidence.attestation.veritas.attestation.policy-change-2026-07-01T01-56-01-735Z-928f47d6028a",
+      "claimId": "veritas.attestation.policy-change-2026-07-01T01-56-01-735Z-928f47d6028a",
+      "evidenceType": "attestation",
+      "method": "attestation",
+      "sourceRef": "veritas:protected-standards",
+      "excerptOrSummary": "Authorize moving non-durable Veritas generated artifacts to .kontourai/veritas, keeping durable governance configuration in .veritas, and updating dependency/workflow versions.",
+      "observedAt": "2026-07-01T01:56:01.735Z",
+      "collectedBy": "brian",
+      "integrityRef": "2de6882571e8556b541f36bf3aee0d1aefc3e339bfa27e4912fe8c0b2292be43",
+      "metadata": {
+        "actor": {
+          "id": "brian",
+          "displayName": "Brian Anderson"
+        },
+        "attestedAt": "2026-07-01T01:56:01.735Z",
+        "validUntil": "2026-09-29T01:56:01.735Z",
+        "contentHash": "2de6882571e8556b541f36bf3aee0d1aefc3e339bfa27e4912fe8c0b2292be43"
+      },
+      "sourceLocator": ".veritas/attestations"
+    },
+    "event": {
+      "id": "veritas.attestation.policy-change-2026-07-01T01-56-01-735Z-928f47d6028a.verified",
+      "claimId": "veritas.attestation.policy-change-2026-07-01T01-56-01-735Z-928f47d6028a",
+      "status": "verified",
+      "actor": "brian",
+      "method": "human attestation",
+      "evidenceIds": [
+        "evidence.attestation.veritas.attestation.policy-change-2026-07-01T01-56-01-735Z-928f47d6028a"
+      ],
+      "createdAt": "2026-07-01T01:56:01.735Z",
+      "verifiedAt": "2026-07-01T01:56:01.735Z"
+    }
+  }
+}

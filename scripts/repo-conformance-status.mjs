@@ -10,6 +10,7 @@ import {
   selectedEvidenceCheckLabels,
   summarizeAlertCounts,
 } from '../src/index.mjs';
+import { veritasArtifactRepoPath } from '../src/paths.mjs';
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -134,16 +135,16 @@ export async function runRepoConformanceStatus({
 
   writeArtifact(
     rootDirOverride,
-    `.veritas/repo-conformance/${result.runId}.json`,
+    veritasArtifactRepoPath('repo-conformance', `${result.runId}.json`),
     `${JSON.stringify(result.conformance, null, 2)}\n`,
   );
-  writeArtifact(rootDirOverride, `.veritas/repo-conformance/${result.runId}.md`, result.markdownText);
+  writeArtifact(rootDirOverride, veritasArtifactRepoPath('repo-conformance', `${result.runId}.md`), result.markdownText);
   writeArtifact(
     rootDirOverride,
-    '.veritas/repo-conformance/latest.json',
+    veritasArtifactRepoPath('repo-conformance', 'latest.json'),
     `${JSON.stringify(result.conformance, null, 2)}\n`,
   );
-  writeArtifact(rootDirOverride, '.veritas/repo-conformance/latest.md', result.markdownText);
+  writeArtifact(rootDirOverride, veritasArtifactRepoPath('repo-conformance', 'latest.md'), result.markdownText);
 
   if (summaryPath) {
     appendFileSync(summaryPath, result.markdownText, 'utf8');
@@ -168,10 +169,10 @@ if (isMainModule) {
         alerts: result.alerts,
         reportArtifactPath: result.report.artifactPath,
         standardsFeedbackDraftArtifactPath: result.draft.artifactPath,
-        conformanceJsonPath: `.veritas/repo-conformance/${result.runId}.json`,
-        conformanceMarkdownPath: `.veritas/repo-conformance/${result.runId}.md`,
-        latestConformanceJsonPath: '.veritas/repo-conformance/latest.json',
-        latestConformanceMarkdownPath: '.veritas/repo-conformance/latest.md',
+        conformanceJsonPath: veritasArtifactRepoPath('repo-conformance', `${result.runId}.json`),
+        conformanceMarkdownPath: veritasArtifactRepoPath('repo-conformance', `${result.runId}.md`),
+        latestConformanceJsonPath: veritasArtifactRepoPath('repo-conformance', 'latest.json'),
+        latestConformanceMarkdownPath: veritasArtifactRepoPath('repo-conformance', 'latest.md'),
         policyResultsSummary: result.policySummary,
         governanceSurface: result.governanceSurface,
         runtimeStatus: result.runtimeStatus,

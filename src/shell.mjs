@@ -84,7 +84,7 @@ function tokenizeCommand(command) {
   return tokens;
 }
 
-export function runEvidenceCheckCommand(command, rootDir, options = {}) {
+function runEvidenceCheckCommand(command, rootDir, options = {}) {
   const [executable, ...args] = tokenizeCommand(command);
   return execFileSync(executable, args, {
     cwd: rootDir,
@@ -94,7 +94,7 @@ export function runEvidenceCheckCommand(command, rootDir, options = {}) {
   });
 }
 
-export function runEvidenceCheckCommandDetailed(command, rootDir) {
+function runEvidenceCheckCommandDetailed(command, rootDir) {
   const [executable, ...args] = tokenizeCommand(command);
   const result = spawnSync(executable, args, {
     cwd: rootDir,
@@ -114,7 +114,7 @@ export function runEvidenceCheckCommandDetailed(command, rootDir) {
   };
 }
 
-export function gitOutput(args, rootDir, options = {}) {
+function gitOutput(args, rootDir, options = {}) {
   return execFileSync('git', args, {
     cwd: rootDir,
     encoding: 'utf8',

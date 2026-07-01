@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { loadAuthoritySettings, loadEvidenceArtifact, loadStandardsFeedbackDraftArtifact } from '../load.mjs';
-import { relativeRepoPath } from '../paths.mjs';
+import { relativeRepoPath, veritasArtifactPath } from '../paths.mjs';
 import {
   buildStandardsFeedbackRecord,
   buildStandardsFeedbackDraft,
@@ -228,7 +228,7 @@ function buildRuleTrend(records) {
 
 export function generateStandardsFeedbackSummary(options = {}, defaults = {}) {
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
-  const historyPath = resolve(rootDir, '.veritas/standards-feedback/history.jsonl');
+  const historyPath = veritasArtifactPath(rootDir, 'standards-feedback', 'history.jsonl');
   if (!existsSync(historyPath)) {
     return {
       rootDir,

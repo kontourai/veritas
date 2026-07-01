@@ -1,3 +1,6 @@
+import { isAbsolute, resolve } from 'node:path';
+import { assertWithinDir, VERITAS_ARTIFACT_ROOT } from '../paths.mjs';
+
 export const DEFAULT_SELECTED_INSTRUCTION_TARGETS = [
   { path: 'AGENTS.md', tool: 'codex', required: true },
   { path: 'CLAUDE.md', tool: 'claude-code', required: true },
@@ -12,7 +15,7 @@ export const OPTIONAL_INSTRUCTION_TARGETS = [
   },
 ];
 
-export function toolForInstructionPath(path) {
+function toolForInstructionPath(path) {
   if (path === 'AGENTS.md') return 'codex';
   if (path === 'CLAUDE.md') return 'claude-code';
   if (path === '.cursorrules') return 'cursor';
@@ -46,6 +49,19 @@ export function normalizeInstructionTargets(targets) {
 
 export function selectedInstructionTargetsFromAnswers(answers) {
   return normalizeInstructionTargets(answers?.selectedInstructionTargets ?? answers?.selected_instruction_targets);
+}
+
+export function validateInstructionTargetPaths(rootDir, selectedInstructionTargets, label = 'instruction') {
+  for (const target of selectedInstructionTargets) {
+    if (isAbsolute(target.path)) {
+      throw new Error(`${label} instruction target path must be repo-relative: ${target.path}`);
+    }
+    assertWithinDir(
+      resolve(rootDir, target.path),
+      rootDir,
+      `${label} instruction target path escapes target root: ${target.path}`,
+    );
+  }
 }
 
 export function validateOwnerAnswers(answers) {
@@ -98,10 +114,10 @@ Standards Growth is additive. Developers and agents may propose:
 Do not weaken or delete existing standards without the required authority.
 
 Generated Evidence is output, not the source of standards:
-- \`.veritas/evidence/\`
-- \`.veritas/standards-feedback-drafts/\`
-- \`.veritas/standards-feedback/\`
-- \`.veritas/repo-conformance/\`
+- \`${VERITAS_ARTIFACT_ROOT}/evidence/\`
+- \`${VERITAS_ARTIFACT_ROOT}/standards-feedback-drafts/\`
+- \`${VERITAS_ARTIFACT_ROOT}/standards-feedback/\`
+- \`${VERITAS_ARTIFACT_ROOT}/repo-conformance/\`
 `;
 }
 

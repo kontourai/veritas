@@ -35,7 +35,7 @@ npm pack --dry-run
 Check:
 
 - the tarball only contains intended files from the `files` allowlist
-- no local `.veritas/evidence/` or other disposable artifacts are included
+- no local `.kontourai/veritas/evidence/` or other disposable artifacts are included
 - package size is still reasonable for a CLI-plus-docs package
 
 ## Trusted Publishing

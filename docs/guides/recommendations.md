@@ -24,7 +24,9 @@ npx @kontourai/veritas recommendation list
 npx @kontourai/veritas recommendation show <id>
 ```
 
-These commands inspect generated evidence and feedback history, then write reviewable recommendation artifacts under `.veritas/recommendations/`.
+These commands inspect generated evidence and feedback history, then write reviewable recommendation artifacts under `.kontourai/veritas/recommendations/`.
+
+Implementation note: Standards Recommendation code lives under `src/standards-feedback/recommendations.mjs`. The older root-level `src/recommendations.mjs` module has been removed; see [Migration Guide](../MIGRATING.md#standards-recommendation-module-moved).
 
 ## Decide A Recommendation
 
