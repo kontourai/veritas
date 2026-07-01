@@ -9,6 +9,11 @@ const rootDir = process.cwd();
 const artifactRepoPath = veritasArtifactRepoPath('external', 'fallow-audit.json');
 const artifactPath = veritasArtifactPath(rootDir, 'external', 'fallow-audit.json');
 const localFallowBin = resolve(rootDir, 'node_modules/.bin/fallow');
+const baseline = {
+  dead_code_issues: 37,
+  duplication_clone_groups: 23,
+  complexity_findings: 263,
+};
 
 function runFallow() {
   const executable = existsSync(localFallowBin) ? localFallowBin : 'npx';
@@ -66,18 +71,30 @@ function collectActions(payload) {
   return actions.slice(0, 20);
 }
 
+function compareToBaseline(summary) {
+  const deltas = Object.fromEntries(
+    Object.entries(baseline).map(([key, value]) => [key, Math.max(0, numberValue(summary[key]) - value)]),
+  );
+  return {
+    baseline,
+    deltas,
+    exceeded: Object.values(deltas).some((value) => value > 0),
+  };
+}
+
 const rawOutput = runFallow();
 const payload = JSON.parse(rawOutput);
 const summary = summarize(payload);
-const totalFindings =
-  summary.dead_code_issues + summary.duplication_clone_groups + summary.complexity_findings;
+const baselineComparison = compareToBaseline(summary);
 const artifact = {
   schema_version: 'veritas-fallow-advisory-v1',
   tool: 'fallow',
   command: existsSync(localFallowBin) ? 'fallow --format json --quiet' : 'npx -y fallow --format json --quiet',
-  verdict: totalFindings > 0 ? 'warn' : 'pass',
+  verdict: baselineComparison.exceeded ? 'warn' : 'pass',
   summary,
-  actions: collectActions(payload),
+  baseline: baselineComparison.baseline,
+  deltas: baselineComparison.deltas,
+  actions: baselineComparison.exceeded ? collectActions(payload) : [],
 };
 
 mkdirSync(veritasArtifactPath(rootDir, 'external'), { recursive: true });

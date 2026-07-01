@@ -75,16 +75,25 @@ const summary = {
   complexity_findings: payload.health?.summary?.functions_above_threshold ?? 0,
   average_maintainability: payload.health?.summary?.average_maintainability ?? 0,
 };
-const totalFindings =
-  summary.dead_code_issues + summary.duplication_clone_groups + summary.complexity_findings;
+const baseline = {
+  dead_code_issues: 0,
+  duplication_clone_groups: 0,
+  complexity_findings: 0,
+};
+const deltas = Object.fromEntries(
+  Object.entries(baseline).map(([key, value]) => [key, Math.max(0, summary[key] - value)]),
+);
+const findingsAboveBaseline = Object.values(deltas).reduce((sum, value) => sum + value, 0);
 
 writeFileSync(
   '.kontourai/veritas/external/fallow-audit.json',
   `${JSON.stringify({
     schema_version: 'veritas-fallow-advisory-v1',
     tool: 'fallow',
-    verdict: totalFindings > 0 ? 'warn' : 'pass',
+    verdict: findingsAboveBaseline > 0 ? 'warn' : 'pass',
     summary,
+    baseline,
+    deltas,
   }, null, 2)}\n`,
   'utf8',
 );
@@ -103,6 +112,8 @@ fallow dupes --save-baseline fallow-baselines/dupes.json
 ```
 
 Keep committed baselines outside `.fallow/`. The `.fallow/` directory is cache/local data and should not become the reviewable migration contract.
+
+For an advisory lane, prefer warning only on findings above the committed baseline. The artifact should still include the raw Fallow counts so reviewers can see total debt, but the Veritas verdict should stay `pass` when the repo is no worse than the accepted baseline.
 
 After baseline, run:
 
