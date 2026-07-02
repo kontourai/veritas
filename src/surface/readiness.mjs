@@ -1,12 +1,12 @@
 export function readinessVerdict(record) {
-  if (record.promotion_allowed === true) return 'ready';
   if (readinessHasBlockingFailure(record)) return 'not-ready';
+  if (record.promotion_allowed === true) return 'ready';
   return 'needs-review';
 }
 
 export function readinessSurfaceStatus(record) {
-  if (record.promotion_allowed === true) return 'verified';
   if (readinessHasBlockingFailure(record)) return 'rejected';
+  if (record.promotion_allowed === true) return 'verified';
   return 'disputed';
 }
 
