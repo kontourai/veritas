@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.2.0](https://github.com/kontourai/veritas/compare/v1.1.1...v1.2.0) (2026-07-02)
+
+
+### Features
+
+* **surface:** migrate Claim `surface` field to `facet`, bump to Surface ^2.0.0 (schemaVersion 5) ([#109](https://github.com/kontourai/veritas/issues/109)) ([d10d037](https://github.com/kontourai/veritas/commit/d10d0372ce4496fba83d4f67f92cd56ba077088e))
+
+
+### Fixes
+
+* **readiness:** blocking failures win over promotion_allowed short-circuit (fixes [#106](https://github.com/kontourai/veritas/issues/106)) ([#107](https://github.com/kontourai/veritas/issues/107)) ([3d88428](https://github.com/kontourai/veritas/commit/3d88428142ad238ec172134513b251d97a1bc44a))
+
 ## [1.1.1](https://github.com/kontourai/veritas/compare/v1.1.0...v1.1.1) (2026-07-01)
 
 
