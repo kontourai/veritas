@@ -177,3 +177,23 @@ Operational effect:
 - CLI callers that assumed `veritas readiness` emitted only JSON on stdout must now parse the trailing JSON payload instead of the entire stream
 
 This is intentional. The command no longer rewrites evidence-check output streams behind the operator's back.
+
+## Claim `surface` Field Renamed to `facet` (Surface 2.0, schemaVersion 5)
+
+Veritas now depends on `@kontourai/surface@^2.0.0` and `hachure@^0.9.0`. Both packages renamed the Claim `surface` field to `facet` (still an optional string) and bumped the Surface `TrustBundle` `schemaVersion` from 3 to 5.
+
+Veritas now writes `facet` everywhere it previously wrote `surface`:
+
+- `veritas.claims.json` claim entries use `facet` instead of `surface`.
+- `veritas claim add` / `veritas claim edit` take `--facet <facet>` instead of `--surface <surface>`.
+- Generated `trust.bundle.claims[]` entries carry `facet` and `trust.bundle.schemaVersion` is `5`.
+- The Surface Console read model (`kind: "surface-console-read-model"`) reports `facet`, `facetCounts`, and `coverageByFacet` instead of `surface`, `surfaceCounts`, and `coverageBySurface`.
+
+To migrate:
+
+1. Update `@kontourai/surface` to `^2.0.0` and `hachure` to `^0.9.0`.
+2. Rewrite any hand-authored `veritas.claims.json` entries that still use `"surface"` to use `"facet"` instead (same value, new key).
+3. Update any automation or scripts that pass `--surface` to `veritas claim add` / `veritas claim edit` to pass `--facet` instead.
+4. Update any downstream consumer that reads `claim.surface` from `trust.bundle.claims[]` or the Surface Console read model to read `claim.facet` instead.
+
+`@kontourai/surface@2.0.0`'s `validateTrustBundle` still tolerates a legacy `surface` value on read (mapping it onto `facet` with a one-time deprecation warning), but Veritas no longer emits `surface` anywhere.

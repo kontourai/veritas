@@ -3,7 +3,7 @@ export interface VeritasPluginClaimType {
   displayName: string;
   description: string;
   defaultImpact: 'low' | 'medium' | 'high' | 'critical';
-  defaultSurface?: string;
+  defaultFacet?: string;
   policyTemplateId?: string;
   metadataFields?: Array<{
     key: string;

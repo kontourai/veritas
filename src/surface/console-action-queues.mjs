@@ -22,7 +22,7 @@ export function buildConsoleActionQueues({
 export function claimQueueItem(claim) {
   const item = {
     claimId: claim.id,
-    surface: claim.surface,
+    facet: claim.facet,
     status: claim.status,
     impactLevel: claim.impactLevel ?? 'medium',
     claimType: claim.claimType,

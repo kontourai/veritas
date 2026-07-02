@@ -113,7 +113,7 @@ function writeClaimStoreForRepoMap(rootDir, repoMap, repoStandards, options = {}
   for (const rule of repoStandards?.rules ?? []) {
     claims.push({
       id: `${repoName}.policy.${rule.id}`,
-      surface: 'veritas.policy-results',
+      facet: 'veritas.policy-results',
       claimType: 'veritas-policy-result',
       fieldOrBehavior: rule.id,
       subjectType: 'veritas-policy-rule',
@@ -130,7 +130,7 @@ function writeClaimStoreForRepoMap(rootDir, repoMap, repoStandards, options = {}
     if (!lane.externalTool) continue;
     claims.push({
       id: `${repoName}.external-tool.${lane.externalTool.tool}.${lane.id}`,
-      surface: 'veritas.external-tools',
+      facet: 'veritas.external-tools',
       claimType: 'veritas-external-tool-result',
       fieldOrBehavior: lane.externalTool.tool,
       subjectType: 'external-tool-result',
@@ -146,7 +146,7 @@ function writeClaimStoreForRepoMap(rootDir, repoMap, repoStandards, options = {}
   for (const suiteId of options.evidenceInventoryIds ?? []) {
     claims.push({
       id: `${repoName}.evidence-inventory.${suiteId}`,
-      surface: 'veritas.evidence-inventories',
+      facet: 'veritas.evidence-inventories',
       claimType: 'veritas-evidence-inventory',
       fieldOrBehavior: suiteId,
       subjectType: 'repo-evidence-inventory',
@@ -162,7 +162,7 @@ function writeClaimStoreForRepoMap(rootDir, repoMap, repoStandards, options = {}
   if (options.readinessCoverage) {
     claims.push({
       id: `${repoName}.readiness-coverage`,
-      surface: 'veritas.readiness-coverage',
+      facet: 'veritas.readiness-coverage',
       claimType: 'veritas-readiness-coverage',
       fieldOrBehavior: 'readiness coverage',
       subjectType: 'repo-readiness-coverage',
@@ -316,11 +316,11 @@ test('core classifies nodes and builds evidence from a Repo Map', async () => {
   assert.equal(record.policy_results[0].rule_id, 'required-repo-artifacts');
   assert.equal(record.policy_results[0].implemented, true);
   assert.equal(record.policy_results[0].passed, false);
-  assert.equal(record.trust.bundle.schemaVersion, 3);
+  assert.equal(record.trust.bundle.schemaVersion, 5);
   assert.equal(record.trust.bundle.source, `veritas:${record.run_id}`);
-  assert.ok(record.trust.bundle.claims.some((claim) => claim.surface === 'veritas.affected-surface'));
-  assert.ok(record.trust.bundle.claims.some((claim) => claim.surface === 'veritas.evidence-check'));
-  assert.ok(record.trust.bundle.claims.some((claim) => claim.surface === 'veritas.policy-results'));
+  assert.ok(record.trust.bundle.claims.some((claim) => claim.facet === 'veritas.affected-surface'));
+  assert.ok(record.trust.bundle.claims.some((claim) => claim.facet === 'veritas.evidence-check'));
+  assert.ok(record.trust.bundle.claims.some((claim) => claim.facet === 'veritas.policy-results'));
   assert.ok(record.trust.bundle.evidence.some((item) =>
     item.integrityRef === record.source_ref &&
     item.metadata.integrity?.fileRefs?.some((ref) => ref.path === 'package.json' && ref.hash)
@@ -421,8 +421,8 @@ test('evidence records include native evidence inventory coverage when configure
   assert.equal(record.readiness_coverage.required_inventory_count, 1);
   assert.equal(record.readiness_coverage.advisory_inventory_count, 0);
   assert.equal(record.readiness_coverage.retire_inventory_count, 1);
-  assert.ok(record.trust.bundle.claims.some((claim) => claim.surface === 'veritas.evidence-inventories'));
-  assert.ok(record.trust.bundle.claims.some((claim) => claim.surface === 'veritas.readiness-coverage'));
+  assert.ok(record.trust.bundle.claims.some((claim) => claim.facet === 'veritas.evidence-inventories'));
+  assert.ok(record.trust.bundle.claims.some((claim) => claim.facet === 'veritas.readiness-coverage'));
   assert.ok(record.trust.bundle.events.some((event) => event.status === 'stale' || event.status === 'superseded'));
   assert.deepEqual(record.readiness_coverage.unknown_catch_evidence_inventory_ids, [
     'refactor-tombstones',
@@ -516,14 +516,14 @@ test('evidence records include advisory external tool results in Surface input',
   assert.equal(record.external_tool_results[0].summary.dead_code_issues, 0);
   assert.ok(
     record.trust.bundle.claims.some(
-      (claim) => claim.surface === 'veritas.external-tools',
+      (claim) => claim.facet === 'veritas.external-tools',
     ),
   );
   const evidenceCheckClaim = record.trust.bundle.claims.find(
-    (claim) => claim.surface === 'veritas.evidence-check' && claim.metadata.command === 'node scripts/run-fallow-audit.mjs',
+    (claim) => claim.facet === 'veritas.evidence-check' && claim.metadata.command === 'node scripts/run-fallow-audit.mjs',
   );
   const externalToolClaim = record.trust.bundle.claims.find(
-    (claim) => claim.surface === 'veritas.external-tools',
+    (claim) => claim.facet === 'veritas.external-tools',
   );
   assert.ok(evidenceCheckClaim);
   assert.ok(externalToolClaim);
@@ -2272,7 +2272,7 @@ test('report writes one trimmed Surface claim input per claim', async () => {
   assert.equal(console.contract, 'surface.analytics-compatible');
   assert.equal(console.analytics.reportId, result.record.trust.report.id);
   assert.equal(console.analytics.totals.claims, result.record.trust.bundle.claims.length);
-  assert.ok(Array.isArray(console.analytics.coverageBySurface));
+  assert.ok(Array.isArray(console.analytics.coverageByFacet));
   assert.ok(Array.isArray(console.analytics.actionQueues.reviewNow));
   assert.equal(console.claims.length, result.record.trust.bundle.claims.length);
   assert.ok(console.claims.every((claim) => claim.status));

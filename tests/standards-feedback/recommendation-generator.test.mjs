@@ -134,7 +134,7 @@ test('recommendation artifacts can be accepted and surface as proposed claims be
   const store = JSON.parse(readFileSync(storePath, 'utf8'));
   store.claims.push({
     id: `recommendation.${recommendation.id}`,
-    surface: 'veritas.recommendations',
+    facet: 'veritas.recommendations',
     claimType: 'veritas-recommendation',
     status: 'proposed',
     fieldOrBehavior: recommendation.type,

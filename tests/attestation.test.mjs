@@ -180,7 +180,7 @@ test('surface input projects current governance artifact claims distinctly from 
   assert.equal(policyResult?.status, undefined);
   assert.equal(authoredGovernance.claimType, 'veritas-governance-artifact');
   assert.equal(authoredGovernance.status, 'verified');
-  assert.equal(authoredGovernance.surface, 'veritas.governance');
+  assert.equal(authoredGovernance.facet, 'veritas.governance');
 });
 
 test('surface input projects missing, drifted, and expired governance attestation states', async () => {

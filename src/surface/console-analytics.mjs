@@ -41,7 +41,7 @@ export function buildSurfaceCompatibleAnalyticsProjection({ input, report, claim
       events: input.events.length,
       transparencyGaps: report.transparencyGaps.length,
     },
-    coverageBySurface: buildCoverageBySurface(claims),
+    coverageByFacet: buildCoverageByFacet(claims),
     staleClaims: claimItems.filter((item) => item.status === 'stale'),
     disputedClaims: claimItems.filter((item) => item.status === 'disputed'),
     highImpactUnsupportedClaims: claimItems.filter((item) =>
@@ -67,11 +67,11 @@ export function buildSurfaceCompatibleAnalyticsProjection({ input, report, claim
   };
 }
 
-function buildCoverageBySurface(claims) {
-  const bySurface = new Map();
+function buildCoverageByFacet(claims) {
+  const byFacet = new Map();
   for (const claim of claims) {
-    const item = bySurface.get(claim.surface) ?? {
-      surface: claim.surface,
+    const item = byFacet.get(claim.facet) ?? {
+      facet: claim.facet,
       totalClaims: 0,
       verifiedClaims: 0,
       staleClaims: 0,
@@ -84,12 +84,12 @@ function buildCoverageBySurface(claims) {
     if (claim.status === 'stale') item.staleClaims += 1;
     if (claim.status === 'disputed') item.disputedClaims += 1;
     if (claim.status === 'unknown' || claim.status === 'proposed') item.unsupportedClaims += 1;
-    bySurface.set(claim.surface, item);
+    byFacet.set(claim.facet, item);
   }
-  return [...bySurface.values()]
+  return [...byFacet.values()]
     .map((item) => ({
       ...item,
       verificationCoverage: item.totalClaims === 0 ? 0 : item.verifiedClaims / item.totalClaims,
     }))
-    .sort((a, b) => a.surface.localeCompare(b.surface));
+    .sort((a, b) => a.facet.localeCompare(b.facet));
 }

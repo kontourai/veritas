@@ -23,7 +23,7 @@ export function withProjectedPolicyClaims(claimStore, record) {
     if (existing) continue;
     claims.push({
       id,
-      surface: 'veritas.policy-results',
+      facet: 'veritas.policy-results',
       claimType: 'veritas-policy-result',
       fieldOrBehavior: result.rule_id,
       subjectType: 'policy-rule',
@@ -80,7 +80,7 @@ function buildReadinessVerdictClaim(record, policyResultClaimItems = []) {
   const derivedRequirementClaimIds = derivationEdges.map((edge) => edge.inputClaimId);
   return {
     id: surfaceClaimId(record.run_id, 'readiness-verdict', record.source_ref ?? 'source'),
-    surface: 'veritas.readiness',
+    facet: 'veritas.readiness',
     claimType: 'software-readiness-verdict',
     fieldOrBehavior: 'mergeReadiness',
     subjectType: 'repository-change',

@@ -32,7 +32,7 @@ export function summarizeSurfaceTrustReport(report) {
       status: claim.status,
       subjectType: claim.subjectType,
       subjectId: claim.subjectId,
-      surface: claim.surface,
+      facet: claim.facet,
       claimType: claim.claimType,
       fieldOrBehavior: claim.fieldOrBehavior,
       value: claim.value,

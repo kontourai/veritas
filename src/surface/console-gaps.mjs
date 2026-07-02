@@ -15,7 +15,7 @@ export function buildEvidenceGaps({ claims, transparencyGaps }) {
       const claim = claimsById.get(transparencyGap.claimId);
       const gap = {
         claimId: transparencyGap.claimId,
-        surface: claim?.surface ?? 'unknown',
+        facet: claim?.facet ?? 'unknown',
         impactLevel: claim?.impactLevel ?? transparencyGap.severity,
         gapType: transparencyGap.type,
         message: transparencyGap.message,

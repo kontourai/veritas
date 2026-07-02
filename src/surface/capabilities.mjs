@@ -6,13 +6,13 @@ export const SURFACE_SUPPORTS_EVIDENCE_EXECUTION = (() => {
   if (typeof Surface.validateTrustBundle !== 'function') return false;
   try {
     Surface.validateTrustBundle({
-      schemaVersion: 3,
+      schemaVersion: 5,
       source: 'veritas-capability-detect',
       claims: [{
         id: 'claim.execution-capability',
         subjectType: 'repository',
         subjectId: 'repo',
-        surface: 'veritas.evidence-checks',
+        facet: 'veritas.evidence-checks',
         claimType: 'software-evidence-check',
         fieldOrBehavior: 'evidenceCheck',
         value: true,
@@ -43,13 +43,13 @@ export const SURFACE_SUPPORTS_AUTHORITY_TRACE = (() => {
   if (typeof Surface.validateTrustBundle !== 'function') return false;
   try {
     Surface.validateTrustBundle({
-      schemaVersion: 3,
+      schemaVersion: 5,
       source: 'veritas-authority-trace-capability-detect',
       claims: [{
         id: 'claim.authority-trace-capability',
         subjectType: 'repository-change',
         subjectId: 'repo',
-        surface: 'veritas.readiness',
+        facet: 'veritas.readiness',
         claimType: 'software-readiness-verdict',
         fieldOrBehavior: 'mergeReadiness',
         value: 'ready',

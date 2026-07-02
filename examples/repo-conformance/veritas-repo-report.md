@@ -28,7 +28,7 @@
 - repeatable-governance-uses-veritas-primitives: pass — Repeatable governance checks are represented by Veritas primitives.
 
 ### External Tool Results
-- fallow:fallow-advisory: warn / advisory — .kontourai/veritas/external/fallow-audit.json
+- fallow:fallow-advisory: pass / advisory — .kontourai/veritas/external/fallow-audit.json
 
 ### Readiness Coverage
 - Readiness coverage has owners, review triggers, and no unknown catch-evidence inventories.

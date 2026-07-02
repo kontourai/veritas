@@ -47,7 +47,7 @@ export const VERITAS_EXTENSION = {
       displayName: 'Evidence Check',
       description: 'An automated or inspectable check that produces evidence for code readiness.',
       defaultImpact: 'high',
-      defaultSurface: 'veritas.evidence-check',
+      defaultFacet: 'veritas.evidence-check',
       policyTemplateId: 'veritas.evidence-check',
       metadataFields: [
         { key: 'command', label: 'Evidence Check command', type: 'string', required: true },
@@ -59,7 +59,7 @@ export const VERITAS_EXTENSION = {
       displayName: 'Governance Artifact',
       description: 'A governance artifact that must remain in sync with policy and Repo Mapuration.',
       defaultImpact: 'high',
-      defaultSurface: 'veritas.governance',
+      defaultFacet: 'veritas.governance',
       policyTemplateId: 'veritas.governance-artifact',
     },
     {
@@ -67,7 +67,7 @@ export const VERITAS_EXTENSION = {
       displayName: 'External Tool Result',
       description: 'Result from an external analysis tool integrated via a Veritas Repo Map.',
       defaultImpact: 'medium',
-      defaultSurface: 'veritas.external-tools',
+      defaultFacet: 'veritas.external-tools',
       policyTemplateId: 'veritas.external-tool-result',
       metadataFields: [
         { key: 'tool', label: 'Tool name', type: 'string', required: true },

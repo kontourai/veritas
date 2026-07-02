@@ -90,8 +90,8 @@ const ATTEST_USAGE = `Usage:
 const CLAIM_USAGE = `Usage:
   veritas claim init [--repo-name <name>] [--dry-run] [--force]
   veritas claim list
-  veritas claim add --type <type> --surface <surface> --subject-type <type> --subject-id <id> --field <field> [--id <id>] [--impact low|medium|high|critical] [--policy-id <id>] [--metadata '{"key":"value"}']
-  veritas claim edit --claim-id <id> [--type <type>] [--surface <surface>] [--subject-type <type>] [--subject-id <id>] [--field <field>] [--impact low|medium|high|critical] [--policy-id <id>] [--metadata '{"key":"value"}']
+  veritas claim add --type <type> --facet <facet> --subject-type <type> --subject-id <id> --field <field> [--id <id>] [--impact low|medium|high|critical] [--policy-id <id>] [--metadata '{"key":"value"}']
+  veritas claim edit --claim-id <id> [--type <type>] [--facet <facet>] [--subject-type <type>] [--subject-id <id>] [--field <field>] [--impact low|medium|high|critical] [--policy-id <id>] [--metadata '{"key":"value"}']
   veritas claim remove --claim-id <id>
   veritas claim scaffold --plugin <name>
   veritas claim validate

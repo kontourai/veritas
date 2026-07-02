@@ -182,7 +182,7 @@ function buildAttestationSurfaceProjection({
       id: claimId,
       subjectType: 'veritas-protected-standards',
       subjectId: 'protected-standards',
-      surface: 'veritas.attestations',
+      facet: 'veritas.attestations',
       claimType: 'veritas-human-attestation',
       fieldOrBehavior: kind,
       value: { contentHash, validUntil },

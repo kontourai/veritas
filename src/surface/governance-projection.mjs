@@ -126,7 +126,7 @@ export function buildGovernanceArtifactClaims({
       id,
       subjectType: 'veritas-governance-artifact',
       subjectId: `${artifact.key}:${artifact.subjectId}`,
-      surface: 'veritas.governance-artifacts',
+      facet: 'veritas.governance-artifacts',
       claimType: 'veritas-governance-artifact',
       fieldOrBehavior: artifact.key === 'repo-map' ? 'integrityAndApplicability' : 'integrityAndCurrentness',
       value: {
@@ -195,7 +195,7 @@ export function buildGovernanceArtifactClaims({
     id,
     subjectType: 'veritas-human-attestation',
     subjectId: governanceState.currentAttestationId ?? 'missing',
-    surface: 'veritas.attestations',
+    facet: 'veritas.attestations',
     claimType: 'veritas-governance-artifact',
     fieldOrBehavior: 'attestationCurrency',
     value: {

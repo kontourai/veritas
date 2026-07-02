@@ -66,7 +66,7 @@ Current Veritas evidence artifacts include a `trust.bundle` block, which is a Su
 {
   "trust": {
     "bundle": {
-      "schemaVersion": 3,
+      "schemaVersion": 5,
       "source": "veritas:<run_id>",
       "claims": [],
       "evidence": [],
@@ -87,7 +87,7 @@ Veritas validates this projection with Surface's public validation API (`validat
 Readiness runs also project merge readiness as a portable Surface claim:
 
 - `claimType: "software-readiness-verdict"`
-- `surface: "veritas.readiness"`
+- `facet: "veritas.readiness"`
 - `subjectType: "repository-change"`
 - `subjectId`: a stable producer/source id derived from the adapter or Repo Standards name plus the run source ref
 - `currentIntegrityRef`: the run source integrity ref

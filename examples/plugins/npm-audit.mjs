@@ -11,7 +11,7 @@ export default {
       displayName: 'Package version safety',
       description: 'No critical or high vulnerabilities in npm dependencies.',
       defaultImpact: 'high',
-      defaultSurface: 'security.dependencies',
+      defaultFacet: 'security.dependencies',
       policyTemplateId: 'npm-audit.package-version-safety',
       metadataFields: [
         {
@@ -70,7 +70,7 @@ export default {
     const now = new Date().toISOString();
     return [{
       id: `${safeId(repoName)}.security.npm-audit`,
-      surface: 'security.dependencies',
+      facet: 'security.dependencies',
       claimType: 'package-version-safety',
       fieldOrBehavior: 'no critical or high npm vulnerabilities',
       subjectType: 'repository',
