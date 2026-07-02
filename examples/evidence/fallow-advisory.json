@@ -126,12 +126,12 @@
   "policy_results": [],
   "trust": {
     "bundle": {
-      "schemaVersion": 2,
+      "schemaVersion": 5,
       "source": "veritas:fallow-advisory-example",
       "claims": [
         {
           "id": "veritas.fallow-advisory-example.external-tool.fallow-fallow-advisory",
-          "surface": "veritas.external-tool-results",
+          "facet": "veritas.external-tool-results",
           "claimType": "veritas-external-tool-result",
           "value": {
             "tool": "fallow",

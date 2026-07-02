@@ -83,11 +83,11 @@
     "check:content-boundary": "node scripts/check-content-boundary.cjs"
   },
   "dependencies": {
-    "@kontourai/surface": "^1.3.0",
+    "@kontourai/surface": "^2.0.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
-    "hachure": "^0.5.1",
+    "hachure": "^0.9.0",
     "picomatch": "^4.0.4"
   },
   "devDependencies": {

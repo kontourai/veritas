@@ -182,7 +182,7 @@ test('example Repo Maps and evidence examples stay readable', () => {
   assert.equal(fallowAdvisoryExample.external_tool_results[0].blocking, false);
   assert.ok(
     fallowAdvisoryExample.trust.bundle.claims.some(
-      (claim) => claim.surface === 'veritas.external-tool-results',
+      (claim) => claim.facet === 'veritas.external-tool-results',
     ),
   );
 });

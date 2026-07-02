@@ -28,7 +28,7 @@ export function buildSurfaceConsoleReadModel(record, {
       status,
       subjectType: claim.subjectType,
       subjectId: claim.subjectId,
-      surface: claim.surface,
+      facet: claim.facet,
       domain: consoleDomainForClaim(claim),
       claimType: claim.claimType,
       fieldOrBehavior: claim.fieldOrBehavior,
@@ -94,7 +94,7 @@ export function buildSurfaceConsoleReadModel(record, {
       transparencyGapCount: report.transparencyGaps.length,
       statusCounts: countBy(claims, (claim) => claim.status),
       claimTypeCounts: countBy(claims, (claim) => claim.claimType),
-      surfaceCounts: countBy(claims, (claim) => claim.surface),
+      facetCounts: countBy(claims, (claim) => claim.facet),
       domainCounts: countBy(claims, (claim) => claim.domain),
       policyCounts: countBy(claims, (claim) => claim.verificationPolicyId ?? 'none'),
       evidenceTypeCounts: countBy(input.evidence, (item) => item.evidenceType ?? 'unknown'),
@@ -123,10 +123,10 @@ export function buildSurfaceConsoleReadModel(record, {
 
 function consoleDomainForClaim(claim) {
   if (typeof claim.metadata?.domain === 'string') return claim.metadata.domain;
-  if (typeof claim.surface === 'string' && claim.surface.includes('.')) {
-    return claim.surface.split('.').at(0);
+  if (typeof claim.facet === 'string' && claim.facet.includes('.')) {
+    return claim.facet.split('.').at(0);
   }
-  return claim.surface ?? 'unknown';
+  return claim.facet ?? 'unknown';
 }
 
 function groupBy(items, keyFn) {

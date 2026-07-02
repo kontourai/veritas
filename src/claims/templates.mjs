@@ -8,7 +8,7 @@ export function buildBaselineClaims(repoName, { hasGovernance = false, evidenceC
   for (const node of workAreas) {
     claims.push({
       id: `${safeId(repoName)}.surface.${safeId(node.id ?? node)}`,
-      surface: 'veritas.affected-surface',
+      facet: 'veritas.affected-surface',
       claimType: 'veritas-affected-surface',
       fieldOrBehavior: node.id ?? node,
       subjectType: 'repo-surface',
@@ -25,7 +25,7 @@ export function buildBaselineClaims(repoName, { hasGovernance = false, evidenceC
   if (hasGovernance) {
     claims.push({
       id: `${safeId(repoName)}.governance`,
-      surface: 'veritas.governance',
+      facet: 'veritas.governance',
       claimType: 'veritas-governance-artifact',
       fieldOrBehavior: 'governance artifact integrity',
       subjectType: 'repository',
@@ -41,7 +41,7 @@ export function buildBaselineClaims(repoName, { hasGovernance = false, evidenceC
   for (const command of evidenceCheckCommands) {
     claims.push({
       id: `${safeId(repoName)}.evidence-check.${safeId(command)}`,
-      surface: 'veritas.evidence-check',
+      facet: 'veritas.evidence-check',
       claimType: 'software-evidence-check',
       fieldOrBehavior: command,
       subjectType: 'repository',

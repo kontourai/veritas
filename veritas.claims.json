@@ -4,7 +4,7 @@
   "claims": [
     {
       "id": "veritas.surface.governance.guidance",
-      "surface": "veritas.affected-surface",
+      "facet": "veritas.affected-surface",
       "claimType": "veritas-affected-surface",
       "fieldOrBehavior": "governance.guidance",
       "subjectType": "repo-surface",
@@ -19,7 +19,7 @@
     },
     {
       "id": "veritas.surface.governance.root-manifests",
-      "surface": "veritas.affected-surface",
+      "facet": "veritas.affected-surface",
       "claimType": "veritas-affected-surface",
       "fieldOrBehavior": "governance.root-manifests",
       "subjectType": "repo-surface",
@@ -34,7 +34,7 @@
     },
     {
       "id": "veritas.surface.tooling.bin",
-      "surface": "veritas.affected-surface",
+      "facet": "veritas.affected-surface",
       "claimType": "veritas-affected-surface",
       "fieldOrBehavior": "tooling.bin",
       "subjectType": "repo-surface",
@@ -49,7 +49,7 @@
     },
     {
       "id": "veritas.surface.delivery.github",
-      "surface": "veritas.affected-surface",
+      "facet": "veritas.affected-surface",
       "claimType": "veritas-affected-surface",
       "fieldOrBehavior": "delivery.github",
       "subjectType": "repo-surface",
@@ -64,7 +64,7 @@
     },
     {
       "id": "veritas.surface.tooling.scripts",
-      "surface": "veritas.affected-surface",
+      "facet": "veritas.affected-surface",
       "claimType": "veritas-affected-surface",
       "fieldOrBehavior": "tooling.scripts",
       "subjectType": "repo-surface",
@@ -79,7 +79,7 @@
     },
     {
       "id": "veritas.surface.governance.schemas",
-      "surface": "veritas.affected-surface",
+      "facet": "veritas.affected-surface",
       "claimType": "veritas-affected-surface",
       "fieldOrBehavior": "governance.schemas",
       "subjectType": "repo-surface",
@@ -94,7 +94,7 @@
     },
     {
       "id": "veritas.surface.governance.repo-maps",
-      "surface": "veritas.affected-surface",
+      "facet": "veritas.affected-surface",
       "claimType": "veritas-affected-surface",
       "fieldOrBehavior": "governance.repo-maps",
       "subjectType": "repo-surface",
@@ -109,7 +109,7 @@
     },
     {
       "id": "veritas.surface.governance.repo-standards",
-      "surface": "veritas.affected-surface",
+      "facet": "veritas.affected-surface",
       "claimType": "veritas-affected-surface",
       "fieldOrBehavior": "governance.repo-standards",
       "subjectType": "repo-surface",
@@ -124,7 +124,7 @@
     },
     {
       "id": "veritas.surface.examples.example-data",
-      "surface": "veritas.affected-surface",
+      "facet": "veritas.affected-surface",
       "claimType": "veritas-affected-surface",
       "fieldOrBehavior": "examples.example-data",
       "subjectType": "repo-surface",
@@ -139,7 +139,7 @@
     },
     {
       "id": "veritas.surface.app.src",
-      "surface": "veritas.affected-surface",
+      "facet": "veritas.affected-surface",
       "claimType": "veritas-affected-surface",
       "fieldOrBehavior": "app.src",
       "subjectType": "repo-surface",
@@ -154,7 +154,7 @@
     },
     {
       "id": "veritas.surface.docs.docs",
-      "surface": "veritas.affected-surface",
+      "facet": "veritas.affected-surface",
       "claimType": "veritas-affected-surface",
       "fieldOrBehavior": "docs.docs",
       "subjectType": "repo-surface",
@@ -169,7 +169,7 @@
     },
     {
       "id": "veritas.surface.verification.tests",
-      "surface": "veritas.affected-surface",
+      "facet": "veritas.affected-surface",
       "claimType": "veritas-affected-surface",
       "fieldOrBehavior": "verification.tests",
       "subjectType": "repo-surface",
@@ -184,7 +184,7 @@
     },
     {
       "id": "veritas.governance",
-      "surface": "veritas.governance",
+      "facet": "veritas.governance",
       "claimType": "veritas-governance-artifact",
       "fieldOrBehavior": "governance artifact integrity",
       "subjectType": "repository",
@@ -196,7 +196,7 @@
     },
     {
       "id": "veritas.evidence-check.npm-run-verify",
-      "surface": "veritas.evidence-check",
+      "facet": "veritas.evidence-check",
       "claimType": "software-evidence-check",
       "fieldOrBehavior": "npm run verify",
       "subjectType": "repository",
@@ -211,7 +211,7 @@
     },
     {
       "id": "veritas.evidence-check.npm-run-veritas-fallow-advisory",
-      "surface": "veritas.evidence-check",
+      "facet": "veritas.evidence-check",
       "claimType": "software-evidence-check",
       "fieldOrBehavior": "npm run veritas:fallow:advisory",
       "subjectType": "repository",

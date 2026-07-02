@@ -52,8 +52,8 @@ function runClaimAdd(args, rootDir) {
   const options = parseClaimFlags(args);
   const now = new Date().toISOString();
   const claim = {
-    id: options.id ?? generateClaimId(options.subjectId, options.surface, options.field),
-    surface: options.surface,
+    id: options.id ?? generateClaimId(options.subjectId, options.facet, options.field),
+    facet: options.facet,
     claimType: options.type,
     fieldOrBehavior: options.field,
     subjectType: options.subjectType,
@@ -74,7 +74,7 @@ function runClaimEdit(args, rootDir) {
   if (!options.claimId) throw new Error('veritas claim edit requires --claim-id');
   const updates = {};
   if (options.type) updates.claimType = options.type;
-  if (options.surface) updates.surface = options.surface;
+  if (options.facet) updates.facet = options.facet;
   if (options.subjectType) updates.subjectType = options.subjectType;
   if (options.subjectId) updates.subjectId = options.subjectId;
   if (options.field) updates.fieldOrBehavior = options.field;
@@ -139,7 +139,7 @@ function parseClaimFlags(args, { requireCreateFields = true } = {}) {
     '--id': { type: 'string', key: 'id' },
     '--claim-id': { type: 'string', key: 'claimId' },
     '--type': { type: 'string', key: 'type' },
-    '--surface': { type: 'string', key: 'surface' },
+    '--facet': { type: 'string', key: 'facet' },
     '--subject-type': { type: 'string', key: 'subjectType' },
     '--subject-id': { type: 'string', key: 'subjectId' },
     '--field': { type: 'string', key: 'field' },
@@ -153,15 +153,15 @@ function parseClaimFlags(args, { requireCreateFields = true } = {}) {
     throw new Error('--impact must be low, medium, high, or critical');
   }
   if (requireCreateFields) {
-    for (const field of ['type', 'surface', 'subjectType', 'subjectId', 'field']) {
+    for (const field of ['type', 'facet', 'subjectType', 'subjectId', 'field']) {
       if (!options[field]) throw new Error(`veritas claim add requires --${field.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`);
     }
   }
   return options;
 }
 
-function generateClaimId(subjectId, surface, field) {
-  return `${safeId(subjectId)}.${safeId(surface)}.${safeId(field)}`;
+function generateClaimId(subjectId, facet, field) {
+  return `${safeId(subjectId)}.${safeId(facet)}.${safeId(field)}`;
 }
 
 function safeId(value) {

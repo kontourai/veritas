@@ -120,7 +120,7 @@ export default {
   importEvidence() { return []; },
   scaffoldClaims(repoName) {
     const now = '2026-05-19T00:00:00.000Z';
-    return [{ id: repoName + '.cli-claim', surface: 'cli.surface', claimType: 'cli-claim', fieldOrBehavior: 'cli check', subjectType: 'repository', subjectId: repoName, impactLevel: 'medium', createdAt: now, updatedAt: now }];
+    return [{ id: repoName + '.cli-claim', facet: 'cli.surface', claimType: 'cli-claim', fieldOrBehavior: 'cli check', subjectType: 'repository', subjectId: repoName, impactLevel: 'medium', createdAt: now, updatedAt: now }];
   },
   policyTemplates: { 'cli.policy': { claimType: 'cli-claim', requiredEvidence: ['policy_rule'], requiredMethods: ['validation'], requiresCorroboration: false, reviewAuthority: 'plugin', validityRule: { kind: 'manual' }, stalenessTriggers: [], conflictRules: [], impactLevel: 'medium' } },
 };

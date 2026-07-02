@@ -87,7 +87,7 @@ test('Surface trust report summary is persisted with stale and disputed statuses
     producer: 'veritas',
     claims: [{
       id: 'veritas.surface-report-consumption-test.policy.warn-rule',
-      surface: 'veritas.policy-results',
+      facet: 'veritas.policy-results',
       claimType: 'veritas-policy-result',
       fieldOrBehavior: 'warn-rule',
       subjectType: 'veritas-policy-rule',
@@ -99,7 +99,7 @@ test('Surface trust report summary is persisted with stale and disputed statuses
       updatedAt: '2026-05-10T12:00:00.000Z',
     }, {
       id: 'veritas.surface-report-consumption-test.evidence-inventory.stale-inventory',
-      surface: 'veritas.evidence-inventories',
+      facet: 'veritas.evidence-inventories',
       claimType: 'veritas-evidence-inventory',
       fieldOrBehavior: 'stale-inventory',
       subjectType: 'repo-evidence-inventory',

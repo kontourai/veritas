@@ -68,7 +68,7 @@ export async function createSurfaceProjectionAssembly(record, {
   const effectiveClaimStore = withProjectedPolicyClaims(claimStore, record);
   const assembler = createSurfaceTrustBundleAssembler({
     source: `veritas:${record.run_id}`,
-    schemaVersion: 3,
+    schemaVersion: 5,
   });
   const { claims, evidence, events, claimGroups, authorityTrace } = assembler;
 

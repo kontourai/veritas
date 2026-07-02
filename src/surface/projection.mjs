@@ -74,7 +74,7 @@ export function validateSurfaceTrustBundleAtBoundary({ input, record, rootDir })
   } catch (error) {
     return throwSurfaceTrustBundleValidationError({ error, input, record, rootDir });
   }
-  // Also validate against the normative Hachure JSON Schema (schemaVersion 3, ajv 2020-12)
+  // Also validate against the normative Hachure JSON Schema (schemaVersion 5, ajv 2020-12)
   const hachureResult = validateTrustBundleSchema(validated);
   if (!hachureResult.valid) {
     const detail = hachureResult.errors.slice(0, 5).join('; ');

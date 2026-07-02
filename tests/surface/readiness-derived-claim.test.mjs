@@ -50,7 +50,7 @@ function readinessDerivedFixture({ blocked = false, advisoryFailed = false } = {
     id: `veritas.${runId}.readiness-verdict.${SOURCE_REF}`,
     subjectType: 'repository-change',
     subjectId: `generic-repository:${SOURCE_REF}`,
-    surface: 'veritas.readiness',
+    facet: 'veritas.readiness',
     claimType: 'software-readiness-verdict',
     fieldOrBehavior: 'mergeReadiness',
     value: {
@@ -129,7 +129,7 @@ function readinessDerivedFixture({ blocked = false, advisoryFailed = false } = {
     name: runId,
     trust: {
       bundle: {
-        schemaVersion: 3,
+        schemaVersion: 5,
         source: `veritas:${runId}`,
         claims,
         evidence,
@@ -148,7 +148,7 @@ function policyResultClaim({ runId, ruleId, value }) {
     id: `veritas.${runId}.policy.${ruleId}`,
     subjectType: 'policy-rule',
     subjectId: `generic-repo-standards:${ruleId}`,
-    surface: 'veritas.policy-results',
+    facet: 'veritas.policy-results',
     claimType: 'veritas-policy-result',
     fieldOrBehavior: ruleId,
     value,
@@ -200,7 +200,7 @@ function readinessClaimFrom(inputOrReport) {
 function assertReadinessDerivationShape(input) {
   const readinessClaim = readinessClaimFrom(input);
   assert.equal(readinessClaim.claimType, 'software-readiness-verdict');
-  assert.equal(readinessClaim.surface, 'veritas.readiness');
+  assert.equal(readinessClaim.facet, 'veritas.readiness');
   assert.ok(Array.isArray(readinessClaim.derivedFrom));
   assert.ok(readinessClaim.derivedFrom.length > 0);
   assert.ok(Array.isArray(readinessClaim.derivationEdges));

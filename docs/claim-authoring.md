@@ -17,7 +17,7 @@ Use `veritas claim` to maintain the store:
 
 ```bash
 veritas claim list
-veritas claim add --type software-evidence-check --surface veritas.evidence-check --subject-type repository --subject-id my-repo --field "npm test" --metadata '{"command":"npm test"}'
+veritas claim add --type software-evidence-check --facet veritas.evidence-check --subject-type repository --subject-id my-repo --field "npm test" --metadata '{"command":"npm test"}'
 veritas claim edit --claim-id my-repo.veritas-evidence-check.npm-test --impact high
 veritas claim remove --claim-id my-repo.veritas-evidence-check.npm-test
 veritas claim validate

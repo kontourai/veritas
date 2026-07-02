@@ -47,7 +47,7 @@ test('Veritas trust.bundle validates against Surface and has policy coverage', a
   const readinessClaim = input.claims.find((claim) => claim.claimType === 'software-readiness-verdict');
   assert.ok(readinessClaim, 'expected Surface readiness verdict claim');
   assert.equal(readinessClaim.subjectType, 'repository-change');
-  assert.equal(readinessClaim.surface, 'veritas.readiness');
+  assert.equal(readinessClaim.facet, 'veritas.readiness');
   assert.equal(readinessClaim.verificationPolicyId, 'veritas.readiness-verdict');
   assert.equal(['ready', 'not-ready', 'needs-review'].includes(readinessClaim.value.verdict), true);
   assert.ok(readinessClaim.currentIntegrityRef);
@@ -197,7 +197,7 @@ test('Surface validation failure writes rejected input artifact and uses config 
   assert.equal(Array.isArray(rejectedInput.claims), true);
 });
 
-test('emitted trust.bundle validates against hachure@0.4.0 schema (schemaVersion 3)', async () => {
+test('emitted trust.bundle validates against hachure@0.9.0 schema (schemaVersion 5)', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-hachure-schema-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   await initClaimStore({ rootDir, repoName: 'hachure-schema-test', force: true });
@@ -238,7 +238,7 @@ test('emitted trust.bundle validates against hachure@0.4.0 schema (schemaVersion
   const { validateTrustBundleSchema } = await import('../src/surface/trust-bundle-validator.mjs');
   const result = validateTrustBundleSchema(bundle);
   assert.equal(result.valid, true, `Hachure schema validation failed: ${result.errors.join('; ')}`);
-  assert.equal(bundle.schemaVersion, 3, 'emitted bundle must use schemaVersion 3');
+  assert.equal(bundle.schemaVersion, 5, 'emitted bundle must use schemaVersion 5');
 
   rmSync(rootDir, { recursive: true, force: true });
 });

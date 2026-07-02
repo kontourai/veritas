@@ -18,7 +18,7 @@ export default {
     displayName: 'Vendor check',
     description: 'Evidence imported from vendor output.',
     defaultImpact: 'high',
-    defaultSurface: 'vendor.security',
+    defaultFacet: 'vendor.security',
     policyTemplateId: 'vendor.check',
   }],
   importEvidence(rawOutput, claims, context) {
