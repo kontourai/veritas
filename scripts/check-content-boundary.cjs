@@ -1,8 +1,5 @@
 #!/usr/bin/env node
 
-const { execFileSync } = require("node:child_process");
-const { readFileSync } = require("node:fs");
-
 const SELF = "scripts/check-content-boundary.cjs";
 
 const bannedTerms = [
@@ -30,64 +27,19 @@ const ignoredPathPatterns = [
   /^\.omx\//,
 ];
 
-function trackedFiles() {
-  const output = execFileSync("git", ["ls-files", "-z"], { encoding: "utf8" });
-  return output.split("\0").filter(Boolean);
-}
+(async () => {
+  // Import the package root so this repository exercises the supported public API.
+  const { runContentBoundary } = await import("../src/index.mjs");
+  const result = runContentBoundary({
+    rootDir: process.cwd(),
+    bannedTerms,
+    ignoredPaths: [SELF],
+    ignoredPathPatterns,
+  });
 
-function isIgnoredPath(filePath) {
-  return filePath === SELF || ignoredPathPatterns.some((pattern) => pattern.test(filePath));
-}
-
-function lineNumberFor(content, index) {
-  return content.slice(0, index).split("\n").length;
-}
-
-const findings = [];
-
-for (const filePath of trackedFiles()) {
-  if (filePath.startsWith(".kontourai/flow-agents/")) {
-    findings.push({
-      filePath,
-      line: 1,
-      label: "Flow Agents runtime artifact must not be tracked in this repo",
-    });
-    continue;
-  }
-
-  if (isIgnoredPath(filePath)) {
-    continue;
-  }
-
-  let content;
-  try {
-    content = readFileSync(filePath, "utf8");
-  } catch {
-    continue;
-  }
-
-  if (content.includes("\0")) {
-    continue;
-  }
-
-  for (const term of bannedTerms) {
-    const match = term.pattern.exec(content);
-    if (match) {
-      findings.push({
-        filePath,
-        line: lineNumberFor(content, match.index),
-        label: term.label,
-      });
-    }
-  }
-}
-
-if (findings.length > 0) {
-  console.error("Content boundary check failed:");
-  for (const finding of findings) {
-    console.error(`- ${finding.filePath}:${finding.line} ${finding.label}`);
-  }
-  process.exit(1);
-}
-
-console.log("Content boundary check passed.");
+  (result.ok ? console.log : console.error)(result.output);
+  if (!result.ok) process.exitCode = 1;
+})().catch((error) => {
+  console.error(error);
+  process.exitCode = 2;
+});
