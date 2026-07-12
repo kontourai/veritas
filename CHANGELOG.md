@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.3.0](https://github.com/kontourai/veritas/compare/v1.2.0...v1.3.0) (2026-07-12)
+
+
+### Features
+
+* **conformance:** shared content-boundary gate with tracked+untracked enumeration ([#113](https://github.com/kontourai/veritas/issues/113)) ([a93c2fc](https://github.com/kontourai/veritas/commit/a93c2fc883f4aca0ec897b62ece1782ac8c3e03d))
+
 ## [1.2.0](https://github.com/kontourai/veritas/compare/v1.1.1...v1.2.0) (2026-07-02)
 
 
