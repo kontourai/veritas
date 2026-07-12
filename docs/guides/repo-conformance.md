@@ -67,7 +67,9 @@ If this flow feels awkward, the fix should usually land in the product surface, 
 `@kontourai/veritas` exports `runContentBoundary` from its package root. Consumers
 own their labeled `RegExp` vocabulary and explicit repo-local exclusions; the
 shared engine owns Git discovery, runtime-artifact policy, text scanning, and
-deterministic `path:line label` output. A CommonJS gate can stay thin:
+deterministic quoted-path `path:line label` output. JSON-style pathname and
+label quoting keeps control characters such as newlines on one physical output
+line while leaving valid Unicode readable. A CommonJS gate can stay thin:
 
 ```js
 #!/usr/bin/env node
@@ -98,7 +100,27 @@ from `rootDir`. Provenance is significant: a tracked path below
 `.kontourai/flow-agents/` is a policy violation, while an untracked path below
 that prefix is an allowed local runtime artifact and is not vocabulary-scanned.
 Git-ignored files are not enumerated. Other tracked and untracked text files are
-scanned once, with stable output ordering.
+scanned once, with stable output ordering. Git pathname bytes remain intact
+through enumeration and filesystem lookup. A pathname that is not valid UTF-8,
+or an enumerated scannable file that cannot be resolved or read, fails closed
+with a typed finding instead of being silently skipped. Binary content remains
+an intentional skip after a successful read. Before any read, the engine
+resolves both the repository root and target canonically; a symlink target
+outside the repository is rejected without reading outside content. The engine
+opens the validated canonical target with final-component symlink following
+disabled, but does not read immediately. It snapshots the device, inode, and
+type of every canonical-root-to-target component before open, repeats that walk
+after open, and requires the opened descriptor to identify the unchanged final
+component. Any symlink, missing or changed component, or descriptor mismatch
+fails closed before a content read; the descriptor is always closed. This
+pre/open/post identity protocol prevents persistent and swap-open-restore parent
+redirection without reopening the lexical candidate. The filesystem test seam's
+`read` operation receives only that validated descriptor; there is no supported
+path-based `readFile` hook that can reopen a pathname after validation.
+Concurrent in-place
+mutation of the same inode is outside pathname-containment scope. Runtime
+artifact policy is evaluated first, so allowed untracked Flow Agents artifacts
+are neither resolved nor vocabulary-scanned.
 
 ### Survey and Traverse migration contract
 
