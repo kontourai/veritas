@@ -146,6 +146,66 @@ test("tracked and untracked text are scanned while ignored Git files are omitted
   );
 });
 
+test("empty bannedTerms scans no consumer vocabulary of its own", (t) => {
+  const rootDir = makeRepository();
+  t.after(() => rmSync(rootDir, { recursive: true, force: true }));
+  writeFileSync(
+    path.join(rootDir, "tracked-policy.txt"),
+    "SYNTHETIC_CONSUMER_SENTINEL_ALPHA\n",
+  );
+  commitAll(rootDir);
+  const untrackedFixture = "untracked-policy.txt";
+  writeFileSync(
+    path.join(rootDir, untrackedFixture),
+    "SYNTHETIC_REGULATED_DOMAIN_SENTINEL_BETA\n",
+  );
+
+  const untrackedProof = spawnSync(
+    "git",
+    ["ls-files", "--error-unmatch", untrackedFixture],
+    { cwd: rootDir, encoding: "utf8" },
+  );
+  assert.notEqual(untrackedProof.status, 0, "fixture must remain genuinely untracked");
+
+  const entries = enumerateContentBoundaryFiles({ rootDir });
+  assert.deepEqual(
+    entries
+      .filter(({ filePath }) => filePath.endsWith("-policy.txt"))
+      .map(({ filePath, provenance }) => [filePath, provenance]),
+    [
+      ["tracked-policy.txt", "tracked"],
+      ["untracked-policy.txt", "untracked"],
+    ],
+  );
+  assert.deepEqual(
+    evaluateContentBoundary({ rootDir, entries, bannedTerms: [] }),
+    [],
+  );
+});
+
+test("shared engine source declares no built-in banned vocabulary", () => {
+  const source = readFileSync(
+    new URL("../src/conformance/content-boundary.mjs", import.meta.url),
+    "utf8",
+  );
+  // AC-CONFIG-04 mutation guard: detect vocabulary-owning declarations by
+  // identifier structure without encoding any consumer's private words.
+  const declarationPattern =
+    /^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=/gm;
+  const offenders = [...source.matchAll(declarationPattern)]
+    .map((match) => match[1])
+    .filter((name) =>
+      /(?:PRIVATE.*(?:BANNED|TERM|VOCAB)|BANNED.*(?:TERM|VOCAB)|(?:TERM|VOCAB).*PRIVATE)/i.test(
+        name,
+      ),
+    );
+  assert.deepEqual(
+    offenders,
+    [],
+    `shared engine owns banned vocabulary declarations: ${offenders.join(", ")}`,
+  );
+});
+
 test("thin consumer child process fails on a Git-verified untracked file before staging", (t) => {
   const rootDir = makeRepository();
   t.after(() => rmSync(rootDir, { recursive: true, force: true }));
