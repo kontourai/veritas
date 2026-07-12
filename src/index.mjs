@@ -151,6 +151,14 @@ export {
   summarizeHealth,
   summarizePolicyResults,
 } from './conformance/run.mjs';
+export {
+  FLOW_AGENTS_RUNTIME_PREFIX,
+  TRACKED_RUNTIME_ARTIFACT_LABEL,
+  enumerateContentBoundaryFiles,
+  evaluateContentBoundary,
+  formatContentBoundaryResult,
+  runContentBoundary,
+} from './conformance/content-boundary.mjs';
 
 export {
   produceSurfaceStateForVeritasRecord,

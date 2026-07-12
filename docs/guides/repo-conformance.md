@@ -61,3 +61,75 @@ The self-hosting flow should prove that:
 - [examples/repo-conformance/veritas-repo-conformance-red.json](../../examples/repo-conformance/veritas-repo-conformance-red.json)
 
 If this flow feels awkward, the fix should usually land in the product surface, not in a repo-specific exception.
+
+## Content-Boundary Consumer Contract
+
+`@kontourai/veritas` exports `runContentBoundary` from its package root. Consumers
+own their labeled `RegExp` vocabulary and explicit repo-local exclusions; the
+shared engine owns Git discovery, runtime-artifact policy, text scanning, and
+deterministic `path:line label` output. A CommonJS gate can stay thin:
+
+```js
+#!/usr/bin/env node
+
+const SELF = "scripts/check-content-boundary.cjs";
+const bannedTerms = [
+  { label: "repo-private term", pattern: /replace-with-local-pattern/i },
+];
+
+(async () => {
+  const { runContentBoundary } = await import("@kontourai/veritas");
+  const result = runContentBoundary({
+    rootDir: process.cwd(),
+    bannedTerms,
+    ignoredPaths: [SELF],
+  });
+  (result.ok ? console.log : console.error)(result.output);
+  if (!result.ok) process.exitCode = 1;
+})().catch((error) => {
+  console.error(error);
+  process.exitCode = 2;
+});
+```
+
+The runner returns `{ ok, findings, output }`; each finding has `filePath`,
+`line`, and `label`. It enumerates tracked files and untracked, non-ignored files
+from `rootDir`. Provenance is significant: a tracked path below
+`.kontourai/flow-agents/` is a policy violation, while an untracked path below
+that prefix is an allowed local runtime artifact and is not vocabulary-scanned.
+Git-ignored files are not enumerated. Other tracked and untracked text files are
+scanned once, with stable output ordering.
+
+### Survey and Traverse migration contract
+
+Migration is a separate consumer-repository change after a Veritas release that
+contains this API. Each consumer must pin a compatible released npm version in
+its manifest and lockfile; do not use a copied engine, floating Git dependency,
+unpublished checkout, or cross-repo relative import. Preserve that repository's
+existing vocabulary labels, regexes, and self-exclusion unless a separate change
+authorizes vocabulary edits, and remove its duplicate discovery/scanning logic.
+
+Each migration must execute the real thin adapter in a child process and prove
+that a banned fixture is Git-verified untracked immediately before the gate
+exits non-zero and names its path and line. It must also prove tracked banned
+text is red, clean content is green, an untracked Flow Agents runtime artifact
+is allowed and not scanned, and a tracked runtime artifact is red. Run the
+consumer's focused test and native verify/prepush chain and record the released
+package version and command evidence in its acceptance record.
+
+### Surface audit contract
+
+Audit Surface in its own lane before deciding to migrate it. Record the relevant
+script path and hash (or its absence), both Git enumeration commands, runtime
+prefix and tracked/untracked behavior, vocabulary ownership, installed Veritas
+version, and whether the verification chain invokes the gate. If it shares the
+defective implementation family, apply the same migration and untracked-red
+proof. Otherwise publish an evidence-backed no-change rationale.
+
+### Closure restriction
+
+A Veritas merge or release alone does not prove consumer remediation. Do not
+close the superseded Survey or Traverse defect until that repository consumes a
+released compatible Veritas version and its real adapter passes the verified
+untracked pre-commit red regression. Provider closure and package publication
+remain separate authorized operations.
