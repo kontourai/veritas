@@ -197,7 +197,7 @@ test('Surface validation failure writes rejected input artifact and uses config 
   assert.equal(Array.isArray(rejectedInput.claims), true);
 });
 
-test('emitted trust.bundle validates against hachure@0.9.0 schema (schemaVersion 5)', async () => {
+test('emitted trust.bundle validates against hachure@0.14.0 schema (schemaVersion 5, accepted by the 5/6 range)', async () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-hachure-schema-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   await initClaimStore({ rootDir, repoName: 'hachure-schema-test', force: true });
