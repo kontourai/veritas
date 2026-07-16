@@ -25,11 +25,12 @@ const ALLOWLISTED_SOURCE_FILES = new Set([
 // package.json may still declare hachure while a source file above still needs it.
 const ALLOW_PACKAGE_JSON_HACHURE_DEP = true;
 
+// No `\b` before `require`: an aliased `_require.resolve("hachure")` would slip
+// past a word-boundary anchor, so match the call substring directly.
 const IMPORT_PATTERNS = [
-  /\bfrom\s+['"]hachure['"]/,
-  /\brequire\(\s*['"]hachure['"]\s*\)/,
-  /\brequire\.resolve\(\s*['"]hachure['"]\s*\)/,
-  /\bimport\(\s*['"]hachure['"]\s*\)/,
+  /from\s+['"]hachure['"]/,
+  /require(\.resolve)?\(\s*['"]hachure['"]\s*\)/,
+  /import\(\s*['"]hachure['"]\s*\)/,
 ];
 const SOURCE_EXT = /\.(ts|tsx|mjs|cjs|js|jsx)$/;
 
