@@ -53,6 +53,7 @@ Find what you need by what you're trying to do.
 
 - [Developer Architecture](architecture/developer-architecture.md) for the local product, evidence, and ownership map
 - [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md) for the Veritas product boundary and Surface projection rules
+- [Engine / Surface Seam](architecture/engine-surface-seam.md) for the engine-library vs product-surface split and the frozen engine API
 - [Product Core And Repo Map](design/product-core-and-repo-map.md) for architecture notes
 - [Schema Evolution](design/schema-evolution.md) for schema change policy
 - [CONTRIBUTING.md](../CONTRIBUTING.md) for development workflow
@@ -87,6 +88,7 @@ Find what you need by what you're trying to do.
 
 - [Developer Architecture](architecture/developer-architecture.md)
 - [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md)
+- [Engine / Surface Seam](architecture/engine-surface-seam.md)
 - [Agent Activation](design/agent-activation.md)
 - [Repo Standards Schema](design/repo-standards.md)
 - [Evidence Check Inventories](design/evidence-inventories.md)
