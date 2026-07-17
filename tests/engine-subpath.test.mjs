@@ -72,3 +72,17 @@ test('the three station imports resolve from the engine subpath', () => {
     assert.equal(typeof engine[name], 'function', `station import ${name} must be an engine export`);
   }
 });
+
+test('the public package root (`@kontourai/veritas`) is engine-only', async () => {
+  // The package `exports` map points `.` at src/engine.mjs, so importing the package by name
+  // must yield the engine API and NOT product surface (which the kit owns and which is reachable
+  // only via the bin CLIs / relative imports, not the package name).
+  const pkg = await import('@kontourai/veritas');
+  const engineMissing = ENGINE_API.filter((name) => typeof pkg[name] === 'undefined');
+  assert.deepEqual(engineMissing, [], `package root is missing engine exports: ${engineMissing.join(', ')}`);
+  const surfaceLeaked = SURFACE_FORBIDDEN.filter((name) => typeof pkg[name] !== 'undefined');
+  assert.deepEqual(surfaceLeaked, [], `package root leaked surface exports: ${surfaceLeaked.join(', ')}`);
+  for (const name of ['evaluateRepoStandards', 'loadRepoStandards', 'classifyNodes']) {
+    assert.equal(typeof pkg[name], 'function', `station import ${name} must resolve from the package root`);
+  }
+});

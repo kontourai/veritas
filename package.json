@@ -45,7 +45,7 @@
     "access": "public"
   },
   "exports": {
-    ".": "./src/index.mjs",
+    ".": "./src/engine.mjs",
     "./engine": "./src/engine.mjs"
   },
   "bin": {

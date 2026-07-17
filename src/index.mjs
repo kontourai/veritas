@@ -1,3 +1,19 @@
+// INTERNAL aggregate barrel — NOT the public package API.
+//
+// The public library API of `@kontourai/veritas` is `src/engine.mjs` (the package `exports`
+// map points both `.` and `./engine` there): the frozen engine-classified API only, per the
+// engine/surface seam (docs/architecture/engine-surface-seam.md, flow-agents#650). External
+// consumers importing `@kontourai/veritas` get the engine, not product surface.
+//
+// This file additionally re-exports the product **surface** (init scaffold, hook setup, runtime
+// integrations, standards-feedback authoring, attestation authoring, conformance dashboard, CLI
+// runners). That surface is NOT part of the public library API — it remains here only to back the
+// `bin/veritas*.mjs` CLIs and the test suite, which import this file by relative path (relative
+// imports bypass the `exports` map). The flow-agents veritas-governance kit owns the product
+// surface; the thin CLIs the kit shells into (`veritas readiness`/`explain`/`init --explore`
+// /`--apply`) are what keep this surface reachable at all. Do not treat anything below the engine
+// re-exports as importable via the package name.
+
 export {
   loadJson,
   loadRepoMap,
