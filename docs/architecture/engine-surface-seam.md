@@ -241,7 +241,19 @@ distinct **`@kontourai/veritas/engine` subpath** (`src/engine.mjs`, wired in `pa
 must not leak product surface. The root `.` barrel is unchanged and still re-exports everything,
 so station's three imports (`evaluateRepoStandards`, `loadRepoStandards`, `classifyNodes` — all
 present on `/engine`) and every other root consumer keep working through the transition; station's
-version bump stays gated on #650 (station#233). Step B removes the surface exports from the root.
+version bump stays gated on #650 (station#233).
+
+**Step B — shipped.** The public package library API is now engine-only: `package.json`
+`exports["."]` points at `src/engine.mjs` (alongside `./engine`), so importing `@kontourai/veritas`
+by name yields the engine, not product surface (`import { setupRepoHooks } from '@kontourai/veritas'`
+no longer resolves). `src/index.mjs` remains as an **internal aggregate barrel** — it still
+re-exports the product surface, but only to back the `bin/veritas*.mjs` CLIs and the test suite,
+which import it by *relative path* (relative imports bypass the `exports` map). No source was
+deleted: the surface stays on disk to serve the retained thin CLIs (below). Station's package-name
+imports resolve engine-only; the `tests/engine-subpath.test.mjs` package-root test pins it.
+Deleting the genuinely-unused standalone-CLI surface (e.g. `veritas setup repo-hooks`, superseded
+by the kit's hook provisioning; `veritas integrations`, blocked on veritas#119) is a separate
+product decision, not folded into this API-boundary change.
 
 ### Kit-wrapped CLIs stay (owner decision, #650)
 
