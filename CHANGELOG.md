@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.4.0](https://github.com/kontourai/veritas/compare/v1.3.0...v1.4.0) (2026-07-16)
+
+
+### Features
+
+* add check-hachure-boundary ratchet (layer-doctrine enforcement) ([#116](https://github.com/kontourai/veritas/issues/116)) ([2a57022](https://github.com/kontourai/veritas/commit/2a5702229ffc7b53616c7dab6b002b36562eb368))
+
 ## [1.3.0](https://github.com/kontourai/veritas/compare/v1.2.0...v1.3.0) (2026-07-12)
 
 
