@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.5.0](https://github.com/kontourai/veritas/compare/v1.4.0...v1.5.0) (2026-07-17)
+
+
+### Features
+
+* **ci:** enforce the engine has zero flow-agents dependency (flow-agents[#651](https://github.com/kontourai/veritas/issues/651)) ([#123](https://github.com/kontourai/veritas/issues/123)) ([aedbeee](https://github.com/kontourai/veritas/commit/aedbeeee8f91209f4320a0a49480a9003e5b34ef))
+* **engine:** add @kontourai/veritas/engine subpath — the frozen engine-library API (flow-agents[#650](https://github.com/kontourai/veritas/issues/650) Step A) ([#120](https://github.com/kontourai/veritas/issues/120)) ([819e173](https://github.com/kontourai/veritas/commit/819e173e6b653330a7142d3a2a37b2707f5e4972))
+* **engine:** make the public @kontourai/veritas library API engine-only (flow-agents[#650](https://github.com/kontourai/veritas/issues/650) Step B) ([#122](https://github.com/kontourai/veritas/issues/122)) ([903b5d4](https://github.com/kontourai/veritas/commit/903b5d406e07afb4992136f9ac587354f71a2a91))
+
+
+### Documentation
+
+* reconcile veritas docs to the engine/kit split (flow-agents[#652](https://github.com/kontourai/veritas/issues/652)) ([#124](https://github.com/kontourai/veritas/issues/124)) ([cfd4470](https://github.com/kontourai/veritas/commit/cfd4470248dcaeb0d47650dbc057dd165f8d3945))
+
 ## [1.4.0](https://github.com/kontourai/veritas/compare/v1.3.0...v1.4.0) (2026-07-16)
 
 
