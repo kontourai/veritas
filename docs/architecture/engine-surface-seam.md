@@ -230,16 +230,30 @@ kit, the hook's *evaluation entry point* must remain engine-invokable as CLI (th
 script shells into `veritas`), because kit code cannot import the engine. Hook wiring is kit;
 per-edit evaluation is engine.
 
-## Slice 5 prerequisite: an explicit engine subpath
+## Slice 5 prerequisite: an explicit engine subpath — **shipped (Step A)**
 
-`src/index.mjs` is a flat 254-line barrel with no engine/surface boundary — it exports rule
-evaluators next to `runInitCli` and `setupRepoHooks`. Before (or as the first step of)
-[#650](https://github.com/kontourai/flow-agents/issues/650), split it into a
-**`@kontourai/veritas/engine` subpath** (or equivalent two-package split) exporting exactly the
-engine-classified API, so "standalone importable engine" is structurally true rather than a
-convention, and Slices 2–4 can delete surface exports without touching engine consumers.
-Station's three imports come from the root barrel today; the root can keep re-exporting the
-engine set through the transition, with station's version bump gated on #650 (station#233).
+`src/index.mjs` was a flat 254-line barrel with no engine/surface boundary — it exported rule
+evaluators next to `runInitCli` and `setupRepoHooks`. As the first step of
+[#650](https://github.com/kontourai/flow-agents/issues/650), the engine-classified API is now a
+distinct **`@kontourai/veritas/engine` subpath** (`src/engine.mjs`, wired in `package.json`
+`exports`), so "standalone importable engine" is structural rather than conventional. The
+`tests/engine-subpath.test.mjs` boundary test pins it: the subpath exports the engine API and
+must not leak product surface. The root `.` barrel is unchanged and still re-exports everything,
+so station's three imports (`evaluateRepoStandards`, `loadRepoStandards`, `classifyNodes` — all
+present on `/engine`) and every other root consumer keep working through the transition; station's
+version bump stays gated on #650 (station#233). Step B removes the surface exports from the root.
+
+### Kit-wrapped CLIs stay (owner decision, #650)
+
+The engine subpath is the library boundary; it does **not** decide the CLI boundary. The
+flow-agents veritas-governance kit consumes veritas only through CLI/artifacts (kits cannot
+import the engine), and its shipped skills shell into specific commands: `standards-authoring`
+runs `veritas init --explore`/`--apply`, and `consult-standards` runs `veritas explain`. So
+`veritas readiness`, `veritas explain`, and `veritas init --explore`/`--apply` **remain as thin
+CLIs** in the slimmed package even though `init`'s scaffold *library* surface (`src/bootstrap*`,
+`writeBootstrapStarterKit`, …) is removed. Step B slims the library surface and the non-wrapped
+CLI/UX, but keeps the thin CLIs the kit shells into — removing them would break kit skills that
+already shipped (Slices 2 and 4).
 
 ## Survey findings that reframe downstream slices
 
