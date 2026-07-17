@@ -55,7 +55,7 @@
   "scripts": {
     "docs:pages:build": "node scripts/build-pages-site.mjs",
     "docs:pages:test:browser": "playwright test --config tests/browser/playwright.config.ts",
-    "verify": "node scripts/check-content-boundary.cjs && node scripts/check-hachure-boundary.mjs && node scripts/verify.mjs",
+    "verify": "node scripts/check-content-boundary.cjs && node scripts/check-hachure-boundary.mjs && node scripts/check-no-flow-agents-dep.mjs && node scripts/verify.mjs",
     "test:prepush": "npm run verify",
     "prepush": "npm run test:prepush",
     "test": "node --test tests/*.test.mjs tests/**/*.test.mjs",
@@ -82,7 +82,8 @@
     "veritas:ci:conformance": "npm run veritas:conformance:verify",
     "veritas:console": "surface console --config surface.config.json",
     "check:content-boundary": "node scripts/check-content-boundary.cjs",
-    "check:hachure-boundary": "node scripts/check-hachure-boundary.mjs"
+    "check:hachure-boundary": "node scripts/check-hachure-boundary.mjs",
+    "check:no-flow-agents-dep": "node scripts/check-no-flow-agents-dep.mjs"
   },
   "dependencies": {
     "@kontourai/surface": "^2.0.0",
