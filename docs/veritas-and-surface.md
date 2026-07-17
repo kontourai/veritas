@@ -1,6 +1,8 @@
 # Veritas and Surface
 
-Veritas is the repo and AI-agent governance product. Surface is the transparency layer Veritas is built with.
+Veritas is the repo and AI-agent governance **evaluation engine** (`@kontourai/veritas`) — the
+product surface it once shipped standalone now lives in the flow-agents **Veritas Governance Kit**,
+which wraps the engine. Surface is the transparency layer Veritas is built with.
 
 Most Veritas users should not need to choose between them, configure Surface directly, or learn Surface vocabulary first. Use Veritas when the job is repo standards, change boundaries, evidenceChecks, merge readiness, repo conformance, or change guidance.
 

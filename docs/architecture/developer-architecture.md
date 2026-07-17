@@ -19,7 +19,15 @@ Non-goals for this guide:
 
 ## Product And Layer Relationship
 
-Veritas starts from repo-local governance intent and produces evidence-backed readiness state. Surface is the portable transparency projection. Flow, Flow Agents, and Builder Kit consume readiness or trust state as inputs; they do not own Veritas evaluation semantics.
+Veritas is the **evaluation engine**: a standalone, importable library whose frozen engine API is
+the `@kontourai/veritas/engine` subpath (the package root `@kontourai/veritas` resolves to it),
+plus thin CLIs (`veritas readiness`/`explain`/`init`). It starts from repo-local governance intent
+and produces evidence-backed readiness state. The repo-installed **product surface** it once
+shipped — init scaffold, hook setup, standards authoring, just-in-time agent guidance — is owned by
+the flow-agents **Veritas Governance Kit** (`kits/veritas-governance`), which wraps the engine via
+CLI + artifacts and reimplements no evaluation; see the [Engine / Surface Seam](engine-surface-seam.md).
+Surface is the portable transparency projection. Flow, Flow Agents, and Builder Kit consume
+readiness or trust state as inputs; they do not own Veritas evaluation semantics.
 
 ```mermaid
 flowchart LR
@@ -159,6 +167,7 @@ Start here, then follow only the references needed for the question:
 1. Use the [Glossary](../reference/glossary.md) for canonical Veritas terms.
 2. Use [Artifacts and Schemas](../reference/artifacts-and-schemas.md) for current generated paths and schema details.
 3. Use [Surface-Veritas Boundary](surface-veritas-boundary.md) and [Veritas and Surface](../veritas-and-surface.md) for projection rules.
-4. Use [Resource Contract Audit](../resource-contract-audit.md) only for future migration planning.
+4. Use [Engine / Surface Seam](engine-surface-seam.md) for the engine-library vs product-surface split, the frozen engine API, and where each capability lives (engine vs the flow-agents Governance Kit).
+5. Use [Resource Contract Audit](../resource-contract-audit.md) only for future migration planning.
 
 If an architecture statement says **Current implementation**, it describes behavior or artifacts that exist now. If it says **Future Resource Contract alignment**, it describes a planned direction that needs its own implementation, validation, and compatibility review.
