@@ -5,9 +5,7 @@ library (`@kontourai/veritas`, engine API at `@kontourai/veritas/engine`) plus t
 repo-installed **product surface** (init scaffold, hook setup, standards authoring, just-in-time
 agent guidance) is owned by the flow-agents **Veritas Governance Kit**, which wraps the engine via
 CLI + artifacts and never reimplements evaluation. See [Engine / Surface Seam](engine-surface-seam.md).
-Surface is the product-neutral transparency layer Veritas is built with. The dependency direction
-is one-way: Veritas may use Surface contracts and APIs. Surface does not depend on Veritas
-readiness runtime code.
+Surface is the product-neutral transparency layer Veritas is built with. The dependency direction is one-way: Veritas may use Surface contracts and APIs. Surface does not depend on Veritas readiness runtime code.
 
 ## Boundary Rule
 
