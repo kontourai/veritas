@@ -281,3 +281,17 @@ already shipped (Slices 2 and 4).
 4. **Engine dependency set for #651 (Layer Doctrine):** `@kontourai/surface`,
    `@modelcontextprotocol/sdk`, `picomatch`, `ajv`/`ajv-formats`, `hachure` (schemas). No
    flow-agents dependency exists or may be added.
+
+## The Portfolio Layer Doctrine
+
+This engine/surface split is the veritas-local instance of the portfolio-wide **Layer Doctrine**
+([surface/docs/architecture/portfolio-layer-doctrine.md](https://github.com/kontourai/surface/blob/main/docs/architecture/portfolio-layer-doctrine.md)):
+dependency direction is one-way up the stack — Layer 1 open trust format (`hachure`) → Layer 2
+building-block tools → Layer 3 Surface (`@kontourai/surface`) → Layer 4 products. `@kontourai/veritas`
+is a **Layer 4 product** (the evaluation engine): it depends *down* on Surface, never *sideways*
+into the platform. Concretely, Invariant 1 above — the engine never depends on flow-agents — is the
+Layer Doctrine's no-reach-past-your-neighbor rule, and it is now enforced executably by
+`scripts/check-no-flow-agents-dep.mjs` (wired into `npm run verify`); the mirror-image rule that a
+kit must not import the engine as a library is enforced flow-agents-side by
+`scripts/check-layer-boundary.mjs`. "Kits declare process; the anchor enforces" (ADR 0017/0022) —
+and now the layer edges enforce too.

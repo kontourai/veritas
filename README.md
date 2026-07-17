@@ -7,6 +7,15 @@ Veritas helps teams earn merge autonomy for AI-authored code by making repo stan
 
 Define what good looks like for your repo. Veritas checks each change against those standards, gives the agent just-in-time guidance while it works, and produces a readiness report that says whether the change has enough fresh evidence to merge with reduced human review.
 
+> **Engine and Governance Kit.** `@kontourai/veritas` is a standalone **evaluation engine** — an
+> importable library (engine API at `@kontourai/veritas/engine`) plus the thin CLIs used below.
+> Its repo-installed **product surface** — scaffolding standards, wiring hooks, authoring standards,
+> and delivering just-in-time guidance to agents — is also packaged as the flow-agents
+> **[Veritas Governance Kit](https://github.com/kontourai/flow-agents/tree/main/kits/veritas-governance)**,
+> which wraps this engine via its CLI + recorded artifacts (it never reimplements evaluation). Use
+> the standalone CLI directly, as in the Quickstart, or adopt the kit inside a Flow Agents setup —
+> both drive the same engine. See the [Engine / Surface Seam](docs/architecture/engine-surface-seam.md).
+
 ## Quickstart
 
 Inside a git repository:
@@ -138,4 +147,4 @@ Kontour AI shows the work behind AI:
 | **[Flow](https://kontourai.io/flow)** | Process transparency: steps, gates, transitions, runs, exceptions |
 | **[Flow Agents](https://kontourai.io/flow-agents)** | Agent-facing distribution: skills, kits, runtime adapters, hooks |
 
-Each product stands alone. When they're together: Veritas readiness can appear as evidence behind a [Flow](https://kontourai.github.io/flow/) gate, and [Flow Agents](https://kontourai.github.io/flow-agents/) attaches Veritas reports as optional governance evidence.
+Each product stands alone. When they're together: Veritas readiness appears as evidence behind a [Flow](https://kontourai.github.io/flow/) gate, and [Flow Agents](https://kontourai.github.io/flow-agents/) ships the **Veritas Governance Kit** — an agentless kit that projects a real `veritas readiness` verdict into a `software-readiness-verdict` trust.bundle claim the gate checks, and that owns the repo-installed governance surface (scaffold, hooks, standards authoring, agent guidance) by wrapping this engine's CLI. Veritas evaluates; the kit is the product surface built on it.
