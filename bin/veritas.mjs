@@ -16,6 +16,9 @@ import {
   runAttestCli,
   runIntegrationsCli,
   runSetupRepoHooksCli,
+  runClaudeCodePreToolUseCli,
+  runPrintClaudeCodePreToolUseHookCli,
+  runApplyClaudeCodePreToolUseHookCli,
   runClaimCli,
 } from '../src/index.mjs';
 
@@ -246,6 +249,26 @@ if (!subcommand || isHelpToken(subcommand)) {
     writeStdout('Usage:\n  veritas integrations codex|claude-code|cursor|copilot install|status|uninstall [--root <path>] [--force]\n');
   } else {
     runIntegrationsCli(tool, action, integrationArgs, { rootDir: cwd });
+  }
+} else if (subcommand === 'hooks') {
+  // The Claude Code PreToolUse hook surface (docs/reference/cli.md "hooks claude-code"):
+  // `pre-tool-use` is the runtime evaluator the installed hook shells into
+  // (`veritas hooks claude-code pre-tool-use "$@"`, src/hooks/suggestions.mjs — veritas#119);
+  // `print`/`apply` render and install that hook.
+  const [runtime, action, ...hookArgs] = args;
+  const HOOK_USAGE = 'Usage:\n  veritas hooks claude-code print [--root <path>]\n  veritas hooks claude-code apply [--root <path>] [--output <path>] [--force]\n  veritas hooks claude-code pre-tool-use [--file <path>] [--actor <id>] [--root <path>]\n';
+  if (runtime !== 'claude-code') {
+    writeStderr(HOOK_USAGE);
+    process.exitCode = 1;
+  } else if (action === 'pre-tool-use') {
+    runClaudeCodePreToolUseCli(hookArgs, { rootDir: cwd });
+  } else if (action === 'print') {
+    runPrintClaudeCodePreToolUseHookCli(hookArgs, { rootDir: cwd });
+  } else if (action === 'apply') {
+    runApplyClaudeCodePreToolUseHookCli(hookArgs, { rootDir: cwd });
+  } else {
+    writeStderr(HOOK_USAGE);
+    process.exitCode = 1;
   }
 } else {
   writeStderr(MAIN_USAGE);
