@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.5.1](https://github.com/kontourai/veritas/compare/v1.5.0...v1.5.1) (2026-07-18)
+
+
+### Fixes
+
+* route the veritas hooks claude-code subcommand (veritas[#119](https://github.com/kontourai/veritas/issues/119)) ([#125](https://github.com/kontourai/veritas/issues/125)) ([05be9dc](https://github.com/kontourai/veritas/commit/05be9dce30a7856d6a027f5ec612602de947c785))
+
 ## [1.5.0](https://github.com/kontourai/veritas/compare/v1.4.0...v1.5.0) (2026-07-17)
 
 
