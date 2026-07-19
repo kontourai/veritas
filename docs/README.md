@@ -21,6 +21,7 @@ Find what you need by what you're trying to do.
 ### Wire Veritas into my AI agent
 
 - [Agent Runtime Integrations](guides/agent-runtime-integrations.md) for Claude Code, Cursor, and Codex hooks
+- [Governance Kit](guides/governance-kit.md) for Git installation through Flow Agents and guided engine setup
 - [Agent Activation](design/agent-activation.md) for how Veritas reaches agents
 - [CLI Reference](reference/cli.md) for `explain`, boundary checks, and hook setup
 
@@ -67,6 +68,7 @@ Find what you need by what you're trying to do.
 - [Human Attestation](guides/attestation.md)
 - [Standards Recommendations](guides/recommendations.md)
 - [Agent Runtime Integrations](guides/agent-runtime-integrations.md)
+- [Governance Kit](guides/governance-kit.md)
 - [Start Your Next Project](guides/start-your-next-project.md)
 - [Tune For Your Team](guides/tune-for-your-team.md)
 - [Repo Conformance](guides/repo-conformance.md)

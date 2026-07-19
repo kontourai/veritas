@@ -8,8 +8,8 @@ import { hasReadinessOutcomeInputs, runMergeReadiness } from '../readiness/run.m
 
 function normalizeOutputFormat(format, defaultFormat) {
   const resolvedFormat = format ?? defaultFormat;
-  if (!['json', 'feedback'].includes(resolvedFormat)) {
-    throw new Error('--format must be json or feedback');
+  if (!['json', 'feedback', 'trust-bundle'].includes(resolvedFormat)) {
+    throw new Error('--format must be json, feedback, or trust-bundle');
   }
   return resolvedFormat;
 }
@@ -36,7 +36,8 @@ export async function runReadinessCheckCli(argv = process.argv.slice(2), default
           ? null
           : (evidenceCheckResult) => {
               if (evidenceCheckResult.runner !== 'bash') return;
-              if (evidenceCheckResult.stdout) process.stdout.write(evidenceCheckResult.stdout);
+              const outputStream = format === 'trust-bundle' ? process.stderr : process.stdout;
+              if (evidenceCheckResult.stdout) outputStream.write(evidenceCheckResult.stdout);
               if (evidenceCheckResult.stderr) process.stderr.write(evidenceCheckResult.stderr);
             },
       },
@@ -55,6 +56,18 @@ export async function runReadinessCheckCli(argv = process.argv.slice(2), default
     evidenceCheckPlan,
     options: standardsFeedbackOptions,
   } = readinessRun;
+
+  if (format === 'trust-bundle') {
+    const bundle = reportResult.record.trust?.bundle;
+    if (!bundle) {
+      throw new Error('readiness report did not contain a canonical trust.bundle projection');
+    }
+    process.stdout.write(`${JSON.stringify(bundle, null, 2)}\n`);
+    if (feedbackHasFailures(reportResult.record, evidenceCheckFailure)) {
+      process.exitCode = 1;
+    }
+    return;
+  }
 
   if (!hasReadinessOutcomeInputs(standardsFeedbackOptions)) {
     if (format === 'feedback') {

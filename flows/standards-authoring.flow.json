@@ -1,0 +1,35 @@
+{
+  "id": "veritas-governance.standards-authoring",
+  "version": "1.0",
+  "steps": [
+    { "id": "propose", "next": "apply" },
+    { "id": "apply", "next": null }
+  ],
+  "gates": {
+    "human-approval-gate": {
+      "step": "apply",
+      "expects": [
+        {
+          "id": "standards-authoring-approval",
+          "kind": "trust.bundle",
+          "required": true,
+          "description": "A maintainer reviewed the proposed Repo Standards plan and recorded a verified standards-authoring approval before application.",
+          "explore_hint": "Run `veritas init --explore` or `--guided`, review the plan, attach a standards-authoring-approval claim, and only then run `veritas init --apply --plan <path>`.",
+          "bundle_claim": {
+            "claimType": "standards-authoring-approval",
+            "subjectType": "repo-governance-change",
+            "accepted_statuses": ["verified"]
+          }
+        }
+      ],
+      "on_route_back": {
+        "missing_evidence": "apply",
+        "default": "apply"
+      },
+      "route_back_policy": {
+        "max_attempts": 3,
+        "on_exceeded": "block"
+      }
+    }
+  }
+}

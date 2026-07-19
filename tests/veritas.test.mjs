@@ -2152,6 +2152,42 @@ test('report CLI can emit an empty current-state artifact for a clean working tr
   assert.deepEqual(parsed.triggered_evidence_checks, []);
 });
 
+test('readiness CLI emits the canonical trust bundle for Flow Kit gates', () => {
+  const rootDir = initCommittedRepo('veritas-trust-bundle-cli-');
+  writeBootstrapStarterKit({ rootDir, projectName: 'Trust Bundle Demo' });
+  commitAll(rootDir, 'Bootstrap starter kit');
+
+  const stdout = execFileSync(
+    'npm',
+    [
+      'exec',
+      '--',
+      'veritas',
+      'readiness',
+      '--check',
+      'evidence',
+      '--root',
+      rootDir,
+      '--working-tree',
+      '--format',
+      'trust-bundle',
+      '--skip-evidence-check',
+      '--run-id',
+      'trust-bundle-smoke',
+    ],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  );
+  const bundle = parseCliJson(stdout);
+  const readinessClaim = bundle.claims.find(
+    (claim) => claim.claimType === 'software-readiness-verdict',
+  );
+
+  assert.equal(bundle.schemaVersion, 5);
+  assert.ok(readinessClaim, 'expected canonical software-readiness-verdict claim');
+  assert.equal(readinessClaim.subjectType, 'repository-change');
+  assert.equal(readinessClaim.status, 'verified');
+});
+
 test('report CLI preserves branch-diff behavior', () => {
   const rootDir = initCommittedRepo('veritas-branch-diff-cli-');
   writeBootstrapStarterKit({ rootDir, projectName: 'Branch Diff Demo' });

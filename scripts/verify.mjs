@@ -106,6 +106,7 @@ function assert(condition, message) {
 
 const readme = readText('README.md');
 const packageJson = readJson('package.json');
+const kitManifest = readJson('kit.json');
 
 assert(packageJson.name === '@kontourai/veritas', 'package.json must keep the published package name.');
 assert(packageJson.license === 'Apache-2.0', 'package.json must declare the Apache-2.0 license.');
@@ -129,6 +130,13 @@ assert(
   typeof packageJson.description === 'string' && packageJson.description.length > 0,
   'package.json must include a package description.',
 );
+assert(kitManifest.schema_version === '1.0', 'kit.json must use Flow Kit schema version 1.0.');
+assert(kitManifest.id === 'veritas-governance', 'kit.json must keep the stable kit id.');
+for (const section of ['flows', 'skills', 'docs']) {
+  for (const entry of kitManifest[section] ?? []) {
+    assert(fileExists(entry.path), `kit.json ${section} entry must exist: ${entry.path}`);
+  }
+}
 
 assert(
   readme.includes('## What You Get'),

@@ -1,0 +1,35 @@
+{
+  "id": "veritas-governance.readiness-check",
+  "version": "1.0",
+  "steps": [
+    { "id": "readiness", "next": "gate-check" },
+    { "id": "gate-check", "next": null }
+  ],
+  "gates": {
+    "gate-check-gate": {
+      "step": "gate-check",
+      "expects": [
+        {
+          "id": "readiness-verdict",
+          "kind": "trust.bundle",
+          "required": true,
+          "description": "A canonical Veritas readiness run produced a verified software-readiness-verdict claim for this repository change.",
+          "explore_hint": "Run `npm exec -- veritas readiness --check evidence --working-tree --format trust-bundle > readiness.bundle.json`, then attach readiness.bundle.json to this gate as a bundle.",
+          "bundle_claim": {
+            "claimType": "software-readiness-verdict",
+            "subjectType": "repository-change",
+            "accepted_statuses": ["verified"]
+          }
+        }
+      ],
+      "on_route_back": {
+        "missing_evidence": "gate-check",
+        "default": "gate-check"
+      },
+      "route_back_policy": {
+        "max_attempts": 3,
+        "on_exceeded": "block"
+      }
+    }
+  }
+}

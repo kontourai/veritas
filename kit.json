@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "id": "veritas-governance",
+  "name": "Veritas Governance Kit",
+  "product_name": "Veritas",
+  "description": "Installable governance workflows and agent guidance backed by the standalone @kontourai/veritas readiness engine.",
+  "flows": [
+    {
+      "id": "veritas-governance.readiness-check",
+      "path": "flows/readiness-check.flow.json",
+      "description": "Gate a repository change on the canonical Veritas software-readiness verdict."
+    },
+    {
+      "id": "veritas-governance.standards-authoring",
+      "path": "flows/standards-authoring.flow.json",
+      "description": "Review and approve a Veritas Repo Standards authoring plan before applying it."
+    }
+  ],
+  "skills": [
+    {
+      "id": "veritas-governance.setup-governance",
+      "path": "skills/setup-governance/SKILL.md",
+      "description": "Install or detect the Veritas CLI, author Repo Standards, configure hooks, attest the baseline, and run initial readiness."
+    },
+    {
+      "id": "veritas-governance.consult-standards",
+      "path": "skills/consult-standards/SKILL.md",
+      "description": "Pull just-in-time repo governance guidance from the Veritas engine before editing."
+    },
+    {
+      "id": "veritas-governance.standards-authoring",
+      "path": "skills/standards-authoring/SKILL.md",
+      "description": "Derive and human-review Repo Standards through the standards-authoring flow."
+    }
+  ],
+  "docs": [
+    {
+      "id": "veritas-governance.guide",
+      "path": "docs/guides/governance-kit.md",
+      "description": "Git installation, activation, engine setup, and readiness-gate guide."
+    }
+  ]
+}
