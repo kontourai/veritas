@@ -67,6 +67,7 @@
         "patterns": [
           "package.json",
           "package-lock.json",
+          "kit.json",
           "README.md",
           "CHANGELOG.md",
           "CONTEXT.md",
@@ -91,6 +92,22 @@
         "boundary": "strict",
         "boundaryAllow": [
           "docs-team"
+        ]
+      },
+      {
+        "id": "governance.flow-kit",
+        "kind": "product-area",
+        "label": "governance Flow Kit",
+        "patterns": [
+          "flows/",
+          "skills/"
+        ],
+        "owners": [
+          "governance-team"
+        ],
+        "boundary": "strict",
+        "boundaryAllow": [
+          "repo-core"
         ]
       },
       {
