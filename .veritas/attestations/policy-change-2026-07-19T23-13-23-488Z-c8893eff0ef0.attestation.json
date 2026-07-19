@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "id": "policy-change-2026-07-19T23-13-23-488Z-c8893eff0ef0",
+  "kind": "policy-change",
+  "actor": {
+    "id": "repo-core",
+    "displayName": "Brian Anderson",
+    "identityEvidence": {
+      "gitEmail": "brian.anderson1222@gmail.com",
+      "signingKeyFingerprint": null
+    }
+  },
+  "attestedAt": "2026-07-19T23:13:23.488Z",
+  "repoStandardsHash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
+  "repoMapHash": "sha256:f960e2cffbd32dadabfb2de3d61a6c83c8a7d66d5e5236d616dfb5dc5ac5f4cc",
+  "authoritySettingsHash": "sha256:192e1eeec727a0c18a372b76c4ed194eaa4faef0f6c6080f25a808aeeb660946",
+  "priorAttestationId": "policy-change-2026-07-01T03-36-48-637Z-6ce48338d05a",
+  "validUntilDays": 90,
+  "notes": "Cover the external governance Flow Kit in the Veritas Repo Map.",
+  "metadata": {
+    "protectedStandardsPaths": {
+      "repoStandardsPath": ".veritas/repo-standards/default.repo-standards.json",
+      "repoMapPath": ".veritas/repo-map.json",
+      "authoritySettingsPath": ".veritas/authority/default.authority-settings.json"
+    },
+    "supersedes": "policy-change-2026-07-01T03-36-48-637Z-6ce48338d05a",
+    "approvalRef": "codex-task-user-approval-2026-07-19",
+    "approvalRefPolicy": {
+      "mode": "reference-only",
+      "matchedPrefix": null,
+      "requiresResolution": false
+    },
+    "approvalResolution": null
+  },
+  "surface": {
+    "claim": {
+      "id": "veritas.attestation.policy-change-2026-07-19T23-13-23-488Z-c8893eff0ef0",
+      "subjectType": "veritas-protected-standards",
+      "subjectId": "protected-standards",
+      "facet": "veritas.attestations",
+      "claimType": "veritas-human-attestation",
+      "fieldOrBehavior": "policy-change",
+      "value": {
+        "contentHash": "e7ebc8e3f52bfa169c735ff05da4c734c2833ea5a279516b71d10fd8e3de2b6e",
+        "validUntil": "2026-10-17T23:13:23.488Z"
+      },
+      "createdAt": "2026-07-19T23:13:23.488Z",
+      "updatedAt": "2026-07-19T23:13:23.488Z",
+      "status": "verified",
+      "impactLevel": "high",
+      "confidenceBasis": {
+        "sourceQuality": "strong",
+        "reviewerAuthority": "human",
+        "evidenceStrength": "strong",
+        "impactLevel": "high"
+      }
+    },
+    "evidence": {
+      "id": "evidence.attestation.veritas.attestation.policy-change-2026-07-19T23-13-23-488Z-c8893eff0ef0",
+      "claimId": "veritas.attestation.policy-change-2026-07-19T23-13-23-488Z-c8893eff0ef0",
+      "evidenceType": "attestation",
+      "method": "attestation",
+      "sourceRef": "veritas:protected-standards",
+      "excerptOrSummary": "Cover the external governance Flow Kit in the Veritas Repo Map.",
+      "observedAt": "2026-07-19T23:13:23.488Z",
+      "collectedBy": "repo-core",
+      "integrityRef": "e7ebc8e3f52bfa169c735ff05da4c734c2833ea5a279516b71d10fd8e3de2b6e",
+      "metadata": {
+        "actor": {
+          "id": "repo-core",
+          "displayName": "Brian Anderson"
+        },
+        "attestedAt": "2026-07-19T23:13:23.488Z",
+        "validUntil": "2026-10-17T23:13:23.488Z",
+        "contentHash": "e7ebc8e3f52bfa169c735ff05da4c734c2833ea5a279516b71d10fd8e3de2b6e"
+      },
+      "sourceLocator": ".veritas/attestations"
+    },
+    "event": {
+      "id": "veritas.attestation.policy-change-2026-07-19T23-13-23-488Z-c8893eff0ef0.verified",
+      "claimId": "veritas.attestation.policy-change-2026-07-19T23-13-23-488Z-c8893eff0ef0",
+      "status": "verified",
+      "actor": "repo-core",
+      "method": "human attestation",
+      "evidenceIds": [
+        "evidence.attestation.veritas.attestation.policy-change-2026-07-19T23-13-23-488Z-c8893eff0ef0"
+      ],
+      "createdAt": "2026-07-19T23:13:23.488Z",
+      "verifiedAt": "2026-07-19T23:13:23.488Z"
+    }
+  }
+}

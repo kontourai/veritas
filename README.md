@@ -42,6 +42,22 @@ Once you've reviewed the generated standards, protect them with an authority-bac
 npx veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
 ```
 
+## Governance Kit
+
+This repository is also a root-valid Flow Kit repository. Install the Veritas Governance Kit
+directly from a pinned Git ref, activate its flows and skills, and then use its setup guidance to
+install or configure the standalone engine in the target repository:
+
+```bash
+npx @kontourai/flow-agents kit install \
+  https://github.com/kontourai/veritas.git#v1.5.1 --dest .
+npx @kontourai/flow-agents kit activate --dest . --format json
+```
+
+Git installation never executes setup scripts or silently installs the engine. See the
+[Governance Kit guide](docs/guides/governance-kit.md) for the reviewed engine-setup and readiness
+gate sequence.
+
 ## What You Get
 
 - **Executable repo standards** — requirements for tests, docs, protected files, shared contracts, release checks, security scans, and team-specific expectations.
@@ -104,6 +120,7 @@ That is the point: the agent gets the missing requirement before it declares don
 
 - [Full Documentation](https://kontourai.github.io/veritas/)
 - [Getting Started](docs/guides/getting-started.md)
+- [Governance Kit](docs/guides/governance-kit.md)
 - [Concepts Overview](docs/concepts.md)
 - [Glossary](docs/reference/glossary.md)
 - [Veritas and Surface](docs/veritas-and-surface.md)

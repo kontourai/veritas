@@ -33,7 +33,10 @@
   "files": [
     "LICENSE",
     "README.md",
+    "kit.json",
     "bin/",
+    "flows/",
+    "skills/",
     "src/",
     "schemas/",
     "repo-maps/",

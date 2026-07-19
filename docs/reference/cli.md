@@ -210,6 +210,8 @@ Every report also includes an `integrity` block. `integrity.sourceRef` mirrors t
 - every artifact includes `trust.bundle`, a Surface `TrustBundle` projection with claims, evidence, policies, and events
 - Veritas owns repo-native claimGroup and Surface owns generic validation and report generation
 - JSON is the default output; `--format feedback` prints the same lint-style findings used by hooks
+- `--format trust-bundle` writes only the report's canonical `trust.bundle` JSON to stdout,
+  suitable for direct attachment to a Flow gate; evidence-check diagnostics go to stderr
 - `--trend` prints the standards-feedback trend with sparklines and MTTR instead of generating a new report
 
 ### `explain`
@@ -235,6 +237,12 @@ npx @kontourai/veritas readiness --check boundaries --actor cli-team [--working-
 `--actor` is required unless `VERITAS_ACTOR` is set. Veritas intentionally does not fall back to the operating-system user, because CI runner names and shell usernames are not governance actors. If no actor is supplied, the command exits non-zero with a missing-actor failure.
 
 Strict nodes fail when the actor is neither an owner nor listed in `boundaryAllow`. This means a working tree that spans several strict work areas may legitimately fail for one actor while passing for another owner or allowlisted actor.
+
+To attach readiness directly to a trust-bundle gate, emit the canonical bundle without an adapter:
+
+```bash
+npx @kontourai/veritas readiness --working-tree --format trust-bundle > readiness.bundle.json
+```
 
 To turn a Veritas readiness artifact into a Surface trust report, use the `reportArtifactPath` returned by `veritas readiness --format json` as the stable path. Do not reconstruct `.kontourai/veritas/evidence/<run-id>.json` in downstream tools.
 

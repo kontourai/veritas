@@ -5,13 +5,13 @@ Kit migration, [flow-agents#646](https://github.com/kontourai/flow-agents/issues
 **Surveyed at:** `2a57022` (main). Every `file:line` reference below was verified against that
 commit.
 
-Veritas is splitting along one line: **`@kontourai/veritas` becomes a lean, standalone,
-importable evaluation-engine library**, and Veritas's repo-installed **product surface** (init
-scaffold, hook setup, runtime integrations, standards authoring, agent guidance, dashboards)
-moves into the flow-agents **veritas-governance kit**, which wraps the engine and never
-reimplements it. This document classifies every capability in `src/` as **engine** (stays) or
-**surface** (moves), freezes the engine API the kit and other consumers depend on, and names the
-coupling surgery Slices 2–7 must perform.
+Veritas is split along one line: **`@kontourai/veritas` is a lean, standalone, importable
+evaluation-engine library**, while Veritas's repo-installed **product surface** is expressed by
+the root-installable `veritas-governance` Flow Kit in this same product repository. Flow Agents
+is the neutral host that installs and activates the kit; it does not own or bundle Veritas
+solution semantics. The kit wraps the engine and never reimplements it. This document classifies
+capabilities as **engine** or **surface**, freezes the engine API the kit and other consumers
+depend on, and records the one-way boundary between them.
 
 ## Invariants
 
@@ -20,13 +20,13 @@ coupling surgery Slices 2–7 must perform.
    the path constant `FLOW_AGENTS_RUNTIME_PREFIX` in `src/conformance/content-boundary.mjs:13`).
 2. **The kit wraps the engine; it never reimplements Repo Standards / evidence-check
    evaluation.** The kit's adapter
-   (`flow-agents/kits/veritas-governance/adapter/readiness-to-trust-bundle.mjs`) only reads
-   Veritas's recorded results. (It deliberately mirrors the blocking-failure *derivation* over
-   those recorded results — that is reading, not re-evaluating, and the derivation itself is
-   frozen below.)
-3. **Kits distribute by copy/activate/CLI, never as npm library imports.** Surface code moved
-   into the kit therefore consumes the engine **via CLI + artifacts only**. This is exactly why
-   the engine cannot live inside the kit, and why the freeze below has two channels.
+   consumes the canonical `record.trust.bundle` emitted by Veritas. `veritas readiness --format
+   trust-bundle` exposes that projection directly, so the kit owns no parallel blocking-failure
+   derivation.
+3. **Kits distribute by Git install/copy/activate/CLI, never as npm library imports.** The kit
+   consumes the engine **via CLI + artifacts only** even though both are maintained in one
+   repository. Repository colocation does not create a library dependency from the engine to
+   Flow Agents.
 4. **Kits declare process; the anchor enforces** (flow-agents ADR 0017/0022). Nothing in this
    split moves enforcement into the kit.
 
@@ -43,7 +43,7 @@ The engine has two kinds of consumer, and they use different contracts:
 
 | Channel | Consumers | Contract |
 | --- | --- | --- |
-| **CLI + artifact** | the veritas-governance kit (adapter + flows), repo hooks installed by the kit, CI | frozen CLI invocations, the evidence-record artifact, the projected claim shape |
+| **CLI + artifact** | the veritas-governance kit, repo hooks installed with kit guidance, CI | frozen CLI invocations, the evidence-record artifact, the projected claim shape |
 | **Library import** | station, in-process CI checks, any future embedder | frozen named exports of `@kontourai/veritas` |
 
 ### Channel 1 (frozen): CLI + artifact contract
@@ -60,12 +60,10 @@ The engine has two kinds of consumer, and they use different contracts:
    (`src/report/artifacts.mjs:12`, `src/util/run-id.mjs:12`) — the default run id happens to
    start with `veritas-`, an explicit `--run-id foo` produces `foo.json`. Written by
    `writeEvidenceArtifact` (`src/report/artifacts.mjs:9`).
-3. **Record fields the kit adapter reads** (must not change shape or semantics):
-   `uncovered_path_result`, `policy_results[].{passed,enforcementLevel,rule_id}`,
-   `selected_evidence_checks[].{id,evidence_check_result.passed}`,
-   `external_tool_results[].{blocking,verdict}`, `integrity.sourceRef` (fallback `source_ref`),
-   `run_id`, `timestamp`. (`rule_id` and `id` feed the emitted claim's summary/value —
-   adapter lines 95–101 — so they are contract, not decoration.)
+3. **Portable gate artifact:** `veritas readiness --format trust-bundle` writes the canonical
+   `record.trust.bundle` projection to stdout. The full evidence record retains its existing
+   fields for audit and local inspection, but the kit no longer reconstructs readiness from
+   those internal fields.
 4. **Projected claim shape** (`src/surface/projected-claims.mjs`, `buildReadinessVerdictClaim`
    at line 77): `facet: 'veritas.readiness'` (line 83),
    `claimType: 'software-readiness-verdict'` (line 84), `fieldOrBehavior: 'mergeReadiness'`
@@ -76,12 +74,11 @@ The engine has two kinds of consumer, and they use different contracts:
    tool `fail`/`missing` is **not-ready/rejected regardless of `promotion_allowed`**
    (`readinessHasBlockingFailure`, `src/surface/readiness.mjs:13-19`, checked *before* the
    `promotion_allowed` short-circuit at `src/surface/readiness.mjs:2-3,8-9`; regression-tested
-   in `tests/surface/readiness-verdict.test.mjs:16`). This is the semantics the kit adapter
-   independently derives; veritas#106 (the former `promotion_allowed` bypass) is fixed, so the
-   module's `readinessVerdict`/`readinessSurfaceStatus` now agree with the adapter and their
-   semantics are frozen with it. (These functions are module-level exports of
+   in `tests/surface/readiness-verdict.test.mjs:16`). Veritas owns that derivation and emits its
+   result directly in the canonical bundle; no kit adapter independently derives it. These
+   functions are module-level exports of
    `src/surface/readiness.mjs` but are **not re-exported from the package root today** — see
-   the Channel 2 note below.)
+   the Channel 2 note below.
 
 ### Channel 2 (frozen): library exports
 
