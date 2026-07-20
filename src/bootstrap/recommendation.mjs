@@ -22,6 +22,13 @@ import { GENERATED_OUTPUT_IGNORE_ENTRIES, mergeGeneratedOutputIgnores } from './
 import { assertWithinDir, veritasArtifactPath, veritasArtifactRepoPath } from '../paths.mjs';
 
 const INIT_RECOMMENDATION_SCHEMA_VERSION = 1;
+const GOVERNANCE_CORE_PATHS = [
+  '.veritas/README.md',
+  '.veritas/GOVERNANCE.md',
+  '.veritas/repo-map.json',
+  '.veritas/repo-standards/default.repo-standards.json',
+  '.veritas/authority/default.authority-settings.json',
+];
 
 function sha256Hex(value) {
   return createHash('sha256').update(value).digest('hex');
@@ -79,7 +86,7 @@ function recommendedSurfaces(repoInsights) {
   }));
 }
 
-function ownerQuestions(repoInsights) {
+function ownerQuestions(repoInsights, existingGovernance) {
   const questions = [
     {
       id: 'canonical-evidenceCheck',
@@ -134,6 +141,14 @@ function ownerQuestions(repoInsights) {
     });
   }
 
+  if (existingGovernance.detected) {
+    questions.push({
+      id: 'replace-existing-governance',
+      group: 'brownfield',
+      question: 'Veritas detected existing authored governance. Should re-authoring explicitly replace it instead of preserving it and adding only uncovered work areas?',
+    });
+  }
+
   return questions;
 }
 
@@ -151,15 +166,58 @@ function recommendedEvidenceInventory(repoInsights) {
   }));
 }
 
-function buildArtifactPayloads({ rootDir, projectName, evidenceCheck, repoInsights, selectedInstructionTargets, ownerAnswers }) {
-  const repoMap = buildStarterRepoMap({
+function existingGovernanceState(rootDir) {
+  const presentPaths = GOVERNANCE_CORE_PATHS.filter((path) => existsSync(resolve(rootDir, path)));
+  return {
+    detected: presentPaths.includes('.veritas/repo-map.json')
+      && presentPaths.includes('.veritas/repo-standards/default.repo-standards.json')
+      && presentPaths.includes('.veritas/authority/default.authority-settings.json'),
+    present_paths: presentPaths,
+  };
+}
+
+function pathCoveredByExistingNode(pattern, existingNodes) {
+  return existingNodes.some((node) => (node.patterns ?? []).some((existingPattern) => existingPattern === pattern));
+}
+
+function mergeDiscoveredNodes(existingRepoMap, starterRepoMap) {
+  const merged = structuredClone(existingRepoMap);
+  const existingNodes = Array.isArray(merged.graph?.nodes) ? merged.graph.nodes : [];
+  const discoveredNodes = Array.isArray(starterRepoMap.graph?.nodes) ? starterRepoMap.graph.nodes : [];
+  const existingIds = new Set(existingNodes.map((node) => node.id));
+  const appendedNodes = discoveredNodes.filter((node) => {
+    if (existingIds.has(node.id)) return false;
+    const patterns = Array.isArray(node.patterns) ? node.patterns : [];
+    return patterns.some((pattern) => !pathCoveredByExistingNode(pattern, existingNodes));
+  });
+  if (!merged.graph || typeof merged.graph !== 'object') merged.graph = {};
+  merged.graph.nodes = [...existingNodes, ...appendedNodes];
+  return { repoMap: merged, appendedNodes };
+}
+
+function buildArtifactPayloads({ rootDir, projectName, evidenceCheck, repoInsights, selectedInstructionTargets, ownerAnswers, existingGovernance }) {
+  const starterRepoMap = buildStarterRepoMap({
     projectName,
     evidenceCheck,
     repoInsights,
     instructionTargets: selectedInstructionTargets,
   });
-  const repoStandards = buildStarterRepoStandards({ projectName, instructionTargets: selectedInstructionTargets });
-  const authoritySettings = buildStarterAuthoritySettings({ projectName, evidenceCheck });
+  const replaceExistingGovernance = ownerAnswers.replaceExistingGovernance
+    ?? ownerAnswers.replace_existing_governance
+    ?? false;
+  const preserveExistingGovernance = existingGovernance.detected && !replaceExistingGovernance;
+  let repoMap = starterRepoMap;
+  let appendedNodes = [];
+  if (preserveExistingGovernance) {
+    const existingRepoMap = JSON.parse(readFileSync(resolve(rootDir, '.veritas/repo-map.json'), 'utf8'));
+    ({ repoMap, appendedNodes } = mergeDiscoveredNodes(existingRepoMap, starterRepoMap));
+  }
+  const repoStandards = preserveExistingGovernance
+    ? JSON.parse(readFileSync(resolve(rootDir, '.veritas/repo-standards/default.repo-standards.json'), 'utf8'))
+    : buildStarterRepoStandards({ projectName, instructionTargets: selectedInstructionTargets });
+  const authoritySettings = preserveExistingGovernance
+    ? JSON.parse(readFileSync(resolve(rootDir, '.veritas/authority/default.authority-settings.json'), 'utf8'))
+    : buildStarterAuthoritySettings({ projectName, evidenceCheck });
   const recommendationSummary = [
     `- Mode: guided initialization artifact`,
     `- Repo kind: \`${repoInsights.repoKind}\``,
@@ -167,15 +225,20 @@ function buildArtifactPayloads({ rootDir, projectName, evidenceCheck, repoInsigh
     `- Selected instruction targets: ${selectedInstructionTargets.map((target) => `\`${target.path}\``).join(', ') || '`none`'}`,
   ].join('\n');
   const governanceBlock = buildGovernanceBlock();
-  const payloads = {
-    '.veritas/README.md': buildBootstrapReadme({
+  const generatedReadme = buildBootstrapReadme({
       projectName,
       evidenceCheck,
       repoInsights,
       recommendationSummary,
       ownerAnswers,
-    }),
-    '.veritas/GOVERNANCE.md': buildGovernanceInstructions(),
+    });
+  const payloads = {
+    '.veritas/README.md': preserveExistingGovernance && existsSync(resolve(rootDir, '.veritas/README.md'))
+      ? readFileSync(resolve(rootDir, '.veritas/README.md'), 'utf8')
+      : generatedReadme,
+    '.veritas/GOVERNANCE.md': preserveExistingGovernance && existsSync(resolve(rootDir, '.veritas/GOVERNANCE.md'))
+      ? readFileSync(resolve(rootDir, '.veritas/GOVERNANCE.md'), 'utf8')
+      : buildGovernanceInstructions(),
     '.veritas/repo-map.json': jsonPayload(repoMap),
     '.veritas/repo-standards/default.repo-standards.json': jsonPayload(repoStandards),
     '.veritas/authority/default.authority-settings.json': jsonPayload(authoritySettings),
@@ -187,7 +250,15 @@ function buildArtifactPayloads({ rootDir, projectName, evidenceCheck, repoInsigh
     payloads[target.path] = replaceGovernanceBlock(existingContent, governanceBlock);
   }
 
-  return payloads;
+  return {
+    payloads,
+    preservation: {
+      detected_existing_governance: existingGovernance.detected,
+      preserved_existing_governance: preserveExistingGovernance,
+      explicit_replacement_requested: replaceExistingGovernance,
+      appended_work_area_node_ids: appendedNodes.map((node) => node.id),
+    },
+  };
 }
 
 function artifactHashes(payloads) {
@@ -206,13 +277,15 @@ export function buildInitRecommendation({
   const resolvedEvidenceCheck = ownerAnswers.evidenceCheck ?? evidenceCheck ?? repoInsights.evidenceCheck;
   const selectedInstructionTargets = selectedInstructionTargetsFromAnswers(rootDir, ownerAnswers);
   validateInstructionTargetPaths(rootDir, selectedInstructionTargets);
-  const artifactPayloads = buildArtifactPayloads({
+  const existingGovernance = existingGovernanceState(rootDir);
+  const { payloads: artifactPayloads, preservation } = buildArtifactPayloads({
     rootDir,
     projectName,
     evidenceCheck: resolvedEvidenceCheck,
     repoInsights,
     selectedInstructionTargets,
     ownerAnswers,
+    existingGovernance,
   });
 
   return {
@@ -231,17 +304,24 @@ export function buildInitRecommendation({
     recommended_evidence_inventory: recommendedEvidenceInventory(repoInsights),
     existing_verification: repoInsights.existingVerification,
     external_boundaries: repoInsights.externalBoundaries,
+    existing_governance: {
+      ...existingGovernance,
+      ...preservation,
+    },
     recommended_surfaces: recommendedSurfaces(repoInsights),
     recommended_instruction_targets: recommendedInstructionTargets(rootDir, selectedInstructionTargets),
     selected_instruction_targets: selectedInstructionTargets,
     generated_output_ignores: GENERATED_OUTPUT_IGNORE_ENTRIES,
-    owner_questions: ownerQuestions(repoInsights),
+    owner_questions: ownerQuestions(repoInsights, existingGovernance),
     owner_answers: ownerAnswers,
     apply_command: 'npx @kontourai/veritas init --apply --plan <path-to-this-artifact>',
     reasoning_summary: [
       `Detected repo kind \`${repoInsights.repoKind}\`.`,
       `Selected evidenceCheck \`${resolvedEvidenceCheck}\`.`,
       `Selected instruction targets: ${selectedInstructionTargets.map((target) => target.path).join(', ')}.`,
+      ...(preservation.preserved_existing_governance
+        ? [`Preserved existing authored Repo Standards, authority settings, governance guidance, and repository context; appended ${preservation.appended_work_area_node_ids.length} uncovered work-area node(s).`]
+        : []),
       ...(repoInsights.externalBoundaries.length > 0
         ? [`Preserved ${repoInsights.externalBoundaries.length} repository-declared external authority boundary hint(s).`]
         : []),

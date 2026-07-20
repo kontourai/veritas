@@ -95,6 +95,8 @@ export function validateOwnerAnswers(answers) {
     'review_rules',
     'protectedPaths',
     'protected_paths',
+    'replaceExistingGovernance',
+    'replace_existing_governance',
     'notes',
   ]);
   for (const key of Object.keys(answers)) {
@@ -103,6 +105,10 @@ export function validateOwnerAnswers(answers) {
   const selected = answers.selectedInstructionTargets ?? answers.selected_instruction_targets;
   if (selected !== undefined && !Array.isArray(selected)) {
     throw new Error('init answers selectedInstructionTargets must be an array');
+  }
+  const replaceExistingGovernance = answers.replaceExistingGovernance ?? answers.replace_existing_governance;
+  if (replaceExistingGovernance !== undefined && typeof replaceExistingGovernance !== 'boolean') {
+    throw new Error('init answers replaceExistingGovernance must be a boolean');
   }
   return answers;
 }

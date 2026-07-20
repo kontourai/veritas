@@ -108,6 +108,7 @@ Guided initialization splits setup into a reviewed artifact flow:
 - `--guided --answers <answers.json>` folds owner-provided boundaries, style, evidence-check, and instruction-target choices into the recommendation.
 - `--output` is intentionally constrained to `.veritas/init-plans/` so reviewed setup plans stay repo-local and obvious.
 - `--apply --plan <path>` is the only guided write path. It validates the plan schema, target root, payload hashes, and overwrite rules before writing.
+- Re-authoring an already-governed repository preserves its authored Repo Standards, authority settings, governance guidance, and repository context by default. Deterministically discovered work areas are appended only when their paths are not already covered. An owner may explicitly request starter replacement with `replaceExistingGovernance: true` in guided answers.
 - Brownfield repos with existing guidance or convergence scripts also receive an `existing_verification` inventory and a recommended evidence-check inventory. Unknown catch evidence stays candidate/advisory until a maintainer supplies owner and review evidence.
 - Unknown init flags fail before any files are written.
 
