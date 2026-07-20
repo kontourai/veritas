@@ -53,7 +53,7 @@ npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas readiness --working
 ```
 
 This invocation uses npm's execution cache without writing the consumer manifest or lockfile.
-The exact `1.5.1` version is the approved engine pin in this example; never substitute `latest`,
+The exact `1.5.2` version is the approved engine pin in this example; never substitute `latest`,
 a range, or a different version without renewed maintainer approval. For a repository without a
 package manifest, init configures a Node runtime smoke check so the first readiness run is
 runnable. Replace that smoke check with the repository's real evidenceCheck before promoting it.
