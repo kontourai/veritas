@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import packageManifest from '../package.json' with { type: 'json' };
 import {
   runStandardsFeedbackDraftCli,
   runStandardsFeedbackObserveCli,
@@ -23,6 +24,7 @@ import {
 } from '../src/index.mjs';
 
 const MAIN_USAGE = `Usage:
+  veritas --version
   veritas init [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--template <name>] [--force]
   veritas readiness [--check evidence|boundaries|coverage] [--root <path>] [--working-tree] [--actor <id>] [--format feedback|json|trust-bundle]
   veritas explain <ruleId|workArea|filePath> [--file <path>] [--work-area <id>] [--root <path>]
@@ -128,7 +130,9 @@ process.on('uncaughtException', (error) => {
   process.exit(2);
 });
 
-if (!subcommand || isHelpToken(subcommand)) {
+if (subcommand === '--version' || subcommand === '-V') {
+  writeStdout(`${packageManifest.version}\n`);
+} else if (!subcommand || isHelpToken(subcommand)) {
   writeStdout(MAIN_USAGE);
 } else if (subcommand === 'init') {
   if (args.some(isHelpToken)) {

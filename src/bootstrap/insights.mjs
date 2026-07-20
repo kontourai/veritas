@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadJson } from '../load.mjs';
 
@@ -22,6 +22,77 @@ function detectTestRoots(rootDir) {
   return ['tests/', 'test/', 'spec/'].filter((path) =>
     existsSync(resolve(rootDir, path)),
   );
+}
+
+const GENERATED_TOP_LEVEL_DIRS = new Set([
+  '_site',
+  'build',
+  'coverage',
+  'dist',
+  'node_modules',
+  'out',
+  'playwright-report',
+  'results',
+  'scratch',
+  'target',
+  'test-results',
+]);
+
+const GENERATED_TOP_LEVEL_PREFIXES = [
+  'build-',
+  'build_',
+  'coverage-',
+  'coverage_',
+  'dist-',
+  'dist_',
+  'out-',
+  'out_',
+  'results-',
+  'results_',
+  'scratch-',
+  'scratch_',
+  'test-results-',
+  'test-results_',
+];
+
+function isGeneratedTopLevelDir(name) {
+  return GENERATED_TOP_LEVEL_DIRS.has(name) ||
+    GENERATED_TOP_LEVEL_PREFIXES.some((prefix) => name.startsWith(prefix));
+}
+
+function gitVisibleTopLevelDirs(rootDir) {
+  if (!existsSync(resolve(rootDir, '.git'))) return null;
+  try {
+    const output = execFileSync(
+      'git',
+      ['ls-files', '-z', '--cached', '--others', '--exclude-standard'],
+      { cwd: rootDir, windowsHide: true },
+    );
+    return new Set(
+      output.toString('utf8')
+        .split('\0')
+        .filter(Boolean)
+        .map((path) => path.replaceAll('\\', '/').split('/')[0]),
+    );
+  } catch (error) {
+    if (error?.status === 128) return null;
+    throw error;
+  }
+}
+
+function detectProductRoots(rootDir, classifiedRoots) {
+  const classified = new Set(classifiedRoots.map((root) => root.replace(/\/$/, '')));
+  const gitVisibleRoots = gitVisibleTopLevelDirs(rootDir);
+  return readdirSync(rootDir, { withFileTypes: true })
+    .filter((entry) =>
+      entry.isDirectory() &&
+      !entry.name.startsWith('.') &&
+      !classified.has(entry.name) &&
+      !isGeneratedTopLevelDir(entry.name) &&
+      (gitVisibleRoots === null || gitVisibleRoots.has(entry.name)),
+    )
+    .map((entry) => `${entry.name}/`)
+    .sort((left, right) => left.localeCompare(right));
 }
 
 function inferBaseRef(rootDir) {
@@ -205,6 +276,7 @@ export function inferBootstrapRepoInsights(rootDir) {
   const sourceRoots = detectSourceRoots(rootDir);
   const toolingRoots = detectToolingRoots(rootDir);
   const testRoots = detectTestRoots(rootDir);
+  const productRoots = detectProductRoots(rootDir, [...sourceRoots, ...toolingRoots, ...testRoots]);
   const hasWorkflows = existsSync(resolve(rootDir, '.github/workflows'));
   const hasWorkspaceConfig =
     existsSync(resolve(rootDir, 'pnpm-workspace.yaml')) ||
@@ -279,6 +351,7 @@ export function inferBootstrapRepoInsights(rootDir) {
     sourceRoots,
     toolingRoots,
     testRoots,
+    productRoots,
     hasWorkflows,
     evidenceCheck,
     enableWorkAreaEvidenceRouting: repoKind === 'workspace' || toolingRoots.length > 0,

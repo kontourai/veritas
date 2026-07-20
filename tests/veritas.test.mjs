@@ -1726,6 +1726,26 @@ test('init explore output is constrained to .veritas/init-plans', () => {
   assert.equal(readJsonFromAbsolute(outputPath).artifact_hashes['.veritas/repo-map.json'], recommendation.artifact_hashes['.veritas/repo-map.json']);
 });
 
+test('init apply merges the shared generated-output ignore disclosed by exploration', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-runtime-ignore-'));
+  writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { test: 'node --test' } }, null, 2));
+  writeFileSync(join(rootDir, '.gitignore'), 'node_modules/\n');
+  const planPath = '.veritas/init-plans/runtime-ignore.json';
+
+  const recommendation = parseCliJson(runLocalVeritas([
+    'init', '--explore', '--root', rootDir, '--output', planPath,
+  ]));
+  const applied = parseCliJson(runLocalVeritas([
+    'init', '--apply', '--root', rootDir, '--plan', planPath,
+  ]));
+
+  assert.deepEqual(recommendation.generated_output_ignores, ['.kontourai/']);
+  assert.deepEqual(applied.generatedOutputIgnores, ['.kontourai/']);
+  const ignore = readFileSync(join(rootDir, '.gitignore'), 'utf8');
+  assert.equal(ignore, 'node_modules/\n\n.kontourai/\n');
+  assert.doesNotMatch(ignore, /\.surface|\.veritas/);
+});
+
 test('init guided answers drive the reviewed apply artifact', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-guided-'));
   writeFileSync(
@@ -2407,6 +2427,7 @@ test('report CLI preserves branch-diff behavior', () => {
   assert.equal(parsed.source_kind, 'branch-diff');
   assert.deepEqual(parsed.source_scope, ['changed-from:HEAD~1', 'changed-to:HEAD']);
   assert.deepEqual(parsed.files, [
+    '.gitignore',
     '.veritas/GOVERNANCE.md',
     '.veritas/README.md',
     '.veritas/authority/default.authority-settings.json',
@@ -2479,7 +2500,7 @@ test('report writes one trimmed Surface claim input per claim', async () => {
   }, {}, ['package.json']);
 
   assert.equal(result.claimInputPaths.length, result.record.trust.bundle.claims.length);
-  assert.match(result.consoleReadModelPath, /^\.surface\/runs\/claim-input-smoke\.console\.json$/);
+  assert.match(result.consoleReadModelPath, /^\.kontourai\/veritas\/surface\/claim-input-smoke\.console\.json$/);
   const console = readJsonFromAbsolute(join(rootDir, result.consoleReadModelPath));
   assert.equal(console.kind, 'surface-console-read-model');
   assert.equal(console.source, 'veritas:claim-input-smoke');
@@ -2496,7 +2517,7 @@ test('report writes one trimmed Surface claim input per claim', async () => {
   assert.ok(console.policies.some((policy) => policy.id === 'veritas.policy-result'));
   assert.ok(console.graph.nodes.some((node) => node.kind === 'claim'));
   assert.ok(console.graph.edges.some((edge) => edge.kind === 'supports'));
-  const consoleIndex = readJsonFromAbsolute(join(rootDir, '.surface/runs/latest.json'));
+  const consoleIndex = readJsonFromAbsolute(join(rootDir, '.kontourai/veritas/surface/latest.json'));
   assert.equal(consoleIndex.latestRunId, 'claim-input-smoke');
   assert.equal(consoleIndex.readModelPath, result.consoleReadModelPath);
   for (const relativePath of result.claimInputPaths) {
@@ -2510,16 +2531,16 @@ test('report writes one trimmed Surface claim input per claim', async () => {
   }
 });
 
-test('surface.config.json readModelPath points at the location the console writer actually writes (ops#18)', () => {
+test('surface.config.json readModelPath points at the shared runtime location the console writer actually writes', () => {
   // Regression guard: writeSurfaceConsoleReadModel writes its index to
-  // .surface/runs/latest.json (CONSOLE_DIR + 'latest.json'), the same file the
+  // .kontourai/veritas/surface/latest.json (CONSOLE_DIR + 'latest.json'), the same file the
   // claim-input-smoke test reads above. The `surface console` reader consumes
   // surface.config.json#readModelPath, so it must point at that exact file —
   // previously it referenced .veritas/surface-console/latest.json, which nothing
   // writes, leaving `npm run veritas:console` reading a non-existent read-model.
   const configPath = fileURLToPath(new URL('../surface.config.json', import.meta.url));
   const config = JSON.parse(readFileSync(configPath, 'utf8'));
-  assert.equal(config.readModelPath, '.surface/runs/latest.json');
+  assert.equal(config.readModelPath, '.kontourai/veritas/surface/latest.json');
 });
 
 test('report rejects run ids that would escape output directories', async () => {
@@ -5652,6 +5673,73 @@ test('adaptive bootstrap detects a workspace-shaped repo', () => {
   assert.equal(repoMap.evidence.uncoveredPathPolicy, 'warn');
   assert.match(bootstrapReadme, /Repo kind: `workspace`/);
   assert.match(bootstrapReadme, /Work-Area Evidence Routing/);
+});
+
+test('adaptive bootstrap inventories substantive workspace roots and merges only the shared runtime ignore', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-workspace-inventory-'));
+  writeFileSync(join(rootDir, 'package.json'), JSON.stringify({
+    private: true,
+    workspaces: ['packages/*'],
+    scripts: { verify: 'turbo run verify' },
+  }, null, 2));
+  writeFileSync(join(rootDir, '.gitignore'), 'node_modules/\ncoverage/\n');
+  for (const directory of [
+    'agent-cards', 'agents', 'context', 'evals', 'kits', 'packaging', 'powers', 'prompts',
+    'schemas', 'skills', 'packages/app', 'scripts', 'tests', 'dist', '.kontourai/veritas',
+    '.surface/runs',
+  ]) {
+    mkdirp(join(rootDir, directory));
+  }
+
+  const result = writeBootstrapStarterKit({ rootDir, projectName: 'Portfolio Workspace' });
+  const repoMap = readJsonFromAbsolute(join(rootDir, '.veritas/repo-map.json'));
+  const productPatterns = repoMap.graph.nodes
+    .filter((node) => node.id.startsWith('product.'))
+    .map((node) => node.patterns[0]);
+
+  assert.deepEqual(result.repoInsights.productRoots, [
+    'agent-cards/', 'agents/', 'context/', 'evals/', 'kits/', 'packaging/', 'powers/',
+    'prompts/', 'schemas/', 'skills/',
+  ]);
+  assert.deepEqual(productPatterns, result.repoInsights.productRoots);
+  assert.equal(new Set(repoMap.graph.nodes.map((node) => node.id)).size, repoMap.graph.nodes.length);
+  assert.equal(productPatterns.includes('dist/'), false);
+  const ignore = readFileSync(join(rootDir, '.gitignore'), 'utf8');
+  assert.equal(ignore, 'node_modules/\ncoverage/\n\n.kontourai/\n');
+  assert.doesNotMatch(ignore, /\.surface|\.veritas/);
+  assert.deepEqual(result.generatedOutputIgnores, ['.kontourai/']);
+
+  const repeat = writeBootstrapStarterKit({ rootDir, projectName: 'Portfolio Workspace', force: true });
+  assert.deepEqual(repeat.generatedOutputIgnores, []);
+  assert.equal(readFileSync(join(rootDir, '.gitignore'), 'utf8').match(/\.kontourai\//g)?.length, 1);
+});
+
+test('adaptive bootstrap excludes ignored and generated roots while retaining Git-visible product roots', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-workspace-git-inventory-'));
+  execGitFixture(['init', '-b', 'main'], { cwd: rootDir, encoding: 'utf8' });
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  writeFileSync(join(rootDir, '.gitignore'), 'ignored-product/\n');
+  for (const directory of [
+    'dist-ui-1784563', 'results', 'scratch', 'out', '_site', 'ignored-product', 'kits',
+    'untracked-product',
+  ]) {
+    mkdirp(join(rootDir, directory));
+    writeFileSync(join(rootDir, directory, 'artifact.txt'), `${directory}\n`);
+  }
+  execGitFixture(
+    ['add', 'package.json', '.gitignore', 'kits/artifact.txt'],
+    { cwd: rootDir, encoding: 'utf8' },
+  );
+
+  const insights = inferBootstrapRepoInsights(rootDir);
+
+  assert.deepEqual(insights.productRoots, ['kits/', 'untracked-product/']);
+  assert.equal(insights.productRoots.includes('ignored-product/'), false);
+  assert.equal(insights.productRoots.some((root) => root.startsWith('dist-ui-')), false);
+  assert.equal(insights.productRoots.includes('results/'), false);
+  assert.equal(insights.productRoots.includes('scratch/'), false);
+  assert.equal(insights.productRoots.includes('out/'), false);
+  assert.equal(insights.productRoots.includes('_site/'), false);
 });
 
 test('adaptive bootstrap infers the evidenceCheck through the shipped CLI path', () => {

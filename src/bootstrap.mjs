@@ -21,6 +21,7 @@ import {
   selectExistingInstructionTargets,
   validateInstructionTargetPaths,
 } from './bootstrap/guidance.mjs';
+import { mergeGeneratedOutputIgnores } from './bootstrap/generated-output-ignore.mjs';
 import { veritasArtifactPath } from './paths.mjs';
 
 export {
@@ -152,6 +153,7 @@ export function writeBootstrapStarterKit({
   for (const [filePath, payload] of plan.textFiles) {
     writeFileSync(filePath, payload, 'utf8');
   }
+  const ignoreResult = mergeGeneratedOutputIgnores(rootDir);
 
   return {
     rootDir: plan.rootDir,
@@ -160,6 +162,10 @@ export function writeBootstrapStarterKit({
     evidenceCheck: plan.evidenceCheck,
     repoInsights: plan.repoInsights,
     codeownersBlock: plan.codeownersBlock,
-    generatedFiles: plan.generatedFiles,
+    generatedFiles: [
+      ...plan.generatedFiles,
+      ...(ignoreResult.changed ? [ignoreResult.path] : []),
+    ],
+    generatedOutputIgnores: ignoreResult.addedEntries,
   };
 }

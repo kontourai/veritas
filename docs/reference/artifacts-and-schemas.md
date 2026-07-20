@@ -38,8 +38,8 @@ These are the paths the current CLI writes into a target repo.
 - `.veritas/attestations/PENDING`
 - `.kontourai/veritas/evidence/<run-id>.json`
 - `.kontourai/veritas/claims/<claim-id>.input.json`
-- `.surface/runs/<run-id>.console.json`
-- `.surface/runs/latest.json`
+- `.kontourai/veritas/surface/<run-id>.console.json`
+- `.kontourai/veritas/surface/latest.json`
 - `.kontourai/veritas/standards-feedback-drafts/<run-id>.json`
 - `.kontourai/veritas/standards-feedback/<run-id>.json`
 - `.kontourai/veritas/standards-feedback/history.jsonl`
@@ -472,7 +472,7 @@ The `evidence` and `events` arrays are filtered to the single `claim.id`, and `p
 
 #### Surface Console Read Model
 
-When `trust.bundle` and `trust.report` are present, Veritas writes `.surface/runs/<run-id>.console.json` plus `.surface/runs/latest.json`. These files are derived and gitignored. They are the Veritas-side integration contract for the Surface Console and analytics layer.
+When `trust.bundle` and `trust.report` are present, Veritas writes `.kontourai/veritas/surface/<run-id>.console.json` plus `.kontourai/veritas/surface/latest.json`. These files are derived and gitignored under the shared runtime root. They are the Veritas-side integration contract for the Surface Console and analytics layer.
 
 The read model has `kind: "surface-console-read-model"` and `contract: "surface.analytics-compatible"`. Those are current implementation values. It includes:
 
