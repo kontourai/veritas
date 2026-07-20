@@ -43,4 +43,6 @@ jobs:
       # SHA-pinned (mutable tags are not trusted for a cross-repo action that gates merges).
       - uses: kontourai/flow-agents/.github/actions/trust-verify@f2efb33ef683793bbec01dcf7e909f3e1423c04d # flow-agents @ locked action runtime dependencies
         with:
-          verify-command: "npm run verify && npm test && npm run test:coverage:check"
+          # Keep `npm test` as a temporary second manifest lane so the in-flight
+          # #147 Builder bundle (recorded before `test:ci` existed) reconciles.
+          verify-command: "npm run test:ci,npm test"
