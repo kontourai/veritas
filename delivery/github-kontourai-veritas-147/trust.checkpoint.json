@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "slug": "github-kontourai-veritas-147",
+  "work_item": null,
+  "status": "in_progress",
+  "phase": "release",
+  "sealed_at": "2026-07-20T19:24:16Z",
+  "commit_sha": "382d509fa674bfce32ebcea5cf1bb6df9708633e",
+  "checkpoint": {
+    "asOf": "2026-07-20T19:24:16.460Z",
+    "statusByClaimId": {
+      "github-kontourai-veritas-147-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-147-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-b5bcde5f25fe2694ffa73cd56e6a985848d6b907cabe83159b78fecef7b49abe-gate-visit-2026-07-20t19-02-27z": "verified",
+      "github-kontourai-veritas-147-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-147-is-bounded-assigned-conflict-free-and-ready-gate-visit-2026-07-20t19-03-06-938z": "verified",
+      "github-kontourai-veritas-147-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.deterministic-inference-and-reviewable-authority-boundaries-are-explicit-gate-visit-2026-07-20t19-03-07-531z": "verified",
+      "github-kontourai-veritas-147-gate-claim-implementation-plan.flow-agents-workflow.implementation-plan-covers-deterministic-inference-persistence-boundaries-tests-and-docs-gate-visit-2026-07-20t19-03-18-148z": "verified",
+      "github-kontourai-veritas-147-gate-claim-implementation-scope.flow-agents-workflow.implemented-the-bounded-issue-147-scope-without-modifying-protected-standards-gate-visit-2026-07-20t19-03-18-724z": "verified",
+      "github-kontourai-veritas-147-gate-claim-tests-evidence.flow-agents-workflow.all-declared-acceptance-criteria-pass-the-298-test-suite-completed-with-297-passing-1-skipped-and-0-failing-repository-verification-and-the-coverage-gate-also-passed-independently-gate-visit-2026-07-20t19-11-33-738z": "verified",
+      "github-kontourai-veritas-147-gate-claim-merge-readiness.flow-agents-workflow.acceptance-evidence-is-complete-the-seven-file-diff-is-scoped-all-local-and-hosted-implementation-checks-pass-and-trust-verify-has-the-expected-fresh-bundle-follow-up-gate-visit-2026-07-20t19-13-36-522z": "verified",
+      "github-kontourai-veritas-147-station-multi-root-shape-is-discovered.flow-agents-workflow.station-multi-root-shape-is-discovered-verified-2026-07-20t19-11-33-738z": "verified",
+      "github-kontourai-veritas-147-ops-knowledge-roots-are-discovered.flow-agents-workflow.ops-knowledge-roots-are-discovered-verified-2026-07-20t19-11-33-738z": "verified",
+      "github-kontourai-veritas-147-surface-external-authority-is-preserved.flow-agents-workflow.surface-external-authority-is-preserved-verified-2026-07-20t19-11-33-738z": "verified",
+      "github-kontourai-veritas-147-explore-persists-a-review-artifact-by-default.flow-agents-workflow.explore-persists-a-review-artifact-by-default-verified-2026-07-20t19-11-33-738z": "verified",
+      "github-kontourai-veritas-147-final-code-review.flow-agents-workflow.diff-review-found-no-open-correctness-security-or-scope-findings-after-restoring-the-compact-top-level-help-contract-reviewed-2026-07-20t19-04-17-755z-superseded-final-code-review-2026-07-20t19-20-29-060z": "proposed",
+      "github-kontourai-veritas-147-final-code-review.flow-agents-workflow.post-rebase-review-confirms-the-deterministic-exploration-implementation-plus-the-canonical-test-ci-alignment-remain-scoped-and-correct-reviewed-2026-07-20t19-20-29-060z": "verified"
+    },
+    "throughEventCreatedAt": "2026-07-20T19:20:29.060Z",
+    "throughEventCreatedAtByClaimId": {
+      "github-kontourai-veritas-147-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-147-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-b5bcde5f25fe2694ffa73cd56e6a985848d6b907cabe83159b78fecef7b49abe-gate-visit-2026-07-20t19-02-27z": "2026-07-20T19:20:29.060Z",
+      "github-kontourai-veritas-147-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-147-is-bounded-assigned-conflict-free-and-ready-gate-visit-2026-07-20t19-03-06-938z": "2026-07-20T19:20:29.060Z",
+      "github-kontourai-veritas-147-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.deterministic-inference-and-reviewable-authority-boundaries-are-explicit-gate-visit-2026-07-20t19-03-07-531z": "2026-07-20T19:20:29.060Z",
+      "github-kontourai-veritas-147-gate-claim-implementation-plan.flow-agents-workflow.implementation-plan-covers-deterministic-inference-persistence-boundaries-tests-and-docs-gate-visit-2026-07-20t19-03-18-148z": "2026-07-20T19:20:29.060Z",
+      "github-kontourai-veritas-147-gate-claim-implementation-scope.flow-agents-workflow.implemented-the-bounded-issue-147-scope-without-modifying-protected-standards-gate-visit-2026-07-20t19-03-18-724z": "2026-07-20T19:20:29.060Z",
+      "github-kontourai-veritas-147-gate-claim-tests-evidence.flow-agents-workflow.all-declared-acceptance-criteria-pass-the-298-test-suite-completed-with-297-passing-1-skipped-and-0-failing-repository-verification-and-the-coverage-gate-also-passed-independently-gate-visit-2026-07-20t19-11-33-738z": "2026-07-20T19:20:29.060Z",
+      "github-kontourai-veritas-147-gate-claim-merge-readiness.flow-agents-workflow.acceptance-evidence-is-complete-the-seven-file-diff-is-scoped-all-local-and-hosted-implementation-checks-pass-and-trust-verify-has-the-expected-fresh-bundle-follow-up-gate-visit-2026-07-20t19-13-36-522z": "2026-07-20T19:20:29.060Z",
+      "github-kontourai-veritas-147-station-multi-root-shape-is-discovered.flow-agents-workflow.station-multi-root-shape-is-discovered-verified-2026-07-20t19-11-33-738z": "2026-07-20T19:11:33.738Z",
+      "github-kontourai-veritas-147-ops-knowledge-roots-are-discovered.flow-agents-workflow.ops-knowledge-roots-are-discovered-verified-2026-07-20t19-11-33-738z": "2026-07-20T19:11:33.738Z",
+      "github-kontourai-veritas-147-surface-external-authority-is-preserved.flow-agents-workflow.surface-external-authority-is-preserved-verified-2026-07-20t19-11-33-738z": "2026-07-20T19:11:33.738Z",
+      "github-kontourai-veritas-147-explore-persists-a-review-artifact-by-default.flow-agents-workflow.explore-persists-a-review-artifact-by-default-verified-2026-07-20t19-11-33-738z": "2026-07-20T19:11:33.738Z",
+      "github-kontourai-veritas-147-final-code-review.flow-agents-workflow.diff-review-found-no-open-correctness-security-or-scope-findings-after-restoring-the-compact-top-level-help-contract-reviewed-2026-07-20t19-04-17-755z-superseded-final-code-review-2026-07-20t19-20-29-060z": null,
+      "github-kontourai-veritas-147-final-code-review.flow-agents-workflow.post-rebase-review-confirms-the-deterministic-exploration-implementation-plus-the-canonical-test-ci-alignment-remain-scoped-and-correct-reviewed-2026-07-20t19-20-29-060z": "2026-07-20T19:20:29.060Z"
+    },
+    "statusFunctionVersion": "2"
+  }
+}
