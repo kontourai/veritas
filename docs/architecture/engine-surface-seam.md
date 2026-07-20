@@ -1,7 +1,7 @@
 # Engine / Surface Seam
 
-**Status:** ratified seam inventory + engine API freeze (Slice 1 of the thick Veritas Governance
-Kit migration, [flow-agents#646](https://github.com/kontourai/flow-agents/issues/646)).
+**Status:** ratified seam inventory + completed Veritas Governance Kit migration
+([flow-agents#646–#652](https://github.com/kontourai/flow-agents/issues/646)).
 **Surveyed at:** `2a57022` (main). Every `file:line` reference below was verified against that
 commit.
 
@@ -12,6 +12,17 @@ is the neutral host that installs and activates the kit; it does not own or bund
 solution semantics. The kit wraps the engine and never reimplements it. This document classifies
 capabilities as **engine** or **surface**, freezes the engine API the kit and other consumers
 depend on, and records the one-way boundary between them.
+
+## Epic closeout (2026-07-19)
+
+The migration landed with one deliberate refinement to the original slice plan: the engine and
+the `veritas-governance` kit are colocated in this repository as one product, while Flow Agents
+remains their generic installer and host. The public package import is engine-only. Product CLIs
+remain as thin engine entrypoints because the kit invokes them through explicit commands and
+artifacts. A Git kit install only copies and activates declared assets; it does not execute setup
+code. The `setup-governance` skill therefore performs initialization and hook installation as an
+explicit, reviewed follow-up. The capability inventory below remains useful as historical design
+evidence; its issue destinations are resolved outcomes, not pending moves.
 
 ## Invariants
 
@@ -138,25 +149,25 @@ prerequisite").
 | Foundations | `src/paths.mjs`, `src/load.mjs`, `src/shell.mjs`, `src/util/*`, `src/args.mjs` (engine parsers) | `load.mjs`'s standards-feedback/marker loaders and `args.mjs`'s surface parsers move (splits C/F) |
 | Thin CLI | `bin/veritas.mjs` (readiness subcommands), `bin/veritas-report.mjs`, `src/cli/readiness-check.mjs`, `readiness-coverage.mjs`, `report.mjs` (default path) | `report.mjs --trend` delegates to surface analytics and moves with it |
 
-### Surface — moves into the veritas-governance kit
+### Surface — resolved through the veritas-governance kit
 
 | Capability | Files | Destination |
 | --- | --- | --- |
-| Init scaffold | `src/cli/init.mjs`, `src/bootstrap.mjs`, `src/bootstrap/*` | [#647](https://github.com/kontourai/flow-agents/issues/647) |
+| Init scaffold | `src/cli/init.mjs`, `src/bootstrap.mjs`, `src/bootstrap/*` | #647: retained as thin CLI invoked by `setup-governance` |
 | Standards authoring + feedback workflow | `src/standards-feedback/*`, `src/cli/standards-feedback.mjs`, `veritas feedback */recommendation *` commands | #647 |
 | Claim authoring | `src/cli/claims.mjs`, `src/claims/init.mjs`, `src/claims/templates.mjs`, claim-store write path | #647 |
 | Attestation **authoring** | `src/attestations.mjs:120,214,318` (`writePendingAttestationMarker`, `createAttestation`, `assertAttestationApprovalReference`), `src/attestations/approval.mjs`, `src/attestations/collection.mjs`, `src/approval-resolvers.mjs`, `src/cli/attest.mjs` | #647 (paired with `recommendation decide`) |
-| Hook setup + installers | `src/hooks.mjs`, `src/hooks/*` (incl. `setupRepoHooks`, `src/hooks/git-hooks.mjs:121`), `src/cli/setup*.mjs` | [#648](https://github.com/kontourai/flow-agents/issues/648); `pre-tool-use.mjs` needs split G first |
+| Hook setup + installers | `src/hooks.mjs`, `src/hooks/*` (incl. `setupRepoHooks`, `src/hooks/git-hooks.mjs:121`), `src/cli/setup*.mjs` | #648: explicit `setup-governance` orchestration; no install-time mutation |
 | Runtime integrations | `src/integrations/*` (codex, claude-code, cursor/copilot, session logs) | #648 |
-| Just-in-time agent guidance | **does not exist as MCP today** (see finding below); PreToolUse hook (`src/hooks/pre-tool-use.mjs`) is the only live guidance mechanism; `veritas explain` CLI wrapper | [#649](https://github.com/kontourai/flow-agents/issues/649) — built new in the kit |
-| Conformance dashboard | `src/conformance/run.mjs` (`buildRepoConformanceSnapshot:179` calls `runMergeReadiness` directly at `:187` — a model surface-consumes-engine call), `governance-surface.mjs`, `governance-trend.mjs` | [#650](https://github.com/kontourai/flow-agents/issues/650) removal; kit equivalent is a follow-up decision |
-| Surface Console (dashboard read model) | `src/surface/console.mjs`, `console-*.mjs` | #650 removal; crossing 2 must land first |
+| Just-in-time agent guidance | `veritas explain` evaluation plus kit-owned `consult-standards` guidance | #649: shipped without a standing MCP server |
+| Conformance dashboard | `src/conformance/run.mjs`, `governance-surface.mjs`, `governance-trend.mjs` | #650: excluded from the public package import; retained as internal CLI support |
+| Surface Console (dashboard read model) | `src/surface/console.mjs`, `console-*.mjs` | #650: excluded from the public package import; retained internally |
 | Governance-block **apply** | `src/governance.mjs:9,66,106` (`buildGovernanceBlock`, `replaceGovernanceBlock`, `applyGovernanceBlocks`) | #647 (init/scaffold) |
 
 **Rule for moved code:** everything in this table, once in the kit, talks to the engine only
 through Channel 1 (CLI + artifacts). Nothing in the kit imports `@kontourai/veritas`.
 
-## Coupling surgery (what Slices 2–5 must actually cut)
+## Historical coupling analysis (Slices 2–5)
 
 The import graph is already almost clean: surface→engine calls are fine (that seam survives as
 CLI/artifact calls). Three **engine→surface** couplings (five crossing import statements) and
@@ -248,14 +259,14 @@ re-exports the product surface, but only to back the `bin/veritas*.mjs` CLIs and
 which import it by *relative path* (relative imports bypass the `exports` map). No source was
 deleted: the surface stays on disk to serve the retained thin CLIs (below). Station's package-name
 imports resolve engine-only; the `tests/engine-subpath.test.mjs` package-root test pins it.
-Deleting the genuinely-unused standalone-CLI surface (e.g. `veritas setup repo-hooks`, superseded
-by the kit's hook provisioning; `veritas integrations`, blocked on veritas#119) is a separate
-product decision, not folded into this API-boundary change.
+Deleting standalone CLI surfaces is a separate product decision, not part of this migration.
+`veritas setup repo-hooks` is intentionally retained because `setup-governance` invokes it after
+explicit user consent; Git installation itself remains non-executing.
 
 ### Kit-wrapped CLIs stay (owner decision, #650)
 
 The engine subpath is the library boundary; it does **not** decide the CLI boundary. The
-flow-agents veritas-governance kit consumes veritas only through CLI/artifacts (kits cannot
+root `veritas-governance` kit consumes Veritas only through CLI/artifacts (kits cannot
 import the engine), and its shipped skills shell into specific commands: `standards-authoring`
 runs `veritas init --explore`/`--apply`, and `consult-standards` runs `veritas explain`. So
 `veritas readiness`, `veritas explain`, and `veritas init --explore`/`--apply` **remain as thin
