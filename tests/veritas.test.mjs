@@ -1384,10 +1384,7 @@ test('init CLI writes a conservative starter kit and report CLI can use it', asy
 
   assert.equal(starterRepoMap.name, 'demo-starter');
   assert.equal(starterRepoMap.graph.nodes[0]['governance-locked'], true);
-  assert.deepEqual(starterRepoMap.activation.aiInstructionFiles.slice(0, 2), [
-    { path: 'AGENTS.md', tool: 'codex', required: true },
-    { path: 'CLAUDE.md', tool: 'claude-code', required: true },
-  ]);
+  assert.deepEqual(starterRepoMap.activation.aiInstructionFiles, []);
   assert.equal(starterRepoStandards.name, 'demo-starter-default');
   assert.ok(
     starterRepoStandards.rules.some((rule) => rule.match?.['governance-block']),
@@ -1400,8 +1397,8 @@ test('init CLI writes a conservative starter kit and report CLI can use it', asy
   assert.match(governanceInstructions, /\.veritas\/repo-standards\//);
   assert.match(governanceInstructions, /Standards Growth is additive/);
   assert.match(governanceInstructions, /Generated Evidence is output/);
-  assert.match(readFileSync(join(rootDir, 'AGENTS.md'), 'utf8'), /veritas:governance-block:start/);
-  assert.match(readFileSync(join(rootDir, 'CLAUDE.md'), 'utf8'), /veritas:governance-block:start/);
+  assert.equal(existsSync(join(rootDir, 'AGENTS.md')), false);
+  assert.equal(existsSync(join(rootDir, 'CLAUDE.md')), false);
 
   const reportResult = (await generateVeritasReport({
     rootDir,
@@ -1837,6 +1834,7 @@ test('external Veritas CLI initializes a non-npm repository without creating a m
     { cwd: rootDir, encoding: 'utf8' },
   );
   assert.equal(parseCliJson(explore).mode, 'explore');
+  assert.equal(parseCliJson(explore).evidenceCheck, 'node -e "process.exit(0)"');
   assert.equal(existsSync(join(rootDir, 'package.json')), false);
 
   const apply = execFileSync(
@@ -1852,7 +1850,7 @@ test('external Veritas CLI initializes a non-npm repository without creating a m
 
   const readiness = execFileSync(
     'node',
-    [cliPath, 'readiness', '--root', rootDir, '--skip-evidence-check', 'AGENTS.md'],
+    [cliPath, 'readiness', '--root', rootDir, 'AGENTS.md'],
     { cwd: rootDir, encoding: 'utf8' },
   );
   assert.match(readiness, /PASS/);
@@ -1861,11 +1859,15 @@ test('external Veritas CLI initializes a non-npm repository without creating a m
 
 test('setup-governance documents the manifest-preserving external engine path', () => {
   const skill = readFileSync(join(repoRootDir, 'skills/setup-governance/SKILL.md'), 'utf8');
+  const guide = readFileSync(join(repoRootDir, 'docs/guides/governance-kit.md'), 'utf8');
   assert.match(skill, /maintainer-approved external engine/);
   assert.match(skill, /consumer manifest or lockfile/);
   assert.match(skill, /pinned engine invocation/);
   assert.match(skill, /veritas_engine_path="\$\(command -v veritas\)"/);
   assert.match(skill, /npm exec --yes --package=@kontourai\/veritas@1\.5\.1 -- veritas/);
+  assert.match(guide, /Non-npm repositories/);
+  assert.match(guide, /npm exec --yes --package=@kontourai\/veritas@1\.5\.1 -- veritas readiness --working-tree/);
+  assert.match(guide, /without writing the consumer manifest or lockfile/);
 });
 
 test('init guided rejects instruction targets outside the target root before reading', () => {
@@ -2410,8 +2412,6 @@ test('report CLI preserves branch-diff behavior', () => {
     '.veritas/authority/default.authority-settings.json',
     '.veritas/repo-map.json',
     '.veritas/repo-standards/default.repo-standards.json',
-    'AGENTS.md',
-    'CLAUDE.md',
     'veritas.claims.json',
   ]);
 });

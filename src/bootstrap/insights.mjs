@@ -228,7 +228,11 @@ export function inferBootstrapRepoInsights(rootDir) {
       ? ['docs:build', 'build', 'test', 'verify']
       : ['ci:fast', 'verify', 'test:smoke', 'test', 'build'];
   const matchingScript = scriptPriority.find((name) => typeof scripts[name] === 'string');
-  const packageEvidenceCheck = matchingScript ? `npm run ${matchingScript}` : 'npm test';
+  const packageEvidenceCheck = matchingScript
+    ? `npm run ${matchingScript}`
+    : packageJson
+      ? 'npm test'
+      : 'node -e "process.exit(0)"';
   const existingVerification = detectExistingVerification(rootDir, scripts);
   const conflicts = [...existingVerification.conflicts];
   if (existingVerification.authoritativeCommands.length > 1) {
@@ -266,7 +270,9 @@ export function inferBootstrapRepoInsights(rootDir) {
     ? 'repo-declared AI instructions'
     : matchingScript
       ? 'package.json scripts'
-      : 'fallback';
+      : packageJson
+        ? 'fallback'
+        : 'node runtime smoke fallback';
 
   return {
     repoKind,
