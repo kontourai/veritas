@@ -48,6 +48,11 @@ npx @kontourai/veritas readiness --check boundaries --actor cli-team [--diff mai
 
 `readiness` is the recommended current front door for evidenceCheck execution, generated evidence, standards feedback drafting, and change guidance. `readiness --check boundaries` replaces `boundaries check`. `readiness --check coverage` is the current command for readiness coverage. `readiness --check evidence` is the current command for the lower-level generated evidence path.
 
+Readiness keeps its generated Surface projection under the ignored `.kontourai/veritas/surface/`
+runtime root. Use `--projection-output <repo-relative-file>` to retain an additional copy at an
+explicit location for CI upload or inspection. The explicit destination is caller-owned and is not
+automatically ignored; existing files require `--force`.
+
 ### `--version`
 
 Prints the installed `@kontourai/veritas` package version and exits successfully. Use it to record

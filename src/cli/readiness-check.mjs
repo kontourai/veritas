@@ -1,5 +1,7 @@
-import { resolve } from 'node:path';
+import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
+import { dirname, relative, resolve } from 'node:path';
 import { parseReadinessArgs } from '../args.mjs';
+import { assertWithinDir } from '../paths.mjs';
 import {
   buildFeedbackSummary,
   feedbackHasFailures,
@@ -19,6 +21,19 @@ function handleSurfaceValidationCliError(error) {
   process.stderr.write(`${error.message}\n`);
   process.exitCode = 2;
   return null;
+}
+
+function retainProjection({ rootDir, reportResult, outputPath, force }) {
+  if (!outputPath) return null;
+  const sourcePath = resolve(rootDir, reportResult.consoleReadModelPath);
+  const destinationPath = resolve(rootDir, outputPath);
+  assertWithinDir(destinationPath, rootDir, 'readiness --projection-output must stay inside the target repository');
+  if (existsSync(destinationPath) && !force) {
+    throw new Error(`Refusing to overwrite existing projection output: ${relative(rootDir, destinationPath)}`);
+  }
+  mkdirSync(dirname(destinationPath), { recursive: true });
+  copyFileSync(sourcePath, destinationPath);
+  return relative(rootDir, destinationPath).replaceAll('\\', '/');
 }
 
 export async function runReadinessCheckCli(argv = process.argv.slice(2), defaults = {}) {
@@ -56,6 +71,12 @@ export async function runReadinessCheckCli(argv = process.argv.slice(2), default
     evidenceCheckPlan,
     options: standardsFeedbackOptions,
   } = readinessRun;
+  const projectionOutputPath = retainProjection({
+    rootDir,
+    reportResult,
+    outputPath: options.projectionOutputPath,
+    force: options.force,
+  });
 
   if (format === 'trust-bundle') {
     const bundle = reportResult.record.trust?.bundle;
@@ -99,6 +120,7 @@ export async function runReadinessCheckCli(argv = process.argv.slice(2), default
           draftArtifactPath: draftResult.artifactPath,
           reportRunId: reportResult.record.run_id,
           reportSourceKind: reportResult.record.source_kind,
+          ...(projectionOutputPath ? { projectionOutputPath } : {}),
           suggestedFeedbackCommand: draftResult.suggestedRecordCommand,
           message:
             'Evidence Check, report, and standards feedback draft completed. The final judgment fields still need confirmation.',
@@ -144,6 +166,7 @@ export async function runReadinessCheckCli(argv = process.argv.slice(2), default
         standardsFeedbackArtifactPath: standardsFeedbackResult.artifactPath,
         reportRunId: reportResult.record.run_id,
         reportSourceKind: reportResult.record.source_kind,
+        ...(projectionOutputPath ? { projectionOutputPath } : {}),
         feedbackMode: standardsFeedbackResult.record.mode,
       },
       null,

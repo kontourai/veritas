@@ -474,6 +474,10 @@ The `evidence` and `events` arrays are filtered to the single `claim.id`, and `p
 
 When `trust.bundle` and `trust.report` are present, Veritas writes `.kontourai/veritas/surface/<run-id>.console.json` plus `.kontourai/veritas/surface/latest.json`. These files are derived and gitignored under the shared runtime root. They are the Veritas-side integration contract for the Surface Console and analytics layer.
 
+The ignored runtime copy is owned by Veritas and may be replaced by later readiness runs. A copy
+retained with `veritas readiness --projection-output <path>` is owned by the caller and persists
+until the caller removes it; Veritas refuses to overwrite it unless `--force` is supplied.
+
 The read model has `kind: "surface-console-read-model"` and `contract: "surface.analytics-compatible"`. Those are current implementation values. It includes:
 
 - `producer`: Veritas readiness check id, source ref, evidence artifact path, and per-claim input slice paths
