@@ -136,7 +136,7 @@ if (subcommand === '--version' || subcommand === '-V') {
   writeStdout(MAIN_USAGE);
 } else if (subcommand === 'init') {
   if (args.some(isHelpToken)) {
-    writeStdout('Usage:\n  veritas init [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--template <name>] [--force] [--non-interactive]\n');
+    writeStdout('Usage:\n  veritas init [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--template <name>] [--force] [--non-interactive]\n  veritas init --explore [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--output <path>]\n  veritas init --guided --answers <path> [--root <path>] [--project-name <name>] [--output <path>]\n  veritas init --apply --plan <path> [--root <path>] [--force]\n');
   } else {
     runInitCli(args, { rootDir: cwd });
   }
