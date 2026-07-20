@@ -1568,7 +1568,7 @@ test('init explore deterministically inventories Station, Ops, and declared exte
 test('init explore preserves mature governance and appends only uncovered work areas', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-mature-governance-'));
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { verify: 'node --test' } }));
-  for (const root of ['src', 'docs']) mkdirp(join(rootDir, root));
+  for (const root of ['src', 'docs', 'packages/widget']) mkdirp(join(rootDir, root));
   mkdirp(join(rootDir, '.veritas/repo-standards'));
   mkdirp(join(rootDir, '.veritas/authority'));
   const existingRepoMap = {
@@ -1576,7 +1576,10 @@ test('init explore preserves mature governance and appends only uncovered work a
     name: 'mature',
     graph: {
       version: 1,
-      nodes: [{ id: 'mature.src', kind: 'product-area', label: 'src', patterns: ['src/'], owners: ['product-team'] }],
+      nodes: [
+        { id: 'mature.src', kind: 'product-area', label: 'src', patterns: ['src/'], owners: ['product-team'] },
+        { id: 'mature.package.widget', kind: 'shared-package', label: 'widget', patterns: ['packages/widget/'], owners: ['product-team'] },
+      ],
     },
     evidence: { evidenceChecks: [{ id: 'mature-check', command: 'npm run verify' }] },
   };
@@ -1601,7 +1604,7 @@ test('init explore preserves mature governance and appends only uncovered work a
   assert.equal(recommendation.artifact_payloads['.veritas/GOVERNANCE.md'], 'mature governance\n');
   assert.deepEqual(
     recommendation.recommended_repo_map.graph.nodes.map((node) => node.id),
-    ['mature.src', 'governance.guidance', 'governance.root-manifests', 'docs.docs', 'verification.tests'],
+    ['mature.src', 'mature.package.widget', 'governance.guidance', 'governance.root-manifests', 'docs.docs', 'verification.tests'],
   );
   assert.deepEqual(recommendation.existing_governance.appended_work_area_node_ids, [
     'governance.guidance',
