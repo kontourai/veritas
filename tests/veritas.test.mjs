@@ -1864,9 +1864,9 @@ test('setup-governance documents the manifest-preserving external engine path', 
   assert.match(skill, /consumer manifest or lockfile/);
   assert.match(skill, /pinned engine invocation/);
   assert.match(skill, /veritas_engine_path="\$\(command -v veritas\)"/);
-  assert.match(skill, /npm exec --yes --package=@kontourai\/veritas@1\.5\.1 -- veritas/);
+  assert.match(skill, /npm exec --yes --package=@kontourai\/veritas@1\.5\.2 -- veritas/);
   assert.match(guide, /Non-npm repositories/);
-  assert.match(guide, /npm exec --yes --package=@kontourai\/veritas@1\.5\.1 -- veritas readiness --working-tree/);
+  assert.match(guide, /npm exec --yes --package=@kontourai\/veritas@1\.5\.2 -- veritas readiness --working-tree/);
   assert.match(guide, /without writing the consumer manifest or lockfile/);
 });
 
