@@ -54,6 +54,8 @@ test('filesystem observer infers standards feedback fields without session log',
     files: ['src/app.mjs'],
   };
   writeFileSync(join(rootDir, '.kontourai/veritas/evidence/pass-run.json'), `${JSON.stringify(evidence, null, 2)}\n`);
+  mkdirSync(join(rootDir, 'src'), { recursive: true });
+  writeFileSync(join(rootDir, 'src/app.mjs'), 'export const ready = true;\n');
   execFileSync('git', ['add', '.'], { cwd: rootDir });
   execFileSync('git', ['commit', '-m', 'Evidence'], { cwd: rootDir });
 

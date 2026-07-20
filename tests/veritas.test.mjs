@@ -2427,6 +2427,7 @@ test('report CLI preserves branch-diff behavior', () => {
   assert.equal(parsed.source_kind, 'branch-diff');
   assert.deepEqual(parsed.source_scope, ['changed-from:HEAD~1', 'changed-to:HEAD']);
   assert.deepEqual(parsed.files, [
+    '.gitignore',
     '.veritas/GOVERNANCE.md',
     '.veritas/README.md',
     '.veritas/authority/default.authority-settings.json',
@@ -5711,6 +5712,34 @@ test('adaptive bootstrap inventories substantive workspace roots and merges only
   const repeat = writeBootstrapStarterKit({ rootDir, projectName: 'Portfolio Workspace', force: true });
   assert.deepEqual(repeat.generatedOutputIgnores, []);
   assert.equal(readFileSync(join(rootDir, '.gitignore'), 'utf8').match(/\.kontourai\//g)?.length, 1);
+});
+
+test('adaptive bootstrap excludes ignored and generated roots while retaining Git-visible product roots', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-workspace-git-inventory-'));
+  execGitFixture(['init', '-b', 'main'], { cwd: rootDir, encoding: 'utf8' });
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  writeFileSync(join(rootDir, '.gitignore'), 'ignored-product/\n');
+  for (const directory of [
+    'dist-ui-1784563', 'results', 'scratch', 'out', '_site', 'ignored-product', 'kits',
+    'untracked-product',
+  ]) {
+    mkdirp(join(rootDir, directory));
+    writeFileSync(join(rootDir, directory, 'artifact.txt'), `${directory}\n`);
+  }
+  execGitFixture(
+    ['add', 'package.json', '.gitignore', 'kits/artifact.txt'],
+    { cwd: rootDir, encoding: 'utf8' },
+  );
+
+  const insights = inferBootstrapRepoInsights(rootDir);
+
+  assert.deepEqual(insights.productRoots, ['kits/', 'untracked-product/']);
+  assert.equal(insights.productRoots.includes('ignored-product/'), false);
+  assert.equal(insights.productRoots.some((root) => root.startsWith('dist-ui-')), false);
+  assert.equal(insights.productRoots.includes('results/'), false);
+  assert.equal(insights.productRoots.includes('scratch/'), false);
+  assert.equal(insights.productRoots.includes('out/'), false);
+  assert.equal(insights.productRoots.includes('_site/'), false);
 });
 
 test('adaptive bootstrap infers the evidenceCheck through the shipped CLI path', () => {

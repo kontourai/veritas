@@ -25,23 +25,71 @@ function detectTestRoots(rootDir) {
 }
 
 const GENERATED_TOP_LEVEL_DIRS = new Set([
+  '_site',
   'build',
   'coverage',
   'dist',
   'node_modules',
+  'out',
   'playwright-report',
+  'results',
+  'scratch',
   'target',
   'test-results',
 ]);
 
+const GENERATED_TOP_LEVEL_PREFIXES = [
+  'build-',
+  'build_',
+  'coverage-',
+  'coverage_',
+  'dist-',
+  'dist_',
+  'out-',
+  'out_',
+  'results-',
+  'results_',
+  'scratch-',
+  'scratch_',
+  'test-results-',
+  'test-results_',
+];
+
+function isGeneratedTopLevelDir(name) {
+  return GENERATED_TOP_LEVEL_DIRS.has(name) ||
+    GENERATED_TOP_LEVEL_PREFIXES.some((prefix) => name.startsWith(prefix));
+}
+
+function gitVisibleTopLevelDirs(rootDir) {
+  if (!existsSync(resolve(rootDir, '.git'))) return null;
+  try {
+    const output = execFileSync(
+      'git',
+      ['ls-files', '-z', '--cached', '--others', '--exclude-standard'],
+      { cwd: rootDir, windowsHide: true },
+    );
+    return new Set(
+      output.toString('utf8')
+        .split('\0')
+        .filter(Boolean)
+        .map((path) => path.replaceAll('\\', '/').split('/')[0]),
+    );
+  } catch (error) {
+    if (error?.status === 128) return null;
+    throw error;
+  }
+}
+
 function detectProductRoots(rootDir, classifiedRoots) {
   const classified = new Set(classifiedRoots.map((root) => root.replace(/\/$/, '')));
+  const gitVisibleRoots = gitVisibleTopLevelDirs(rootDir);
   return readdirSync(rootDir, { withFileTypes: true })
     .filter((entry) =>
       entry.isDirectory() &&
       !entry.name.startsWith('.') &&
       !classified.has(entry.name) &&
-      !GENERATED_TOP_LEVEL_DIRS.has(entry.name),
+      !isGeneratedTopLevelDir(entry.name) &&
+      (gitVisibleRoots === null || gitVisibleRoots.has(entry.name)),
     )
     .map((entry) => `${entry.name}/`)
     .sort((left, right) => left.localeCompare(right));
