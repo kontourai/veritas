@@ -41,6 +41,9 @@ Veritas is the product for repo and AI-agent governance. Surface is the transpar
 | **Standards Recommendation** | A suggested change to repo standards based on standards feedback. |
 | **Built with Surface** | The product signal that Veritas uses Surface for portable transparency state. |
 
+Repo Map remains the canonical user-facing term; internal compatibility identifiers are not
+alternate product language. See the [terminology decision](../design/terminology-decisions.md#repo-map-remains-the-canonical-user-facing-term).
+
 Implementation names that predate this glossary are not canonical Veritas vocabulary. Track renames in [Migration Guide](../MIGRATING.md), not in the product glossary.
 
 ## Surface Mapping
