@@ -19,7 +19,7 @@ Generated evidence and read models are local or CI artifacts:
 
 - `.kontourai/veritas/evidence/`
 - `.kontourai/veritas/claims/`
-- `.surface/runs/`
+- `.kontourai/veritas/surface/`
 - `.kontourai/veritas/external/`
 - `.kontourai/veritas/standards-feedback-drafts/`
 - `.kontourai/veritas/standards-feedback/`

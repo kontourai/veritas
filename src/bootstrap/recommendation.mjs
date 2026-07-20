@@ -18,6 +18,7 @@ import {
   validateInstructionTargetPaths,
   validateOwnerAnswers,
 } from './guidance.mjs';
+import { GENERATED_OUTPUT_IGNORE_ENTRIES, mergeGeneratedOutputIgnores } from './generated-output-ignore.mjs';
 import { assertWithinDir, veritasArtifactPath, veritasArtifactRepoPath } from '../paths.mjs';
 
 const INIT_RECOMMENDATION_SCHEMA_VERSION = 1;
@@ -224,6 +225,7 @@ export function buildInitRecommendation({
     recommended_surfaces: recommendedSurfaces(repoInsights),
     recommended_instruction_targets: recommendedInstructionTargets(rootDir, selectedInstructionTargets),
     selected_instruction_targets: selectedInstructionTargets,
+    generated_output_ignores: GENERATED_OUTPUT_IGNORE_ENTRIES,
     owner_questions: ownerQuestions(repoInsights),
     owner_answers: ownerAnswers,
     apply_command: 'npx @kontourai/veritas init --apply --plan <path-to-this-artifact>',
@@ -293,6 +295,7 @@ export function applyInitRecommendation({ rootDir, recommendation, force = false
     mkdirSync(dirname(absolutePath), { recursive: true });
     writeFileSync(absolutePath, payload, 'utf8');
   }
+  const ignoreResult = mergeGeneratedOutputIgnores(rootDir);
 
   return {
     rootDir,
@@ -303,6 +306,8 @@ export function applyInitRecommendation({ rootDir, recommendation, force = false
     generatedFiles: [
       ...Object.keys(recommendation.artifact_payloads),
       `${veritasArtifactRepoPath('evidence')}/`,
+      ...(ignoreResult.changed ? [ignoreResult.path] : []),
     ],
+    generatedOutputIgnores: ignoreResult.addedEntries,
   };
 }

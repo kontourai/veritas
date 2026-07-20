@@ -22,11 +22,14 @@ Inside a git repository:
 
 ```bash
 npm install -D @kontourai/veritas
+npx veritas --version
 npx veritas init
 npx veritas readiness --working-tree
 ```
 
-That bootstraps repo standards, a repo map, and AI instruction guidance under `.veritas/`, then checks the current working tree. You'll see output like:
+`veritas --version` prints the installed package version, so setup records can bind the executable
+to an approved engine release. `init` bootstraps repo standards, a repo map, and AI instruction
+guidance under `.veritas/`, then readiness checks the current working tree. You'll see output like:
 
 ```text
 veritas: 0 files changed ->

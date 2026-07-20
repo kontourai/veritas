@@ -48,6 +48,15 @@ npx @kontourai/veritas readiness --check boundaries --actor cli-team [--diff mai
 
 `readiness` is the recommended current front door for evidenceCheck execution, generated evidence, standards feedback drafting, and change guidance. `readiness --check boundaries` replaces `boundaries check`. `readiness --check coverage` is the current command for readiness coverage. `readiness --check evidence` is the current command for the lower-level generated evidence path.
 
+### `--version`
+
+Prints the installed `@kontourai/veritas` package version and exits successfully. Use it to record
+the engine identity selected by an exact package pin; `--help` proves only that the CLI can run.
+
+```bash
+npx @kontourai/veritas --version
+```
+
 ### `init`
 
 Bootstraps starter Repo Standards and a Repo Map for a target repo.
@@ -81,7 +90,11 @@ The bootstrap logic infers:
 - likely source roots
 - likely test roots
 - whether workflows exist
+- substantive top-level product directories not already classified as source, tooling, or tests
 - an initial evidenceCheck from common npm scripts
+
+Generated runtime output stays under `.kontourai/`. `init` merges the exact `.kontourai/` ignore
+entry into `.gitignore` when needed; it does not add a `.surface/` or `.veritas/` ignore entry.
 
 Guided initialization splits setup into a reviewed artifact flow:
 

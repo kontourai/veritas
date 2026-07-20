@@ -2,8 +2,6 @@ node_modules/
 dist/
 .DS_Store
 .omx/
-.surface/
-
 # Veritas generated run state. Keep durable governance config trackable:
 # .veritas/repo-map.json, .veritas/repo-standards/**, and .veritas/authority/**.
 .kontourai/

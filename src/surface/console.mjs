@@ -1,10 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { relativeRepoPath } from '../paths.mjs';
+import { relativeRepoPath, veritasArtifactRepoPath } from '../paths.mjs';
 import { resolveRunArtifactPath } from '../util/run-id.mjs';
 import { buildSurfaceConsoleReadModel } from './console-read-model.mjs';
 
-const CONSOLE_DIR = '.surface/runs';
+const CONSOLE_DIR = veritasArtifactRepoPath('surface');
 
 export { buildSurfaceConsoleReadModel } from './console-read-model.mjs';
 

@@ -23,7 +23,7 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
 
    ```bash
    npm ls @kontourai/veritas --depth=0
-   npm exec -- veritas --help
+   npm exec -- veritas --version
    ```
 
 2. If npm is not the repository's toolchain, or the maintainer explicitly approves an external
@@ -34,12 +34,12 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
 
    ```bash
    veritas_engine_path="$(command -v veritas)"
-   "$veritas_engine_path" --help
+   "$veritas_engine_path" --version
    ```
 
-   Record the resolved path, the successful help smoke, and the package-manager or distribution
-   evidence that binds that path to the maintainer-approved immutable release. The help output is
-   not version evidence. If the resolved identity differs from the approved invocation, stop. This
+   Record the resolved path, the reported version, and the package-manager or distribution
+   evidence that binds that path to the maintainer-approved immutable release. If the resolved
+   identity differs from the approved invocation, stop. This
    external path does not modify the consumer manifest or lockfile; do not add an npm dependency
    as a fallback.
 
@@ -48,13 +48,12 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    replace it with `latest`, a range, or an unreviewed version:
 
    ```bash
-   npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas --help
+   npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas --version
    npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas init --explore --output .veritas/init-plans/first-pass.json
    ```
 
-   Record the exact npm package selector and successful help smoke with the setup evidence. The
-   selector supplies the version identity; the help output only proves the selected CLI can run.
-   This is a reproducible, pinned engine invocation: npm uses its ephemeral execution cache and
+   Record the exact npm package selector and matching version output with the setup evidence. This
+   is a reproducible, pinned engine invocation: npm uses its ephemeral execution cache and
    does not create or modify the consumer's `package.json` or lockfile. Use the same exact
    invocation for apply, hooks, attestation, and readiness; do not mix it with an unpinned global
    CLI.

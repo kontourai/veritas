@@ -102,6 +102,25 @@ export function buildAdaptiveNodes(repoInsights) {
     });
   }
 
+  const nodeIds = new Set(nodes.map((node) => node.id));
+  for (const root of repoInsights.productRoots ?? []) {
+    const idBase = root.replace(/\/$/, '').replace(/[^a-z0-9]+/g, '.');
+    const baseId = `product.${idBase}`;
+    let id = baseId;
+    let suffix = 2;
+    while (nodeIds.has(id)) {
+      id = `${baseId}-${suffix}`;
+      suffix += 1;
+    }
+    nodeIds.add(id);
+    nodes.push({
+      id,
+      kind: 'product-area',
+      label: `${root}**`,
+      patterns: [root],
+    });
+  }
+
   return nodes;
 }
 
@@ -142,6 +161,7 @@ export function buildStarterRepoMap({
     sourceRoots: [],
     toolingRoots: [],
     testRoots: [],
+    productRoots: [],
     hasWorkflows: true,
   },
 }) {

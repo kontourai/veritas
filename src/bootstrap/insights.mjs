@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadJson } from '../load.mjs';
 
@@ -22,6 +22,29 @@ function detectTestRoots(rootDir) {
   return ['tests/', 'test/', 'spec/'].filter((path) =>
     existsSync(resolve(rootDir, path)),
   );
+}
+
+const GENERATED_TOP_LEVEL_DIRS = new Set([
+  'build',
+  'coverage',
+  'dist',
+  'node_modules',
+  'playwright-report',
+  'target',
+  'test-results',
+]);
+
+function detectProductRoots(rootDir, classifiedRoots) {
+  const classified = new Set(classifiedRoots.map((root) => root.replace(/\/$/, '')));
+  return readdirSync(rootDir, { withFileTypes: true })
+    .filter((entry) =>
+      entry.isDirectory() &&
+      !entry.name.startsWith('.') &&
+      !classified.has(entry.name) &&
+      !GENERATED_TOP_LEVEL_DIRS.has(entry.name),
+    )
+    .map((entry) => `${entry.name}/`)
+    .sort((left, right) => left.localeCompare(right));
 }
 
 function inferBaseRef(rootDir) {
@@ -205,6 +228,7 @@ export function inferBootstrapRepoInsights(rootDir) {
   const sourceRoots = detectSourceRoots(rootDir);
   const toolingRoots = detectToolingRoots(rootDir);
   const testRoots = detectTestRoots(rootDir);
+  const productRoots = detectProductRoots(rootDir, [...sourceRoots, ...toolingRoots, ...testRoots]);
   const hasWorkflows = existsSync(resolve(rootDir, '.github/workflows'));
   const hasWorkspaceConfig =
     existsSync(resolve(rootDir, 'pnpm-workspace.yaml')) ||
@@ -279,6 +303,7 @@ export function inferBootstrapRepoInsights(rootDir) {
     sourceRoots,
     toolingRoots,
     testRoots,
+    productRoots,
     hasWorkflows,
     evidenceCheck,
     enableWorkAreaEvidenceRouting: repoKind === 'workspace' || toolingRoots.length > 0,
