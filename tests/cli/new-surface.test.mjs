@@ -20,11 +20,6 @@ test('top-level help centers the primary verb-noun surface', () => {
   assert.ok(output.split('\n').length <= 24);
 });
 
-test('top-level version reports the package version for pinned engine setup', () => {
-  assert.equal(veritas(['--version']), '1.5.2\n');
-  assert.equal(veritas(['-v']), '1.5.2\n');
-});
-
 test('readiness front door supports boundaries check', () => {
   const output = veritas(['readiness', '--check', 'boundaries', '--actor', 'repo-core']);
   assert.match(output, /^PASS work-area-boundary:/);

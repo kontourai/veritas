@@ -45,7 +45,7 @@ Do not add a consumer `package.json` merely to run Veritas. After explicit maint
 the exact engine release, use the pinned ephemeral invocation for every setup command:
 
 ```bash
-npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas --version
+npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas --help
 npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas init --explore --output .veritas/init-plans/first-pass.json
 # Review and approve the generated plan.
 npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas init --apply --plan .veritas/init-plans/first-pass.json

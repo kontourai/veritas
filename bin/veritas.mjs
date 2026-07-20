@@ -21,11 +21,6 @@ import {
   runApplyClaudeCodePreToolUseHookCli,
   runClaimCli,
 } from '../src/index.mjs';
-import { readFileSync } from 'node:fs';
-
-const PACKAGE_VERSION = JSON.parse(
-  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-).version;
 
 const MAIN_USAGE = `Usage:
   veritas init [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--template <name>] [--force]
@@ -133,9 +128,7 @@ process.on('uncaughtException', (error) => {
   process.exit(2);
 });
 
-if (subcommand === '--version' || subcommand === '-v') {
-  writeStdout(`${PACKAGE_VERSION}\n`);
-} else if (!subcommand || isHelpToken(subcommand)) {
+if (!subcommand || isHelpToken(subcommand)) {
   writeStdout(MAIN_USAGE);
 } else if (subcommand === 'init') {
   if (args.some(isHelpToken)) {
