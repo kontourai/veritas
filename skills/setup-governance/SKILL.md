@@ -46,8 +46,8 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    replace it with `latest`, a range, or an unreviewed version:
 
    ```bash
-   npm exec --yes --package=@kontourai/veritas@1.5.1 -- veritas --version
-   npm exec --yes --package=@kontourai/veritas@1.5.1 -- veritas init --explore --output .veritas/init-plans/first-pass.json
+   npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas --version
+   npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas init --explore --output .veritas/init-plans/first-pass.json
    ```
 
    Record the approved package version and the reported CLI version with the setup evidence. This

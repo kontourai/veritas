@@ -50,7 +50,7 @@ install or configure the standalone engine in the target repository:
 
 ```bash
 npx @kontourai/flow-agents kit install \
-  https://github.com/kontourai/veritas.git#v1.5.1 --dest .
+  https://github.com/kontourai/veritas.git#v1.5.2 --dest .
 npx @kontourai/flow-agents kit activate --dest . --format json
 ```
 
