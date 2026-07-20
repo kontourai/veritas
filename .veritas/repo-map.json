@@ -156,6 +156,21 @@
         ]
       },
       {
+        "id": "delivery.trust-evidence",
+        "kind": "delivery-area",
+        "label": "delivery trust evidence",
+        "patterns": [
+          "delivery/"
+        ],
+        "owners": [
+          "delivery-team"
+        ],
+        "boundary": "strict",
+        "boundaryAllow": [
+          "repo-core"
+        ]
+      },
+      {
         "id": "tooling.scripts",
         "kind": "tooling-area",
         "label": "scripts/**",
