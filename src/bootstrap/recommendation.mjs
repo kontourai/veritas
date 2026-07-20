@@ -177,7 +177,11 @@ function existingGovernanceState(rootDir) {
 }
 
 function pathCoveredByExistingNode(pattern, existingNodes) {
-  return existingNodes.some((node) => (node.patterns ?? []).some((existingPattern) => existingPattern === pattern));
+  return existingNodes.some((node) => (node.patterns ?? []).some((existingPattern) => (
+    existingPattern === pattern
+    || existingPattern.startsWith(pattern)
+    || pattern.startsWith(existingPattern)
+  )));
 }
 
 function mergeDiscoveredNodes(existingRepoMap, starterRepoMap) {
