@@ -55,24 +55,24 @@ import {
 
 The old `src/recommendations.mjs` module is removed instead of re-exported. Update internal imports and external consumers to the new path.
 
-## Run Snapshots Move to `.surface/runs/`
+## Run Snapshots Move to `.kontourai/veritas/surface/`
 
-Veritas writes run snapshots to `.surface/runs/`.
+Veritas writes run snapshots below the shared `.kontourai/` runtime root.
 
 New paths:
 
 ```
-.surface/runs/<run-id>.console.json
-.surface/runs/latest.json
+.kontourai/veritas/surface/<run-id>.console.json
+.kontourai/veritas/surface/latest.json
 ```
 
 When updating an existing local checkout:
 
-1. Add `.surface/` to your `.gitignore` if it is not already there (run snapshots are derived and should not be committed).
+1. Ensure `.kontourai/` is present in `.gitignore` (current `veritas init` adds that exact entry when needed).
 2. The next `veritas readiness` writes to the new path automatically.
-3. Remove stale ignore entries for the retired Veritas-local console directory once that directory is gone.
+3. Remove stale `.surface/` runtime files once they are no longer needed; do not add a `.surface/` ignore entry for Veritas output.
 
-If you pass a `--read-model` flag explicitly to the Surface Console, set it to `.surface/runs/latest.json` or omit it entirely, since `.surface/runs/latest.json` is now the default.
+If you pass a `--read-model` flag explicitly to the Surface Console, set it to `.kontourai/veritas/surface/latest.json` or omit it entirely, since that path is now the default.
 
 ## Claims Are Now Authored, Not Generated Per Run
 

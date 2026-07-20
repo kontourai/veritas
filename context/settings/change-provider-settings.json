@@ -1,0 +1,24 @@
+{
+  "$schema": "https://flow-agents.dev/schemas/change-provider-settings.schema.json",
+  "schema_version": "1.0",
+  "projects": [
+    {
+      "project": {
+        "repo": {
+          "owner": "kontourai",
+          "name": "veritas"
+        }
+      },
+      "provider": {
+        "role": "ChangeProvider",
+        "kind": "github",
+        "repository": {
+          "owner": "kontourai",
+          "name": "veritas"
+        },
+        "capabilities": ["change.create", "change.observe"],
+        "executor": "gh-cli"
+      }
+    }
+  ]
+}

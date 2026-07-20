@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "slug": "kontourai-veritas-143",
+  "work_item": null,
+  "status": "delivered",
+  "phase": "release",
+  "sealed_at": "2026-07-20T17:41:53.702Z",
+  "commit_sha": "5099efda4b89c4022136177df6be522e0ed051cb",
+  "checkpoint": {
+    "asOf": "2026-07-20T17:41:53.702Z",
+    "statusByClaimId": {
+      "kontourai-veritas-143-gate-claim-selected-work.flow-agents-workflow.work-item-kontourai-veritas-143-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-83793c8ef9c468bd150c71f706e383eddd7fc7a4f31a93277898351d74ad7d53-gate-visit-2026-07-20t17-22-30z": "verified",
+      "kontourai-veritas-143-gate-claim-pickup-probe-readiness.flow-agents-workflow.follow-up-scope-and-assignment-are-ready-gate-visit-2026-07-20t17-23-35-195z": "verified",
+      "kontourai-veritas-143-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.canonical-schema-and-exact-provider-binding-decisions-are-explicit-gate-visit-2026-07-20t17-23-35-530z": "verified",
+      "kontourai-veritas-143-gate-claim-implementation-plan.flow-agents-workflow.plan-covers-configuration-resolution-review-and-pr-reconciliation-gate-visit-2026-07-20t17-23-35-999z": "verified",
+      "kontourai-veritas-143-gate-claim-implementation-scope.flow-agents-workflow.added-the-exact-safe-changeprovider-configuration-gate-visit-2026-07-20t17-23-36-418z": "verified",
+      "kontourai-veritas-143-gate-claim-acceptance-criteria.flow-agents-workflow.effective-settings-resolve-the-exact-safe-kontourai-veritas-github-changeprovider-and-governance-mapping-gate-visit-2026-07-20t17-27-15-129z": "verified",
+      "kontourai-veritas-143-gate-claim-tests-evidence.flow-agents-workflow.the-complete-veritas-suite-passes-with-exact-provider-configuration-and-governed-mapping-gate-visit-2026-07-20t17-29-30-680z": "verified",
+      "kontourai-veritas-143-gate-claim-merge-readiness.flow-agents-workflow.current-review-verification-conformance-scope-integrity-and-provider-checks-support-merge-review-gate-visit-2026-07-20t17-41-01-185z": "verified",
+      "kontourai-veritas-143-gate-claim-ci-merge-readiness.flow-agents-workflow.pr-142-is-current-independently-reviewed-verified-and-all-hosted-checks-are-green-merge-is-authorized-by-the-user-gate-visit-2026-07-20t17-41-45-767z": "verified",
+      "kontourai-veritas-143-effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider.flow-agents-workflow.effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider-verified-2026-07-20t17-29-30-680z": "verified",
+      "kontourai-veritas-143-final-code-review.flow-agents-workflow.report-only-review-approved-the-canonical-changeprovider-schema-correction-no-correctness-or-security-findings-remain-reviewed-2026-07-20t17-24-10-851z-superseded-critique-c4df6d39911688af647cb99c0afbe502853d19de570314f74e5f32e6bb239e4f": "proposed",
+      "kontourai-veritas-143-final-code-review.flow-agents-workflow.revised-report-only-review-approved-the-canonical-changeprovider-config-explicit-context-settings-governance-mapping-and-current-authority-backed-policy-attestation-no-correctness-or-security-findings-remain-reviewed-2026-07-20t17-25-53-401z": "verified"
+    },
+    "throughEventCreatedAt": "2026-07-20T17:41:45.767Z",
+    "throughEventCreatedAtByClaimId": {
+      "kontourai-veritas-143-gate-claim-selected-work.flow-agents-workflow.work-item-kontourai-veritas-143-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-83793c8ef9c468bd150c71f706e383eddd7fc7a4f31a93277898351d74ad7d53-gate-visit-2026-07-20t17-22-30z": "2026-07-20T17:41:45.767Z",
+      "kontourai-veritas-143-gate-claim-pickup-probe-readiness.flow-agents-workflow.follow-up-scope-and-assignment-are-ready-gate-visit-2026-07-20t17-23-35-195z": "2026-07-20T17:41:45.767Z",
+      "kontourai-veritas-143-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.canonical-schema-and-exact-provider-binding-decisions-are-explicit-gate-visit-2026-07-20t17-23-35-530z": "2026-07-20T17:41:45.767Z",
+      "kontourai-veritas-143-gate-claim-implementation-plan.flow-agents-workflow.plan-covers-configuration-resolution-review-and-pr-reconciliation-gate-visit-2026-07-20t17-23-35-999z": "2026-07-20T17:41:45.767Z",
+      "kontourai-veritas-143-gate-claim-implementation-scope.flow-agents-workflow.added-the-exact-safe-changeprovider-configuration-gate-visit-2026-07-20t17-23-36-418z": "2026-07-20T17:41:45.767Z",
+      "kontourai-veritas-143-gate-claim-acceptance-criteria.flow-agents-workflow.effective-settings-resolve-the-exact-safe-kontourai-veritas-github-changeprovider-and-governance-mapping-gate-visit-2026-07-20t17-27-15-129z": "2026-07-20T17:41:45.767Z",
+      "kontourai-veritas-143-gate-claim-tests-evidence.flow-agents-workflow.the-complete-veritas-suite-passes-with-exact-provider-configuration-and-governed-mapping-gate-visit-2026-07-20t17-29-30-680z": "2026-07-20T17:41:45.767Z",
+      "kontourai-veritas-143-gate-claim-merge-readiness.flow-agents-workflow.current-review-verification-conformance-scope-integrity-and-provider-checks-support-merge-review-gate-visit-2026-07-20t17-41-01-185z": "2026-07-20T17:41:45.767Z",
+      "kontourai-veritas-143-gate-claim-ci-merge-readiness.flow-agents-workflow.pr-142-is-current-independently-reviewed-verified-and-all-hosted-checks-are-green-merge-is-authorized-by-the-user-gate-visit-2026-07-20t17-41-45-767z": "2026-07-20T17:41:45.767Z",
+      "kontourai-veritas-143-effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider.flow-agents-workflow.effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider-verified-2026-07-20t17-29-30-680z": "2026-07-20T17:29:30.680Z",
+      "kontourai-veritas-143-final-code-review.flow-agents-workflow.report-only-review-approved-the-canonical-changeprovider-schema-correction-no-correctness-or-security-findings-remain-reviewed-2026-07-20t17-24-10-851z-superseded-critique-c4df6d39911688af647cb99c0afbe502853d19de570314f74e5f32e6bb239e4f": null,
+      "kontourai-veritas-143-final-code-review.flow-agents-workflow.revised-report-only-review-approved-the-canonical-changeprovider-config-explicit-context-settings-governance-mapping-and-current-authority-backed-policy-attestation-no-correctness-or-security-findings-remain-reviewed-2026-07-20t17-25-53-401z": "2026-07-20T17:41:45.767Z"
+    },
+    "statusFunctionVersion": "2"
+  }
+}

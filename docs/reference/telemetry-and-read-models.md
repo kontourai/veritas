@@ -20,8 +20,8 @@ Current examples:
 
 - `.kontourai/veritas/repo-conformance/*.json`
 - `.kontourai/veritas/repo-conformance/*.md`
-- `.surface/runs/<run-id>.console.json`
-- `.surface/runs/latest.json`
+- `.kontourai/veritas/surface/<run-id>.console.json`
+- `.kontourai/veritas/surface/latest.json`
 
 Use **Readiness Report**, **Repo Conformance**, or **Standards Feedback** depending on the summary.
 

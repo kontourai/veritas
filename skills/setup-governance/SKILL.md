@@ -23,7 +23,7 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
 
    ```bash
    npm ls @kontourai/veritas --depth=0
-   npm exec -- veritas --help
+   npm exec -- veritas --version
    ```
 
 2. If npm is not the repository's toolchain, or the maintainer explicitly approves an external
@@ -37,23 +37,26 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    "$veritas_engine_path" --version
    ```
 
-   Record the resolved path and reported version with the setup evidence. If either differs from
-   the maintainer-approved pinned engine invocation, stop. This external path does not modify the
-   consumer manifest or lockfile; do not add an npm dependency as a fallback.
+   Record the resolved path, the reported version, and the package-manager or distribution
+   evidence that binds that path to the maintainer-approved immutable release. If the resolved
+   identity differs from the approved invocation, stop. This
+   external path does not modify the consumer manifest or lockfile; do not add an npm dependency
+   as a fallback.
 
 3. If the external CLI is absent but the maintainer approves the exact Veritas release, acquire
    and invoke that release ephemerally. The approved version below is intentionally exact; do not
    replace it with `latest`, a range, or an unreviewed version:
 
    ```bash
-   npm exec --yes --package=@kontourai/veritas@1.5.1 -- veritas --version
-   npm exec --yes --package=@kontourai/veritas@1.5.1 -- veritas init --explore --output .veritas/init-plans/first-pass.json
+   npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas --version
+   npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas init --explore --output .veritas/init-plans/first-pass.json
    ```
 
-   Record the approved package version and the reported CLI version with the setup evidence. This
-   is a reproducible, pinned engine invocation: npm uses its ephemeral execution cache and does
-   not create or modify the consumer's `package.json` or lockfile. Use the same exact invocation
-   for apply, hooks, attestation, and readiness; do not mix it with an unpinned global CLI.
+   Record the exact npm package selector and matching version output with the setup evidence. This
+   is a reproducible, pinned engine invocation: npm uses its ephemeral execution cache and
+   does not create or modify the consumer's `package.json` or lockfile. Use the same exact
+   invocation for apply, hooks, attestation, and readiness; do not mix it with an unpinned global
+   CLI.
 
 4. If it is absent and the maintainer approves the dependency change, install it:
 

@@ -156,6 +156,21 @@
         ]
       },
       {
+        "id": "delivery.trust-evidence",
+        "kind": "delivery-area",
+        "label": "delivery trust evidence",
+        "patterns": [
+          "delivery/"
+        ],
+        "owners": [
+          "delivery-team"
+        ],
+        "boundary": "strict",
+        "boundaryAllow": [
+          "repo-core"
+        ]
+      },
+      {
         "id": "tooling.scripts",
         "kind": "tooling-area",
         "label": "scripts/**",
@@ -168,6 +183,21 @@
         "boundary": "advisory",
         "boundaryAllow": [
           "repo-core"
+        ]
+      },
+      {
+        "id": "integration.context-settings",
+        "kind": "integration-area",
+        "label": "context settings",
+        "patterns": [
+          "context/settings/"
+        ],
+        "owners": [
+          "repo-core"
+        ],
+        "boundary": "strict",
+        "boundaryAllow": [
+          "delivery-team"
         ]
       },
       {

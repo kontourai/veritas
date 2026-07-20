@@ -22,10 +22,17 @@ Inside a git repository:
 
 ```bash
 npm install -D @kontourai/veritas
+npx veritas --version
 npx veritas init
 ```
 
-That bootstraps repo standards, a repo map, and AI instruction guidance under `.veritas/`. Once you've reviewed the generated standards, protect them with an authority-backed attestation — do this before your first readiness check, or `readiness` reports an advisory warning that no attestation exists yet:
+`veritas --version` prints the installed package version, so setup records can bind the executable
+to an approved engine release. `init` bootstraps repo standards, a repo map, and AI instruction
+guidance under `.veritas/`.
+
+Once you've reviewed the generated standards, protect them with an authority-backed attestation —
+do this before your first readiness check, or `readiness` reports advisory warnings that no
+attestation exists yet:
 
 ```bash
 npx veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
@@ -58,7 +65,7 @@ install or configure the standalone engine in the target repository:
 
 ```bash
 npx @kontourai/flow-agents kit install \
-  https://github.com/kontourai/veritas.git#v1.5.1 --dest .
+  https://github.com/kontourai/veritas.git#v1.5.2 --dest .
 npx @kontourai/flow-agents kit activate --dest . --format json
 ```
 

@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "id": "policy-change-2026-07-20T17-43-46-074Z-92455f207a00",
+  "kind": "policy-change",
+  "actor": {
+    "id": "briananderson1222",
+    "displayName": "Brian Anderson",
+    "identityEvidence": {
+      "gitEmail": "brian.anderson1222@gmail.com",
+      "signingKeyFingerprint": null
+    }
+  },
+  "attestedAt": "2026-07-20T17:43:46.074Z",
+  "repoStandardsHash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
+  "repoMapHash": "sha256:2b5e7a4c88091d135b7ff88b82a60b3e1c5f589cb801ce68ab38015dad3b7f07",
+  "authoritySettingsHash": "sha256:192e1eeec727a0c18a372b76c4ed194eaa4faef0f6c6080f25a808aeeb660946",
+  "priorAttestationId": "policy-change-2026-07-20T17-24-55-187Z-2a41f89ff587",
+  "validUntilDays": 90,
+  "notes": "Map committed Builder delivery trust evidence discovered during governance dogfood follow-through.",
+  "metadata": {
+    "protectedStandardsPaths": {
+      "repoStandardsPath": ".veritas/repo-standards/default.repo-standards.json",
+      "repoMapPath": ".veritas/repo-map.json",
+      "authoritySettingsPath": ".veritas/authority/default.authority-settings.json"
+    },
+    "supersedes": "policy-change-2026-07-20T17-24-55-187Z-2a41f89ff587",
+    "approvalRef": "user-approved-epic-2026-07-20",
+    "approvalRefPolicy": {
+      "mode": "reference-only",
+      "matchedPrefix": null,
+      "requiresResolution": false
+    },
+    "approvalResolution": null
+  },
+  "surface": {
+    "claim": {
+      "id": "veritas.attestation.policy-change-2026-07-20T17-43-46-074Z-92455f207a00",
+      "subjectType": "veritas-protected-standards",
+      "subjectId": "protected-standards",
+      "facet": "veritas.attestations",
+      "claimType": "veritas-human-attestation",
+      "fieldOrBehavior": "policy-change",
+      "value": {
+        "contentHash": "bd6cbe1725de7438cda3b49fa1914ce63c57ba13159a9080671ccab1a86ceb48",
+        "validUntil": "2026-10-18T17:43:46.074Z"
+      },
+      "createdAt": "2026-07-20T17:43:46.074Z",
+      "updatedAt": "2026-07-20T17:43:46.074Z",
+      "status": "verified",
+      "impactLevel": "high",
+      "confidenceBasis": {
+        "sourceQuality": "strong",
+        "reviewerAuthority": "human",
+        "evidenceStrength": "strong",
+        "impactLevel": "high"
+      }
+    },
+    "evidence": {
+      "id": "evidence.attestation.veritas.attestation.policy-change-2026-07-20T17-43-46-074Z-92455f207a00",
+      "claimId": "veritas.attestation.policy-change-2026-07-20T17-43-46-074Z-92455f207a00",
+      "evidenceType": "attestation",
+      "method": "attestation",
+      "sourceRef": "veritas:protected-standards",
+      "excerptOrSummary": "Map committed Builder delivery trust evidence discovered during governance dogfood follow-through.",
+      "observedAt": "2026-07-20T17:43:46.074Z",
+      "collectedBy": "briananderson1222",
+      "integrityRef": "bd6cbe1725de7438cda3b49fa1914ce63c57ba13159a9080671ccab1a86ceb48",
+      "metadata": {
+        "actor": {
+          "id": "briananderson1222",
+          "displayName": "Brian Anderson"
+        },
+        "attestedAt": "2026-07-20T17:43:46.074Z",
+        "validUntil": "2026-10-18T17:43:46.074Z",
+        "contentHash": "bd6cbe1725de7438cda3b49fa1914ce63c57ba13159a9080671ccab1a86ceb48"
+      },
+      "sourceLocator": ".veritas/attestations"
+    },
+    "event": {
+      "id": "veritas.attestation.policy-change-2026-07-20T17-43-46-074Z-92455f207a00.verified",
+      "claimId": "veritas.attestation.policy-change-2026-07-20T17-43-46-074Z-92455f207a00",
+      "status": "verified",
+      "actor": "briananderson1222",
+      "method": "human attestation",
+      "evidenceIds": [
+        "evidence.attestation.veritas.attestation.policy-change-2026-07-20T17-43-46-074Z-92455f207a00"
+      ],
+      "createdAt": "2026-07-20T17:43:46.074Z",
+      "verifiedAt": "2026-07-20T17:43:46.074Z"
+    }
+  }
+}
