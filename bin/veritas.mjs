@@ -26,9 +26,6 @@ import {
 const MAIN_USAGE = `Usage:
   veritas --version
   veritas init [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--template <name>] [--force]
-  veritas init --explore [--root <path>] [--output .veritas/init-plans/<name>.json]
-  veritas init --guided --answers <path> [--root <path>] [--output .veritas/init-plans/<name>.json]
-  veritas init --apply --plan <path> [--root <path>] [--force]
   veritas readiness [--check evidence|boundaries|coverage] [--root <path>] [--working-tree] [--actor <id>] [--format feedback|json|trust-bundle]
   veritas explain <ruleId|workArea|filePath> [--file <path>] [--work-area <id>] [--root <path>]
   veritas attest bootstrap --actor <id> --approval-ref <ref> [--root <path>] [--non-interactive] [--valid-until-days <days>]
