@@ -23,23 +23,31 @@ Inside a git repository:
 ```bash
 npm install -D @kontourai/veritas
 npx veritas init
-npx veritas readiness --working-tree
 ```
 
-That bootstraps repo standards, a repo map, and AI instruction guidance under `.veritas/`, then checks the current working tree. You'll see output like:
-
-```text
-veritas: 0 files changed ->
-PASS  required-veritas-artifacts: All required repository artifacts are present.
-PASS  ai-instruction-files-synced: All required AI instruction files contain the canonical governance block.
-
-0 failures · 0 warnings
-```
-
-Once you've reviewed the generated standards, protect them with an authority-backed attestation:
+That bootstraps repo standards, a repo map, and AI instruction guidance under `.veritas/`. Once you've reviewed the generated standards, protect them with an authority-backed attestation — do this before your first readiness check, or `readiness` reports an advisory warning that no attestation exists yet:
 
 ```bash
 npx veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
+```
+
+Now check the current working tree:
+
+```bash
+npx veritas readiness --working-tree
+```
+
+You'll see output like:
+
+```text
+veritas: 8 files changed -> governance.guidance
+PASS  evidence-check: node -e "process.exit(0)"
+PASS  policy-changes-require-attestation: Active attestation bootstrap-2026-07-20T14-18-01-415Z-ba6e20f3f7ba matches current protected standards hashes.
+PASS  required-veritas-artifacts: All required repository artifacts are present.
+PASS  ai-instruction-files-synced: All required AI instruction files contain the canonical Veritas governance block.
+PASS  prefer-veritas-routed-delivery: All required repository artifacts are present.
+
+0 failures · 0 warnings · run `veritas readiness --check evidence` for full generated evidence
 ```
 
 ## Governance Kit
@@ -77,6 +85,7 @@ For a repo requirement like (from the shipped [`nextjs-typescript` template](exa
 {
   "id": "api-routes-require-api-tests",
   "kind": "diff-required",
+  "enforcementLevel": "Guide",
   "match": {
     "if-changed": "app/api/**",
     "then-require": "tests/api/**"
@@ -84,23 +93,38 @@ For a repo requirement like (from the shipped [`nextjs-typescript` template](exa
 }
 ```
 
-An agent that edits only the API gets immediate feedback:
+`enforcementLevel: "Guide"` means this requirement shows up as a `WARN`, not a blocking `FAIL` — it is advice the agent should follow, not a merge blocker. An agent that edits only the API gets immediate feedback:
 
 ```text
 $ npx veritas readiness --working-tree
-FAIL  api-routes-require-api-tests: Changed files matched app/api/** but no companion changes matched tests/api/**.
+veritas: 1 file changed -> app.app
+PASS  evidence-check: node -e "process.exit(0)"
+PASS  policy-changes-require-attestation: Active attestation bootstrap-2026-07-20T14-19-16-185Z-d827e763e4e0 matches current protected standards hashes.
+PASS  required-veritas-artifacts: All required repository artifacts are present.
+PASS  ai-instruction-files-synced: All required AI instruction files contain the canonical Veritas governance block.
+WARN  api-routes-require-api-tests: Changed files matched app/api/** but no companion changes matched tests/api/**.
       -> app/api/projects/route.ts
+PASS  no-console-log-in-app: No matched files contain forbidden pattern console\.log.
+PASS  centralize-env-access: No matched files contain forbidden pattern process\.env\.(?!NODE_ENV).
+WARN  surface-status: claim "veritas.policy.fix-sv-caught.nextjs-typescript.api-routes-require-api-tests" is DISPUTED (Evidence explicitly reported a non-passing result.)
 
-1 failure · 0 warnings · run `veritas readiness --check evidence` for full evidence
+0 failures · 2 warnings · run `veritas readiness --check evidence` for full generated evidence
 ```
 
 After adding the missing API test and rerunning:
 
 ```text
 $ npx veritas readiness --working-tree
+veritas: 2 files changed -> app.app, verification.tests
+PASS  evidence-check: node -e "process.exit(0)"
+PASS  policy-changes-require-attestation: Active attestation bootstrap-2026-07-20T14-19-16-185Z-d827e763e4e0 matches current protected standards hashes.
+PASS  required-veritas-artifacts: All required repository artifacts are present.
+PASS  ai-instruction-files-synced: All required AI instruction files contain the canonical Veritas governance block.
 PASS  api-routes-require-api-tests: Changed files matched app/api/** and included required companion changes under tests/api/**.
+PASS  no-console-log-in-app: No matched files contain forbidden pattern console\.log.
+PASS  centralize-env-access: No matched files contain forbidden pattern process\.env\.(?!NODE_ENV).
 
-0 failures · 0 warnings · run `veritas readiness --check evidence` for full evidence
+0 failures · 0 warnings · run `veritas readiness --check evidence` for full generated evidence
 ```
 
 That is the point: the agent gets the missing requirement before it declares done, and reviewers can inspect the evidence instead of rediscovering the repo standards from the diff.
@@ -163,5 +187,7 @@ Kontour AI shows the work behind AI:
 | **[Survey](https://kontourai.io/survey)** | Producer evidence: source → extraction → candidate → review → claim |
 | **[Flow](https://kontourai.io/flow)** | Process transparency: steps, gates, transitions, runs, exceptions |
 | **[Flow Agents](https://kontourai.io/flow-agents)** | Agent-facing distribution: skills, kits, runtime adapters, hooks |
+
+(`kontourai.io/<product>` is each product's homepage; `kontourai.github.io/<product>/` is that product's generated docs site, same split as this repo's own [Full Documentation](https://kontourai.github.io/veritas/) link above.)
 
 Each product stands alone. When they're together: Veritas readiness appears as evidence behind a [Flow](https://kontourai.github.io/flow/) gate, and [Flow Agents](https://kontourai.github.io/flow-agents/) ships the **Veritas Governance Kit** — an agentless kit that projects a real `veritas readiness` verdict into a `software-readiness-verdict` trust.bundle claim the gate checks, and that owns the repo-installed governance surface (scaffold, hooks, standards authoring, agent guidance) by wrapping this engine's CLI. Veritas evaluates; the kit is the product surface built on it.

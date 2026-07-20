@@ -2,7 +2,7 @@
 
 This page documents the CLI surface that currently ships in this repo.
 
-The primary CLI surface is eight verbs: `init`, `readiness`, `explain`, `attest`, `recommendation`, `feedback`, `setup`, `integrations`. Most commands print JSON to stdout. The developer- and agent-facing readiness feedback path prints lint-style text by default; use `--format json` when you need machine-readable orchestration output.
+The primary CLI surface is ten verbs: `init`, `readiness`, `explain`, `attest`, `claim`, `recommendation`, `feedback`, `setup`, `plugin`, `integrations`. Most commands print JSON to stdout. The developer- and agent-facing readiness feedback path prints lint-style text by default; use `--format json` when you need machine-readable orchestration output.
 
 ## Entry Points
 
