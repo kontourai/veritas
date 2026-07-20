@@ -1587,11 +1587,13 @@ test('init explore preserves mature governance and appends only uncovered work a
   const existingAuthority = { version: 1, id: 'mature', defaults: { mode: 'observe' }, custom: { keep: true } };
   const existingStandardsPayload = `${JSON.stringify(existingStandards)}\n`;
   const existingAuthorityPayload = `${JSON.stringify(existingAuthority)}\n`;
+  const existingInstructions = 'Local guidance.\n\n<!-- veritas:governance-block:start -->\nRun `npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas readiness`.\n<!-- veritas:governance-block:end -->\n';
   writeFileSync(join(rootDir, '.veritas/repo-map.json'), `${JSON.stringify(existingRepoMap, null, 2)}\n`);
   writeFileSync(join(rootDir, '.veritas/repo-standards/default.repo-standards.json'), existingStandardsPayload);
   writeFileSync(join(rootDir, '.veritas/authority/default.authority-settings.json'), existingAuthorityPayload);
   writeFileSync(join(rootDir, '.veritas/README.md'), 'mature readme\n');
   writeFileSync(join(rootDir, '.veritas/GOVERNANCE.md'), 'mature governance\n');
+  writeFileSync(join(rootDir, 'AGENTS.md'), existingInstructions);
 
   const recommendation = parseCliJson(execFileSync(
     'npm',
@@ -1606,6 +1608,7 @@ test('init explore preserves mature governance and appends only uncovered work a
   assert.equal(recommendation.artifact_payloads['.veritas/GOVERNANCE.md'], 'mature governance\n');
   assert.equal(recommendation.artifact_payloads['.veritas/repo-standards/default.repo-standards.json'], existingStandardsPayload);
   assert.equal(recommendation.artifact_payloads['.veritas/authority/default.authority-settings.json'], existingAuthorityPayload);
+  assert.equal(recommendation.artifact_payloads['AGENTS.md'], existingInstructions);
   assert.deepEqual(
     recommendation.recommended_repo_map.graph.nodes.map((node) => node.id),
     ['mature.src', 'mature.package.widget', 'governance.guidance', 'governance.root-manifests', 'docs.docs', 'verification.tests'],

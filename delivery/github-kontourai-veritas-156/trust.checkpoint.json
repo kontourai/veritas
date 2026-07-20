@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "slug": "github-kontourai-veritas-156",
+  "work_item": null,
+  "status": "in_progress",
+  "phase": "release",
+  "sealed_at": "2026-07-20T21:28:38Z",
+  "commit_sha": "948137fbbbd090dd9c5f5dbf4ceb4adbde4a9e9d",
+  "checkpoint": {
+    "asOf": "2026-07-20T21:28:38.681Z",
+    "statusByClaimId": {
+      "github-kontourai-veritas-156-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-156-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-ac0e31b30e186388eb5986943eeba61b3925582141f688d6c520f398ecebf7e2-gate-visit-2026-07-20t21-26-06z": "verified",
+      "github-kontourai-veritas-156-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-156-has-a-concrete-reproduction-from-surface-and-ops-bounded-scope-and-explicit-acceptance-criteria-gate-visit-2026-07-20t21-26-13-804z": "verified",
+      "github-kontourai-veritas-156-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.decision-preserve-complete-existing-marker-blocks-only-in-brownfield-preservation-mode-missing-blocks-and-explicit-replacement-keep-canonical-generation-gate-visit-2026-07-20t21-26-14-377z": "verified",
+      "github-kontourai-veritas-156-gate-claim-implementation-plan.flow-agents-workflow.plan-preserves-complete-existing-blocks-only-in-preservation-mode-and-verifies-both-generation-fallbacks-gate-visit-2026-07-20t21-26-40-287z": "verified",
+      "github-kontourai-veritas-156-gate-claim-implementation-scope.flow-agents-workflow.changed-only-instruction-payload-selection-in-bootstrap-recommendation-and-its-mature-governance-fixture-gate-visit-2026-07-20t21-26-41-274z": "verified",
+      "github-kontourai-veritas-156-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-passed-including-pinned-governance-block-preservation-and-existing-generation-coverage-gate-visit-2026-07-20t21-26-43-049z": "verified",
+      "github-kontourai-veritas-156-gate-claim-merge-readiness.flow-agents-workflow.scoped-instruction-preservation-fix-is-review-clean-and-canonical-ci-passed-gate-visit-2026-07-20t21-28-38-036z": "verified",
+      "github-kontourai-veritas-156-existing-marker-bounded-governance-blocks-are-preserved-byte-for-byte.flow-agents-workflow.existing-marker-bounded-governance-blocks-are-preserved-byte-for-byte-verified-2026-07-20t21-26-43-049z": "verified",
+      "github-kontourai-veritas-156-missing-blocks-and-explicit-replacement-retain-canonical-generation-behavior.flow-agents-workflow.missing-blocks-and-explicit-replacement-retain-canonical-generation-behavior-verified-2026-07-20t21-26-43-049z": "verified",
+      "github-kontourai-veritas-156-final-code-review.flow-agents-workflow.review-found-no-correctness-security-or-scope-findings-in-the-complete-marker-preservation-condition-reviewed-2026-07-20t21-26-42-213z": "verified"
+    },
+    "throughEventCreatedAt": "2026-07-20T21:28:38.036Z",
+    "throughEventCreatedAtByClaimId": {
+      "github-kontourai-veritas-156-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-156-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-ac0e31b30e186388eb5986943eeba61b3925582141f688d6c520f398ecebf7e2-gate-visit-2026-07-20t21-26-06z": "2026-07-20T21:28:38.036Z",
+      "github-kontourai-veritas-156-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-156-has-a-concrete-reproduction-from-surface-and-ops-bounded-scope-and-explicit-acceptance-criteria-gate-visit-2026-07-20t21-26-13-804z": "2026-07-20T21:28:38.036Z",
+      "github-kontourai-veritas-156-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.decision-preserve-complete-existing-marker-blocks-only-in-brownfield-preservation-mode-missing-blocks-and-explicit-replacement-keep-canonical-generation-gate-visit-2026-07-20t21-26-14-377z": "2026-07-20T21:28:38.036Z",
+      "github-kontourai-veritas-156-gate-claim-implementation-plan.flow-agents-workflow.plan-preserves-complete-existing-blocks-only-in-preservation-mode-and-verifies-both-generation-fallbacks-gate-visit-2026-07-20t21-26-40-287z": "2026-07-20T21:28:38.036Z",
+      "github-kontourai-veritas-156-gate-claim-implementation-scope.flow-agents-workflow.changed-only-instruction-payload-selection-in-bootstrap-recommendation-and-its-mature-governance-fixture-gate-visit-2026-07-20t21-26-41-274z": "2026-07-20T21:28:38.036Z",
+      "github-kontourai-veritas-156-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-passed-including-pinned-governance-block-preservation-and-existing-generation-coverage-gate-visit-2026-07-20t21-26-43-049z": "2026-07-20T21:28:38.036Z",
+      "github-kontourai-veritas-156-gate-claim-merge-readiness.flow-agents-workflow.scoped-instruction-preservation-fix-is-review-clean-and-canonical-ci-passed-gate-visit-2026-07-20t21-28-38-036z": "2026-07-20T21:28:38.036Z",
+      "github-kontourai-veritas-156-existing-marker-bounded-governance-blocks-are-preserved-byte-for-byte.flow-agents-workflow.existing-marker-bounded-governance-blocks-are-preserved-byte-for-byte-verified-2026-07-20t21-26-43-049z": "2026-07-20T21:26:43.049Z",
+      "github-kontourai-veritas-156-missing-blocks-and-explicit-replacement-retain-canonical-generation-behavior.flow-agents-workflow.missing-blocks-and-explicit-replacement-retain-canonical-generation-behavior-verified-2026-07-20t21-26-43-049z": "2026-07-20T21:26:43.049Z",
+      "github-kontourai-veritas-156-final-code-review.flow-agents-workflow.review-found-no-correctness-security-or-scope-findings-in-the-complete-marker-preservation-condition-reviewed-2026-07-20t21-26-42-213z": "2026-07-20T21:28:38.036Z"
+    },
+    "statusFunctionVersion": "2"
+  }
+}

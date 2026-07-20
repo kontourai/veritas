@@ -257,7 +257,11 @@ function buildArtifactPayloads({ rootDir, projectName, evidenceCheck, repoInsigh
   for (const target of selectedInstructionTargets) {
     const absolutePath = resolve(rootDir, target.path);
     const existingContent = existsSync(absolutePath) ? readFileSync(absolutePath, 'utf8') : '';
-    payloads[target.path] = replaceGovernanceBlock(existingContent, governanceBlock);
+    const hasExistingGovernanceBlock = existingContent.includes('veritas:governance-block:start')
+      && existingContent.includes('veritas:governance-block:end');
+    payloads[target.path] = preserveExistingGovernance && hasExistingGovernanceBlock
+      ? existingContent
+      : replaceGovernanceBlock(existingContent, governanceBlock);
   }
 
   return {
