@@ -113,7 +113,9 @@ function buildStarterEvidenceConfig({ evidenceCheck, repoInsights }) {
         id: 'required-evidence-check',
         command: evidenceCheck,
         method: 'validation',
-        summary: 'Default repository evidenceCheck.',
+        summary: repoInsights.packageManager === 'unknown'
+          ? 'Node runtime smoke check until an owner selects a project evidenceCheck.'
+          : 'Default repository evidenceCheck.',
       },
     ],
     requiredEvidenceCheckIds: ['required-evidence-check'],

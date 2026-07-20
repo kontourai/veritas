@@ -11,7 +11,7 @@ import {
   buildStarterAuthoritySettings,
 } from './starter-artifacts.mjs';
 import {
-  OPTIONAL_INSTRUCTION_TARGETS,
+  KNOWN_INSTRUCTION_TARGETS,
   buildGovernanceInstructions,
   buildSuggestedCodeownersBlock,
   selectedInstructionTargetsFromAnswers,
@@ -32,7 +32,7 @@ function jsonPayload(value) {
 
 function recommendedInstructionTargets(rootDir, selectedInstructionTargets) {
   const selectedPaths = new Set(selectedInstructionTargets.map((target) => target.path));
-  return [...selectedInstructionTargets, ...OPTIONAL_INSTRUCTION_TARGETS.filter((target) => !selectedPaths.has(target.path))].map((target) => {
+  return [...selectedInstructionTargets, ...KNOWN_INSTRUCTION_TARGETS.filter((target) => !selectedPaths.has(target.path))].map((target) => {
     const absolutePath = resolve(rootDir, target.path);
     const existingContent = existsSync(absolutePath) ? readFileSync(absolutePath, 'utf8') : '';
     return {
@@ -48,16 +48,24 @@ function recommendedInstructionTargets(rootDir, selectedInstructionTargets) {
 }
 
 function recommendedEvidenceChecks(repoInsights) {
+  const hasConflicts = repoInsights.existingVerification?.conflicts?.length > 0;
+  const reason = hasConflicts
+    ? 'Conflicting package-script or authoritative instruction-file verification signals detected; review before promoting this check.'
+    : repoInsights.evidenceCheckSource === 'repo-declared AI instructions'
+      ? 'Selected from an authoritative repository AI instruction file.'
+      : repoInsights.evidenceCheckSource === 'node runtime smoke fallback'
+        ? 'No package manifest was detected; selected a Node runtime smoke check until an owner supplies a project evidenceCheck.'
+      : repoInsights.matchedScripts.length > 0
+        ? `Selected from package script priority; matched scripts: ${repoInsights.matchedScripts.join(', ')}.`
+        : 'Fallback evidenceCheck because no known package scripts were detected.';
   return [
     {
       id: 'required-evidence-check',
       command: repoInsights.evidenceCheck,
       method: 'validation',
-      reason: repoInsights.matchedScripts.length > 0
-        ? `Selected from package script priority; matched scripts: ${repoInsights.matchedScripts.join(', ')}.`
-        : 'Fallback evidenceCheck because no known package scripts were detected.',
-      confidence: repoInsights.matchedScripts.length > 0 ? 'high' : 'low',
-      source: repoInsights.matchedScripts.length > 0 ? 'package.json scripts' : 'fallback',
+      reason,
+      confidence: repoInsights.evidenceCheckConfidence,
+      source: repoInsights.evidenceCheckSource,
     },
   ];
 }
@@ -75,7 +83,9 @@ function ownerQuestions(repoInsights) {
     {
       id: 'canonical-evidenceCheck',
       group: 'evidenceCheck',
-      question: `Is \`${repoInsights.evidenceCheck}\` the command that should prove repo health before AI-authored changes are considered ready?`,
+      question: repoInsights.packageManager === 'unknown'
+        ? `No package manifest was detected, so Veritas selected \`${repoInsights.evidenceCheck}\` only as an engine smoke check. What project evidenceCheck should replace it before promotion?`
+        : `Is \`${repoInsights.evidenceCheck}\` the command that should prove repo health before AI-authored changes are considered ready?`,
     },
     {
       id: 'protected-paths',
@@ -185,7 +195,7 @@ export function buildInitRecommendation({
   const ownerAnswers = validateOwnerAnswers(answers);
   const repoInsights = inferBootstrapRepoInsights(rootDir);
   const resolvedEvidenceCheck = ownerAnswers.evidenceCheck ?? evidenceCheck ?? repoInsights.evidenceCheck;
-  const selectedInstructionTargets = selectedInstructionTargetsFromAnswers(ownerAnswers);
+  const selectedInstructionTargets = selectedInstructionTargetsFromAnswers(rootDir, ownerAnswers);
   validateInstructionTargetPaths(rootDir, selectedInstructionTargets);
   const artifactPayloads = buildArtifactPayloads({
     rootDir,

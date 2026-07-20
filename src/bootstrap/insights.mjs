@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadJson } from '../load.mjs';
 
@@ -62,6 +62,89 @@ function inferBaseRef(rootDir) {
   return '<base-ref>';
 }
 
+const REPO_DECLARED_INSTRUCTION_FILES = ['AGENTS.md', 'CLAUDE.md'];
+
+function npmCommandSegments(command) {
+  return command.trim().split(/\s*&&\s*/);
+}
+
+function isValidatedNpmCommand(command, scripts) {
+  const segments = npmCommandSegments(command);
+  return segments.length > 0 && segments.every((segment) => {
+    const runMatch = /^npm run ([A-Za-z0-9:_-]+)$/.exec(segment);
+    if (runMatch) return typeof scripts[runMatch[1]] === 'string';
+    return segment === 'npm test' && typeof scripts.test === 'string';
+  });
+}
+
+function npmCommandsInLine(line) {
+  const backtickedCommands = [...line.matchAll(/`([^`]+)`/g)]
+    .map((match) => match[1].trim())
+    .filter((command) => command.startsWith('npm '));
+  if (backtickedCommands.length > 0) return backtickedCommands;
+
+  return line.match(/npm(?:\s+run\s+[A-Za-z0-9:_-]+|\s+test)(?:\s*&&\s*npm(?:\s+run\s+[A-Za-z0-9:_-]+|\s+test))*/g) ?? [];
+}
+
+function verificationSignal(line) {
+  if (/broad verification|pre[- ]?merge|before (?:pr )?merge(?: readiness)?|before merging|before review/i.test(line)) {
+    return 'pre-merge';
+  }
+  if (/(?:must|required|always)\s+(?:run|execute)|after (?:making|any) changes|all changes/i.test(line)) {
+    return 'broad';
+  }
+  return null;
+}
+
+function detectInstructionVerification(rootDir, scripts) {
+  const entries = [];
+  for (const path of REPO_DECLARED_INSTRUCTION_FILES) {
+    const absolutePath = resolve(rootDir, path);
+    if (!existsSync(absolutePath)) continue;
+    const lines = readFileSync(absolutePath, 'utf8').split(/\r?\n/);
+    lines.forEach((line, lineIndex) => {
+      const signal = verificationSignal(line);
+      if (!signal) return;
+      for (const command of npmCommandsInLine(line)) {
+        if (!isValidatedNpmCommand(command, scripts)) continue;
+        entries.push({
+          kind: 'instruction-file-verification',
+          id: `${path}:${lineIndex + 1}`,
+          command,
+          recommendedDisposition: 'candidate',
+          reason: 'Authoritative repository-declared verification command detected during brownfield init.',
+          provenance: {
+            path,
+            line: lineIndex + 1,
+            signal,
+            authority: 'repo-declared-ai-instructions',
+          },
+        });
+      }
+    });
+  }
+  return entries;
+}
+
+function strongestInstructionCommand(entries) {
+  const commands = new Map();
+  for (const entry of entries) {
+    const current = commands.get(entry.command) ?? {
+      command: entry.command,
+      preMerge: false,
+      segmentCount: npmCommandSegments(entry.command).length,
+    };
+    current.preMerge ||= entry.provenance.signal === 'pre-merge';
+    commands.set(entry.command, current);
+  }
+  return [...commands.values()]
+    .sort((left, right) =>
+      Number(right.preMerge) - Number(left.preMerge) ||
+      right.segmentCount - left.segmentCount ||
+      left.command.localeCompare(right.command),
+    )[0]?.command ?? null;
+}
+
 function detectExistingVerification(rootDir, scripts = {}) {
   const scriptEntries = Object.entries(scripts)
     .filter(([name, command]) => {
@@ -94,9 +177,19 @@ function detectExistingVerification(rootDir, scripts = {}) {
       reason: 'Existing guidance or convergence path detected; inventory before copying into Veritas.',
     }));
 
+  const instructionEntries = detectInstructionVerification(rootDir, scripts);
+  const authoritativeCommands = [...new Set(instructionEntries.map((entry) => entry.command))];
+
   return {
-    detected: scriptEntries.length + fileEntries.length > 0,
-    items: [...scriptEntries, ...fileEntries],
+    detected: scriptEntries.length + fileEntries.length + instructionEntries.length > 0,
+    items: [...scriptEntries, ...fileEntries, ...instructionEntries],
+    authoritativeCommands,
+    selectedAuthoritativeCommand: strongestInstructionCommand(instructionEntries),
+    provenance: instructionEntries.map((entry) => ({
+      command: entry.command,
+      ...entry.provenance,
+    })),
+    conflicts: [],
     recommendedEvidenceInventoryDefaults: {
       unknownCatchEvidenceDefault: 'candidate',
       requiredNeedsOwner: true,
@@ -135,7 +228,51 @@ export function inferBootstrapRepoInsights(rootDir) {
       ? ['docs:build', 'build', 'test', 'verify']
       : ['ci:fast', 'verify', 'test:smoke', 'test', 'build'];
   const matchingScript = scriptPriority.find((name) => typeof scripts[name] === 'string');
-  const evidenceCheck = matchingScript ? `npm run ${matchingScript}` : 'npm test';
+  const packageEvidenceCheck = matchingScript
+    ? `npm run ${matchingScript}`
+    : packageJson
+      ? 'npm test'
+      : 'node -e "process.exit(0)"';
+  const existingVerification = detectExistingVerification(rootDir, scripts);
+  const conflicts = [...existingVerification.conflicts];
+  if (existingVerification.authoritativeCommands.length > 1) {
+    conflicts.push({
+      kind: 'instruction-command-disagreement',
+      commands: existingVerification.authoritativeCommands,
+      reason: 'Authoritative AI instruction files declare different verification commands.',
+    });
+  }
+  if (
+    matchingScript &&
+    existingVerification.authoritativeCommands.length === 1 &&
+    !npmCommandSegments(existingVerification.authoritativeCommands[0]).includes(packageEvidenceCheck)
+  ) {
+    conflicts.push({
+      kind: 'package-script-disagreement',
+      command: packageEvidenceCheck,
+      instructionCommand: existingVerification.authoritativeCommands[0],
+      reason: 'The package-script priority and authoritative AI instruction command differ.',
+    });
+  }
+  existingVerification.conflicts = conflicts;
+
+  const hasConflictingSignals = conflicts.length > 0;
+  const authoritativeEvidenceCheck = existingVerification.selectedAuthoritativeCommand;
+  const evidenceCheck = authoritativeEvidenceCheck
+    ? authoritativeEvidenceCheck
+    : packageEvidenceCheck;
+  const evidenceCheckConfidence = hasConflictingSignals
+    ? 'medium'
+    : authoritativeEvidenceCheck || matchingScript
+      ? 'high'
+      : 'low';
+  const evidenceCheckSource = authoritativeEvidenceCheck
+    ? 'repo-declared AI instructions'
+    : matchingScript
+      ? 'package.json scripts'
+      : packageJson
+        ? 'fallback'
+        : 'node runtime smoke fallback';
 
   return {
     repoKind,
@@ -148,6 +285,8 @@ export function inferBootstrapRepoInsights(rootDir) {
     baseRef: inferBaseRef(rootDir),
     packageManager: packageJson ? 'npm' : 'unknown',
     matchedScripts: scriptPriority.filter((name) => typeof scripts[name] === 'string'),
-    existingVerification: detectExistingVerification(rootDir, scripts),
+    evidenceCheckConfidence,
+    evidenceCheckSource,
+    existingVerification,
   };
 }

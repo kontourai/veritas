@@ -96,6 +96,10 @@ _Avoid_: Forbidden area, human-only area
 The repo-local model of work areas, change boundaries, protected areas, ownership context, and dependency relationships. A repo map explains the shape of the repository; the repo standards define what requirements apply to that shape.
 _Avoid_: Adapter as the product term, repo surface, surface node, configuration catch-all
 
+Repo Map remains the canonical user-facing term. Internal compatibility identifiers may remain
+where a stored artifact or API requires them; the durable rationale is in
+[Terminology Decisions](docs/design/terminology-decisions.md#repo-map-remains-the-canonical-user-facing-term).
+
 **Standards File**:
 The repo-local artifact that stores repo standards in machine-readable form. The standards file is the source Veritas evaluates when deciding what evidence, boundaries, and guidance apply to a change.
 _Avoid_: Policy pack, rules bundle, configuration blob

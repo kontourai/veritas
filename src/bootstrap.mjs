@@ -13,12 +13,12 @@ import {
   slugifyProjectName,
 } from './bootstrap/starter-artifacts.mjs';
 import {
-  DEFAULT_SELECTED_INSTRUCTION_TARGETS,
   buildGovernanceInstructions,
   buildSuggestedCiSnippet,
   buildSuggestedCodeownersBlock,
   buildSuggestedPackageScripts,
   normalizeInstructionTargets,
+  selectExistingInstructionTargets,
   validateInstructionTargetPaths,
 } from './bootstrap/guidance.mjs';
 import { veritasArtifactPath } from './paths.mjs';
@@ -43,7 +43,9 @@ export function buildBootstrapStarterKitPlan({
 }) {
   const repoInsights = inferBootstrapRepoInsights(rootDir);
   const resolvedEvidenceCheck = evidenceCheck ?? repoInsights.evidenceCheck;
-  const selectedInstructionTargets = normalizeInstructionTargets(instructionTargets ?? DEFAULT_SELECTED_INSTRUCTION_TARGETS);
+  const selectedInstructionTargets = instructionTargets === undefined
+    ? selectExistingInstructionTargets(rootDir)
+    : normalizeInstructionTargets(instructionTargets);
   validateInstructionTargetPaths(rootDir, selectedInstructionTargets, 'bootstrap');
   const repoMapPath = resolve(rootDir, '.veritas/repo-map.json');
   const repoStandardsPath = resolve(rootDir, '.veritas/repo-standards/default.repo-standards.json');

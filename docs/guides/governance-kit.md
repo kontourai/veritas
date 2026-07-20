@@ -39,6 +39,25 @@ npm exec -- veritas attest bootstrap --actor <authority-id> \
 npm exec -- veritas readiness --working-tree
 ```
 
+### Non-npm repositories
+
+Do not add a consumer `package.json` merely to run Veritas. After explicit maintainer approval of
+the exact engine release, use the pinned ephemeral invocation for every setup command:
+
+```bash
+npm exec --yes --package=@kontourai/veritas@1.5.1 -- veritas --version
+npm exec --yes --package=@kontourai/veritas@1.5.1 -- veritas init --explore --output .veritas/init-plans/first-pass.json
+# Review and approve the generated plan.
+npm exec --yes --package=@kontourai/veritas@1.5.1 -- veritas init --apply --plan .veritas/init-plans/first-pass.json
+npm exec --yes --package=@kontourai/veritas@1.5.1 -- veritas readiness --working-tree
+```
+
+This invocation uses npm's execution cache without writing the consumer manifest or lockfile.
+The exact `1.5.1` version is the approved engine pin in this example; never substitute `latest`,
+a range, or a different version without renewed maintainer approval. For a repository without a
+package manifest, init configures a Node runtime smoke check so the first readiness run is
+runnable. Replace that smoke check with the repository's real evidenceCheck before promoting it.
+
 ## Gate canonical readiness
 
 Veritas emits the canonical Hachure trust bundle directly; the kit does not maintain a second
