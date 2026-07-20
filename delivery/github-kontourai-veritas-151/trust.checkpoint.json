@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "slug": "github-kontourai-veritas-151",
+  "work_item": null,
+  "status": "in_progress",
+  "phase": "release",
+  "sealed_at": "2026-07-20T21:09:44Z",
+  "commit_sha": "61b00dc87efc7c2e4759c5304b7f726c92eb6fcb",
+  "checkpoint": {
+    "asOf": "2026-07-20T21:09:44.616Z",
+    "statusByClaimId": {
+      "github-kontourai-veritas-151-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-151-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-5b114c55648103ff3c5870d38783c6d800ba6f9aca39a728a661115e245436ab-gate-visit-2026-07-20t21-05-22z": "verified",
+      "github-kontourai-veritas-151-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-151-is-assigned-isolated-bounded-to-two-files-and-ready-gate-visit-2026-07-20t21-05-47-821z": "verified",
+      "github-kontourai-veritas-151-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.parent-and-child-prefix-coverage-is-the-accepted-deterministic-rule-no-gaps-remain-gate-visit-2026-07-20t21-05-48-372z": "verified",
+      "github-kontourai-veritas-151-gate-claim-implementation-plan.flow-agents-workflow.the-plan-covers-the-prefix-rule-regression-fixture-and-verification-gate-visit-2026-07-20t21-05-49-116z": "verified",
+      "github-kontourai-veritas-151-gate-claim-implementation-scope.flow-agents-workflow.changed-only-preservation-aware-work-area-coverage-and-its-mature-governance-regression-fixture-exact-parent-and-child-prefix-coverage-now-prevents-ambiguous-additive-nodes-gate-visit-2026-07-20t21-07-23-873z": "verified",
+      "github-kontourai-veritas-151-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-verification-passed-including-the-preservation-overlap-regression-and-coverage-gate-gate-visit-2026-07-20t21-07-41-180z": "verified",
+      "github-kontourai-veritas-151-gate-claim-merge-readiness.flow-agents-workflow.bounded-overlap-fix-is-review-clean-and-canonical-test-ci-passed-with-acceptance-criteria-covered-gate-visit-2026-07-20t21-09-43-833z": "verified",
+      "github-kontourai-veritas-151-mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended.flow-agents-workflow.mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended-verified-2026-07-20t21-07-41-180z": "verified",
+      "github-kontourai-veritas-151-genuinely-uncovered-work-areas-still-append-deterministically.flow-agents-workflow.genuinely-uncovered-work-areas-still-append-deterministically-verified-2026-07-20t21-07-41-180z": "verified",
+      "github-kontourai-veritas-151-final-code-review.flow-agents-workflow.review-found-no-open-correctness-security-or-scope-findings-in-overlap-safe-preservation-merging-reviewed-2026-07-20t21-07-40-465z": "verified"
+    },
+    "throughEventCreatedAt": "2026-07-20T21:09:43.833Z",
+    "throughEventCreatedAtByClaimId": {
+      "github-kontourai-veritas-151-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-151-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-5b114c55648103ff3c5870d38783c6d800ba6f9aca39a728a661115e245436ab-gate-visit-2026-07-20t21-05-22z": "2026-07-20T21:09:43.833Z",
+      "github-kontourai-veritas-151-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-151-is-assigned-isolated-bounded-to-two-files-and-ready-gate-visit-2026-07-20t21-05-47-821z": "2026-07-20T21:09:43.833Z",
+      "github-kontourai-veritas-151-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.parent-and-child-prefix-coverage-is-the-accepted-deterministic-rule-no-gaps-remain-gate-visit-2026-07-20t21-05-48-372z": "2026-07-20T21:09:43.833Z",
+      "github-kontourai-veritas-151-gate-claim-implementation-plan.flow-agents-workflow.the-plan-covers-the-prefix-rule-regression-fixture-and-verification-gate-visit-2026-07-20t21-05-49-116z": "2026-07-20T21:09:43.833Z",
+      "github-kontourai-veritas-151-gate-claim-implementation-scope.flow-agents-workflow.changed-only-preservation-aware-work-area-coverage-and-its-mature-governance-regression-fixture-exact-parent-and-child-prefix-coverage-now-prevents-ambiguous-additive-nodes-gate-visit-2026-07-20t21-07-23-873z": "2026-07-20T21:09:43.833Z",
+      "github-kontourai-veritas-151-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-verification-passed-including-the-preservation-overlap-regression-and-coverage-gate-gate-visit-2026-07-20t21-07-41-180z": "2026-07-20T21:09:43.833Z",
+      "github-kontourai-veritas-151-gate-claim-merge-readiness.flow-agents-workflow.bounded-overlap-fix-is-review-clean-and-canonical-test-ci-passed-with-acceptance-criteria-covered-gate-visit-2026-07-20t21-09-43-833z": "2026-07-20T21:09:43.833Z",
+      "github-kontourai-veritas-151-mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended.flow-agents-workflow.mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended-verified-2026-07-20t21-07-41-180z": "2026-07-20T21:07:41.180Z",
+      "github-kontourai-veritas-151-genuinely-uncovered-work-areas-still-append-deterministically.flow-agents-workflow.genuinely-uncovered-work-areas-still-append-deterministically-verified-2026-07-20t21-07-41-180z": "2026-07-20T21:07:41.180Z",
+      "github-kontourai-veritas-151-final-code-review.flow-agents-workflow.review-found-no-open-correctness-security-or-scope-findings-in-overlap-safe-preservation-merging-reviewed-2026-07-20t21-07-40-465z": "2026-07-20T21:09:43.833Z"
+    },
+    "statusFunctionVersion": "2"
+  }
+}

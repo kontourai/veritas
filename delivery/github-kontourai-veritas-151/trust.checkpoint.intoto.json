@@ -1,0 +1,890 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "trust.checkpoint.json",
+      "digest": {
+        "sha256": "a6e8df7bd80d70d4a358578554471f571cd75e6eb575795c381f97471b4d33ee"
+      }
+    }
+  ],
+  "predicateType": "https://hachure.org/v1/bundle",
+  "predicate": {
+    "schemaVersion": 5,
+    "source": "flow-agents/workflow-sidecar;statusFunctionVersion=2",
+    "claims": [
+      {
+        "id": "github-kontourai-veritas-151-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-151-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-5b114c55648103ff3c5870d38783c6d800ba6f9aca39a728a661115e245436ab-gate-visit-2026-07-20t21-05-22z",
+        "subjectType": "work-item",
+        "subjectId": "github-kontourai-veritas-151/gate-claim-selected-work",
+        "facet": "flow-agents.workflow",
+        "claimType": "builder.pull-work.selected",
+        "fieldOrBehavior": "Work Item github:kontourai/veritas#151 is durably assigned to the active workflow actor (assignment sha256:5b114c55648103ff3c5870d38783c6d800ba6f9aca39a728a661115e245436ab).",
+        "value": "pass",
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "updatedAt": "2026-07-20T21:09:43.833Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:builder.pull-work.selected:attestation",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "external",
+          "workflow_subject_ref": "github:kontourai/veritas#151",
+          "expected_producer": "builder.pull-work",
+          "recorded_by": "codexveritas-overlap-151Kontour",
+          "self_produced_trust_slices": [
+            "selected-work"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/assignment/github-kontourai-veritas-151.json",
+              "summary": "Durable local assignment record for the selected Work Item and active actor; sha256:5b114c55648103ff3c5870d38783c6d800ba6f9aca39a728a661115e245436ab."
+            },
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/github-kontourai-veritas-151/github-kontourai-veritas-151--pull-work.md",
+              "summary": "Concrete pull-work selection report for github:kontourai/veritas#151."
+            }
+          ],
+          "gate_claim": {
+            "expectation_id": "selected-work",
+            "claim_type": "builder.pull-work.selected",
+            "subject_type": "work-item",
+            "step_id": "pull-work",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T21:05:22Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "github-kontourai-veritas-151-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-151-is-assigned-isolated-bounded-to-two-files-and-ready-gate-visit-2026-07-20t21-05-47-821z",
+        "subjectType": "work-item",
+        "subjectId": "github-kontourai-veritas-151/gate-claim-pickup-probe-readiness",
+        "facet": "flow-agents.workflow",
+        "claimType": "builder.design-probe.pickup-readiness",
+        "fieldOrBehavior": "Issue #151 is assigned, isolated, bounded to two files, and ready.",
+        "value": "pass",
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "updatedAt": "2026-07-20T21:09:43.833Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:builder.design-probe.pickup-readiness:attestation",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "external",
+          "workflow_subject_ref": "github:kontourai/veritas#151",
+          "expected_producer": "builder.pickup-probe",
+          "recorded_by": "codexveritas-overlap-151Kontour",
+          "self_produced_trust_slices": [
+            "pickup-probe"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/github-kontourai-veritas-151/github-kontourai-veritas-151--pull-work.md",
+              "summary": "Reviewable scoped evidence."
+            }
+          ],
+          "gate_claim": {
+            "expectation_id": "pickup-probe-readiness",
+            "claim_type": "builder.design-probe.pickup-readiness",
+            "subject_type": "work-item",
+            "step_id": "design-probe",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T21:05:47.821Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "github-kontourai-veritas-151-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.parent-and-child-prefix-coverage-is-the-accepted-deterministic-rule-no-gaps-remain-gate-visit-2026-07-20t21-05-48-372z",
+        "subjectType": "decision",
+        "subjectId": "github-kontourai-veritas-151/gate-claim-probe-decisions-or-accepted-gaps",
+        "facet": "flow-agents.workflow",
+        "claimType": "builder.design-probe.decisions",
+        "fieldOrBehavior": "Parent and child prefix coverage is the accepted deterministic rule; no gaps remain.",
+        "value": "pass",
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "updatedAt": "2026-07-20T21:09:43.833Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:builder.design-probe.decisions:attestation",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "external",
+          "workflow_subject_ref": "github:kontourai/veritas#151",
+          "expected_producer": "builder.pickup-probe",
+          "recorded_by": "codexveritas-overlap-151Kontour",
+          "self_produced_trust_slices": [
+            "pickup-probe"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/github-kontourai-veritas-151/github-kontourai-veritas-151--pull-work.md",
+              "summary": "Reviewable scoped evidence."
+            }
+          ],
+          "gate_claim": {
+            "expectation_id": "probe-decisions-or-accepted-gaps",
+            "claim_type": "builder.design-probe.decisions",
+            "subject_type": "decision",
+            "step_id": "design-probe",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T21:05:48.372Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "github-kontourai-veritas-151-gate-claim-implementation-plan.flow-agents-workflow.the-plan-covers-the-prefix-rule-regression-fixture-and-verification-gate-visit-2026-07-20t21-05-49-116z",
+        "subjectType": "artifact",
+        "subjectId": "github-kontourai-veritas-151/gate-claim-implementation-plan",
+        "facet": "flow-agents.workflow",
+        "claimType": "builder.plan.implementation",
+        "fieldOrBehavior": "The plan covers the prefix rule, regression fixture, and verification.",
+        "value": "pass",
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "updatedAt": "2026-07-20T21:09:43.833Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:builder.plan.implementation:attestation",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "external",
+          "workflow_subject_ref": "github:kontourai/veritas#151",
+          "expected_producer": "builder.plan-work",
+          "recorded_by": "codexveritas-overlap-151Kontour",
+          "self_produced_trust_slices": [
+            "implementation-plan"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/github-kontourai-veritas-151/github-kontourai-veritas-151--plan-work.md",
+              "summary": "Reviewable scoped evidence."
+            }
+          ],
+          "gate_claim": {
+            "expectation_id": "implementation-plan",
+            "claim_type": "builder.plan.implementation",
+            "subject_type": "artifact",
+            "step_id": "plan",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T21:05:49.116Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "github-kontourai-veritas-151-gate-claim-implementation-scope.flow-agents-workflow.changed-only-preservation-aware-work-area-coverage-and-its-mature-governance-regression-fixture-exact-parent-and-child-prefix-coverage-now-prevents-ambiguous-additive-nodes-gate-visit-2026-07-20t21-07-23-873z",
+        "subjectType": "change",
+        "subjectId": "github-kontourai-veritas-151/gate-claim-implementation-scope",
+        "facet": "flow-agents.workflow",
+        "claimType": "builder.execute.scope",
+        "fieldOrBehavior": "Changed only preservation-aware work-area coverage and its mature-governance regression fixture; exact, parent, and child prefix coverage now prevents ambiguous additive nodes.",
+        "value": "pass",
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "updatedAt": "2026-07-20T21:09:43.833Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:builder.execute.scope:attestation",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "external",
+          "workflow_subject_ref": "github:kontourai/veritas#151",
+          "expected_producer": "builder.execute-plan",
+          "recorded_by": "codexveritas-overlap-151Kontour",
+          "self_produced_trust_slices": [
+            "implementation-scope"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/github-kontourai-veritas-151/github-kontourai-veritas-151--deliver.md",
+              "summary": "Declared durable delivery artifact for the bounded implementation."
+            }
+          ],
+          "gate_claim": {
+            "expectation_id": "implementation-scope",
+            "claim_type": "builder.execute.scope",
+            "subject_type": "change",
+            "step_id": "execute",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T21:07:23.873Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "github-kontourai-veritas-151-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-verification-passed-including-the-preservation-overlap-regression-and-coverage-gate-gate-visit-2026-07-20t21-07-41-180z",
+        "subjectType": "flow-step",
+        "subjectId": "github-kontourai-veritas-151/gate-claim-tests-evidence",
+        "facet": "flow-agents.workflow",
+        "claimType": "builder.verify.tests",
+        "fieldOrBehavior": "Canonical CI verification passed, including the preservation overlap regression and coverage gate.",
+        "value": "pass",
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "updatedAt": "2026-07-20T21:09:43.833Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:builder.verify.tests:test_output",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "command",
+          "workflow_subject_ref": "github:kontourai/veritas#151",
+          "expected_producer": "builder.verify-work",
+          "recorded_by": "codexveritas-overlap-151Kontour",
+          "self_produced_trust_slices": [
+            "acceptance-criteria",
+            "tests-evidence",
+            "policy-compliance"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "command",
+              "excerpt": "npm run test:ci",
+              "summary": "Canonical verification, full tests, and coverage gate passed."
+            },
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/github-kontourai-veritas-151/github-kontourai-veritas-151--plan-work.md",
+              "summary": "Acceptance and verification plan."
+            }
+          ],
+          "output_digest": {
+            "algorithm": "sha256",
+            "hex": "ab065e876c10a9d986538955cc60544fa7cc39c25ed1a56a054bdf848879860d"
+          },
+          "observed_commands": [
+            {
+              "command": "npm run test:ci",
+              "exit_code": 0,
+              "output_sha256": "ab065e876c10a9d986538955cc60544fa7cc39c25ed1a56a054bdf848879860d",
+              "test_count": 265,
+              "execution_proof": {
+                "kind": "local-process-exit",
+                "runner": "node --test",
+                "static_test_units": 578
+              }
+            }
+          ],
+          "gate_claim": {
+            "expectation_id": "tests-evidence",
+            "claim_type": "builder.verify.tests",
+            "subject_type": "flow-step",
+            "step_id": "verify",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T21:07:41.180Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "github-kontourai-veritas-151-gate-claim-merge-readiness.flow-agents-workflow.bounded-overlap-fix-is-review-clean-and-canonical-test-ci-passed-with-acceptance-criteria-covered-gate-visit-2026-07-20t21-09-43-833z",
+        "subjectType": "change",
+        "subjectId": "github-kontourai-veritas-151/gate-claim-merge-readiness",
+        "facet": "flow-agents.workflow",
+        "claimType": "builder.merge-ready.readiness",
+        "fieldOrBehavior": "Bounded overlap fix is review-clean and canonical test:ci passed with acceptance criteria covered.",
+        "value": "pass",
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "updatedAt": "2026-07-20T21:09:43.833Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:builder.merge-ready.readiness:attestation",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "external",
+          "workflow_subject_ref": "github:kontourai/veritas#151",
+          "expected_producer": "builder.evidence-gate",
+          "recorded_by": "codexveritas-overlap-151Kontour",
+          "self_produced_trust_slices": [
+            "merge-readiness"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/github-kontourai-veritas-151/github-kontourai-veritas-151--evidence-gate.md",
+              "summary": "Merge-readiness assessment for issue 151."
+            }
+          ],
+          "gate_claim": {
+            "expectation_id": "merge-readiness",
+            "claim_type": "builder.merge-ready.readiness",
+            "subject_type": "change",
+            "step_id": "merge-ready",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T21:09:43.833Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "github-kontourai-veritas-151-mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended.flow-agents-workflow.mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended-verified-2026-07-20t21-07-41-180z",
+        "subjectType": "flow-step",
+        "subjectId": "github-kontourai-veritas-151/mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended",
+        "facet": "flow-agents.workflow",
+        "claimType": "workflow.acceptance.criterion",
+        "fieldOrBehavior": "Mature child work-area patterns prevent a redundant broad parent node from being appended",
+        "value": "pass",
+        "createdAt": "2026-07-20T21:07:41.180Z",
+        "updatedAt": "2026-07-20T21:07:41.180Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:workflow.acceptance.criterion:test_output",
+        "metadata": {
+          "origin": "acceptance",
+          "criterion": {
+            "id": "mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended",
+            "description": "Mature child work-area patterns prevent a redundant broad parent node from being appended",
+            "status": "pass",
+            "evidence_refs": [
+              {
+                "kind": "command",
+                "excerpt": "npm run test:ci",
+                "summary": "Regression fixture proves split package routing prevents a redundant broad package node."
+              }
+            ],
+            "observed_commands": [
+              {
+                "command": "npm run test:ci",
+                "exit_code": 0,
+                "output_sha256": "ab065e876c10a9d986538955cc60544fa7cc39c25ed1a56a054bdf848879860d",
+                "test_count": 265,
+                "execution_proof": {
+                  "kind": "local-process-exit",
+                  "runner": "node --test",
+                  "static_test_units": 578
+                }
+              }
+            ],
+            "identity_version": 2,
+            "verified_at": "2026-07-20T21:07:41.180Z"
+          },
+          "workflow_subject_ref": "github:kontourai/veritas#151"
+        },
+        "status": "verified"
+      },
+      {
+        "id": "github-kontourai-veritas-151-genuinely-uncovered-work-areas-still-append-deterministically.flow-agents-workflow.genuinely-uncovered-work-areas-still-append-deterministically-verified-2026-07-20t21-07-41-180z",
+        "subjectType": "flow-step",
+        "subjectId": "github-kontourai-veritas-151/genuinely-uncovered-work-areas-still-append-deterministically",
+        "facet": "flow-agents.workflow",
+        "claimType": "workflow.acceptance.criterion",
+        "fieldOrBehavior": "Genuinely uncovered work areas still append deterministically",
+        "value": "pass",
+        "createdAt": "2026-07-20T21:07:41.180Z",
+        "updatedAt": "2026-07-20T21:07:41.180Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:workflow.acceptance.criterion:test_output",
+        "metadata": {
+          "origin": "acceptance",
+          "criterion": {
+            "id": "genuinely-uncovered-work-areas-still-append-deterministically",
+            "description": "Genuinely uncovered work areas still append deterministically",
+            "status": "pass",
+            "evidence_refs": [
+              {
+                "kind": "command",
+                "excerpt": "npm run test:ci",
+                "summary": "Regression fixture proves genuinely uncovered work areas still append."
+              }
+            ],
+            "observed_commands": [
+              {
+                "command": "npm run test:ci",
+                "exit_code": 0,
+                "output_sha256": "ab065e876c10a9d986538955cc60544fa7cc39c25ed1a56a054bdf848879860d",
+                "test_count": 265,
+                "execution_proof": {
+                  "kind": "local-process-exit",
+                  "runner": "node --test",
+                  "static_test_units": 578
+                }
+              }
+            ],
+            "identity_version": 2,
+            "verified_at": "2026-07-20T21:07:41.180Z"
+          },
+          "workflow_subject_ref": "github:kontourai/veritas#151"
+        },
+        "status": "verified"
+      },
+      {
+        "id": "github-kontourai-veritas-151-final-code-review.flow-agents-workflow.review-found-no-open-correctness-security-or-scope-findings-in-overlap-safe-preservation-merging-reviewed-2026-07-20t21-07-40-465z",
+        "subjectType": "workflow-critique",
+        "subjectId": "github-kontourai-veritas-151/final-code-review",
+        "facet": "flow-agents.workflow",
+        "claimType": "workflow.critique.review",
+        "fieldOrBehavior": "Review found no open correctness, security, or scope findings in overlap-safe preservation merging.",
+        "value": "pass",
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "updatedAt": "2026-07-20T21:09:43.833Z",
+        "impactLevel": "medium",
+        "verificationPolicyId": "policy:workflow.critique.review",
+        "metadata": {
+          "origin": "critique",
+          "reviewer": "codex:veritas-overlap-review:Kontour",
+          "reviewed_at": "2026-07-20T21:07:40.465Z",
+          "identity_version": 2,
+          "findings": [],
+          "lanes": [
+            {
+              "id": "code-review",
+              "status": "pass",
+              "summary": "Reviewed exact, parent, and child prefix coverage and the mature package regression fixture.",
+              "evidence_refs": [
+                {
+                  "kind": "artifact",
+                  "file": ".kontourai/flow-agents/github-kontourai-veritas-151/github-kontourai-veritas-151--plan-work.md",
+                  "summary": "Scoped plan and verification."
+                }
+              ]
+            }
+          ],
+          "review_target": {
+            "artifacts": [
+              {
+                "file": ".kontourai/flow-agents/github-kontourai-veritas-151/github-kontourai-veritas-151--deliver.md",
+                "sha256": "d22b5e8b3261314674416060a5ea190a11ed8e7535eec04f66acfaf74a6d5f6b"
+              }
+            ],
+            "workspace_snapshot": {
+              "version": 1,
+              "kind": "git-worktree",
+              "algorithm": "sha256",
+              "digest": "a7a9ed0d368e135e6b6667887de460885a105fa6ed17c6b2f503735c7ea1ca32",
+              "head_sha": "61b00dc87efc7c2e4759c5304b7f726c92eb6fcb"
+            }
+          },
+          "artifact_refs": [
+            ".kontourai/flow-agents/github-kontourai-veritas-151/github-kontourai-veritas-151--deliver.md"
+          ],
+          "workflow_subject_ref": "github:kontourai/veritas#151"
+        },
+        "status": "verified"
+      }
+    ],
+    "evidence": [
+      {
+        "id": "ev:github-kontourai-veritas-151-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-151-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-5b114c55648103ff3c5870d38783c6d800ba6f9aca39a728a661115e245436ab-gate-visit-2026-07-20t21-05-22z",
+        "claimId": "github-kontourai-veritas-151-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-151-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-5b114c55648103ff3c5870d38783c6d800ba6f9aca39a728a661115e245436ab-gate-visit-2026-07-20t21-05-22z",
+        "evidenceType": "attestation",
+        "method": "corroboration",
+        "sourceRef": "github-kontourai-veritas-151/evidence.json",
+        "excerptOrSummary": "Work Item github:kontourai/veritas#151 is durably assigned to the active workflow actor (assignment sha256:5b114c55648103ff3c5870d38783c6d800ba6f9aca39a728a661115e245436ab).",
+        "observedAt": "2026-07-20T21:09:43.833Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true
+      },
+      {
+        "id": "ev:github-kontourai-veritas-151-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-151-is-assigned-isolated-bounded-to-two-files-and-ready-gate-visit-2026-07-20t21-05-47-821z",
+        "claimId": "github-kontourai-veritas-151-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-151-is-assigned-isolated-bounded-to-two-files-and-ready-gate-visit-2026-07-20t21-05-47-821z",
+        "evidenceType": "attestation",
+        "method": "corroboration",
+        "sourceRef": "github-kontourai-veritas-151/evidence.json",
+        "excerptOrSummary": "Issue #151 is assigned, isolated, bounded to two files, and ready.",
+        "observedAt": "2026-07-20T21:09:43.833Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true
+      },
+      {
+        "id": "ev:github-kontourai-veritas-151-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.parent-and-child-prefix-coverage-is-the-accepted-deterministic-rule-no-gaps-remain-gate-visit-2026-07-20t21-05-48-372z",
+        "claimId": "github-kontourai-veritas-151-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.parent-and-child-prefix-coverage-is-the-accepted-deterministic-rule-no-gaps-remain-gate-visit-2026-07-20t21-05-48-372z",
+        "evidenceType": "attestation",
+        "method": "corroboration",
+        "sourceRef": "github-kontourai-veritas-151/evidence.json",
+        "excerptOrSummary": "Parent and child prefix coverage is the accepted deterministic rule; no gaps remain.",
+        "observedAt": "2026-07-20T21:09:43.833Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true
+      },
+      {
+        "id": "ev:github-kontourai-veritas-151-gate-claim-implementation-plan.flow-agents-workflow.the-plan-covers-the-prefix-rule-regression-fixture-and-verification-gate-visit-2026-07-20t21-05-49-116z",
+        "claimId": "github-kontourai-veritas-151-gate-claim-implementation-plan.flow-agents-workflow.the-plan-covers-the-prefix-rule-regression-fixture-and-verification-gate-visit-2026-07-20t21-05-49-116z",
+        "evidenceType": "attestation",
+        "method": "corroboration",
+        "sourceRef": "github-kontourai-veritas-151/evidence.json",
+        "excerptOrSummary": "The plan covers the prefix rule, regression fixture, and verification.",
+        "observedAt": "2026-07-20T21:09:43.833Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true
+      },
+      {
+        "id": "ev:github-kontourai-veritas-151-gate-claim-implementation-scope.flow-agents-workflow.changed-only-preservation-aware-work-area-coverage-and-its-mature-governance-regression-fixture-exact-parent-and-child-prefix-coverage-now-prevents-ambiguous-additive-nodes-gate-visit-2026-07-20t21-07-23-873z",
+        "claimId": "github-kontourai-veritas-151-gate-claim-implementation-scope.flow-agents-workflow.changed-only-preservation-aware-work-area-coverage-and-its-mature-governance-regression-fixture-exact-parent-and-child-prefix-coverage-now-prevents-ambiguous-additive-nodes-gate-visit-2026-07-20t21-07-23-873z",
+        "evidenceType": "attestation",
+        "method": "corroboration",
+        "sourceRef": "github-kontourai-veritas-151/evidence.json",
+        "excerptOrSummary": "Changed only preservation-aware work-area coverage and its mature-governance regression fixture; exact, parent, and child prefix coverage now prevents ambiguous additive nodes.",
+        "observedAt": "2026-07-20T21:09:43.833Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true
+      },
+      {
+        "id": "ev:github-kontourai-veritas-151-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-verification-passed-including-the-preservation-overlap-regression-and-coverage-gate-gate-visit-2026-07-20t21-07-41-180z",
+        "claimId": "github-kontourai-veritas-151-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-verification-passed-including-the-preservation-overlap-regression-and-coverage-gate-gate-visit-2026-07-20t21-07-41-180z",
+        "evidenceType": "test_output",
+        "method": "validation",
+        "sourceRef": "github-kontourai-veritas-151/command-log.jsonl",
+        "excerptOrSummary": "Canonical CI verification passed, including the preservation overlap regression and coverage gate.",
+        "observedAt": "2026-07-20T21:09:43.833Z",
+        "collectedBy": "flow-agents/evidence-capture",
+        "passing": true,
+        "execution": {
+          "runner": "bash",
+          "label": "npm run test:ci",
+          "isError": false,
+          "exitCode": 0
+        }
+      },
+      {
+        "id": "ev:github-kontourai-veritas-151-gate-claim-merge-readiness.flow-agents-workflow.bounded-overlap-fix-is-review-clean-and-canonical-test-ci-passed-with-acceptance-criteria-covered-gate-visit-2026-07-20t21-09-43-833z",
+        "claimId": "github-kontourai-veritas-151-gate-claim-merge-readiness.flow-agents-workflow.bounded-overlap-fix-is-review-clean-and-canonical-test-ci-passed-with-acceptance-criteria-covered-gate-visit-2026-07-20t21-09-43-833z",
+        "evidenceType": "attestation",
+        "method": "corroboration",
+        "sourceRef": "github-kontourai-veritas-151/evidence.json",
+        "excerptOrSummary": "Bounded overlap fix is review-clean and canonical test:ci passed with acceptance criteria covered.",
+        "observedAt": "2026-07-20T21:09:43.833Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true
+      },
+      {
+        "id": "ev:github-kontourai-veritas-151-mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended.flow-agents-workflow.mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended-verified-2026-07-20t21-07-41-180z:c36b9c0d11820d38",
+        "claimId": "github-kontourai-veritas-151-mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended.flow-agents-workflow.mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended-verified-2026-07-20t21-07-41-180z",
+        "evidenceType": "test_output",
+        "method": "validation",
+        "sourceRef": "github-kontourai-veritas-151/observed-command",
+        "excerptOrSummary": "npm run test:ci",
+        "observedAt": "2026-07-20T21:07:41.180Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true,
+        "execution": {
+          "runner": "bash",
+          "label": "npm run test:ci",
+          "isError": false,
+          "exitCode": 0
+        }
+      },
+      {
+        "id": "ev:github-kontourai-veritas-151-genuinely-uncovered-work-areas-still-append-deterministically.flow-agents-workflow.genuinely-uncovered-work-areas-still-append-deterministically-verified-2026-07-20t21-07-41-180z:c36b9c0d11820d38",
+        "claimId": "github-kontourai-veritas-151-genuinely-uncovered-work-areas-still-append-deterministically.flow-agents-workflow.genuinely-uncovered-work-areas-still-append-deterministically-verified-2026-07-20t21-07-41-180z",
+        "evidenceType": "test_output",
+        "method": "validation",
+        "sourceRef": "github-kontourai-veritas-151/observed-command",
+        "excerptOrSummary": "npm run test:ci",
+        "observedAt": "2026-07-20T21:07:41.180Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true,
+        "execution": {
+          "runner": "bash",
+          "label": "npm run test:ci",
+          "isError": false,
+          "exitCode": 0
+        }
+      }
+    ],
+    "policies": [
+      {
+        "id": "policy:workflow.check.external:attestation",
+        "claimType": "workflow.check.external",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a workflow.check.external claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:builder.pull-work.selected:attestation",
+        "claimType": "builder.pull-work.selected",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a builder.pull-work.selected claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:builder.design-probe.pickup-readiness:attestation",
+        "claimType": "builder.design-probe.pickup-readiness",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a builder.design-probe.pickup-readiness claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:builder.design-probe.decisions:attestation",
+        "claimType": "builder.design-probe.decisions",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a builder.design-probe.decisions claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:builder.plan.implementation:attestation",
+        "claimType": "builder.plan.implementation",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a builder.plan.implementation claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:builder.execute.scope:attestation",
+        "claimType": "builder.execute.scope",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a builder.execute.scope claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:workflow.check.command:test_output",
+        "claimType": "workflow.check.command",
+        "requiredEvidence": [
+          "test_output"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a workflow.check.command claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:builder.verify.tests:test_output",
+        "claimType": "builder.verify.tests",
+        "requiredEvidence": [
+          "test_output"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a builder.verify.tests claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:builder.merge-ready.readiness:attestation",
+        "claimType": "builder.merge-ready.readiness",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a builder.merge-ready.readiness claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:workflow.acceptance.criterion:test_output",
+        "claimType": "workflow.acceptance.criterion",
+        "requiredEvidence": [
+          "test_output"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a workflow.acceptance.criterion claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:workflow.critique.review",
+        "claimType": "workflow.critique.review",
+        "requiredEvidence": [],
+        "acceptanceCriteria": [
+          "A verified verification event must support a workflow.critique.review claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "medium"
+      }
+    ],
+    "events": [
+      {
+        "id": "evt:github-kontourai-veritas-151-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-151-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-5b114c55648103ff3c5870d38783c6d800ba6f9aca39a728a661115e245436ab-gate-visit-2026-07-20t21-05-22z",
+        "claimId": "github-kontourai-veritas-151-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-151-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-5b114c55648103ff3c5870d38783c6d800ba6f9aca39a728a661115e245436ab-gate-visit-2026-07-20t21-05-22z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:github-kontourai-veritas-151-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-151-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-5b114c55648103ff3c5870d38783c6d800ba6f9aca39a728a661115e245436ab-gate-visit-2026-07-20t21-05-22z"
+        ],
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "verifiedAt": "2026-07-20T21:09:43.833Z"
+      },
+      {
+        "id": "evt:github-kontourai-veritas-151-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-151-is-assigned-isolated-bounded-to-two-files-and-ready-gate-visit-2026-07-20t21-05-47-821z",
+        "claimId": "github-kontourai-veritas-151-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-151-is-assigned-isolated-bounded-to-two-files-and-ready-gate-visit-2026-07-20t21-05-47-821z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:github-kontourai-veritas-151-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-151-is-assigned-isolated-bounded-to-two-files-and-ready-gate-visit-2026-07-20t21-05-47-821z"
+        ],
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "verifiedAt": "2026-07-20T21:09:43.833Z"
+      },
+      {
+        "id": "evt:github-kontourai-veritas-151-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.parent-and-child-prefix-coverage-is-the-accepted-deterministic-rule-no-gaps-remain-gate-visit-2026-07-20t21-05-48-372z",
+        "claimId": "github-kontourai-veritas-151-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.parent-and-child-prefix-coverage-is-the-accepted-deterministic-rule-no-gaps-remain-gate-visit-2026-07-20t21-05-48-372z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:github-kontourai-veritas-151-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.parent-and-child-prefix-coverage-is-the-accepted-deterministic-rule-no-gaps-remain-gate-visit-2026-07-20t21-05-48-372z"
+        ],
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "verifiedAt": "2026-07-20T21:09:43.833Z"
+      },
+      {
+        "id": "evt:github-kontourai-veritas-151-gate-claim-implementation-plan.flow-agents-workflow.the-plan-covers-the-prefix-rule-regression-fixture-and-verification-gate-visit-2026-07-20t21-05-49-116z",
+        "claimId": "github-kontourai-veritas-151-gate-claim-implementation-plan.flow-agents-workflow.the-plan-covers-the-prefix-rule-regression-fixture-and-verification-gate-visit-2026-07-20t21-05-49-116z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:github-kontourai-veritas-151-gate-claim-implementation-plan.flow-agents-workflow.the-plan-covers-the-prefix-rule-regression-fixture-and-verification-gate-visit-2026-07-20t21-05-49-116z"
+        ],
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "verifiedAt": "2026-07-20T21:09:43.833Z"
+      },
+      {
+        "id": "evt:github-kontourai-veritas-151-gate-claim-implementation-scope.flow-agents-workflow.changed-only-preservation-aware-work-area-coverage-and-its-mature-governance-regression-fixture-exact-parent-and-child-prefix-coverage-now-prevents-ambiguous-additive-nodes-gate-visit-2026-07-20t21-07-23-873z",
+        "claimId": "github-kontourai-veritas-151-gate-claim-implementation-scope.flow-agents-workflow.changed-only-preservation-aware-work-area-coverage-and-its-mature-governance-regression-fixture-exact-parent-and-child-prefix-coverage-now-prevents-ambiguous-additive-nodes-gate-visit-2026-07-20t21-07-23-873z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:github-kontourai-veritas-151-gate-claim-implementation-scope.flow-agents-workflow.changed-only-preservation-aware-work-area-coverage-and-its-mature-governance-regression-fixture-exact-parent-and-child-prefix-coverage-now-prevents-ambiguous-additive-nodes-gate-visit-2026-07-20t21-07-23-873z"
+        ],
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "verifiedAt": "2026-07-20T21:09:43.833Z"
+      },
+      {
+        "id": "evt:github-kontourai-veritas-151-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-verification-passed-including-the-preservation-overlap-regression-and-coverage-gate-gate-visit-2026-07-20t21-07-41-180z",
+        "claimId": "github-kontourai-veritas-151-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-verification-passed-including-the-preservation-overlap-regression-and-coverage-gate-gate-visit-2026-07-20t21-07-41-180z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:github-kontourai-veritas-151-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-verification-passed-including-the-preservation-overlap-regression-and-coverage-gate-gate-visit-2026-07-20t21-07-41-180z"
+        ],
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "verifiedAt": "2026-07-20T21:09:43.833Z"
+      },
+      {
+        "id": "evt:github-kontourai-veritas-151-gate-claim-merge-readiness.flow-agents-workflow.bounded-overlap-fix-is-review-clean-and-canonical-test-ci-passed-with-acceptance-criteria-covered-gate-visit-2026-07-20t21-09-43-833z",
+        "claimId": "github-kontourai-veritas-151-gate-claim-merge-readiness.flow-agents-workflow.bounded-overlap-fix-is-review-clean-and-canonical-test-ci-passed-with-acceptance-criteria-covered-gate-visit-2026-07-20t21-09-43-833z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:github-kontourai-veritas-151-gate-claim-merge-readiness.flow-agents-workflow.bounded-overlap-fix-is-review-clean-and-canonical-test-ci-passed-with-acceptance-criteria-covered-gate-visit-2026-07-20t21-09-43-833z"
+        ],
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "verifiedAt": "2026-07-20T21:09:43.833Z"
+      },
+      {
+        "id": "evt:github-kontourai-veritas-151-mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended.flow-agents-workflow.mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended-verified-2026-07-20t21-07-41-180z",
+        "claimId": "github-kontourai-veritas-151-mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended.flow-agents-workflow.mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended-verified-2026-07-20t21-07-41-180z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:github-kontourai-veritas-151-mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended.flow-agents-workflow.mature-child-work-area-patterns-prevent-a-redundant-broad-parent-node-from-being-appended-verified-2026-07-20t21-07-41-180z:c36b9c0d11820d38"
+        ],
+        "createdAt": "2026-07-20T21:07:41.180Z",
+        "verifiedAt": "2026-07-20T21:07:41.180Z"
+      },
+      {
+        "id": "evt:github-kontourai-veritas-151-genuinely-uncovered-work-areas-still-append-deterministically.flow-agents-workflow.genuinely-uncovered-work-areas-still-append-deterministically-verified-2026-07-20t21-07-41-180z",
+        "claimId": "github-kontourai-veritas-151-genuinely-uncovered-work-areas-still-append-deterministically.flow-agents-workflow.genuinely-uncovered-work-areas-still-append-deterministically-verified-2026-07-20t21-07-41-180z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:github-kontourai-veritas-151-genuinely-uncovered-work-areas-still-append-deterministically.flow-agents-workflow.genuinely-uncovered-work-areas-still-append-deterministically-verified-2026-07-20t21-07-41-180z:c36b9c0d11820d38"
+        ],
+        "createdAt": "2026-07-20T21:07:41.180Z",
+        "verifiedAt": "2026-07-20T21:07:41.180Z"
+      },
+      {
+        "id": "evt:github-kontourai-veritas-151-final-code-review.flow-agents-workflow.review-found-no-open-correctness-security-or-scope-findings-in-overlap-safe-preservation-merging-reviewed-2026-07-20t21-07-40-465z",
+        "claimId": "github-kontourai-veritas-151-final-code-review.flow-agents-workflow.review-found-no-open-correctness-security-or-scope-findings-in-overlap-safe-preservation-merging-reviewed-2026-07-20t21-07-40-465z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [],
+        "createdAt": "2026-07-20T21:09:43.833Z",
+        "verifiedAt": "2026-07-20T21:09:43.833Z"
+      }
+    ]
+  }
+}
