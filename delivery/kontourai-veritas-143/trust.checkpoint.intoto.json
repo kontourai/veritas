@@ -1,0 +1,1106 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "trust.checkpoint.json",
+      "digest": {
+        "sha256": "f8daa2953a177b28b62ae532188d64805417ca33aa85a0b2260d92cbcf12125f"
+      }
+    }
+  ],
+  "predicateType": "https://hachure.org/v1/bundle",
+  "predicate": {
+    "schemaVersion": 5,
+    "source": "flow-agents/workflow-sidecar;statusFunctionVersion=2",
+    "claims": [
+      {
+        "id": "kontourai-veritas-143-gate-claim-selected-work.flow-agents-workflow.work-item-kontourai-veritas-143-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-83793c8ef9c468bd150c71f706e383eddd7fc7a4f31a93277898351d74ad7d53-gate-visit-2026-07-20t17-22-30z",
+        "subjectType": "work-item",
+        "subjectId": "kontourai-veritas-143/gate-claim-selected-work",
+        "facet": "flow-agents.workflow",
+        "claimType": "builder.pull-work.selected",
+        "fieldOrBehavior": "Work Item kontourai/veritas#143 is durably assigned to the active workflow actor (assignment sha256:83793c8ef9c468bd150c71f706e383eddd7fc7a4f31a93277898351d74ad7d53).",
+        "value": "pass",
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "updatedAt": "2026-07-20T17:41:45.767Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:builder.pull-work.selected:attestation",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "external",
+          "workflow_subject_ref": "kontourai/veritas#143",
+          "expected_producer": "builder.pull-work",
+          "recorded_by": "codexveritas-change-provider-followupKontour",
+          "self_produced_trust_slices": [
+            "selected-work"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/assignment/kontourai-veritas-143.json",
+              "summary": "Durable local assignment record for the selected Work Item and active actor; sha256:83793c8ef9c468bd150c71f706e383eddd7fc7a4f31a93277898351d74ad7d53."
+            },
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/kontourai-veritas-143/kontourai-veritas-143--pull-work.md",
+              "summary": "Concrete pull-work selection report for kontourai/veritas#143."
+            }
+          ],
+          "gate_claim": {
+            "expectation_id": "selected-work",
+            "claim_type": "builder.pull-work.selected",
+            "subject_type": "work-item",
+            "step_id": "pull-work",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T17:22:30Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "kontourai-veritas-143-gate-claim-pickup-probe-readiness.flow-agents-workflow.follow-up-scope-and-assignment-are-ready-gate-visit-2026-07-20t17-23-35-195z",
+        "subjectType": "work-item",
+        "subjectId": "kontourai-veritas-143/gate-claim-pickup-probe-readiness",
+        "facet": "flow-agents.workflow",
+        "claimType": "builder.design-probe.pickup-readiness",
+        "fieldOrBehavior": "Follow-up scope and assignment are ready.",
+        "value": "pass",
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "updatedAt": "2026-07-20T17:41:45.767Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:builder.design-probe.pickup-readiness:attestation",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "external",
+          "workflow_subject_ref": "kontourai/veritas#143",
+          "expected_producer": "builder.pickup-probe",
+          "recorded_by": "codexveritas-change-provider-followupKontour",
+          "self_produced_trust_slices": [
+            "pickup-probe"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/kontourai-veritas-143/kontourai-veritas-143--pull-work.md",
+              "summary": "Bound follow-up learning and scope."
+            }
+          ],
+          "gate_claim": {
+            "expectation_id": "pickup-probe-readiness",
+            "claim_type": "builder.design-probe.pickup-readiness",
+            "subject_type": "work-item",
+            "step_id": "design-probe",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T17:23:35.195Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "kontourai-veritas-143-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.canonical-schema-and-exact-provider-binding-decisions-are-explicit-gate-visit-2026-07-20t17-23-35-530z",
+        "subjectType": "decision",
+        "subjectId": "kontourai-veritas-143/gate-claim-probe-decisions-or-accepted-gaps",
+        "facet": "flow-agents.workflow",
+        "claimType": "builder.design-probe.decisions",
+        "fieldOrBehavior": "Canonical schema and exact provider binding decisions are explicit.",
+        "value": "pass",
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "updatedAt": "2026-07-20T17:41:45.767Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:builder.design-probe.decisions:attestation",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "external",
+          "workflow_subject_ref": "kontourai/veritas#143",
+          "expected_producer": "builder.pickup-probe",
+          "recorded_by": "codexveritas-change-provider-followupKontour",
+          "self_produced_trust_slices": [
+            "pickup-probe"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/kontourai-veritas-143/kontourai-veritas-143--pull-work.md",
+              "summary": "Bound follow-up learning and scope."
+            }
+          ],
+          "gate_claim": {
+            "expectation_id": "probe-decisions-or-accepted-gaps",
+            "claim_type": "builder.design-probe.decisions",
+            "subject_type": "decision",
+            "step_id": "design-probe",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T17:23:35.530Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "kontourai-veritas-143-gate-claim-implementation-plan.flow-agents-workflow.plan-covers-configuration-resolution-review-and-pr-reconciliation-gate-visit-2026-07-20t17-23-35-999z",
+        "subjectType": "artifact",
+        "subjectId": "kontourai-veritas-143/gate-claim-implementation-plan",
+        "facet": "flow-agents.workflow",
+        "claimType": "builder.plan.implementation",
+        "fieldOrBehavior": "Plan covers configuration, resolution, review, and PR reconciliation.",
+        "value": "pass",
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "updatedAt": "2026-07-20T17:41:45.767Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:builder.plan.implementation:attestation",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "external",
+          "workflow_subject_ref": "kontourai/veritas#143",
+          "expected_producer": "builder.plan-work",
+          "recorded_by": "codexveritas-change-provider-followupKontour",
+          "self_produced_trust_slices": [
+            "implementation-plan"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/kontourai-veritas-143/kontourai-veritas-143--plan-work.md",
+              "summary": "Follow-up implementation plan."
+            }
+          ],
+          "gate_claim": {
+            "expectation_id": "implementation-plan",
+            "claim_type": "builder.plan.implementation",
+            "subject_type": "artifact",
+            "step_id": "plan",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T17:23:35.999Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "kontourai-veritas-143-gate-claim-implementation-scope.flow-agents-workflow.added-the-exact-safe-changeprovider-configuration-gate-visit-2026-07-20t17-23-36-418z",
+        "subjectType": "change",
+        "subjectId": "kontourai-veritas-143/gate-claim-implementation-scope",
+        "facet": "flow-agents.workflow",
+        "claimType": "builder.execute.scope",
+        "fieldOrBehavior": "Added the exact safe ChangeProvider configuration.",
+        "value": "pass",
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "updatedAt": "2026-07-20T17:41:45.767Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:builder.execute.scope:attestation",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "external",
+          "workflow_subject_ref": "kontourai/veritas#143",
+          "expected_producer": "builder.execute-plan",
+          "recorded_by": "codexveritas-change-provider-followupKontour",
+          "self_produced_trust_slices": [
+            "implementation-scope"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/kontourai-veritas-143/kontourai-veritas-143--deliver.md",
+              "summary": "Follow-up delivery report."
+            },
+            {
+              "kind": "artifact",
+              "file": "context/settings/change-provider-settings.json",
+              "summary": "Exact repository ChangeProvider settings."
+            }
+          ],
+          "gate_claim": {
+            "expectation_id": "implementation-scope",
+            "claim_type": "builder.execute.scope",
+            "subject_type": "change",
+            "step_id": "execute",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T17:23:36.418Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "kontourai-veritas-143-gate-claim-acceptance-criteria.flow-agents-workflow.effective-settings-resolve-the-exact-safe-kontourai-veritas-github-changeprovider-and-governance-mapping-gate-visit-2026-07-20t17-27-15-129z",
+        "subjectType": "flow-step",
+        "subjectId": "kontourai-veritas-143/gate-claim-acceptance-criteria",
+        "facet": "flow-agents.workflow",
+        "claimType": "workflow.acceptance.criterion",
+        "fieldOrBehavior": "Effective settings resolve the exact safe kontourai/veritas GitHub ChangeProvider and governance mapping.",
+        "value": "pass",
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "updatedAt": "2026-07-20T17:41:45.767Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:workflow.acceptance.criterion:attestation",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "external",
+          "workflow_subject_ref": "kontourai/veritas#143",
+          "expected_producer": "builder.verify-work",
+          "recorded_by": "codexveritas-change-provider-followupKontour",
+          "self_produced_trust_slices": [
+            "acceptance-criteria",
+            "tests-evidence",
+            "policy-compliance"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/kontourai-veritas-143/acceptance.json",
+              "summary": "Accepted provider criterion."
+            }
+          ],
+          "gate_claim": {
+            "expectation_id": "acceptance-criteria",
+            "claim_type": "workflow.acceptance.criterion",
+            "subject_type": "flow-step",
+            "step_id": "verify",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T17:27:15.129Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "kontourai-veritas-143-gate-claim-tests-evidence.flow-agents-workflow.the-complete-veritas-suite-passes-with-exact-provider-configuration-and-governed-mapping-gate-visit-2026-07-20t17-29-30-680z",
+        "subjectType": "flow-step",
+        "subjectId": "kontourai-veritas-143/gate-claim-tests-evidence",
+        "facet": "flow-agents.workflow",
+        "claimType": "builder.verify.tests",
+        "fieldOrBehavior": "The complete Veritas suite passes with exact provider configuration and governed mapping.",
+        "value": "pass",
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "updatedAt": "2026-07-20T17:41:45.767Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:builder.verify.tests:test_output",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "command",
+          "workflow_subject_ref": "kontourai/veritas#143",
+          "expected_producer": "builder.verify-work",
+          "recorded_by": "codexveritas-change-provider-followupKontour",
+          "self_produced_trust_slices": [
+            "acceptance-criteria",
+            "tests-evidence",
+            "policy-compliance"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "command",
+              "excerpt": "npm test",
+              "summary": "Complete Veritas test suite."
+            },
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/kontourai-veritas-143/kontourai-veritas-143--plan-work.md",
+              "summary": "Criterion verification mapping."
+            }
+          ],
+          "output_digest": {
+            "algorithm": "sha256",
+            "hex": "20216e85bd4b8d6101253d18e7605e829269b899fe39e843de1b474cb56e7888"
+          },
+          "observed_commands": [
+            {
+              "command": "npm test",
+              "exit_code": 0,
+              "output_sha256": "20216e85bd4b8d6101253d18e7605e829269b899fe39e843de1b474cb56e7888",
+              "test_count": 268,
+              "execution_proof": {
+                "kind": "local-process-exit",
+                "runner": "node --test",
+                "static_test_units": 574
+              }
+            }
+          ],
+          "verification_workspace_snapshot": {
+            "version": 1,
+            "kind": "git-worktree",
+            "algorithm": "sha256",
+            "digest": "c2cd1e722dd9c2194438225f458adb3e83f336df700a5bf72eea49b5a4e965a8",
+            "head_sha": "5099efda4b89c4022136177df6be522e0ed051cb"
+          },
+          "gate_claim": {
+            "expectation_id": "tests-evidence",
+            "claim_type": "builder.verify.tests",
+            "subject_type": "flow-step",
+            "step_id": "verify",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T17:29:30.680Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "kontourai-veritas-143-gate-claim-merge-readiness.flow-agents-workflow.current-review-verification-conformance-scope-integrity-and-provider-checks-support-merge-review-gate-visit-2026-07-20t17-41-01-185z",
+        "subjectType": "change",
+        "subjectId": "kontourai-veritas-143/gate-claim-merge-readiness",
+        "facet": "flow-agents.workflow",
+        "claimType": "builder.merge-ready.readiness",
+        "fieldOrBehavior": "Current review, verification, conformance, scope integrity, and provider checks support merge review.",
+        "value": "pass",
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "updatedAt": "2026-07-20T17:41:45.767Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:builder.merge-ready.readiness:attestation",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "external",
+          "workflow_subject_ref": "kontourai/veritas#143",
+          "expected_producer": "builder.evidence-gate",
+          "recorded_by": "codexveritas-change-provider-followupKontour",
+          "self_produced_trust_slices": [
+            "merge-readiness"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/kontourai-veritas-143/kontourai-veritas-143--evidence-gate.md",
+              "summary": "Follow-up confidence report."
+            }
+          ],
+          "gate_claim": {
+            "expectation_id": "merge-readiness",
+            "claim_type": "builder.merge-ready.readiness",
+            "subject_type": "change",
+            "step_id": "merge-ready",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T17:41:01.185Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "kontourai-veritas-143-gate-claim-ci-merge-readiness.flow-agents-workflow.pr-142-is-current-independently-reviewed-verified-and-all-hosted-checks-are-green-merge-is-authorized-by-the-user-gate-visit-2026-07-20t17-41-45-767z",
+        "subjectType": "pull-request",
+        "subjectId": "kontourai-veritas-143/gate-claim-ci-merge-readiness",
+        "facet": "flow-agents.workflow",
+        "claimType": "builder.merge-ready-ci.readiness",
+        "fieldOrBehavior": "PR #142 is current, independently reviewed, verified, and all hosted checks are green; merge is authorized by the user.",
+        "value": "pass",
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "updatedAt": "2026-07-20T17:41:45.767Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:builder.merge-ready-ci.readiness:attestation",
+        "metadata": {
+          "origin": "check",
+          "check_kind": "external",
+          "workflow_subject_ref": "kontourai/veritas#143",
+          "expected_producer": "builder.release-readiness",
+          "recorded_by": "codexveritas-change-provider-followupKontour",
+          "self_produced_trust_slices": [
+            "ci-merge-readiness"
+          ],
+          "artifact_refs": [
+            {
+              "kind": "artifact",
+              "file": ".kontourai/flow-agents/kontourai-veritas-143/release.json",
+              "summary": "Merge decision and provider record."
+            }
+          ],
+          "gate_claim": {
+            "expectation_id": "ci-merge-readiness",
+            "claim_type": "builder.merge-ready-ci.readiness",
+            "subject_type": "pull-request",
+            "step_id": "merge-ready-ci",
+            "identity_version": 2,
+            "recorded_at": "2026-07-20T17:41:45.767Z"
+          }
+        },
+        "status": "verified"
+      },
+      {
+        "id": "kontourai-veritas-143-effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider.flow-agents-workflow.effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider-verified-2026-07-20t17-29-30-680z",
+        "subjectType": "flow-step",
+        "subjectId": "kontourai-veritas-143/effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider",
+        "facet": "flow-agents.workflow",
+        "claimType": "workflow.acceptance.criterion",
+        "fieldOrBehavior": "Effective settings resolve the exact kontourai/veritas GitHub gh-cli ChangeProvider",
+        "value": "pass",
+        "createdAt": "2026-07-20T17:29:30.680Z",
+        "updatedAt": "2026-07-20T17:29:30.680Z",
+        "impactLevel": "high",
+        "verificationPolicyId": "policy:workflow.acceptance.criterion:test_output",
+        "metadata": {
+          "origin": "acceptance",
+          "criterion": {
+            "id": "effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider",
+            "description": "Effective settings resolve the exact kontourai/veritas GitHub gh-cli ChangeProvider",
+            "status": "pass",
+            "evidence_refs": [
+              {
+                "kind": "command",
+                "excerpt": "npm test",
+                "summary": "Complete Veritas suite passes."
+              }
+            ],
+            "observed_commands": [
+              {
+                "command": "npm test",
+                "exit_code": 0,
+                "output_sha256": "20216e85bd4b8d6101253d18e7605e829269b899fe39e843de1b474cb56e7888",
+                "test_count": 268,
+                "execution_proof": {
+                  "kind": "local-process-exit",
+                  "runner": "node --test",
+                  "static_test_units": 574
+                }
+              }
+            ],
+            "identity_version": 2,
+            "verified_at": "2026-07-20T17:29:30.680Z"
+          },
+          "workflow_subject_ref": "kontourai/veritas#143"
+        },
+        "status": "verified"
+      },
+      {
+        "id": "kontourai-veritas-143-final-code-review.flow-agents-workflow.report-only-review-approved-the-canonical-changeprovider-schema-correction-no-correctness-or-security-findings-remain-reviewed-2026-07-20t17-24-10-851z-superseded-critique-c4df6d39911688af647cb99c0afbe502853d19de570314f74e5f32e6bb239e4f",
+        "subjectType": "workflow-critique",
+        "subjectId": "kontourai-veritas-143/final-code-review",
+        "facet": "flow-agents.workflow",
+        "claimType": "workflow.critique.review",
+        "fieldOrBehavior": "Report-only review approved the canonical ChangeProvider schema correction; no correctness or security findings remain.",
+        "value": "pass",
+        "createdAt": "2026-07-20T17:24:10.851Z",
+        "updatedAt": "2026-07-20T17:24:10.851Z",
+        "impactLevel": "medium",
+        "verificationPolicyId": "policy:workflow.critique.review",
+        "metadata": {
+          "origin": "critique",
+          "reviewer": "codex:thread-b56a4672bd4a870866c19349:Kontour",
+          "reviewed_at": "2026-07-20T17:24:10.851Z",
+          "identity_version": 2,
+          "critique_sequence": 1,
+          "critique_predecessor_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "critique_record_hash": "e17a2aad5c4f02a67a9541f823eb54261bb8ce49325e9d0fe2a0dafda0f1562c",
+          "findings": [],
+          "lanes": [
+            {
+              "id": "code-review",
+              "status": "pass",
+              "summary": "The corrected schema identifier, exact kontourai/veritas repository binding, declared capabilities, and fixed gh-cli executor were reviewed with no open findings.",
+              "evidence_refs": [
+                {
+                  "kind": "artifact",
+                  "file": ".kontourai/flow-agents/kontourai-veritas-143/kontourai-veritas-143--deliver.md",
+                  "summary": "Reviewed delivery scope and implementation evidence."
+                },
+                {
+                  "kind": "artifact",
+                  "file": "context/settings/change-provider-settings.json",
+                  "summary": "Reviewed the corrected ChangeProvider configuration."
+                }
+              ]
+            }
+          ],
+          "review_target": {
+            "artifacts": [
+              {
+                "file": ".kontourai/flow-agents/kontourai-veritas-143/kontourai-veritas-143--deliver.md",
+                "sha256": "5fdb9ac8161e470af5fd1368afea67e5624fa0598e054ead4a45d76f44e28d21"
+              },
+              {
+                "file": "context/settings/change-provider-settings.json",
+                "sha256": "dbe68dc9b299ed94d83462adeeccb199591dafd4d9ed5a77cd3dfbc666e3716e"
+              }
+            ],
+            "workspace_snapshot": {
+              "version": 1,
+              "kind": "git-worktree",
+              "algorithm": "sha256",
+              "digest": "9b916ab0b48a573d7bde17f0863bdcd6b7bb7918f93bd846786277d17a293f74",
+              "head_sha": "aa8a4aac2703b7411452895c6769533850514634"
+            }
+          },
+          "artifact_refs": [
+            ".kontourai/flow-agents/kontourai-veritas-143/kontourai-veritas-143--deliver.md",
+            "context/settings/change-provider-settings.json"
+          ],
+          "workflow_subject_ref": "kontourai/veritas#143",
+          "superseded_by": "critique:c4df6d39911688af647cb99c0afbe502853d19de570314f74e5f32e6bb239e4f",
+          "critique_resolution": {
+            "schema_version": "1.0",
+            "kind": "same-reviewer-recheck",
+            "prior_record_id": "critique:e17a2aad5c4f02a67a9541f823eb54261bb8ce49325e9d0fe2a0dafda0f1562c",
+            "resolving_record_id": "critique:c4df6d39911688af647cb99c0afbe502853d19de570314f74e5f32e6bb239e4f",
+            "resolver": "codex:thread-b56a4672bd4a870866c19349:Kontour",
+            "resolved_lane_ids": [],
+            "resolved_finding_ids": [],
+            "resolved_at": "2026-07-20T17:25:53.401Z"
+          },
+          "critique_record_id": "critique:e17a2aad5c4f02a67a9541f823eb54261bb8ce49325e9d0fe2a0dafda0f1562c"
+        },
+        "status": "superseded"
+      },
+      {
+        "id": "kontourai-veritas-143-final-code-review.flow-agents-workflow.revised-report-only-review-approved-the-canonical-changeprovider-config-explicit-context-settings-governance-mapping-and-current-authority-backed-policy-attestation-no-correctness-or-security-findings-remain-reviewed-2026-07-20t17-25-53-401z",
+        "subjectType": "workflow-critique",
+        "subjectId": "kontourai-veritas-143/final-code-review",
+        "facet": "flow-agents.workflow",
+        "claimType": "workflow.critique.review",
+        "fieldOrBehavior": "Revised report-only review approved the canonical ChangeProvider config, explicit context/settings governance mapping, and current authority-backed policy attestation; no correctness or security findings remain.",
+        "value": "pass",
+        "createdAt": "2026-07-20T17:25:53.401Z",
+        "updatedAt": "2026-07-20T17:25:53.401Z",
+        "impactLevel": "medium",
+        "verificationPolicyId": "policy:workflow.critique.review",
+        "metadata": {
+          "origin": "critique",
+          "reviewer": "codex:thread-b56a4672bd4a870866c19349:Kontour",
+          "reviewed_at": "2026-07-20T17:25:53.401Z",
+          "identity_version": 2,
+          "critique_sequence": 2,
+          "critique_predecessor_hash": "e17a2aad5c4f02a67a9541f823eb54261bb8ce49325e9d0fe2a0dafda0f1562c",
+          "critique_record_hash": "c4df6d39911688af647cb99c0afbe502853d19de570314f74e5f32e6bb239e4f",
+          "findings": [],
+          "lanes": [
+            {
+              "id": "code-review",
+              "status": "pass",
+              "summary": "Reviewed the canonical provider schema, exact repository binding, strict context/settings work-area mapping, delivery-team allowance, and current hash-bound attestation chain. Veritas reports no attestation drift and boundary readiness passes for the allowed actor.",
+              "evidence_refs": [
+                {
+                  "kind": "artifact",
+                  "file": ".kontourai/flow-agents/kontourai-veritas-143/kontourai-veritas-143--deliver.md",
+                  "summary": "Reviewed current delivery scope and evidence."
+                },
+                {
+                  "kind": "artifact",
+                  "file": "context/settings/change-provider-settings.json",
+                  "summary": "Reviewed canonical ChangeProvider configuration."
+                },
+                {
+                  "kind": "artifact",
+                  "file": ".veritas/repo-map.json",
+                  "summary": "Reviewed explicit context/settings governance node."
+                },
+                {
+                  "kind": "artifact",
+                  "file": ".veritas/attestations/policy-change-2026-07-20T17-24-55-187Z-2a41f89ff587.attestation.json",
+                  "summary": "Reviewed current authority-backed attestation and protected-standard hashes."
+                }
+              ]
+            }
+          ],
+          "review_target": {
+            "artifacts": [
+              {
+                "file": ".kontourai/flow-agents/kontourai-veritas-143/kontourai-veritas-143--deliver.md",
+                "sha256": "5fdb9ac8161e470af5fd1368afea67e5624fa0598e054ead4a45d76f44e28d21"
+              },
+              {
+                "file": "context/settings/change-provider-settings.json",
+                "sha256": "dbe68dc9b299ed94d83462adeeccb199591dafd4d9ed5a77cd3dfbc666e3716e"
+              },
+              {
+                "file": ".veritas/repo-map.json",
+                "sha256": "f630cb6d47e304d4f3f5b9121406affe966a276dde9d6fde5f337159a62aeda7"
+              },
+              {
+                "file": ".veritas/attestations/HEAD",
+                "sha256": "6d35bcc8fb9920279eab4287693ace1352ac675877fd2513f25f2ea38d90b69e"
+              },
+              {
+                "file": ".veritas/attestations/policy-change-2026-07-20T17-24-55-187Z-2a41f89ff587.attestation.json",
+                "sha256": "6c36861d38d27cf3810687878550971119dea428a71835820063b4b3d030ef36"
+              }
+            ],
+            "workspace_snapshot": {
+              "version": 1,
+              "kind": "git-worktree",
+              "algorithm": "sha256",
+              "digest": "c2cd1e722dd9c2194438225f458adb3e83f336df700a5bf72eea49b5a4e965a8",
+              "head_sha": "5099efda4b89c4022136177df6be522e0ed051cb"
+            }
+          },
+          "artifact_refs": [
+            ".kontourai/flow-agents/kontourai-veritas-143/kontourai-veritas-143--deliver.md",
+            "context/settings/change-provider-settings.json",
+            ".veritas/repo-map.json",
+            ".veritas/attestations/HEAD",
+            ".veritas/attestations/policy-change-2026-07-20T17-24-55-187Z-2a41f89ff587.attestation.json"
+          ],
+          "workflow_subject_ref": "kontourai/veritas#143",
+          "critique_record_id": "critique:c4df6d39911688af647cb99c0afbe502853d19de570314f74e5f32e6bb239e4f"
+        },
+        "status": "verified"
+      }
+    ],
+    "evidence": [
+      {
+        "id": "ev:kontourai-veritas-143-gate-claim-selected-work.flow-agents-workflow.work-item-kontourai-veritas-143-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-83793c8ef9c468bd150c71f706e383eddd7fc7a4f31a93277898351d74ad7d53-gate-visit-2026-07-20t17-22-30z",
+        "claimId": "kontourai-veritas-143-gate-claim-selected-work.flow-agents-workflow.work-item-kontourai-veritas-143-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-83793c8ef9c468bd150c71f706e383eddd7fc7a4f31a93277898351d74ad7d53-gate-visit-2026-07-20t17-22-30z",
+        "evidenceType": "attestation",
+        "method": "corroboration",
+        "sourceRef": "kontourai-veritas-143/evidence.json",
+        "excerptOrSummary": "Work Item kontourai/veritas#143 is durably assigned to the active workflow actor (assignment sha256:83793c8ef9c468bd150c71f706e383eddd7fc7a4f31a93277898351d74ad7d53).",
+        "observedAt": "2026-07-20T17:41:45.767Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true
+      },
+      {
+        "id": "ev:kontourai-veritas-143-gate-claim-pickup-probe-readiness.flow-agents-workflow.follow-up-scope-and-assignment-are-ready-gate-visit-2026-07-20t17-23-35-195z",
+        "claimId": "kontourai-veritas-143-gate-claim-pickup-probe-readiness.flow-agents-workflow.follow-up-scope-and-assignment-are-ready-gate-visit-2026-07-20t17-23-35-195z",
+        "evidenceType": "attestation",
+        "method": "corroboration",
+        "sourceRef": "kontourai-veritas-143/evidence.json",
+        "excerptOrSummary": "Follow-up scope and assignment are ready.",
+        "observedAt": "2026-07-20T17:41:45.767Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true
+      },
+      {
+        "id": "ev:kontourai-veritas-143-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.canonical-schema-and-exact-provider-binding-decisions-are-explicit-gate-visit-2026-07-20t17-23-35-530z",
+        "claimId": "kontourai-veritas-143-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.canonical-schema-and-exact-provider-binding-decisions-are-explicit-gate-visit-2026-07-20t17-23-35-530z",
+        "evidenceType": "attestation",
+        "method": "corroboration",
+        "sourceRef": "kontourai-veritas-143/evidence.json",
+        "excerptOrSummary": "Canonical schema and exact provider binding decisions are explicit.",
+        "observedAt": "2026-07-20T17:41:45.767Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true
+      },
+      {
+        "id": "ev:kontourai-veritas-143-gate-claim-implementation-plan.flow-agents-workflow.plan-covers-configuration-resolution-review-and-pr-reconciliation-gate-visit-2026-07-20t17-23-35-999z",
+        "claimId": "kontourai-veritas-143-gate-claim-implementation-plan.flow-agents-workflow.plan-covers-configuration-resolution-review-and-pr-reconciliation-gate-visit-2026-07-20t17-23-35-999z",
+        "evidenceType": "attestation",
+        "method": "corroboration",
+        "sourceRef": "kontourai-veritas-143/evidence.json",
+        "excerptOrSummary": "Plan covers configuration, resolution, review, and PR reconciliation.",
+        "observedAt": "2026-07-20T17:41:45.767Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true
+      },
+      {
+        "id": "ev:kontourai-veritas-143-gate-claim-implementation-scope.flow-agents-workflow.added-the-exact-safe-changeprovider-configuration-gate-visit-2026-07-20t17-23-36-418z",
+        "claimId": "kontourai-veritas-143-gate-claim-implementation-scope.flow-agents-workflow.added-the-exact-safe-changeprovider-configuration-gate-visit-2026-07-20t17-23-36-418z",
+        "evidenceType": "attestation",
+        "method": "corroboration",
+        "sourceRef": "kontourai-veritas-143/evidence.json",
+        "excerptOrSummary": "Added the exact safe ChangeProvider configuration.",
+        "observedAt": "2026-07-20T17:41:45.767Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true
+      },
+      {
+        "id": "ev:kontourai-veritas-143-gate-claim-acceptance-criteria.flow-agents-workflow.effective-settings-resolve-the-exact-safe-kontourai-veritas-github-changeprovider-and-governance-mapping-gate-visit-2026-07-20t17-27-15-129z",
+        "claimId": "kontourai-veritas-143-gate-claim-acceptance-criteria.flow-agents-workflow.effective-settings-resolve-the-exact-safe-kontourai-veritas-github-changeprovider-and-governance-mapping-gate-visit-2026-07-20t17-27-15-129z",
+        "evidenceType": "attestation",
+        "method": "corroboration",
+        "sourceRef": "kontourai-veritas-143/evidence.json",
+        "excerptOrSummary": "Effective settings resolve the exact safe kontourai/veritas GitHub ChangeProvider and governance mapping.",
+        "observedAt": "2026-07-20T17:41:45.767Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true
+      },
+      {
+        "id": "ev:kontourai-veritas-143-gate-claim-tests-evidence.flow-agents-workflow.the-complete-veritas-suite-passes-with-exact-provider-configuration-and-governed-mapping-gate-visit-2026-07-20t17-29-30-680z",
+        "claimId": "kontourai-veritas-143-gate-claim-tests-evidence.flow-agents-workflow.the-complete-veritas-suite-passes-with-exact-provider-configuration-and-governed-mapping-gate-visit-2026-07-20t17-29-30-680z",
+        "evidenceType": "test_output",
+        "method": "validation",
+        "sourceRef": "kontourai-veritas-143/command-log.jsonl",
+        "excerptOrSummary": "The complete Veritas suite passes with exact provider configuration and governed mapping.",
+        "observedAt": "2026-07-20T17:41:45.767Z",
+        "collectedBy": "flow-agents/evidence-capture",
+        "passing": true,
+        "execution": {
+          "runner": "bash",
+          "label": "npm test",
+          "isError": false,
+          "exitCode": 0
+        }
+      },
+      {
+        "id": "ev:kontourai-veritas-143-gate-claim-merge-readiness.flow-agents-workflow.current-review-verification-conformance-scope-integrity-and-provider-checks-support-merge-review-gate-visit-2026-07-20t17-41-01-185z",
+        "claimId": "kontourai-veritas-143-gate-claim-merge-readiness.flow-agents-workflow.current-review-verification-conformance-scope-integrity-and-provider-checks-support-merge-review-gate-visit-2026-07-20t17-41-01-185z",
+        "evidenceType": "attestation",
+        "method": "corroboration",
+        "sourceRef": "kontourai-veritas-143/evidence.json",
+        "excerptOrSummary": "Current review, verification, conformance, scope integrity, and provider checks support merge review.",
+        "observedAt": "2026-07-20T17:41:45.767Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true
+      },
+      {
+        "id": "ev:kontourai-veritas-143-gate-claim-ci-merge-readiness.flow-agents-workflow.pr-142-is-current-independently-reviewed-verified-and-all-hosted-checks-are-green-merge-is-authorized-by-the-user-gate-visit-2026-07-20t17-41-45-767z",
+        "claimId": "kontourai-veritas-143-gate-claim-ci-merge-readiness.flow-agents-workflow.pr-142-is-current-independently-reviewed-verified-and-all-hosted-checks-are-green-merge-is-authorized-by-the-user-gate-visit-2026-07-20t17-41-45-767z",
+        "evidenceType": "attestation",
+        "method": "corroboration",
+        "sourceRef": "kontourai-veritas-143/evidence.json",
+        "excerptOrSummary": "PR #142 is current, independently reviewed, verified, and all hosted checks are green; merge is authorized by the user.",
+        "observedAt": "2026-07-20T17:41:45.767Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true
+      },
+      {
+        "id": "ev:kontourai-veritas-143-effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider.flow-agents-workflow.effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider-verified-2026-07-20t17-29-30-680z:328e123c63857fd8",
+        "claimId": "kontourai-veritas-143-effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider.flow-agents-workflow.effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider-verified-2026-07-20t17-29-30-680z",
+        "evidenceType": "test_output",
+        "method": "validation",
+        "sourceRef": "kontourai-veritas-143/observed-command",
+        "excerptOrSummary": "npm test",
+        "observedAt": "2026-07-20T17:29:30.680Z",
+        "collectedBy": "flow-agents/workflow-sidecar",
+        "passing": true,
+        "execution": {
+          "runner": "bash",
+          "label": "npm test",
+          "isError": false,
+          "exitCode": 0
+        }
+      }
+    ],
+    "policies": [
+      {
+        "id": "policy:workflow.check.external:attestation",
+        "claimType": "workflow.check.external",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a workflow.check.external claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:builder.pull-work.selected:attestation",
+        "claimType": "builder.pull-work.selected",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a builder.pull-work.selected claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:builder.design-probe.pickup-readiness:attestation",
+        "claimType": "builder.design-probe.pickup-readiness",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a builder.design-probe.pickup-readiness claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:builder.design-probe.decisions:attestation",
+        "claimType": "builder.design-probe.decisions",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a builder.design-probe.decisions claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:builder.plan.implementation:attestation",
+        "claimType": "builder.plan.implementation",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a builder.plan.implementation claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:builder.execute.scope:attestation",
+        "claimType": "builder.execute.scope",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a builder.execute.scope claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:workflow.acceptance.criterion:attestation",
+        "claimType": "workflow.acceptance.criterion",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a workflow.acceptance.criterion claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:workflow.check.command:test_output",
+        "claimType": "workflow.check.command",
+        "requiredEvidence": [
+          "test_output"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a workflow.check.command claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:builder.verify.tests:test_output",
+        "claimType": "builder.verify.tests",
+        "requiredEvidence": [
+          "test_output"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a builder.verify.tests claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:builder.merge-ready.readiness:attestation",
+        "claimType": "builder.merge-ready.readiness",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a builder.merge-ready.readiness claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:builder.merge-ready-ci.readiness:attestation",
+        "claimType": "builder.merge-ready-ci.readiness",
+        "requiredEvidence": [
+          "attestation"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a builder.merge-ready-ci.readiness claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:workflow.acceptance.criterion:test_output",
+        "claimType": "workflow.acceptance.criterion",
+        "requiredEvidence": [
+          "test_output"
+        ],
+        "acceptanceCriteria": [
+          "A verified verification event must support a workflow.acceptance.criterion claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "high"
+      },
+      {
+        "id": "policy:workflow.critique.review",
+        "claimType": "workflow.critique.review",
+        "requiredEvidence": [],
+        "acceptanceCriteria": [
+          "A verified verification event must support a workflow.critique.review claim."
+        ],
+        "reviewAuthority": "system",
+        "validityRule": {
+          "kind": "manual"
+        },
+        "stalenessTriggers": [],
+        "conflictRules": [],
+        "impactLevel": "medium"
+      }
+    ],
+    "events": [
+      {
+        "id": "evt:kontourai-veritas-143-gate-claim-selected-work.flow-agents-workflow.work-item-kontourai-veritas-143-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-83793c8ef9c468bd150c71f706e383eddd7fc7a4f31a93277898351d74ad7d53-gate-visit-2026-07-20t17-22-30z",
+        "claimId": "kontourai-veritas-143-gate-claim-selected-work.flow-agents-workflow.work-item-kontourai-veritas-143-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-83793c8ef9c468bd150c71f706e383eddd7fc7a4f31a93277898351d74ad7d53-gate-visit-2026-07-20t17-22-30z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:kontourai-veritas-143-gate-claim-selected-work.flow-agents-workflow.work-item-kontourai-veritas-143-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-83793c8ef9c468bd150c71f706e383eddd7fc7a4f31a93277898351d74ad7d53-gate-visit-2026-07-20t17-22-30z"
+        ],
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "verifiedAt": "2026-07-20T17:41:45.767Z"
+      },
+      {
+        "id": "evt:kontourai-veritas-143-gate-claim-pickup-probe-readiness.flow-agents-workflow.follow-up-scope-and-assignment-are-ready-gate-visit-2026-07-20t17-23-35-195z",
+        "claimId": "kontourai-veritas-143-gate-claim-pickup-probe-readiness.flow-agents-workflow.follow-up-scope-and-assignment-are-ready-gate-visit-2026-07-20t17-23-35-195z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:kontourai-veritas-143-gate-claim-pickup-probe-readiness.flow-agents-workflow.follow-up-scope-and-assignment-are-ready-gate-visit-2026-07-20t17-23-35-195z"
+        ],
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "verifiedAt": "2026-07-20T17:41:45.767Z"
+      },
+      {
+        "id": "evt:kontourai-veritas-143-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.canonical-schema-and-exact-provider-binding-decisions-are-explicit-gate-visit-2026-07-20t17-23-35-530z",
+        "claimId": "kontourai-veritas-143-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.canonical-schema-and-exact-provider-binding-decisions-are-explicit-gate-visit-2026-07-20t17-23-35-530z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:kontourai-veritas-143-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.canonical-schema-and-exact-provider-binding-decisions-are-explicit-gate-visit-2026-07-20t17-23-35-530z"
+        ],
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "verifiedAt": "2026-07-20T17:41:45.767Z"
+      },
+      {
+        "id": "evt:kontourai-veritas-143-gate-claim-implementation-plan.flow-agents-workflow.plan-covers-configuration-resolution-review-and-pr-reconciliation-gate-visit-2026-07-20t17-23-35-999z",
+        "claimId": "kontourai-veritas-143-gate-claim-implementation-plan.flow-agents-workflow.plan-covers-configuration-resolution-review-and-pr-reconciliation-gate-visit-2026-07-20t17-23-35-999z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:kontourai-veritas-143-gate-claim-implementation-plan.flow-agents-workflow.plan-covers-configuration-resolution-review-and-pr-reconciliation-gate-visit-2026-07-20t17-23-35-999z"
+        ],
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "verifiedAt": "2026-07-20T17:41:45.767Z"
+      },
+      {
+        "id": "evt:kontourai-veritas-143-gate-claim-implementation-scope.flow-agents-workflow.added-the-exact-safe-changeprovider-configuration-gate-visit-2026-07-20t17-23-36-418z",
+        "claimId": "kontourai-veritas-143-gate-claim-implementation-scope.flow-agents-workflow.added-the-exact-safe-changeprovider-configuration-gate-visit-2026-07-20t17-23-36-418z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:kontourai-veritas-143-gate-claim-implementation-scope.flow-agents-workflow.added-the-exact-safe-changeprovider-configuration-gate-visit-2026-07-20t17-23-36-418z"
+        ],
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "verifiedAt": "2026-07-20T17:41:45.767Z"
+      },
+      {
+        "id": "evt:kontourai-veritas-143-gate-claim-acceptance-criteria.flow-agents-workflow.effective-settings-resolve-the-exact-safe-kontourai-veritas-github-changeprovider-and-governance-mapping-gate-visit-2026-07-20t17-27-15-129z",
+        "claimId": "kontourai-veritas-143-gate-claim-acceptance-criteria.flow-agents-workflow.effective-settings-resolve-the-exact-safe-kontourai-veritas-github-changeprovider-and-governance-mapping-gate-visit-2026-07-20t17-27-15-129z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:kontourai-veritas-143-gate-claim-acceptance-criteria.flow-agents-workflow.effective-settings-resolve-the-exact-safe-kontourai-veritas-github-changeprovider-and-governance-mapping-gate-visit-2026-07-20t17-27-15-129z"
+        ],
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "verifiedAt": "2026-07-20T17:41:45.767Z"
+      },
+      {
+        "id": "evt:kontourai-veritas-143-gate-claim-tests-evidence.flow-agents-workflow.the-complete-veritas-suite-passes-with-exact-provider-configuration-and-governed-mapping-gate-visit-2026-07-20t17-29-30-680z",
+        "claimId": "kontourai-veritas-143-gate-claim-tests-evidence.flow-agents-workflow.the-complete-veritas-suite-passes-with-exact-provider-configuration-and-governed-mapping-gate-visit-2026-07-20t17-29-30-680z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:kontourai-veritas-143-gate-claim-tests-evidence.flow-agents-workflow.the-complete-veritas-suite-passes-with-exact-provider-configuration-and-governed-mapping-gate-visit-2026-07-20t17-29-30-680z"
+        ],
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "verifiedAt": "2026-07-20T17:41:45.767Z"
+      },
+      {
+        "id": "evt:kontourai-veritas-143-gate-claim-merge-readiness.flow-agents-workflow.current-review-verification-conformance-scope-integrity-and-provider-checks-support-merge-review-gate-visit-2026-07-20t17-41-01-185z",
+        "claimId": "kontourai-veritas-143-gate-claim-merge-readiness.flow-agents-workflow.current-review-verification-conformance-scope-integrity-and-provider-checks-support-merge-review-gate-visit-2026-07-20t17-41-01-185z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:kontourai-veritas-143-gate-claim-merge-readiness.flow-agents-workflow.current-review-verification-conformance-scope-integrity-and-provider-checks-support-merge-review-gate-visit-2026-07-20t17-41-01-185z"
+        ],
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "verifiedAt": "2026-07-20T17:41:45.767Z"
+      },
+      {
+        "id": "evt:kontourai-veritas-143-gate-claim-ci-merge-readiness.flow-agents-workflow.pr-142-is-current-independently-reviewed-verified-and-all-hosted-checks-are-green-merge-is-authorized-by-the-user-gate-visit-2026-07-20t17-41-45-767z",
+        "claimId": "kontourai-veritas-143-gate-claim-ci-merge-readiness.flow-agents-workflow.pr-142-is-current-independently-reviewed-verified-and-all-hosted-checks-are-green-merge-is-authorized-by-the-user-gate-visit-2026-07-20t17-41-45-767z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:kontourai-veritas-143-gate-claim-ci-merge-readiness.flow-agents-workflow.pr-142-is-current-independently-reviewed-verified-and-all-hosted-checks-are-green-merge-is-authorized-by-the-user-gate-visit-2026-07-20t17-41-45-767z"
+        ],
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "verifiedAt": "2026-07-20T17:41:45.767Z"
+      },
+      {
+        "id": "evt:kontourai-veritas-143-effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider.flow-agents-workflow.effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider-verified-2026-07-20t17-29-30-680z",
+        "claimId": "kontourai-veritas-143-effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider.flow-agents-workflow.effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider-verified-2026-07-20t17-29-30-680z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [
+          "ev:kontourai-veritas-143-effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider.flow-agents-workflow.effective-settings-resolve-the-exact-kontourai-veritas-github-gh-cli-changeprovider-verified-2026-07-20t17-29-30-680z:328e123c63857fd8"
+        ],
+        "createdAt": "2026-07-20T17:29:30.680Z",
+        "verifiedAt": "2026-07-20T17:29:30.680Z"
+      },
+      {
+        "id": "evt:kontourai-veritas-143-final-code-review.flow-agents-workflow.revised-report-only-review-approved-the-canonical-changeprovider-config-explicit-context-settings-governance-mapping-and-current-authority-backed-policy-attestation-no-correctness-or-security-findings-remain-reviewed-2026-07-20t17-25-53-401z",
+        "claimId": "kontourai-veritas-143-final-code-review.flow-agents-workflow.revised-report-only-review-approved-the-canonical-changeprovider-config-explicit-context-settings-governance-mapping-and-current-authority-backed-policy-attestation-no-correctness-or-security-findings-remain-reviewed-2026-07-20t17-25-53-401z",
+        "status": "verified",
+        "actor": "flow-agents/workflow-sidecar",
+        "method": "validation",
+        "evidenceIds": [],
+        "createdAt": "2026-07-20T17:41:45.767Z",
+        "verifiedAt": "2026-07-20T17:41:45.767Z"
+      }
+    ]
+  }
+}
