@@ -171,6 +171,21 @@
         ]
       },
       {
+        "id": "integration.context-settings",
+        "kind": "integration-area",
+        "label": "context settings",
+        "patterns": [
+          "context/settings/"
+        ],
+        "owners": [
+          "repo-core"
+        ],
+        "boundary": "strict",
+        "boundaryAllow": [
+          "delivery-team"
+        ]
+      },
+      {
         "id": "governance.schemas",
         "kind": "protected-area",
         "label": "schemas/**",
