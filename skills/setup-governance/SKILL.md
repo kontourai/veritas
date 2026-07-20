@@ -26,16 +26,32 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    npm exec -- veritas --help
    ```
 
-2. If it is absent and the maintainer approves the dependency change, install it:
+2. If npm is not the repository's toolchain, or the maintainer explicitly approves an external
+   engine instead of a consumer dependency, use the maintainer-approved external engine path.
+   The maintainer must approve the exact, pinned engine invocation (including version or immutable
+   distribution reference) before it runs. Detect the candidate, verify the approved identity, and
+   use that exact path for every later command:
+
+   ```bash
+   veritas_engine_path="$(command -v veritas)"
+   "$veritas_engine_path" --version
+   ```
+
+   Record the resolved path and reported version with the setup evidence. If either differs from
+   the maintainer-approved pinned engine invocation, stop. This external path does not modify the
+   consumer manifest or lockfile; do not add an npm dependency as a fallback.
+
+3. If it is absent and the maintainer approves the dependency change, install it:
 
    ```bash
    npm install -D @kontourai/veritas
    ```
 
-   For repositories that do not use npm, stop and ask which package/runtime installation
-   convention to use. Do not invent one.
+   For repositories that do not use npm and have not approved an external engine, stop and ask
+   which package/runtime installation convention to use. Do not invent one.
 
-3. Derive a plan without applying it:
+4. Derive a plan without applying it. Use `"$veritas_engine_path"` in place of
+   `npm exec -- veritas` when following the approved external engine path:
 
    ```bash
    npm exec -- veritas init --explore --output .veritas/init-plans/first-pass.json
@@ -43,23 +59,23 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
 
    Use `init --guided --answers <answers.json> --output <plan>` when owner answers are needed.
 
-4. Review the plan and satisfy the `veritas-governance.standards-authoring` flow's
+5. Review the plan and satisfy the `veritas-governance.standards-authoring` flow's
    `human-approval-gate`. A schema-valid approval claim records the decision; it does not by
    itself authenticate who attached the claim.
 
-5. Apply only the reviewed plan:
+6. Apply only the reviewed plan:
 
    ```bash
    npm exec -- veritas init --apply --plan .veritas/init-plans/first-pass.json
    ```
 
-6. Configure or repair tracked repo hooks with explicit approval:
+7. Configure or repair tracked repo hooks with explicit approval:
 
    ```bash
    npm exec -- veritas setup repo-hooks
    ```
 
-7. After a maintainer reviews the generated standards and map, record bootstrap authority:
+8. After a maintainer reviews the generated standards and map, record bootstrap authority:
 
    ```bash
    npm exec -- veritas attest bootstrap \
@@ -68,7 +84,7 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
      --non-interactive
    ```
 
-8. Run the first readiness check:
+9. Run the first readiness check:
 
    ```bash
    npm exec -- veritas readiness --working-tree

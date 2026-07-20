@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
 import { assertWithinDir, VERITAS_ARTIFACT_ROOT } from '../paths.mjs';
 
@@ -13,6 +14,11 @@ export const OPTIONAL_INSTRUCTION_TARGETS = [
     tool: 'github-copilot',
     required: false,
   },
+];
+
+export const KNOWN_INSTRUCTION_TARGETS = [
+  ...DEFAULT_SELECTED_INSTRUCTION_TARGETS,
+  ...OPTIONAL_INSTRUCTION_TARGETS,
 ];
 
 function toolForInstructionPath(path) {
@@ -47,8 +53,15 @@ export function normalizeInstructionTargets(targets) {
   });
 }
 
-export function selectedInstructionTargetsFromAnswers(answers) {
-  return normalizeInstructionTargets(answers?.selectedInstructionTargets ?? answers?.selected_instruction_targets);
+export function selectExistingInstructionTargets(rootDir) {
+  return KNOWN_INSTRUCTION_TARGETS.filter((target) => existsSync(resolve(rootDir, target.path)));
+}
+
+export function selectedInstructionTargetsFromAnswers(rootDir, answers) {
+  const selected = answers?.selectedInstructionTargets ?? answers?.selected_instruction_targets;
+  return selected === undefined
+    ? selectExistingInstructionTargets(rootDir)
+    : normalizeInstructionTargets(selected);
 }
 
 export function validateInstructionTargetPaths(rootDir, selectedInstructionTargets, label = 'instruction') {

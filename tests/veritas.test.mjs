@@ -1467,8 +1467,9 @@ test('init explore emits a read-only recommendation artifact', () => {
   assert.ok(recommendation.artifact_hashes['.veritas/repo-map.json']);
   assert.deepEqual(
     recommendation.selected_instruction_targets.map((target) => target.path),
-    ['AGENTS.md', 'CLAUDE.md'],
+    ['AGENTS.md'],
   );
+  assert.equal(recommendation.artifact_payloads['CLAUDE.md'], undefined);
   assert.equal(existsSync(join(rootDir, '.veritas')), false);
 });
 
@@ -1511,6 +1512,53 @@ test('init explore inventories existing brownfield verification', () => {
       (question) => question.id === 'existing-verification-inventory',
     ),
   );
+});
+
+test('init explore preserves authoritative compound instruction verification with provenance and lowers confidence on conflicts', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-kontourai-io-'));
+  writeFileSync(
+    join(rootDir, 'package.json'),
+    JSON.stringify(
+      {
+        scripts: {
+          verify: 'node scripts/verify.mjs',
+          'test:unit': 'node --test',
+          test: 'node --test',
+        },
+      },
+      null,
+      2,
+    ),
+  );
+  writeFileSync(
+    join(rootDir, 'AGENTS.md'),
+    '# Agent Instructions\n\n## Pre-merge verification\n\nBefore merging, run `npm run verify && npm run test:unit`.\n',
+  );
+  writeFileSync(
+    join(rootDir, 'CLAUDE.md'),
+    '# Claude Instructions\n\n## Pre-merge verification\n\nBefore merging, run `npm test`.\n',
+  );
+
+  const recommendation = parseCliJson(
+    execFileSync(
+      'npm',
+      ['exec', '--', 'veritas', 'init', '--explore', '--root', rootDir],
+      { cwd: repoRootDir, encoding: 'utf8' },
+    ),
+  );
+
+  const compound = recommendation.existing_verification.items.find(
+    (item) => item.command === 'npm run verify && npm run test:unit',
+  );
+  assert.deepEqual(compound.provenance, {
+    path: 'AGENTS.md',
+    line: 5,
+    signal: 'pre-merge',
+    authority: 'repo-declared-ai-instructions',
+  });
+  assert.equal(recommendation.existing_verification.conflicts.length > 0, true);
+  assert.equal(recommendation.recommended_evidence_checks[0].confidence, 'medium');
+  assert.equal(recommendation.recommended_evidence_checks[0].confidence === 'high', false);
 });
 
 test('readiness coverage CLI prints readiness coverage without reading the full report', () => {
@@ -1685,6 +1733,35 @@ test('init guided answers drive the reviewed apply artifact', () => {
   assert.doesNotMatch(readFileSync(join(rootDir, 'CLAUDE.md'), 'utf8'), /veritas:governance-block:start/);
   assert.match(readme, /Owner Answers/);
   assert.match(readme, /Prefer small ESM modules/);
+});
+
+test('init guided may explicitly select an absent instruction target', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-guided-absent-target-'));
+  writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { test: 'node --test' } }, null, 2));
+  writeFileSync(join(rootDir, 'AGENTS.md'), '# Agents\n');
+  writeFileSync(
+    join(rootDir, 'answers.json'),
+    JSON.stringify({ selectedInstructionTargets: ['CLAUDE.md'] }, null, 2),
+  );
+
+  const recommendation = parseCliJson(
+    execFileSync(
+      'npm',
+      ['exec', '--', 'veritas', 'init', '--guided', '--answers', 'answers.json', '--root', rootDir],
+      { cwd: repoRootDir, encoding: 'utf8' },
+    ),
+  );
+
+  assert.deepEqual(recommendation.selected_instruction_targets.map((target) => target.path), ['CLAUDE.md']);
+  assert.match(recommendation.artifact_payloads['CLAUDE.md'], /veritas:governance-block:start/);
+});
+
+test('setup-governance documents the manifest-preserving external engine path', () => {
+  const skill = readFileSync(join(repoRootDir, 'skills/setup-governance/SKILL.md'), 'utf8');
+  assert.match(skill, /maintainer-approved external engine/);
+  assert.match(skill, /consumer manifest or lockfile/);
+  assert.match(skill, /pinned engine invocation/);
+  assert.match(skill, /veritas_engine_path="\$\(command -v veritas\)"/);
 });
 
 test('init guided rejects instruction targets outside the target root before reading', () => {
