@@ -3392,6 +3392,45 @@ test('readiness check CLI defaults to agent-readable feedback output', () => {
   assert.match(stdout, /standards feedback draft: \.kontourai\/veritas\/standards-feedback-drafts\//);
 });
 
+test('readiness keeps default projections ignored and retains an explicit requested copy', () => {
+  const rootDir = initCommittedRepo('veritas-readiness-clean-projection-');
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  execFileSync('npm', [
+    'exec', '--', 'veritas', 'init', '--root', rootDir,
+    '--project-name', 'Clean Projection Demo', '--evidence-check', 'node -e "process.exit(0)"',
+  ], { cwd: repoRootDir, encoding: 'utf8' });
+  execGitFixture(['add', '.'], { cwd: rootDir, encoding: 'utf8' });
+  execGitFixture(['commit', '-m', 'Initialize governance'], { cwd: rootDir, encoding: 'utf8' });
+
+  execFileSync('npm', ['exec', '--', 'veritas', 'readiness', '--root', rootDir], {
+    cwd: repoRootDir, encoding: 'utf8',
+  });
+  assert.equal(execGitFixture(['status', '--porcelain'], { cwd: rootDir, encoding: 'utf8' }), '');
+
+  const output = parseCliJson(execFileSync('npm', [
+    'exec', '--', 'veritas', 'readiness', '--format', 'json', '--root', rootDir,
+    '--projection-output', 'artifacts/readiness-projection.json',
+  ], { cwd: repoRootDir, encoding: 'utf8' }));
+  assert.equal(output.projectionOutputPath, 'artifacts/readiness-projection.json');
+  assert.equal(readJsonFromAbsolute(join(rootDir, output.projectionOutputPath)).kind, 'surface-console-read-model');
+  assert.equal(execGitFixture(['status', '--porcelain'], { cwd: rootDir, encoding: 'utf8' }), '?? artifacts/\n');
+
+  assert.throws(() => execFileSync('npm', [
+    'exec', '--', 'veritas', 'readiness', '--root', rootDir,
+    '--projection-output', 'artifacts/readiness-projection.json',
+  ], { cwd: repoRootDir, encoding: 'utf8', stdio: 'pipe' }), /Refusing to overwrite existing projection output/);
+
+  execFileSync('npm', [
+    'exec', '--', 'veritas', 'readiness', '--root', rootDir, '--force',
+    '--projection-output', 'artifacts/readiness-projection.json',
+  ], { cwd: repoRootDir, encoding: 'utf8' });
+
+  assert.throws(() => execFileSync('npm', [
+    'exec', '--', 'veritas', 'readiness', '--root', rootDir,
+    '--projection-output', '../escaped-projection.json',
+  ], { cwd: repoRootDir, encoding: 'utf8', stdio: 'pipe' }), /must stay inside the target repository/);
+});
+
 test('readiness check reports primitive-first governance findings as policy results', () => {
   const rootDir = initCommittedRepo('veritas-readiness-primitive-first-');
   writeFileSync(join(rootDir, 'package.json'), `${JSON.stringify({

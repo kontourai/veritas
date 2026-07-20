@@ -281,6 +281,7 @@ export function parseReadinessArgs(argv) {
       '--evidence-check-command': { type: 'string', key: 'evidenceCheckCommand' },
       '--skip-evidence-check': { type: 'flag', key: 'skipEvidenceCheck' },
       '--baseline-ci-fast-status': { type: 'string', key: 'baselineCiFastStatus' },
+      '--projection-output': { type: 'string', key: 'projectionOutputPath' },
       '--force': { type: 'flag', key: 'force' },
       '--format': { type: 'string', key: 'format' },
     },
