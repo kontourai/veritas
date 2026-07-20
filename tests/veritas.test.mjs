@@ -1432,7 +1432,7 @@ test('init CLI can install a named Repo Standards template', () => {
   assert.ok(repoStandards.rules.some((rule) => rule.id === 'api-routes-require-api-tests'));
 });
 
-test('init explore emits a read-only recommendation artifact', () => {
+test('init explore persists a read-only recommendation artifact by default', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-explore-'));
   writeFileSync(
     join(rootDir, 'package.json'),
@@ -1467,7 +1467,102 @@ test('init explore emits a read-only recommendation artifact', () => {
     ['AGENTS.md'],
   );
   assert.equal(recommendation.artifact_payloads['CLAUDE.md'], undefined);
-  assert.equal(existsSync(join(rootDir, '.veritas')), false);
+  assert.equal(recommendation.output_path, '.veritas/init-plans/explore.json');
+  assert.equal(existsSync(join(rootDir, '.veritas/init-plans/explore.json')), true);
+  assert.equal(existsSync(join(rootDir, '.veritas/repo-map.json')), false);
+  assert.equal(
+    readJsonFromAbsolute(join(rootDir, '.veritas/init-plans/explore.json')).output_path,
+    '.veritas/init-plans/explore.json',
+  );
+});
+
+test('init explore deterministically inventories Station, Ops, and declared external authority shapes', () => {
+  const stationRoot = mkdtempSync(join(tmpdir(), 'veritas-init-station-shaped-'));
+  writeFileSync(join(stationRoot, 'package.json'), JSON.stringify({
+    private: true,
+    workspaces: ['packages/*'],
+    scripts: { 'ci:fast': 'node --test', verify: 'node --test' },
+  }));
+  for (const root of ['src-server', 'src-ui', 'src-shared', 'packages', 'docs', 'scripts', 'tests']) {
+    mkdirp(join(stationRoot, root));
+  }
+  const station = parseCliJson(execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'init', '--explore', '--root', stationRoot],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  ));
+  assert.deepEqual(station.repo_insights.sourceRoots, [
+    'src-server/', 'src-ui/', 'src-shared/', 'packages/', 'docs/',
+  ]);
+  assert.equal(station.evidenceCheck, 'npm run ci:fast');
+
+  const opsRoot = mkdtempSync(join(tmpdir(), 'veritas-init-ops-shaped-'));
+  writeFileSync(join(opsRoot, 'package.json'), JSON.stringify({ scripts: { verify: 'node --test' } }));
+  for (const root of ['docs', 'strategy', 'knowledge', 'suite', 'scripts']) mkdirp(join(opsRoot, root));
+  const ops = parseCliJson(execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'init', '--explore', '--root', opsRoot],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  ));
+  assert.equal(ops.repo_insights.repoKind, 'knowledge');
+  assert.deepEqual(ops.repo_insights.sourceRoots, ['docs/', 'strategy/', 'knowledge/', 'suite/']);
+  assert.deepEqual(
+    ops.recommended_repo_map.graph.nodes
+      .filter((node) => node.kind === 'product-area')
+      .map((node) => node.patterns[0]),
+    ['docs/', 'strategy/', 'knowledge/', 'suite/'],
+  );
+
+  const surfaceRoot = mkdtempSync(join(tmpdir(), 'veritas-init-surface-shaped-'));
+  writeFileSync(join(surfaceRoot, 'package.json'), JSON.stringify({
+    scripts: { verify: 'node --test' },
+    veritas: {
+      externalBoundaries: [{
+        id: 'hachure-spec',
+        authority: 'https://github.com/hachure-org/spec',
+        relationship: 'upstream-format',
+        package: 'hachure',
+      }],
+    },
+  }));
+  mkdirp(join(surfaceRoot, 'src'));
+  const first = parseCliJson(execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'init', '--explore', '--root', surfaceRoot],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  ));
+  const second = parseCliJson(execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'init', '--explore', '--root', surfaceRoot],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  ));
+  assert.deepEqual(first.external_boundaries, [{
+    id: 'hachure-spec',
+    authority: 'https://github.com/hachure-org/spec',
+    relationship: 'upstream-format',
+    package: 'hachure',
+    source: 'package.json#veritas.externalBoundaries',
+  }]);
+  assert.ok(first.owner_questions.some((question) => question.id === 'external-authority-boundaries'));
+  assert.deepEqual(second.repo_insights, first.repo_insights);
+  assert.deepEqual(second.artifact_hashes, first.artifact_hashes);
+
+  const documentedRoot = mkdtempSync(join(tmpdir(), 'veritas-init-documented-boundary-'));
+  writeFileSync(join(documentedRoot, 'package.json'), JSON.stringify({
+    dependencies: { hachure: '^0.15.0' },
+  }));
+  writeFileSync(
+    join(documentedRoot, 'CONTEXT.md'),
+    '[Hachure](https://github.com/hachure-org/spec) owns the upstream format; this package adapts it.\n',
+  );
+  const documented = inferBootstrapRepoInsights(documentedRoot);
+  assert.deepEqual(documented.externalBoundaries, [{
+    id: 'hachure-authority',
+    authority: 'https://github.com/hachure-org/spec',
+    relationship: 'documented-external-authority',
+    package: 'hachure',
+    source: 'repository documentation',
+  }]);
 });
 
 test('init explore inventories existing brownfield verification', () => {

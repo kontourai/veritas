@@ -9,9 +9,77 @@ function readJsonIfExists(path) {
 }
 
 function detectSourceRoots(rootDir) {
-  return ['src/', 'app/', 'packages/', 'apps/', 'docs/', 'content/'].filter((path) =>
+  return [
+    'src/',
+    'src-server/',
+    'src-ui/',
+    'src-shared/',
+    'app/',
+    'packages/',
+    'apps/',
+    'docs/',
+    'content/',
+    'strategy/',
+    'knowledge/',
+    'suite/',
+  ].filter((path) =>
     existsSync(resolve(rootDir, path)),
   );
+}
+
+function inferDocumentedExternalBoundaries(rootDir, packageJson) {
+  const dependencies = {
+    ...(packageJson?.dependencies ?? {}),
+    ...(packageJson?.devDependencies ?? {}),
+    ...(packageJson?.peerDependencies ?? {}),
+  };
+  const documents = ['CONTEXT.md', 'README.md']
+    .filter((path) => existsSync(resolve(rootDir, path)))
+    .map((path) => readFileSync(resolve(rootDir, path), 'utf8'))
+    .join('\n\n');
+  const boundaries = [];
+  for (const packageName of Object.keys(dependencies)) {
+    const label = packageName.split('/').at(-1);
+    if (!label) continue;
+    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const link = new RegExp(`\\[(${escaped})\\]\\((https:\\/\\/[^)]+)\\)`, 'i').exec(documents);
+    if (!link) continue;
+    const authorityStatement = new RegExp(`${escaped}[\\s\\S]{0,160}\\bowns?\\b|\\bowns?\\b[\\s\\S]{0,160}${escaped}`, 'i');
+    if (!authorityStatement.test(documents)) continue;
+    boundaries.push({
+      id: `${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-authority`,
+      authority: link[2],
+      relationship: 'documented-external-authority',
+      package: packageName,
+      source: 'repository documentation',
+    });
+  }
+  return boundaries;
+}
+
+function detectExternalBoundaries(rootDir, packageJson) {
+  const declared = packageJson?.veritas?.externalBoundaries;
+  const explicit = Array.isArray(declared) ? declared
+    .filter((boundary) =>
+      boundary &&
+      typeof boundary === 'object' &&
+      typeof boundary.id === 'string' &&
+      typeof boundary.authority === 'string',
+    )
+    .map((boundary) => ({
+      id: boundary.id,
+      authority: boundary.authority,
+      relationship: typeof boundary.relationship === 'string' ? boundary.relationship : 'external-authority',
+      package: typeof boundary.package === 'string' ? boundary.package : null,
+      source: 'package.json#veritas.externalBoundaries',
+    }))
+    : [];
+  const seenPackages = new Set(explicit.map((boundary) => boundary.package).filter(Boolean));
+  return [
+    ...explicit,
+    ...inferDocumentedExternalBoundaries(rootDir, packageJson)
+      .filter((boundary) => !seenPackages.has(boundary.package)),
+  ].sort((left, right) => left.id.localeCompare(right.id));
 }
 
 function detectToolingRoots(rootDir) {
@@ -277,6 +345,7 @@ export function inferBootstrapRepoInsights(rootDir) {
   const toolingRoots = detectToolingRoots(rootDir);
   const testRoots = detectTestRoots(rootDir);
   const productRoots = detectProductRoots(rootDir, [...sourceRoots, ...toolingRoots, ...testRoots]);
+  const externalBoundaries = detectExternalBoundaries(rootDir, packageJson);
   const hasWorkflows = existsSync(resolve(rootDir, '.github/workflows'));
   const hasWorkspaceConfig =
     existsSync(resolve(rootDir, 'pnpm-workspace.yaml')) ||
@@ -287,6 +356,8 @@ export function inferBootstrapRepoInsights(rootDir) {
   let repoKind = 'application';
   if (hasWorkspaceConfig || sourceRoots.includes('packages/') || sourceRoots.includes('apps/')) {
     repoKind = 'workspace';
+  } else if (['strategy/', 'knowledge/', 'suite/'].some((root) => sourceRoots.includes(root))) {
+    repoKind = 'knowledge';
   } else if (
     (sourceRoots.includes('docs/') || sourceRoots.includes('content/')) &&
     !sourceRoots.includes('src/') &&
@@ -352,6 +423,7 @@ export function inferBootstrapRepoInsights(rootDir) {
     toolingRoots,
     testRoots,
     productRoots,
+    externalBoundaries,
     hasWorkflows,
     evidenceCheck,
     enableWorkAreaEvidenceRouting: repoKind === 'workspace' || toolingRoots.length > 0,

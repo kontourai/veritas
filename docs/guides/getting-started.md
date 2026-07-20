@@ -45,10 +45,13 @@ Current generated paths are documented in [CLI Reference](../reference/cli.md). 
 For a repo where setup should be reviewed before files are written, use the guided path:
 
 ```bash
-npx @kontourai/veritas init --explore --output .veritas/init-plans/first-pass.json
+npx @kontourai/veritas init --explore
 npx @kontourai/veritas init --guided --answers answers.json --output .veritas/init-plans/guided.json
 npx @kontourai/veritas init --apply --plan .veritas/init-plans/guided.json
 ```
+
+Exploration is deterministic: it does not call AI. The first command writes its review artifact to
+`.veritas/init-plans/explore.json` by default while leaving active standards untouched.
 
 ## Protect The Standards
 
