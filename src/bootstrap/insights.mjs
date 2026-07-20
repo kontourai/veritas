@@ -86,14 +86,11 @@ function npmCommandsInLine(line) {
   return line.match(/npm(?:\s+run\s+[A-Za-z0-9:_-]+|\s+test)(?:\s*&&\s*npm(?:\s+run\s+[A-Za-z0-9:_-]+|\s+test))*/g) ?? [];
 }
 
-function verificationSignal(lines, lineIndex) {
-  const context = lines
-    .slice(Math.max(0, lineIndex - 2), Math.min(lines.length, lineIndex + 2))
-    .join(' ');
-  if (/pre[- ]?merge|before (?:you )?merge|before merging|before review/i.test(context)) {
+function verificationSignal(line) {
+  if (/broad verification|pre[- ]?merge|before (?:pr )?merge(?: readiness)?|before merging|before review/i.test(line)) {
     return 'pre-merge';
   }
-  if (/(?:must|required|always)\s+(?:run|execute)|after (?:making|any) changes|all changes/i.test(context)) {
+  if (/(?:must|required|always)\s+(?:run|execute)|after (?:making|any) changes|all changes/i.test(line)) {
     return 'broad';
   }
   return null;
@@ -106,7 +103,7 @@ function detectInstructionVerification(rootDir, scripts) {
     if (!existsSync(absolutePath)) continue;
     const lines = readFileSync(absolutePath, 'utf8').split(/\r?\n/);
     lines.forEach((line, lineIndex) => {
-      const signal = verificationSignal(lines, lineIndex);
+      const signal = verificationSignal(line);
       if (!signal) return;
       for (const command of npmCommandsInLine(line)) {
         if (!isValidatedNpmCommand(command, scripts)) continue;
@@ -127,6 +124,25 @@ function detectInstructionVerification(rootDir, scripts) {
     });
   }
   return entries;
+}
+
+function strongestInstructionCommand(entries) {
+  const commands = new Map();
+  for (const entry of entries) {
+    const current = commands.get(entry.command) ?? {
+      command: entry.command,
+      preMerge: false,
+      segmentCount: npmCommandSegments(entry.command).length,
+    };
+    current.preMerge ||= entry.provenance.signal === 'pre-merge';
+    commands.set(entry.command, current);
+  }
+  return [...commands.values()]
+    .sort((left, right) =>
+      Number(right.preMerge) - Number(left.preMerge) ||
+      right.segmentCount - left.segmentCount ||
+      left.command.localeCompare(right.command),
+    )[0]?.command ?? null;
 }
 
 function detectExistingVerification(rootDir, scripts = {}) {
@@ -168,6 +184,7 @@ function detectExistingVerification(rootDir, scripts = {}) {
     detected: scriptEntries.length + fileEntries.length + instructionEntries.length > 0,
     items: [...scriptEntries, ...fileEntries, ...instructionEntries],
     authoritativeCommands,
+    selectedAuthoritativeCommand: strongestInstructionCommand(instructionEntries),
     provenance: instructionEntries.map((entry) => ({
       command: entry.command,
       ...entry.provenance,
@@ -236,10 +253,8 @@ export function inferBootstrapRepoInsights(rootDir) {
   existingVerification.conflicts = conflicts;
 
   const hasConflictingSignals = conflicts.length > 0;
-  const authoritativeEvidenceCheck = existingVerification.authoritativeCommands.length === 1
-    ? existingVerification.authoritativeCommands[0]
-    : null;
-  const evidenceCheck = authoritativeEvidenceCheck && !hasConflictingSignals
+  const authoritativeEvidenceCheck = existingVerification.selectedAuthoritativeCommand;
+  const evidenceCheck = authoritativeEvidenceCheck
     ? authoritativeEvidenceCheck
     : packageEvidenceCheck;
   const evidenceCheckConfidence = hasConflictingSignals
@@ -247,7 +262,7 @@ export function inferBootstrapRepoInsights(rootDir) {
     : authoritativeEvidenceCheck || matchingScript
       ? 'high'
       : 'low';
-  const evidenceCheckSource = authoritativeEvidenceCheck && !hasConflictingSignals
+  const evidenceCheckSource = authoritativeEvidenceCheck
     ? 'repo-declared AI instructions'
     : matchingScript
       ? 'package.json scripts'

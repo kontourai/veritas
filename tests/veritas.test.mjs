@@ -1557,8 +1557,77 @@ test('init explore preserves authoritative compound instruction verification wit
     authority: 'repo-declared-ai-instructions',
   });
   assert.equal(recommendation.existing_verification.conflicts.length > 0, true);
+  assert.equal(recommendation.evidenceCheck, 'npm run verify && npm run test:unit');
+  assert.equal(recommendation.recommended_evidence_checks[0].source, 'repo-declared AI instructions');
   assert.equal(recommendation.recommended_evidence_checks[0].confidence, 'medium');
   assert.equal(recommendation.recommended_evidence_checks[0].confidence === 'high', false);
+});
+
+test('init explore keeps kontourai.io broad verification line-local and preferred over package priority', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-kontourai-io-shaped-'));
+  writeFileSync(
+    join(rootDir, 'package.json'),
+    JSON.stringify(
+      {
+        scripts: {
+          build: 'astro build',
+          validate: 'node scripts/validate.mjs',
+          'test:rendered': 'playwright test',
+          'check:content-boundary': 'node scripts/check-content-boundary.cjs',
+          'sync-versions': 'node scripts/sync-versions.mjs',
+        },
+      },
+      null,
+      2,
+    ),
+  );
+  writeFileSync(
+    join(rootDir, 'AGENTS.md'),
+    `## Source Of Truth
+
+- Broad verification: \`npm run validate && npm run test:rendered\`.
+
+## Match Checks To Change Type
+
+- Docs/interface-only changes: \`npm run check:content-boundary\` plus source inspection.
+- Before PR merge readiness: \`npm run validate && npm run test:rendered\`.
+- After any Kontour package release: run \`npm run sync-versions\` to pull the latest npm versions.
+
+## Useful Commands
+
+- \`npm run validate && npm run test:rendered\` — broad repo verification before merge readiness.
+- \`npm run check:content-boundary\` — focused public-boundary check after public-facing copy.
+- \`npm run sync-versions\` — refresh version pins after any release.
+`,
+  );
+
+  const recommendation = parseCliJson(
+    execFileSync(
+      'npm',
+      ['exec', '--', 'veritas', 'init', '--explore', '--root', rootDir],
+      { cwd: repoRootDir, encoding: 'utf8' },
+    ),
+  );
+
+  assert.deepEqual(recommendation.existing_verification.authoritativeCommands, [
+    'npm run validate && npm run test:rendered',
+  ]);
+  assert.equal(recommendation.existing_verification.selectedAuthoritativeCommand, 'npm run validate && npm run test:rendered');
+  assert.equal(recommendation.evidenceCheck, 'npm run validate && npm run test:rendered');
+  assert.deepEqual(
+    recommendation.existing_verification.items
+      .filter((item) => item.kind === 'instruction-file-verification')
+      .map((item) => item.command),
+    [
+      'npm run validate && npm run test:rendered',
+      'npm run validate && npm run test:rendered',
+      'npm run validate && npm run test:rendered',
+    ],
+  );
+  assert.deepEqual(recommendation.existing_verification.conflicts.map((conflict) => conflict.kind), [
+    'package-script-disagreement',
+  ]);
+  assert.equal(recommendation.recommended_evidence_checks[0].confidence, 'medium');
 });
 
 test('readiness coverage CLI prints readiness coverage without reading the full report', () => {
@@ -1756,12 +1825,47 @@ test('init guided may explicitly select an absent instruction target', () => {
   assert.match(recommendation.artifact_payloads['CLAUDE.md'], /veritas:governance-block:start/);
 });
 
+test('external Veritas CLI initializes a non-npm repository without creating a manifest', () => {
+  const rootDir = initCommittedRepo('veritas-external-cli-non-npm-');
+  const cliPath = join(repoRootDir, 'bin/veritas.mjs');
+  const planPath = '.veritas/init-plans/external.json';
+  writeFileSync(join(rootDir, 'AGENTS.md'), '# Agent Instructions\n');
+
+  const explore = execFileSync(
+    'node',
+    [cliPath, 'init', '--explore', '--root', rootDir, '--output', planPath],
+    { cwd: rootDir, encoding: 'utf8' },
+  );
+  assert.equal(parseCliJson(explore).mode, 'explore');
+  assert.equal(existsSync(join(rootDir, 'package.json')), false);
+
+  const apply = execFileSync(
+    'node',
+    [cliPath, 'init', '--apply', '--root', rootDir, '--plan', planPath],
+    { cwd: rootDir, encoding: 'utf8' },
+  );
+  assert.ok(parseCliJson(apply).generatedFiles.includes('.veritas/repo-map.json'));
+  assert.equal(existsSync(join(rootDir, 'package.json')), false);
+
+  execFileSync('node', [cliPath, 'claim', 'init'], { cwd: rootDir, encoding: 'utf8' });
+  assert.equal(existsSync(join(rootDir, 'veritas.claims.json')), true);
+
+  const readiness = execFileSync(
+    'node',
+    [cliPath, 'readiness', '--root', rootDir, '--skip-evidence-check', 'AGENTS.md'],
+    { cwd: rootDir, encoding: 'utf8' },
+  );
+  assert.match(readiness, /PASS/);
+  assert.equal(existsSync(join(rootDir, 'package.json')), false);
+});
+
 test('setup-governance documents the manifest-preserving external engine path', () => {
   const skill = readFileSync(join(repoRootDir, 'skills/setup-governance/SKILL.md'), 'utf8');
   assert.match(skill, /maintainer-approved external engine/);
   assert.match(skill, /consumer manifest or lockfile/);
   assert.match(skill, /pinned engine invocation/);
   assert.match(skill, /veritas_engine_path="\$\(command -v veritas\)"/);
+  assert.match(skill, /npm exec --yes --package=@kontourai\/veritas@1\.5\.1 -- veritas/);
 });
 
 test('init guided rejects instruction targets outside the target root before reading', () => {
