@@ -1565,6 +1565,53 @@ test('init explore deterministically inventories Station, Ops, and declared exte
   }]);
 });
 
+test('init explore preserves mature governance and appends only uncovered work areas', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-mature-governance-'));
+  writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { verify: 'node --test' } }));
+  for (const root of ['src', 'docs']) mkdirp(join(rootDir, root));
+  mkdirp(join(rootDir, '.veritas/repo-standards'));
+  mkdirp(join(rootDir, '.veritas/authority'));
+  const existingRepoMap = {
+    kind: 'repo-map',
+    name: 'mature',
+    graph: {
+      version: 1,
+      nodes: [{ id: 'mature.src', kind: 'product-area', label: 'src', patterns: ['src/'], owners: ['product-team'] }],
+    },
+    evidence: { evidenceChecks: [{ id: 'mature-check', command: 'npm run verify' }] },
+  };
+  const existingStandards = { version: 1, name: 'mature', rules: [{ id: 'keep-me', kind: 'required-artifacts', match: { artifacts: ['CONTEXT.md'] } }] };
+  const existingAuthority = { version: 1, id: 'mature', defaults: { mode: 'observe' }, custom: { keep: true } };
+  writeFileSync(join(rootDir, '.veritas/repo-map.json'), `${JSON.stringify(existingRepoMap, null, 2)}\n`);
+  writeFileSync(join(rootDir, '.veritas/repo-standards/default.repo-standards.json'), `${JSON.stringify(existingStandards, null, 2)}\n`);
+  writeFileSync(join(rootDir, '.veritas/authority/default.authority-settings.json'), `${JSON.stringify(existingAuthority, null, 2)}\n`);
+  writeFileSync(join(rootDir, '.veritas/README.md'), 'mature readme\n');
+  writeFileSync(join(rootDir, '.veritas/GOVERNANCE.md'), 'mature governance\n');
+
+  const recommendation = parseCliJson(execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'init', '--explore', '--root', rootDir],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  ));
+
+  assert.equal(recommendation.existing_governance.preserved_existing_governance, true);
+  assert.deepEqual(recommendation.recommended_repo_standards, existingStandards);
+  assert.deepEqual(recommendation.recommended_authority_settings, existingAuthority);
+  assert.equal(recommendation.artifact_payloads['.veritas/README.md'], 'mature readme\n');
+  assert.equal(recommendation.artifact_payloads['.veritas/GOVERNANCE.md'], 'mature governance\n');
+  assert.deepEqual(
+    recommendation.recommended_repo_map.graph.nodes.map((node) => node.id),
+    ['mature.src', 'governance.guidance', 'governance.root-manifests', 'docs.docs', 'verification.tests'],
+  );
+  assert.deepEqual(recommendation.existing_governance.appended_work_area_node_ids, [
+    'governance.guidance',
+    'governance.root-manifests',
+    'docs.docs',
+    'verification.tests',
+  ]);
+  assert.ok(recommendation.owner_questions.some((question) => question.id === 'replace-existing-governance'));
+});
+
 test('init explore inventories existing brownfield verification', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-existing-'));
   mkdirp(join(rootDir, 'scripts'));
