@@ -21,12 +21,14 @@ That command writes starter files under `.veritas/`, including generated files f
 For agent-guided setup, use the plan-first variant:
 
 ```bash
-npx @kontourai/veritas init --explore --output .veritas/init-plans/first-pass.json
+npx @kontourai/veritas init --explore
 npx @kontourai/veritas init --guided --answers answers.json --output .veritas/init-plans/guided.json
 npx @kontourai/veritas init --apply --plan .veritas/init-plans/guided.json
 ```
 
 The conversation can be flexible, but `--apply --plan` remains the reviewed write path.
+The exploration step itself is deterministic and offline; no model is invoked. Its default review artifact is
+`.veritas/init-plans/explore.json`.
 
 ## Minimum Useful Setup
 

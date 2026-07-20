@@ -36,14 +36,15 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
       answers,
       mode: options.guided ? 'guided' : 'explore',
     });
-    if (options.outputPath) {
-      const outputPath = resolve(rootDir, options.outputPath);
-      const allowedDir = resolve(rootDir, '.veritas/init-plans');
-      assertWithinDir(outputPath, allowedDir, 'init --output must stay inside .veritas/init-plans/');
-      mkdirSync(dirname(outputPath), { recursive: true });
-      writeFileSync(outputPath, `${JSON.stringify(recommendation, null, 2)}\n`, 'utf8');
-      recommendation.output_path = relative(rootDir, outputPath).replaceAll('\\', '/');
-    }
+    const outputPath = resolve(
+      rootDir,
+      options.outputPath ?? `.veritas/init-plans/${options.guided ? 'guided' : 'explore'}.json`,
+    );
+    const allowedDir = resolve(rootDir, '.veritas/init-plans');
+    assertWithinDir(outputPath, allowedDir, 'init --output must stay inside .veritas/init-plans/');
+    recommendation.output_path = relative(rootDir, outputPath).replaceAll('\\', '/');
+    mkdirSync(dirname(outputPath), { recursive: true });
+    writeFileSync(outputPath, `${JSON.stringify(recommendation, null, 2)}\n`, 'utf8');
     process.stdout.write(`${JSON.stringify(recommendation, null, 2)}\n`);
     return;
   }

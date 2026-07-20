@@ -126,6 +126,14 @@ function ownerQuestions(repoInsights) {
     });
   }
 
+  if (repoInsights.externalBoundaries?.length > 0) {
+    questions.push({
+      id: 'external-authority-boundaries',
+      group: 'boundaries',
+      question: 'Are the repository-declared external authorities and dependency directions complete and current?',
+    });
+  }
+
   return questions;
 }
 
@@ -222,6 +230,7 @@ export function buildInitRecommendation({
     recommended_evidence_checks: recommendedEvidenceChecks({ ...repoInsights, evidenceCheck: resolvedEvidenceCheck }),
     recommended_evidence_inventory: recommendedEvidenceInventory(repoInsights),
     existing_verification: repoInsights.existingVerification,
+    external_boundaries: repoInsights.externalBoundaries,
     recommended_surfaces: recommendedSurfaces(repoInsights),
     recommended_instruction_targets: recommendedInstructionTargets(rootDir, selectedInstructionTargets),
     selected_instruction_targets: selectedInstructionTargets,
@@ -233,6 +242,9 @@ export function buildInitRecommendation({
       `Detected repo kind \`${repoInsights.repoKind}\`.`,
       `Selected evidenceCheck \`${resolvedEvidenceCheck}\`.`,
       `Selected instruction targets: ${selectedInstructionTargets.map((target) => target.path).join(', ')}.`,
+      ...(repoInsights.externalBoundaries.length > 0
+        ? [`Preserved ${repoInsights.externalBoundaries.length} repository-declared external authority boundary hint(s).`]
+        : []),
     ],
   };
 }

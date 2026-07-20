@@ -81,13 +81,19 @@ Writes:
 `--template` replaces generated starter standards with a named example template. Shipped templates currently include `nextjs-typescript`, `python-fastapi`, and `monorepo-pnpm`.
 
 `init` keeps stdout machine-readable JSON and prints the suggested CODEOWNERS block to stderr as informational text.
+`init --explore` and `init --guided` are deterministic and make no model or network calls. They inspect
+Git-visible repository shape, package scripts, instruction files, and repository-declared hints. By default
+they persist the same JSON emitted on stdout to `.veritas/init-plans/explore.json` or
+`.veritas/init-plans/guided.json`; `--output` selects another path within that directory.
 
 In `--non-interactive` mode, `init` writes `.veritas/attestations/PENDING` instead of recording an attestation. Run `attest bootstrap` after a trusted authority reviews the generated protected standards.
 
 The bootstrap logic infers:
 
-- repo kind: `application`, `workspace`, or `docs`
+- repo kind: `application`, `workspace`, `knowledge`, or `docs`
 - likely source roots
+- repository-declared external authority boundaries from `package.json#veritas.externalBoundaries`
+  or an authoritative dependency statement linked from `CONTEXT.md`/`README.md`
 - likely test roots
 - whether workflows exist
 - substantive top-level product directories not already classified as source, tooling, or tests
