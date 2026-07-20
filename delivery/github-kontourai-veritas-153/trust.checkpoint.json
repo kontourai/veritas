@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "slug": "github-kontourai-veritas-153",
+  "work_item": null,
+  "status": "in_progress",
+  "phase": "release",
+  "sealed_at": "2026-07-20T21:21:33Z",
+  "commit_sha": "4fc79cb88f9db80dabd452c14dace5f11df412c6",
+  "checkpoint": {
+    "asOf": "2026-07-20T21:21:33.866Z",
+    "statusByClaimId": {
+      "github-kontourai-veritas-153-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-153-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-d0abf6b78c4714fb1c9e2dab0dfd7eb0f47fd8551fcc56d0b4f6d8d635816f94-gate-visit-2026-07-20t21-17-44z": "verified",
+      "github-kontourai-veritas-153-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-153-is-ready-the-exact-noisy-churn-reproduction-bounded-files-and-acceptance-criteria-are-explicit-gate-visit-2026-07-20t21-18-04-164z": "verified",
+      "github-kontourai-veritas-153-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.decision-preserve-raw-bytes-only-when-preservation-mode-is-active-keep-parsing-for-recommendation-metadata-and-keep-replacement-generation-unchanged-gate-visit-2026-07-20t21-18-04-803z": "verified",
+      "github-kontourai-veritas-153-gate-claim-implementation-plan.flow-agents-workflow.plan-preserves-raw-payload-bytes-retains-parsed-metadata-covers-replacement-behavior-and-verifies-through-canonical-ci-gate-visit-2026-07-20t21-18-25-207z": "verified",
+      "github-kontourai-veritas-153-gate-claim-implementation-scope.flow-agents-workflow.changed-only-bootstrap-recommendation-payload-selection-and-its-mature-governance-regression-fixture-gate-visit-2026-07-20t21-18-41-468z": "verified",
+      "github-kontourai-veritas-153-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-passed-with-exact-byte-preservation-regression-and-unchanged-replacement-path-gate-visit-2026-07-20t21-18-43-606z": "verified",
+      "github-kontourai-veritas-153-gate-claim-merge-readiness.flow-agents-workflow.scoped-byte-preservation-fix-is-review-clean-and-canonical-ci-passed-gate-visit-2026-07-20t21-21-32-168z": "verified",
+      "github-kontourai-veritas-153-untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte.flow-agents-workflow.untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte-verified-2026-07-20t21-18-43-606z": "verified",
+      "github-kontourai-veritas-153-explicit-replacement-continues-to-generate-starter-artifacts.flow-agents-workflow.explicit-replacement-continues-to-generate-starter-artifacts-verified-2026-07-20t21-18-43-606z": "verified",
+      "github-kontourai-veritas-153-final-code-review.flow-agents-workflow.review-found-no-correctness-security-or-scope-findings-null-raw-payloads-cleanly-preserve-the-replacement-path-reviewed-2026-07-20t21-18-42-653z": "verified"
+    },
+    "throughEventCreatedAt": "2026-07-20T21:21:32.168Z",
+    "throughEventCreatedAtByClaimId": {
+      "github-kontourai-veritas-153-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-153-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-d0abf6b78c4714fb1c9e2dab0dfd7eb0f47fd8551fcc56d0b4f6d8d635816f94-gate-visit-2026-07-20t21-17-44z": "2026-07-20T21:21:32.168Z",
+      "github-kontourai-veritas-153-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-153-is-ready-the-exact-noisy-churn-reproduction-bounded-files-and-acceptance-criteria-are-explicit-gate-visit-2026-07-20t21-18-04-164z": "2026-07-20T21:21:32.168Z",
+      "github-kontourai-veritas-153-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.decision-preserve-raw-bytes-only-when-preservation-mode-is-active-keep-parsing-for-recommendation-metadata-and-keep-replacement-generation-unchanged-gate-visit-2026-07-20t21-18-04-803z": "2026-07-20T21:21:32.168Z",
+      "github-kontourai-veritas-153-gate-claim-implementation-plan.flow-agents-workflow.plan-preserves-raw-payload-bytes-retains-parsed-metadata-covers-replacement-behavior-and-verifies-through-canonical-ci-gate-visit-2026-07-20t21-18-25-207z": "2026-07-20T21:21:32.168Z",
+      "github-kontourai-veritas-153-gate-claim-implementation-scope.flow-agents-workflow.changed-only-bootstrap-recommendation-payload-selection-and-its-mature-governance-regression-fixture-gate-visit-2026-07-20t21-18-41-468z": "2026-07-20T21:21:32.168Z",
+      "github-kontourai-veritas-153-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-passed-with-exact-byte-preservation-regression-and-unchanged-replacement-path-gate-visit-2026-07-20t21-18-43-606z": "2026-07-20T21:21:32.168Z",
+      "github-kontourai-veritas-153-gate-claim-merge-readiness.flow-agents-workflow.scoped-byte-preservation-fix-is-review-clean-and-canonical-ci-passed-gate-visit-2026-07-20t21-21-32-168z": "2026-07-20T21:21:32.168Z",
+      "github-kontourai-veritas-153-untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte.flow-agents-workflow.untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte-verified-2026-07-20t21-18-43-606z": "2026-07-20T21:18:43.606Z",
+      "github-kontourai-veritas-153-explicit-replacement-continues-to-generate-starter-artifacts.flow-agents-workflow.explicit-replacement-continues-to-generate-starter-artifacts-verified-2026-07-20t21-18-43-606z": "2026-07-20T21:18:43.606Z",
+      "github-kontourai-veritas-153-final-code-review.flow-agents-workflow.review-found-no-correctness-security-or-scope-findings-null-raw-payloads-cleanly-preserve-the-replacement-path-reviewed-2026-07-20t21-18-42-653z": "2026-07-20T21:21:32.168Z"
+    },
+    "statusFunctionVersion": "2"
+  }
+}

@@ -1,0 +1,873 @@
+{
+  "schemaVersion": 5,
+  "source": "flow-agents/workflow-sidecar;statusFunctionVersion=2",
+  "claims": [
+    {
+      "id": "github-kontourai-veritas-153-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-153-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-d0abf6b78c4714fb1c9e2dab0dfd7eb0f47fd8551fcc56d0b4f6d8d635816f94-gate-visit-2026-07-20t21-17-44z",
+      "subjectType": "work-item",
+      "subjectId": "github-kontourai-veritas-153/gate-claim-selected-work",
+      "facet": "flow-agents.workflow",
+      "claimType": "builder.pull-work.selected",
+      "fieldOrBehavior": "Work Item github:kontourai/veritas#153 is durably assigned to the active workflow actor (assignment sha256:d0abf6b78c4714fb1c9e2dab0dfd7eb0f47fd8551fcc56d0b4f6d8d635816f94).",
+      "value": "pass",
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "updatedAt": "2026-07-20T21:21:32.168Z",
+      "impactLevel": "high",
+      "verificationPolicyId": "policy:builder.pull-work.selected:attestation",
+      "metadata": {
+        "origin": "check",
+        "check_kind": "external",
+        "workflow_subject_ref": "github:kontourai/veritas#153",
+        "expected_producer": "builder.pull-work",
+        "recorded_by": "codexveritas-bytes-153Kontour",
+        "self_produced_trust_slices": [
+          "selected-work"
+        ],
+        "artifact_refs": [
+          {
+            "kind": "artifact",
+            "file": ".kontourai/flow-agents/assignment/github-kontourai-veritas-153.json",
+            "summary": "Durable local assignment record for the selected Work Item and active actor; sha256:d0abf6b78c4714fb1c9e2dab0dfd7eb0f47fd8551fcc56d0b4f6d8d635816f94."
+          },
+          {
+            "kind": "artifact",
+            "file": ".kontourai/flow-agents/github-kontourai-veritas-153/github-kontourai-veritas-153--pull-work.md",
+            "summary": "Concrete pull-work selection report for github:kontourai/veritas#153."
+          }
+        ],
+        "gate_claim": {
+          "expectation_id": "selected-work",
+          "claim_type": "builder.pull-work.selected",
+          "subject_type": "work-item",
+          "step_id": "pull-work",
+          "identity_version": 2,
+          "recorded_at": "2026-07-20T21:17:44Z"
+        }
+      },
+      "status": "verified"
+    },
+    {
+      "id": "github-kontourai-veritas-153-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-153-is-ready-the-exact-noisy-churn-reproduction-bounded-files-and-acceptance-criteria-are-explicit-gate-visit-2026-07-20t21-18-04-164z",
+      "subjectType": "work-item",
+      "subjectId": "github-kontourai-veritas-153/gate-claim-pickup-probe-readiness",
+      "facet": "flow-agents.workflow",
+      "claimType": "builder.design-probe.pickup-readiness",
+      "fieldOrBehavior": "Issue 153 is ready: the exact noisy-churn reproduction, bounded files, and acceptance criteria are explicit.",
+      "value": "pass",
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "updatedAt": "2026-07-20T21:21:32.168Z",
+      "impactLevel": "high",
+      "verificationPolicyId": "policy:builder.design-probe.pickup-readiness:attestation",
+      "metadata": {
+        "origin": "check",
+        "check_kind": "external",
+        "workflow_subject_ref": "github:kontourai/veritas#153",
+        "expected_producer": "builder.pickup-probe",
+        "recorded_by": "codexveritas-bytes-153Kontour",
+        "self_produced_trust_slices": [
+          "pickup-probe"
+        ],
+        "artifact_refs": [
+          {
+            "kind": "artifact",
+            "file": ".kontourai/flow-agents/github-kontourai-veritas-153/github-kontourai-veritas-153--pull-work.md",
+            "summary": "Selected work and bounded scope."
+          }
+        ],
+        "gate_claim": {
+          "expectation_id": "pickup-probe-readiness",
+          "claim_type": "builder.design-probe.pickup-readiness",
+          "subject_type": "work-item",
+          "step_id": "design-probe",
+          "identity_version": 2,
+          "recorded_at": "2026-07-20T21:18:04.164Z"
+        }
+      },
+      "status": "verified"
+    },
+    {
+      "id": "github-kontourai-veritas-153-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.decision-preserve-raw-bytes-only-when-preservation-mode-is-active-keep-parsing-for-recommendation-metadata-and-keep-replacement-generation-unchanged-gate-visit-2026-07-20t21-18-04-803z",
+      "subjectType": "decision",
+      "subjectId": "github-kontourai-veritas-153/gate-claim-probe-decisions-or-accepted-gaps",
+      "facet": "flow-agents.workflow",
+      "claimType": "builder.design-probe.decisions",
+      "fieldOrBehavior": "Decision: preserve raw bytes only when preservation mode is active; keep parsing for recommendation metadata and keep replacement generation unchanged.",
+      "value": "pass",
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "updatedAt": "2026-07-20T21:21:32.168Z",
+      "impactLevel": "high",
+      "verificationPolicyId": "policy:builder.design-probe.decisions:attestation",
+      "metadata": {
+        "origin": "check",
+        "check_kind": "external",
+        "workflow_subject_ref": "github:kontourai/veritas#153",
+        "expected_producer": "builder.pickup-probe",
+        "recorded_by": "codexveritas-bytes-153Kontour",
+        "self_produced_trust_slices": [
+          "pickup-probe"
+        ],
+        "artifact_refs": [
+          {
+            "kind": "artifact",
+            "file": ".kontourai/flow-agents/github-kontourai-veritas-153/github-kontourai-veritas-153--pull-work.md",
+            "summary": "Selected work and bounded scope."
+          }
+        ],
+        "gate_claim": {
+          "expectation_id": "probe-decisions-or-accepted-gaps",
+          "claim_type": "builder.design-probe.decisions",
+          "subject_type": "decision",
+          "step_id": "design-probe",
+          "identity_version": 2,
+          "recorded_at": "2026-07-20T21:18:04.803Z"
+        }
+      },
+      "status": "verified"
+    },
+    {
+      "id": "github-kontourai-veritas-153-gate-claim-implementation-plan.flow-agents-workflow.plan-preserves-raw-payload-bytes-retains-parsed-metadata-covers-replacement-behavior-and-verifies-through-canonical-ci-gate-visit-2026-07-20t21-18-25-207z",
+      "subjectType": "artifact",
+      "subjectId": "github-kontourai-veritas-153/gate-claim-implementation-plan",
+      "facet": "flow-agents.workflow",
+      "claimType": "builder.plan.implementation",
+      "fieldOrBehavior": "Plan preserves raw payload bytes, retains parsed metadata, covers replacement behavior, and verifies through canonical CI.",
+      "value": "pass",
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "updatedAt": "2026-07-20T21:21:32.168Z",
+      "impactLevel": "high",
+      "verificationPolicyId": "policy:builder.plan.implementation:attestation",
+      "metadata": {
+        "origin": "check",
+        "check_kind": "external",
+        "workflow_subject_ref": "github:kontourai/veritas#153",
+        "expected_producer": "builder.plan-work",
+        "recorded_by": "codexveritas-bytes-153Kontour",
+        "self_produced_trust_slices": [
+          "implementation-plan"
+        ],
+        "artifact_refs": [
+          {
+            "kind": "artifact",
+            "file": ".kontourai/flow-agents/github-kontourai-veritas-153/github-kontourai-veritas-153--plan-work.md",
+            "summary": "Bounded implementation and verification plan."
+          }
+        ],
+        "gate_claim": {
+          "expectation_id": "implementation-plan",
+          "claim_type": "builder.plan.implementation",
+          "subject_type": "artifact",
+          "step_id": "plan",
+          "identity_version": 2,
+          "recorded_at": "2026-07-20T21:18:25.207Z"
+        }
+      },
+      "status": "verified"
+    },
+    {
+      "id": "github-kontourai-veritas-153-gate-claim-implementation-scope.flow-agents-workflow.changed-only-bootstrap-recommendation-payload-selection-and-its-mature-governance-regression-fixture-gate-visit-2026-07-20t21-18-41-468z",
+      "subjectType": "change",
+      "subjectId": "github-kontourai-veritas-153/gate-claim-implementation-scope",
+      "facet": "flow-agents.workflow",
+      "claimType": "builder.execute.scope",
+      "fieldOrBehavior": "Changed only bootstrap recommendation payload selection and its mature-governance regression fixture.",
+      "value": "pass",
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "updatedAt": "2026-07-20T21:21:32.168Z",
+      "impactLevel": "high",
+      "verificationPolicyId": "policy:builder.execute.scope:attestation",
+      "metadata": {
+        "origin": "check",
+        "check_kind": "external",
+        "workflow_subject_ref": "github:kontourai/veritas#153",
+        "expected_producer": "builder.execute-plan",
+        "recorded_by": "codexveritas-bytes-153Kontour",
+        "self_produced_trust_slices": [
+          "implementation-scope"
+        ],
+        "artifact_refs": [
+          {
+            "kind": "artifact",
+            "file": ".kontourai/flow-agents/github-kontourai-veritas-153/github-kontourai-veritas-153--deliver.md",
+            "summary": "Declared durable delivery artifact."
+          }
+        ],
+        "gate_claim": {
+          "expectation_id": "implementation-scope",
+          "claim_type": "builder.execute.scope",
+          "subject_type": "change",
+          "step_id": "execute",
+          "identity_version": 2,
+          "recorded_at": "2026-07-20T21:18:41.468Z"
+        }
+      },
+      "status": "verified"
+    },
+    {
+      "id": "github-kontourai-veritas-153-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-passed-with-exact-byte-preservation-regression-and-unchanged-replacement-path-gate-visit-2026-07-20t21-18-43-606z",
+      "subjectType": "flow-step",
+      "subjectId": "github-kontourai-veritas-153/gate-claim-tests-evidence",
+      "facet": "flow-agents.workflow",
+      "claimType": "builder.verify.tests",
+      "fieldOrBehavior": "Canonical CI passed with exact byte-preservation regression and unchanged replacement path.",
+      "value": "pass",
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "updatedAt": "2026-07-20T21:21:32.168Z",
+      "impactLevel": "high",
+      "verificationPolicyId": "policy:builder.verify.tests:test_output",
+      "metadata": {
+        "origin": "check",
+        "check_kind": "command",
+        "workflow_subject_ref": "github:kontourai/veritas#153",
+        "expected_producer": "builder.verify-work",
+        "recorded_by": "codexveritas-bytes-153Kontour",
+        "self_produced_trust_slices": [
+          "acceptance-criteria",
+          "tests-evidence",
+          "policy-compliance"
+        ],
+        "artifact_refs": [
+          {
+            "kind": "command",
+            "excerpt": "npm run test:ci",
+            "summary": "Canonical verification, full tests, and coverage gate passed."
+          }
+        ],
+        "output_digest": {
+          "algorithm": "sha256",
+          "hex": "6b498327e06de74cf27a77fe01d9b0de72dbae7c4a0e7a5feefb00ecc1f6903e"
+        },
+        "observed_commands": [
+          {
+            "command": "npm run test:ci",
+            "exit_code": 0,
+            "output_sha256": "6b498327e06de74cf27a77fe01d9b0de72dbae7c4a0e7a5feefb00ecc1f6903e",
+            "test_count": 264,
+            "execution_proof": {
+              "kind": "local-process-exit",
+              "runner": "node --test",
+              "static_test_units": 578
+            }
+          }
+        ],
+        "gate_claim": {
+          "expectation_id": "tests-evidence",
+          "claim_type": "builder.verify.tests",
+          "subject_type": "flow-step",
+          "step_id": "verify",
+          "identity_version": 2,
+          "recorded_at": "2026-07-20T21:18:43.606Z"
+        }
+      },
+      "status": "verified"
+    },
+    {
+      "id": "github-kontourai-veritas-153-gate-claim-merge-readiness.flow-agents-workflow.scoped-byte-preservation-fix-is-review-clean-and-canonical-ci-passed-gate-visit-2026-07-20t21-21-32-168z",
+      "subjectType": "change",
+      "subjectId": "github-kontourai-veritas-153/gate-claim-merge-readiness",
+      "facet": "flow-agents.workflow",
+      "claimType": "builder.merge-ready.readiness",
+      "fieldOrBehavior": "Scoped byte-preservation fix is review-clean and canonical CI passed.",
+      "value": "pass",
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "updatedAt": "2026-07-20T21:21:32.168Z",
+      "impactLevel": "high",
+      "verificationPolicyId": "policy:builder.merge-ready.readiness:attestation",
+      "metadata": {
+        "origin": "check",
+        "check_kind": "external",
+        "workflow_subject_ref": "github:kontourai/veritas#153",
+        "expected_producer": "builder.evidence-gate",
+        "recorded_by": "codexveritas-bytes-153Kontour",
+        "self_produced_trust_slices": [
+          "merge-readiness"
+        ],
+        "artifact_refs": [
+          {
+            "kind": "artifact",
+            "file": ".kontourai/flow-agents/github-kontourai-veritas-153/github-kontourai-veritas-153--evidence-gate.md",
+            "summary": "Merge-readiness assessment."
+          }
+        ],
+        "gate_claim": {
+          "expectation_id": "merge-readiness",
+          "claim_type": "builder.merge-ready.readiness",
+          "subject_type": "change",
+          "step_id": "merge-ready",
+          "identity_version": 2,
+          "recorded_at": "2026-07-20T21:21:32.168Z"
+        }
+      },
+      "status": "verified"
+    },
+    {
+      "id": "github-kontourai-veritas-153-untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte.flow-agents-workflow.untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte-verified-2026-07-20t21-18-43-606z",
+      "subjectType": "flow-step",
+      "subjectId": "github-kontourai-veritas-153/untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte",
+      "facet": "flow-agents.workflow",
+      "claimType": "workflow.acceptance.criterion",
+      "fieldOrBehavior": "Untouched Repo Standards and authority payloads are preserved byte-for-byte",
+      "value": "pass",
+      "createdAt": "2026-07-20T21:18:43.606Z",
+      "updatedAt": "2026-07-20T21:18:43.606Z",
+      "impactLevel": "high",
+      "verificationPolicyId": "policy:workflow.acceptance.criterion:test_output",
+      "metadata": {
+        "origin": "acceptance",
+        "criterion": {
+          "id": "untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte",
+          "description": "Untouched Repo Standards and authority payloads are preserved byte-for-byte",
+          "status": "pass",
+          "evidence_refs": [
+            {
+              "kind": "command",
+              "excerpt": "npm run test:ci",
+              "summary": "Compact fixtures prove exact raw payload equality."
+            }
+          ],
+          "observed_commands": [
+            {
+              "command": "npm run test:ci",
+              "exit_code": 0,
+              "output_sha256": "6b498327e06de74cf27a77fe01d9b0de72dbae7c4a0e7a5feefb00ecc1f6903e",
+              "test_count": 264,
+              "execution_proof": {
+                "kind": "local-process-exit",
+                "runner": "node --test",
+                "static_test_units": 578
+              }
+            }
+          ],
+          "identity_version": 2,
+          "verified_at": "2026-07-20T21:18:43.606Z"
+        },
+        "workflow_subject_ref": "github:kontourai/veritas#153"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "github-kontourai-veritas-153-explicit-replacement-continues-to-generate-starter-artifacts.flow-agents-workflow.explicit-replacement-continues-to-generate-starter-artifacts-verified-2026-07-20t21-18-43-606z",
+      "subjectType": "flow-step",
+      "subjectId": "github-kontourai-veritas-153/explicit-replacement-continues-to-generate-starter-artifacts",
+      "facet": "flow-agents.workflow",
+      "claimType": "workflow.acceptance.criterion",
+      "fieldOrBehavior": "Explicit replacement continues to generate starter artifacts",
+      "value": "pass",
+      "createdAt": "2026-07-20T21:18:43.606Z",
+      "updatedAt": "2026-07-20T21:18:43.606Z",
+      "impactLevel": "high",
+      "verificationPolicyId": "policy:workflow.acceptance.criterion:test_output",
+      "metadata": {
+        "origin": "acceptance",
+        "criterion": {
+          "id": "explicit-replacement-continues-to-generate-starter-artifacts",
+          "description": "Explicit replacement continues to generate starter artifacts",
+          "status": "pass",
+          "evidence_refs": [
+            {
+              "kind": "command",
+              "excerpt": "npm run test:ci",
+              "summary": "Existing explicit replacement coverage remains green."
+            }
+          ],
+          "observed_commands": [
+            {
+              "command": "npm run test:ci",
+              "exit_code": 0,
+              "output_sha256": "6b498327e06de74cf27a77fe01d9b0de72dbae7c4a0e7a5feefb00ecc1f6903e",
+              "test_count": 264,
+              "execution_proof": {
+                "kind": "local-process-exit",
+                "runner": "node --test",
+                "static_test_units": 578
+              }
+            }
+          ],
+          "identity_version": 2,
+          "verified_at": "2026-07-20T21:18:43.606Z"
+        },
+        "workflow_subject_ref": "github:kontourai/veritas#153"
+      },
+      "status": "verified"
+    },
+    {
+      "id": "github-kontourai-veritas-153-final-code-review.flow-agents-workflow.review-found-no-correctness-security-or-scope-findings-null-raw-payloads-cleanly-preserve-the-replacement-path-reviewed-2026-07-20t21-18-42-653z",
+      "subjectType": "workflow-critique",
+      "subjectId": "github-kontourai-veritas-153/final-code-review",
+      "facet": "flow-agents.workflow",
+      "claimType": "workflow.critique.review",
+      "fieldOrBehavior": "Review found no correctness, security, or scope findings; null raw payloads cleanly preserve the replacement path.",
+      "value": "pass",
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "updatedAt": "2026-07-20T21:21:32.168Z",
+      "impactLevel": "medium",
+      "verificationPolicyId": "policy:workflow.critique.review",
+      "metadata": {
+        "origin": "critique",
+        "reviewer": "codex:veritas-bytes-review:Kontour",
+        "reviewed_at": "2026-07-20T21:18:42.653Z",
+        "identity_version": 2,
+        "findings": [],
+        "lanes": [
+          {
+            "id": "code-review",
+            "status": "pass",
+            "summary": "Reviewed raw payload preservation and replacement fallback.",
+            "evidence_refs": [
+              {
+                "kind": "artifact",
+                "file": ".kontourai/flow-agents/github-kontourai-veritas-153/github-kontourai-veritas-153--plan-work.md",
+                "summary": "Scoped plan."
+              }
+            ]
+          }
+        ],
+        "review_target": {
+          "artifacts": [
+            {
+              "file": ".kontourai/flow-agents/github-kontourai-veritas-153/github-kontourai-veritas-153--deliver.md",
+              "sha256": "825ea8257f25d8edc4942242c6fae4e362d4ace546367bcb2de3c74e4b5bb414"
+            }
+          ],
+          "workspace_snapshot": {
+            "version": 1,
+            "kind": "git-worktree",
+            "algorithm": "sha256",
+            "digest": "ec67bf58ffd41820d805de4ef6e67a2f1f5c6c92b76207c00628b209bc2d350f",
+            "head_sha": "4fc79cb88f9db80dabd452c14dace5f11df412c6"
+          }
+        },
+        "artifact_refs": [
+          ".kontourai/flow-agents/github-kontourai-veritas-153/github-kontourai-veritas-153--deliver.md"
+        ],
+        "workflow_subject_ref": "github:kontourai/veritas#153"
+      },
+      "status": "verified"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "ev:github-kontourai-veritas-153-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-153-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-d0abf6b78c4714fb1c9e2dab0dfd7eb0f47fd8551fcc56d0b4f6d8d635816f94-gate-visit-2026-07-20t21-17-44z",
+      "claimId": "github-kontourai-veritas-153-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-153-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-d0abf6b78c4714fb1c9e2dab0dfd7eb0f47fd8551fcc56d0b4f6d8d635816f94-gate-visit-2026-07-20t21-17-44z",
+      "evidenceType": "attestation",
+      "method": "corroboration",
+      "sourceRef": "github-kontourai-veritas-153/evidence.json",
+      "excerptOrSummary": "Work Item github:kontourai/veritas#153 is durably assigned to the active workflow actor (assignment sha256:d0abf6b78c4714fb1c9e2dab0dfd7eb0f47fd8551fcc56d0b4f6d8d635816f94).",
+      "observedAt": "2026-07-20T21:21:32.168Z",
+      "collectedBy": "flow-agents/workflow-sidecar",
+      "passing": true
+    },
+    {
+      "id": "ev:github-kontourai-veritas-153-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-153-is-ready-the-exact-noisy-churn-reproduction-bounded-files-and-acceptance-criteria-are-explicit-gate-visit-2026-07-20t21-18-04-164z",
+      "claimId": "github-kontourai-veritas-153-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-153-is-ready-the-exact-noisy-churn-reproduction-bounded-files-and-acceptance-criteria-are-explicit-gate-visit-2026-07-20t21-18-04-164z",
+      "evidenceType": "attestation",
+      "method": "corroboration",
+      "sourceRef": "github-kontourai-veritas-153/evidence.json",
+      "excerptOrSummary": "Issue 153 is ready: the exact noisy-churn reproduction, bounded files, and acceptance criteria are explicit.",
+      "observedAt": "2026-07-20T21:21:32.168Z",
+      "collectedBy": "flow-agents/workflow-sidecar",
+      "passing": true
+    },
+    {
+      "id": "ev:github-kontourai-veritas-153-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.decision-preserve-raw-bytes-only-when-preservation-mode-is-active-keep-parsing-for-recommendation-metadata-and-keep-replacement-generation-unchanged-gate-visit-2026-07-20t21-18-04-803z",
+      "claimId": "github-kontourai-veritas-153-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.decision-preserve-raw-bytes-only-when-preservation-mode-is-active-keep-parsing-for-recommendation-metadata-and-keep-replacement-generation-unchanged-gate-visit-2026-07-20t21-18-04-803z",
+      "evidenceType": "attestation",
+      "method": "corroboration",
+      "sourceRef": "github-kontourai-veritas-153/evidence.json",
+      "excerptOrSummary": "Decision: preserve raw bytes only when preservation mode is active; keep parsing for recommendation metadata and keep replacement generation unchanged.",
+      "observedAt": "2026-07-20T21:21:32.168Z",
+      "collectedBy": "flow-agents/workflow-sidecar",
+      "passing": true
+    },
+    {
+      "id": "ev:github-kontourai-veritas-153-gate-claim-implementation-plan.flow-agents-workflow.plan-preserves-raw-payload-bytes-retains-parsed-metadata-covers-replacement-behavior-and-verifies-through-canonical-ci-gate-visit-2026-07-20t21-18-25-207z",
+      "claimId": "github-kontourai-veritas-153-gate-claim-implementation-plan.flow-agents-workflow.plan-preserves-raw-payload-bytes-retains-parsed-metadata-covers-replacement-behavior-and-verifies-through-canonical-ci-gate-visit-2026-07-20t21-18-25-207z",
+      "evidenceType": "attestation",
+      "method": "corroboration",
+      "sourceRef": "github-kontourai-veritas-153/evidence.json",
+      "excerptOrSummary": "Plan preserves raw payload bytes, retains parsed metadata, covers replacement behavior, and verifies through canonical CI.",
+      "observedAt": "2026-07-20T21:21:32.168Z",
+      "collectedBy": "flow-agents/workflow-sidecar",
+      "passing": true
+    },
+    {
+      "id": "ev:github-kontourai-veritas-153-gate-claim-implementation-scope.flow-agents-workflow.changed-only-bootstrap-recommendation-payload-selection-and-its-mature-governance-regression-fixture-gate-visit-2026-07-20t21-18-41-468z",
+      "claimId": "github-kontourai-veritas-153-gate-claim-implementation-scope.flow-agents-workflow.changed-only-bootstrap-recommendation-payload-selection-and-its-mature-governance-regression-fixture-gate-visit-2026-07-20t21-18-41-468z",
+      "evidenceType": "attestation",
+      "method": "corroboration",
+      "sourceRef": "github-kontourai-veritas-153/evidence.json",
+      "excerptOrSummary": "Changed only bootstrap recommendation payload selection and its mature-governance regression fixture.",
+      "observedAt": "2026-07-20T21:21:32.168Z",
+      "collectedBy": "flow-agents/workflow-sidecar",
+      "passing": true
+    },
+    {
+      "id": "ev:github-kontourai-veritas-153-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-passed-with-exact-byte-preservation-regression-and-unchanged-replacement-path-gate-visit-2026-07-20t21-18-43-606z",
+      "claimId": "github-kontourai-veritas-153-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-passed-with-exact-byte-preservation-regression-and-unchanged-replacement-path-gate-visit-2026-07-20t21-18-43-606z",
+      "evidenceType": "test_output",
+      "method": "validation",
+      "sourceRef": "github-kontourai-veritas-153/command-log.jsonl",
+      "excerptOrSummary": "Canonical CI passed with exact byte-preservation regression and unchanged replacement path.",
+      "observedAt": "2026-07-20T21:21:32.168Z",
+      "collectedBy": "flow-agents/evidence-capture",
+      "passing": true,
+      "execution": {
+        "runner": "bash",
+        "label": "npm run test:ci",
+        "isError": false,
+        "exitCode": 0
+      }
+    },
+    {
+      "id": "ev:github-kontourai-veritas-153-gate-claim-merge-readiness.flow-agents-workflow.scoped-byte-preservation-fix-is-review-clean-and-canonical-ci-passed-gate-visit-2026-07-20t21-21-32-168z",
+      "claimId": "github-kontourai-veritas-153-gate-claim-merge-readiness.flow-agents-workflow.scoped-byte-preservation-fix-is-review-clean-and-canonical-ci-passed-gate-visit-2026-07-20t21-21-32-168z",
+      "evidenceType": "attestation",
+      "method": "corroboration",
+      "sourceRef": "github-kontourai-veritas-153/evidence.json",
+      "excerptOrSummary": "Scoped byte-preservation fix is review-clean and canonical CI passed.",
+      "observedAt": "2026-07-20T21:21:32.168Z",
+      "collectedBy": "flow-agents/workflow-sidecar",
+      "passing": true
+    },
+    {
+      "id": "ev:github-kontourai-veritas-153-untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte.flow-agents-workflow.untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte-verified-2026-07-20t21-18-43-606z:c36b9c0d11820d38",
+      "claimId": "github-kontourai-veritas-153-untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte.flow-agents-workflow.untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte-verified-2026-07-20t21-18-43-606z",
+      "evidenceType": "test_output",
+      "method": "validation",
+      "sourceRef": "github-kontourai-veritas-153/observed-command",
+      "excerptOrSummary": "npm run test:ci",
+      "observedAt": "2026-07-20T21:18:43.606Z",
+      "collectedBy": "flow-agents/workflow-sidecar",
+      "passing": true,
+      "execution": {
+        "runner": "bash",
+        "label": "npm run test:ci",
+        "isError": false,
+        "exitCode": 0
+      }
+    },
+    {
+      "id": "ev:github-kontourai-veritas-153-explicit-replacement-continues-to-generate-starter-artifacts.flow-agents-workflow.explicit-replacement-continues-to-generate-starter-artifacts-verified-2026-07-20t21-18-43-606z:c36b9c0d11820d38",
+      "claimId": "github-kontourai-veritas-153-explicit-replacement-continues-to-generate-starter-artifacts.flow-agents-workflow.explicit-replacement-continues-to-generate-starter-artifacts-verified-2026-07-20t21-18-43-606z",
+      "evidenceType": "test_output",
+      "method": "validation",
+      "sourceRef": "github-kontourai-veritas-153/observed-command",
+      "excerptOrSummary": "npm run test:ci",
+      "observedAt": "2026-07-20T21:18:43.606Z",
+      "collectedBy": "flow-agents/workflow-sidecar",
+      "passing": true,
+      "execution": {
+        "runner": "bash",
+        "label": "npm run test:ci",
+        "isError": false,
+        "exitCode": 0
+      }
+    }
+  ],
+  "policies": [
+    {
+      "id": "policy:workflow.check.external:attestation",
+      "claimType": "workflow.check.external",
+      "requiredEvidence": [
+        "attestation"
+      ],
+      "acceptanceCriteria": [
+        "A verified verification event must support a workflow.check.external claim."
+      ],
+      "reviewAuthority": "system",
+      "validityRule": {
+        "kind": "manual"
+      },
+      "stalenessTriggers": [],
+      "conflictRules": [],
+      "impactLevel": "high"
+    },
+    {
+      "id": "policy:builder.pull-work.selected:attestation",
+      "claimType": "builder.pull-work.selected",
+      "requiredEvidence": [
+        "attestation"
+      ],
+      "acceptanceCriteria": [
+        "A verified verification event must support a builder.pull-work.selected claim."
+      ],
+      "reviewAuthority": "system",
+      "validityRule": {
+        "kind": "manual"
+      },
+      "stalenessTriggers": [],
+      "conflictRules": [],
+      "impactLevel": "high"
+    },
+    {
+      "id": "policy:builder.design-probe.pickup-readiness:attestation",
+      "claimType": "builder.design-probe.pickup-readiness",
+      "requiredEvidence": [
+        "attestation"
+      ],
+      "acceptanceCriteria": [
+        "A verified verification event must support a builder.design-probe.pickup-readiness claim."
+      ],
+      "reviewAuthority": "system",
+      "validityRule": {
+        "kind": "manual"
+      },
+      "stalenessTriggers": [],
+      "conflictRules": [],
+      "impactLevel": "high"
+    },
+    {
+      "id": "policy:builder.design-probe.decisions:attestation",
+      "claimType": "builder.design-probe.decisions",
+      "requiredEvidence": [
+        "attestation"
+      ],
+      "acceptanceCriteria": [
+        "A verified verification event must support a builder.design-probe.decisions claim."
+      ],
+      "reviewAuthority": "system",
+      "validityRule": {
+        "kind": "manual"
+      },
+      "stalenessTriggers": [],
+      "conflictRules": [],
+      "impactLevel": "high"
+    },
+    {
+      "id": "policy:builder.plan.implementation:attestation",
+      "claimType": "builder.plan.implementation",
+      "requiredEvidence": [
+        "attestation"
+      ],
+      "acceptanceCriteria": [
+        "A verified verification event must support a builder.plan.implementation claim."
+      ],
+      "reviewAuthority": "system",
+      "validityRule": {
+        "kind": "manual"
+      },
+      "stalenessTriggers": [],
+      "conflictRules": [],
+      "impactLevel": "high"
+    },
+    {
+      "id": "policy:builder.execute.scope:attestation",
+      "claimType": "builder.execute.scope",
+      "requiredEvidence": [
+        "attestation"
+      ],
+      "acceptanceCriteria": [
+        "A verified verification event must support a builder.execute.scope claim."
+      ],
+      "reviewAuthority": "system",
+      "validityRule": {
+        "kind": "manual"
+      },
+      "stalenessTriggers": [],
+      "conflictRules": [],
+      "impactLevel": "high"
+    },
+    {
+      "id": "policy:workflow.check.command:test_output",
+      "claimType": "workflow.check.command",
+      "requiredEvidence": [
+        "test_output"
+      ],
+      "acceptanceCriteria": [
+        "A verified verification event must support a workflow.check.command claim."
+      ],
+      "reviewAuthority": "system",
+      "validityRule": {
+        "kind": "manual"
+      },
+      "stalenessTriggers": [],
+      "conflictRules": [],
+      "impactLevel": "high"
+    },
+    {
+      "id": "policy:builder.verify.tests:test_output",
+      "claimType": "builder.verify.tests",
+      "requiredEvidence": [
+        "test_output"
+      ],
+      "acceptanceCriteria": [
+        "A verified verification event must support a builder.verify.tests claim."
+      ],
+      "reviewAuthority": "system",
+      "validityRule": {
+        "kind": "manual"
+      },
+      "stalenessTriggers": [],
+      "conflictRules": [],
+      "impactLevel": "high"
+    },
+    {
+      "id": "policy:builder.merge-ready.readiness:attestation",
+      "claimType": "builder.merge-ready.readiness",
+      "requiredEvidence": [
+        "attestation"
+      ],
+      "acceptanceCriteria": [
+        "A verified verification event must support a builder.merge-ready.readiness claim."
+      ],
+      "reviewAuthority": "system",
+      "validityRule": {
+        "kind": "manual"
+      },
+      "stalenessTriggers": [],
+      "conflictRules": [],
+      "impactLevel": "high"
+    },
+    {
+      "id": "policy:workflow.acceptance.criterion:test_output",
+      "claimType": "workflow.acceptance.criterion",
+      "requiredEvidence": [
+        "test_output"
+      ],
+      "acceptanceCriteria": [
+        "A verified verification event must support a workflow.acceptance.criterion claim."
+      ],
+      "reviewAuthority": "system",
+      "validityRule": {
+        "kind": "manual"
+      },
+      "stalenessTriggers": [],
+      "conflictRules": [],
+      "impactLevel": "high"
+    },
+    {
+      "id": "policy:workflow.critique.review",
+      "claimType": "workflow.critique.review",
+      "requiredEvidence": [],
+      "acceptanceCriteria": [
+        "A verified verification event must support a workflow.critique.review claim."
+      ],
+      "reviewAuthority": "system",
+      "validityRule": {
+        "kind": "manual"
+      },
+      "stalenessTriggers": [],
+      "conflictRules": [],
+      "impactLevel": "medium"
+    }
+  ],
+  "events": [
+    {
+      "id": "evt:github-kontourai-veritas-153-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-153-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-d0abf6b78c4714fb1c9e2dab0dfd7eb0f47fd8551fcc56d0b4f6d8d635816f94-gate-visit-2026-07-20t21-17-44z",
+      "claimId": "github-kontourai-veritas-153-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-153-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-d0abf6b78c4714fb1c9e2dab0dfd7eb0f47fd8551fcc56d0b4f6d8d635816f94-gate-visit-2026-07-20t21-17-44z",
+      "status": "verified",
+      "actor": "flow-agents/workflow-sidecar",
+      "method": "validation",
+      "evidenceIds": [
+        "ev:github-kontourai-veritas-153-gate-claim-selected-work.flow-agents-workflow.work-item-github-kontourai-veritas-153-is-durably-assigned-to-the-active-workflow-actor-assignment-sha256-d0abf6b78c4714fb1c9e2dab0dfd7eb0f47fd8551fcc56d0b4f6d8d635816f94-gate-visit-2026-07-20t21-17-44z"
+      ],
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "verifiedAt": "2026-07-20T21:21:32.168Z"
+    },
+    {
+      "id": "evt:github-kontourai-veritas-153-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-153-is-ready-the-exact-noisy-churn-reproduction-bounded-files-and-acceptance-criteria-are-explicit-gate-visit-2026-07-20t21-18-04-164z",
+      "claimId": "github-kontourai-veritas-153-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-153-is-ready-the-exact-noisy-churn-reproduction-bounded-files-and-acceptance-criteria-are-explicit-gate-visit-2026-07-20t21-18-04-164z",
+      "status": "verified",
+      "actor": "flow-agents/workflow-sidecar",
+      "method": "validation",
+      "evidenceIds": [
+        "ev:github-kontourai-veritas-153-gate-claim-pickup-probe-readiness.flow-agents-workflow.issue-153-is-ready-the-exact-noisy-churn-reproduction-bounded-files-and-acceptance-criteria-are-explicit-gate-visit-2026-07-20t21-18-04-164z"
+      ],
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "verifiedAt": "2026-07-20T21:21:32.168Z"
+    },
+    {
+      "id": "evt:github-kontourai-veritas-153-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.decision-preserve-raw-bytes-only-when-preservation-mode-is-active-keep-parsing-for-recommendation-metadata-and-keep-replacement-generation-unchanged-gate-visit-2026-07-20t21-18-04-803z",
+      "claimId": "github-kontourai-veritas-153-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.decision-preserve-raw-bytes-only-when-preservation-mode-is-active-keep-parsing-for-recommendation-metadata-and-keep-replacement-generation-unchanged-gate-visit-2026-07-20t21-18-04-803z",
+      "status": "verified",
+      "actor": "flow-agents/workflow-sidecar",
+      "method": "validation",
+      "evidenceIds": [
+        "ev:github-kontourai-veritas-153-gate-claim-probe-decisions-or-accepted-gaps.flow-agents-workflow.decision-preserve-raw-bytes-only-when-preservation-mode-is-active-keep-parsing-for-recommendation-metadata-and-keep-replacement-generation-unchanged-gate-visit-2026-07-20t21-18-04-803z"
+      ],
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "verifiedAt": "2026-07-20T21:21:32.168Z"
+    },
+    {
+      "id": "evt:github-kontourai-veritas-153-gate-claim-implementation-plan.flow-agents-workflow.plan-preserves-raw-payload-bytes-retains-parsed-metadata-covers-replacement-behavior-and-verifies-through-canonical-ci-gate-visit-2026-07-20t21-18-25-207z",
+      "claimId": "github-kontourai-veritas-153-gate-claim-implementation-plan.flow-agents-workflow.plan-preserves-raw-payload-bytes-retains-parsed-metadata-covers-replacement-behavior-and-verifies-through-canonical-ci-gate-visit-2026-07-20t21-18-25-207z",
+      "status": "verified",
+      "actor": "flow-agents/workflow-sidecar",
+      "method": "validation",
+      "evidenceIds": [
+        "ev:github-kontourai-veritas-153-gate-claim-implementation-plan.flow-agents-workflow.plan-preserves-raw-payload-bytes-retains-parsed-metadata-covers-replacement-behavior-and-verifies-through-canonical-ci-gate-visit-2026-07-20t21-18-25-207z"
+      ],
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "verifiedAt": "2026-07-20T21:21:32.168Z"
+    },
+    {
+      "id": "evt:github-kontourai-veritas-153-gate-claim-implementation-scope.flow-agents-workflow.changed-only-bootstrap-recommendation-payload-selection-and-its-mature-governance-regression-fixture-gate-visit-2026-07-20t21-18-41-468z",
+      "claimId": "github-kontourai-veritas-153-gate-claim-implementation-scope.flow-agents-workflow.changed-only-bootstrap-recommendation-payload-selection-and-its-mature-governance-regression-fixture-gate-visit-2026-07-20t21-18-41-468z",
+      "status": "verified",
+      "actor": "flow-agents/workflow-sidecar",
+      "method": "validation",
+      "evidenceIds": [
+        "ev:github-kontourai-veritas-153-gate-claim-implementation-scope.flow-agents-workflow.changed-only-bootstrap-recommendation-payload-selection-and-its-mature-governance-regression-fixture-gate-visit-2026-07-20t21-18-41-468z"
+      ],
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "verifiedAt": "2026-07-20T21:21:32.168Z"
+    },
+    {
+      "id": "evt:github-kontourai-veritas-153-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-passed-with-exact-byte-preservation-regression-and-unchanged-replacement-path-gate-visit-2026-07-20t21-18-43-606z",
+      "claimId": "github-kontourai-veritas-153-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-passed-with-exact-byte-preservation-regression-and-unchanged-replacement-path-gate-visit-2026-07-20t21-18-43-606z",
+      "status": "verified",
+      "actor": "flow-agents/workflow-sidecar",
+      "method": "validation",
+      "evidenceIds": [
+        "ev:github-kontourai-veritas-153-gate-claim-tests-evidence.flow-agents-workflow.canonical-ci-passed-with-exact-byte-preservation-regression-and-unchanged-replacement-path-gate-visit-2026-07-20t21-18-43-606z"
+      ],
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "verifiedAt": "2026-07-20T21:21:32.168Z"
+    },
+    {
+      "id": "evt:github-kontourai-veritas-153-gate-claim-merge-readiness.flow-agents-workflow.scoped-byte-preservation-fix-is-review-clean-and-canonical-ci-passed-gate-visit-2026-07-20t21-21-32-168z",
+      "claimId": "github-kontourai-veritas-153-gate-claim-merge-readiness.flow-agents-workflow.scoped-byte-preservation-fix-is-review-clean-and-canonical-ci-passed-gate-visit-2026-07-20t21-21-32-168z",
+      "status": "verified",
+      "actor": "flow-agents/workflow-sidecar",
+      "method": "validation",
+      "evidenceIds": [
+        "ev:github-kontourai-veritas-153-gate-claim-merge-readiness.flow-agents-workflow.scoped-byte-preservation-fix-is-review-clean-and-canonical-ci-passed-gate-visit-2026-07-20t21-21-32-168z"
+      ],
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "verifiedAt": "2026-07-20T21:21:32.168Z"
+    },
+    {
+      "id": "evt:github-kontourai-veritas-153-untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte.flow-agents-workflow.untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte-verified-2026-07-20t21-18-43-606z",
+      "claimId": "github-kontourai-veritas-153-untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte.flow-agents-workflow.untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte-verified-2026-07-20t21-18-43-606z",
+      "status": "verified",
+      "actor": "flow-agents/workflow-sidecar",
+      "method": "validation",
+      "evidenceIds": [
+        "ev:github-kontourai-veritas-153-untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte.flow-agents-workflow.untouched-repo-standards-and-authority-payloads-are-preserved-byte-for-byte-verified-2026-07-20t21-18-43-606z:c36b9c0d11820d38"
+      ],
+      "createdAt": "2026-07-20T21:18:43.606Z",
+      "verifiedAt": "2026-07-20T21:18:43.606Z"
+    },
+    {
+      "id": "evt:github-kontourai-veritas-153-explicit-replacement-continues-to-generate-starter-artifacts.flow-agents-workflow.explicit-replacement-continues-to-generate-starter-artifacts-verified-2026-07-20t21-18-43-606z",
+      "claimId": "github-kontourai-veritas-153-explicit-replacement-continues-to-generate-starter-artifacts.flow-agents-workflow.explicit-replacement-continues-to-generate-starter-artifacts-verified-2026-07-20t21-18-43-606z",
+      "status": "verified",
+      "actor": "flow-agents/workflow-sidecar",
+      "method": "validation",
+      "evidenceIds": [
+        "ev:github-kontourai-veritas-153-explicit-replacement-continues-to-generate-starter-artifacts.flow-agents-workflow.explicit-replacement-continues-to-generate-starter-artifacts-verified-2026-07-20t21-18-43-606z:c36b9c0d11820d38"
+      ],
+      "createdAt": "2026-07-20T21:18:43.606Z",
+      "verifiedAt": "2026-07-20T21:18:43.606Z"
+    },
+    {
+      "id": "evt:github-kontourai-veritas-153-final-code-review.flow-agents-workflow.review-found-no-correctness-security-or-scope-findings-null-raw-payloads-cleanly-preserve-the-replacement-path-reviewed-2026-07-20t21-18-42-653z",
+      "claimId": "github-kontourai-veritas-153-final-code-review.flow-agents-workflow.review-found-no-correctness-security-or-scope-findings-null-raw-payloads-cleanly-preserve-the-replacement-path-reviewed-2026-07-20t21-18-42-653z",
+      "status": "verified",
+      "actor": "flow-agents/workflow-sidecar",
+      "method": "validation",
+      "evidenceIds": [],
+      "createdAt": "2026-07-20T21:21:32.168Z",
+      "verifiedAt": "2026-07-20T21:21:32.168Z"
+    }
+  ]
+}
