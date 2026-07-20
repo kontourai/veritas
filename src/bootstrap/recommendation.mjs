@@ -216,11 +216,17 @@ function buildArtifactPayloads({ rootDir, projectName, evidenceCheck, repoInsigh
     const existingRepoMap = JSON.parse(readFileSync(resolve(rootDir, '.veritas/repo-map.json'), 'utf8'));
     ({ repoMap, appendedNodes } = mergeDiscoveredNodes(existingRepoMap, starterRepoMap));
   }
+  const existingRepoStandardsPayload = preserveExistingGovernance
+    ? readFileSync(resolve(rootDir, '.veritas/repo-standards/default.repo-standards.json'), 'utf8')
+    : null;
+  const existingAuthoritySettingsPayload = preserveExistingGovernance
+    ? readFileSync(resolve(rootDir, '.veritas/authority/default.authority-settings.json'), 'utf8')
+    : null;
   const repoStandards = preserveExistingGovernance
-    ? JSON.parse(readFileSync(resolve(rootDir, '.veritas/repo-standards/default.repo-standards.json'), 'utf8'))
+    ? JSON.parse(existingRepoStandardsPayload)
     : buildStarterRepoStandards({ projectName, instructionTargets: selectedInstructionTargets });
   const authoritySettings = preserveExistingGovernance
-    ? JSON.parse(readFileSync(resolve(rootDir, '.veritas/authority/default.authority-settings.json'), 'utf8'))
+    ? JSON.parse(existingAuthoritySettingsPayload)
     : buildStarterAuthoritySettings({ projectName, evidenceCheck });
   const recommendationSummary = [
     `- Mode: guided initialization artifact`,
@@ -244,8 +250,8 @@ function buildArtifactPayloads({ rootDir, projectName, evidenceCheck, repoInsigh
       ? readFileSync(resolve(rootDir, '.veritas/GOVERNANCE.md'), 'utf8')
       : buildGovernanceInstructions(),
     '.veritas/repo-map.json': jsonPayload(repoMap),
-    '.veritas/repo-standards/default.repo-standards.json': jsonPayload(repoStandards),
-    '.veritas/authority/default.authority-settings.json': jsonPayload(authoritySettings),
+    '.veritas/repo-standards/default.repo-standards.json': existingRepoStandardsPayload ?? jsonPayload(repoStandards),
+    '.veritas/authority/default.authority-settings.json': existingAuthoritySettingsPayload ?? jsonPayload(authoritySettings),
   };
 
   for (const target of selectedInstructionTargets) {

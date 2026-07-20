@@ -1585,9 +1585,11 @@ test('init explore preserves mature governance and appends only uncovered work a
   };
   const existingStandards = { version: 1, name: 'mature', rules: [{ id: 'keep-me', kind: 'required-artifacts', match: { artifacts: ['CONTEXT.md'] } }] };
   const existingAuthority = { version: 1, id: 'mature', defaults: { mode: 'observe' }, custom: { keep: true } };
+  const existingStandardsPayload = `${JSON.stringify(existingStandards)}\n`;
+  const existingAuthorityPayload = `${JSON.stringify(existingAuthority)}\n`;
   writeFileSync(join(rootDir, '.veritas/repo-map.json'), `${JSON.stringify(existingRepoMap, null, 2)}\n`);
-  writeFileSync(join(rootDir, '.veritas/repo-standards/default.repo-standards.json'), `${JSON.stringify(existingStandards, null, 2)}\n`);
-  writeFileSync(join(rootDir, '.veritas/authority/default.authority-settings.json'), `${JSON.stringify(existingAuthority, null, 2)}\n`);
+  writeFileSync(join(rootDir, '.veritas/repo-standards/default.repo-standards.json'), existingStandardsPayload);
+  writeFileSync(join(rootDir, '.veritas/authority/default.authority-settings.json'), existingAuthorityPayload);
   writeFileSync(join(rootDir, '.veritas/README.md'), 'mature readme\n');
   writeFileSync(join(rootDir, '.veritas/GOVERNANCE.md'), 'mature governance\n');
 
@@ -1602,6 +1604,8 @@ test('init explore preserves mature governance and appends only uncovered work a
   assert.deepEqual(recommendation.recommended_authority_settings, existingAuthority);
   assert.equal(recommendation.artifact_payloads['.veritas/README.md'], 'mature readme\n');
   assert.equal(recommendation.artifact_payloads['.veritas/GOVERNANCE.md'], 'mature governance\n');
+  assert.equal(recommendation.artifact_payloads['.veritas/repo-standards/default.repo-standards.json'], existingStandardsPayload);
+  assert.equal(recommendation.artifact_payloads['.veritas/authority/default.authority-settings.json'], existingAuthorityPayload);
   assert.deepEqual(
     recommendation.recommended_repo_map.graph.nodes.map((node) => node.id),
     ['mature.src', 'mature.package.widget', 'governance.guidance', 'governance.root-manifests', 'docs.docs', 'verification.tests'],
