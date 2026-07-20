@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.5.3](https://github.com/kontourai/veritas/compare/v1.5.2...v1.5.3) (2026-07-20)
+
+
+### Fixes
+
+* keep readiness projections out of worktrees ([b871229](https://github.com/kontourai/veritas/commit/b8712296f19742a7296978a02d78776951bddad2))
+* keep readiness projections out of worktrees ([38d77b2](https://github.com/kontourai/veritas/commit/38d77b2f1ee764dc4896ee4486f423d11737ae0f))
+* preserve governance artifact bytes ([#154](https://github.com/kontourai/veritas/issues/154)) ([a3b0f4f](https://github.com/kontourai/veritas/commit/a3b0f4f4e310f6ba67f412004db8aaf37c7a4e11))
+
+
+### Documentation
+
+* content sweep — accuracy and clarity fixes ([#144](https://github.com/kontourai/veritas/issues/144)) ([7bc032a](https://github.com/kontourai/veritas/commit/7bc032ac862fff9c27b24aec311599ca96f49b95))
+
 ## [1.5.2](https://github.com/kontourai/veritas/compare/v1.5.1...v1.5.2) (2026-07-20)
 
 
