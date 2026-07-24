@@ -46,6 +46,9 @@ export function buildMarkdownSummary(record, artifactPath) {
         if (finding.artifact) {
           lines.push(`  - Artifact: ${finding.artifact}`);
         }
+        if (finding.remediation) {
+          lines.push(`    - Remediation: ${finding.remediation}`);
+        }
       }
     }
   }
@@ -179,6 +182,9 @@ export function buildFeedbackSummary({
       const target = finding.artifact ?? finding.path ?? finding.required;
       if (target) {
         lines.push(`      -> ${target}`);
+      }
+      if (finding.remediation) {
+        lines.push(`         ${finding.remediation}`);
       }
     }
   }

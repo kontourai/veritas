@@ -695,6 +695,141 @@ test('Repo Standards evaluates governance blocks and diff-required rules', () =>
   assert.equal(passedResults[1].passed, true);
 });
 
+test('governance block diagnostics distinguish absent files, markers, and exact stale content', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-governance-block-diagnostics-'));
+  const staleCommand = 'npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas readiness';
+  const unrelatedInstruction = 'Never expose this unrelated instruction in readiness output.';
+  writeFileSync(join(rootDir, 'NO_MARKERS.md'), `# Local guidance\n\n${unrelatedInstruction}\n`);
+  writeFileSync(
+    join(rootDir, 'STALE.md'),
+    `# Local guidance\n\n<!-- veritas:governance-block:start -->\nRun \`${staleCommand}\`.\n<!-- veritas:governance-block:end -->\n`,
+  );
+  writeFileSync(join(rootDir, 'CANONICAL.md'), `${buildGovernanceBlock()}\n`);
+
+  const rule = {
+    id: 'ai-instruction-files-synced',
+    kind: 'governance-block',
+    classification: 'hard-invariant',
+    enforcementLevel: 'Require',
+    message: 'Instruction files must include the Veritas block.',
+    match: {
+      'governance-block': ['MISSING.md', 'NO_MARKERS.md', 'STALE.md', 'CANONICAL.md'],
+    },
+  };
+  const [result] = evaluateRepoStandards({ version: 1, name: 'governance-block-diagnostics', rules: [rule] }, { rootDir });
+
+  assert.equal(result.passed, false);
+  assert.deepEqual(
+    result.findings.map(({ kind, artifact }) => ({ kind, artifact })),
+    [
+      { kind: 'missing-governance-file', artifact: 'MISSING.md' },
+      { kind: 'missing-governance-block', artifact: 'NO_MARKERS.md' },
+      { kind: 'stale-governance-block', artifact: 'STALE.md' },
+    ],
+  );
+  assert.equal(result.findings[1].diagnostic, 'missing-governance-markers');
+  assert.equal(result.findings[2].diagnostic, 'stale-governance-content');
+  assert.match(result.summary, /1 missing file, 1 missing canonical marker set, 1 stale canonical block/);
+  assert.match(result.summary, /veritas apply governance-blocks/);
+  assert.equal(result.findings.some(({ artifact }) => artifact === 'CANONICAL.md'), false);
+  assert.doesNotMatch(JSON.stringify(result), new RegExp(staleCommand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.doesNotMatch(JSON.stringify(result), /Never expose this unrelated instruction/);
+
+  const feedback = buildFeedbackSummary({
+    record: {
+      files: [],
+      components: [],
+      policy_results: [result],
+      evidence_inventory_results: [],
+      external_tool_results: [],
+    },
+  });
+  assert.match(feedback, /missing canonical marker set/);
+  assert.match(feedback, /Run `veritas apply governance-blocks` to replace the marker-bounded block/);
+  assert.doesNotMatch(feedback, new RegExp(staleCommand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.doesNotMatch(feedback, /Never expose this unrelated instruction/);
+});
+
+test('governance block remediation normalizes partial, reversed, and duplicate markers idempotently', () => {
+  const block = buildGovernanceBlock();
+  const malformedCases = new Map([
+    ['start-only', {
+      content: `Before\n<!-- veritas:governance-block:start -->\nLocal tail\n`,
+      preserved: 'Local tail',
+    }],
+    ['end-only', {
+      content: `Before\n<!-- veritas:governance-block:end -->\nLocal tail\n`,
+      preserved: 'Local tail',
+    }],
+    [
+      'reversed',
+      {
+        content: `Before\n<!-- veritas:governance-block:end -->\nLocal middle\n<!-- veritas:governance-block:start -->\nAfter\n`,
+        preserved: 'Local middle',
+      },
+    ],
+    [
+      'duplicate',
+      {
+        content: `Before\n${block}\nBetween\n${block.replace('veritas readiness', 'npm exec -- veritas readiness')}\nAfter\n`,
+        preserved: 'Between',
+      },
+    ],
+  ]);
+
+  for (const [name, { content, preserved }] of malformedCases) {
+    const rootDir = mkdtempSync(join(tmpdir(), `veritas-governance-${name}-`));
+    mkdirp(join(rootDir, '.veritas'));
+    writeFileSync(
+      join(rootDir, '.veritas/repo-map.json'),
+      JSON.stringify({
+        activation: {
+          aiInstructionFiles: [{ path: 'AGENTS.md', tool: 'codex', required: true }],
+        },
+      }),
+    );
+    writeFileSync(join(rootDir, 'AGENTS.md'), content);
+    const rule = {
+      id: 'ai-instruction-files-synced',
+      kind: 'governance-block',
+      classification: 'hard-invariant',
+      enforcementLevel: 'Require',
+      match: { 'governance-block': ['AGENTS.md'] },
+    };
+    const [before] = evaluateRepoStandards({ rules: [rule] }, { rootDir });
+    assert.equal(before.passed, false, `${name} should fail before remediation`);
+    assert.equal(
+      before.findings[0].kind,
+      'stale-governance-block',
+    );
+    assert.equal(
+      before.findings[0].diagnostic,
+      name === 'duplicate' ? 'duplicate-governance-markers' : 'malformed-governance-markers',
+    );
+
+    applyGovernanceBlocks({ rootDir });
+    const once = readFileSync(join(rootDir, 'AGENTS.md'), 'utf8');
+    applyGovernanceBlocks({ rootDir });
+    const twice = readFileSync(join(rootDir, 'AGENTS.md'), 'utf8');
+    const [after] = evaluateRepoStandards({ rules: [rule] }, { rootDir });
+    assert.equal(
+      once.match(/veritas:governance-block:start/g)?.length,
+      1,
+      `${name} should have one start marker`,
+    );
+    assert.equal(
+      once.match(/veritas:governance-block:end/g)?.length,
+      1,
+      `${name} should have one end marker`,
+    );
+    assert.equal(once.includes(block), true, `${name} should contain the exact canonical block`);
+    assert.equal(twice, once, `${name} remediation should be idempotent`);
+    assert.equal(after.passed, true, `${name} should pass after remediation`);
+    assert.match(once, /Before/);
+    assert.equal(once.includes(preserved), true, `${name} should preserve instructions outside valid blocks`);
+  }
+});
+
 test('Repo Standards flags repeatable governance checks without Veritas primitive coverage', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-primitive-first-'));
   writeFileSync(join(rootDir, 'package.json'), `${JSON.stringify({

@@ -64,11 +64,44 @@ function resolveTargetPath(rootDir, targetPath) {
 }
 
 export function replaceGovernanceBlock(content, block = buildGovernanceBlock()) {
-  const startIndex = content.indexOf(GOVERNANCE_BLOCK_START);
-  const endIndex = content.indexOf(GOVERNANCE_BLOCK_END);
-  if (startIndex !== -1 && endIndex !== -1 && endIndex >= startIndex) {
-    const afterEndIndex = endIndex + GOVERNANCE_BLOCK_END.length;
-    return `${content.slice(0, startIndex)}${block}${content.slice(afterEndIndex)}`;
+  const markerPattern = new RegExp(
+    `${GOVERNANCE_BLOCK_START}|${GOVERNANCE_BLOCK_END}`,
+    'g',
+  );
+  const markers = [...content.matchAll(markerPattern)].map((match) => ({
+    kind: match[0] === GOVERNANCE_BLOCK_START ? 'start' : 'end',
+    start: match.index,
+    end: match.index + match[0].length,
+  }));
+
+  if (markers.length > 0) {
+    const pairedRanges = [];
+    let openStart = null;
+    for (const marker of markers) {
+      if (marker.kind === 'start' && openStart === null) {
+        openStart = marker;
+      } else if (marker.kind === 'end' && openStart !== null) {
+        pairedRanges.push({ start: openStart.start, end: marker.end });
+        openStart = null;
+      }
+    }
+
+    const removalRanges = [
+      ...pairedRanges,
+      ...markers
+        .filter((marker) =>
+          !pairedRanges.some((range) => marker.start >= range.start && marker.end <= range.end))
+        .map((marker) => ({ start: marker.start, end: marker.end })),
+    ].sort((left, right) => left.start - right.start);
+
+    let normalized = '';
+    let cursor = 0;
+    for (const [index, range] of removalRanges.entries()) {
+      normalized += content.slice(cursor, range.start);
+      if (index === 0) normalized += block;
+      cursor = range.end;
+    }
+    return normalized + content.slice(cursor);
   }
 
   const trimmedContent = content.replace(/\s*$/, '');
@@ -76,7 +109,9 @@ export function replaceGovernanceBlock(content, block = buildGovernanceBlock()) 
 }
 
 function fileContainsCanonicalGovernanceBlock(content, block = buildGovernanceBlock()) {
-  return content.includes(block);
+  const startCount = content.split(GOVERNANCE_BLOCK_START).length - 1;
+  const endCount = content.split(GOVERNANCE_BLOCK_END).length - 1;
+  return startCount === 1 && endCount === 1 && content.includes(block);
 }
 
 export function inspectGovernanceBlockFile({ rootDir, filePath, block = buildGovernanceBlock() }) {
@@ -91,15 +126,29 @@ export function inspectGovernanceBlockFile({ rootDir, filePath, block = buildGov
   }
 
   const content = readFileSync(resolvedPath, 'utf8');
-  const hasStart = content.includes(GOVERNANCE_BLOCK_START);
-  const hasEnd = content.includes(GOVERNANCE_BLOCK_END);
+  const startCount = content.split(GOVERNANCE_BLOCK_START).length - 1;
+  const endCount = content.split(GOVERNANCE_BLOCK_END).length - 1;
+  const startIndex = content.indexOf(GOVERNANCE_BLOCK_START);
+  const endIndex = content.indexOf(GOVERNANCE_BLOCK_END);
+  const hasAnyMarker = startCount > 0 || endCount > 0;
   const canonical = fileContainsCanonicalGovernanceBlock(content, block);
+  const diagnostic = canonical
+    ? null
+    : !hasAnyMarker
+      ? 'missing-governance-markers'
+      : startCount > 1 || endCount > 1
+        ? 'duplicate-governance-markers'
+        : startCount !== 1 || endCount !== 1 || endIndex < startIndex
+          ? 'malformed-governance-markers'
+          : 'stale-governance-content';
 
   return {
     path: filePath,
     exists: true,
     canonical,
-    stale: (hasStart || hasEnd) && !canonical,
+    diagnostic,
+    missingMarkers: !hasAnyMarker,
+    stale: hasAnyMarker && !canonical,
   };
 }
 
