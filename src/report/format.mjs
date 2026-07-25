@@ -44,7 +44,11 @@ export function buildMarkdownSummary(record, artifactPath) {
       lines.push(`- ${result.rule_id}: ${status} — ${result.summary}`);
       for (const finding of result.findings ?? []) {
         if (finding.artifact) {
-          lines.push(`  - Artifact: ${finding.artifact}`);
+          const diagnostic = finding.diagnostic ? ` (${finding.diagnostic})` : '';
+          lines.push(`  - Artifact: ${finding.artifact}${diagnostic}`);
+        }
+        if (finding.remediation) {
+          lines.push(`    - Remediation: ${finding.remediation}`);
         }
       }
     }
@@ -178,7 +182,11 @@ export function buildFeedbackSummary({
     for (const finding of result.findings ?? []) {
       const target = finding.artifact ?? finding.path ?? finding.required;
       if (target) {
-        lines.push(`      -> ${target}`);
+        const diagnostic = finding.diagnostic ? ` [${finding.diagnostic}]` : '';
+        lines.push(`      -> ${target}${diagnostic}`);
+      }
+      if (finding.remediation) {
+        lines.push(`         ${finding.remediation}`);
       }
     }
   }
