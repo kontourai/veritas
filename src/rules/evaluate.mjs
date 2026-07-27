@@ -61,8 +61,38 @@ export function evaluateGovernanceBlockRule(rule, { rootDir }) {
           ? 'stale-governance-block'
           : 'missing-governance-block'
         : 'missing-governance-file',
+      diagnostic: status.diagnostic ?? undefined,
       artifact: status.path,
+      remediation:
+        !status.exists
+          ? 'Create this required instruction file, then run `veritas apply governance-blocks`.'
+          : status.diagnostic === 'missing-governance-markers'
+            ? 'Run `veritas apply governance-blocks` to add the canonical markers and block.'
+            : status.diagnostic === 'stale-governance-content'
+              ? 'Run `veritas apply governance-blocks` to replace the marker-bounded block with the exact canonical block.'
+              : 'Run `veritas apply governance-blocks` to normalize the markers and restore the exact canonical block.',
     }));
+
+  const missingFileCount = findings.filter(({ kind }) => kind === 'missing-governance-file').length;
+  const missingMarkerCount = findings.filter(
+    ({ diagnostic }) => diagnostic === 'missing-governance-markers',
+  ).length;
+  const malformedMarkerCount = findings.filter(
+    ({ diagnostic }) => diagnostic === 'malformed-governance-markers',
+  ).length;
+  const duplicateMarkerCount = findings.filter(
+    ({ diagnostic }) => diagnostic === 'duplicate-governance-markers',
+  ).length;
+  const staleContentCount = findings.filter(
+    ({ diagnostic }) => diagnostic === 'stale-governance-content',
+  ).length;
+  const problems = [
+    missingFileCount > 0 && `${missingFileCount} missing ${missingFileCount === 1 ? 'file' : 'files'}`,
+    missingMarkerCount > 0 && `${missingMarkerCount} missing canonical ${missingMarkerCount === 1 ? 'marker set' : 'marker sets'}`,
+    malformedMarkerCount > 0 && `${malformedMarkerCount} malformed canonical ${malformedMarkerCount === 1 ? 'marker set' : 'marker sets'}`,
+    duplicateMarkerCount > 0 && `${duplicateMarkerCount} duplicate canonical ${duplicateMarkerCount === 1 ? 'marker set' : 'marker sets'}`,
+    staleContentCount > 0 && `${staleContentCount} stale canonical block ${staleContentCount === 1 ? 'content mismatch' : 'content mismatches'}`,
+  ].filter(Boolean);
 
   return buildRuleResult(rule, {
     implemented: true,
@@ -70,7 +100,7 @@ export function evaluateGovernanceBlockRule(rule, { rootDir }) {
     summary:
       findings.length === 0
         ? 'All required AI instruction files contain the canonical Veritas governance block.'
-        : 'Some AI instruction files are missing the canonical Veritas governance block.',
+        : `AI instruction governance block mismatch: ${problems.join(', ')}. Run \`veritas apply governance-blocks\` to restore the exact canonical block.`,
     findings,
   });
 }
