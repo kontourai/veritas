@@ -1,6 +1,6 @@
 {
   "name": "@kontourai/veritas",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "Merge autonomy for AI-authored code. Turn your repo's standards into evidence-backed readiness reports the agent reads back.",
   "private": false,
   "license": "Apache-2.0",

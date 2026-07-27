@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.5.4](https://github.com/kontourai/veritas/compare/v1.5.3...v1.5.4) (2026-07-27)
+
+
+### Fixes
+
+* make governance mismatches actionable ([#167](https://github.com/kontourai/veritas/issues/167)) ([127d4ac](https://github.com/kontourai/veritas/commit/127d4ac33185676494b02718168e054765be39c9))
+* preserve existing governance instruction blocks ([#157](https://github.com/kontourai/veritas/issues/157)) ([a0197ea](https://github.com/kontourai/veritas/commit/a0197ea3f6c88953cc9f0a548b60599260b8bc49))
+
 ## [1.5.3](https://github.com/kontourai/veritas/compare/v1.5.2...v1.5.3) (2026-07-20)
 
 
