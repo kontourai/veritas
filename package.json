@@ -87,7 +87,9 @@
     "veritas:console": "surface console --config surface.config.json",
     "check:content-boundary": "node scripts/check-content-boundary.cjs",
     "check:hachure-boundary": "node scripts/check-hachure-boundary.mjs",
-    "check:no-flow-agents-dep": "node scripts/check-no-flow-agents-dep.mjs"
+    "check:no-flow-agents-dep": "node scripts/check-no-flow-agents-dep.mjs",
+    "workflow:sidecar": "flow-agents-workflow-sidecar",
+    "workflow:validate-artifacts": "flow-agents-validate-artifacts"
   },
   "dependencies": {
     "@kontourai/surface": "^2.0.0",
@@ -98,6 +100,7 @@
     "picomatch": "^4.0.4"
   },
   "devDependencies": {
+    "@kontourai/flow-agents": "5.5.0",
     "@playwright/test": "^1.61.1"
   }
 }
