@@ -405,7 +405,7 @@ assert(
   'CI workflow must use the current checkout action.',
 );
 assert(
-  ciWorkflow.includes('actions/setup-node@v6'),
+  ciWorkflow.includes('actions/setup-node@v7'),
   'CI workflow must use the current setup-node action.',
 );
 assert(
@@ -431,7 +431,7 @@ assert(
   'Pages workflow must use the current checkout action.',
 );
 assert(
-  pagesWorkflow.includes('actions/setup-node@v6'),
+  pagesWorkflow.includes('actions/setup-node@v7'),
   'Pages workflow must use the current setup-node action.',
 );
 assert(
@@ -488,7 +488,7 @@ assert(
   'Publish workflow must use the current checkout action.',
 );
 assert(
-  publishWorkflow.includes('actions/setup-node@v6'),
+  publishWorkflow.includes('actions/setup-node@v7'),
   'Publish workflow must use the current setup-node action.',
 );
 assert(
@@ -502,7 +502,7 @@ assert(
   'Repo Conformance workflow must use the current checkout action.',
 );
 assert(
-  conformanceWorkflow.includes('actions/setup-node@v6'),
+  conformanceWorkflow.includes('actions/setup-node@v7'),
   'Repo Conformance workflow must use the current setup-node action.',
 );
 assert(

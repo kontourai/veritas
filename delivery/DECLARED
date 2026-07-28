@@ -34,5 +34,11 @@
     "reason": "The governance-file change adding the release-automation entry above. Touches delivery/DECLARED only. Scope paired with author: per the ADR 0022 2026-07-03 addendum.",
     "approved_by": "brian.anderson1222 (delegated approval, 2026-07-27 session: scoped-DECLARED-exemption route)",
     "declared_at": "2026-07-27T22:00:00Z"
+  },
+  {
+    "scope": "author:briananderson1222 branch-prefix:chore/setup-node-7",
+    "reason": "Moves every workflow to actions/setup-node@v7 together with the verify guard that pins the expected action version. The guard is self-referential \u2014 dependabot's bump alone always fails it (its own PR #173 went red on 'CI workflow must use the current setup-node action'), because the workflow and the expectation must move in one change, which a bot cannot author. Config and guard expectation only. Verification in lieu of a bundle: this PR's own CI runs the bumped workflows under the updated guard. Scope paired with author: per the ADR 0022 2026-07-03 addendum.",
+    "approved_by": "brian.anderson1222 (delegated approval, 2026-07-28 session: scoped-DECLARED-exemption route)",
+    "declared_at": "2026-07-28T02:00:00Z"
   }
 ]
