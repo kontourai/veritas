@@ -12,7 +12,7 @@ import {
 } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import {
@@ -862,6 +862,73 @@ test('governance block remediation normalizes partial, reversed, duplicate, and 
     }
     assert.match(once, /Before/);
     assert.equal(once.includes(preserved), true, `${name} should preserve instructions outside valid blocks`);
+  }
+});
+
+test('readiness governance remediation invokes the parsed marker-bounded apply command', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-governance-cli-remediation-'));
+  mkdirp(join(rootDir, '.veritas'));
+  writeFileSync(
+    join(rootDir, '.veritas/repo-map.json'),
+    JSON.stringify({
+      activation: {
+        aiInstructionFiles: [{ path: 'AGENTS.md', tool: 'codex', required: true }],
+      },
+    }),
+  );
+  writeFileSync(join(rootDir, 'AGENTS.md'), '# Existing\n\n<!-- veritas:governance-block:start -->\nstale\n<!-- veritas:governance-block:end -->\n');
+  const rule = {
+    id: 'ai-instruction-files-synced',
+    kind: 'governance-block',
+    classification: 'hard-invariant',
+    enforcementLevel: 'Require',
+    match: { 'governance-block': ['AGENTS.md'] },
+  };
+  const [before] = evaluateRepoStandards({ rules: [rule] }, { rootDir });
+  const command = before.findings[0].remediation.match(/`([^`]+)`/)[1].split(' ');
+
+  assert.deepEqual(command, ['veritas', 'apply', 'governance-blocks']);
+  assert.match(runLocalVeritas(['apply', 'governance-blocks', '--help']), /veritas apply governance-blocks/);
+  const applied = parseCliJson(runLocalVeritas([...command.slice(1), '--root', rootDir]));
+  assert.deepEqual(applied.applied.map((entry) => entry.path), ['AGENTS.md']);
+
+  const once = readFileSync(join(rootDir, 'AGENTS.md'), 'utf8');
+  runLocalVeritas([...command.slice(1), '--root', rootDir]);
+  assert.equal(readFileSync(join(rootDir, 'AGENTS.md'), 'utf8'), once);
+  assert.equal(evaluateRepoStandards({ rules: [rule] }, { rootDir })[0].passed, true);
+
+  const unknown = spawnSync(
+    'node',
+    [join(repoRootDir, 'bin/veritas.mjs'), 'apply', 'unknown-target', '--help'],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  );
+  assert.equal(unknown.status, 1);
+  assert.match(unknown.stderr, /veritas apply governance-blocks/);
+});
+
+test('governance-block apply rejects malformed arguments before writing', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-governance-cli-invalid-'));
+  const stale = '# Existing\n\n<!-- veritas:governance-block:start -->\nstale\n<!-- veritas:governance-block:end -->\n';
+  mkdirp(join(rootDir, '.veritas'));
+  writeFileSync(
+    join(rootDir, '.veritas/repo-map.json'),
+    JSON.stringify({ activation: { aiInstructionFiles: [{ path: 'AGENTS.md', tool: 'codex', required: true }] } }),
+  );
+  writeFileSync(join(rootDir, 'AGENTS.md'), stale);
+
+  for (const args of [
+    ['apply', 'governance-blocks', '--root'],
+    ['apply', 'governance-blocks', '--root', rootDir, '--bogus'],
+    ['apply', 'governance-blocks', 'unexpected-positional', '--root', rootDir],
+  ]) {
+    const result = spawnSync(
+      'node',
+      [join(repoRootDir, 'bin/veritas.mjs'), ...args],
+      { cwd: rootDir, encoding: 'utf8' },
+    );
+    assert.equal(result.status, 1, args.join(' '));
+    assert.match(result.stderr, /veritas apply governance-blocks/);
+    assert.equal(readFileSync(join(rootDir, 'AGENTS.md'), 'utf8'), stale, args.join(' '));
   }
 });
 
