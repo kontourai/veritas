@@ -1,25 +1,32 @@
 import { execFileSync } from 'node:child_process';
 import { resolveSourceRef } from './integrity.mjs';
 
-export function listChangedFiles(fromRef, toRef, rootDir) {
-  if (!fromRef || !toRef) return [];
-
-  return execFileSync('git', ['diff', '--name-only', '--diff-filter=ACMR', fromRef, toRef], {
+function gitExecOptions(rootDir, timeoutMs) {
+  return {
     cwd: rootDir,
     encoding: 'utf8',
     windowsHide: true,
-  })
+    ...(Number.isFinite(timeoutMs) && timeoutMs > 0
+      ? { timeout: Math.max(1, Math.floor(timeoutMs)) }
+      : {}),
+  };
+}
+
+export function listChangedFiles(fromRef, toRef, rootDir, { timeoutMs } = {}) {
+  if (!fromRef || !toRef) return [];
+
+  return execFileSync(
+    'git',
+    ['diff', '--name-only', '--diff-filter=ACMR', fromRef, toRef],
+    gitExecOptions(rootDir, timeoutMs),
+  )
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
 }
 
-function listGitFiles(args, rootDir) {
-  return execFileSync('git', args, {
-    cwd: rootDir,
-    encoding: 'utf8',
-    windowsHide: true,
-  })
+function listGitFiles(args, rootDir, timeoutMs) {
+  return execFileSync('git', args, gitExecOptions(rootDir, timeoutMs))
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
@@ -28,6 +35,7 @@ function listGitFiles(args, rootDir) {
 export function listWorkingTreeFiles(
   { staged = false, unstaged = false, untracked = false } = {},
   rootDir,
+  { timeoutMs } = {},
 ) {
   const files = new Set();
 
@@ -35,6 +43,7 @@ export function listWorkingTreeFiles(
     for (const file of listGitFiles(
       ['diff', '--cached', '--name-only', '--diff-filter=ACMR'],
       rootDir,
+      timeoutMs,
     )) {
       files.add(file);
     }
@@ -44,6 +53,7 @@ export function listWorkingTreeFiles(
     for (const file of listGitFiles(
       ['diff', '--name-only', '--diff-filter=ACMR'],
       rootDir,
+      timeoutMs,
     )) {
       files.add(file);
     }
@@ -53,6 +63,7 @@ export function listWorkingTreeFiles(
     for (const file of listGitFiles(
       ['ls-files', '--others', '--exclude-standard'],
       rootDir,
+      timeoutMs,
     )) {
       files.add(file);
     }
@@ -61,7 +72,7 @@ export function listWorkingTreeFiles(
   return [...files].sort();
 }
 
-export function resolveReportInputs(explicitFiles, options, rootDir) {
+export function resolveReportInputs(explicitFiles, options, rootDir, { gitTimeoutMs } = {}) {
   if (explicitFiles.length > 0) {
     return {
       files: explicitFiles,
@@ -83,7 +94,12 @@ export function resolveReportInputs(explicitFiles, options, rootDir) {
     }
     const sourceRef = options.sourceRef ?? `${options.changedFrom}..${options.changedTo}`;
     return {
-      files: listChangedFiles(options.changedFrom, options.changedTo, rootDir),
+      files: listChangedFiles(
+        options.changedFrom,
+        options.changedTo,
+        rootDir,
+        { timeoutMs: gitTimeoutMs },
+      ),
       sourceKind: 'branch-diff',
       sourceScope: [
         ...(options.changedFrom ? [`changed-from:${options.changedFrom}`] : []),
@@ -110,6 +126,7 @@ export function resolveReportInputs(explicitFiles, options, rootDir) {
           untracked: uniqueScopes.includes('untracked'),
         },
         rootDir,
+        { timeoutMs: gitTimeoutMs },
       ),
       sourceKind: 'working-tree',
       sourceScope: uniqueScopes,

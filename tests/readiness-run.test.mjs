@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { writeBootstrapStarterKit } from '../src/bootstrap.mjs';
@@ -190,4 +190,53 @@ test('Merge Readiness terminates a Flow Agents-shaped redirected descendant in d
   assert.equal(result.evidenceCheckFailure?.reason, 'timeout');
   await new Promise((resolve) => setTimeout(resolve, 800));
   assert.equal(existsSync(markerPath), false, 'redirected descendant must not outlive diff-scoped readiness');
+});
+
+test('Merge Readiness bounds Git diff scope resolution by the workflow deadline', async () => {
+  const rootDir = initCommittedRepo('veritas-readiness-scope-resolution-timeout-');
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  writeBootstrapStarterKit({
+    rootDir,
+    projectName: 'readiness-scope-resolution-timeout-fixture',
+    evidenceCheck: 'node -e "process.exit(0)"',
+    force: true,
+  });
+  commitAll(rootDir, 'Bootstrap scope timeout fixture');
+  writeFileSync(join(rootDir, 'README.md'), '# changed scope\n');
+  commitAll(rootDir, 'Add changed scope input');
+
+  const fakeBin = join(rootDir, 'fake-bin');
+  const fakeGit = join(fakeBin, 'git');
+  mkdirSync(fakeBin);
+  writeFileSync(fakeGit, '#!/bin/sh\nexec /bin/sleep 1\n');
+  chmodSync(fakeGit, 0o755);
+
+  const originalPath = process.env.PATH;
+  const startedAt = Date.now();
+  process.env.PATH = `${fakeBin}:${originalPath ?? ''}`;
+  try {
+    await assert.rejects(
+      runMergeReadiness(
+        {
+          rootDir,
+          runId: 'readiness-scope-resolution-timeout-test',
+          changedFrom: 'HEAD~1',
+          changedTo: 'HEAD',
+          force: true,
+        },
+        { rootDir },
+        [],
+        { appendHistory: false, workflowTimeoutMs: 50 },
+      ),
+      (error) => {
+        assert.equal(error.code, 'VERITAS_READINESS_WORKFLOW_TIMEOUT');
+        assert.equal(error.phase, 'scope-resolution');
+        assert.equal(error.reason, 'timeout');
+        return true;
+      },
+    );
+  } finally {
+    process.env.PATH = originalPath;
+  }
+  assert.ok(Date.now() - startedAt < 300, 'slow Git scope resolution must honor the workflow deadline');
 });

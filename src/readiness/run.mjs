@@ -11,12 +11,28 @@ import { finalizeReadinessArtifacts, hasReadinessOutcomeInputs } from './feedbac
 
 export { hasReadinessOutcomeInputs };
 
-function assertWorkflowDeadline(deadline, phase) {
-  if (!deadline || Date.now() < deadline) return;
+function workflowTimeoutError(phase, cause) {
   const error = new Error(`Merge Readiness workflow timed out before ${phase}`);
   error.code = 'VERITAS_READINESS_WORKFLOW_TIMEOUT';
   error.phase = phase;
-  throw error;
+  error.reason = 'timeout';
+  if (cause) error.cause = cause;
+  return error;
+}
+
+function remainingWorkflowTimeout(deadline, phase) {
+  if (!deadline) return undefined;
+  const remaining = deadline - Date.now();
+  if (remaining <= 0) throw workflowTimeoutError(phase);
+  return remaining;
+}
+
+function assertWorkflowDeadline(deadline, phase) {
+  remainingWorkflowTimeout(deadline, phase);
+}
+
+function isProcessTimeout(error) {
+  return error?.code === 'ETIMEDOUT' || error?.killed === true;
 }
 
 export async function runMergeReadiness(
@@ -38,11 +54,19 @@ export async function runMergeReadiness(
     { ...options, rootDir },
     { ...defaults, rootDir },
   );
-  const reportInputs = resolveReportInputs(
-    explicitFiles,
-    { ...options, workingTree },
-    rootDir,
-  );
+  let reportInputs;
+  try {
+    reportInputs = resolveReportInputs(
+      explicitFiles,
+      { ...options, workingTree },
+      rootDir,
+      { gitTimeoutMs: remainingWorkflowTimeout(workflowDeadline, 'scope-resolution') },
+    );
+  } catch (error) {
+    if (isProcessTimeout(error)) throw workflowTimeoutError('scope-resolution', error);
+    throw error;
+  }
+  assertWorkflowDeadline(workflowDeadline, 'scope-resolution');
   const evidenceCheckPlan = resolveEvidenceCheckCommands({
     repoMapPath,
     files: reportInputs.files,
@@ -86,6 +110,7 @@ export async function runMergeReadiness(
     },
     { ...defaults, rootDir },
     explicitFiles,
+    { reportInputs },
   );
   if (reportResult.record.uncovered_path_result === 'fail') {
     throw new Error(
