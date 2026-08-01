@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { writeBootstrapStarterKit } from '../src/bootstrap.mjs';
 import { runMergeReadiness } from '../src/readiness/run.mjs';
 import { commitAll, initCommittedRepo } from './helpers.mjs';
@@ -89,4 +90,60 @@ test('Merge Readiness reports a typed evidence-check timeout and phase progress'
   assert.deepEqual(phases.map((phase) => phase.phase), ['scope-resolution', 'evidence-check']);
   await new Promise((resolve) => setTimeout(resolve, 350));
   assert.equal(existsSync(markerPath), false, 'timed-out evidence check descendant must not continue');
+});
+
+test('Merge Readiness reports a typed MCP evidence-check timeout and phase progress', async () => {
+  const rootDir = initCommittedRepo('veritas-readiness-run-mcp-timeout-');
+  const serverPath = join(rootDir, 'mcp-server.mjs');
+  const sdkRoot = resolve('node_modules/@modelcontextprotocol/sdk/dist/esm');
+  writeFileSync(serverPath, `
+import { Server } from '${pathToFileURL(join(sdkRoot, 'server/index.js')).href}';
+import { StdioServerTransport } from '${pathToFileURL(join(sdkRoot, 'server/stdio.js')).href}';
+import { CallToolRequestSchema } from '${pathToFileURL(join(sdkRoot, 'types.js')).href}';
+
+const server = new Server({ name: 'veritas-readiness-timeout-test', version: '1.0.0' }, { capabilities: { tools: {} } });
+server.setRequestHandler(CallToolRequestSchema, async () => new Promise(() => {}));
+await server.connect(new StdioServerTransport());
+`);
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  writeBootstrapStarterKit({
+    rootDir,
+    projectName: 'readiness-mcp-timeout-fixture',
+    evidenceCheck: 'node -e "process.exit(0)"',
+    force: true,
+  });
+  const repoMapPath = join(rootDir, '.veritas/repo-map.json');
+  const repoMap = JSON.parse(readFileSync(repoMapPath, 'utf8'));
+  repoMap.evidence.evidenceChecks[0] = {
+    ...repoMap.evidence.evidenceChecks[0],
+    runner: 'mcp',
+    server: { command: process.execPath, args: [serverPath] },
+    tool: 'scan',
+    input: {},
+    timeoutMs: 50,
+  };
+  delete repoMap.evidence.evidenceChecks[0].command;
+  writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
+  commitAll(rootDir, 'Bootstrap Veritas MCP timeout fixture');
+
+  const phases = [];
+  const result = await runMergeReadiness(
+    { rootDir, runId: 'readiness-mcp-timeout-test', workingTree: true, force: true },
+    { rootDir },
+    [],
+    { appendHistory: false, onReadinessPhase: (phase) => phases.push(phase) },
+  );
+
+  const evidenceCheck = repoMap.evidence.evidenceChecks[0];
+  assert.equal(result.currentStatus, 'fail');
+  assert.deepEqual(result.evidenceCheckResults, []);
+  assert.deepEqual(result.evidenceCheckFailure, {
+    phase: 'evidence-check',
+    reason: 'timeout',
+    id: evidenceCheck.id,
+    runner: 'mcp',
+    label: `scan@${process.execPath}`,
+    message: 'MCP Evidence Check timed out after 50ms',
+  });
+  assert.deepEqual(phases.map((phase) => phase.phase), ['scope-resolution', 'evidence-check']);
 });

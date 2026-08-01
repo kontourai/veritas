@@ -2,6 +2,13 @@ import { spawn } from 'node:child_process';
 
 export function runBash(command, { cwd, env, timeoutMs, signal } = {}) {
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      const error = new Error('Bash command aborted');
+      error.name = 'AbortError';
+      reject(error);
+      return;
+    }
+
     const startedAt = Date.now();
     const child = spawn('sh', ['-c', command], {
       cwd,
@@ -20,10 +27,13 @@ export function runBash(command, { cwd, env, timeoutMs, signal } = {}) {
     child.stderr.on('data', (chunk) => stderrChunks.push(chunk));
 
     let timer = null;
+    let escalationTimer = null;
     let killed = false;
     let timedOut = false;
+    let settled = false;
 
     function sendSignal(signalName) {
+      if (settled) return;
       if (process.platform !== 'win32' && child.pid) {
         try {
           process.kill(-child.pid, signalName);
@@ -39,7 +49,7 @@ export function runBash(command, { cwd, env, timeoutMs, signal } = {}) {
       if (killed) return;
       killed = true;
       sendSignal('SIGTERM');
-      setTimeout(() => {
+      escalationTimer = setTimeout(() => {
         sendSignal('SIGKILL');
       }, 2000).unref?.();
     }
@@ -52,13 +62,21 @@ export function runBash(command, { cwd, env, timeoutMs, signal } = {}) {
     if (signal) signal.addEventListener('abort', onAbort, { once: true });
 
     child.on('error', (error) => {
+      if (settled) return;
+      settled = true;
       if (timer) clearTimeout(timer);
+      if (escalationTimer) clearTimeout(escalationTimer);
       if (signal) signal.removeEventListener('abort', onAbort);
       reject(error);
     });
 
     child.on('close', (code, sig) => {
+      if (settled) return;
+      // Mark completion before clearing the escalation. This prevents a late
+      // timer from signalling a recycled POSIX process group after close.
+      settled = true;
       if (timer) clearTimeout(timer);
+      if (escalationTimer) clearTimeout(escalationTimer);
       if (signal) signal.removeEventListener('abort', onAbort);
 
       if (signal?.aborted) {

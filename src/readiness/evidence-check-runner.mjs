@@ -1,5 +1,6 @@
 import { runBash, createMcpServerPool } from '../runner/index.mjs';
 import { evidenceCheckLabel } from '../evidence/index.mjs';
+import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
 /**
  * Default per-evidence-check timeout (ms). Without it, a bash check waiting on
@@ -55,6 +56,10 @@ function buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs) {
   };
 }
 
+function isMcpTimeout(error) {
+  return error?.code === ErrorCode.RequestTimeout;
+}
+
 async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, onPhase, evidenceCheckTimeoutMs = DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS }) {
   let evidenceCheckFailure = null;
   const evidenceCheckResults = [];
@@ -73,7 +78,12 @@ async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, on
       });
       try {
         const result = runner === 'mcp'
-          ? await pool.call(evidenceCheck.server, evidenceCheck.tool, evidenceCheck.input ?? {}, { signal })
+          ? await pool.call(
+            evidenceCheck.server,
+            evidenceCheck.tool,
+            evidenceCheck.input ?? {},
+            { signal, timeoutMs: checkTimeoutMs },
+          )
           : await runBash(evidenceCheck.command, { cwd: rootDir, signal, timeoutMs: checkTimeoutMs });
         const evidenceCheckResult = buildEvidenceCheckResult(evidenceCheck, runner, label, result);
         evidenceCheckResults.push(evidenceCheckResult);
@@ -85,11 +95,13 @@ async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, on
       } catch (error) {
         evidenceCheckFailure = {
           phase: 'evidence-check',
-          reason: 'runner-error',
+          reason: runner === 'mcp' && isMcpTimeout(error) ? 'timeout' : 'runner-error',
           id: evidenceCheck.id,
           runner,
           label,
-          message: error.message,
+          message: runner === 'mcp' && isMcpTimeout(error)
+            ? `MCP Evidence Check timed out after ${checkTimeoutMs}ms`
+            : error.message,
         };
         break;
       }
