@@ -61,6 +61,8 @@ function recommendedEvidenceChecks(repoInsights) {
     ? 'Conflicting package-script or authoritative instruction-file verification signals detected; review before promoting this check.'
     : repoInsights.evidenceCheckSource === 'repo-declared AI instructions'
       ? 'Selected from an authoritative repository AI instruction file.'
+      : repoInsights.evidenceCheckSource === 'Makefile test target'
+        ? 'Selected from a detected Makefile test target.'
       : repoInsights.evidenceCheckSource === 'node runtime smoke fallback'
         ? 'No package manifest was detected; selected a Node runtime smoke check until an owner supplies a project evidenceCheck.'
       : repoInsights.matchedScripts.length > 0
@@ -91,8 +93,10 @@ function ownerQuestions(repoInsights, existingGovernance) {
     {
       id: 'canonical-evidenceCheck',
       group: 'evidenceCheck',
-      question: repoInsights.packageManager === 'unknown'
+      question: repoInsights.evidenceCheckSource === 'node runtime smoke fallback'
         ? `No package manifest was detected, so Veritas selected \`${repoInsights.evidenceCheck}\` only as an engine smoke check. What project evidenceCheck should replace it before promotion?`
+        : repoInsights.evidenceCheckSource === 'Makefile test target'
+          ? `Veritas detected \`${repoInsights.evidenceCheck}\` as project evidence from a Makefile test target. Is this the command that should prove repo health before AI-authored changes are considered ready?`
         : `Is \`${repoInsights.evidenceCheck}\` the command that should prove repo health before AI-authored changes are considered ready?`,
     },
     {

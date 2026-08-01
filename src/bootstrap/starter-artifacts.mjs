@@ -58,7 +58,16 @@ export function buildAdaptiveNodes(repoInsights) {
     });
   }
 
-  const sourceRoots = repoInsights.sourceRoots.length > 0 ? repoInsights.sourceRoots : ['src/'];
+  const hasNoDetectedRoots =
+    repoInsights.sourceRoots.length === 0 &&
+    (repoInsights.productRoots?.length ?? 0) === 0 &&
+    (repoInsights.toolingRoots?.length ?? 0) === 0 &&
+    (repoInsights.testRoots?.length ?? 0) === 0;
+  const sourceRoots = repoInsights.sourceRoots.length > 0
+    ? repoInsights.sourceRoots
+    : hasNoDetectedRoots
+      ? ['src/']
+      : [];
   const testRoots = repoInsights.testRoots.length > 0 ? repoInsights.testRoots : ['tests/'];
 
   for (const root of sourceRoots) {
@@ -132,7 +141,9 @@ function buildStarterEvidenceConfig({ evidenceCheck, repoInsights }) {
         id: 'required-evidence-check',
         command: evidenceCheck,
         method: 'validation',
-        summary: repoInsights.packageManager === 'unknown'
+        summary: repoInsights.evidenceCheckSource === 'Makefile test target'
+          ? 'Detected Makefile test target.'
+          : repoInsights.packageManager === 'unknown'
           ? 'Node runtime smoke check until an owner selects a project evidenceCheck.'
           : 'Default repository evidenceCheck.',
       },

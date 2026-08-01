@@ -4,16 +4,16 @@
 # environment an agent does not control (build + tests + lint — whatever this
 # repo declares as its comprehensive verify). If a Flow Agents session has
 # published delivery/trust.bundle, it also RECONCILES the agent's claimed passes
-# against CI's own fresh results and fails on any divergence. When no bundle is
-# present, only the fresh verify is enforced (fail-open on bundle absence;
-# fail-closed on divergence when present).
+# against CI's own fresh results and fails on any divergence. Missing or stale
+# delivery evidence also fails with a diagnostic unless a governed DECLARED
+# exemption applies; the check remains non-required during this advisory phase.
 #
-# ADVISORY PHASE: this workflow runs and reports but is NOT yet a required status
-# check — a failing Trust Verify run does not block merge. To ARM it: add
-# "Trust Verify" as a required, no-bypass status check in this repo's branch
-# protection settings (Settings -> Branches -> main), and add a CODEOWNERS entry
-# protecting this file + package.json so the verify command cannot be quietly
-# weakened. See https://github.com/kontourai/flow-agents/blob/main/docs/trust-anchor-adoption.md
+# ADVISORY PHASE: Trust Verify remains non-required in branch protection, so a
+# reconciliation failure stays visible and truthful without blocking merge. A
+# separate trusted workflow_run publisher owns PR comments. To arm it, add
+# "Trust Verify" as a required, no-bypass status check and protect this file
+# plus package.json in CODEOWNERS. See
+# https://github.com/kontourai/flow-agents/blob/main/docs/trust-anchor-adoption.md
 # for the full adoption guide.
 name: Trust Verify
 
