@@ -20,6 +20,7 @@ import {
   runClaudeCodePreToolUseCli,
   runPrintClaudeCodePreToolUseHookCli,
   runApplyClaudeCodePreToolUseHookCli,
+  runApplyGovernanceBlocksCli,
   runClaimCli,
 } from '../src/index.mjs';
 
@@ -34,6 +35,7 @@ const MAIN_USAGE = `Usage:
   veritas attest status [--root <path>]
   veritas claim init|list|add|edit|remove|scaffold|validate [--root <path>]
   veritas setup repo-hooks [--root <path>] [--force]
+  veritas apply governance-blocks [--root <path>] [--force]
   veritas plugin list [--root <path>]
   veritas feedback draft --evidence <path> [--authority-settings <path>] [--output <path>] [--force]
   veritas feedback observe [--session-log <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>]
@@ -106,8 +108,27 @@ const SETUP_USAGE = `Usage:
   veritas setup repo-hooks [--root <path>] [--force]
 `;
 
+const APPLY_USAGE = `Usage:
+  veritas apply governance-blocks [--root <path>] [--force]
+`;
+
 function isHelpToken(token) {
   return token === '--help' || token === '-h' || token === 'help';
+}
+
+function validateGovernanceBlocksArgs(argv) {
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+    if (token === '--force') continue;
+    if (token === '--root') {
+      const rootDir = argv[index + 1];
+      if (!rootDir || rootDir.startsWith('--')) return '--root requires a path';
+      index += 1;
+      continue;
+    }
+    return `Unknown apply governance-blocks argument: ${token}`;
+  }
+  return null;
 }
 
 function writeStdout(text) {
@@ -166,6 +187,25 @@ if (subcommand === '--version' || subcommand === '-V') {
     runSetupRepoHooksCli(setupArgs, { rootDir: cwd });
   } else {
     writeStderr(SETUP_USAGE);
+    process.exitCode = 1;
+  }
+} else if (subcommand === 'apply') {
+  const [target, ...applyArgs] = args;
+  if (!target || isHelpToken(target)) {
+    writeStdout(APPLY_USAGE);
+  } else if (target === 'governance-blocks') {
+    const nonHelpArgs = applyArgs.filter((token) => !isHelpToken(token));
+    const validationError = validateGovernanceBlocksArgs(nonHelpArgs);
+    if (validationError) {
+      writeStderr(`${validationError}\n${APPLY_USAGE}`);
+      process.exitCode = 1;
+    } else if (applyArgs.some(isHelpToken)) {
+      writeStdout(APPLY_USAGE);
+    } else {
+      runApplyGovernanceBlocksCli(applyArgs, { rootDir: cwd });
+    }
+  } else {
+    writeStderr(APPLY_USAGE);
     process.exitCode = 1;
   }
 } else if (subcommand === 'plugin') {

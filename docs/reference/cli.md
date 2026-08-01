@@ -536,6 +536,11 @@ Write restrictions are intentional:
 
 `apply git-hook` remains available for lower-level scripting, custom output-path control inside `.githooks/`, and installing one hook at a time. For normal repository setup or repair, prefer `setup repo-hooks`.
 
+`apply governance-blocks` is the executable remediation named by the
+`ai-instruction-files-synced` readiness result. It updates only the configured
+AI instruction targets, replacing content only between Veritas governance
+markers; unknown `apply` targets fail closed.
+
 ### `runtime status`
 
 Inspects the installed state of tracked runtime integrations.
