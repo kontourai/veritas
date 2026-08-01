@@ -8,10 +8,18 @@ export function buildBootstrapReadme({
     sourceRoots: [],
     toolingRoots: [],
     testRoots: [],
+    productRoots: [],
     hasWorkflows: false,
     matchedScripts: [],
   },
 }) {
+  const productRoots = repoInsights.productRoots ?? [];
+  const hasNoDetectedRoots =
+    repoInsights.sourceRoots.length === 0 &&
+    productRoots.length === 0 &&
+    (repoInsights.toolingRoots ?? []).length === 0 &&
+    (repoInsights.testRoots ?? []).length === 0;
+
   return `# Veritas Starter Kit
 
 This repo was bootstrapped for \`${projectName}\` with a conservative starter kit for agent-guided development.
@@ -30,7 +38,14 @@ This repo was bootstrapped for \`${projectName}\` with a conservative starter ki
 - Source roots: ${
     repoInsights.sourceRoots.length > 0
       ? `\`${repoInsights.sourceRoots.join('`, `')}\``
-      : '`src/` (default)'
+      : !hasNoDetectedRoots
+        ? '`none detected`'
+        : '`src/` (conservative starter fallback)'
+  }
+- Product roots: ${
+    productRoots.length > 0
+      ? `\`${productRoots.join('`, `')}\``
+      : '`none detected`'
   }
 - Tooling roots: ${
     (repoInsights.toolingRoots ?? []).length > 0

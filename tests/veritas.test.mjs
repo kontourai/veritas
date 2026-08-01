@@ -6103,6 +6103,68 @@ test('adaptive bootstrap excludes ignored and generated roots while retaining Gi
   assert.equal(insights.productRoots.includes('_site/'), false);
 });
 
+test('adaptive bootstrap uses a Makefile test target for top-level product domains without inventing src', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-makefile-domains-'));
+  writeFileSync(join(rootDir, 'Makefile'), '.PHONY: test\n\ntest:\n\t@echo test\n');
+  for (const directory of ['agent-cards', 'agents', 'context', 'evals', 'kits', 'skills']) {
+    mkdirp(join(rootDir, directory));
+  }
+
+  const firstInsights = inferBootstrapRepoInsights(rootDir);
+  const secondInsights = inferBootstrapRepoInsights(rootDir);
+  const recommendation = parseCliJson(runLocalVeritas(['init', '--explore', '--root', rootDir]));
+  const result = writeBootstrapStarterKit({ rootDir, projectName: 'Makefile Domains' });
+  const repoMap = readJsonFromAbsolute(join(rootDir, '.veritas/repo-map.json'));
+  const bootstrapReadme = readFileSync(join(rootDir, '.veritas/README.md'), 'utf8');
+  const nodePatterns = repoMap.graph.nodes.flatMap((node) => node.patterns);
+
+  assert.deepEqual(secondInsights, firstInsights);
+  assert.equal(result.evidenceCheck, 'make test');
+  assert.equal(firstInsights.evidenceCheckSource, 'Makefile test target');
+  assert.equal(firstInsights.evidenceCheckConfidence, 'high');
+  assert.deepEqual(firstInsights.sourceRoots, []);
+  assert.deepEqual(firstInsights.productRoots, [
+    'agent-cards/', 'agents/', 'context/', 'evals/', 'kits/', 'skills/',
+  ]);
+  assert.equal(nodePatterns.includes('src/'), false);
+  assert.deepEqual(
+    repoMap.graph.nodes
+      .filter((node) => node.id.startsWith('product.'))
+      .map((node) => node.patterns[0]),
+    firstInsights.productRoots,
+  );
+  assert.match(bootstrapReadme, /Source roots: `none detected`/);
+  assert.match(bootstrapReadme, /Product roots: `agent-cards\/`, `agents\/`, `context\/`, `evals\/`, `kits\/`, `skills\/`/);
+  assert.equal(repoMap.evidence.evidenceChecks[0].summary, 'Detected Makefile test target.');
+  assert.equal(
+    recommendation.recommended_evidence_checks[0].reason,
+    'Selected from a detected Makefile test target.',
+  );
+  const evidenceQuestion = recommendation.owner_questions.find((question) => question.id === 'canonical-evidenceCheck');
+  assert.match(evidenceQuestion.question, /detected `make test` as project evidence from a Makefile test target/);
+  assert.doesNotMatch(evidenceQuestion.question, /engine smoke check/);
+});
+
+test('adaptive bootstrap retains a stronger package script over a Makefile test target', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-package-over-makefile-'));
+  writeFileSync(join(rootDir, 'package.json'), JSON.stringify({
+    scripts: { verify: 'node --test' },
+  }));
+  writeFileSync(join(rootDir, 'Makefile'), 'test:\n\t@echo test\n');
+  mkdirp(join(rootDir, 'src'));
+
+  const insights = inferBootstrapRepoInsights(rootDir);
+  const result = writeBootstrapStarterKit({ rootDir, projectName: 'Conventional Repo' });
+  const repoMap = readJsonFromAbsolute(join(rootDir, '.veritas/repo-map.json'));
+  const bootstrapReadme = readFileSync(join(rootDir, '.veritas/README.md'), 'utf8');
+
+  assert.equal(result.evidenceCheck, 'npm run verify');
+  assert.equal(insights.evidenceCheckSource, 'package.json scripts');
+  assert.deepEqual(insights.sourceRoots, ['src/']);
+  assert.ok(repoMap.graph.nodes.some((node) => node.patterns.includes('src/')));
+  assert.match(bootstrapReadme, /Source roots: `src\/`/);
+});
+
 test('adaptive bootstrap infers the evidenceCheck through the shipped CLI path', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-workspace-cli-'));
   writeFileSync(

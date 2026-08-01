@@ -92,6 +92,17 @@ function detectTestRoots(rootDir) {
   );
 }
 
+function hasMakefileTestTarget(rootDir) {
+  const makefilePath = ['GNUmakefile', 'Makefile', 'makefile']
+    .map((path) => resolve(rootDir, path))
+    .find((path) => existsSync(path));
+  if (!makefilePath) return false;
+
+  return readFileSync(makefilePath, 'utf8').split(/\r?\n/).some((line) =>
+    /^\s*test\s*::?(?!\s*(?::|[+?!])?=)(?:\s|#|$)/.test(line),
+  );
+}
+
 const GENERATED_TOP_LEVEL_DIRS = new Set([
   '_site',
   'build',
@@ -376,6 +387,7 @@ export function inferBootstrapRepoInsights(rootDir) {
     : packageJson
       ? 'npm test'
       : 'node -e "process.exit(0)"';
+  const hasMakefileTest = hasMakefileTestTarget(rootDir);
   const existingVerification = detectExistingVerification(rootDir, scripts);
   const conflicts = [...existingVerification.conflicts];
   if (existingVerification.authoritativeCommands.length > 1) {
@@ -403,16 +415,22 @@ export function inferBootstrapRepoInsights(rootDir) {
   const authoritativeEvidenceCheck = existingVerification.selectedAuthoritativeCommand;
   const evidenceCheck = authoritativeEvidenceCheck
     ? authoritativeEvidenceCheck
-    : packageEvidenceCheck;
+    : matchingScript
+      ? packageEvidenceCheck
+      : hasMakefileTest
+        ? 'make test'
+        : packageEvidenceCheck;
   const evidenceCheckConfidence = hasConflictingSignals
     ? 'medium'
-    : authoritativeEvidenceCheck || matchingScript
+    : authoritativeEvidenceCheck || matchingScript || hasMakefileTest
       ? 'high'
       : 'low';
   const evidenceCheckSource = authoritativeEvidenceCheck
     ? 'repo-declared AI instructions'
     : matchingScript
       ? 'package.json scripts'
+      : hasMakefileTest
+        ? 'Makefile test target'
       : packageJson
         ? 'fallback'
         : 'node runtime smoke fallback';
