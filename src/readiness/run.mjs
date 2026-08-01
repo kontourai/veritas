@@ -11,6 +11,14 @@ import { finalizeReadinessArtifacts, hasReadinessOutcomeInputs } from './feedbac
 
 export { hasReadinessOutcomeInputs };
 
+function assertWorkflowDeadline(deadline, phase) {
+  if (!deadline || Date.now() < deadline) return;
+  const error = new Error(`Merge Readiness workflow timed out before ${phase}`);
+  error.code = 'VERITAS_READINESS_WORKFLOW_TIMEOUT';
+  error.phase = phase;
+  throw error;
+}
+
 export async function runMergeReadiness(
   rawOptions = {},
   defaults = {},
@@ -20,6 +28,9 @@ export async function runMergeReadiness(
   const options = { ...rawOptions };
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const startedAt = runtime.startedAt ?? new Date().toISOString();
+  const workflowDeadline = runtime.workflowTimeoutMs > 0
+    ? Date.now() + runtime.workflowTimeoutMs
+    : null;
   const actor = runtime.actor ?? process.env.VERITAS_ACTOR ?? 'unknown';
   const workingTree = options.workingTree || (!options.changedFrom && !options.changedTo);
   runtime.onReadinessPhase?.({ phase: 'scope-resolution' });
@@ -59,6 +70,8 @@ export async function runMergeReadiness(
     evidenceCheckResults = result.evidenceCheckResults;
   }
 
+  assertWorkflowDeadline(workflowDeadline, 'report');
+  runtime.onReadinessPhase?.({ phase: 'report' });
   const reportResult = await generateVeritasReport(
     {
       ...options,
@@ -80,6 +93,8 @@ export async function runMergeReadiness(
     );
   }
 
+  assertWorkflowDeadline(workflowDeadline, 'finalization');
+  runtime.onReadinessPhase?.({ phase: 'finalization' });
   const {
     finishedAt,
     currentStatus,
@@ -96,8 +111,9 @@ export async function runMergeReadiness(
     reportResult,
     evidenceCheckFailure,
   });
+  assertWorkflowDeadline(workflowDeadline, 'complete');
 
-  return {
+  const result = {
     rootDir,
     startedAt,
     finishedAt,
@@ -113,4 +129,6 @@ export async function runMergeReadiness(
     standardsFeedbackResult,
     currentStatus,
   };
+  runtime.onReadinessPhase?.({ phase: 'complete', currentStatus });
+  return result;
 }

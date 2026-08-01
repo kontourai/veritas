@@ -61,6 +61,19 @@ export function runBash(command, { cwd, env, timeoutMs, signal } = {}) {
     const onAbort = () => { if (timer) { clearTimeout(timer); timer = null; } kill(); };
     if (signal) signal.addEventListener('abort', onAbort, { once: true });
 
+    child.on('exit', () => {
+      if (!killed || settled || process.platform === 'win32') return;
+      // The shell can exit while a redirected descendant still owns no stdio
+      // handles, so `close` can arrive before the grace timer. Kill the known
+      // group while the leader PID is still fresh instead of retaining a late
+      // negative-PID timer that could target a recycled process group.
+      if (escalationTimer) {
+        clearTimeout(escalationTimer);
+        escalationTimer = null;
+      }
+      sendSignal('SIGKILL');
+    });
+
     child.on('error', (error) => {
       if (settled) return;
       settled = true;

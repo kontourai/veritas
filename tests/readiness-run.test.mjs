@@ -87,7 +87,9 @@ test('Merge Readiness reports a typed evidence-check timeout and phase progress'
     stderr: '',
     exitCode: null,
   });
-  assert.deepEqual(phases.map((phase) => phase.phase), ['scope-resolution', 'evidence-check']);
+  assert.deepEqual(phases.map((phase) => phase.phase), [
+    'scope-resolution', 'evidence-check', 'report', 'finalization', 'complete',
+  ]);
   await new Promise((resolve) => setTimeout(resolve, 350));
   assert.equal(existsSync(markerPath), false, 'timed-out evidence check descendant must not continue');
 });
@@ -145,5 +147,47 @@ await server.connect(new StdioServerTransport());
     label: `scan@${process.execPath}`,
     message: 'MCP Evidence Check timed out after 50ms',
   });
-  assert.deepEqual(phases.map((phase) => phase.phase), ['scope-resolution', 'evidence-check']);
+  assert.deepEqual(phases.map((phase) => phase.phase), [
+    'scope-resolution', 'evidence-check', 'report', 'finalization', 'complete',
+  ]);
+});
+
+test('Merge Readiness terminates a Flow Agents-shaped redirected descendant in diff scope', async () => {
+  const rootDir = initCommittedRepo('veritas-readiness-run-diff-scope-timeout-');
+  const markerPath = join(rootDir, 'redirected-descendant-ran');
+  const childScriptPath = join(rootDir, 'redirected-descendant.mjs');
+  writeFileSync(
+    childScriptPath,
+    "import { writeFileSync } from 'node:fs'; process.on('SIGTERM', () => {}); setTimeout(() => writeFileSync(process.argv[2], 'ran'), 700);\n",
+  );
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  writeBootstrapStarterKit({
+    rootDir,
+    projectName: 'readiness-diff-scope-timeout-fixture',
+    evidenceCheck: 'node -e "process.exit(0)"',
+    force: true,
+  });
+  const repoMapPath = join(rootDir, '.veritas/repo-map.json');
+  const repoMap = JSON.parse(readFileSync(repoMapPath, 'utf8'));
+  repoMap.evidence.evidenceChecks[0] = {
+    ...repoMap.evidence.evidenceChecks[0],
+    command: `${JSON.stringify(process.execPath)} ${JSON.stringify(childScriptPath)} ${JSON.stringify(markerPath)} >/dev/null 2>&1 & wait`,
+    timeoutMs: 100,
+  };
+  writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
+  commitAll(rootDir, 'Bootstrap diff-scoped timeout fixture');
+  writeFileSync(join(rootDir, 'README.md'), '# changed scope\n');
+  commitAll(rootDir, 'Change Flow Agents-shaped scoped input');
+
+  const result = await runMergeReadiness(
+    { rootDir, runId: 'readiness-diff-scope-timeout-test', changedFrom: 'HEAD~1', changedTo: 'HEAD', force: true },
+    { rootDir },
+    [],
+    { appendHistory: false },
+  );
+
+  assert.equal(result.currentStatus, 'fail');
+  assert.equal(result.evidenceCheckFailure?.reason, 'timeout');
+  await new Promise((resolve) => setTimeout(resolve, 800));
+  assert.equal(existsSync(markerPath), false, 'redirected descendant must not outlive diff-scoped readiness');
 });

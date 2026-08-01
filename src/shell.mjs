@@ -1,6 +1,27 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 
+const GIT_DIFF_TIMEOUT_MS = 30_000;
+
+function timedGitDiff(rootDir, args) {
+  try {
+    return execFileSync('git', args, {
+      cwd: rootDir,
+      encoding: 'utf8',
+      windowsHide: true,
+      timeout: GIT_DIFF_TIMEOUT_MS,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+  } catch (error) {
+    if (error?.code === 'ETIMEDOUT' || error?.signal === 'SIGTERM') {
+      const timeoutError = new Error(`Git diff resolution timed out after ${GIT_DIFF_TIMEOUT_MS}ms`);
+      timeoutError.code = 'VERITAS_DIFF_TIMEOUT';
+      throw timeoutError;
+    }
+    throw error;
+  }
+}
+
 export function shellQuote(value) {
   if (/^[A-Za-z0-9_./:-]+$/.test(value)) {
     return value;
@@ -134,24 +155,16 @@ export function resolveGitHead(rootDir) {
 export function stagedDiffSha256(rootDir) {
   let diff = '';
   try {
-    diff = execFileSync('git', ['diff', '--cached', '--binary'], {
-      cwd: rootDir,
-      encoding: 'utf8',
-      windowsHide: true,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
-  } catch {
+    diff = timedGitDiff(rootDir, ['diff', '--cached', '--binary']);
+  } catch (error) {
+    if (error?.code === 'VERITAS_DIFF_TIMEOUT') throw error;
     diff = '';
   }
   if (!diff) {
     try {
-      diff = execFileSync('git', ['diff', '--binary'], {
-        cwd: rootDir,
-        encoding: 'utf8',
-        windowsHide: true,
-        stdio: ['ignore', 'pipe', 'ignore'],
-      });
-    } catch {
+      diff = timedGitDiff(rootDir, ['diff', '--binary']);
+    } catch (error) {
+      if (error?.code === 'VERITAS_DIFF_TIMEOUT') throw error;
       diff = '';
     }
   }

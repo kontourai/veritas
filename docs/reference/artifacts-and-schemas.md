@@ -346,7 +346,7 @@ Current Repo Map files use explicit check objects. `runner` defaults to `bash`; 
 }
 ```
 
-MCP checks use `runner: "mcp"` with a stdio server definition, tool name, and optional JSON input. Current routing still refers to `evidenceChecks[].id`, so bash and MCP checks can be mixed in `requiredEvidenceCheckIds`, `defaultEvidenceCheckIds`, and `evidenceCheckRoutes`.
+MCP checks use `runner: "mcp"` with a stdio server definition, tool name, and optional JSON input. `timeoutMs`, when present, is a positive integer and bounds one complete check: MCP initialization plus the tool call share that single deadline. Current routing still refers to `evidenceChecks[].id`, so bash and MCP checks can be mixed in `requiredEvidenceCheckIds`, `defaultEvidenceCheckIds`, and `evidenceCheckRoutes`.
 
 ```json
 {

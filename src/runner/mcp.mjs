@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { OwnedStdioClientTransport } from './owned-stdio.mjs';
 
 function serverKey(serverDef) {
   return createHash('sha256')
@@ -14,6 +16,28 @@ function abortError() {
   return error;
 }
 
+function timeoutError(timeoutMs) {
+  return McpError.fromError(ErrorCode.RequestTimeout, 'MCP evidence check timed out', { timeout: timeoutMs });
+}
+
+function remainingTimeout(deadline) {
+  if (!deadline) return undefined;
+  const remaining = deadline - Date.now();
+  if (remaining <= 0) throw timeoutError(0);
+  return remaining;
+}
+
+function transportFor(serverDef) {
+  const options = {
+    command: serverDef.command,
+    args: serverDef.args ?? [],
+    env: serverDef.env,
+  };
+  return process.platform === 'win32'
+    ? new StdioClientTransport(options)
+    : new OwnedStdioClientTransport(options);
+}
+
 class McpServerPool {
   #connections = new Map();
   #signal;
@@ -23,11 +47,11 @@ class McpServerPool {
     this.#signal = signal ?? null;
   }
 
-  async #getOrConnect(serverDef, { signal, timeoutMs } = {}) {
+  async #getOrConnect(serverDef, { signal, deadline } = {}) {
     const key = serverKey(serverDef);
     if (!this.#connections.has(key)) {
       const connection = { client: null, transport: null, closed: false };
-      connection.promise = this.#connect(serverDef, connection, { signal, timeoutMs }).catch((error) => {
+      connection.promise = this.#connect(serverDef, connection, { signal, deadline }).catch((error) => {
         this.#connections.delete(key);
         throw error;
       });
@@ -36,14 +60,11 @@ class McpServerPool {
     return this.#connections.get(key).promise;
   }
 
-  async #connect(serverDef, connection, { signal, timeoutMs } = {}) {
-    const transport = connection.transport = new StdioClientTransport({
-      command: serverDef.command,
-      args: serverDef.args ?? [],
-      env: serverDef.env,
-    });
+  async #connect(serverDef, connection, { signal, deadline } = {}) {
+    const transport = connection.transport = transportFor(serverDef);
     const client = new Client({ name: 'veritas-runner', version: '1.0.0' });
     try {
+      const timeoutMs = remainingTimeout(deadline);
       await client.connect(transport, {
         ...(signal ? { signal } : {}),
         ...(timeoutMs ? { timeout: timeoutMs, maxTotalTimeout: timeoutMs } : {}),
@@ -64,20 +85,26 @@ class McpServerPool {
   }
 
   async call(serverDef, toolName, input, { signal, timeoutMs } = {}) {
-    const callSignal =
+    const deadline = timeoutMs > 0 ? Date.now() + timeoutMs : null;
+    const deadlineSignal = timeoutMs > 0 ? AbortSignal.timeout(timeoutMs) : null;
+    const baseSignal =
       this.#signal && signal
         ? AbortSignal.any([this.#signal, signal])
         : (this.#signal ?? signal ?? null);
+    const callSignal = baseSignal && deadlineSignal
+      ? AbortSignal.any([baseSignal, deadlineSignal])
+      : (baseSignal ?? deadlineSignal);
     if (callSignal?.aborted) throw abortError();
 
     const startedAt = Date.now();
-    const { client } = await this.#getOrConnect(serverDef, { signal: callSignal, timeoutMs });
+    const { client } = await this.#getOrConnect(serverDef, { signal: callSignal, deadline });
+    const remainingMs = remainingTimeout(deadline);
     const result = await client.callTool(
       { name: toolName, arguments: input ?? {} },
       undefined,
       {
         ...(callSignal ? { signal: callSignal } : {}),
-        ...(timeoutMs ? { timeout: timeoutMs, maxTotalTimeout: timeoutMs } : {}),
+        ...(remainingMs ? { timeout: remainingMs, maxTotalTimeout: remainingMs } : {}),
       },
     );
     return {
