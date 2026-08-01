@@ -46,3 +46,15 @@ jobs:
           # Keep `npm test` as a temporary second manifest lane so the in-flight
           # #147 Builder bundle (recorded before `test:ci` existed) reconciles.
           verify-command: "npm run test:ci,npm test"
+  trust-advisory-comment:
+    if: >-
+      ${{ always() && github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository }}
+    needs: trust-verify
+    permissions:
+      pull-requests: write
+    uses: kontourai/.github/.github/workflows/trust-advisory-comment.yml@04e2430e537406244c28496c43e620fa0999332b
+    with:
+      pr-number: ${{ github.event.pull_request.number }}
+      result: ${{ needs['trust-verify'].result }}
+      run-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
