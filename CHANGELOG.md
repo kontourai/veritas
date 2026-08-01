@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.5.5](https://github.com/kontourai/veritas/compare/v1.5.4...v1.5.5) (2026-08-01)
+
+
+### Fixes
+
+* adapt init to Makefile domain repositories ([#183](https://github.com/kontourai/veritas/issues/183)) ([e793ef3](https://github.com/kontourai/veritas/commit/e793ef3c5a4e98a3c3e6907f6779bb2edfe7493b))
+* bound readiness evidence and scope timeouts ([#184](https://github.com/kontourai/veritas/issues/184)) ([09243f4](https://github.com/kontourai/veritas/commit/09243f479d6fad7552a6aef68f56d3842198870c))
+
 ## [1.5.4](https://github.com/kontourai/veritas/compare/v1.5.3...v1.5.4) (2026-07-27)
 
 
