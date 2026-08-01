@@ -98,7 +98,12 @@ export function resolveVeritasPaths(options, defaults = {}) {
   };
 }
 
-export async function generateVeritasReport(options = {}, defaults = {}, explicitFiles = []) {
+export async function generateVeritasReport(
+  options = {},
+  defaults = {},
+  explicitFiles = [],
+  runtime = {},
+) {
   const { rootDir, repoMapPath, repoStandardsPath, authoritySettingsPath } = resolveVeritasPaths(options, defaults);
 
   if (!rootDir || !repoMapPath || !repoStandardsPath) {
@@ -107,7 +112,13 @@ export async function generateVeritasReport(options = {}, defaults = {}, explici
     );
   }
 
-  const reportInputs = resolveReportInputs(explicitFiles, options, rootDir);
+  const reportInputs = runtime.reportInputs
+    ?? resolveReportInputs(
+      explicitFiles,
+      options,
+      rootDir,
+      { gitTimeoutMs: runtime.gitTimeoutMs },
+    );
   const files = reportInputs.files;
 
   if (files.length === 0 && reportInputs.sourceKind === 'explicit-files') {

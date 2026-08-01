@@ -92,6 +92,7 @@
             "properties": {
               "id": { "type": "string" },
               "runner": { "enum": ["bash", "mcp"] },
+              "timeoutMs": { "type": "integer", "minimum": 1 },
               "command": { "type": "string" },
               "server": {
                 "type": "object",

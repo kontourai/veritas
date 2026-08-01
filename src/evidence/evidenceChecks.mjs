@@ -159,6 +159,9 @@ function assertEvidenceCheckObject(evidenceCheck) {
   if (!['observation', 'extraction', 'validation', 'corroboration', 'attestation', 'auditability', 'anchoring', 'monitoring'].includes(evidenceCheck.method)) {
     throw new Error(`Veritas Repo Map evidence.evidenceChecks[].method contains unsupported value: ${evidenceCheck.method}`);
   }
+  if (evidenceCheck.timeoutMs !== undefined && (!Number.isInteger(evidenceCheck.timeoutMs) || evidenceCheck.timeoutMs <= 0)) {
+    throw new Error('Veritas Repo Map evidence.evidenceChecks[].timeoutMs must be a positive integer when provided.');
+  }
   if (evidenceCheck.surfaceClaimIds !== undefined && !Array.isArray(evidenceCheck.surfaceClaimIds)) {
     throw new Error('Veritas Repo Map evidence.evidenceChecks[].surfaceClaimIds must be an array of strings.');
   }

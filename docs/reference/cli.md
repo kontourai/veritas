@@ -48,6 +48,8 @@ npx @kontourai/veritas readiness --check boundaries --actor cli-team [--diff mai
 
 `readiness` is the recommended current front door for evidenceCheck execution, generated evidence, standards feedback drafting, and change guidance. `readiness --check boundaries` replaces `boundaries check`. `readiness --check coverage` is the current command for readiness coverage. `readiness --check evidence` is the current command for the lower-level generated evidence path.
 
+Evidence-check processes have bounded cancellation and per-check deadlines. Embedders may set `runtime.workflowTimeoutMs` for an overall readiness deadline; Veritas checks that deadline before report, finalization, and completion. Report generation and filesystem-backed feedback finalization remain synchronous repository operations: they receive explicit bounded Git diff resolution, but a caller cannot preempt an already-running filesystem operation once that finalization phase has started. The workflow deadline is therefore observed at phase boundaries, not a claim of universal mid-operation cancellation.
+
 Readiness keeps its generated Surface projection under the ignored `.kontourai/veritas/surface/`
 runtime root. Use `--projection-output <repo-relative-file>` to retain an additional copy at an
 explicit location for CI upload or inspection. The explicit destination is caller-owned and is not

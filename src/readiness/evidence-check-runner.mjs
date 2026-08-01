@@ -1,5 +1,6 @@
 import { runBash, createMcpServerPool } from '../runner/index.mjs';
 import { evidenceCheckLabel } from '../evidence/index.mjs';
+import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
 /**
  * Default per-evidence-check timeout (ms). Without it, a bash check waiting on
@@ -34,10 +35,16 @@ function buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs) {
       ? `timed out after ${checkTimeoutMs}ms`
       : (evidenceCheckResult.exitCode ?? evidenceCheckResult.signal ?? 'unknown status');
   return {
+    phase: 'evidence-check',
+    reason: runner === 'bash' && evidenceCheckResult.timedOut ? 'timeout' : 'failed',
     id: evidenceCheckResult.id,
     runner,
     label,
-    message: runner === 'mcp' ? status : `Evidence Check command exited with ${status}`,
+    message: runner === 'mcp'
+      ? status
+      : evidenceCheckResult.timedOut
+        ? `Evidence Check command ${status}`
+        : `Evidence Check command exited with ${status}`,
     ...(runner === 'bash' ? {
       stdout: evidenceCheckResult.stdout,
       stderr: evidenceCheckResult.stderr,
@@ -49,7 +56,11 @@ function buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs) {
   };
 }
 
-async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, evidenceCheckTimeoutMs = DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS }) {
+function isMcpTimeout(error) {
+  return error?.code === ErrorCode.RequestTimeout;
+}
+
+async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, onPhase, evidenceCheckTimeoutMs = DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS }) {
   let evidenceCheckFailure = null;
   const evidenceCheckResults = [];
   const pool = createMcpServerPool({ signal });
@@ -58,9 +69,21 @@ async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, ev
       const runner = evidenceCheck.runner ?? 'bash';
       const label = evidenceCheckLabel(evidenceCheck);
       const checkTimeoutMs = evidenceCheck.timeoutMs ?? evidenceCheckTimeoutMs;
+      onPhase?.({
+        phase: 'evidence-check',
+        id: evidenceCheck.id,
+        runner,
+        label,
+        timeoutMs: checkTimeoutMs,
+      });
       try {
         const result = runner === 'mcp'
-          ? await pool.call(evidenceCheck.server, evidenceCheck.tool, evidenceCheck.input ?? {}, { signal })
+          ? await pool.call(
+            evidenceCheck.server,
+            evidenceCheck.tool,
+            evidenceCheck.input ?? {},
+            { signal, timeoutMs: checkTimeoutMs },
+          )
           : await runBash(evidenceCheck.command, { cwd: rootDir, signal, timeoutMs: checkTimeoutMs });
         const evidenceCheckResult = buildEvidenceCheckResult(evidenceCheck, runner, label, result);
         evidenceCheckResults.push(evidenceCheckResult);
@@ -71,10 +94,14 @@ async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, ev
         }
       } catch (error) {
         evidenceCheckFailure = {
+          phase: 'evidence-check',
+          reason: runner === 'mcp' && isMcpTimeout(error) ? 'timeout' : 'runner-error',
           id: evidenceCheck.id,
           runner,
           label,
-          message: error.message,
+          message: runner === 'mcp' && isMcpTimeout(error)
+            ? `MCP Evidence Check timed out after ${checkTimeoutMs}ms`
+            : error.message,
         };
         break;
       }
@@ -108,6 +135,7 @@ export async function runEvidenceCheckPlan({
       rootDir,
       signal: controller.signal,
       onOutput: runtime.onEvidenceCheckOutput,
+      onPhase: runtime.onReadinessPhase,
       evidenceCheckTimeoutMs,
     });
   } finally {

@@ -1,10 +1,49 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { runBash, createMcpServerPool } from '../src/runner/index.mjs';
+
+function writeMcpTestServer(dir) {
+  const serverPath = join(dir, 'server.mjs');
+  const sdkRoot = resolve('node_modules/@modelcontextprotocol/sdk/dist/esm');
+  writeFileSync(serverPath, `
+import { readFileSync, writeFileSync } from 'node:fs';
+import { Server } from '${pathToFileURL(join(sdkRoot, 'server/index.js')).href}';
+import { StdioServerTransport } from '${pathToFileURL(join(sdkRoot, 'server/stdio.js')).href}';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '${pathToFileURL(join(sdkRoot, 'types.js')).href}';
+import { spawn } from 'node:child_process';
+
+const mode = process.argv[2];
+const countPath = process.argv[3];
+if (mode === 'connect-hang') {
+  setInterval(() => {}, 1_000);
+} else {
+  if (mode === 'cumulative-deadline') await new Promise((resolve) => setTimeout(resolve, 60));
+  if (countPath && mode === 'normal') writeFileSync(countPath, String(Number(readFileSync(countPath, 'utf8')) + 1));
+  const server = new Server({ name: 'veritas-runner-test', version: '1.0.0' }, { capabilities: { tools: {} } });
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: [{ name: 'scan', description: 'test scan', inputSchema: { type: 'object' } }],
+  }));
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    if (mode === 'tool-hang') return new Promise(() => {});
+    if (mode === 'cumulative-deadline') await new Promise((resolve) => setTimeout(resolve, 60));
+    if (mode === 'descendant-hang') {
+      spawn(process.execPath, ['-e', "const { writeFileSync } = require('node:fs'); process.on('SIGTERM', () => {}); setTimeout(() => writeFileSync(process.argv[1], 'ran'), 500);", countPath], { stdio: 'ignore' });
+      return new Promise(() => {});
+    }
+    return {
+      content: [{ type: 'text', text: JSON.stringify(request.params.arguments ?? {}) }],
+      isError: false,
+    };
+  });
+  await server.connect(new StdioServerTransport());
+}
+`);
+  return serverPath;
+}
 
 test('runBash captures successful commands', async () => {
   const result = await runBash('printf "ok"');
@@ -33,36 +72,25 @@ test('runBash aborts an in-flight command', async () => {
   await assert.rejects(promise, { name: 'AbortError' });
 });
 
+test('runBash rejects a signal that was already aborted without spawning', async () => {
+  const controller = new AbortController();
+  controller.abort();
+
+  await assert.rejects(
+    runBash('exit 0', { signal: controller.signal }),
+    { name: 'AbortError' },
+  );
+});
+
 test('McpServerPool deduplicates server processes and closes cleanly', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-runner-'));
   const countPath = join(dir, 'count.txt');
-  const serverPath = join(dir, 'server.mjs');
-  const sdkRoot = resolve('node_modules/@modelcontextprotocol/sdk/dist/esm');
+  const serverPath = writeMcpTestServer(dir);
   writeFileSync(countPath, '0');
-  writeFileSync(serverPath, `
-import { readFileSync, writeFileSync } from 'node:fs';
-import { Server } from '${pathToFileURL(join(sdkRoot, 'server/index.js')).href}';
-import { StdioServerTransport } from '${pathToFileURL(join(sdkRoot, 'server/stdio.js')).href}';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '${pathToFileURL(join(sdkRoot, 'types.js')).href}';
-
-const countPath = process.argv[2];
-writeFileSync(countPath, String(Number(readFileSync(countPath, 'utf8')) + 1));
-
-const server = new Server({ name: 'veritas-runner-test', version: '1.0.0' }, { capabilities: { tools: {} } });
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [{ name: 'scan', description: 'test scan', inputSchema: { type: 'object' } }],
-}));
-server.setRequestHandler(CallToolRequestSchema, async (request) => ({
-  content: [{ type: 'text', text: JSON.stringify(request.params.arguments ?? {}) }],
-  isError: false,
-}));
-
-await server.connect(new StdioServerTransport());
-`);
 
   const pool = createMcpServerPool();
   try {
-    const server = { command: process.execPath, args: [serverPath, countPath] };
+    const server = { command: process.execPath, args: [serverPath, 'normal', countPath] };
     const first = await pool.call(server, 'scan', { depth: 2 });
     const second = await pool.call(server, 'scan', { depth: 3 });
 
@@ -75,12 +103,158 @@ await server.connect(new StdioServerTransport());
   }
 });
 
+test('McpServerPool bounds a stalled MCP initialization and does not wait to close it', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-connect-timeout-'));
+  const serverPath = writeMcpTestServer(dir);
+  const pool = createMcpServerPool();
+  const startedAt = Date.now();
+  try {
+    await assert.rejects(
+      pool.call(
+        { command: process.execPath, args: [serverPath, 'connect-hang'] },
+        'scan',
+        {},
+        { timeoutMs: 60 },
+      ),
+      (error) => error?.code === -32001,
+    );
+    assert.ok(Date.now() - startedAt < 500, 'MCP initialization must honor the evidence-check deadline');
+  } finally {
+    const closeStartedAt = Date.now();
+    await pool.close();
+    assert.ok(Date.now() - closeStartedAt < 500, 'pool.close must not wait for a timed-out MCP process');
+  }
+});
+
+test('McpServerPool bounds a stalled MCP tool call and does not wait to close it', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-tool-timeout-'));
+  const serverPath = writeMcpTestServer(dir);
+  const pool = createMcpServerPool();
+  const startedAt = Date.now();
+  try {
+    await assert.rejects(
+      pool.call(
+        { command: process.execPath, args: [serverPath, 'tool-hang'] },
+        'scan',
+        {},
+        { timeoutMs: 60 },
+      ),
+      (error) => error?.code === -32001,
+    );
+    assert.ok(Date.now() - startedAt < 500, 'MCP tool call must honor the evidence-check deadline');
+  } finally {
+    const closeStartedAt = Date.now();
+    await pool.close();
+    assert.ok(Date.now() - closeStartedAt < 500, 'pool.close must not wait for a timed-out MCP process');
+  }
+});
+
+test('McpServerPool applies one absolute timeout across MCP connect and tool call', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-cumulative-timeout-'));
+  const serverPath = writeMcpTestServer(dir);
+  const pool = createMcpServerPool();
+  const startedAt = Date.now();
+  try {
+    await assert.rejects(
+      pool.call(
+        { command: process.execPath, args: [serverPath, 'cumulative-deadline'] },
+        'scan',
+        {},
+        { timeoutMs: 100 },
+      ),
+      (error) => error?.code === -32001,
+    );
+    assert.ok(Date.now() - startedAt < 180, 'the tool must receive only the deadline remaining after connect');
+  } finally {
+    await pool.close();
+  }
+});
+
+test('McpServerPool closes the POSIX process group containing an MCP descendant', {
+  skip: process.platform === 'win32' && 'Windows uses the SDK-native MCP transport',
+}, async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-descendant-timeout-'));
+  const markerPath = join(dir, 'descendant-ran');
+  const serverPath = writeMcpTestServer(dir);
+  const pool = createMcpServerPool();
+  try {
+    await assert.rejects(
+      pool.call(
+        { command: process.execPath, args: [serverPath, 'descendant-hang', markerPath] },
+        'scan',
+        {},
+        { timeoutMs: 80 },
+      ),
+      (error) => error?.code === -32001,
+    );
+  } finally {
+    await pool.close();
+  }
+  await new Promise((resolve) => setTimeout(resolve, 650));
+  assert.equal(existsSync(markerPath), false, 'an MCP timeout must terminate descendants in the owned process group');
+});
+
+test('McpServerPool rejects a signal that was already aborted without starting a server', async () => {
+  const controller = new AbortController();
+  controller.abort();
+  const pool = createMcpServerPool();
+  try {
+    await assert.rejects(
+      pool.call(
+        { command: 'this-command-must-not-run', args: [] },
+        'scan',
+        {},
+        { signal: controller.signal },
+      ),
+      { name: 'AbortError' },
+    );
+  } finally {
+    await pool.close();
+  }
+});
+
 test('runBash kills a hanging command at timeoutMs and flags timedOut', async () => {
   const result = await runBash('sleep 30', { timeoutMs: 100 });
 
   assert.equal(result.passed, false);
   assert.equal(result.timedOut, true);
   assert.notEqual(result.signal, null, 'killed via signal, not a clean exit');
+});
+
+test('runBash timeout terminates descendants that keep output pipes open', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'veritas-bash-descendant-'));
+  const markerPath = join(dir, 'descendant-ran');
+  const childScriptPath = join(dir, 'descendant.mjs');
+  writeFileSync(
+    childScriptPath,
+    "import { writeFileSync } from 'node:fs'; setTimeout(() => writeFileSync(process.argv[2], 'ran'), 300);\n",
+  );
+
+  const startedAt = Date.now();
+  const result = await runBash(
+    `${JSON.stringify(process.execPath)} ${JSON.stringify(childScriptPath)} ${JSON.stringify(markerPath)} & wait`,
+    { timeoutMs: 50 },
+  );
+
+  assert.equal(result.passed, false);
+  assert.equal(result.timedOut, true);
+  assert.ok(Date.now() - startedAt < 250, 'timeout must not wait for the descendant');
+  await new Promise((resolve) => setTimeout(resolve, 350));
+  assert.equal(existsSync(markerPath), false, 'timed-out descendant must not continue after readiness returns');
+});
+
+test('runBash kills a SIGTERM-resistant descendant immediately when the shell exits', {
+  skip: process.platform === 'win32' && 'Windows has no process-group SIGKILL escalation',
+}, async () => {
+  const startedAt = Date.now();
+  const result = await runBash(
+    "sh -c 'trap \"\" TERM; while :; do :; done' & wait",
+    { timeoutMs: 250 },
+  );
+
+  assert.equal(result.passed, false);
+  assert.equal(result.timedOut, true);
+  assert.ok(Date.now() - startedAt < 1_000, 'a shell exit must trigger immediate group SIGKILL, not leave a grace timer');
 });
 
 test('runBash leaves timedOut false for a command that finishes in time', async () => {

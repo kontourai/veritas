@@ -40,6 +40,9 @@ export async function runReadinessCheckCli(argv = process.argv.slice(2), default
   const options = parseReadinessArgs(argv);
   const format = normalizeOutputFormat(options.format, 'feedback');
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const onReadinessPhase = ({ phase, label }) => {
+    process.stderr.write(`RUN   ${phase}${label ? `: ${label}` : ''}\n`);
+  };
   let readinessRun;
   try {
     readinessRun = await runMergeReadiness(
@@ -47,6 +50,7 @@ export async function runReadinessCheckCli(argv = process.argv.slice(2), default
       { ...defaults, rootDir },
       [],
       {
+        onReadinessPhase,
         onEvidenceCheckOutput: format === 'feedback'
           ? null
           : (evidenceCheckResult) => {
