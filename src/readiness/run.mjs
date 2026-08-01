@@ -22,6 +22,7 @@ export async function runMergeReadiness(
   const startedAt = runtime.startedAt ?? new Date().toISOString();
   const actor = runtime.actor ?? process.env.VERITAS_ACTOR ?? 'unknown';
   const workingTree = options.workingTree || (!options.changedFrom && !options.changedTo);
+  runtime.onReadinessPhase?.({ phase: 'scope-resolution' });
   const { repoMapPath } = resolveVeritasPaths(
     { ...options, rootDir },
     { ...defaults, rootDir },

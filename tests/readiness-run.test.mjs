@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { writeBootstrapStarterKit } from '../src/bootstrap.mjs';
 import { runMergeReadiness } from '../src/readiness/run.mjs';
@@ -37,4 +37,56 @@ test('Merge Readiness run coordinates evidence, report, and draft behind one int
   assert.equal(result.reportResult.record.run_id, 'readiness-run-test');
   assert.equal(result.draftResult.record.run_id, 'readiness-run-test');
   assert.equal(existsSync(join(rootDir, '.kontourai/veritas/runs/history.jsonl')), false);
+});
+
+test('Merge Readiness reports a typed evidence-check timeout and phase progress', async () => {
+  const rootDir = initCommittedRepo('veritas-readiness-run-timeout-');
+  const markerPath = join(rootDir, 'descendant-ran');
+  const childScriptPath = join(rootDir, 'descendant.mjs');
+  writeFileSync(
+    childScriptPath,
+    "import { writeFileSync } from 'node:fs'; setTimeout(() => writeFileSync(process.argv[2], 'ran'), 300);\n",
+  );
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  writeBootstrapStarterKit({
+    rootDir,
+    projectName: 'readiness-timeout-fixture',
+    evidenceCheck: 'node -e "process.exit(0)"',
+    force: true,
+  });
+  const repoMapPath = join(rootDir, '.veritas/repo-map.json');
+  const repoMap = JSON.parse(readFileSync(repoMapPath, 'utf8'));
+  repoMap.evidence.evidenceChecks[0] = {
+    ...repoMap.evidence.evidenceChecks[0],
+    command: `${JSON.stringify(process.execPath)} ${JSON.stringify(childScriptPath)} ${JSON.stringify(markerPath)} & wait`,
+    timeoutMs: 50,
+  };
+  writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
+  commitAll(rootDir, 'Bootstrap Veritas timeout fixture');
+
+  const phases = [];
+  const result = await runMergeReadiness(
+    { rootDir, runId: 'readiness-timeout-test', workingTree: true, force: true },
+    { rootDir },
+    [],
+    { appendHistory: false, onReadinessPhase: (phase) => phases.push(phase) },
+  );
+
+  assert.equal(result.currentStatus, 'fail');
+  assert.equal(result.evidenceCheckResults[0].timedOut, true);
+  assert.equal(result.evidenceCheckResults[0].passed, false);
+  assert.deepEqual(result.evidenceCheckFailure, {
+    phase: 'evidence-check',
+    reason: 'timeout',
+    id: result.evidenceCheckResults[0].id,
+    runner: 'bash',
+    label: result.evidenceCheckResults[0].label,
+    message: 'Evidence Check command timed out after 50ms',
+    stdout: '',
+    stderr: '',
+    exitCode: null,
+  });
+  assert.deepEqual(phases.map((phase) => phase.phase), ['scope-resolution', 'evidence-check']);
+  await new Promise((resolve) => setTimeout(resolve, 350));
+  assert.equal(existsSync(markerPath), false, 'timed-out evidence check descendant must not continue');
 });

@@ -34,10 +34,16 @@ function buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs) {
       ? `timed out after ${checkTimeoutMs}ms`
       : (evidenceCheckResult.exitCode ?? evidenceCheckResult.signal ?? 'unknown status');
   return {
+    phase: 'evidence-check',
+    reason: runner === 'bash' && evidenceCheckResult.timedOut ? 'timeout' : 'failed',
     id: evidenceCheckResult.id,
     runner,
     label,
-    message: runner === 'mcp' ? status : `Evidence Check command exited with ${status}`,
+    message: runner === 'mcp'
+      ? status
+      : evidenceCheckResult.timedOut
+        ? `Evidence Check command ${status}`
+        : `Evidence Check command exited with ${status}`,
     ...(runner === 'bash' ? {
       stdout: evidenceCheckResult.stdout,
       stderr: evidenceCheckResult.stderr,
@@ -49,7 +55,7 @@ function buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs) {
   };
 }
 
-async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, evidenceCheckTimeoutMs = DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS }) {
+async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, onPhase, evidenceCheckTimeoutMs = DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS }) {
   let evidenceCheckFailure = null;
   const evidenceCheckResults = [];
   const pool = createMcpServerPool({ signal });
@@ -58,6 +64,13 @@ async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, ev
       const runner = evidenceCheck.runner ?? 'bash';
       const label = evidenceCheckLabel(evidenceCheck);
       const checkTimeoutMs = evidenceCheck.timeoutMs ?? evidenceCheckTimeoutMs;
+      onPhase?.({
+        phase: 'evidence-check',
+        id: evidenceCheck.id,
+        runner,
+        label,
+        timeoutMs: checkTimeoutMs,
+      });
       try {
         const result = runner === 'mcp'
           ? await pool.call(evidenceCheck.server, evidenceCheck.tool, evidenceCheck.input ?? {}, { signal })
@@ -71,6 +84,8 @@ async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, ev
         }
       } catch (error) {
         evidenceCheckFailure = {
+          phase: 'evidence-check',
+          reason: 'runner-error',
           id: evidenceCheck.id,
           runner,
           label,
@@ -108,6 +123,7 @@ export async function runEvidenceCheckPlan({
       rootDir,
       signal: controller.signal,
       onOutput: runtime.onEvidenceCheckOutput,
+      onPhase: runtime.onReadinessPhase,
       evidenceCheckTimeoutMs,
     });
   } finally {

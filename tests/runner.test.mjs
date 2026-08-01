@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
@@ -81,6 +81,28 @@ test('runBash kills a hanging command at timeoutMs and flags timedOut', async ()
   assert.equal(result.passed, false);
   assert.equal(result.timedOut, true);
   assert.notEqual(result.signal, null, 'killed via signal, not a clean exit');
+});
+
+test('runBash timeout terminates descendants that keep output pipes open', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'veritas-bash-descendant-'));
+  const markerPath = join(dir, 'descendant-ran');
+  const childScriptPath = join(dir, 'descendant.mjs');
+  writeFileSync(
+    childScriptPath,
+    "import { writeFileSync } from 'node:fs'; setTimeout(() => writeFileSync(process.argv[2], 'ran'), 300);\n",
+  );
+
+  const startedAt = Date.now();
+  const result = await runBash(
+    `${JSON.stringify(process.execPath)} ${JSON.stringify(childScriptPath)} ${JSON.stringify(markerPath)} & wait`,
+    { timeoutMs: 50 },
+  );
+
+  assert.equal(result.passed, false);
+  assert.equal(result.timedOut, true);
+  assert.ok(Date.now() - startedAt < 250, 'timeout must not wait for the descendant');
+  await new Promise((resolve) => setTimeout(resolve, 350));
+  assert.equal(existsSync(markerPath), false, 'timed-out descendant must not continue after readiness returns');
 });
 
 test('runBash leaves timedOut false for a command that finishes in time', async () => {

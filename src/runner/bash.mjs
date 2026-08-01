@@ -6,6 +6,9 @@ export function runBash(command, { cwd, env, timeoutMs, signal } = {}) {
     const child = spawn('sh', ['-c', command], {
       cwd,
       env: { ...process.env, ...env },
+      // On POSIX, give the command its own process group so a timeout also
+      // reaches shell/npm/make descendants that inherit stdout or stderr.
+      detached: process.platform !== 'win32',
       windowsHide: true,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -20,12 +23,24 @@ export function runBash(command, { cwd, env, timeoutMs, signal } = {}) {
     let killed = false;
     let timedOut = false;
 
+    function sendSignal(signalName) {
+      if (process.platform !== 'win32' && child.pid) {
+        try {
+          process.kill(-child.pid, signalName);
+          return;
+        } catch {
+          // The process group can already be gone; fall back to the shell.
+        }
+      }
+      try { child.kill(signalName); } catch { /* already gone */ }
+    }
+
     function kill() {
       if (killed) return;
       killed = true;
-      child.kill('SIGTERM');
+      sendSignal('SIGTERM');
       setTimeout(() => {
-        try { child.kill('SIGKILL'); } catch { /* already gone */ }
+        sendSignal('SIGKILL');
       }, 2000).unref?.();
     }
 
@@ -59,7 +74,7 @@ export function runBash(command, { cwd, env, timeoutMs, signal } = {}) {
       resolve({
         exitCode,
         signal: sig ?? null,
-        passed: exitCode === 0,
+        passed: exitCode === 0 && !timedOut,
         stdout,
         stderr,
         durationMs: Date.now() - startedAt,
