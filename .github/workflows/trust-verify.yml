@@ -4,15 +4,14 @@
 # environment an agent does not control (build + tests + lint — whatever this
 # repo declares as its comprehensive verify). If a Flow Agents session has
 # published delivery/trust.bundle, it also RECONCILES the agent's claimed passes
-# against CI's own fresh results and reports any divergence. When no bundle is
-# present, only the fresh verify runs (fail-open on bundle absence; divergence
-# remains visible as an advisory during this phase).
+# against CI's own fresh results and fails on any divergence. Missing or stale
+# delivery evidence also fails with a diagnostic unless a governed DECLARED
+# exemption applies; the check remains non-required during this advisory phase.
 #
-# ADVISORY PHASE: the Trust Verify action step uses `continue-on-error`, then
-# a follow-up step emits an annotation and job summary when reconciliation
-# fails. This keeps the PR check successful while the advisory failure stays
-# explicit and inspectable. To arm it, remove that action-step setting, add
-# "Trust Verify" as a required, no-bypass status check, and protect this file
+# ADVISORY PHASE: Trust Verify remains non-required in branch protection, so a
+# reconciliation failure stays visible and truthful without blocking merge. A
+# separate trusted workflow_run publisher owns PR comments. To arm it, add
+# "Trust Verify" as a required, no-bypass status check and protect this file
 # plus package.json in CODEOWNERS. See
 # https://github.com/kontourai/flow-agents/blob/main/docs/trust-anchor-adoption.md
 # for the full adoption guide.
@@ -43,18 +42,7 @@ jobs:
       # The external anchor: re-run our real verify fresh + reconcile any delivered bundle.
       # SHA-pinned (mutable tags are not trusted for a cross-repo action that gates merges).
       - uses: kontourai/flow-agents/.github/actions/trust-verify@e5f348b49f8130f9d452e73b104ba328f9916981 # flow-agents @ reports which DECLARED condition failed (#1015)
-        id: trust_verify
-        continue-on-error: true
         with:
           # Keep `npm test` as a temporary second manifest lane so the in-flight
           # #147 Builder bundle (recorded before `test:ci` existed) reconciles.
           verify-command: "npm run test:ci,npm test"
-      - name: Report advisory Trust Verify failure
-        if: ${{ always() && steps.trust_verify.outcome == 'failure' }}
-        run: |
-          echo "::warning title=Trust Verify advisory::Trust reconciliation failed. Inspect the Trust Verify step output before merge."
-          {
-            echo "## Trust Verify advisory"
-            echo
-            echo "Trust reconciliation failed, but this advisory-phase check does not block the PR. Inspect the Trust Verify step output before merge."
-          } >> "$GITHUB_STEP_SUMMARY"
