@@ -179,7 +179,21 @@ npx @kontourai/veritas hooks claude-code apply [--root <path>] [--force]
 npx @kontourai/veritas hooks claude-code pre-tool-use [--root <path>] [--file <path>] [--actor <id>]
 ```
 
-`pre-tool-use` reads the Claude hook JSON payload from stdin, extracts `tool_input.file_path` or `tool_input.path`, resolves the actor from `--actor`, `VERITAS_ACTOR`, or the current attestation, and returns hook protocol JSON. Deny-enforced failures return `decision: "block"` and exit non-zero. Set `VERITAS_EXCEPTION_RULE` and `VERITAS_EXCEPTION_REASON` to allow a specific denied rule and append an exception record.
+`pre-tool-use` reads the Claude hook JSON payload from stdin, extracts `tool_input.file_path` or `tool_input.path`, resolves the actor from `--actor`, `VERITAS_ACTOR`, or the current attestation, and returns hook protocol JSON.
+
+Exit codes follow the Claude Code PreToolUse protocol, where **exit 2 is the only code that blocks the tool call** — any other non-zero exit is reported as a non-blocking hook error and the edit proceeds:
+
+| Decision | Exit code | Effect in Claude Code |
+|----------|-----------|-----------------------|
+| `block` (deny-enforced failure) | `2` | the edit is blocked and the reason is returned to the agent |
+| `approve` | `0` | the edit proceeds |
+
+This is the only Veritas mechanism that can block an edit, so both ways past it are recorded to `.kontourai/veritas/standards-feedback/exceptions.jsonl`:
+
+- `VERITAS_EXCEPTION_RULE` + `VERITAS_EXCEPTION_REASON` allow one specific denied rule and append a `rule-exception` record.
+- `VERITAS_HOOK_SKIP=1` skips evaluation entirely and appends a `hook-skip` record (set `VERITAS_HOOK_SKIP_REASON` to say why). Unlike the generated git and runtime hooks, the PreToolUse gate resolves this bypass inside Veritas rather than in the shell body, so a skipped gate still leaves a record in the repo.
+
+Both records carry the resolved actor, the file, and a timestamp, and both count toward the `exception_count` reported by standards feedback.
 
 ### `integrations`
 
@@ -608,9 +622,12 @@ They can also produce a `pre-push` hook that:
 
 `print codex-hook` and `apply codex-hook` produce a tracked Codex config that installs the runtime hook as a `Stop` hook.
 
+The Claude Code PreToolUse hook (`.veritas/hooks/pre-tool-use.sh`) deliberately does **not** skip itself in the shell body. It always calls `veritas hooks claude-code pre-tool-use`, which honours `VERITAS_HOOK_SKIP=1` and records the bypass before approving.
+
 ## Environment Variables
 
-- `VERITAS_HOOK_SKIP=1`: skips generated git/runtime hook execution
+- `VERITAS_HOOK_SKIP=1`: skips generated git/runtime hook execution. For the Claude Code PreToolUse gate it skips evaluation but appends a `hook-skip` record to `.kontourai/veritas/standards-feedback/exceptions.jsonl`
+- `VERITAS_HOOK_SKIP_REASON`: optional free-text reason stored on that `hook-skip` record
 
 Do not set either skip variable in CI if the CI lane is meant to enforce evidenceCheck execution.
 
