@@ -109,10 +109,18 @@ Attestations are immutable authority-backed records for protected standards hash
 - `.veritas/repo-standards/default.repo-standards.json`
 - `.veritas/authority/default.authority-settings.json`
 
-The Repo Map integrity value is a stable, recursively redacted public policy projection. MCP
-server arguments, environment, and tool input are runtime execution inputs; they are never part
-of a protected-policy hash in an attestation, governance state, trust projection, CLI output, or
-init recommendation. Changes to public policy remain hash-sensitive.
+The Repo Map integrity value is a stable, recursively redacted public policy projection. New
+attestations declare `repoMapHashAlgorithm: "public-policy-v1"`. MCP server arguments,
+environment, and tool input are runtime execution inputs; they are never part of a protected-policy
+hash in an attestation, governance state, trust projection, CLI output, or init recommendation.
+Changes to public policy remain hash-sensitive.
+
+Unmarked historical attestations use the retired raw-file algorithm. Veritas privately compares that
+historical digest only to establish whether the file is unchanged; it never emits the raw digest or
+the legacy attestation's nested Surface content hash. An unchanged legacy attestation remains valid
+and receives a nonblocking migration recommendation. Any legacy file mismatch fails closed and
+requires a policy-change attestation because Veritas cannot safely infer whether the change was
+secret-only or policy-relevant.
 
 The active pointer lives at `.veritas/attestations/HEAD` as JSON with `currentAttestationId`. New `policy-change` attestations supersede older records by setting `priorAttestationId`; old records stay tracked for auditability.
 

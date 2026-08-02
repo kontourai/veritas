@@ -123,6 +123,9 @@ export async function runMergeReadiness(
     evidenceCheckFailure = result.evidenceCheckFailure;
     evidenceCheckResults = result.evidenceCheckResults;
   }
+  const allRequiredEvidencePassed = evidenceCheckPlan.requiredEvidenceCheckIds.every((id) => (
+    evidenceCheckResults.find((result) => result.id === id)?.passed === true
+  ));
 
   assertWorkflowDeadline(workflowDeadline, 'report');
   runtime.onReadinessPhase?.({ phase: 'report' });
@@ -136,8 +139,11 @@ export async function runMergeReadiness(
       evidenceCheckExecutionSkipped,
       workingTree,
       baselineCiFastStatus:
-        options.baselineCiFastStatus ??
-        (options.skipEvidenceCheck ? undefined : evidenceCheckFailure ? 'failed' : 'success'),
+        evidenceCheckExecutionSkipped
+          ? undefined
+          : allRequiredEvidencePassed
+            ? (options.baselineCiFastStatus ?? (evidenceCheckFailure ? 'failed' : 'success'))
+            : 'failed',
       explicitEvidenceCheckCommand: options.evidenceCheckCommand,
       includeAttestationGate: runtime.includeAttestationGate ?? true,
     },

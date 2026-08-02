@@ -44,6 +44,7 @@ export function readinessRuntimeEnvelope(record, currentStatus) {
     // of execution state and is deliberately not mutated for CLI reporting.
     status: currentStatus,
     verdict: readinessVerdict(record),
+    baselineCiFastPassed: record.baseline_ci_fast_passed,
     requiredEvidenceChecks,
     remediation: requiredEvidenceChecks
       .filter((check) => check.state !== 'passed')

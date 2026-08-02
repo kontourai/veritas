@@ -98,12 +98,15 @@ test('skipped or no-execution required evidence is diagnostic-only and rejects c
 
     assert.equal(result.currentStatus, 'fail', `${label} must not pass canonical readiness`);
     assert.equal(result.evidenceCheckExecutionSkipped, true);
+    assert.equal(result.reportResult.record.baseline_ci_fast_passed, null);
     assert.deepEqual(requiredEvidenceChecksFor(result.reportResult.record).map((check) => check.state), ['skipped']);
+    const readinessEnvelope = readinessRuntimeEnvelope(result.reportResult.record, result.currentStatus);
     assert.deepEqual(
-      readinessRuntimeEnvelope(result.reportResult.record, result.currentStatus).requiredEvidenceChecks.map((check) => check.state),
+      readinessEnvelope.requiredEvidenceChecks.map((check) => check.state),
       ['skipped'],
       `${label} must retain required-check state for the CLI JSON envelope`,
     );
+    assert.equal(readinessEnvelope.baselineCiFastPassed, null);
     const readinessClaim = result.reportResult.record.trust.bundle.claims.find(
       (claim) => claim.claimType === 'software-readiness-verdict',
     );
@@ -119,6 +122,7 @@ test('skipped or no-execution required evidence is diagnostic-only and rejects c
     );
     assert.ok(readinessEvidence.metadata.evidenceChecks.required.some((check) => check.state === 'skipped'));
     assert.ok(readinessEvidence.metadata.transparencyGapHints.some((gap) => gap.blocking && gap.message.includes('skipped')));
+    assert.equal(JSON.stringify(result.reportResult.record.trust).includes('"baselineCiFastPassed":true'), false);
     assert.ok(
       result.reportResult.record.trust.report.transparencyGapsByClaimId[readinessClaim.id]
         .some((gap) => gap.message.includes('skipped')),
@@ -161,6 +165,7 @@ test('readiness CLI JSON retains required evidence state when an embedded runtim
 
   const output = parseCliJson(stdout);
   assert.equal(output.evidenceCheckRan, false);
+  assert.equal(output.readiness.baselineCiFastPassed, null);
   assert.equal(output.readiness.status, 'fail');
   assert.equal(output.readiness.verdict, 'not-ready');
   assert.deepEqual(output.readiness.requiredEvidenceChecks.map((check) => [check.id, check.state]), [

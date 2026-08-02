@@ -4,6 +4,8 @@ import { resolve } from 'node:path';
 import { relativeRepoPath } from '../paths.mjs';
 import { publicRepoMapPolicyIdentity } from '../evidence/public-config.mjs';
 
+export const REPO_MAP_HASH_ALGORITHM = 'public-policy-v1';
+
 export function sha256Hex(value) {
   return createHash('sha256').update(value).digest('hex');
 }
@@ -15,6 +17,13 @@ function hashFile(path) {
 function hashRepoMapPolicy(path) {
   const config = JSON.parse(readFileSync(path, 'utf8'));
   return `sha256:${sha256Hex(publicRepoMapPolicyIdentity(config))}`;
+}
+
+// Legacy attestations stored a raw file digest. This comparison deliberately
+// returns only a boolean so the legacy digest never crosses an output boundary.
+export function matchesLegacyRepoMapHash(rootDir, expectedHash, options = {}) {
+  const { repoMapPath } = resolveProtectedStandardsPaths(rootDir, options);
+  return expectedHash === hashFile(repoMapPath);
 }
 
 export function resolveProtectedStandardsPaths(rootDir, options = {}) {
@@ -33,6 +42,7 @@ export function hashProtectedStandards(rootDir, options = {}) {
     // not protected policy identity. Every exported Repo Map hash uses this
     // same recursively redacted public projection.
     repoMapHash: hashRepoMapPolicy(paths.repoMapPath),
+    repoMapHashAlgorithm: REPO_MAP_HASH_ALGORITHM,
     authoritySettingsHash: hashFile(paths.authoritySettingsPath),
     paths: {
       repoStandardsPath: relativeRepoPath(rootDir, paths.repoStandardsPath),

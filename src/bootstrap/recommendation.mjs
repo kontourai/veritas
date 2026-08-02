@@ -289,6 +289,10 @@ function artifactHashes(payloads) {
   ]));
 }
 
+function exactArtifactPayloadHashes(payloads) {
+  return Object.fromEntries(Object.entries(payloads).map(([path, payload]) => [path, sha256Hex(payload)]));
+}
+
 export function buildInitRecommendation({
   rootDir,
   projectName = basename(resolve(rootDir)),
@@ -389,8 +393,25 @@ function validateInitRecommendation(recommendation, rootDir) {
   }
 }
 
-export function applyInitRecommendation({ rootDir, recommendation, force = false }) {
+export function applyInitRecommendation({
+  rootDir,
+  recommendation,
+  force = false,
+  privateArtifactPayloadHashes = null,
+  requirePrivateArtifactIntegrity = false,
+}) {
   validateInitRecommendation(recommendation, rootDir);
+  if (requirePrivateArtifactIntegrity && !privateArtifactPayloadHashes) {
+    throw new Error('init recommendation payload hash mismatch: local private integrity record is missing');
+  }
+  if (privateArtifactPayloadHashes) {
+    const actualPayloadHashes = exactArtifactPayloadHashes(recommendation.artifact_payloads);
+    for (const [path, actualHash] of Object.entries(actualPayloadHashes)) {
+      if (privateArtifactPayloadHashes[path] !== actualHash) {
+        throw new Error(`init recommendation payload hash mismatch: ${path}`);
+      }
+    }
+  }
   const starterPaths = [
     '.veritas/README.md',
     '.veritas/GOVERNANCE.md',

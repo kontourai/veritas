@@ -15,10 +15,13 @@ import {
 } from './attestations/approval.mjs';
 export {
   hashProtectedStandards,
+  REPO_MAP_HASH_ALGORITHM,
   resolveProtectedStandardsPaths,
 } from './attestations/protected-standards.mjs';
 import {
   hashProtectedStandards,
+  matchesLegacyRepoMapHash,
+  REPO_MAP_HASH_ALGORITHM,
   sha256Hex,
 } from './attestations/protected-standards.mjs';
 import { computeAdmissibilityWarning } from './attestations/collection.mjs';
@@ -27,6 +30,27 @@ const DEFAULT_VALID_UNTIL_DAYS = 90;
 const ATTESTATIONS_DIR = '.veritas/attestations';
 const HEAD_FILE = 'HEAD';
 const PENDING_FILE = 'PENDING';
+
+function isLegacyRepoMapHash(attestation) {
+  return attestation.repoMapHashAlgorithm !== REPO_MAP_HASH_ALGORITHM;
+}
+
+function stripLegacyRepoMapHashes(value) {
+  if (Array.isArray(value)) return value.map(stripLegacyRepoMapHashes);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(Object.entries(value)
+    .filter(([key]) => key !== 'repoMapHash' && key !== 'surface')
+    .map(([key, child]) => [key, stripLegacyRepoMapHashes(child)]));
+}
+
+function publicAttestationReference(attestation) {
+  const legacy = isLegacyRepoMapHash(attestation);
+  const reference = legacy
+    ? stripLegacyRepoMapHashes(attestation)
+    : structuredClone(attestation);
+  if (legacy) reference.repoMapHashAlgorithm = 'legacy-file-v0';
+  return reference;
+}
 
 function readGitConfig(rootDir, key) {
   try {
@@ -276,6 +300,7 @@ export function createAttestation({
     attestedAt: timestamp,
     repoStandardsHash: hashes.repoStandardsHash,
     repoMapHash: hashes.repoMapHash,
+    repoMapHashAlgorithm: REPO_MAP_HASH_ALGORITHM,
     authoritySettingsHash: hashes.authoritySettingsHash,
     priorAttestationId: priorAttestationId ?? null,
     validUntilDays,
@@ -390,13 +415,26 @@ export function inspectAttestationStatus(rootDir, options = {}) {
     };
   }
   const hashes = protectedStandards.hashes ?? hashProtectedStandards(rootDir, options);
-  const drift = ['repoStandardsHash', 'repoMapHash', 'authoritySettingsHash']
+  const legacyRepoMapHash = isLegacyRepoMapHash(current);
+  const drift = ['repoStandardsHash', 'authoritySettingsHash']
     .filter((field) => current[field] !== hashes[field])
     .map((field) => ({
       field,
       attested: current[field],
       current: hashes[field],
     }));
+  if (legacyRepoMapHash
+    && !matchesLegacyRepoMapHash(rootDir, current.repoMapHash, options)) {
+    // Do not expose the legacy raw digest that detected this mismatch.
+    drift.push({ field: 'repoMapHash', reason: 'legacy-file-hash-mismatch' });
+  }
+  if (!legacyRepoMapHash && current.repoMapHash !== hashes.repoMapHash) {
+    drift.push({
+      field: 'repoMapHash',
+      attested: current.repoMapHash,
+      current: hashes.repoMapHash,
+    });
+  }
   const now = options.now ? new Date(options.now) : new Date();
   const attestedAt = new Date(current.attestedAt);
   const ageDays = Math.floor((now.getTime() - attestedAt.getTime()) / 86_400_000);
@@ -404,13 +442,19 @@ export function inspectAttestationStatus(rootDir, options = {}) {
   return {
     state: drift.length > 0 ? 'drifted' : 'current',
     currentAttestationId: current.id,
-    attestation: current,
+    attestation: publicAttestationReference(current),
     pending,
     drift,
     expired: now.getTime() > validUntil.getTime(),
     ageDays,
     validUntil: validUntil.toISOString(),
     protectedStandards,
+    ...(legacyRepoMapHash ? {
+      migrationRecommendation: {
+        status: 'recommended',
+        message: 'This legacy attestation uses the retired raw Repo Map file-hash algorithm. Its unchanged file state remains valid; record a future policy-change attestation to adopt public-policy-v1.',
+      },
+    } : {}),
     admissibilityWarning: current.admissibilityWarning ?? false,
     admissibilityWarningReason: current.admissibilityWarningReason ?? null,
   };
