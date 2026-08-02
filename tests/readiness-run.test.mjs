@@ -7,9 +7,12 @@ import { pathToFileURL } from 'node:url';
 import Ajv from 'ajv/dist/2020.js';
 import { writeBootstrapStarterKit } from '../src/bootstrap.mjs';
 import { runMergeReadiness } from '../src/readiness/run.mjs';
+import { runEvidenceCheckPlan } from '../src/readiness/evidence-check-runner.mjs';
 import { buildRequiredEvidenceChecks } from '../src/report/evidence-checks.mjs';
+import { buildEvidenceIntegrity } from '../src/report/integrity.mjs';
 import { generateVeritasReport } from '../src/report/index.mjs';
 import { buildFeedbackSummary } from '../src/report/format.mjs';
+import { requiredEvidenceChecksFor } from '../src/surface/readiness.mjs';
 import { commitAll, initCommittedRepo, repoRootDir } from './helpers.mjs';
 
 test('Merge Readiness run coordinates evidence, report, and draft behind one interface', async () => {
@@ -40,13 +43,27 @@ test('Merge Readiness run coordinates evidence, report, and draft behind one int
   assert.equal(result.currentStatus, 'pass');
   assert.deepEqual(result.evidenceCheckLabels, ['npm test']);
   assert.equal(result.evidenceCheckResults[0].passed, true);
-  assert.deepEqual(result.reportResult.record.required_evidence_checks.map((check) => check.state), ['passed']);
+  assert.deepEqual(requiredEvidenceChecksFor(result.reportResult.record).map((check) => check.state), ['passed']);
+  assert.equal(Object.hasOwn(result.reportResult.record, 'required_evidence_checks'), false);
+  assert.equal(JSON.stringify(result.reportResult.record).includes('"timedOut"'), false);
   assert.equal(result.reportResult.record.run_id, 'readiness-run-test');
   assert.equal(result.draftResult.record.run_id, 'readiness-run-test');
   assert.equal(existsSync(join(rootDir, '.kontourai/veritas/runs/history.jsonl')), false);
   const evidenceSchema = JSON.parse(readFileSync(join(repoRootDir, 'schemas/veritas-evidence.schema.json'), 'utf8'));
   const validateEvidence = new Ajv({ strict: false, allErrors: true }).compile(evidenceSchema);
   assert.equal(validateEvidence(result.reportResult.record), true, JSON.stringify(validateEvidence.errors));
+  const baseEvidenceSchema = JSON.parse(execFileSync(
+    'git',
+    ['show', 'origin/main:schemas/veritas-evidence.schema.json'],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  ));
+  const validateBaseEvidence = new Ajv({ strict: false, allErrors: true }).compile(baseEvidenceSchema);
+  assert.equal(validateBaseEvidence(result.reportResult.record), false);
+  assert.deepEqual(
+    validateBaseEvidence.errors.map((error) => error.instancePath),
+    ['/trust/bundle/schemaVersion'],
+    'the exact base schema must reject only its known stale Surface schemaVersion constant',
+  );
   const recordWithUnexpectedRuntimeField = structuredClone(result.reportResult.record);
   recordWithUnexpectedRuntimeField.selected_evidence_checks[0].evidence_check_result.unexpected_runtime_field = true;
   assert.equal(validateEvidence(recordWithUnexpectedRuntimeField), false);
@@ -79,7 +96,7 @@ test('skipped or no-execution required evidence is diagnostic-only and rejects c
     );
 
     assert.equal(result.currentStatus, 'fail', `${label} must not pass canonical readiness`);
-    assert.deepEqual(result.reportResult.record.required_evidence_checks.map((check) => check.state), ['skipped']);
+    assert.deepEqual(requiredEvidenceChecksFor(result.reportResult.record).map((check) => check.state), ['skipped']);
     const readinessClaim = result.reportResult.record.trust.bundle.claims.find(
       (claim) => claim.claimType === 'software-readiness-verdict',
     );
@@ -164,7 +181,7 @@ test('a failed optional diagnostic cannot block or prevent required Evidence Che
   assert.deepEqual(result.evidenceCheckResults.map((check) => check.id), ['required-completion', 'optional-diagnostic']);
   assert.equal(result.evidenceCheckResults[1].passed, false);
   assert.equal(result.evidenceCheckFailure, null);
-  assert.deepEqual(result.reportResult.record.required_evidence_checks.map((check) => check.state), ['passed']);
+  assert.deepEqual(requiredEvidenceChecksFor(result.reportResult.record).map((check) => check.state), ['passed']);
   assert.equal(result.currentStatus, 'pass');
   assert.match(buildFeedbackSummary({
     record: result.reportResult.record,
@@ -221,6 +238,71 @@ test('required evidence result association rejects the same ID with a different 
   });
 
   assert.deepEqual(required.map((check) => check.state), ['missing']);
+});
+
+test('execution uses a private immutable definition after caller mutation', async () => {
+  const definition = {
+    id: 'required-completion',
+    command: 'node -e "process.exit(1)"',
+    runner: 'bash',
+    server: { command: 'original-server', args: ['original-arg'], env: { SECRET: 'original-secret' } },
+    input: { token: 'original-input' },
+    method: 'validation',
+  };
+  const outcome = await runEvidenceCheckPlan({
+    evidenceChecks: [definition],
+    requiredEvidenceCheckIds: [definition.id],
+    rootDir: repoRootDir,
+    runtime: {
+      onEvidenceCheckOutput: () => {
+        definition.command = 'node -e "process.exit(0)"';
+        definition.server.args[0] = 'forged-arg';
+        definition.server.env.SECRET = 'forged-secret';
+        definition.input.token = 'forged-input';
+      },
+    },
+  });
+
+  assert.equal(definition.command, 'node -e "process.exit(0)"');
+  assert.equal(definition.server.args[0], 'forged-arg');
+  assert.equal(definition.server.env.SECRET, 'forged-secret');
+  assert.equal(definition.input.token, 'forged-input');
+
+  const required = buildRequiredEvidenceChecks({
+    config: { evidence: { evidenceChecks: [definition], requiredEvidenceCheckIds: [definition.id] } },
+    evidenceCheckPlan: { evidenceChecks: [definition] },
+    evidenceCheckResults: outcome.evidenceCheckResults,
+    evidenceCheckFailure: outcome.evidenceCheckFailure,
+  });
+  assert.deepEqual(required.map((check) => check.state), ['missing']);
+});
+
+test('repo-map integrity cannot distinguish low-entropy MCP secret candidates', () => {
+  const integrityFor = (secret) => buildEvidenceIntegrity({
+    rootDir: repoRootDir,
+    normalizedFiles: [],
+    sourceRef: 'test-source',
+    sourceKind: 'explicit-files',
+    sourceScope: ['explicit'],
+    config: {
+      name: 'redacted-integrity-fixture',
+      evidence: {
+        evidenceChecks: [{
+          id: 'mcp-check',
+          runner: 'mcp',
+          server: { command: 'node', args: ['server.mjs', secret], env: { TOKEN: secret } },
+          tool: 'scan',
+          input: { token: secret },
+          method: 'validation',
+        }],
+      },
+    },
+    repoStandards: { name: 'fixture' },
+    options: {},
+  }).configRefs.repoMap.hash;
+
+  const candidates = ['alpha', 'bravo', 'charlie', 'delta'];
+  assert.equal(new Set(candidates.map(integrityFor)).size, 1);
 });
 
 test('required evidence cannot be forged by reflective copies or callback mutation', async () => {
@@ -325,7 +407,7 @@ test('Merge Readiness reports a typed evidence-check timeout and phase progress'
   assert.equal(result.currentStatus, 'fail');
   assert.equal(result.evidenceCheckResults[0].timedOut, true);
   assert.equal(result.evidenceCheckResults[0].passed, false);
-  assert.deepEqual(result.reportResult.record.required_evidence_checks.map((check) => check.state), ['timedout']);
+  assert.deepEqual(requiredEvidenceChecksFor(result.reportResult.record).map((check) => check.state), ['timedout']);
   assert.deepEqual(result.evidenceCheckFailure, {
     phase: 'evidence-check',
     reason: 'timeout',
@@ -401,7 +483,7 @@ await server.connect(new StdioServerTransport());
     label: 'mcp:required-evidence-check',
     message: 'MCP Evidence Check timed out after 50ms',
   });
-  assert.deepEqual(result.reportResult.record.required_evidence_checks.map((check) => check.state), ['timedout']);
+  assert.deepEqual(requiredEvidenceChecksFor(result.reportResult.record).map((check) => check.state), ['timedout']);
   const serializedResult = JSON.stringify(result);
   const evidenceArtifact = readFileSync(join(rootDir, result.reportResult.artifactPath), 'utf8');
   for (const secret of ['server-env-secret-never-export', 'input-secret-never-export']) {
@@ -469,7 +551,7 @@ await server.connect(new StdioServerTransport());
   assert.deepEqual(result.evidenceCheckResults.map((check) => check.id), ['required-timeout-one', 'required-timeout-two']);
   assert.deepEqual(result.evidenceCheckResults.map((check) => check.timedOut), [true, true]);
   assert.equal(result.evidenceCheckFailure.id, 'required-timeout-one');
-  assert.deepEqual(result.reportResult.record.required_evidence_checks.map((check) => check.state), ['timedout', 'timedout']);
+  assert.deepEqual(requiredEvidenceChecksFor(result.reportResult.record).map((check) => check.state), ['timedout', 'timedout']);
   assert.equal(result.currentStatus, 'fail');
 });
 

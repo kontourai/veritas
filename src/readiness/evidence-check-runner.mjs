@@ -13,8 +13,19 @@ import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
  */
 const DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS = 10 * 60_000;
 
+function attachRuntimeTimeout(result, timedOut) {
+  // record_schema_version 1 has no timedOut result field. Keep it available to
+  // the live readiness decision without serializing a schema-incompatible
+  // property into evidence artifacts or public JSON.
+  Object.defineProperty(result, 'timedOut', {
+    value: Boolean(timedOut),
+    enumerable: false,
+  });
+  return result;
+}
+
 function buildEvidenceCheckResult(evidenceCheck, runner, label, result) {
-  return {
+  return attachRuntimeTimeout({
     id: evidenceCheck.id,
     runner,
     label,
@@ -25,9 +36,8 @@ function buildEvidenceCheckResult(evidenceCheck, runner, label, result) {
     stderr: runner === 'bash' ? result.stderr ?? '' : '',
     ...(runner === 'bash' ? { content: [] } : {}),
     isError: runner === 'mcp' ? result.isError ?? false : false,
-    timedOut: runner === 'bash' ? result.timedOut ?? false : false,
     durationMs: result.durationMs ?? 0,
-  };
+  }, runner === 'bash' ? result.timedOut ?? false : false);
 }
 
 function deepFreeze(value, seen = new Set()) {
@@ -75,7 +85,7 @@ function buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs) {
 }
 
 function buildEvidenceCheckRunnerErrorResult(evidenceCheck, runner, label, timedOut) {
-  return {
+  return attachRuntimeTimeout({
     id: evidenceCheck.id,
     runner,
     label,
@@ -86,9 +96,8 @@ function buildEvidenceCheckRunnerErrorResult(evidenceCheck, runner, label, timed
     stderr: '',
     ...(runner === 'bash' ? { content: [] } : {}),
     isError: runner === 'mcp',
-    timedOut,
     durationMs: 0,
-  };
+  }, timedOut);
 }
 
 function isMcpTimeout(error) {
@@ -180,13 +189,17 @@ export async function runEvidenceCheckPlan({
     };
   }
 
+  // This clone is the authority-bearing execution definition. Callers retain
+  // their mutable config objects, while results are associated only with this
+  // private, deeply immutable plan for the lifetime of the returned outcome.
+  const executionEvidenceChecks = deepFreeze(structuredClone(evidenceChecks));
   const controller = new AbortController();
   const onSignal = () => controller.abort();
   process.once('SIGINT', onSignal);
   process.once('SIGTERM', onSignal);
   try {
-    return await runEvidenceChecks({
-      evidenceChecks,
+    const outcome = await runEvidenceChecks({
+      evidenceChecks: executionEvidenceChecks,
       requiredEvidenceCheckIds,
       rootDir,
       signal: controller.signal,
@@ -194,6 +207,7 @@ export async function runEvidenceCheckPlan({
       onPhase: runtime.onReadinessPhase,
       evidenceCheckTimeoutMs,
     });
+    return outcome;
   } finally {
     process.off('SIGINT', onSignal);
     process.off('SIGTERM', onSignal);

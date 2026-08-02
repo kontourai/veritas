@@ -1,6 +1,7 @@
 import {
   readinessEvidenceCheckSummary,
   readinessIntegrityScope,
+  requiredEvidenceChecksFor,
   readinessPolicyResultSummary,
   readinessSurfaceStatus,
   readinessTransparencyGapHints,
@@ -96,7 +97,7 @@ export function collectEvidenceCheckEvidence(record, claimStore, evidence, event
     );
     if (!claim) continue;
     const evidenceCheckResult = evidenceCheck.evidence_check_result ?? null;
-    const requiredEvidenceCheck = (record.required_evidence_checks ?? [])
+    const requiredEvidenceCheck = requiredEvidenceChecksFor(record)
       .find((check) => check.id === evidenceCheck.id) ?? null;
     const passing = requiredEvidenceCheck
       ? (typeof evidenceCheckResult?.passed === 'boolean' ? evidenceCheckResult.passed : undefined)

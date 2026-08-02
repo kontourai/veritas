@@ -1,3 +1,35 @@
+import { readinessRuntimeFor } from './readiness-runtime.mjs';
+
+export function requiredEvidenceChecksFor(record) {
+  const runtimeChecks = readinessRuntimeFor(record)?.requiredEvidenceChecks;
+  if (runtimeChecks) return runtimeChecks;
+  // Read old records if present, but emit no new v1 record field.
+  if (Array.isArray(record.required_evidence_checks)) return record.required_evidence_checks;
+  const selectedById = new Map(
+    (record.selected_evidence_checks ?? []).map((check) => [check.id, check]),
+  );
+  return (record.repo_map?.required_evidence_check_ids ?? []).map((id) => {
+    const check = selectedById.get(id);
+    const result = check?.evidence_check_result;
+    return {
+      id,
+      label: check?.label ?? id,
+      runner: check?.runner ?? 'bash',
+      selected: Boolean(check),
+      observed: Boolean(result),
+      imported: false,
+      passed: typeof result?.passed === 'boolean' ? result.passed : null,
+      state: !check
+        ? 'missing'
+        : !result
+          ? 'missing'
+          : result.passed
+            ? 'passed'
+            : 'failed',
+    };
+  });
+}
+
 export function readinessVerdict(record) {
   if (readinessHasBlockingFailure(record)) return 'not-ready';
   if (record.promotion_allowed === true) return 'ready';
@@ -13,8 +45,9 @@ export function readinessSurfaceStatus(record) {
 function readinessHasBlockingFailure(record) {
   if (record.uncovered_path_result === 'fail') return true;
   if ((record.policy_results ?? []).some((result) => result.passed === false && result.enforcementLevel === 'Require')) return true;
-  if ((record.required_evidence_checks ?? []).some((check) => check.state !== 'passed')) return true;
-  const requiredEvidenceCheckIds = new Set((record.required_evidence_checks ?? []).map((check) => check.id));
+  const requiredEvidenceChecks = requiredEvidenceChecksFor(record);
+  if (requiredEvidenceChecks.some((check) => check.state !== 'passed')) return true;
+  const requiredEvidenceCheckIds = new Set(requiredEvidenceChecks.map((check) => check.id));
   if ((record.selected_evidence_checks ?? []).some((check) => requiredEvidenceCheckIds.has(check.id) && check.evidence_check_result?.passed === false)) return true;
   if ((record.external_tool_results ?? []).some((result) => result.blocking !== false && ['fail', 'missing'].includes(result.verdict))) return true;
   return false;
@@ -41,7 +74,7 @@ export function readinessEvidenceCheckSummary(record) {
   return {
     selected: checks.map((check) => check.id),
     failed: checks.filter((check) => check.evidence_check_result?.passed === false).map((check) => check.id),
-    required: record.required_evidence_checks ?? [],
+    required: requiredEvidenceChecksFor(record),
     baselineCiFastPassed: record.baseline_ci_fast_passed,
   };
 }
@@ -74,7 +107,7 @@ export function readinessTransparencyGapHints(record) {
       blocking: true,
     });
   }
-  for (const check of record.required_evidence_checks ?? []) {
+  for (const check of requiredEvidenceChecksFor(record)) {
     if (check.state === 'passed') continue;
     hints.push({
       type: 'provenance_gap',

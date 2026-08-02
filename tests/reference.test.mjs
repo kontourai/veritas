@@ -51,7 +51,7 @@ test('evidence schema requires current producer metadata sections', () => {
   assert.ok(evidenceSchema.properties.trust);
   assert.ok(evidenceSchema.properties.evidence_inventory_results);
   assert.ok(evidenceSchema.properties.readiness_coverage);
-  assert.ok(evidenceSchema.properties.required_evidence_checks);
+  assert.equal(evidenceSchema.properties.required_evidence_checks, undefined);
   assert.ok(
     evidenceSchema.properties.readiness_coverage.$ref.endsWith('readinessCoverage'),
   );

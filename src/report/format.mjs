@@ -1,3 +1,5 @@
+import { requiredEvidenceChecksFor } from '../surface/readiness.mjs';
+
 function formatTriState(value) {
   if (value === true) return 'yes';
   if (value === false) return 'no';
@@ -7,7 +9,7 @@ function formatTriState(value) {
 export function buildMarkdownSummary(record, artifactPath) {
   const triggeredEvidenceChecks = record.triggered_evidence_checks ?? [];
   const selectedEvidenceCheckLabels = record.selected_evidence_check_labels ?? [];
-  const requiredEvidenceChecks = record.required_evidence_checks ?? [];
+  const requiredEvidenceChecks = requiredEvidenceChecksFor(record);
   const policyPassCount = record.policy_results.filter((result) => result.passed === true).length;
   const policyFailCount = record.policy_results.filter((result) => result.passed === false).length;
   const policyMetadataOnlyCount = record.policy_results.filter(
@@ -121,14 +123,15 @@ export function feedbackStatusForPolicyResult(result) {
 
 function evidenceCheckFailureIsRepresentedByRequiredState(record, evidenceCheckFailure) {
   return Boolean(evidenceCheckFailure?.id
-    && (record?.required_evidence_checks ?? []).some((check) => check.id === evidenceCheckFailure.id));
+    && requiredEvidenceChecksFor(record ?? {}).some((check) => check.id === evidenceCheckFailure.id));
 }
 
 function summarizeFeedbackCounts(record, evidenceCheckFailure = null, evidenceCheckResults = []) {
   let failures = evidenceCheckFailure && !evidenceCheckFailureIsRepresentedByRequiredState(record, evidenceCheckFailure) ? 1 : 0;
   let warnings = 0;
   let passes = 0;
-  const requiredEvidenceCheckIds = new Set((record?.required_evidence_checks ?? []).map((check) => check.id));
+  const requiredEvidenceChecks = requiredEvidenceChecksFor(record ?? {});
+  const requiredEvidenceCheckIds = new Set(requiredEvidenceChecks.map((check) => check.id));
 
   for (const result of evidenceCheckResults) {
     if (!result.passed && !requiredEvidenceCheckIds.has(result.id)) warnings += 1;
@@ -141,7 +144,7 @@ function summarizeFeedbackCounts(record, evidenceCheckFailure = null, evidenceCh
     if (status === 'PASS') passes += 1;
   }
 
-  for (const check of record?.required_evidence_checks ?? []) {
+  for (const check of requiredEvidenceChecks) {
     if (check.state !== 'passed') failures += 1;
     else passes += 1;
   }
@@ -194,7 +197,7 @@ export function buildFeedbackSummary({
       lines.push(`FAIL  evidence-check: ${evidenceCheckFailure.label}`);
       lines.push(`      -> ${evidenceCheckFailure.message}`);
     } else if (evidenceCheckResults.length > 0) {
-      const requiredEvidenceCheckIds = new Set((record?.required_evidence_checks ?? []).map((check) => check.id));
+      const requiredEvidenceCheckIds = new Set(requiredEvidenceChecksFor(record ?? {}).map((check) => check.id));
       for (const result of evidenceCheckResults) {
         if (result.passed) {
           lines.push(`PASS  evidence-check: ${result.label}`);
@@ -210,7 +213,7 @@ export function buildFeedbackSummary({
     }
   }
 
-  for (const check of record?.required_evidence_checks ?? []) {
+  for (const check of requiredEvidenceChecksFor(record ?? {})) {
     if (check.state === 'passed') continue;
     lines.push(`FAIL  required-evidence-check:${check.id}: ${check.state}`);
     lines.push(`      -> Run ${check.label} and record an acceptable result before merge readiness can be verified.`);

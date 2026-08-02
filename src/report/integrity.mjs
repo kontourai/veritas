@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { assertWithinDir, normalizeRepoPath, relativeRepoPath } from '../paths.mjs';
 import { resolveGitHead, stagedDiffSha256 } from '../shell.mjs';
+import { publicRepoMapConfig } from '../evidence/public-config.mjs';
 
 function sha256Hex(value) {
   return createHash('sha256').update(value).digest('hex');
@@ -50,9 +51,13 @@ function fileIntegrityRef(rootDir, repoPath) {
   }
 }
 
-function configIntegrityRef({ name, value, path, rootDir }) {
+function configIntegrityRef({ name, value, path, rootDir, durableValue = null }) {
   const ref = { name };
   if (path && rootDir) ref.path = relativeRepoPath(rootDir, path);
+  if (durableValue !== null) {
+    ref.hash = sha256Ref(stableStringify(durableValue));
+    return ref;
+  }
   try {
     if (path && existsSync(path)) {
       ref.hash = sha256Ref(readFileSync(path));
@@ -90,6 +95,10 @@ export function buildEvidenceIntegrity({
         value: config,
         path: sources.repoMapPath,
         rootDir,
+        // A raw Repo Map can contain MCP credentials. Its durable identity is
+        // therefore calculated from the same recursively redacted projection
+        // exposed by public report APIs, never the on-disk secret bytes.
+        durableValue: publicRepoMapConfig(config),
       }),
       repoStandards: configIntegrityRef({
         name: repoStandards.name ?? 'repo-standards',

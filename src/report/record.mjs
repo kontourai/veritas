@@ -1,6 +1,7 @@
 import { normalizeRepoPath } from '../paths.mjs';
 import { evaluateRepoStandards } from '../rules/evaluate.mjs';
 import { produceSurfaceStateForVeritasRecord } from '../surface/producer.mjs';
+import { setReadinessRuntime } from '../surface/readiness-runtime.mjs';
 import { buildAttestationPolicyResult } from '../attestations.mjs';
 import {
   readDefaultEvidenceCheckIds,
@@ -108,7 +109,6 @@ function buildBaseEvidenceRecord({
   selectedEvidenceChecks,
   selectedEvidenceCheckSources,
   selectedEvidenceCheckIds,
-  requiredEvidenceChecks,
   evidenceInventoryResults,
   allEvidenceChecks,
   recommendations,
@@ -141,7 +141,6 @@ function buildBaseEvidenceRecord({
     selected_evidence_check_ids: selectedEvidenceCheckIds,
     selected_evidence_check_labels: selectedEvidenceChecks.map((evidenceCheck) => evidenceCheck.label),
     selected_evidence_checks: selectedEvidenceChecks,
-    required_evidence_checks: requiredEvidenceChecks,
     evidence_check_resolution_source: evidenceCheckPlan.resolutionSource,
     evidence_inventory_results: evidenceInventoryResults,
     readiness_coverage: buildReadinessCoverage({
@@ -254,7 +253,6 @@ export async function buildEvidenceRecord({
     selectedEvidenceChecks,
     selectedEvidenceCheckSources,
     selectedEvidenceCheckIds,
-    requiredEvidenceChecks,
     evidenceInventoryResults,
     allEvidenceChecks,
     recommendations,
@@ -268,12 +266,15 @@ export async function buildEvidenceRecord({
     rootDir,
     options,
   });
+  setReadinessRuntime(record, { requiredEvidenceChecks });
   const surface = await produceSurfaceStateForVeritasRecord(record, {
     rootDir,
     repoMapConfig: config,
   });
-  return {
+  const result = {
     ...record,
     trust: surface,
   };
+  setReadinessRuntime(result, { requiredEvidenceChecks });
+  return result;
 }

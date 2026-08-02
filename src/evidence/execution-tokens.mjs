@@ -1,10 +1,19 @@
-import { randomBytes } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 
 const executionDefinitions = new WeakMap();
 const executionResults = new WeakMap();
 
+function deepFreeze(value, seen = new Set()) {
+  if (!value || typeof value !== 'object' || seen.has(value)) return value;
+  seen.add(value);
+  for (const child of Object.values(value)) deepFreeze(child, seen);
+  return Object.freeze(value);
+}
+
 export function bindEvidenceCheckExecution(evidenceCheck) {
-  executionDefinitions.set(evidenceCheck, randomBytes(32));
+  executionDefinitions.set(evidenceCheck, {
+    snapshot: deepFreeze(structuredClone(evidenceCheck)),
+  });
   return evidenceCheck;
 }
 
@@ -14,9 +23,6 @@ export function bindEvidenceCheckResult(result, evidenceCheck) {
 }
 
 export function isBoundEvidenceCheckResult(result, evidenceCheck) {
-  return Boolean(
-    executionResults.has(result)
-      && executionDefinitions.has(evidenceCheck)
-      && executionResults.get(result) === executionDefinitions.get(evidenceCheck),
-  );
+  const binding = executionResults.get(result);
+  return Boolean(binding && isDeepStrictEqual(evidenceCheck, binding.snapshot));
 }

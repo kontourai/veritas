@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildTrustReport } from '@kontourai/surface';
+import Ajv from 'ajv/dist/2020.js';
 import {
   createAttestation,
   buildExplainText,
@@ -829,6 +830,35 @@ test('admissibility warning does not fail readiness (PASS with annotation)', () 
   // Should PASS (not fail) and contain admissibility warning annotation
   assert.match(output, /PASS\s+policy-changes-require-attestation/);
   assert.match(output, /admissibility warning/);
+});
+
+test('a generated record with governance admissibility fields conforms to the evidence schema', async () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-governance-schema-');
+  createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Setup',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2020-01-01T00:00:00.000Z',
+    authorizing: { kind: 'explicit-statement', statement: 'banana orange grape' },
+    validUntilDays: 36500,
+  });
+  const result = await generateVeritasReport({
+    rootDir,
+    includeAttestationGate: true,
+    skipEvidenceCheck: true,
+    workingTree: true,
+    runId: 'governance-schema-conformance',
+  }, { rootDir }, ['package.json']);
+  const schema = JSON.parse(readFileSync(join(repoRootDir, 'schemas/veritas-evidence.schema.json'), 'utf8'));
+  const validate = new Ajv({ strict: false, allErrors: true }).compile(schema);
+  assert.equal(validate(result.record), true, JSON.stringify(validate.errors));
+  assert.equal(typeof result.record.governance_state.admissibilityWarning, 'boolean');
+  assert.ok(
+    result.record.governance_state.admissibilityWarningReason === null ||
+      typeof result.record.governance_state.admissibilityWarningReason === 'string',
+  );
 });
 
 test('CLI --executed-by requires --authorizing-statement or exchange pair', () => {

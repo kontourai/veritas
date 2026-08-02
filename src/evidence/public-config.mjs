@@ -1,16 +1,18 @@
-export function publicEvidenceCheck(evidenceCheck) {
-  const publicCheck = structuredClone(evidenceCheck);
-  if ((publicCheck.runner ?? 'bash') === 'mcp') {
-    delete publicCheck.server;
-    delete publicCheck.input;
+function redactMcpExecutionConfig(value) {
+  if (Array.isArray(value)) return value.map(redactMcpExecutionConfig);
+  if (!value || typeof value !== 'object') return value;
+  const result = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (value.runner === 'mcp' && (key === 'server' || key === 'input')) continue;
+    result[key] = redactMcpExecutionConfig(child);
   }
-  return publicCheck;
+  return result;
+}
+
+export function publicEvidenceCheck(evidenceCheck) {
+  return redactMcpExecutionConfig(structuredClone(evidenceCheck));
 }
 
 export function publicRepoMapConfig(config) {
-  const publicConfig = structuredClone(config);
-  if (Array.isArray(publicConfig.evidence?.evidenceChecks)) {
-    publicConfig.evidence.evidenceChecks = publicConfig.evidence.evidenceChecks.map(publicEvidenceCheck);
-  }
-  return publicConfig;
+  return redactMcpExecutionConfig(structuredClone(config));
 }
