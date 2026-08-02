@@ -76,6 +76,39 @@ function writeExceptionRecord(rootDir, exception) {
   return relativeRepoPath(rootDir, path);
 }
 
+function isHookSkipRequested() {
+  return process.env.VERITAS_HOOK_SKIP === '1';
+}
+
+/**
+ * VERITAS_HOOK_SKIP=1 used to be handled by the generated shell body, which exited 0
+ * before any Veritas code ran and therefore left no record of the bypass. The gate now
+ * resolves the skip here so it lands in exceptions.jsonl next to VERITAS_EXCEPTION_RULE
+ * bypasses: both ways past the gate are auditable.
+ */
+function buildHookSkipResult({ rootDir, relativeFile, actor, payloadError }) {
+  const record = {
+    kind: 'hook-skip',
+    ruleId: null,
+    reason: process.env.VERITAS_HOOK_SKIP_REASON || 'VERITAS_HOOK_SKIP=1 (no reason supplied)',
+    actor,
+    timestamp: new Date().toISOString(),
+    file: relativeFile,
+  };
+  if (payloadError) record.payloadError = payloadError;
+  const skipReason = `Veritas PreToolUse gate skipped by VERITAS_HOOK_SKIP=1: ${record.reason}`;
+  return {
+    decision: 'approve',
+    skipped: true,
+    reason: skipReason,
+    file: relativeFile,
+    actor,
+    results: [],
+    exceptions: [record],
+    exceptionPath: writeExceptionRecord(rootDir, record),
+  };
+}
+
 export function evaluatePreToolUse({
   rootDir,
   filePath,
@@ -83,16 +116,29 @@ export function evaluatePreToolUse({
   actor,
 } = {}) {
   const payload = readHookPayload(stdinText);
-  if (payload.__veritasHookPayloadError) {
+  const payloadError = payload.__veritasHookPayloadError ?? null;
+  const relativeFile = payloadError
+    ? null
+    : normalizeHookFilePath(rootDir, filePath ?? findFilePathInHookPayload(payload));
+
+  if (isHookSkipRequested()) {
+    return buildHookSkipResult({
+      rootDir,
+      relativeFile,
+      actor: resolveHookActor(rootDir, actor),
+      payloadError,
+    });
+  }
+
+  if (payloadError) {
     return {
       decision: 'block',
-      reason: `Malformed PreToolUse payload: ${payload.__veritasHookPayloadError}`,
+      reason: `Malformed PreToolUse payload: ${payloadError}`,
       file: null,
       actor: resolveHookActor(rootDir, actor),
       results: [],
     };
   }
-  const relativeFile = normalizeHookFilePath(rootDir, filePath ?? findFilePathInHookPayload(payload));
   if (!relativeFile) {
     return {
       decision: 'approve',
@@ -125,6 +171,7 @@ export function evaluatePreToolUse({
     const matching = blocked.find((result) => result.rule_id === exceptionRule);
     if (matching) {
       const exception = {
+        kind: 'rule-exception',
         ruleId: exceptionRule,
         reason: exceptionReason,
         actor: effectiveActor,
