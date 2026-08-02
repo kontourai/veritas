@@ -89,6 +89,7 @@ export async function runMergeReadiness(
       rootDir,
       runtime,
       evidenceCheckTimeoutMs: options.evidenceCheckTimeoutMs,
+      requiredEvidenceCheckIds: evidenceCheckPlan.requiredEvidenceCheckIds,
     });
     evidenceCheckFailure = result.evidenceCheckFailure;
     evidenceCheckResults = result.evidenceCheckResults;

@@ -80,3 +80,16 @@ test('an optional diagnostic with no observed result remains nonblocking', () =>
   assert.equal(readinessVerdict(record), 'ready');
   assert.equal(readinessSurfaceStatus(record), 'verified');
 });
+
+test('a failed optional diagnostic remains nonblocking', () => {
+  const record = baseRecord({
+    selected_evidence_checks: [{
+      id: 'diagnostic',
+      evidence_check_result: { passed: false },
+    }],
+    required_evidence_checks: [],
+  });
+
+  assert.equal(readinessVerdict(record), 'ready');
+  assert.equal(readinessSurfaceStatus(record), 'verified');
+});

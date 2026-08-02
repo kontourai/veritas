@@ -1,14 +1,18 @@
 import { uniqueStrings } from '../util/strings.mjs';
 import {
   evidenceCheckLabel,
+  evidenceCheckDefinitionIdentity,
   evidenceCheckRecordsForCommands,
   evidenceChecksByIds,
   readEvidenceChecks,
   readRequiredEvidenceCheckIds,
 } from '../evidence/index.mjs';
 
-function evidenceCheckResultById(evidenceCheckResults, id) {
-  return (evidenceCheckResults ?? []).find((result) => result.id === id) ?? null;
+function evidenceCheckResultForDefinition(evidenceCheckResults, evidenceCheck) {
+  const definitionIdentity = evidenceCheckDefinitionIdentity(evidenceCheck);
+  return (evidenceCheckResults ?? []).find(
+    (result) => result.id === evidenceCheck.id && result.definition_identity === definitionIdentity,
+  ) ?? null;
 }
 
 function evidenceCheckResultSummary(result) {
@@ -62,7 +66,7 @@ export function buildSelectedEvidenceChecks({ evidenceChecks, evidenceCheckResul
   return evidenceChecks.map((evidenceCheck) => {
     const label = evidenceCheckLabel(evidenceCheck);
     const runner = evidenceCheck.runner ?? 'bash';
-    const evidenceCheckResult = evidenceCheckResultById(evidenceCheckResults, evidenceCheck.id);
+    const evidenceCheckResult = evidenceCheckResultForDefinition(evidenceCheckResults, evidenceCheck);
     return {
       id: evidenceCheck.id,
       runner,
@@ -87,10 +91,13 @@ export function buildRequiredEvidenceChecks({
     (evidenceCheckPlan.evidenceChecks ?? []).map((evidenceCheck) => evidenceCheck.id),
   );
   return evidenceChecksByIds(config, readRequiredEvidenceCheckIds(config)).map((evidenceCheck) => {
-    const result = evidenceCheckResultById(evidenceCheckResults, evidenceCheck.id);
+    const result = evidenceCheckResultForDefinition(evidenceCheckResults, evidenceCheck);
     const selected = selectedEvidenceCheckIds.has(evidenceCheck.id);
     const observed = Boolean(result);
-    const failure = evidenceCheckFailure?.id === evidenceCheck.id ? evidenceCheckFailure : null;
+    const failure = evidenceCheckFailure?.id === evidenceCheck.id
+      && evidenceCheckFailure.definition_identity === evidenceCheckDefinitionIdentity(evidenceCheck)
+      ? evidenceCheckFailure
+      : null;
     const state = !selected
       ? 'missing'
       : evidenceCheckExecutionSkipped

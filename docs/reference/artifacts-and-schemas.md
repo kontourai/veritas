@@ -349,7 +349,7 @@ Current Repo Map files use explicit check objects. `runner` defaults to `bash`; 
 
 MCP checks use `runner: "mcp"` with a stdio server definition, tool name, and optional JSON input. `timeoutMs`, when present, is a positive integer and bounds one complete check: MCP initialization plus the tool call share that single deadline. Current routing still refers to `evidenceChecks[].id`, so bash and MCP checks can be mixed in `requiredEvidenceCheckIds`, `defaultEvidenceCheckIds`, and `evidenceCheckRoutes`.
 
-`requiredEvidenceCheckIds` are a canonical Merge Readiness requirement, not a fallback route. Veritas unions them with work-area routes, defaults, and an explicit `--evidence-check-command`, deduplicated by stable id while retaining deterministic selection order. A required check that is missing, skipped, timed out, fails, or has a runner error leaves the readiness verdict `not-ready` and the trust-bundle claim `rejected`. Optional routed diagnostics remain visible without becoming globally blocking.
+`requiredEvidenceCheckIds` are a canonical Merge Readiness requirement, not a fallback route. Veritas unions them with work-area routes, defaults, and an explicit `--evidence-check-command`, deduplicated by stable id while retaining deterministic selection order in the report. At execution time it runs required checks first, then optional diagnostics, so an optional failure cannot starve a required result. A required check that is missing, skipped, timed out, fails, or has a runner error leaves the readiness verdict `not-ready` and the trust-bundle claim `rejected`. Optional routed diagnostics remain visible without becoming globally blocking.
 
 ```json
 {

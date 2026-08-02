@@ -119,10 +119,20 @@ export function feedbackStatusForPolicyResult(result) {
   return 'INFO';
 }
 
-function summarizeFeedbackCounts(record, evidenceCheckFailure = null) {
-  let failures = evidenceCheckFailure ? 1 : 0;
+function evidenceCheckFailureIsRepresentedByRequiredState(record, evidenceCheckFailure) {
+  return Boolean(evidenceCheckFailure?.id
+    && (record?.required_evidence_checks ?? []).some((check) => check.id === evidenceCheckFailure.id));
+}
+
+function summarizeFeedbackCounts(record, evidenceCheckFailure = null, evidenceCheckResults = []) {
+  let failures = evidenceCheckFailure && !evidenceCheckFailureIsRepresentedByRequiredState(record, evidenceCheckFailure) ? 1 : 0;
   let warnings = 0;
   let passes = 0;
+  const requiredEvidenceCheckIds = new Set((record?.required_evidence_checks ?? []).map((check) => check.id));
+
+  for (const result of evidenceCheckResults) {
+    if (!result.passed && !requiredEvidenceCheckIds.has(result.id)) warnings += 1;
+  }
 
   for (const result of record?.policy_results ?? []) {
     const status = feedbackStatusForPolicyResult(result);
@@ -166,6 +176,7 @@ export function buildFeedbackSummary({
   standardsFeedbackArtifactPath = null,
   evidenceCheckLabels = [],
   evidenceCheckCommands = [],
+  evidenceCheckResults = [],
   evidenceCheckRan = false,
   evidenceCheckFailure = null,
 } = {}) {
@@ -179,10 +190,20 @@ export function buildFeedbackSummary({
   ];
 
   if (evidenceCheckRan) {
-    if (evidenceCheckFailure) {
+    if (evidenceCheckFailure && !evidenceCheckFailureIsRepresentedByRequiredState(record, evidenceCheckFailure)) {
       lines.push(`FAIL  evidence-check: ${evidenceCheckFailure.label}`);
       lines.push(`      -> ${evidenceCheckFailure.message}`);
-    } else {
+    } else if (evidenceCheckResults.length > 0) {
+      const requiredEvidenceCheckIds = new Set((record?.required_evidence_checks ?? []).map((check) => check.id));
+      for (const result of evidenceCheckResults) {
+        if (result.passed) {
+          lines.push(`PASS  evidence-check: ${result.label}`);
+        } else if (!requiredEvidenceCheckIds.has(result.id)) {
+          lines.push(`WARN  evidence-check: ${result.label}`);
+          lines.push('      -> Optional diagnostic failed; it does not block canonical merge readiness.');
+        }
+      }
+    } else if (!evidenceCheckFailure) {
       for (const label of resolvedEvidenceCheckLabels) {
         lines.push(`PASS  evidence-check: ${label}`);
       }
@@ -240,7 +261,7 @@ export function buildFeedbackSummary({
     );
   }
 
-  const counts = summarizeFeedbackCounts(record, evidenceCheckFailure);
+  const counts = summarizeFeedbackCounts(record, evidenceCheckFailure, evidenceCheckResults);
   const nouns = [
     `${counts.failures} ${counts.failures === 1 ? 'failure' : 'failures'}`,
     `${counts.warnings} ${counts.warnings === 1 ? 'warning' : 'warnings'}`,

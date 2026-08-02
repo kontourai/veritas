@@ -5,7 +5,10 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'n
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { writeBootstrapStarterKit } from '../src/bootstrap.mjs';
+import { evidenceCheckDefinitionIdentity } from '../src/evidence/index.mjs';
 import { runMergeReadiness } from '../src/readiness/run.mjs';
+import { buildRequiredEvidenceChecks } from '../src/report/evidence-checks.mjs';
+import { buildFeedbackSummary } from '../src/report/format.mjs';
 import { commitAll, initCommittedRepo, repoRootDir } from './helpers.mjs';
 
 test('Merge Readiness run coordinates evidence, report, and draft behind one interface', async () => {
@@ -122,6 +125,97 @@ test('readiness CLI returns failure for skipped required evidence while retainin
   );
 });
 
+test('a failed optional diagnostic cannot block or prevent required Evidence Checks from running', async () => {
+  const rootDir = initCommittedRepo('veritas-readiness-optional-diagnostic-');
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  writeBootstrapStarterKit({
+    rootDir,
+    projectName: 'readiness-optional-diagnostic-fixture',
+    evidenceCheck: 'node -e "process.exit(0)"',
+    force: true,
+  });
+  const repoMapPath = join(rootDir, '.veritas/repo-map.json');
+  const repoMap = JSON.parse(readFileSync(repoMapPath, 'utf8'));
+  repoMap.evidence.evidenceChecks = [
+    { id: 'optional-diagnostic', command: 'node -e "process.exit(17)"', method: 'validation' },
+    { id: 'required-completion', command: 'node -e "process.exit(0)"', method: 'validation' },
+  ];
+  repoMap.evidence.defaultEvidenceCheckIds = ['optional-diagnostic'];
+  repoMap.evidence.requiredEvidenceCheckIds = ['required-completion'];
+  writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
+  commitAll(rootDir, 'Bootstrap optional diagnostic fixture');
+
+  const result = await runMergeReadiness(
+    { rootDir, runId: 'optional-diagnostic-test', workingTree: true, force: true },
+    { rootDir },
+    [],
+    { appendHistory: false },
+  );
+
+  assert.deepEqual(result.evidenceCheckPlan.evidenceChecks.map((check) => check.id), ['optional-diagnostic', 'required-completion']);
+  assert.deepEqual(result.evidenceCheckResults.map((check) => check.id), ['required-completion', 'optional-diagnostic']);
+  assert.equal(result.evidenceCheckResults[1].passed, false);
+  assert.equal(result.evidenceCheckFailure, null);
+  assert.deepEqual(result.reportResult.record.required_evidence_checks.map((check) => check.state), ['passed']);
+  assert.equal(result.currentStatus, 'pass');
+  assert.match(buildFeedbackSummary({
+    record: result.reportResult.record,
+    evidenceCheckRan: true,
+    evidenceCheckResults: result.evidenceCheckResults,
+  }), /WARN  evidence-check: node -e "process.exit\(17\)"/);
+  const readinessClaim = result.reportResult.record.trust.bundle.claims.find(
+    (claim) => claim.claimType === 'software-readiness-verdict',
+  );
+  assert.equal(readinessClaim.status, 'verified');
+});
+
+test('feedback counts a required evidence failure once', () => {
+  const feedback = buildFeedbackSummary({
+    evidenceCheckRan: true,
+    evidenceCheckFailure: {
+      id: 'required-completion',
+      label: 'node -e "process.exit(1)"',
+      message: 'Evidence Check command failed with exit code 1',
+    },
+    record: {
+      files: [],
+      components: [],
+      policy_results: [],
+      required_evidence_checks: [
+        { id: 'required-completion', label: 'node -e "process.exit(1)"', state: 'failed' },
+      ],
+    },
+  });
+
+  assert.match(feedback, /1 failure/);
+  assert.doesNotMatch(feedback, /FAIL  evidence-check:/);
+  assert.match(feedback, /FAIL  required-evidence-check:required-completion: failed/);
+});
+
+test('required evidence result association rejects the same ID with a different definition', () => {
+  const config = {
+    evidence: {
+      evidenceChecks: [{
+        id: 'required-completion',
+        command: 'node -e "process.exit(0)"',
+        method: 'validation',
+      }],
+      requiredEvidenceCheckIds: ['required-completion'],
+    },
+  };
+  const required = buildRequiredEvidenceChecks({
+    config,
+    evidenceCheckPlan: { evidenceChecks: config.evidence.evidenceChecks },
+    evidenceCheckResults: [{
+      id: 'required-completion',
+      definition_identity: 'bash:node -e "process.exit(17)"',
+      passed: true,
+    }],
+  });
+
+  assert.deepEqual(required.map((check) => check.state), ['missing']);
+});
+
 test('Merge Readiness reports a typed evidence-check timeout and phase progress', async () => {
   const rootDir = initCommittedRepo('veritas-readiness-run-timeout-');
   const markerPath = join(rootDir, 'descendant-ran');
@@ -163,6 +257,7 @@ test('Merge Readiness reports a typed evidence-check timeout and phase progress'
     phase: 'evidence-check',
     reason: 'timeout',
     id: result.evidenceCheckResults[0].id,
+    definition_identity: result.evidenceCheckResults[0].definition_identity,
     runner: 'bash',
     label: result.evidenceCheckResults[0].label,
     message: 'Evidence Check command timed out after 50ms',
@@ -226,6 +321,7 @@ await server.connect(new StdioServerTransport());
     phase: 'evidence-check',
     reason: 'timeout',
     id: evidenceCheck.id,
+    definition_identity: evidenceCheckDefinitionIdentity(evidenceCheck),
     runner: 'mcp',
     label: `scan@${process.execPath}`,
     message: 'MCP Evidence Check timed out after 50ms',

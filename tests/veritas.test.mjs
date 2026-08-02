@@ -1482,6 +1482,42 @@ test('work-area, default, and explicit evidence routing always compose required 
   assert.deepEqual(explicitPlan.evidenceCheckCommands, ['npm run diagnostic', 'npm run required-evidence-check']);
   assert.equal(explicitPlan.resolutionSource, 'explicit');
 
+  repoMap.evidence.evidenceChecks.push({
+    id: 'npm-run-diagnostic',
+    command: 'npm run canonical-required',
+    method: 'validation',
+  });
+  repoMap.evidence.requiredEvidenceCheckIds = ['npm-run-diagnostic'];
+  const collisionPlan = resolveEvidenceCheckCommands({
+    repoMapPath: writeTempRepoMap(rootDir, repoMap),
+    files: ['scripts/build-viewer.mjs'],
+    rootDir,
+    explicitEvidenceCheckCommand: 'npm run diagnostic',
+  });
+  assert.deepEqual(collisionPlan.evidenceCheckCommands, ['npm run diagnostic', 'npm run canonical-required']);
+  assert.notEqual(collisionPlan.evidenceChecks[0].id, 'npm-run-diagnostic');
+  assert.equal(collisionPlan.evidenceChecks[1].id, 'npm-run-diagnostic');
+  repoMap.evidence.evidenceChecks.push(
+    { id: 'explicit-command-npm-run-diagnostic', command: 'npm run occupied-explicit-id', method: 'validation' },
+    { id: 'explicit-command-npm-run-diagnostic-2', command: 'npm run occupied-explicit-id-suffix', method: 'validation' },
+  );
+  repoMap.evidence.requiredEvidenceCheckIds = ['explicit-command-npm-run-diagnostic-2'];
+  const occupiedNamespacePlan = resolveEvidenceCheckCommands({
+    repoMapPath: writeTempRepoMap(rootDir, repoMap),
+    files: ['scripts/build-viewer.mjs'],
+    rootDir,
+    explicitEvidenceCheckCommand: 'npm run diagnostic',
+  });
+  assert.equal(occupiedNamespacePlan.evidenceChecks[0].id, 'explicit-command-npm-run-diagnostic-3');
+  assert.deepEqual(
+    occupiedNamespacePlan.evidenceChecks.map((check) => [check.id, check.command]),
+    [
+      ['explicit-command-npm-run-diagnostic-3', 'npm run diagnostic'],
+      ['explicit-command-npm-run-diagnostic-2', 'npm run occupied-explicit-id-suffix'],
+    ],
+  );
+  repoMap.evidence.requiredEvidenceCheckIds = ['required-evidence-check'];
+
   delete repoMap.evidence.defaultEvidenceCheckIds;
   const requiredPlan = resolveEvidenceCheckCommands({
     repoMapPath: writeTempRepoMap(rootDir, repoMap),

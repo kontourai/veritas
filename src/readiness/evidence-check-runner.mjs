@@ -1,5 +1,5 @@
 import { runBash, createMcpServerPool } from '../runner/index.mjs';
-import { evidenceCheckLabel } from '../evidence/index.mjs';
+import { evidenceCheckDefinitionIdentity, evidenceCheckLabel } from '../evidence/index.mjs';
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
 /**
@@ -13,6 +13,7 @@ const DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS = 10 * 60_000;
 function buildEvidenceCheckResult(evidenceCheck, runner, label, result) {
   return {
     id: evidenceCheck.id,
+    definition_identity: evidenceCheckDefinitionIdentity(evidenceCheck),
     runner,
     label,
     passed: runner === 'mcp' ? !result.isError : result.passed,
@@ -38,6 +39,7 @@ function buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs) {
     phase: 'evidence-check',
     reason: runner === 'bash' && evidenceCheckResult.timedOut ? 'timeout' : 'failed',
     id: evidenceCheckResult.id,
+    definition_identity: evidenceCheckResult.definition_identity,
     runner,
     label,
     message: runner === 'mcp'
@@ -60,12 +62,17 @@ function isMcpTimeout(error) {
   return error?.code === ErrorCode.RequestTimeout;
 }
 
-async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, onPhase, evidenceCheckTimeoutMs = DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS }) {
+async function runEvidenceChecks({ evidenceChecks, requiredEvidenceCheckIds, rootDir, signal, onOutput, onPhase, evidenceCheckTimeoutMs = DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS }) {
   let evidenceCheckFailure = null;
   const evidenceCheckResults = [];
+  const requiredIds = new Set(requiredEvidenceCheckIds ?? evidenceChecks.map((evidenceCheck) => evidenceCheck.id));
+  const executionPlan = [
+    ...evidenceChecks.filter((evidenceCheck) => requiredIds.has(evidenceCheck.id)),
+    ...evidenceChecks.filter((evidenceCheck) => !requiredIds.has(evidenceCheck.id)),
+  ];
   const pool = createMcpServerPool({ signal });
   try {
-    for (const evidenceCheck of evidenceChecks) {
+    for (const evidenceCheck of executionPlan) {
       const runner = evidenceCheck.runner ?? 'bash';
       const label = evidenceCheckLabel(evidenceCheck);
       const checkTimeoutMs = evidenceCheck.timeoutMs ?? evidenceCheckTimeoutMs;
@@ -88,22 +95,23 @@ async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, on
         const evidenceCheckResult = buildEvidenceCheckResult(evidenceCheck, runner, label, result);
         evidenceCheckResults.push(evidenceCheckResult);
         onOutput?.(evidenceCheckResult);
-        if (!evidenceCheckResult.passed) {
+        if (!evidenceCheckResult.passed && requiredIds.has(evidenceCheck.id) && !evidenceCheckFailure) {
           evidenceCheckFailure = buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs);
-          break;
         }
       } catch (error) {
-        evidenceCheckFailure = {
-          phase: 'evidence-check',
-          reason: runner === 'mcp' && isMcpTimeout(error) ? 'timeout' : 'runner-error',
-          id: evidenceCheck.id,
-          runner,
-          label,
-          message: runner === 'mcp' && isMcpTimeout(error)
-            ? `MCP Evidence Check timed out after ${checkTimeoutMs}ms`
-            : error.message,
-        };
-        break;
+        if (requiredIds.has(evidenceCheck.id) && !evidenceCheckFailure) {
+          evidenceCheckFailure = {
+            phase: 'evidence-check',
+            reason: runner === 'mcp' && isMcpTimeout(error) ? 'timeout' : 'runner-error',
+            id: evidenceCheck.id,
+            definition_identity: evidenceCheckDefinitionIdentity(evidenceCheck),
+            runner,
+            label,
+            message: runner === 'mcp' && isMcpTimeout(error)
+              ? `MCP Evidence Check timed out after ${checkTimeoutMs}ms`
+              : error.message,
+          };
+        }
       }
     }
   } finally {
@@ -117,6 +125,7 @@ export async function runEvidenceCheckPlan({
   rootDir,
   runtime = {},
   evidenceCheckTimeoutMs,
+  requiredEvidenceCheckIds,
 }) {
   if (runtime.runEvidenceChecks === false) {
     return {
@@ -132,6 +141,7 @@ export async function runEvidenceCheckPlan({
   try {
     return await runEvidenceChecks({
       evidenceChecks,
+      requiredEvidenceCheckIds,
       rootDir,
       signal: controller.signal,
       onOutput: runtime.onEvidenceCheckOutput,

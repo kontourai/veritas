@@ -74,6 +74,7 @@ export function resolveEvidenceCheckPlan({
     uncoveredPathResult: unmatchedFiles.length > 0 ? uncoveredPathPolicy : 'clear',
     evidenceCheckCommands,
     evidenceChecks,
+    requiredEvidenceCheckIds,
     resolutionSource,
   };
 }

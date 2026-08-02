@@ -14,7 +14,8 @@ function readinessHasBlockingFailure(record) {
   if (record.uncovered_path_result === 'fail') return true;
   if ((record.policy_results ?? []).some((result) => result.passed === false && result.enforcementLevel === 'Require')) return true;
   if ((record.required_evidence_checks ?? []).some((check) => check.state !== 'passed')) return true;
-  if ((record.selected_evidence_checks ?? []).some((check) => check.evidence_check_result?.passed === false)) return true;
+  const requiredEvidenceCheckIds = new Set((record.required_evidence_checks ?? []).map((check) => check.id));
+  if ((record.selected_evidence_checks ?? []).some((check) => requiredEvidenceCheckIds.has(check.id) && check.evidence_check_result?.passed === false)) return true;
   if ((record.external_tool_results ?? []).some((result) => result.blocking !== false && ['fail', 'missing'].includes(result.verdict))) return true;
   return false;
 }

@@ -44,7 +44,7 @@ test('evidence schema requires current producer metadata sections', () => {
   assert.ok(evidenceSchema.required.includes('selected_evidence_check_ids'));
   assert.ok(evidenceSchema.required.includes('selected_evidence_check_labels'));
   assert.ok(evidenceSchema.required.includes('selected_evidence_checks'));
-  assert.ok(evidenceSchema.required.includes('required_evidence_checks'));
+  assert.equal(evidenceSchema.required.includes('required_evidence_checks'), false);
   assert.ok(evidenceSchema.required.includes('evidence_check_resolution_source'));
   assert.ok(evidenceSchema.required.includes('policy_results'));
   assert.ok(evidenceSchema.required.includes('trust'));

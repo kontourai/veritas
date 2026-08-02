@@ -45,10 +45,14 @@ export function evidenceChecksByIds(config, evidenceCheckIds) {
 
 export function evidenceCheckRecordsForCommands(config, commands) {
   const evidenceChecks = readEvidenceChecks(config);
+  const usedIds = new Set(evidenceChecks.map((evidenceCheck) => evidenceCheck.id));
   return commands.map((command) => {
     const evidenceCheck = evidenceChecks.find((item) => (item.runner ?? 'bash') === 'bash' && item.command === command);
-    return evidenceCheck ?? {
-      id: command.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'explicit-evidence-check',
+    if (evidenceCheck) return evidenceCheck;
+    const id = uniqueExplicitEvidenceCheckId(command, usedIds);
+    usedIds.add(id);
+    return {
+      id,
       runner: 'bash',
       command,
       method: 'validation',
@@ -57,11 +61,41 @@ export function evidenceCheckRecordsForCommands(config, commands) {
   });
 }
 
+function uniqueExplicitEvidenceCheckId(command, usedIds) {
+  const slug = command.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'command';
+  const base = `explicit-command-${slug}`;
+  let id = base;
+  let suffix = 2;
+  while (usedIds.has(id)) {
+    id = `${base}-${suffix}`;
+    suffix += 1;
+  }
+  return id;
+}
+
 export function evidenceCheckLabel(evidenceCheck) {
   if ((evidenceCheck.runner ?? 'bash') === 'mcp') {
     return `${evidenceCheck.tool}@${evidenceCheck.server?.command ?? 'mcp'}`;
   }
   return evidenceCheck.command;
+}
+
+export function evidenceCheckDefinitionIdentity(evidenceCheck) {
+  const runner = evidenceCheck.runner ?? 'bash';
+  if (runner === 'bash') return `bash:${evidenceCheck.command}`;
+  return `mcp:${stableJson({
+    server: evidenceCheck.server ?? {},
+    tool: evidenceCheck.tool,
+    input: evidenceCheck.input ?? {},
+  })}`;
+}
+
+function stableJson(value) {
+  if (Array.isArray(value)) return `[${value.map((item) => stableJson(item)).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
 }
 
 function assertEvidenceCheckConfig(config) {

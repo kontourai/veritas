@@ -20,7 +20,6 @@
     "selected_evidence_check_ids",
     "selected_evidence_check_labels",
     "selected_evidence_checks",
-    "required_evidence_checks",
     "evidence_check_resolution_source",
     "uncovered_path_result",
     "baseline_ci_fast_passed",
@@ -626,6 +625,9 @@
       ],
       "properties": {
         "id": {
+          "type": "string"
+        },
+        "definition_identity": {
           "type": "string"
         },
         "runner": {

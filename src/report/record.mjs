@@ -151,6 +151,7 @@ function buildBaseEvidenceRecord({
     external_tool_results: buildExternalToolResults({
       evidenceChecks: selectedEvidenceCheckSources,
       rootDir,
+      requiredEvidenceCheckIds: readRequiredEvidenceCheckIds(config),
     }),
     uncovered_path_result: evidenceCheckPlan.uncoveredPathResult,
     baseline_ci_fast_passed: baselineCiFastPassed,
