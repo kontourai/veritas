@@ -15,7 +15,7 @@ function veritas(args, options = {}) {
 
 test('top-level help centers the primary verb-noun surface', () => {
   const output = veritas(['--help']);
-  assert.match(output, /veritas readiness \[--check evidence\|boundaries\|coverage\]/);
+  assert.match(output, /veritas readiness \[--check evidence\|boundaries\|coverage\|config\]/);
   assert.match(output, /veritas recommendation list\|show <id>\|decide <id>/);
   assert.doesNotMatch(output, /Deprecated shims/);
   assert.doesNotMatch(output, /veritas readiness check/);
@@ -37,7 +37,7 @@ test('removed legacy shim exits with primary help', () => {
   assert.throws(
     () => veritas(['legacy', 'help'], { stdio: 'pipe' }),
     (error) => {
-      assert.match(error.stderr.toString(), /veritas readiness \[--check evidence\|boundaries\|coverage\]/);
+      assert.match(error.stderr.toString(), /veritas readiness \[--check evidence\|boundaries\|coverage\|config\]/);
       return true;
     },
   );

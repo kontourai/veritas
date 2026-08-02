@@ -54,7 +54,8 @@
               "tooling-area",
               "delivery-area",
               "shared-package",
-              "example-area"
+              "example-area",
+              "integration-area"
             ]
           },
           "label": { "type": "string" },
@@ -64,7 +65,11 @@
             "type": "string",
             "enum": ["strict", "advisory"]
           },
-          "boundaryAllow": { "$ref": "#/$defs/stringArray" }
+          "boundaryAllow": { "$ref": "#/$defs/stringArray" },
+          "governance-locked": {
+            "description": "Descriptive marker emitted by the starter Repo Map for governance-owned work areas. Advisory only: no runtime code branches on it. Declared here because Veritas itself writes it and this schema is now enforced.",
+            "type": "boolean"
+          }
         }
       }
     }

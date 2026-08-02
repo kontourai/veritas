@@ -42,11 +42,11 @@ Breaking evidence-check migration notes live in [../MIGRATING.md](../MIGRATING.m
 Runs the requested check. Without `--check`, this is the agent-facing feedback path.
 
 ```bash
-npx @kontourai/veritas readiness [--check evidence|boundaries|coverage] [--root <path>] [--working-tree]
+npx @kontourai/veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree]
 npx @kontourai/veritas readiness --check boundaries --actor cli-team [--diff main]
 ```
 
-`readiness` is the recommended current front door for evidenceCheck execution, generated evidence, standards feedback drafting, and change guidance. `readiness --check boundaries` replaces `boundaries check`. `readiness --check coverage` is the current command for readiness coverage. `readiness --check evidence` is the current command for the lower-level generated evidence path.
+`readiness` is the recommended current front door for evidenceCheck execution, generated evidence, standards feedback drafting, and change guidance. `readiness --check boundaries` replaces `boundaries check`. `readiness --check coverage` is the current command for readiness coverage. `readiness --check evidence` is the current command for the lower-level generated evidence path. `readiness --check config` validates this repo's Repo Map and Repo Standards against the schemas Veritas publishes for them.
 
 Evidence-check processes have bounded cancellation and per-check deadlines. Embedders may set `runtime.workflowTimeoutMs` for an overall readiness deadline; Veritas checks that deadline before report, finalization, and completion. Report generation and filesystem-backed feedback finalization remain synchronous repository operations: they receive explicit bounded Git diff resolution, but a caller cannot preempt an already-running filesystem operation once that finalization phase has started. The workflow deadline is therefore observed at phase boundaries, not a claim of universal mid-operation cancellation.
 
@@ -493,6 +493,20 @@ Printed helper surfaces:
 - a tracked Codex hooks config plus optional target inspection status
 - a Claude Code PreToolUse hook that injects `veritas explain` context before file edits
 
+### `readiness --check config`
+
+Validates this repo's governance config against the JSON Schemas Veritas publishes for it.
+
+```bash
+npx @kontourai/veritas readiness --check config [--root <path>] [--repo-map <path>] [--repo-standards <path>] [--format json]
+```
+
+Checks `.veritas/repo-map.json` against `schemas/veritas-repo-map.schema.json` and `.veritas/repo-standards/default.repo-standards.json` against `schemas/veritas-repo-standards.schema.json`, printing one `PASS` / `FAIL` / `SKIP` line per artifact and **exiting 1 if either is invalid**. This is the gateable form of the check — put it in CI or a pre-push lane to make config drift an authoring-time error.
+
+The same validation runs whenever Veritas loads either artifact, but loading only **warns**: these loaders sit on the Claude Code PreToolUse gate's path, and a hard failure there would block every edit in the repo until the config was repaired. Set `VERITAS_STRICT_CONFIG=1` to turn the warning into a load failure today. A future major version makes that the default.
+
+Both schemas set `additionalProperties: false`, so a field the schema does not define — a rule attribute Veritas never reads, for example — is reported rather than silently ignored.
+
 ### `setup`
 
 Installs or repairs first-class repo setup.
@@ -611,6 +625,7 @@ They can also produce a `pre-push` hook that:
 ## Environment Variables
 
 - `VERITAS_HOOK_SKIP=1`: skips generated git/runtime hook execution
+- `VERITAS_STRICT_CONFIG=1`: makes a Repo Map or Repo Standards file that fails schema validation a hard load failure instead of a warning
 
 Do not set either skip variable in CI if the CI lane is meant to enforce evidenceCheck execution.
 
