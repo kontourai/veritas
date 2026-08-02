@@ -129,9 +129,10 @@
                   "format": { "type": "string", "minLength": 1 },
                   "blocking": { "type": "boolean" },
                   "artifactPath": {
+                    "description": "Repo-local path to the external tool's artifact. Must live under the Veritas artifact root, which src/evidence/external-tools.mjs enforces at runtime as VERITAS_ARTIFACT_ROOT.",
                     "type": "string",
                     "minLength": 1,
-                    "pattern": "^\\.veritas/"
+                    "pattern": "^\\.kontourai/veritas/"
                   }
                 }
               }

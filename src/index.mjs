@@ -24,7 +24,18 @@ export {
   loadMarkerBenchmarkScenario,
   loadMarkerBenchmarkSessionLog,
   loadMarkerBenchmarkSuite,
+  formatConfigValidationReport,
 } from './load.mjs';
+export {
+  SCHEMAS_DIR,
+  REPO_MAP_SCHEMA,
+  REPO_STANDARDS_SCHEMA,
+  listShippedSchemaFiles,
+  getSchemaValidator,
+  validateAgainstSchema,
+  validateRepoMap,
+  validateRepoStandards,
+} from './schema-validation.mjs';
 export {
   parseTokens,
   parseArgs,
@@ -252,6 +263,8 @@ export {
   runIntegrationsCli,
   runReadinessCheckCli,
   runClaimCli,
+  runRepoConfigCheckCli,
+  validateRepoConfig,
 } from './cli/index.mjs';
 export * from './cli/plugins.mjs';
 

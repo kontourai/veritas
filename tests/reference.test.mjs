@@ -125,7 +125,10 @@ test('Repo Map and Repo Standards schemas declare activation and lint requiremen
   assert.equal(externalTool.properties.tool.minLength, 1);
   assert.equal(externalTool.properties.format.minLength, 1);
   assert.equal(externalTool.properties.artifactPath.minLength, 1);
-  assert.equal(externalTool.properties.artifactPath.pattern, '^\\.veritas/');
+  // The runtime enforces VERITAS_ARTIFACT_ROOT ('.kontourai/veritas') in
+  // src/evidence/external-tools.mjs. The schema previously demanded '^\\.veritas/', so no
+  // config could satisfy both; this test pinned the contradiction (veritas#196).
+  assert.equal(externalTool.properties.artifactPath.pattern, '^\\.kontourai/veritas/');
   assert.deepEqual(ruleProperties.kind.enum, [
     'required-artifacts',
     'governance-block',
