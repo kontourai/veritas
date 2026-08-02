@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { OwnedStdioClientTransport } from './owned-stdio.mjs';
 
 function serverKey(serverDef) {
@@ -27,25 +26,25 @@ function remainingTimeout(deadline) {
   return remaining;
 }
 
-function transportFor(serverDef) {
+function transportFor(serverDef, { maxBufferBytes } = {}) {
   const options = {
     command: serverDef.command,
     args: serverDef.args ?? [],
     env: serverDef.env,
     stderr: 'ignore',
   };
-  return process.platform === 'win32'
-    ? new StdioClientTransport(options)
-    : new OwnedStdioClientTransport(options);
+  return new OwnedStdioClientTransport(options, { maxBufferBytes });
 }
 
 class McpServerPool {
   #connections = new Map();
   #signal;
+  #maxBufferBytes;
   #closed = false;
 
-  constructor({ signal } = {}) {
+  constructor({ signal, maxBufferBytes } = {}) {
     this.#signal = signal ?? null;
+    this.#maxBufferBytes = maxBufferBytes;
   }
 
   async #getOrConnect(serverDef, { signal, deadline } = {}) {
@@ -62,7 +61,9 @@ class McpServerPool {
   }
 
   async #connect(serverDef, connection, { signal, deadline } = {}) {
-    const transport = connection.transport = transportFor(serverDef);
+    const transport = connection.transport = transportFor(serverDef, {
+      maxBufferBytes: this.#maxBufferBytes,
+    });
     const client = new Client({ name: 'veritas-runner', version: '1.0.0' });
     try {
       const timeoutMs = remainingTimeout(deadline);
@@ -81,7 +82,7 @@ class McpServerPool {
       // seconds for a hostile child. Begin closure without extending the
       // evidence-check deadline or making pool.close wait for it.
       void transport.close().catch(() => {});
-      throw error;
+      throw transport.failure ?? error;
     }
   }
 

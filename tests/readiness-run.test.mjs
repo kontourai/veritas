@@ -8,6 +8,7 @@ import Ajv from 'ajv/dist/2020.js';
 import { writeBootstrapStarterKit } from '../src/bootstrap.mjs';
 import { runMergeReadiness } from '../src/readiness/run.mjs';
 import { buildRequiredEvidenceChecks } from '../src/report/evidence-checks.mjs';
+import { generateVeritasReport } from '../src/report/index.mjs';
 import { buildFeedbackSummary } from '../src/report/format.mjs';
 import { commitAll, initCommittedRepo, repoRootDir } from './helpers.mjs';
 
@@ -220,6 +221,72 @@ test('required evidence result association rejects the same ID with a different 
   });
 
   assert.deepEqual(required.map((check) => check.state), ['missing']);
+});
+
+test('required evidence cannot be forged by reflective copies or callback mutation', async () => {
+  const rootDir = initCommittedRepo('veritas-readiness-private-association-');
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  writeBootstrapStarterKit({
+    rootDir,
+    projectName: 'readiness-private-association-fixture',
+    evidenceCheck: 'node -e "process.exit(1)"',
+    force: true,
+  });
+  commitAll(rootDir, 'Bootstrap private association fixture');
+
+  let observed = null;
+  const result = await runMergeReadiness(
+    { rootDir, runId: 'readiness-private-association-test', workingTree: true, force: true },
+    { rootDir },
+    [],
+    {
+      appendHistory: false,
+      onEvidenceCheckOutput: (snapshot) => {
+        observed = snapshot;
+        assert.equal(Object.isFrozen(snapshot), true);
+        assert.throws(() => { snapshot.passed = true; }, TypeError);
+        assert.throws(() => { snapshot.extra = 'forged'; }, TypeError);
+        throw new Error('diagnostic observer must not change readiness');
+      },
+    },
+  );
+
+  assert.ok(observed);
+  assert.equal(result.evidenceCheckResults[0].passed, false);
+  assert.equal(result.evidenceCheckFailure?.reason, 'failed');
+  assert.equal(result.currentStatus, 'fail');
+
+  const original = result.evidenceCheckResults[0];
+  assert.deepEqual(Object.getOwnPropertySymbols(original), []);
+  const symbolCopied = { ...original };
+  for (const symbol of Object.getOwnPropertySymbols(original)) symbolCopied[symbol] = original[symbol];
+  symbolCopied[Symbol('forged-execution-binding')] = true;
+  const variants = [
+    { ...original, passed: true, command: 'different definition' },
+    structuredClone(original),
+    JSON.parse(JSON.stringify(original)),
+    symbolCopied,
+    new Proxy({ ...original }, {}),
+  ];
+  const config = {
+    evidence: {
+      evidenceChecks: [{
+        id: original.id,
+        command: 'node -e "process.exit(0)"',
+        method: 'validation',
+      }],
+      requiredEvidenceCheckIds: [original.id],
+    },
+  };
+  for (const forgedResult of variants) {
+    forgedResult.passed = true;
+    const required = buildRequiredEvidenceChecks({
+      config,
+      evidenceCheckPlan: { evidenceChecks: config.evidence.evidenceChecks },
+      evidenceCheckResults: [forgedResult],
+    });
+    assert.deepEqual(required.map((check) => check.state), ['missing']);
+  }
 });
 
 test('Merge Readiness reports a typed evidence-check timeout and phase progress', async () => {
@@ -469,6 +536,12 @@ await server.connect(new StdioServerTransport());
   assert.ok(result.evidenceCheckResults.every((check) => check.passed === false));
   assert.ok(result.evidenceCheckResults.every((check) => !Object.hasOwn(check, 'content')));
   const serializedResult = JSON.stringify(result);
+  const directReport = await generateVeritasReport(
+    { rootDir, runId: 'readiness-mcp-redaction-direct-report', workingTree: true, force: true },
+    { rootDir },
+    [],
+  );
+  const directReportSerialized = JSON.stringify(directReport);
   assert.doesNotMatch(serializedResult, /definition_digest|definition_identity/);
   const evidenceArtifact = readFileSync(join(rootDir, result.reportResult.artifactPath), 'utf8');
   const raw = [serverArgsSecret, environmentSecret, nestedInputSecret, nestedValue].join('|');
@@ -486,6 +559,7 @@ await server.connect(new StdioServerTransport());
   ];
   for (const secret of forbidden) {
     assert.ok(!serializedResult.includes(secret), `run result leaked ${secret}`);
+    assert.ok(!directReportSerialized.includes(secret), `generateVeritasReport leaked ${secret}`);
     assert.ok(!evidenceArtifact.includes(secret), `evidence artifact leaked ${secret}`);
   }
   assert.ok(!['alpha', 'bravo', 'charlie', 'delta'].some((candidate) => serializedResult.includes(candidate)));

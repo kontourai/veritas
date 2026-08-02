@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { evidenceCheckLabel } from '../evidence/index.mjs';
+import { evidenceCheckLabel, publicEvidenceCheck } from '../evidence/index.mjs';
 import {
   generateVeritasReport,
   resolveVeritasPaths,
@@ -36,9 +36,7 @@ function isProcessTimeout(error) {
 }
 
 function safeEvidenceCheckForResult(evidenceCheck) {
-  if ((evidenceCheck.runner ?? 'bash') !== 'mcp') return evidenceCheck;
-  const { server, input, ...safeEvidenceCheck } = evidenceCheck;
-  return safeEvidenceCheck;
+  return publicEvidenceCheck(evidenceCheck);
 }
 
 function safeEvidenceCheckPlanForResult(evidenceCheckPlan) {

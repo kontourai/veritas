@@ -11,6 +11,7 @@ import {
 } from '../attestations.mjs';
 import {
   evidenceCheckRecordsForCommands,
+  publicRepoMapConfig,
 } from '../evidence/index.mjs';
 import {
   formatTriState,
@@ -180,7 +181,7 @@ export async function generateVeritasReport(
 
   return {
     rootDir,
-    config,
+    config: publicRepoMapConfig(config),
     record,
     artifactPath: relativeArtifactPath,
     claimInputPaths,

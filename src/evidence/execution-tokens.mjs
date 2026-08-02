@@ -1,27 +1,22 @@
 import { randomBytes } from 'node:crypto';
 
-const executionDefinitionToken = Symbol('veritas.executionDefinitionToken');
+const executionDefinitions = new WeakMap();
+const executionResults = new WeakMap();
 
 export function bindEvidenceCheckExecution(evidenceCheck) {
-  Object.defineProperty(evidenceCheck, executionDefinitionToken, {
-    configurable: true,
-    value: randomBytes(32).toString('base64url'),
-  });
+  executionDefinitions.set(evidenceCheck, randomBytes(32));
   return evidenceCheck;
 }
 
 export function bindEvidenceCheckResult(result, evidenceCheck) {
-  Object.defineProperty(result, executionDefinitionToken, {
-    configurable: true,
-    value: evidenceCheck[executionDefinitionToken],
-  });
+  executionResults.set(result, executionDefinitions.get(evidenceCheck));
   return result;
 }
 
 export function isBoundEvidenceCheckResult(result, evidenceCheck) {
   return Boolean(
-    result?.[executionDefinitionToken]
-      && evidenceCheck?.[executionDefinitionToken]
-      && result[executionDefinitionToken] === evidenceCheck[executionDefinitionToken],
+    executionResults.has(result)
+      && executionDefinitions.has(evidenceCheck)
+      && executionResults.get(result) === executionDefinitions.get(evidenceCheck),
   );
 }

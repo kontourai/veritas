@@ -30,6 +30,22 @@ function buildEvidenceCheckResult(evidenceCheck, runner, label, result) {
   };
 }
 
+function deepFreeze(value, seen = new Set()) {
+  if (!value || typeof value !== 'object' || seen.has(value)) return value;
+  seen.add(value);
+  for (const child of Object.values(value)) deepFreeze(child, seen);
+  return Object.freeze(value);
+}
+
+function emitEvidenceCheckOutput(onOutput, canonicalResult) {
+  if (!onOutput) return;
+  try {
+    onOutput(deepFreeze(structuredClone(canonicalResult)));
+  } catch {
+    // Observers are diagnostic only and cannot affect readiness authority.
+  }
+}
+
 function buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs) {
   const { runner, label } = evidenceCheckResult;
   const status = runner === 'mcp'
@@ -87,6 +103,8 @@ async function runEvidenceChecks({ evidenceChecks, requiredEvidenceCheckIds, roo
     ...evidenceChecks.filter((evidenceCheck) => requiredIds.has(evidenceCheck.id)),
     ...evidenceChecks.filter((evidenceCheck) => !requiredIds.has(evidenceCheck.id)),
   ];
+  // Definitions stay caller-owned and mutable as normal configuration objects;
+  // their execution association is private object identity, not a property.
   executionPlan.forEach(bindEvidenceCheckExecution);
   const pool = createMcpServerPool({ signal });
   try {
@@ -110,20 +128,20 @@ async function runEvidenceChecks({ evidenceChecks, requiredEvidenceCheckIds, roo
             { signal, timeoutMs: checkTimeoutMs },
           )
           : await runBash(evidenceCheck.command, { cwd: rootDir, signal, timeoutMs: checkTimeoutMs });
-        const evidenceCheckResult = bindEvidenceCheckResult(
+        const evidenceCheckResult = deepFreeze(bindEvidenceCheckResult(
           buildEvidenceCheckResult(evidenceCheck, runner, label, result),
           evidenceCheck,
-        );
+        ));
         evidenceCheckResults.push(evidenceCheckResult);
-        onOutput?.(evidenceCheckResult);
         if (!evidenceCheckResult.passed && requiredIds.has(evidenceCheck.id) && !evidenceCheckFailure) {
-          evidenceCheckFailure = bindEvidenceCheckResult(
+          evidenceCheckFailure = deepFreeze(bindEvidenceCheckResult(
             buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs),
             evidenceCheck,
-          );
+          ));
         }
+        emitEvidenceCheckOutput(onOutput, evidenceCheckResult);
       } catch (error) {
-        const evidenceCheckResult = bindEvidenceCheckResult(
+        const evidenceCheckResult = deepFreeze(bindEvidenceCheckResult(
           buildEvidenceCheckRunnerErrorResult(
             evidenceCheck,
             runner,
@@ -131,15 +149,15 @@ async function runEvidenceChecks({ evidenceChecks, requiredEvidenceCheckIds, roo
             runner === 'mcp' && isMcpTimeout(error),
           ),
           evidenceCheck,
-        );
+        ));
         evidenceCheckResults.push(evidenceCheckResult);
-        onOutput?.(evidenceCheckResult);
         if (requiredIds.has(evidenceCheck.id) && !evidenceCheckFailure) {
-          evidenceCheckFailure = bindEvidenceCheckResult(
+          evidenceCheckFailure = deepFreeze(bindEvidenceCheckResult(
             buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs),
             evidenceCheck,
-          );
+          ));
         }
+        emitEvidenceCheckOutput(onOutput, evidenceCheckResult);
       }
     }
   } finally {

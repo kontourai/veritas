@@ -18,7 +18,13 @@ import { spawn } from 'node:child_process';
 
 const mode = process.argv[2];
 const countPath = process.argv[3];
-if (mode === 'connect-hang') {
+if (mode === 'stdout-overflow-no-newline' || mode === 'stdout-overflow-frame') {
+  if (countPath) {
+    setTimeout(() => writeFileSync(countPath, 'ran'), 500);
+  }
+  process.stdout.write('x'.repeat(4_096) + (mode === 'stdout-overflow-frame' ? '\\n' : ''));
+  setInterval(() => {}, 1_000);
+} else if (mode === 'connect-hang') {
   setInterval(() => {}, 1_000);
 } else {
   if (mode === 'cumulative-deadline') await new Promise((resolve) => setTimeout(resolve, 60));
@@ -35,7 +41,14 @@ if (mode === 'connect-hang') {
       return new Promise(() => {});
     }
     return {
-      content: [{ type: 'text', text: JSON.stringify(request.params.arguments ?? {}) }],
+      content: [{ type: 'text', text: JSON.stringify(mode === 'env-probe' ? {
+        ambient: process.env.VERITAS_AMBIENT_MCP_SECRET ?? null,
+        declared: process.env.VERITAS_DECLARED_MCP_VALUE ?? null,
+        hasPath: Boolean(process.env.PATH),
+        platformValue: process.platform === 'win32'
+          ? Boolean(process.env.SYSTEMROOT)
+          : Boolean(process.env.HOME),
+      } : (request.params.arguments ?? {})) }],
       isError: false,
     };
   });
@@ -102,6 +115,61 @@ test('McpServerPool deduplicates server processes and closes cleanly', async () 
     await pool.close();
   }
 });
+
+test('McpServerPool does not inherit ambient credentials into an MCP server', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-safe-env-'));
+  const serverPath = writeMcpTestServer(dir);
+  const original = process.env.VERITAS_AMBIENT_MCP_SECRET;
+  process.env.VERITAS_AMBIENT_MCP_SECRET = 'ambient-secret-must-not-reach-server';
+  const pool = createMcpServerPool();
+  try {
+    const result = await pool.call(
+      {
+        command: process.execPath,
+        args: [serverPath, 'env-probe'],
+        env: { VERITAS_DECLARED_MCP_VALUE: 'declared-value' },
+      },
+      'scan',
+      { environment: true },
+    );
+    assert.deepEqual(JSON.parse(result.content[0].text), {
+      ambient: null,
+      declared: 'declared-value',
+      hasPath: true,
+      platformValue: true,
+    });
+  } finally {
+    await pool.close();
+    if (original === undefined) delete process.env.VERITAS_AMBIENT_MCP_SECRET;
+    else process.env.VERITAS_AMBIENT_MCP_SECRET = original;
+  }
+});
+
+for (const mode of ['stdout-overflow-no-newline', 'stdout-overflow-frame']) {
+  test(`McpServerPool rejects and cleans up ${mode} output`, async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-stdout-overflow-'));
+    const markerPath = join(dir, 'descendant-ran');
+    const serverPath = writeMcpTestServer(dir);
+    const pool = createMcpServerPool({ maxBufferBytes: 256 });
+    const startedAt = Date.now();
+    try {
+      await assert.rejects(
+        pool.call(
+          { command: process.execPath, args: [serverPath, mode, markerPath] },
+          'scan',
+          {},
+          { timeoutMs: 1_000 },
+        ),
+        (error) => error?.code === 'MCP_STDIO_BUFFER_LIMIT' || /buffer limit/i.test(error?.message),
+      );
+      assert.ok(Date.now() - startedAt < 500, 'overflow must reject before the call deadline');
+    } finally {
+      await pool.close();
+    }
+    await new Promise((resolve) => setTimeout(resolve, 650));
+    assert.equal(existsSync(markerPath), false, 'overflow closure must terminate the owned process group');
+  });
+}
 
 test('McpServerPool bounds a stalled MCP initialization and does not wait to close it', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-connect-timeout-'));
@@ -171,7 +239,7 @@ test('McpServerPool applies one absolute timeout across MCP connect and tool cal
 });
 
 test('McpServerPool closes the POSIX process group containing an MCP descendant', {
-  skip: process.platform === 'win32' && 'Windows uses the SDK-native MCP transport',
+  skip: process.platform === 'win32' && 'Windows falls back to direct-child termination',
 }, async () => {
   const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-descendant-timeout-'));
   const markerPath = join(dir, 'descendant-ran');

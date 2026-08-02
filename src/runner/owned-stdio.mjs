@@ -1,22 +1,31 @@
 import { spawn } from 'node:child_process';
-import { ReadBuffer, serializeMessage } from '@modelcontextprotocol/sdk/shared/stdio.js';
+import { getDefaultEnvironment } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { deserializeMessage, serializeMessage } from '@modelcontextprotocol/sdk/shared/stdio.js';
 
 const GRACE_MS = 2_000;
+export const DEFAULT_MCP_STDIO_MAX_BUFFER_BYTES = 1_048_576;
 
 /**
- * POSIX-only MCP stdio transport that owns the complete server process group.
- * The SDK transport is retained on Windows, where negative PID signalling is
- * unavailable and the native child termination behavior remains compatible.
+ * MCP stdio transport that owns its child process and bounds untrusted stdout.
+ * On platforms without process-group signalling, termination falls back to the
+ * direct child process.
  */
 export class OwnedStdioClientTransport {
-  #readBuffer = new ReadBuffer();
+  #buffer = Buffer.alloc(0);
+  #maxBufferBytes;
   #process = null;
   #closing = false;
   #settled = false;
+  #overflowed = false;
+  #failure = null;
   #escalationTimer = null;
 
-  constructor(server) {
+  constructor(server, { maxBufferBytes = DEFAULT_MCP_STDIO_MAX_BUFFER_BYTES } = {}) {
+    if (!Number.isSafeInteger(maxBufferBytes) || maxBufferBytes <= 0) {
+      throw new TypeError('maxBufferBytes must be a positive integer');
+    }
     this.server = server;
+    this.#maxBufferBytes = maxBufferBytes;
     this.onclose = undefined;
     this.onerror = undefined;
     this.onmessage = undefined;
@@ -26,7 +35,10 @@ export class OwnedStdioClientTransport {
     if (this.#process) throw new Error('OwnedStdioClientTransport already started');
     await new Promise((resolve, reject) => {
       const child = this.#process = spawn(this.server.command, this.server.args ?? [], {
-        env: { ...process.env, ...this.server.env },
+        // Match the MCP SDK's deliberately small inherited environment. The
+        // parent process commonly carries provider credentials unrelated to
+        // this server; only declared server.env may add to the safe baseline.
+        env: { ...getDefaultEnvironment(), ...this.server.env },
         cwd: this.server.cwd,
         detached: true,
         windowsHide: true,
@@ -54,16 +66,40 @@ export class OwnedStdioClientTransport {
   }
 
   #onData(chunk) {
-    this.#readBuffer.append(chunk);
+    // Check before concatenation so a hostile single chunk cannot transiently
+    // allocate an unbounded aggregate. The one cap limits both an incomplete
+    // frame and all buffered frames awaiting parse.
+    if (this.#overflowed || chunk.length > this.#maxBufferBytes - this.#buffer.length) {
+      this.#failBufferLimit();
+      return;
+    }
+    this.#buffer = this.#buffer.length === 0 ? Buffer.from(chunk) : Buffer.concat([this.#buffer, chunk]);
     while (true) {
       try {
-        const message = this.#readBuffer.readMessage();
-        if (message === null) return;
+        const boundary = this.#buffer.indexOf('\n');
+        if (boundary === -1) return;
+        const line = this.#buffer.toString('utf8', 0, boundary).replace(/\r$/, '');
+        this.#buffer = this.#buffer.subarray(boundary + 1);
+        const message = deserializeMessage(line);
         this.onmessage?.(message);
       } catch (error) {
         this.onerror?.(error);
       }
     }
+  }
+
+  #failBufferLimit() {
+    if (this.#overflowed) return;
+    this.#overflowed = true;
+    const error = new Error(`MCP stdio stdout exceeded ${this.#maxBufferBytes} byte buffer limit`);
+    error.code = 'MCP_STDIO_BUFFER_LIMIT';
+    this.#failure = error;
+    this.onerror?.(error);
+    void this.close();
+  }
+
+  get failure() {
+    return this.#failure;
   }
 
   #signalGroup(signalName) {
@@ -86,7 +122,7 @@ export class OwnedStdioClientTransport {
     this.#settled = true;
     this.#clearEscalation();
     this.#process = null;
-    this.#readBuffer.clear();
+    this.#buffer = Buffer.alloc(0);
     this.onclose?.();
   }
 

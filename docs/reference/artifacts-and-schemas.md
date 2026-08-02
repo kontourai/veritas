@@ -389,7 +389,7 @@ Evidence Checks may optionally declare an external tool artifact. Veritas reads 
 
 External tool artifacts must stay under `.veritas/`. Use advisory mode for existing repos until findings are cleaned up or baselined.
 
-Selected check records include `runner`, `label`, and an optional `evidence_check_result`. Bash results carry `exitCode`, `signal`, `stdout`, and `stderr`; MCP results carry `content` and `isError`. Both runners include `id`, `passed`, and `durationMs`.
+Selected check records include `runner`, `label`, and an optional `evidence_check_result`. Bash results carry `exitCode`, `signal`, `stdout`, and `stderr`; MCP results carry structural status only (`id`, `runner`, `label`, `passed`, `isError`, `timedOut`, and `durationMs`). MCP response content, stderr, server configuration, and inputs never appear in generated output.
 
 Repo Maps can also declare grouped evidence-check inventories:
 

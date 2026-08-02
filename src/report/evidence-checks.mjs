@@ -18,10 +18,7 @@ function evidenceCheckResultSummary(result) {
   if (!result) return null;
   if (result.passed) return 'All evidence checks passed.';
   if (result.runner === 'mcp') {
-    const text = result.content?.find((content) => content.type === 'text')?.text;
-    return text
-      ? `MCP tool error: ${text.split('\n')[0]}`
-      : 'MCP tool returned an error.';
+    return 'MCP Evidence Check reported failure.';
   }
   const status = result.exitCode !== null && result.exitCode !== undefined
     ? `exit code ${result.exitCode}`
