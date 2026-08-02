@@ -30,6 +30,8 @@ const DEFAULT_VALID_UNTIL_DAYS = 90;
 const ATTESTATIONS_DIR = '.veritas/attestations';
 const HEAD_FILE = 'HEAD';
 const PENDING_FILE = 'PENDING';
+const LEGACY_ATTESTATION_REFERENCE_PREFIX = 'legacy-attestation-v0';
+const UNRESOLVED_ATTESTATION_REFERENCE = 'attestation-reference-unavailable';
 
 function isLegacyRepoMapHash(attestation) {
   return attestation.repoMapHashAlgorithm !== REPO_MAP_HASH_ALGORITHM;
@@ -43,12 +45,71 @@ function stripLegacyRepoMapHashes(value) {
     .map(([key, child]) => [key, stripLegacyRepoMapHashes(child)]));
 }
 
-function publicAttestationReference(attestation) {
+function legacyAttestationReference(attestation) {
+  // Historical IDs were derived from the raw Repo Map file digest. Never
+  // transform that ID directly: even a one-way digest would let callers test
+  // candidate low-entropy runtime values offline. This replacement uses only
+  // fields that were already safe to publish and deliberately remains stable
+  // across historical records which differ solely in their raw file hash.
+  const safeIdentity = {
+    actorId: typeof attestation.actor?.id === 'string' ? attestation.actor.id : null,
+    attestedAt: typeof attestation.attestedAt === 'string' ? attestation.attestedAt : null,
+    kind: typeof attestation.kind === 'string' ? attestation.kind : null,
+  };
+  return `${LEGACY_ATTESTATION_REFERENCE_PREFIX}:${sha256Hex(JSON.stringify(safeIdentity)).slice(0, 16)}`;
+}
+
+function publicAttestationId(attestation) {
+  return isLegacyRepoMapHash(attestation)
+    ? legacyAttestationReference(attestation)
+    : attestation.id;
+}
+
+function readAttestationHeadRecord(rootDir) {
+  const path = headPath(rootDir);
+  if (!existsSync(path)) return null;
+  const pointer = loadJson(path, 'attestation HEAD');
+  return typeof pointer.currentAttestationId === 'string' ? pointer.currentAttestationId : null;
+}
+
+function readCurrentAttestationRecord(rootDir) {
+  const id = readAttestationHeadRecord(rootDir);
+  if (!id) return null;
+  const path = attestationPath(rootDir, id);
+  if (!existsSync(path)) return { missing: true, id, path };
+  return loadJson(path, 'attestation');
+}
+
+function publicPriorAttestationId(rootDir, priorAttestationId) {
+  if (typeof priorAttestationId !== 'string' || !priorAttestationId) return null;
+  // Successors created after migration persist the already-safe opaque
+  // reference. It is not a filename and must not be resolved as one.
+  if (priorAttestationId.startsWith(`${LEGACY_ATTESTATION_REFERENCE_PREFIX}:`)) {
+    return priorAttestationId;
+  }
+  const path = attestationPath(rootDir, priorAttestationId);
+  if (!existsSync(path)) return UNRESOLVED_ATTESTATION_REFERENCE;
+  const prior = loadJson(path, 'prior attestation');
+  return publicAttestationId(prior);
+}
+
+function publicAttestationReference(rootDir, attestation) {
   const legacy = isLegacyRepoMapHash(attestation);
   const reference = legacy
     ? stripLegacyRepoMapHashes(attestation)
     : structuredClone(attestation);
-  if (legacy) reference.repoMapHashAlgorithm = 'legacy-file-v0';
+  const priorAttestationId = publicPriorAttestationId(rootDir, attestation.priorAttestationId);
+  if (legacy) {
+    reference.id = legacyAttestationReference(attestation);
+    reference.repoMapHashAlgorithm = 'legacy-file-v0';
+  }
+  if (typeof attestation.priorAttestationId === 'string') {
+    reference.priorAttestationId = priorAttestationId;
+  }
+  if (typeof attestation.metadata?.supersedes === 'string') {
+    reference.metadata ??= {};
+    reference.metadata.supersedes = publicPriorAttestationId(rootDir, attestation.metadata.supersedes);
+  }
   return reference;
 }
 
@@ -121,24 +182,22 @@ function resolveApprovalReferencePolicy({
 }
 
 export function readAttestationHead(rootDir) {
-  const path = headPath(rootDir);
-  if (!existsSync(path)) return null;
-  const pointer = loadJson(path, 'attestation HEAD');
-  return typeof pointer.currentAttestationId === 'string' ? pointer.currentAttestationId : null;
+  const current = readCurrentAttestationRecord(rootDir);
+  if (!current) return null;
+  return current.missing ? UNRESOLVED_ATTESTATION_REFERENCE : publicAttestationId(current);
 }
 
 export function readCurrentAttestation(rootDir) {
-  const id = readAttestationHead(rootDir);
-  if (!id) return null;
-  const path = attestationPath(rootDir, id);
-  if (!existsSync(path)) {
+  const current = readCurrentAttestationRecord(rootDir);
+  if (!current) return null;
+  if (current.missing) {
     return {
       missing: true,
-      id,
-      path: relativeRepoPath(rootDir, path),
+      id: UNRESOLVED_ATTESTATION_REFERENCE,
+      path: relativeRepoPath(rootDir, attestationsDir(rootDir)),
     };
   }
-  return loadJson(path, 'attestation');
+  return publicAttestationReference(rootDir, current);
 }
 
 export function writePendingAttestationMarker(rootDir, options = {}) {
@@ -259,9 +318,13 @@ export function createAttestation({
   rejectNonHumanActor(actor);
   requireHumanApprovalReference({ kind, approvalRef });
   const timestamp = nowIso({ attestedAt });
-  const priorAttestationId = readAttestationHead(rootDir);
+  const priorAttestationId = readAttestationHeadRecord(rootDir);
+  const priorAttestation = readCurrentAttestationRecord(rootDir);
+  const publicPriorAttestationId = priorAttestation && !priorAttestation.missing
+    ? publicAttestationId(priorAttestation)
+    : (priorAttestationId ? UNRESOLVED_ATTESTATION_REFERENCE : null);
   if (kind === 'bootstrap' && priorAttestationId) {
-    throw new Error(`Bootstrap attestation already exists: ${priorAttestationId}`);
+    throw new Error(`Bootstrap attestation already exists: ${publicPriorAttestationId}`);
   }
   if (kind !== 'bootstrap' && !priorAttestationId) {
     throw new Error(`${kind} attestation requires an existing prior attestation`);
@@ -302,14 +365,14 @@ export function createAttestation({
     repoMapHash: hashes.repoMapHash,
     repoMapHashAlgorithm: REPO_MAP_HASH_ALGORITHM,
     authoritySettingsHash: hashes.authoritySettingsHash,
-    priorAttestationId: priorAttestationId ?? null,
+    priorAttestationId: publicPriorAttestationId,
     validUntilDays,
     notes,
     ...(authorizing ? { authorizing } : {}),
     ...(admissibilityWarning ? { admissibilityWarning, admissibilityWarningReason } : {}),
     metadata: {
       protectedStandardsPaths: hashes.paths,
-      supersedes: priorAttestationId ?? null,
+      supersedes: publicPriorAttestationId,
       approvalRef: approvalRef?.trim() ?? null,
       approvalRefPolicy,
       approvalResolution,
@@ -371,7 +434,7 @@ export function assertAttestationApprovalReference({
 }
 
 export function inspectAttestationStatus(rootDir, options = {}) {
-  const current = readCurrentAttestation(rootDir);
+  const current = readCurrentAttestationRecord(rootDir);
   const pending = existsSync(pendingPath(rootDir));
   const protectedStandards = (() => {
     try {
@@ -405,9 +468,9 @@ export function inspectAttestationStatus(rootDir, options = {}) {
   if (current.missing) {
     return {
       state: 'broken-head',
-      currentAttestationId: current.id,
+      currentAttestationId: UNRESOLVED_ATTESTATION_REFERENCE,
       pending,
-      drift: [{ field: 'currentAttestationId', attested: current.id, current: null }],
+      drift: [{ field: 'currentAttestationId', attested: UNRESOLVED_ATTESTATION_REFERENCE, current: null }],
       expired: false,
       ageDays: null,
       validUntil: null,
@@ -441,8 +504,8 @@ export function inspectAttestationStatus(rootDir, options = {}) {
   const validUntil = new Date(attestedAt.getTime() + current.validUntilDays * 86_400_000);
   return {
     state: drift.length > 0 ? 'drifted' : 'current',
-    currentAttestationId: current.id,
-    attestation: publicAttestationReference(current),
+    currentAttestationId: publicAttestationId(current),
+    attestation: publicAttestationReference(rootDir, current),
     pending,
     drift,
     expired: now.getTime() > validUntil.getTime(),

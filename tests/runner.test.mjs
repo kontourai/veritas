@@ -162,18 +162,21 @@ test('McpServerPool does not inherit ambient credentials into an MCP server', as
 });
 
 for (const mode of ['stdout-overflow-no-newline', 'stdout-overflow-frame']) {
-  test(`McpServerPool rejects and cleans up ${mode} output`, async () => {
+  test(`McpServerPool rejects and cleans up ${mode} output`, { timeout: 5_000 }, async () => {
     const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-stdout-overflow-'));
     const markerPath = join(dir, 'descendant-ran');
     const serverPath = writeMcpTestServer(dir);
     const pool = createMcpServerPool({ maxBufferBytes: 256 });
     try {
       await assert.rejects(
+        // This validates the transport's event-driven terminal failure once
+        // the fixture writes stdout. Keep the deadline tests below separate:
+        // a one-second evidence budget can expire before a child gets CPU in
+        // parallel coverage, which cannot distinguish frame handling.
         pool.call(
           { command: process.execPath, args: [serverPath, mode, markerPath] },
           'scan',
           {},
-          { timeoutMs: 1_000 },
         ),
         (error) => error?.code === 'MCP_STDIO_BUFFER_LIMIT' || /buffer limit/i.test(error?.message),
       );

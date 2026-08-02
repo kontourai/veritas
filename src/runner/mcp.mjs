@@ -67,10 +67,11 @@ class McpServerPool {
     const client = new Client({ name: 'veritas-runner', version: '1.0.0' });
     try {
       const timeoutMs = remainingTimeout(deadline);
-      await client.connect(transport, {
+      await Promise.race([client.connect(transport, {
         ...(signal ? { signal } : {}),
         ...(timeoutMs ? { timeout: timeoutMs, maxTotalTimeout: timeoutMs } : {}),
-      });
+      }), transport.waitForFailure()]);
+      if (transport.failure) throw transport.failure;
       connection.client = client;
       if (this.#closed || connection.closed) {
         void client.close().catch(() => {});

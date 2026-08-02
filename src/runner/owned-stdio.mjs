@@ -40,6 +40,7 @@ export class OwnedStdioClientTransport {
   #settled = false;
   #overflowed = false;
   #failure = null;
+  #failureWaiters = new Set();
   #escalationTimer = null;
 
   constructor(server, { maxBufferBytes = DEFAULT_MCP_STDIO_MAX_BUFFER_BYTES } = {}) {
@@ -117,12 +118,27 @@ export class OwnedStdioClientTransport {
     const error = new Error(`MCP stdio stdout exceeded ${this.#maxBufferBytes} byte buffer limit`);
     error.code = 'MCP_STDIO_BUFFER_LIMIT';
     this.#failure = error;
+    for (const reject of this.#failureWaiters) reject(error);
+    this.#failureWaiters.clear();
     this.onerror?.(error);
     void this.close();
   }
 
   get failure() {
     return this.#failure;
+  }
+
+  /**
+   * Rejects as soon as a terminal transport failure is known. The MCP SDK
+   * reports transport errors to callbacks but does not reject its pending
+   * initialize request, so callers that own the connection must also observe
+   * this signal to avoid waiting for their request deadline.
+   */
+  waitForFailure() {
+    if (this.#failure) return Promise.reject(this.#failure);
+    return new Promise((_resolve, reject) => {
+      this.#failureWaiters.add(reject);
+    });
   }
 
   #signalGroup(signalName) {
