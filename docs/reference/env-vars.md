@@ -38,6 +38,12 @@ Runtime-specific variables such as `CODEX_TRANSCRIPT_PATH` and `CLAUDE_TRANSCRIP
 
 Tells generated Veritas hooks to exit without running. Use for local emergency bypasses, not as a normal CI configuration.
 
+The generated git and runtime hooks honour this in their shell body and leave no record. The Claude Code PreToolUse gate is different: it is the only Veritas mechanism that can block an edit, so it resolves the skip inside Veritas and appends a `hook-skip` record to `.kontourai/veritas/standards-feedback/exceptions.jsonl` before approving. That puts it on the same auditable footing as a `VERITAS_EXCEPTION_RULE` bypass.
+
+### `VERITAS_HOOK_SKIP_REASON`
+
+Optional free-text reason recorded on the `hook-skip` record written by the Claude Code PreToolUse gate. Ignored by the other generated hooks.
+
 ### `VERITAS_ACTOR`
 
 Provides the governance actor for `veritas boundaries check` when `--actor` is not supplied.

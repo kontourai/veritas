@@ -130,10 +130,15 @@ exit 0
 export function buildSuggestedClaudeCodePreToolUseHook() {
   const hookBody = `#!/bin/sh
 # .veritas/hooks/pre-tool-use.sh -- Claude Code PreToolUse Veritas gate.
-
-if [ "\${VERITAS_HOOK_SKIP:-0}" = "1" ]; then
-  exit 0
-fi
+#
+# VERITAS_HOOK_SKIP=1 is deliberately NOT handled here. This is the only Veritas
+# mechanism that can block an edit, so its bypass is resolved inside Veritas
+# (src/hooks/pre-tool-use.mjs) where it is recorded to
+# .kontourai/veritas/standards-feedback/exceptions.jsonl. A shell-level "exit 0"
+# would leave the repo no record that the gate was passed.
+#
+# Exit codes follow the Claude Code PreToolUse protocol: 2 blocks the tool call,
+# 0 allows it.
 
 exec npm exec -- veritas hooks claude-code pre-tool-use "$@"
 `;
