@@ -109,6 +109,11 @@ Attestations are immutable authority-backed records for protected standards hash
 - `.veritas/repo-standards/default.repo-standards.json`
 - `.veritas/authority/default.authority-settings.json`
 
+The Repo Map integrity value is a stable, recursively redacted public policy projection. MCP
+server arguments, environment, and tool input are runtime execution inputs; they are never part
+of a protected-policy hash in an attestation, governance state, trust projection, CLI output, or
+init recommendation. Changes to public policy remain hash-sensitive.
+
 The active pointer lives at `.veritas/attestations/HEAD` as JSON with `currentAttestationId`. New `policy-change` attestations supersede older records by setting `priorAttestationId`; old records stay tracked for auditability.
 
 New attestation write paths require `metadata.approvalRef`, supplied through `--approval-ref`, to point at the explicit human approval that authorized the record. Existing historical attestations without this field remain readable, but agents must not create new authority-backed attestations without a durable approval reference.
@@ -351,7 +356,9 @@ MCP checks use `runner: "mcp"` with a stdio server definition, tool name, and op
 
 `requiredEvidenceCheckIds` are a canonical Merge Readiness requirement, not a fallback route. Veritas unions them with work-area routes, defaults, and an explicit `--evidence-check-command`, deduplicated by stable id while retaining deterministic selection order in the report. At execution time it runs required checks first, then optional diagnostics, so an optional failure cannot starve a required result. A required check that is missing, skipped, timed out, fails, or has a runner error leaves the readiness verdict `not-ready` and the trust-bundle claim `rejected`. Optional routed diagnostics remain visible without becoming globally blocking.
 
-MCP execution configuration and tool responses are runtime-only. Generated evidence records retain only structural MCP outcome fields; they never retain MCP server arguments, environment, input, response content, or subprocess stderr. The in-memory association between a result and its exact execution definition is intentionally non-persistent, so a prior record cannot be replayed to satisfy a required Evidence Check in a later readiness run.
+MCP execution configuration and tool responses are runtime-only. Generated evidence records retain only structural MCP outcome fields; they never retain MCP server arguments, environment, input, response content, or subprocess stderr. These runtime values are also excluded from every durable Repo Map integrity hash; they are execution inputs rather than protected policy identity. The in-memory association between a result and its exact execution definition is intentionally non-persistent, so a prior record cannot be replayed to satisfy a required Evidence Check in a later readiness run.
+
+Owned MCP stdio uses Windows command-shim resolution (for example `npx` can resolve to `npx.cmd`) and a safe inherited environment, bounded stdout, contained stderr, and owned-process cleanup. The `win32` resolver has platform-injected unit coverage; end-to-end Windows process cleanup remains **NOT_VERIFIED** until a live Windows lane runs it.
 
 ```json
 {

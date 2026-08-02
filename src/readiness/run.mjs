@@ -103,7 +103,8 @@ export async function runMergeReadiness(
   });
   const evidenceChecks = evidenceCheckPlan.evidenceChecks ?? [];
   const evidenceCheckLabels = evidenceChecks.map((evidenceCheck) => evidenceCheckLabel(evidenceCheck));
-  if (!options.skipEvidenceCheck && evidenceChecks.length === 0) {
+  const evidenceCheckExecutionSkipped = options.skipEvidenceCheck === true || runtime.runEvidenceChecks === false;
+  if (!evidenceCheckExecutionSkipped && evidenceChecks.length === 0) {
     throw new Error(
       'veritas readiness requires an evidenceCheck command or configured evidenceCheck',
     );
@@ -111,7 +112,7 @@ export async function runMergeReadiness(
 
   let evidenceCheckFailure = null;
   let evidenceCheckResults = [];
-  if (!options.skipEvidenceCheck) {
+  if (!evidenceCheckExecutionSkipped) {
     const result = await runEvidenceCheckPlan({
       evidenceChecks,
       rootDir,
@@ -132,7 +133,7 @@ export async function runMergeReadiness(
       evidenceCheckResults,
       evidenceCheckFailure,
       evidenceCheckPlan,
-      evidenceCheckExecutionSkipped: options.skipEvidenceCheck === true || runtime.runEvidenceChecks === false,
+      evidenceCheckExecutionSkipped,
       workingTree,
       baselineCiFastStatus:
         options.baselineCiFastStatus ??
@@ -181,6 +182,7 @@ export async function runMergeReadiness(
     evidenceCheckLabels,
     evidenceCheckFailure,
     evidenceCheckResults,
+    evidenceCheckExecutionSkipped,
     reportResult: safeReportResultForResult(reportResult),
     draftResult,
     standardsFeedbackResult,

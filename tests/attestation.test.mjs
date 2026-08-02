@@ -12,6 +12,7 @@ import {
   inspectAttestationStatus,
   writeBootstrapStarterKit,
 } from '../src/index.mjs';
+import { hashProtectedStandards } from '../src/attestations/protected-standards.mjs';
 import {
   commitAll,
   repoRootDir,
@@ -70,6 +71,39 @@ function governanceClaim(claims) {
 
 const HUMAN_APPROVAL_REF = 'test://human-approved-attestation';
 
+function sha256Dictionary(value, path = '$', dictionary = {}) {
+  if (typeof value === 'string' && /^sha256:[0-9a-f]{64}$/.test(value)) {
+    dictionary[path] = value;
+  } else if (Array.isArray(value)) {
+    value.forEach((item, index) => sha256Dictionary(item, `${path}[${index}]`, dictionary));
+  } else if (value && typeof value === 'object') {
+    for (const [key, child] of Object.entries(value)) {
+      sha256Dictionary(child, `${path}.${key}`, dictionary);
+    }
+  }
+  return dictionary;
+}
+
+async function durableRepoMapHashOutputs(rootDir, runId) {
+  const report = await generateVeritasReport({
+    rootDir,
+    includeAttestationGate: true,
+    skipEvidenceCheck: true,
+    runId,
+    timestamp: '2026-05-11T00:00:00.000Z',
+  }, { rootDir }, ['package.json']);
+  const attestation = JSON.parse(readFileSync(
+    join(rootDir, '.veritas/attestations', `${readJsonFromAbsolute(join(rootDir, '.veritas/attestations/HEAD')).currentAttestationId}.attestation.json`),
+    'utf8',
+  ));
+  return {
+    integrity: report.record.integrity,
+    governance_state: report.record.governance_state,
+    attestation,
+    trust: report.record.trust,
+  };
+}
+
 function configureResolvedApprovalPolicy(rootDir, options = {}) {
   const authorityPath = join(rootDir, '.veritas/authority/default.authority-settings.json');
   const authoritySettings = JSON.parse(readFileSync(authorityPath, 'utf8'));
@@ -122,6 +156,58 @@ test('bootstrap attestation records protected standards hashes and status detect
   const drifted = inspectAttestationStatus(rootDir, { now: '2026-05-11T00:00:00.000Z' });
   assert.equal(drifted.state, 'drifted');
   assert.deepEqual(drifted.drift.map((item) => item.field), ['repoStandardsHash']);
+});
+
+test('all durable Repo Map hash outputs redact MCP runtime inputs and retain public-policy drift', async () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-redacted-hash-');
+  const repoMapPath = join(rootDir, '.veritas/repo-map.json');
+  const repoMap = JSON.parse(readFileSync(repoMapPath, 'utf8'));
+  repoMap.evidence.evidenceChecks = [{
+    id: 'mcp-runtime-check',
+    runner: 'mcp',
+    server: {
+      command: 'npx',
+      args: ['-y', 'low-entropy-secret-alpha'],
+      env: { TOKEN: 'low-entropy-secret-alpha' },
+    },
+    tool: 'scan',
+    input: { token: 'low-entropy-secret-alpha' },
+    method: 'validation',
+  }];
+  writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
+
+  const firstHashes = hashProtectedStandards(rootDir);
+  createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Reviewed redacted Repo Map policy.',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+  const firstOutputs = await durableRepoMapHashOutputs(rootDir, 'redacted-repo-map-hash');
+
+  const replacement = JSON.parse(readFileSync(repoMapPath, 'utf8'));
+  replacement.evidence.evidenceChecks[0].server.args = ['-y', 'low-entropy-secret-beta'];
+  replacement.evidence.evidenceChecks[0].server.env.TOKEN = 'low-entropy-secret-beta';
+  replacement.evidence.evidenceChecks[0].input.token = 'low-entropy-secret-beta';
+  writeFileSync(repoMapPath, `${JSON.stringify(replacement, null, 2)}\n`);
+
+  const secondHashes = hashProtectedStandards(rootDir);
+  const secondOutputs = await durableRepoMapHashOutputs(rootDir, 'redacted-repo-map-hash');
+  const allOutput = JSON.stringify({ firstOutputs, secondOutputs });
+  assert.equal(allOutput.includes('low-entropy-secret-alpha'), false);
+  assert.equal(allOutput.includes('low-entropy-secret-beta'), false);
+  assert.equal(secondHashes.repoMapHash, firstHashes.repoMapHash);
+  assert.deepEqual(sha256Dictionary(secondOutputs), sha256Dictionary(firstOutputs));
+  assert.equal(firstOutputs.integrity.configRefs.repoMap.hash, firstHashes.repoMapHash);
+  assert.ok(firstOutputs.governance_state.protectedStandards.hashes.repoMapHash);
+  assert.equal(firstOutputs.attestation.repoMapHash, firstHashes.repoMapHash);
+  assert.ok(firstOutputs.trust.bundle);
+
+  replacement.graph.defaultResolution.workstream = 'Changed public policy';
+  writeFileSync(repoMapPath, `${JSON.stringify(replacement, null, 2)}\n`);
+  assert.notEqual(hashProtectedStandards(rootDir).repoMapHash, firstHashes.repoMapHash);
 });
 
 test('policy-change attestation chains to prior attestation and refreshes drift', () => {

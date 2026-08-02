@@ -20,6 +20,7 @@ import {
 } from './guidance.mjs';
 import { GENERATED_OUTPUT_IGNORE_ENTRIES, mergeGeneratedOutputIgnores } from './generated-output-ignore.mjs';
 import { assertWithinDir, veritasArtifactPath, veritasArtifactRepoPath } from '../paths.mjs';
+import { publicRepoMapPolicyIdentity } from '../evidence/public-config.mjs';
 
 const INIT_RECOMMENDATION_SCHEMA_VERSION = 1;
 const GOVERNANCE_CORE_PATHS = [
@@ -280,7 +281,12 @@ function buildArtifactPayloads({ rootDir, projectName, evidenceCheck, repoInsigh
 }
 
 function artifactHashes(payloads) {
-  return Object.fromEntries(Object.entries(payloads).map(([path, payload]) => [path, sha256Hex(payload)]));
+  return Object.fromEntries(Object.entries(payloads).map(([path, payload]) => [
+    path,
+    sha256Hex(path === '.veritas/repo-map.json'
+      ? publicRepoMapPolicyIdentity(JSON.parse(payload))
+      : payload),
+  ]));
 }
 
 export function buildInitRecommendation({
@@ -374,7 +380,10 @@ function validateInitRecommendation(recommendation, rootDir) {
     );
     if (typeof payload !== 'string') throw new Error(`init recommendation payload must be a string: ${path}`);
     const expectedHash = recommendation.artifact_hashes[path];
-    if (expectedHash !== sha256Hex(payload)) {
+    const actualHash = path === '.veritas/repo-map.json'
+      ? sha256Hex(publicRepoMapPolicyIdentity(JSON.parse(payload)))
+      : sha256Hex(payload);
+    if (expectedHash !== actualHash) {
       throw new Error(`init recommendation payload hash mismatch: ${path}`);
     }
   }

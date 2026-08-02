@@ -13,7 +13,8 @@ import { buildEvidenceIntegrity } from '../src/report/integrity.mjs';
 import { generateVeritasReport } from '../src/report/index.mjs';
 import { buildFeedbackSummary } from '../src/report/format.mjs';
 import { requiredEvidenceChecksFor } from '../src/surface/readiness.mjs';
-import { commitAll, initCommittedRepo, repoRootDir } from './helpers.mjs';
+import { readinessRuntimeEnvelope, runReadinessCheckCli } from '../src/cli/readiness-check.mjs';
+import { commitAll, initCommittedRepo, parseCliJson, repoRootDir } from './helpers.mjs';
 
 test('Merge Readiness run coordinates evidence, report, and draft behind one interface', async () => {
   const rootDir = initCommittedRepo('veritas-readiness-run-');
@@ -96,7 +97,13 @@ test('skipped or no-execution required evidence is diagnostic-only and rejects c
     );
 
     assert.equal(result.currentStatus, 'fail', `${label} must not pass canonical readiness`);
+    assert.equal(result.evidenceCheckExecutionSkipped, true);
     assert.deepEqual(requiredEvidenceChecksFor(result.reportResult.record).map((check) => check.state), ['skipped']);
+    assert.deepEqual(
+      readinessRuntimeEnvelope(result.reportResult.record, result.currentStatus).requiredEvidenceChecks.map((check) => check.state),
+      ['skipped'],
+      `${label} must retain required-check state for the CLI JSON envelope`,
+    );
     const readinessClaim = result.reportResult.record.trust.bundle.claims.find(
       (claim) => claim.claimType === 'software-readiness-verdict',
     );
@@ -122,6 +129,46 @@ test('skipped or no-execution required evidence is diagnostic-only and rejects c
   }
 });
 
+test('readiness CLI JSON retains required evidence state when an embedded runtime performs no execution', async () => {
+  const rootDir = initCommittedRepo('veritas-readiness-cli-runtime-no-execution-');
+  writeFileSync(join(rootDir, 'package.json'), JSON.stringify({
+    scripts: { test: 'node -e "process.exit(0)"' },
+  }, null, 2));
+  writeBootstrapStarterKit({
+    rootDir,
+    projectName: 'readiness-cli-runtime-no-execution-fixture',
+    evidenceCheck: 'npm test',
+    force: true,
+  });
+  commitAll(rootDir, 'Bootstrap Veritas');
+
+  let stdout = '';
+  const originalWrite = process.stdout.write;
+  const originalExitCode = process.exitCode;
+  process.stdout.write = (chunk) => {
+    stdout += chunk;
+    return true;
+  };
+  try {
+    await runReadinessCheckCli(
+      ['--root', rootDir, '--working-tree', '--format', 'json'],
+      { rootDir, readinessRuntime: { appendHistory: false, runEvidenceChecks: false } },
+    );
+  } finally {
+    process.stdout.write = originalWrite;
+    process.exitCode = originalExitCode;
+  }
+
+  const output = parseCliJson(stdout);
+  assert.equal(output.evidenceCheckRan, false);
+  assert.equal(output.readiness.status, 'fail');
+  assert.equal(output.readiness.verdict, 'not-ready');
+  assert.deepEqual(output.readiness.requiredEvidenceChecks.map((check) => [check.id, check.state]), [
+    ['required-evidence-check', 'skipped'],
+  ]);
+  assert.match(output.readiness.remediation[0].message, /Required Evidence Check required-evidence-check is skipped/);
+});
+
 test('readiness CLI returns failure for skipped required evidence while retaining its diagnostic report', () => {
   const rootDir = initCommittedRepo('veritas-readiness-cli-skip-required-');
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({
@@ -138,13 +185,18 @@ test('readiness CLI returns failure for skipped required evidence while retainin
   assert.throws(
     () => execFileSync(
       process.execPath,
-      [join(repoRootDir, 'bin/veritas.mjs'), 'readiness', '--root', rootDir, '--working-tree', '--skip-evidence-check'],
+      [join(repoRootDir, 'bin/veritas.mjs'), 'readiness', '--root', rootDir, '--working-tree', '--skip-evidence-check', '--format', 'json'],
       { cwd: rootDir, encoding: 'utf8', stdio: 'pipe' },
     ),
     (error) => {
       assert.equal(error.status, 1);
-      assert.match(error.stdout, /FAIL\s+required-evidence-check:required-evidence-check: skipped/);
-      assert.match(error.stdout, /report: \.kontourai\/veritas\/evidence\//);
+      const output = parseCliJson(error.stdout);
+      assert.equal(output.readiness.status, 'fail');
+      assert.equal(output.readiness.verdict, 'not-ready');
+      assert.deepEqual(output.readiness.requiredEvidenceChecks.map((check) => [check.id, check.state]), [
+        ['required-evidence-check', 'skipped'],
+      ]);
+      assert.match(output.readiness.remediation[0].message, /Required Evidence Check required-evidence-check is skipped/);
       return true;
     },
   );

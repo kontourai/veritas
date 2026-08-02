@@ -1,9 +1,31 @@
-import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { win32 as winPath } from 'node:path';
+import crossSpawn from 'cross-spawn';
 import { getDefaultEnvironment } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { deserializeMessage, serializeMessage } from '@modelcontextprotocol/sdk/shared/stdio.js';
 
 const GRACE_MS = 2_000;
 export const DEFAULT_MCP_STDIO_MAX_BUFFER_BYTES = 1_048_576;
+
+/**
+ * Resolves Windows command shims before spawning an owned MCP child. The
+ * injected inputs make the platform behavior unit-testable on non-Windows
+ * hosts; cross-spawn remains the final compatibility layer for PATH/PATHEXT
+ * cases this small pre-resolution cannot observe.
+ */
+export function resolveOwnedStdioCommand(command, {
+  platform = process.platform,
+  pathValue = process.env.PATH ?? '',
+  exists = existsSync,
+} = {}) {
+  if (platform !== 'win32' || winPath.extname(command)) return command;
+
+  const commandPath = winPath.isAbsolute(command) || command.includes('\\') || command.includes('/');
+  const candidates = commandPath
+    ? [`${command}.cmd`]
+    : pathValue.split(';').filter(Boolean).map((directory) => winPath.join(directory, `${command}.cmd`));
+  return candidates.find((candidate) => exists(candidate)) ?? command;
+}
 
 /**
  * MCP stdio transport that owns its child process and bounds untrusted stdout.
@@ -34,7 +56,8 @@ export class OwnedStdioClientTransport {
   async start() {
     if (this.#process) throw new Error('OwnedStdioClientTransport already started');
     await new Promise((resolve, reject) => {
-      const child = this.#process = spawn(this.server.command, this.server.args ?? [], {
+      const command = resolveOwnedStdioCommand(this.server.command);
+      const child = this.#process = crossSpawn(command, this.server.args ?? [], {
         // Match the MCP SDK's deliberately small inherited environment. The
         // parent process commonly carries provider credentials unrelated to
         // this server; only declared server.env may add to the safe baseline.

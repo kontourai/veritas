@@ -55,6 +55,11 @@ runtime root. Use `--projection-output <repo-relative-file>` to retain an additi
 explicit location for CI upload or inspection. The explicit destination is caller-owned and is not
 automatically ignored; existing files require `--force`.
 
+`readiness --format json` adds a runtime-only `readiness` envelope with the overall status/verdict,
+every required Evidence Check's `passed`, `failed`, `missing`, `skipped`, or `timedout` state, and
+per-check remediation. It is intentionally outside the generated version-1 evidence record so
+orchestrators can enforce the current run without changing that durable schema.
+
 ### `--version`
 
 Prints the installed `@kontourai/veritas` package version and exits successfully. Use it to record
@@ -129,7 +134,7 @@ npx @kontourai/veritas attest policy-change --actor <id> --approval-ref <ref> --
 npx @kontourai/veritas attest status [--root <path>]
 ```
 
-`bootstrap` records the first reviewed hashes for the current protected standards files: `.veritas/repo-map.json`, `.veritas/repo-standards/default.repo-standards.json`, and `.veritas/authority/default.authority-settings.json`. `policy-change` records a reviewed successor and requires an explanation in `--message`. Both write paths require `--approval-ref`, a durable reference to the explicit human approval that authorized the attestation. `status` reports the current attestation, age, expiry, and hash drift.
+`bootstrap` records the first reviewed hashes for the current protected standards files: `.veritas/repo-map.json`, `.veritas/repo-standards/default.repo-standards.json`, and `.veritas/authority/default.authority-settings.json`. The Repo Map hash is its recursively redacted public policy projection: MCP server arguments, environment, and tool input are runtime execution inputs, not protected policy identity. `policy-change` records a reviewed successor and requires an explanation in `--message`. Both write paths require `--approval-ref`, a durable reference to the explicit human approval that authorized the attestation. `status` reports the current attestation, age, expiry, and hash drift.
 
 The built-in requirement `policy-changes-require-attestation` fails when the active attestation no longer matches protected standards.
 

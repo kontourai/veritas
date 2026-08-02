@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { runBash, createMcpServerPool } from '../src/runner/index.mjs';
+import { resolveOwnedStdioCommand } from '../src/runner/owned-stdio.mjs';
 
 function writeMcpTestServer(dir) {
   const serverPath = join(dir, 'server.mjs');
@@ -92,6 +93,21 @@ test('runBash rejects a signal that was already aborted without spawning', async
   await assert.rejects(
     runBash('exit 0', { signal: controller.signal }),
     { name: 'AbortError' },
+  );
+});
+
+test('OwnedStdio resolves Windows command shims with injected platform inputs', () => {
+  const pathValue = 'C:\\Tools\\node;C:\\Windows\\System32';
+  const resolved = resolveOwnedStdioCommand('npx', {
+    platform: 'win32',
+    pathValue,
+    exists: (candidate) => candidate === 'C:\\Tools\\node\\npx.cmd',
+  });
+
+  assert.equal(resolved, 'C:\\Tools\\node\\npx.cmd');
+  assert.equal(
+    resolveOwnedStdioCommand('npx.cmd', { platform: 'win32', pathValue, exists: () => false }),
+    'npx.cmd',
   );
 });
 

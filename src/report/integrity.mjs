@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { assertWithinDir, normalizeRepoPath, relativeRepoPath } from '../paths.mjs';
 import { resolveGitHead, stagedDiffSha256 } from '../shell.mjs';
-import { publicRepoMapConfig } from '../evidence/public-config.mjs';
+import { publicRepoMapConfig, stablePublicJson } from '../evidence/public-config.mjs';
 
 function sha256Hex(value) {
   return createHash('sha256').update(value).digest('hex');
@@ -19,14 +19,6 @@ export function resolveSourceRef({ explicitSourceRef, rootDir, sourceKind = 'exp
 
 function sha256Ref(value) {
   return `sha256:${sha256Hex(value)}`;
-}
-
-function stableStringify(value) {
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
-  if (value && typeof value === 'object') {
-    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
-  }
-  return JSON.stringify(value);
 }
 
 function fileIntegrityRef(rootDir, repoPath) {
@@ -55,7 +47,7 @@ function configIntegrityRef({ name, value, path, rootDir, durableValue = null })
   const ref = { name };
   if (path && rootDir) ref.path = relativeRepoPath(rootDir, path);
   if (durableValue !== null) {
-    ref.hash = sha256Ref(stableStringify(durableValue));
+    ref.hash = sha256Ref(stablePublicJson(durableValue));
     return ref;
   }
   try {
@@ -67,7 +59,7 @@ function configIntegrityRef({ name, value, path, rootDir, durableValue = null })
     ref.status = 'unreadable';
     ref.error = error.message;
   }
-  ref.hash = sha256Ref(stableStringify(value ?? null));
+  ref.hash = sha256Ref(stablePublicJson(value ?? null));
   return ref;
 }
 

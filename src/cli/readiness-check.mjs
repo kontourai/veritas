@@ -7,6 +7,7 @@ import {
   feedbackHasFailures,
 } from '../report/index.mjs';
 import { hasReadinessOutcomeInputs, runMergeReadiness } from '../readiness/run.mjs';
+import { readinessVerdict, requiredEvidenceChecksFor } from '../surface/readiness.mjs';
 
 function normalizeOutputFormat(format, defaultFormat) {
   const resolvedFormat = format ?? defaultFormat;
@@ -36,6 +37,24 @@ function retainProjection({ rootDir, reportResult, outputPath, force }) {
   return relative(rootDir, destinationPath).replaceAll('\\', '/');
 }
 
+export function readinessRuntimeEnvelope(record, currentStatus) {
+  const requiredEvidenceChecks = requiredEvidenceChecksFor(record);
+  return {
+    // This lives only in command stdout. The v1 evidence record remains free
+    // of execution state and is deliberately not mutated for CLI reporting.
+    status: currentStatus,
+    verdict: readinessVerdict(record),
+    requiredEvidenceChecks,
+    remediation: requiredEvidenceChecks
+      .filter((check) => check.state !== 'passed')
+      .map((check) => ({
+        id: check.id,
+        state: check.state,
+        message: `Required Evidence Check ${check.id} is ${check.state}; run it and record an acceptable result before merge readiness can be verified.`,
+      })),
+  };
+}
+
 export async function runReadinessCheckCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseReadinessArgs(argv);
   const format = normalizeOutputFormat(options.format, 'feedback');
@@ -50,6 +69,7 @@ export async function runReadinessCheckCli(argv = process.argv.slice(2), default
       { ...defaults, rootDir },
       [],
       {
+        ...(defaults.readinessRuntime ?? {}),
         onReadinessPhase,
         onEvidenceCheckOutput: format === 'feedback'
           ? null
@@ -74,6 +94,8 @@ export async function runReadinessCheckCli(argv = process.argv.slice(2), default
     evidenceCheckResults,
     evidenceCheckFailure,
     evidenceCheckPlan,
+    evidenceCheckExecutionSkipped,
+    currentStatus,
     options: standardsFeedbackOptions,
   } = readinessRun;
   const projectionOutputPath = retainProjection({
@@ -118,10 +140,11 @@ export async function runReadinessCheckCli(argv = process.argv.slice(2), default
       `${JSON.stringify(
         {
           mode: 'report-and-draft',
-          evidenceCheckLabels: options.skipEvidenceCheck ? [] : evidenceCheckLabels,
+          evidenceCheckLabels: evidenceCheckExecutionSkipped ? [] : evidenceCheckLabels,
           evidenceCheckResolutionSource: evidenceCheckPlan.resolutionSource,
-          evidenceCheckRan: !options.skipEvidenceCheck,
+          evidenceCheckRan: !evidenceCheckExecutionSkipped,
           evidenceCheckFailure,
+          readiness: readinessRuntimeEnvelope(reportResult.record, currentStatus),
           reportArtifactPath: reportResult.artifactPath,
           draftArtifactPath: draftResult.artifactPath,
           reportRunId: reportResult.record.run_id,
@@ -148,9 +171,9 @@ export async function runReadinessCheckCli(argv = process.argv.slice(2), default
         reportArtifactPath: reportResult.artifactPath,
         draftArtifactPath: draftResult.artifactPath,
         standardsFeedbackArtifactPath: standardsFeedbackResult.artifactPath,
-        evidenceCheckLabels: options.skipEvidenceCheck ? [] : evidenceCheckLabels,
-        evidenceCheckResults: options.skipEvidenceCheck ? [] : evidenceCheckResults,
-        evidenceCheckRan: !options.skipEvidenceCheck,
+          evidenceCheckLabels: evidenceCheckExecutionSkipped ? [] : evidenceCheckLabels,
+          evidenceCheckResults: evidenceCheckExecutionSkipped ? [] : evidenceCheckResults,
+          evidenceCheckRan: !evidenceCheckExecutionSkipped,
         evidenceCheckFailure,
       }),
     );
@@ -164,10 +187,11 @@ export async function runReadinessCheckCli(argv = process.argv.slice(2), default
     `${JSON.stringify(
       {
         mode: 'report-draft-and-feedback',
-        evidenceCheckLabels: options.skipEvidenceCheck ? [] : evidenceCheckLabels,
+        evidenceCheckLabels: evidenceCheckExecutionSkipped ? [] : evidenceCheckLabels,
         evidenceCheckResolutionSource: evidenceCheckPlan.resolutionSource,
-        evidenceCheckRan: !options.skipEvidenceCheck,
+        evidenceCheckRan: !evidenceCheckExecutionSkipped,
         evidenceCheckFailure,
+        readiness: readinessRuntimeEnvelope(reportResult.record, currentStatus),
         reportArtifactPath: reportResult.artifactPath,
         draftArtifactPath: draftResult.artifactPath,
         standardsFeedbackArtifactPath: standardsFeedbackResult.artifactPath,

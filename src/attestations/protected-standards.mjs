@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { relativeRepoPath } from '../paths.mjs';
+import { publicRepoMapPolicyIdentity } from '../evidence/public-config.mjs';
 
 export function sha256Hex(value) {
   return createHash('sha256').update(value).digest('hex');
@@ -9,6 +10,11 @@ export function sha256Hex(value) {
 
 function hashFile(path) {
   return `sha256:${sha256Hex(readFileSync(path))}`;
+}
+
+function hashRepoMapPolicy(path) {
+  const config = JSON.parse(readFileSync(path, 'utf8'));
+  return `sha256:${sha256Hex(publicRepoMapPolicyIdentity(config))}`;
 }
 
 export function resolveProtectedStandardsPaths(rootDir, options = {}) {
@@ -23,7 +29,10 @@ export function hashProtectedStandards(rootDir, options = {}) {
   const paths = resolveProtectedStandardsPaths(rootDir, options);
   return {
     repoStandardsHash: hashFile(paths.repoStandardsPath),
-    repoMapHash: hashFile(paths.repoMapPath),
+    // MCP server arguments, environment, and tool input are execution inputs,
+    // not protected policy identity. Every exported Repo Map hash uses this
+    // same recursively redacted public projection.
+    repoMapHash: hashRepoMapPolicy(paths.repoMapPath),
     authoritySettingsHash: hashFile(paths.authoritySettingsPath),
     paths: {
       repoStandardsPath: relativeRepoPath(rootDir, paths.repoStandardsPath),
