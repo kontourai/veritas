@@ -627,9 +627,6 @@
         "id": {
           "type": "string"
         },
-        "definition_identity": {
-          "type": "string"
-        },
         "runner": {
           "enum": [
             "bash",
@@ -679,6 +676,10 @@
         "id": {
           "type": "string"
         },
+        "definition_digest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
         "runner": {
           "enum": [
             "bash",
@@ -725,6 +726,9 @@
           }
         },
         "isError": {
+          "type": "boolean"
+        },
+        "timedOut": {
           "type": "boolean"
         },
         "durationMs": {
@@ -1277,7 +1281,7 @@
       ],
       "properties": {
         "schemaVersion": {
-          "const": 2
+          "enum": [5, 6, 7]
         },
         "source": {
           "type": "string"

@@ -35,6 +35,36 @@ function isProcessTimeout(error) {
   return error?.code === 'ETIMEDOUT' || error?.killed === true;
 }
 
+function safeEvidenceCheckForResult(evidenceCheck) {
+  if ((evidenceCheck.runner ?? 'bash') !== 'mcp') return evidenceCheck;
+  const { server, input, ...safeEvidenceCheck } = evidenceCheck;
+  return safeEvidenceCheck;
+}
+
+function safeEvidenceCheckPlanForResult(evidenceCheckPlan) {
+  return {
+    ...evidenceCheckPlan,
+    evidenceChecks: (evidenceCheckPlan.evidenceChecks ?? []).map(safeEvidenceCheckForResult),
+  };
+}
+
+function safeReportResultForResult(reportResult) {
+  return {
+    ...reportResult,
+    config: reportResult.config
+      ? {
+          ...reportResult.config,
+          evidence: reportResult.config.evidence
+            ? {
+                ...reportResult.config.evidence,
+                evidenceChecks: (reportResult.config.evidence.evidenceChecks ?? []).map(safeEvidenceCheckForResult),
+              }
+            : reportResult.config.evidence,
+        }
+      : reportResult.config,
+  };
+}
+
 export async function runMergeReadiness(
   rawOptions = {},
   defaults = {},
@@ -147,12 +177,12 @@ export async function runMergeReadiness(
     finishedAt,
     actor,
     options: standardsFeedbackOptions,
-    evidenceCheckPlan,
-    evidenceChecks,
+    evidenceCheckPlan: safeEvidenceCheckPlanForResult(evidenceCheckPlan),
+    evidenceChecks: evidenceChecks.map(safeEvidenceCheckForResult),
     evidenceCheckLabels,
     evidenceCheckFailure,
     evidenceCheckResults,
-    reportResult,
+    reportResult: safeReportResultForResult(reportResult),
     draftResult,
     standardsFeedbackResult,
     currentStatus,

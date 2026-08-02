@@ -1,5 +1,5 @@
 import { runBash, createMcpServerPool } from '../runner/index.mjs';
-import { evidenceCheckDefinitionIdentity, evidenceCheckLabel } from '../evidence/index.mjs';
+import { evidenceCheckDefinitionDigest, evidenceCheckLabel } from '../evidence/index.mjs';
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
 /**
@@ -13,7 +13,7 @@ const DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS = 10 * 60_000;
 function buildEvidenceCheckResult(evidenceCheck, runner, label, result) {
   return {
     id: evidenceCheck.id,
-    definition_identity: evidenceCheckDefinitionIdentity(evidenceCheck),
+    definition_digest: evidenceCheckDefinitionDigest(evidenceCheck),
     runner,
     label,
     passed: runner === 'mcp' ? !result.isError : result.passed,
@@ -21,7 +21,7 @@ function buildEvidenceCheckResult(evidenceCheck, runner, label, result) {
     signal: runner === 'bash' ? result.signal ?? null : null,
     stdout: runner === 'bash' ? result.stdout ?? '' : '',
     stderr: runner === 'bash' ? result.stderr ?? '' : '',
-    content: runner === 'mcp' ? result.content ?? [] : [],
+    content: runner === 'mcp' ? redactMcpContent(result.content ?? [], evidenceCheck) : [],
     isError: runner === 'mcp' ? result.isError ?? false : false,
     timedOut: runner === 'bash' ? result.timedOut ?? false : false,
     durationMs: result.durationMs ?? 0,
@@ -37,24 +37,64 @@ function buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs) {
       : (evidenceCheckResult.exitCode ?? evidenceCheckResult.signal ?? 'unknown status');
   return {
     phase: 'evidence-check',
-    reason: runner === 'bash' && evidenceCheckResult.timedOut ? 'timeout' : 'failed',
+    reason: evidenceCheckResult.timedOut ? 'timeout' : 'failed',
     id: evidenceCheckResult.id,
-    definition_identity: evidenceCheckResult.definition_identity,
+    definition_digest: evidenceCheckResult.definition_digest,
     runner,
     label,
-    message: runner === 'mcp'
-      ? status
-      : evidenceCheckResult.timedOut
-        ? `Evidence Check command ${status}`
+    message: evidenceCheckResult.timedOut
+      ? runner === 'mcp'
+        ? `MCP Evidence Check timed out after ${checkTimeoutMs}ms`
+        : `Evidence Check command ${status}`
+      : runner === 'mcp'
+        ? status
         : `Evidence Check command exited with ${status}`,
     ...(runner === 'bash' ? {
       stdout: evidenceCheckResult.stdout,
       stderr: evidenceCheckResult.stderr,
       exitCode: evidenceCheckResult.exitCode,
-    } : {
-      content: evidenceCheckResult.content,
-      isError: evidenceCheckResult.isError,
-    }),
+    } : {}),
+  };
+}
+
+function redactMcpContent(content, evidenceCheck) {
+  const secrets = [...secretStrings(evidenceCheck.server?.env), ...secretStrings(evidenceCheck.input)];
+  return redactValue(content, secrets);
+}
+
+function secretStrings(value) {
+  if (typeof value === 'string') return value.length > 0 ? [value] : [];
+  if (Array.isArray(value)) return value.flatMap((item) => secretStrings(item));
+  if (value && typeof value === 'object') return Object.values(value).flatMap((item) => secretStrings(item));
+  return [];
+}
+
+function redactValue(value, secrets) {
+  if (typeof value === 'string') {
+    return secrets.reduce((redacted, secret) => redacted.split(secret).join('[REDACTED]'), value);
+  }
+  if (Array.isArray(value)) return value.map((item) => redactValue(item, secrets));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, redactValue(item, secrets)]));
+  }
+  return value;
+}
+
+function buildEvidenceCheckRunnerErrorResult(evidenceCheck, runner, label, timedOut) {
+  return {
+    id: evidenceCheck.id,
+    definition_digest: evidenceCheckDefinitionDigest(evidenceCheck),
+    runner,
+    label,
+    passed: false,
+    exitCode: null,
+    signal: null,
+    stdout: '',
+    stderr: '',
+    content: [],
+    isError: runner === 'mcp',
+    timedOut,
+    durationMs: 0,
   };
 }
 
@@ -99,18 +139,16 @@ async function runEvidenceChecks({ evidenceChecks, requiredEvidenceCheckIds, roo
           evidenceCheckFailure = buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs);
         }
       } catch (error) {
+        const evidenceCheckResult = buildEvidenceCheckRunnerErrorResult(
+          evidenceCheck,
+          runner,
+          label,
+          runner === 'mcp' && isMcpTimeout(error),
+        );
+        evidenceCheckResults.push(evidenceCheckResult);
+        onOutput?.(evidenceCheckResult);
         if (requiredIds.has(evidenceCheck.id) && !evidenceCheckFailure) {
-          evidenceCheckFailure = {
-            phase: 'evidence-check',
-            reason: runner === 'mcp' && isMcpTimeout(error) ? 'timeout' : 'runner-error',
-            id: evidenceCheck.id,
-            definition_identity: evidenceCheckDefinitionIdentity(evidenceCheck),
-            runner,
-            label,
-            message: runner === 'mcp' && isMcpTimeout(error)
-              ? `MCP Evidence Check timed out after ${checkTimeoutMs}ms`
-              : error.message,
-          };
+          evidenceCheckFailure = buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs);
         }
       }
     }

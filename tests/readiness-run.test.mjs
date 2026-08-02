@@ -4,8 +4,9 @@ import { execFileSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import Ajv from 'ajv/dist/2020.js';
 import { writeBootstrapStarterKit } from '../src/bootstrap.mjs';
-import { evidenceCheckDefinitionIdentity } from '../src/evidence/index.mjs';
+import { evidenceCheckDefinitionDigest } from '../src/evidence/index.mjs';
 import { runMergeReadiness } from '../src/readiness/run.mjs';
 import { buildRequiredEvidenceChecks } from '../src/report/evidence-checks.mjs';
 import { buildFeedbackSummary } from '../src/report/format.mjs';
@@ -43,6 +44,13 @@ test('Merge Readiness run coordinates evidence, report, and draft behind one int
   assert.equal(result.reportResult.record.run_id, 'readiness-run-test');
   assert.equal(result.draftResult.record.run_id, 'readiness-run-test');
   assert.equal(existsSync(join(rootDir, '.kontourai/veritas/runs/history.jsonl')), false);
+  const evidenceSchema = JSON.parse(readFileSync(join(repoRootDir, 'schemas/veritas-evidence.schema.json'), 'utf8'));
+  const validateEvidence = new Ajv({ strict: false, allErrors: true }).compile(evidenceSchema);
+  assert.equal(validateEvidence(result.reportResult.record), true, JSON.stringify(validateEvidence.errors));
+  const recordWithUnexpectedRuntimeField = structuredClone(result.reportResult.record);
+  recordWithUnexpectedRuntimeField.selected_evidence_checks[0].evidence_check_result.unexpected_runtime_field = true;
+  assert.equal(validateEvidence(recordWithUnexpectedRuntimeField), false);
+  assert.ok(validateEvidence.errors.some((error) => error.keyword === 'additionalProperties'));
 });
 
 test('skipped or no-execution required evidence is diagnostic-only and rejects canonical readiness', async () => {
@@ -208,7 +216,7 @@ test('required evidence result association rejects the same ID with a different 
     evidenceCheckPlan: { evidenceChecks: config.evidence.evidenceChecks },
     evidenceCheckResults: [{
       id: 'required-completion',
-      definition_identity: 'bash:node -e "process.exit(17)"',
+      definition_digest: '1'.repeat(64),
       passed: true,
     }],
   });
@@ -257,7 +265,7 @@ test('Merge Readiness reports a typed evidence-check timeout and phase progress'
     phase: 'evidence-check',
     reason: 'timeout',
     id: result.evidenceCheckResults[0].id,
-    definition_identity: result.evidenceCheckResults[0].definition_identity,
+    definition_digest: result.evidenceCheckResults[0].definition_digest,
     runner: 'bash',
     label: result.evidenceCheckResults[0].label,
     message: 'Evidence Check command timed out after 50ms',
@@ -297,9 +305,13 @@ await server.connect(new StdioServerTransport());
   repoMap.evidence.evidenceChecks[0] = {
     ...repoMap.evidence.evidenceChecks[0],
     runner: 'mcp',
-    server: { command: process.execPath, args: [serverPath] },
+    server: {
+      command: process.execPath,
+      args: [serverPath],
+      env: { MCP_SECRET: 'server-env-secret-never-export' },
+    },
     tool: 'scan',
-    input: {},
+    input: { api_key: 'input-secret-never-export' },
     timeoutMs: 50,
   };
   delete repoMap.evidence.evidenceChecks[0].command;
@@ -316,20 +328,144 @@ await server.connect(new StdioServerTransport());
 
   const evidenceCheck = repoMap.evidence.evidenceChecks[0];
   assert.equal(result.currentStatus, 'fail');
-  assert.deepEqual(result.evidenceCheckResults, []);
+  assert.equal(result.evidenceCheckResults.length, 1);
+  assert.equal(result.evidenceCheckResults[0].timedOut, true);
   assert.deepEqual(result.evidenceCheckFailure, {
     phase: 'evidence-check',
     reason: 'timeout',
     id: evidenceCheck.id,
-    definition_identity: evidenceCheckDefinitionIdentity(evidenceCheck),
+    definition_digest: evidenceCheckDefinitionDigest(evidenceCheck),
     runner: 'mcp',
     label: `scan@${process.execPath}`,
     message: 'MCP Evidence Check timed out after 50ms',
   });
   assert.deepEqual(result.reportResult.record.required_evidence_checks.map((check) => check.state), ['timedout']);
+  assert.match(result.evidenceCheckFailure.definition_digest, /^[a-f0-9]{64}$/);
+  const serializedResult = JSON.stringify(result);
+  const evidenceArtifact = readFileSync(join(rootDir, result.reportResult.artifactPath), 'utf8');
+  for (const secret of ['server-env-secret-never-export', 'input-secret-never-export']) {
+    assert.doesNotMatch(serializedResult, new RegExp(secret));
+    assert.doesNotMatch(evidenceArtifact, new RegExp(secret));
+  }
+  assert.throws(
+    () => execFileSync(
+      process.execPath,
+      [join(repoRootDir, 'bin/veritas.mjs'), 'readiness', '--root', rootDir, '--working-tree', '--format', 'json'],
+      { cwd: rootDir, encoding: 'utf8', stdio: 'pipe' },
+    ),
+    (error) => {
+      assert.equal(error.status, 1);
+      assert.doesNotMatch(error.stdout, /server-env-secret-never-export|input-secret-never-export/);
+      return true;
+    },
+  );
   assert.deepEqual(phases.map((phase) => phase.phase), [
     'scope-resolution', 'evidence-check', 'report', 'finalization', 'complete',
   ]);
+});
+
+test('Merge Readiness records every required MCP timeout', async () => {
+  const rootDir = initCommittedRepo('veritas-readiness-run-multi-mcp-timeout-');
+  const serverPath = join(rootDir, 'mcp-server.mjs');
+  const sdkRoot = resolve('node_modules/@modelcontextprotocol/sdk/dist/esm');
+  writeFileSync(serverPath, `
+import { Server } from '${pathToFileURL(join(sdkRoot, 'server/index.js')).href}';
+import { StdioServerTransport } from '${pathToFileURL(join(sdkRoot, 'server/stdio.js')).href}';
+import { CallToolRequestSchema } from '${pathToFileURL(join(sdkRoot, 'types.js')).href}';
+const server = new Server({ name: 'veritas-readiness-multi-timeout-test', version: '1.0.0' }, { capabilities: { tools: {} } });
+server.setRequestHandler(CallToolRequestSchema, async () => new Promise(() => {}));
+await server.connect(new StdioServerTransport());
+`);
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  writeBootstrapStarterKit({
+    rootDir,
+    projectName: 'readiness-multi-timeout-fixture',
+    evidenceCheck: 'node -e "process.exit(0)"',
+    force: true,
+  });
+  const repoMapPath = join(rootDir, '.veritas/repo-map.json');
+  const repoMap = JSON.parse(readFileSync(repoMapPath, 'utf8'));
+  repoMap.evidence.evidenceChecks = [
+    {
+      id: 'required-timeout-one', runner: 'mcp', server: { command: process.execPath, args: [serverPath, 'one'] }, tool: 'scan', input: {}, method: 'validation', timeoutMs: 50,
+    },
+    {
+      id: 'required-timeout-two', runner: 'mcp', server: { command: process.execPath, args: [serverPath, 'two'] }, tool: 'scan', input: {}, method: 'validation', timeoutMs: 50,
+    },
+  ];
+  repoMap.evidence.requiredEvidenceCheckIds = ['required-timeout-one', 'required-timeout-two'];
+  writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
+  commitAll(rootDir, 'Bootstrap required multi-timeout fixture');
+
+  const result = await runMergeReadiness(
+    { rootDir, runId: 'readiness-multi-timeout-test', workingTree: true, force: true },
+    { rootDir },
+    [],
+    { appendHistory: false },
+  );
+
+  assert.deepEqual(result.evidenceCheckResults.map((check) => check.id), ['required-timeout-one', 'required-timeout-two']);
+  assert.deepEqual(result.evidenceCheckResults.map((check) => check.timedOut), [true, true]);
+  assert.equal(result.evidenceCheckFailure.id, 'required-timeout-one');
+  assert.deepEqual(result.reportResult.record.required_evidence_checks.map((check) => check.state), ['timedout', 'timedout']);
+  assert.equal(result.currentStatus, 'fail');
+});
+
+test('MCP result content redacts configured server and input secrets', async () => {
+  const rootDir = initCommittedRepo('veritas-readiness-run-mcp-redaction-');
+  const serverPath = join(rootDir, 'mcp-server.mjs');
+  const sdkRoot = resolve('node_modules/@modelcontextprotocol/sdk/dist/esm');
+  writeFileSync(serverPath, `
+import { Server } from '${pathToFileURL(join(sdkRoot, 'server/index.js')).href}';
+import { StdioServerTransport } from '${pathToFileURL(join(sdkRoot, 'server/stdio.js')).href}';
+import { CallToolRequestSchema } from '${pathToFileURL(join(sdkRoot, 'types.js')).href}';
+const server = new Server({ name: 'veritas-readiness-redaction-test', version: '1.0.0' }, { capabilities: { tools: {} } });
+server.setRequestHandler(CallToolRequestSchema, async (request) => ({
+  content: [{ type: 'text', text: process.env.MCP_SECRET + ':' + request.params.arguments.api_key }],
+  isError: true,
+}));
+await server.connect(new StdioServerTransport());
+`);
+  writeFileSync(join(rootDir, 'package.json'), '{}\n');
+  writeBootstrapStarterKit({
+    rootDir,
+    projectName: 'readiness-mcp-redaction-fixture',
+    evidenceCheck: 'node -e "process.exit(0)"',
+    force: true,
+  });
+  const repoMapPath = join(rootDir, '.veritas/repo-map.json');
+  const repoMap = JSON.parse(readFileSync(repoMapPath, 'utf8'));
+  repoMap.evidence.evidenceChecks[0] = {
+    ...repoMap.evidence.evidenceChecks[0],
+    runner: 'mcp',
+    server: {
+      command: process.execPath,
+      args: [serverPath],
+      env: { MCP_SECRET: 'server-output-secret-never-export' },
+    },
+    tool: 'scan',
+    input: { api_key: 'input-output-secret-never-export' },
+    timeoutMs: 1_000,
+  };
+  delete repoMap.evidence.evidenceChecks[0].command;
+  writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
+  commitAll(rootDir, 'Bootstrap MCP redaction fixture');
+
+  const result = await runMergeReadiness(
+    { rootDir, runId: 'readiness-mcp-redaction-test', workingTree: true, force: true },
+    { rootDir },
+    [],
+    { appendHistory: false },
+  );
+
+  assert.equal(result.evidenceCheckResults[0].passed, false);
+  assert.equal(result.evidenceCheckResults[0].content[0].text, '[REDACTED]:[REDACTED]');
+  const serializedResult = JSON.stringify(result);
+  const evidenceArtifact = readFileSync(join(rootDir, result.reportResult.artifactPath), 'utf8');
+  for (const secret of ['server-output-secret-never-export', 'input-output-secret-never-export']) {
+    assert.doesNotMatch(serializedResult, new RegExp(secret));
+    assert.doesNotMatch(evidenceArtifact, new RegExp(secret));
+  }
 });
 
 test('Merge Readiness terminates a Flow Agents-shaped redirected descendant in diff scope', async () => {

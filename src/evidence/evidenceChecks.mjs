@@ -1,4 +1,5 @@
 import { uniqueStrings } from '../util/strings.mjs';
+import { createHash } from 'node:crypto';
 import { assertExternalToolConfig } from './external-tools.mjs';
 import { readEvidenceInventoryManifestPaths } from './suites.mjs';
 
@@ -80,14 +81,17 @@ export function evidenceCheckLabel(evidenceCheck) {
   return evidenceCheck.command;
 }
 
-export function evidenceCheckDefinitionIdentity(evidenceCheck) {
+export function evidenceCheckDefinitionDigest(evidenceCheck) {
   const runner = evidenceCheck.runner ?? 'bash';
-  if (runner === 'bash') return `bash:${evidenceCheck.command}`;
-  return `mcp:${stableJson({
-    server: evidenceCheck.server ?? {},
-    tool: evidenceCheck.tool,
-    input: evidenceCheck.input ?? {},
-  })}`;
+  const definition = runner === 'bash'
+    ? { runner, command: evidenceCheck.command }
+    : {
+        runner,
+        server: evidenceCheck.server ?? {},
+        tool: evidenceCheck.tool,
+        input: evidenceCheck.input ?? {},
+      };
+  return createHash('sha256').update(stableJson(definition)).digest('hex');
 }
 
 function stableJson(value) {

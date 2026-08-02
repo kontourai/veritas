@@ -1,7 +1,7 @@
 import { uniqueStrings } from '../util/strings.mjs';
 import {
   evidenceCheckLabel,
-  evidenceCheckDefinitionIdentity,
+  evidenceCheckDefinitionDigest,
   evidenceCheckRecordsForCommands,
   evidenceChecksByIds,
   readEvidenceChecks,
@@ -9,9 +9,9 @@ import {
 } from '../evidence/index.mjs';
 
 function evidenceCheckResultForDefinition(evidenceCheckResults, evidenceCheck) {
-  const definitionIdentity = evidenceCheckDefinitionIdentity(evidenceCheck);
+  const definitionDigest = evidenceCheckDefinitionDigest(evidenceCheck);
   return (evidenceCheckResults ?? []).find(
-    (result) => result.id === evidenceCheck.id && result.definition_identity === definitionIdentity,
+    (result) => result.id === evidenceCheck.id && result.definition_digest === definitionDigest,
   ) ?? null;
 }
 
@@ -95,7 +95,7 @@ export function buildRequiredEvidenceChecks({
     const selected = selectedEvidenceCheckIds.has(evidenceCheck.id);
     const observed = Boolean(result);
     const failure = evidenceCheckFailure?.id === evidenceCheck.id
-      && evidenceCheckFailure.definition_identity === evidenceCheckDefinitionIdentity(evidenceCheck)
+      && evidenceCheckFailure.definition_digest === evidenceCheckDefinitionDigest(evidenceCheck)
       ? evidenceCheckFailure
       : null;
     const state = !selected
