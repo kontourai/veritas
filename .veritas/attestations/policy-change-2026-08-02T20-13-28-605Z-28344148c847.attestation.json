@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "id": "policy-change-2026-08-02T20-13-28-605Z-28344148c847",
+  "kind": "policy-change",
+  "actor": {
+    "id": "brian",
+    "displayName": "Brian Anderson",
+    "identityEvidence": {
+      "gitEmail": "brian.anderson1222@gmail.com",
+      "signingKeyFingerprint": null
+    }
+  },
+  "attestedAt": "2026-08-02T20:13:28.605Z",
+  "repoStandardsHash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
+  "repoMapHash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
+  "authoritySettingsHash": "sha256:192e1eeec727a0c18a372b76c4ed194eaa4faef0f6c6080f25a808aeeb660946",
+  "priorAttestationId": "policy-change-2026-07-20T17-43-46-074Z-92455f207a00",
+  "validUntilDays": 90,
+  "notes": "Add delivery.kits repo-map node (delivery-area, kits/) covering kits/catalog.json and kits/builder/kit.json added in PR #208, resolving the unresolved-files red health check. Delegated to agent session by Brian via station task on 2026-08-02.",
+  "metadata": {
+    "protectedStandardsPaths": {
+      "repoStandardsPath": ".veritas/repo-standards/default.repo-standards.json",
+      "repoMapPath": ".veritas/repo-map.json",
+      "authoritySettingsPath": ".veritas/authority/default.authority-settings.json"
+    },
+    "supersedes": "policy-change-2026-07-20T17-43-46-074Z-92455f207a00",
+    "approvalRef": "station-delegated-task-2026-08-02-pr208",
+    "approvalRefPolicy": {
+      "mode": "reference-only",
+      "matchedPrefix": null,
+      "requiresResolution": false
+    },
+    "approvalResolution": null
+  },
+  "surface": {
+    "claim": {
+      "id": "veritas.attestation.policy-change-2026-08-02T20-13-28-605Z-28344148c847",
+      "subjectType": "veritas-protected-standards",
+      "subjectId": "protected-standards",
+      "facet": "veritas.attestations",
+      "claimType": "veritas-human-attestation",
+      "fieldOrBehavior": "policy-change",
+      "value": {
+        "contentHash": "2f5802ad867aefa663383e6fd9a63aa64318ab2cba2a1b70c2fa53e800b52de1",
+        "validUntil": "2026-10-31T20:13:28.605Z"
+      },
+      "createdAt": "2026-08-02T20:13:28.605Z",
+      "updatedAt": "2026-08-02T20:13:28.605Z",
+      "status": "verified",
+      "impactLevel": "high",
+      "confidenceBasis": {
+        "sourceQuality": "strong",
+        "reviewerAuthority": "human",
+        "evidenceStrength": "strong",
+        "impactLevel": "high"
+      }
+    },
+    "evidence": {
+      "id": "evidence.attestation.veritas.attestation.policy-change-2026-08-02T20-13-28-605Z-28344148c847",
+      "claimId": "veritas.attestation.policy-change-2026-08-02T20-13-28-605Z-28344148c847",
+      "evidenceType": "attestation",
+      "method": "attestation",
+      "sourceRef": "veritas:protected-standards",
+      "excerptOrSummary": "Add delivery.kits repo-map node (delivery-area, kits/) covering kits/catalog.json and kits/builder/kit.json added in PR #208, resolving the unresolved-files red health check. Delegated to agent session by Brian via station task on 2026-08-02.",
+      "observedAt": "2026-08-02T20:13:28.605Z",
+      "collectedBy": "brian",
+      "integrityRef": "2f5802ad867aefa663383e6fd9a63aa64318ab2cba2a1b70c2fa53e800b52de1",
+      "metadata": {
+        "actor": {
+          "id": "brian",
+          "displayName": "Brian Anderson"
+        },
+        "attestedAt": "2026-08-02T20:13:28.605Z",
+        "validUntil": "2026-10-31T20:13:28.605Z",
+        "contentHash": "2f5802ad867aefa663383e6fd9a63aa64318ab2cba2a1b70c2fa53e800b52de1"
+      },
+      "sourceLocator": ".veritas/attestations"
+    },
+    "event": {
+      "id": "veritas.attestation.policy-change-2026-08-02T20-13-28-605Z-28344148c847.verified",
+      "claimId": "veritas.attestation.policy-change-2026-08-02T20-13-28-605Z-28344148c847",
+      "status": "verified",
+      "actor": "brian",
+      "method": "human attestation",
+      "evidenceIds": [
+        "evidence.attestation.veritas.attestation.policy-change-2026-08-02T20-13-28-605Z-28344148c847"
+      ],
+      "createdAt": "2026-08-02T20:13:28.605Z",
+      "verifiedAt": "2026-08-02T20:13:28.605Z"
+    }
+  }
+}
