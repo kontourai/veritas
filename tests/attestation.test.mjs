@@ -30,6 +30,13 @@ function bootstrapVeritasRepo(prefix = 'veritas-attest-') {
     evidenceCheck: 'npm test',
     force: true,
   });
+  // These fixtures isolate attestation behavior. They intentionally have no
+  // canonical required Evidence Check, so --skip-evidence-check is a
+  // non-blocking diagnostic setup rather than a merge-readiness bypass.
+  const repoMapPath = join(rootDir, '.veritas/repo-map.json');
+  const repoMap = JSON.parse(readFileSync(repoMapPath, 'utf8'));
+  repoMap.evidence.requiredEvidenceCheckIds = [];
+  writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
   commitAll(rootDir, 'Bootstrap Veritas');
   return rootDir;
 }

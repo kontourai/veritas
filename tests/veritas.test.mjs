@@ -88,6 +88,13 @@ const realNpmPath = execFileSync('which', ['npm'], { encoding: 'utf8' }).trim();
 function executableBits(path) {
   return statSync(path).mode & 0o111;
 }
+
+function disableRequiredEvidenceChecks(rootDir) {
+  const repoMapPath = join(rootDir, '.veritas/repo-map.json');
+  const repoMap = readJsonFromAbsolute(repoMapPath);
+  repoMap.evidence.requiredEvidenceCheckIds = [];
+  writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
+}
 writeFileSync(
   join(testBinDir, 'npm'),
   `#!/bin/sh
@@ -2676,6 +2683,7 @@ test('report input resolution keeps branch-diff and working-tree modes explicit'
 test('report CLI can measure the full working tree', () => {
   const rootDir = initCommittedRepo('veritas-working-tree-cli-');
   writeBootstrapStarterKit({ rootDir, projectName: 'Working Tree Demo' });
+  disableRequiredEvidenceChecks(rootDir);
   commitAll(rootDir, 'Bootstrap starter kit');
 
   writeFileSync(join(rootDir, 'package.json'), '{\"name\":\"demo\"}\n');
@@ -2721,6 +2729,7 @@ test('report CLI can measure the full working tree', () => {
 test('report CLI can emit an empty current-state artifact for a clean working tree', () => {
   const rootDir = initCommittedRepo('veritas-working-tree-clean-');
   writeBootstrapStarterKit({ rootDir, projectName: 'Clean Working Tree Demo' });
+  disableRequiredEvidenceChecks(rootDir);
   commitAll(rootDir, 'Bootstrap starter kit');
 
   const stdout = execFileSync(
@@ -2756,6 +2765,7 @@ test('report CLI can emit an empty current-state artifact for a clean working tr
 test('readiness CLI emits the canonical trust bundle for Flow Kit gates', () => {
   const rootDir = initCommittedRepo('veritas-trust-bundle-cli-');
   writeBootstrapStarterKit({ rootDir, projectName: 'Trust Bundle Demo' });
+  disableRequiredEvidenceChecks(rootDir);
   commitAll(rootDir, 'Bootstrap starter kit');
 
   const stdout = execFileSync(
@@ -2792,6 +2802,7 @@ test('readiness CLI emits the canonical trust bundle for Flow Kit gates', () => 
 test('report CLI preserves branch-diff behavior', () => {
   const rootDir = initCommittedRepo('veritas-branch-diff-cli-');
   writeBootstrapStarterKit({ rootDir, projectName: 'Branch Diff Demo' });
+  disableRequiredEvidenceChecks(rootDir);
   commitAll(rootDir, 'Bootstrap starter kit');
 
   writeFileSync(join(rootDir, 'package.json'), '{\"name\":\"demo\"}\n');
@@ -3708,6 +3719,7 @@ test('readiness check reports primitive-first governance findings as policy resu
     ],
     { cwd: repoRootDir, encoding: 'utf8' },
   );
+  disableRequiredEvidenceChecks(rootDir);
   const policyPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
   const repoStandards = readJsonFromAbsolute(policyPath);
   repoStandards.rules.push({
@@ -3823,6 +3835,7 @@ test('readiness check records run history and reuses fail-to-pass time to green'
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-run-history-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   writeBootstrapStarterKit({ rootDir, projectName: 'Run History Demo', evidenceCheck: 'node -e process.exit(0)' });
+  disableRequiredEvidenceChecks(rootDir);
   execFileSync('git', ['init'], { cwd: rootDir, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.email', 'veritas@example.com'], { cwd: rootDir });
   execFileSync('git', ['config', 'user.name', 'Veritas Test'], { cwd: rootDir });

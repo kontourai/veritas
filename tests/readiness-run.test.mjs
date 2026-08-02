@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { writeBootstrapStarterKit } from '../src/bootstrap.mjs';
 import { runMergeReadiness } from '../src/readiness/run.mjs';
-import { commitAll, initCommittedRepo } from './helpers.mjs';
+import { commitAll, initCommittedRepo, repoRootDir } from './helpers.mjs';
 
 test('Merge Readiness run coordinates evidence, report, and draft behind one interface', async () => {
   const rootDir = initCommittedRepo('veritas-readiness-run-');
@@ -91,6 +92,34 @@ test('skipped or no-execution required evidence is diagnostic-only and rejects c
     const validation = validateTrustBundleSchema(result.reportResult.record.trust.bundle);
     assert.equal(validation.valid, true, `${label} trust bundle must remain Hachure-valid`);
   }
+});
+
+test('readiness CLI returns failure for skipped required evidence while retaining its diagnostic report', () => {
+  const rootDir = initCommittedRepo('veritas-readiness-cli-skip-required-');
+  writeFileSync(join(rootDir, 'package.json'), JSON.stringify({
+    scripts: { test: 'node -e "process.exit(0)"' },
+  }, null, 2));
+  writeBootstrapStarterKit({
+    rootDir,
+    projectName: 'readiness-cli-skip-required-fixture',
+    evidenceCheck: 'npm test',
+    force: true,
+  });
+  commitAll(rootDir, 'Bootstrap Veritas');
+
+  assert.throws(
+    () => execFileSync(
+      process.execPath,
+      [join(repoRootDir, 'bin/veritas.mjs'), 'readiness', '--root', rootDir, '--working-tree', '--skip-evidence-check'],
+      { cwd: rootDir, encoding: 'utf8', stdio: 'pipe' },
+    ),
+    (error) => {
+      assert.equal(error.status, 1);
+      assert.match(error.stdout, /FAIL\s+required-evidence-check:required-evidence-check: skipped/);
+      assert.match(error.stdout, /report: \.kontourai\/veritas\/evidence\//);
+      return true;
+    },
+  );
 });
 
 test('Merge Readiness reports a typed evidence-check timeout and phase progress', async () => {
