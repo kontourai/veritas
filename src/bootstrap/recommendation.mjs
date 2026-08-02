@@ -22,7 +22,7 @@ import { GENERATED_OUTPUT_IGNORE_ENTRIES, mergeGeneratedOutputIgnores } from './
 import { assertWithinDir, veritasArtifactPath, veritasArtifactRepoPath } from '../paths.mjs';
 import { publicRepoMapPolicyIdentity } from '../evidence/public-config.mjs';
 
-const INIT_RECOMMENDATION_SCHEMA_VERSION = 1;
+const INIT_RECOMMENDATION_SCHEMA_VERSION = 2;
 const GOVERNANCE_CORE_PATHS = [
   '.veritas/README.md',
   '.veritas/GOVERNANCE.md',
@@ -293,6 +293,30 @@ function exactArtifactPayloadHashes(payloads) {
   return Object.fromEntries(Object.entries(payloads).map(([path, payload]) => [path, sha256Hex(payload)]));
 }
 
+function artifactPathSet(value, fieldName) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`init recommendation missing ${fieldName}`);
+  }
+  return Object.keys(value).sort();
+}
+
+function requiredArtifactPathSet(value) {
+  if (!Array.isArray(value) || value.some((path) => typeof path !== 'string')) {
+    throw new Error('init recommendation missing required_artifact_paths');
+  }
+  const paths = [...value].sort();
+  if (new Set(paths).size !== paths.length) {
+    throw new Error('init recommendation artifact set mismatch: required_artifact_paths contains duplicates');
+  }
+  return paths;
+}
+
+function assertMatchingArtifactPathSets(expectedPaths, actualPaths, fieldName) {
+  if (expectedPaths.length !== actualPaths.length || expectedPaths.some((path, index) => path !== actualPaths[index])) {
+    throw new Error(`init recommendation artifact set mismatch: ${fieldName}`);
+  }
+}
+
 export function buildInitRecommendation({
   rootDir,
   projectName = basename(resolve(rootDir)),
@@ -325,6 +349,7 @@ export function buildInitRecommendation({
     repo_insights: repoInsights,
     artifact_payloads: artifactPayloads,
     artifact_hashes: artifactHashes(artifactPayloads),
+    required_artifact_paths: Object.keys(artifactPayloads).sort(),
     recommended_repo_map: JSON.parse(artifactPayloads['.veritas/repo-map.json']),
     recommended_repo_standards: JSON.parse(artifactPayloads['.veritas/repo-standards/default.repo-standards.json']),
     recommended_authority_settings: JSON.parse(artifactPayloads['.veritas/authority/default.authority-settings.json']),
@@ -357,7 +382,12 @@ export function buildInitRecommendation({
   };
 }
 
-function validateInitRecommendation(recommendation, rootDir) {
+function validateInitRecommendation({
+  recommendation,
+  rootDir,
+  privateArtifactPayloadHashes = null,
+  requirePrivateArtifactIntegrity = false,
+}) {
   if (!recommendation || typeof recommendation !== 'object' || Array.isArray(recommendation)) {
     throw new Error('init recommendation must be an object');
   }
@@ -367,12 +397,11 @@ function validateInitRecommendation(recommendation, rootDir) {
   if (resolve(recommendation.target_root) !== resolve(rootDir)) {
     throw new Error(`Init recommendation target_root does not match current root: ${recommendation.target_root}`);
   }
-  if (!recommendation.artifact_payloads || typeof recommendation.artifact_payloads !== 'object') {
-    throw new Error('init recommendation missing artifact_payloads');
-  }
-  if (!recommendation.artifact_hashes || typeof recommendation.artifact_hashes !== 'object') {
-    throw new Error('init recommendation missing artifact_hashes');
-  }
+  const payloadPaths = artifactPathSet(recommendation.artifact_payloads, 'artifact_payloads');
+  const publicHashPaths = artifactPathSet(recommendation.artifact_hashes, 'artifact_hashes');
+  const requiredPaths = requiredArtifactPathSet(recommendation.required_artifact_paths);
+  assertMatchingArtifactPathSets(payloadPaths, publicHashPaths, 'artifact_payloads and artifact_hashes must match exactly');
+  assertMatchingArtifactPathSets(payloadPaths, requiredPaths, 'artifact_payloads and required_artifact_paths must match exactly');
   for (const [path, payload] of Object.entries(recommendation.artifact_payloads)) {
     if (isAbsolute(path)) {
       throw new Error(`init recommendation artifact path must be repo-relative: ${path}`);
@@ -383,6 +412,16 @@ function validateInitRecommendation(recommendation, rootDir) {
       `init recommendation artifact path escapes target root: ${path}`,
     );
     if (typeof payload !== 'string') throw new Error(`init recommendation payload must be a string: ${path}`);
+  }
+  if (requirePrivateArtifactIntegrity && !privateArtifactPayloadHashes) {
+    throw new Error('init recommendation payload hash mismatch: local private integrity record is missing');
+  }
+  if (privateArtifactPayloadHashes) {
+    const privateHashPaths = artifactPathSet(privateArtifactPayloadHashes, 'local private integrity record');
+    assertMatchingArtifactPathSets(payloadPaths, privateHashPaths, 'artifact_payloads and local private integrity record must match exactly');
+  }
+
+  for (const [path, payload] of Object.entries(recommendation.artifact_payloads)) {
     const expectedHash = recommendation.artifact_hashes[path];
     const actualHash = path === '.veritas/repo-map.json'
       ? sha256Hex(publicRepoMapPolicyIdentity(JSON.parse(payload)))
@@ -400,10 +439,12 @@ export function applyInitRecommendation({
   privateArtifactPayloadHashes = null,
   requirePrivateArtifactIntegrity = false,
 }) {
-  validateInitRecommendation(recommendation, rootDir);
-  if (requirePrivateArtifactIntegrity && !privateArtifactPayloadHashes) {
-    throw new Error('init recommendation payload hash mismatch: local private integrity record is missing');
-  }
+  validateInitRecommendation({
+    recommendation,
+    rootDir,
+    privateArtifactPayloadHashes,
+    requirePrivateArtifactIntegrity,
+  });
   if (privateArtifactPayloadHashes) {
     const actualPayloadHashes = exactArtifactPayloadHashes(recommendation.artifact_payloads);
     for (const [path, actualHash] of Object.entries(actualPayloadHashes)) {

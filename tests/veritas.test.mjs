@@ -66,6 +66,7 @@ import {
   resolveWorkstream,
   writeBootstrapStarterKit,
 } from '../src/index.mjs';
+import { applyInitRecommendation, buildInitRecommendation } from '../src/bootstrap/recommendation.mjs';
 import { SURFACE_TRUST_POLICIES } from '../src/surface/policies.mjs';
 import {
   repoRootDir,
@@ -2418,6 +2419,100 @@ test('init apply requires an untampered plan artifact', () => {
   assert.equal(existsSync(join(rootDir, '.veritas/repo-map.json')), false);
 });
 
+test('init apply binds the complete canonical artifact set before accepting plan hashes', () => {
+  function planWithPrivateIntegrity(rootDir) {
+    const recommendation = buildInitRecommendation({ rootDir, projectName: 'integrity-fixture' });
+    const privateArtifactPayloadHashes = Object.fromEntries(
+      Object.entries(recommendation.artifact_payloads).map(([path, payload]) => [
+        path,
+        createHash('sha256').update(payload).digest('hex'),
+      ]),
+    );
+    return { recommendation, privateArtifactPayloadHashes };
+  }
+
+  function rootWithPackage(prefix) {
+    const rootDir = mkdtempSync(join(tmpdir(), prefix));
+    writeFileSync(join(rootDir, 'package.json'), '{}\n');
+    return rootDir;
+  }
+
+  const normalRoot = rootWithPackage('veritas-init-exact-plan-');
+  const normal = planWithPrivateIntegrity(normalRoot);
+  applyInitRecommendation({
+    rootDir: normalRoot,
+    ...normal,
+    requirePrivateArtifactIntegrity: true,
+  });
+  assert.deepEqual(
+    normal.recommendation.required_artifact_paths,
+    Object.keys(normal.recommendation.artifact_payloads).sort(),
+  );
+  for (const path of normal.recommendation.required_artifact_paths) {
+    assert.equal(existsSync(join(normalRoot, path)), true, `${path} was written by the exact plan`);
+  }
+
+  const deletedPublicRoot = rootWithPackage('veritas-init-deleted-public-');
+  const deletedPublic = planWithPrivateIntegrity(deletedPublicRoot);
+  delete deletedPublic.recommendation.artifact_payloads['.veritas/repo-map.json'];
+  delete deletedPublic.recommendation.artifact_hashes['.veritas/repo-map.json'];
+  assert.throws(
+    () => applyInitRecommendation({
+      rootDir: deletedPublicRoot,
+      ...deletedPublic,
+      requirePrivateArtifactIntegrity: true,
+    }),
+    /artifact set mismatch/,
+  );
+  assert.equal(existsSync(join(deletedPublicRoot, '.veritas/repo-map.json')), false);
+
+  const deletedPrivateRoot = rootWithPackage('veritas-init-deleted-private-');
+  const deletedPrivate = planWithPrivateIntegrity(deletedPrivateRoot);
+  delete deletedPrivate.privateArtifactPayloadHashes['.veritas/repo-map.json'];
+  assert.throws(
+    () => applyInitRecommendation({
+      rootDir: deletedPrivateRoot,
+      ...deletedPrivate,
+      requirePrivateArtifactIntegrity: true,
+    }),
+    /artifact set mismatch/,
+  );
+
+  const extraPrivateRoot = rootWithPackage('veritas-init-extra-private-');
+  const extraPrivate = planWithPrivateIntegrity(extraPrivateRoot);
+  extraPrivate.privateArtifactPayloadHashes['.veritas/unexpected.json'] = 'a'.repeat(64);
+  assert.throws(
+    () => applyInitRecommendation({
+      rootDir: extraPrivateRoot,
+      ...extraPrivate,
+      requirePrivateArtifactIntegrity: true,
+    }),
+    /artifact set mismatch/,
+  );
+
+  const renamedRoot = rootWithPackage('veritas-init-renamed-artifact-');
+  const renamed = planWithPrivateIntegrity(renamedRoot);
+  const originalPath = '.veritas/repo-map.json';
+  const renamedPath = '.veritas/renamed-repo-map.json';
+  renamed.recommendation.artifact_payloads[renamedPath] = renamed.recommendation.artifact_payloads[originalPath];
+  renamed.recommendation.artifact_hashes[renamedPath] = renamed.recommendation.artifact_hashes[originalPath];
+  delete renamed.recommendation.artifact_payloads[originalPath];
+  delete renamed.recommendation.artifact_hashes[originalPath];
+  renamed.recommendation.required_artifact_paths = renamed.recommendation.required_artifact_paths.map((path) => (
+    path === originalPath ? renamedPath : path
+  )).sort();
+  assert.throws(
+    () => applyInitRecommendation({
+      rootDir: renamedRoot,
+      ...renamed,
+      requirePrivateArtifactIntegrity: true,
+    }),
+    /artifact set mismatch/,
+  );
+  assert.equal(existsSync(join(renamedRoot, originalPath)), false);
+  assert.equal(existsSync(join(renamedRoot, renamedPath)), false);
+});
+
 test('init apply rejects plan artifact paths outside the target root', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-apply-escape-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
@@ -2443,6 +2538,7 @@ test('init apply rejects plan artifact paths outside the target root', () => {
   const tampered = readJsonFromAbsolute(planPath);
   tampered.artifact_payloads[escapedPath] = 'escaped\n';
   tampered.artifact_hashes[escapedPath] = createHash('sha256').update('escaped\n').digest('hex');
+  tampered.required_artifact_paths.push(escapedPath);
   const tamperedPath = join(rootDir, '.veritas/init-plans/escape.json');
   writeFileSync(tamperedPath, `${JSON.stringify(tampered, null, 2)}\n`, 'utf8');
 
