@@ -67,17 +67,22 @@ class McpServerPool {
     const client = new Client({ name: 'veritas-runner', version: '1.0.0' });
     try {
       const timeoutMs = remainingTimeout(deadline);
-      await Promise.race([client.connect(transport, {
-        ...(signal ? { signal } : {}),
-        ...(timeoutMs ? { timeout: timeoutMs, maxTotalTimeout: timeoutMs } : {}),
-      }), transport.waitForFailure()]);
+      const failure = transport.waitForFailure();
+      try {
+        await Promise.race([client.connect(transport, {
+          ...(signal ? { signal } : {}),
+          ...(timeoutMs ? { timeout: timeoutMs, maxTotalTimeout: timeoutMs } : {}),
+        }), failure.promise]);
+      } finally {
+        failure.cancel();
+      }
       if (transport.failure) throw transport.failure;
       connection.client = client;
       if (this.#closed || connection.closed) {
         void client.close().catch(() => {});
         throw new Error('MCP server pool closed during connection');
       }
-      return { client };
+      return { client, transport };
     } catch (error) {
       // StdioClientTransport.close() is itself bounded, but can wait several
       // seconds for a hostile child. Begin closure without extending the
@@ -100,16 +105,23 @@ class McpServerPool {
     if (callSignal?.aborted) throw abortError();
 
     const startedAt = Date.now();
-    const { client } = await this.#getOrConnect(serverDef, { signal: callSignal, deadline });
+    const { client, transport } = await this.#getOrConnect(serverDef, { signal: callSignal, deadline });
+    if (transport.failure) throw transport.failure;
     const remainingMs = remainingTimeout(deadline);
-    const result = await client.callTool(
-      { name: toolName, arguments: input ?? {} },
-      undefined,
-      {
-        ...(callSignal ? { signal: callSignal } : {}),
-        ...(remainingMs ? { timeout: remainingMs, maxTotalTimeout: remainingMs } : {}),
-      },
-    );
+    const failure = transport.waitForFailure();
+    let result;
+    try {
+      result = await Promise.race([client.callTool(
+        { name: toolName, arguments: input ?? {} },
+        undefined,
+        {
+          ...(callSignal ? { signal: callSignal } : {}),
+          ...(remainingMs ? { timeout: remainingMs, maxTotalTimeout: remainingMs } : {}),
+        },
+      ), failure.promise]);
+    } finally {
+      failure.cancel();
+    }
     return {
       content: result.content,
       isError: result.isError ?? false,

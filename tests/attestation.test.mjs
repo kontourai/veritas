@@ -18,6 +18,7 @@ import {
   readCurrentAttestation as readCurrentAttestationFromEngine,
 } from '../src/engine.mjs';
 import { hashProtectedStandards } from '../src/attestations/protected-standards.mjs';
+import { validateTrustBundleSchema } from '../src/surface/trust-bundle-validator.mjs';
 import {
   commitAll,
   repoRootDir,
@@ -87,6 +88,15 @@ function sha256Dictionary(value, path = '$', dictionary = {}) {
     }
   }
   return dictionary;
+}
+
+function assertGeneratedReportSchemas(rootDir, report) {
+  const schema = JSON.parse(readFileSync(join(repoRootDir, 'schemas/veritas-evidence.schema.json'), 'utf8'));
+  const validateEvidence = new Ajv({ strict: false, allErrors: true }).compile(schema);
+  const artifact = JSON.parse(readFileSync(join(rootDir, report.artifactPath), 'utf8'));
+  assert.equal(validateEvidence(artifact), true, JSON.stringify(validateEvidence.errors));
+  const trustValidation = validateTrustBundleSchema(report.record.trust.bundle);
+  assert.equal(trustValidation.valid, true, trustValidation.errors.join('; '));
 }
 
 function rewriteCurrentAttestationAsLegacy(rootDir) {
@@ -256,6 +266,7 @@ test('legacy unchanged attestation stays current without exposing raw Repo Map h
     assert.equal(durableOutputs.includes(forbidden), false, `durable output must not expose ${forbidden}`);
   }
   assert.equal(report.record.governance_state.state, 'current');
+  assertGeneratedReportSchemas(rootDir, report);
 });
 
 test('policy-change successors replace historical raw ID links with the opaque legacy reference', async () => {
@@ -337,7 +348,7 @@ test('legacy public references are indistinguishable across raw Repo Map hash ca
   }
 });
 
-test('legacy Repo Map file drift fails closed without exposing the raw comparison hash', () => {
+test('legacy Repo Map file drift fails closed with redacted schema-compatible evidence', async () => {
   const rootDir = bootstrapVeritasRepo('veritas-attest-legacy-drift-');
   createAttestation({
     rootDir,
@@ -355,8 +366,18 @@ test('legacy Repo Map file drift fails closed without exposing the raw compariso
 
   const status = inspectAttestationStatus(rootDir, { now: '2026-05-11T00:00:00.000Z' });
   assert.equal(status.state, 'drifted');
-  assert.deepEqual(status.drift, [{ field: 'repoMapHash', reason: 'legacy-file-hash-mismatch' }]);
+  assert.deepEqual(status.drift, [{ field: 'repoMapHash', attested: null, current: null }]);
   assert.equal(JSON.stringify(status).includes(rawRepoMapHash), false);
+  const report = await generateVeritasReport({
+    rootDir,
+    includeAttestationGate: true,
+    skipEvidenceCheck: true,
+    runId: 'legacy-redacted-drift',
+    timestamp: '2026-05-11T00:00:00.000Z',
+  }, { rootDir }, ['package.json']);
+  assert.deepEqual(report.record.governance_state.drift, status.drift);
+  assert.equal(JSON.stringify(report).includes(rawRepoMapHash), false);
+  assertGeneratedReportSchemas(rootDir, report);
 });
 
 test('all durable Repo Map hash outputs redact MCP runtime inputs and retain public-policy drift', async () => {

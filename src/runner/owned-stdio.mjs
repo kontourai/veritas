@@ -135,10 +135,18 @@ export class OwnedStdioClientTransport {
    * this signal to avoid waiting for their request deadline.
    */
   waitForFailure() {
-    if (this.#failure) return Promise.reject(this.#failure);
-    return new Promise((_resolve, reject) => {
+    if (this.#failure) {
+      return { promise: Promise.reject(this.#failure), cancel: () => {} };
+    }
+    let reject;
+    const promise = new Promise((_resolve, rejectFailure) => {
+      reject = rejectFailure;
       this.#failureWaiters.add(reject);
     });
+    return {
+      promise,
+      cancel: () => this.#failureWaiters.delete(reject),
+    };
   }
 
   #signalGroup(signalName) {

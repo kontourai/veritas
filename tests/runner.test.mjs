@@ -35,6 +35,10 @@ if (mode === 'stdout-overflow-no-newline' || mode === 'stdout-overflow-frame') {
     tools: [{ name: 'scan', description: 'test scan', inputSchema: { type: 'object' } }],
   }));
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    if (mode === 'post-connect-overflow') {
+      setTimeout(() => process.stdout.write('x'.repeat(4_096)), 20);
+      return new Promise(() => {});
+    }
     if (mode === 'tool-hang') return new Promise(() => {});
     if (mode === 'cumulative-deadline') await new Promise((resolve) => setTimeout(resolve, 60));
     if (mode === 'descendant-hang') {
@@ -187,6 +191,24 @@ for (const mode of ['stdout-overflow-no-newline', 'stdout-overflow-frame']) {
     assert.equal(existsSync(markerPath), false, 'overflow closure must terminate the owned process group');
   });
 }
+
+test('McpServerPool preserves the stdout overflow diagnostic after connection', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-post-connect-overflow-'));
+  const serverPath = writeMcpTestServer(dir);
+  const pool = createMcpServerPool({ maxBufferBytes: 256 });
+  try {
+    await assert.rejects(
+      pool.call(
+        { command: process.execPath, args: [serverPath, 'post-connect-overflow'] },
+        'scan',
+        {},
+      ),
+      (error) => error?.code === 'MCP_STDIO_BUFFER_LIMIT',
+    );
+  } finally {
+    await pool.close();
+  }
+});
 
 test('McpServerPool bounds a stalled MCP initialization and does not wait to close it', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-connect-timeout-'));

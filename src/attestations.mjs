@@ -488,8 +488,9 @@ export function inspectAttestationStatus(rootDir, options = {}) {
     }));
   if (legacyRepoMapHash
     && !matchesLegacyRepoMapHash(rootDir, current.repoMapHash, options)) {
-    // Do not expose the legacy raw digest that detected this mismatch.
-    drift.push({ field: 'repoMapHash', reason: 'legacy-file-hash-mismatch' });
+    // Preserve the drift record contract without exposing either the legacy
+    // raw digest or a derived value that could test candidate runtime inputs.
+    drift.push({ field: 'repoMapHash', attested: null, current: null });
   }
   if (!legacyRepoMapHash && current.repoMapHash !== hashes.repoMapHash) {
     drift.push({
