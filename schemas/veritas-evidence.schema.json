@@ -20,6 +20,7 @@
     "selected_evidence_check_ids",
     "selected_evidence_check_labels",
     "selected_evidence_checks",
+    "required_evidence_checks",
     "evidence_check_resolution_source",
     "uncovered_path_result",
     "baseline_ci_fast_passed",
@@ -187,6 +188,19 @@
         "evidence",
         "policy",
         "event"
+      ]
+    },
+    "required_evidence_checks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/requiredEvidenceCheck"
+      },
+      "x_surface_mapping": "mapped",
+      "x_surface_targets": [
+        "claim",
+        "evidence",
+        "event",
+        "metadata"
       ]
     },
     "evidence_check_resolution_source": {
@@ -715,6 +729,33 @@
           "type": "number",
           "minimum": 0
         }
+      }
+    },
+    "requiredEvidenceCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "runner",
+        "selected",
+        "observed",
+        "imported",
+        "passed",
+        "state"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "runner": { "enum": ["bash", "mcp"] },
+        "selected": { "type": "boolean" },
+        "observed": { "type": "boolean" },
+        "imported": { "type": "boolean" },
+        "passed": { "type": ["boolean", "null"] },
+        "state": {
+          "enum": ["selected", "observed", "imported", "passed", "failed", "missing", "skipped", "timedout"]
+        },
+        "failure_reason": { "type": "string" }
       }
     },
     "evidenceInventoryResult": {

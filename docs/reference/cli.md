@@ -329,6 +329,8 @@ If `accepted_without_major_rewrite`, `required_followup`, and `time_to_green_min
 
 Evidence Check commands are executed as tokenized argv, not through an implicit shell. Keep each command to one executable plus arguments, or move compound shell logic into a real script.
 
+`--skip-evidence-check` is a deliberate diagnostic-only mode. It may generate guidance and a report, but when the Repo Map declares `requiredEvidenceCheckIds`, those checks are recorded as `skipped` and canonical Merge Readiness remains `not-ready` / `rejected`. An explicit `--evidence-check-command` is additive diagnostic evidence: it does not replace configured required checks.
+
 External tool evidenceChecks follow the same rule. For tools such as Fallow, put shell-sensitive behavior like `2>/dev/null || true` inside a script, have that script write a JSON artifact under `.veritas/`, and point the check's `externalTool.artifactPath` at that file. Advisory external tool findings appear as warnings in feedback; blocking external tool findings fail the run.
 
 Exit codes:

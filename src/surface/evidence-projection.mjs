@@ -96,13 +96,20 @@ export function collectEvidenceCheckEvidence(record, claimStore, evidence, event
     );
     if (!claim) continue;
     const evidenceCheckResult = evidenceCheck.evidence_check_result ?? null;
-    const passing = typeof evidenceCheckResult?.passed === 'boolean'
-      ? evidenceCheckResult.passed
-      : record.baseline_ci_fast_passed === null ? undefined : record.baseline_ci_fast_passed;
-    const observedStatus = typeof passing === 'boolean' ? (passing ? 'passed' : 'failed') : 'not captured';
+    const requiredEvidenceCheck = (record.required_evidence_checks ?? [])
+      .find((check) => check.id === evidenceCheck.id) ?? null;
+    const passing = requiredEvidenceCheck
+      ? (typeof evidenceCheckResult?.passed === 'boolean' ? evidenceCheckResult.passed : undefined)
+      : typeof evidenceCheckResult?.passed === 'boolean'
+        ? evidenceCheckResult.passed
+        : record.baseline_ci_fast_passed === null ? undefined : record.baseline_ci_fast_passed;
+    const observedStatus = requiredEvidenceCheck?.state
+      ?? (typeof passing === 'boolean' ? (passing ? 'passed' : 'failed') : 'not captured');
     const observedSummary = evidenceCheckResultSummary(evidenceCheckResult)
       ?? (typeof passing === 'boolean'
         ? (passing ? 'All evidence checks passed.' : 'Evidence checks failed.')
+        : requiredEvidenceCheck
+          ? `Required Evidence Check ${evidenceCheck.id} is ${requiredEvidenceCheck.state}; an acceptable result is required for merge readiness.`
         : `Evidence Check selected but output was not captured: ${label}`);
     const evidenceId = `${record.run_id}.evidence-check.${surfaceSafeId(evidenceCheck.id)}.evidence`;
     evidence.push(surfaceEvidence({
@@ -114,7 +121,7 @@ export function collectEvidenceCheckEvidence(record, claimStore, evidence, event
       locator: 'selected_evidence_checks',
       summary: observedSummary,
       passing,
-      blocking: true,
+      blocking: Boolean(requiredEvidenceCheck),
       metadata: {
         evidenceCheckLabel: label,
         ...(evidenceCheck.command ? { command: evidenceCheck.command } : {}),
@@ -138,6 +145,7 @@ export function collectEvidenceCheckEvidence(record, claimStore, evidence, event
         baselineCiFastPassed: typeof passing === 'boolean' ? passing : record.baseline_ci_fast_passed,
         evidenceCheckId: evidenceCheck.id,
         evidenceCheckRunner: evidenceCheck.runner ?? 'bash',
+        ...(requiredEvidenceCheck ? { requiredEvidenceCheck } : {}),
         surfaceClaimIds: evidenceCheck.surface_claim_ids ?? [],
       },
       execution: evidenceCheckResult ? {

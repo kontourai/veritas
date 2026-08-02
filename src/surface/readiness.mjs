@@ -13,6 +13,7 @@ export function readinessSurfaceStatus(record) {
 function readinessHasBlockingFailure(record) {
   if (record.uncovered_path_result === 'fail') return true;
   if ((record.policy_results ?? []).some((result) => result.passed === false && result.enforcementLevel === 'Require')) return true;
+  if ((record.required_evidence_checks ?? []).some((check) => check.state !== 'passed')) return true;
   if ((record.selected_evidence_checks ?? []).some((check) => check.evidence_check_result?.passed === false)) return true;
   if ((record.external_tool_results ?? []).some((result) => result.blocking !== false && ['fail', 'missing'].includes(result.verdict))) return true;
   return false;
@@ -39,6 +40,7 @@ export function readinessEvidenceCheckSummary(record) {
   return {
     selected: checks.map((check) => check.id),
     failed: checks.filter((check) => check.evidence_check_result?.passed === false).map((check) => check.id),
+    required: record.required_evidence_checks ?? [],
     baselineCiFastPassed: record.baseline_ci_fast_passed,
   };
 }
@@ -68,6 +70,15 @@ export function readinessTransparencyGapHints(record) {
       type: 'policy_violation',
       severity: 'high',
       message: 'Changed files were outside configured work areas and uncovered path policy is fail.',
+      blocking: true,
+    });
+  }
+  for (const check of record.required_evidence_checks ?? []) {
+    if (check.state === 'passed') continue;
+    hints.push({
+      type: 'provenance_gap',
+      severity: 'high',
+      message: `Required Evidence Check ${check.id} is ${check.state}; run it and record an acceptable result before merge readiness can be verified.`,
       blocking: true,
     });
   }

@@ -1395,7 +1395,7 @@ test('work-area boundary fails closed without actor and reports owner outcomes',
   }
 });
 
-test('work-area evidence routing prefers work-area routes, then default, then required checks', () => {
+test('work-area, default, and explicit evidence routing always compose required checks once', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-evidence-check-plan-'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
   mkdirp(join(rootDir, 'scripts'));
@@ -1447,7 +1447,7 @@ test('work-area evidence routing prefers work-area routes, then default, then re
     files: ['scripts/build-viewer.mjs'],
     rootDir,
   });
-  assert.deepEqual(surfacePlan.evidenceCheckCommands, ['npm run viewer:build']);
+  assert.deepEqual(surfacePlan.evidenceCheckCommands, ['npm run viewer:build', 'npm run required-evidence-check']);
   assert.equal(surfacePlan.resolutionSource, 'surface');
 
   const defaultPlan = resolveEvidenceCheckCommands({
@@ -1455,7 +1455,7 @@ test('work-area evidence routing prefers work-area routes, then default, then re
     files: ['packages/core/index.ts'],
     rootDir,
   });
-  assert.deepEqual(defaultPlan.evidenceCheckCommands, ['npm run default-evidence-check']);
+  assert.deepEqual(defaultPlan.evidenceCheckCommands, ['npm run default-evidence-check', 'npm run required-evidence-check']);
   assert.equal(defaultPlan.resolutionSource, 'default');
 
   const mixedPlan = resolveEvidenceCheckCommands({
@@ -1463,8 +1463,17 @@ test('work-area evidence routing prefers work-area routes, then default, then re
     files: ['scripts/build-viewer.mjs', 'packages/core/index.ts'],
     rootDir,
   });
-  assert.deepEqual(mixedPlan.evidenceCheckCommands, ['npm run viewer:build', 'npm run default-evidence-check']);
+  assert.deepEqual(mixedPlan.evidenceCheckCommands, ['npm run viewer:build', 'npm run default-evidence-check', 'npm run required-evidence-check']);
   assert.equal(mixedPlan.resolutionSource, 'surface');
+
+  const explicitPlan = resolveEvidenceCheckCommands({
+    repoMapPath: writeTempRepoMap(rootDir, repoMap),
+    files: ['scripts/build-viewer.mjs'],
+    rootDir,
+    explicitEvidenceCheckCommand: 'npm run diagnostic',
+  });
+  assert.deepEqual(explicitPlan.evidenceCheckCommands, ['npm run diagnostic', 'npm run required-evidence-check']);
+  assert.equal(explicitPlan.resolutionSource, 'explicit');
 
   delete repoMap.evidence.defaultEvidenceCheckIds;
   const requiredPlan = resolveEvidenceCheckCommands({

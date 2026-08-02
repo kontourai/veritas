@@ -2,7 +2,9 @@ import { uniqueStrings } from '../util/strings.mjs';
 import {
   evidenceCheckLabel,
   evidenceCheckRecordsForCommands,
+  evidenceChecksByIds,
   readEvidenceChecks,
+  readRequiredEvidenceCheckIds,
 } from '../evidence/index.mjs';
 
 function evidenceCheckResultById(evidenceCheckResults, id) {
@@ -70,6 +72,44 @@ export function buildSelectedEvidenceChecks({ evidenceChecks, evidenceCheckResul
       surface_claim_ids: uniqueStrings(evidenceCheck.surfaceClaimIds ?? []),
       summary: evidenceCheckResultSummary(evidenceCheckResult) ?? evidenceCheck.summary ?? `Evidence Check ${evidenceCheck.id}: ${label}`,
       ...(evidenceCheckResult ? { evidence_check_result: evidenceCheckResult } : {}),
+    };
+  });
+}
+
+export function buildRequiredEvidenceChecks({
+  config,
+  evidenceCheckPlan,
+  evidenceCheckResults,
+  evidenceCheckFailure,
+  evidenceCheckExecutionSkipped = false,
+}) {
+  const selectedEvidenceCheckIds = new Set(
+    (evidenceCheckPlan.evidenceChecks ?? []).map((evidenceCheck) => evidenceCheck.id),
+  );
+  return evidenceChecksByIds(config, readRequiredEvidenceCheckIds(config)).map((evidenceCheck) => {
+    const result = evidenceCheckResultById(evidenceCheckResults, evidenceCheck.id);
+    const selected = selectedEvidenceCheckIds.has(evidenceCheck.id);
+    const observed = Boolean(result);
+    const failure = evidenceCheckFailure?.id === evidenceCheck.id ? evidenceCheckFailure : null;
+    const state = !selected
+      ? 'missing'
+      : evidenceCheckExecutionSkipped
+        ? 'skipped'
+        : result?.timedOut || failure?.reason === 'timeout'
+          ? 'timedout'
+          : result
+            ? (result.passed ? 'passed' : 'failed')
+            : 'missing';
+    return {
+      id: evidenceCheck.id,
+      label: evidenceCheckLabel(evidenceCheck),
+      runner: evidenceCheck.runner ?? 'bash',
+      selected,
+      observed,
+      imported: false,
+      passed: result ? result.passed : null,
+      state,
+      ...(failure && !result ? { failure_reason: failure.reason } : {}),
     };
   });
 }

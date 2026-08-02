@@ -101,6 +101,8 @@ export async function runMergeReadiness(
       ...options,
       rootDir,
       evidenceCheckResults,
+      evidenceCheckFailure,
+      evidenceCheckExecutionSkipped: options.skipEvidenceCheck === true || runtime.runEvidenceChecks === false,
       workingTree,
       baselineCiFastStatus:
         options.baselineCiFastStatus ??

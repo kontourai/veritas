@@ -35,9 +35,62 @@ test('Merge Readiness run coordinates evidence, report, and draft behind one int
   assert.equal(result.currentStatus, 'pass');
   assert.deepEqual(result.evidenceCheckLabels, ['npm test']);
   assert.equal(result.evidenceCheckResults[0].passed, true);
+  assert.deepEqual(result.reportResult.record.required_evidence_checks.map((check) => check.state), ['passed']);
   assert.equal(result.reportResult.record.run_id, 'readiness-run-test');
   assert.equal(result.draftResult.record.run_id, 'readiness-run-test');
   assert.equal(existsSync(join(rootDir, '.kontourai/veritas/runs/history.jsonl')), false);
+});
+
+test('skipped or no-execution required evidence is diagnostic-only and rejects canonical readiness', async () => {
+  for (const [label, rawOptions, runtime] of [
+    ['skip flag', { skipEvidenceCheck: true }, {}],
+    ['runtime no-execution', {}, { runEvidenceChecks: false }],
+  ]) {
+    const testId = label.replaceAll(' ', '-');
+    const rootDir = initCommittedRepo(`veritas-readiness-${testId}-`);
+    writeFileSync(join(rootDir, 'package.json'), JSON.stringify({
+      scripts: { test: 'node -e "process.exit(0)"' },
+    }, null, 2));
+    writeBootstrapStarterKit({
+      rootDir,
+      projectName: `readiness-${label}-fixture`,
+      evidenceCheck: 'npm test',
+      force: true,
+    });
+    commitAll(rootDir, `Bootstrap ${label} fixture`);
+
+    const result = await runMergeReadiness(
+      { rootDir, runId: `readiness-${testId}-test`, workingTree: true, force: true, ...rawOptions },
+      { rootDir },
+      [],
+      { appendHistory: false, ...runtime },
+    );
+
+    assert.equal(result.currentStatus, 'fail', `${label} must not pass canonical readiness`);
+    assert.deepEqual(result.reportResult.record.required_evidence_checks.map((check) => check.state), ['skipped']);
+    const readinessClaim = result.reportResult.record.trust.bundle.claims.find(
+      (claim) => claim.claimType === 'software-readiness-verdict',
+    );
+    assert.ok(readinessClaim);
+    assert.equal(readinessClaim.value.verdict, 'not-ready');
+    assert.equal(readinessClaim.status, 'rejected');
+    const readinessReportClaim = result.reportResult.record.trust.report.claims.find(
+      (claim) => claim.id === readinessClaim.id,
+    );
+    assert.equal(readinessReportClaim.status, 'rejected');
+    const readinessEvidence = result.reportResult.record.trust.bundle.evidence.find(
+      (evidence) => evidence.claimId === readinessClaim.id,
+    );
+    assert.ok(readinessEvidence.metadata.evidenceChecks.required.some((check) => check.state === 'skipped'));
+    assert.ok(readinessEvidence.metadata.transparencyGapHints.some((gap) => gap.blocking && gap.message.includes('skipped')));
+    assert.ok(
+      result.reportResult.record.trust.report.transparencyGapsByClaimId[readinessClaim.id]
+        .some((gap) => gap.message.includes('skipped')),
+    );
+    const { validateTrustBundleSchema } = await import('../src/surface/trust-bundle-validator.mjs');
+    const validation = validateTrustBundleSchema(result.reportResult.record.trust.bundle);
+    assert.equal(validation.valid, true, `${label} trust bundle must remain Hachure-valid`);
+  }
 });
 
 test('Merge Readiness reports a typed evidence-check timeout and phase progress', async () => {
@@ -76,6 +129,7 @@ test('Merge Readiness reports a typed evidence-check timeout and phase progress'
   assert.equal(result.currentStatus, 'fail');
   assert.equal(result.evidenceCheckResults[0].timedOut, true);
   assert.equal(result.evidenceCheckResults[0].passed, false);
+  assert.deepEqual(result.reportResult.record.required_evidence_checks.map((check) => check.state), ['timedout']);
   assert.deepEqual(result.evidenceCheckFailure, {
     phase: 'evidence-check',
     reason: 'timeout',
@@ -147,6 +201,7 @@ await server.connect(new StdioServerTransport());
     label: `scan@${process.execPath}`,
     message: 'MCP Evidence Check timed out after 50ms',
   });
+  assert.deepEqual(result.reportResult.record.required_evidence_checks.map((check) => check.state), ['timedout']);
   assert.deepEqual(phases.map((phase) => phase.phase), [
     'scope-resolution', 'evidence-check', 'report', 'finalization', 'complete',
   ]);

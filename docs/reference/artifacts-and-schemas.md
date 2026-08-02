@@ -302,6 +302,7 @@ An evidence artifact records:
 - which work areas were matched
 - which evidenceCheck commands were selected
 - which evidence-check objects were selected, including method and Surface claim mapping
+- `required_evidence_checks`: the state of every configured required Evidence Check (`passed`, `failed`, `missing`, `skipped`, or `timedout`), including whether its result was observed or imported
 - evidence-check inventory results when the current Repo Map declares inventory manifests
 - generated readiness coverage that shows required, candidate, advisory, move-to-test, and retiring check groups
 - optional external tool results from evidenceChecks, such as Fallow audit JSON (advisory or blocking)
@@ -347,6 +348,8 @@ Current Repo Map files use explicit check objects. `runner` defaults to `bash`; 
 ```
 
 MCP checks use `runner: "mcp"` with a stdio server definition, tool name, and optional JSON input. `timeoutMs`, when present, is a positive integer and bounds one complete check: MCP initialization plus the tool call share that single deadline. Current routing still refers to `evidenceChecks[].id`, so bash and MCP checks can be mixed in `requiredEvidenceCheckIds`, `defaultEvidenceCheckIds`, and `evidenceCheckRoutes`.
+
+`requiredEvidenceCheckIds` are a canonical Merge Readiness requirement, not a fallback route. Veritas unions them with work-area routes, defaults, and an explicit `--evidence-check-command`, deduplicated by stable id while retaining deterministic selection order. A required check that is missing, skipped, timed out, fails, or has a runner error leaves the readiness verdict `not-ready` and the trust-bundle claim `rejected`. Optional routed diagnostics remain visible without becoming globally blocking.
 
 ```json
 {
@@ -435,6 +438,7 @@ After validation, Veritas calls Surface's public `buildTrustReport` API and pers
 | `components` | `Claim`, `Evidence`, and `VerificationEvent` records on `veritas.affected-surface` | Surface-mapped |
 | `component_details`, `file_nodes` | Surface ownership and boundary metadata for matched files | Surface-mapped |
 | `selected_evidence_check_ids`, `selected_evidence_check_labels`, `selected_evidence_checks`, `evidence_check_resolution_source` | `Claim`, `Evidence`, `VerificationPolicy`, and `VerificationEvent` records on `veritas.evidence-checks` | Surface-mapped |
+| `required_evidence_checks` | Required Evidence Check state is attached to the readiness claim and evidence, including missing/skipped/timedout transparency gaps that reject canonical readiness | Surface-mapped |
 | `uncovered_path_result`, `baseline_ci_fast_passed` | Evidence Check claim status, verification events, and metadata for evidenceCheck confidence | Surface-mapped |
 | `evidence_inventory_results` | `Claim`, `Evidence`, `VerificationEvent`, and metadata records on `veritas.evidence-inventories` | Surface-mapped |
 | `readiness_coverage` | A readiness coverage claim/evidence pair plus metadata used by Surface report generation | Surface-mapped |

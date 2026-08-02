@@ -13,6 +13,7 @@ import {
 import {
   buildAllEvidenceChecks,
   buildEvidenceRecommendations,
+  buildRequiredEvidenceChecks,
   buildSelectedEvidenceChecks,
   resolveSelectedEvidenceCheckSources,
 } from './evidence-checks.mjs';
@@ -107,6 +108,7 @@ function buildBaseEvidenceRecord({
   selectedEvidenceChecks,
   selectedEvidenceCheckSources,
   selectedEvidenceCheckIds,
+  requiredEvidenceChecks,
   evidenceInventoryResults,
   allEvidenceChecks,
   recommendations,
@@ -139,6 +141,7 @@ function buildBaseEvidenceRecord({
     selected_evidence_check_ids: selectedEvidenceCheckIds,
     selected_evidence_check_labels: selectedEvidenceChecks.map((evidenceCheck) => evidenceCheck.label),
     selected_evidence_checks: selectedEvidenceChecks,
+    required_evidence_checks: requiredEvidenceChecks,
     evidence_check_resolution_source: evidenceCheckPlan.resolutionSource,
     evidence_inventory_results: evidenceInventoryResults,
     readiness_coverage: buildReadinessCoverage({
@@ -210,6 +213,13 @@ export async function buildEvidenceRecord({
     evidenceCheckResults: options.evidenceCheckResults,
   });
   const selectedEvidenceCheckIds = selectedEvidenceChecks.map((evidenceCheck) => evidenceCheck.id);
+  const requiredEvidenceChecks = buildRequiredEvidenceChecks({
+    config,
+    evidenceCheckPlan,
+    evidenceCheckResults: options.evidenceCheckResults,
+    evidenceCheckFailure: options.evidenceCheckFailure,
+    evidenceCheckExecutionSkipped: options.evidenceCheckExecutionSkipped,
+  });
   const evidenceInventoryResults = loadEvidenceInventoryResults(config, rootDir, selectedEvidenceCheckIds);
   const allEvidenceChecks = buildAllEvidenceChecks(config, selectedEvidenceCheckIds);
   const sourceRef = resolveSourceRef({
@@ -243,6 +253,7 @@ export async function buildEvidenceRecord({
     selectedEvidenceChecks,
     selectedEvidenceCheckSources,
     selectedEvidenceCheckIds,
+    requiredEvidenceChecks,
     evidenceInventoryResults,
     allEvidenceChecks,
     recommendations,

@@ -53,3 +53,30 @@ test('promotion_allowed:false with no blocking failure is needs-review/disputed'
   assert.equal(readinessVerdict(record), 'needs-review');
   assert.equal(readinessSurfaceStatus(record), 'disputed');
 });
+
+test('missing, skipped, timed-out, or failed required evidence cannot earn readiness', () => {
+  for (const state of ['missing', 'skipped', 'timedout', 'failed']) {
+    const record = baseRecord({
+      required_evidence_checks: [{
+        id: 'required-completion',
+        state,
+        selected: state !== 'missing',
+        observed: state === 'failed' || state === 'timedout',
+        passed: state === 'failed' || state === 'timedout' ? false : null,
+      }],
+    });
+
+    assert.equal(readinessVerdict(record), 'not-ready', `${state} must block readiness`);
+    assert.equal(readinessSurfaceStatus(record), 'rejected', `${state} must reject Surface readiness`);
+  }
+});
+
+test('an optional diagnostic with no observed result remains nonblocking', () => {
+  const record = baseRecord({
+    selected_evidence_checks: [{ id: 'diagnostic', evidence_check_result: null }],
+    required_evidence_checks: [],
+  });
+
+  assert.equal(readinessVerdict(record), 'ready');
+  assert.equal(readinessSurfaceStatus(record), 'verified');
+});

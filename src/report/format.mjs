@@ -7,6 +7,7 @@ function formatTriState(value) {
 export function buildMarkdownSummary(record, artifactPath) {
   const triggeredEvidenceChecks = record.triggered_evidence_checks ?? [];
   const selectedEvidenceCheckLabels = record.selected_evidence_check_labels ?? [];
+  const requiredEvidenceChecks = record.required_evidence_checks ?? [];
   const policyPassCount = record.policy_results.filter((result) => result.passed === true).length;
   const policyFailCount = record.policy_results.filter((result) => result.passed === false).length;
   const policyMetadataOnlyCount = record.policy_results.filter(
@@ -27,6 +28,7 @@ export function buildMarkdownSummary(record, artifactPath) {
     }`,
     `- **Selected evidenceCheck labels:** \`${selectedEvidenceCheckLabels.join(', ') || 'none'}\``,
     `- **Evidence Check selection:** ${record.evidence_check_resolution_source}`,
+    `- **Required Evidence Checks:** ${requiredEvidenceChecks.length ? requiredEvidenceChecks.map((check) => `${check.id} (${check.state})`).join(', ') : 'none'}`,
     `- **Evidence inventories:** ${record.readiness_coverage?.evidence_inventory_count ?? 0} total, ${record.readiness_coverage?.required_inventory_count ?? 0} required, ${record.readiness_coverage?.candidate_inventory_count ?? 0} candidate, ${record.readiness_coverage?.move_to_test_inventory_count ?? 0} move-to-test, ${record.readiness_coverage?.retire_inventory_count ?? 0} retiring`,
     `- **External tool results:** ${record.external_tool_results?.length ?? 0}`,
     `- **Uncovered path result:** ${record.uncovered_path_result}`,
@@ -64,6 +66,13 @@ export function buildMarkdownSummary(record, artifactPath) {
       if (item.review_trigger) {
         lines.push(`  - Review trigger: ${item.review_trigger}`);
       }
+    }
+  }
+
+  if (requiredEvidenceChecks.length > 0) {
+    lines.push('', '### Required Evidence Checks');
+    for (const check of requiredEvidenceChecks) {
+      lines.push(`- ${check.id}: ${check.state} — ${check.label}`);
     }
   }
 
@@ -122,6 +131,11 @@ function summarizeFeedbackCounts(record, evidenceCheckFailure = null) {
     if (status === 'PASS') passes += 1;
   }
 
+  for (const check of record?.required_evidence_checks ?? []) {
+    if (check.state !== 'passed') failures += 1;
+    else passes += 1;
+  }
+
   for (const item of record?.evidence_inventory_results ?? []) {
     if (item.verification_weight === 'blocking' && item.blocking_status === 'failed') {
       failures += 1;
@@ -173,6 +187,12 @@ export function buildFeedbackSummary({
         lines.push(`PASS  evidence-check: ${label}`);
       }
     }
+  }
+
+  for (const check of record?.required_evidence_checks ?? []) {
+    if (check.state === 'passed') continue;
+    lines.push(`FAIL  required-evidence-check:${check.id}: ${check.state}`);
+    lines.push(`      -> Run ${check.label} and record an acceptable result before merge readiness can be verified.`);
   }
 
   for (const result of record?.policy_results ?? []) {
