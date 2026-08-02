@@ -351,6 +351,8 @@ MCP checks use `runner: "mcp"` with a stdio server definition, tool name, and op
 
 `requiredEvidenceCheckIds` are a canonical Merge Readiness requirement, not a fallback route. Veritas unions them with work-area routes, defaults, and an explicit `--evidence-check-command`, deduplicated by stable id while retaining deterministic selection order in the report. At execution time it runs required checks first, then optional diagnostics, so an optional failure cannot starve a required result. A required check that is missing, skipped, timed out, fails, or has a runner error leaves the readiness verdict `not-ready` and the trust-bundle claim `rejected`. Optional routed diagnostics remain visible without becoming globally blocking.
 
+MCP execution configuration and tool responses are runtime-only. Generated evidence records retain only structural MCP outcome fields; they never retain MCP server arguments, environment, input, response content, or subprocess stderr. The in-memory association between a result and its exact execution definition is intentionally non-persistent, so a prior record cannot be replayed to satisfy a required Evidence Check in a later readiness run.
+
 ```json
 {
   "id": "dep-scan",

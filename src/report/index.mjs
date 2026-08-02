@@ -127,7 +127,7 @@ export async function generateVeritasReport(
 
   const config = loadRepoMap(repoMapPath);
   const repoStandards = loadRepoStandards(repoStandardsPath);
-  const evidenceCheckPlan = resolveEvidenceCheckPlan({
+  const evidenceCheckPlan = options.evidenceCheckPlan ?? resolveEvidenceCheckPlan({
     files,
     config,
     rootDir,

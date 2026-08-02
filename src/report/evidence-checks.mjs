@@ -1,17 +1,16 @@
 import { uniqueStrings } from '../util/strings.mjs';
 import {
   evidenceCheckLabel,
-  evidenceCheckDefinitionDigest,
   evidenceCheckRecordsForCommands,
   evidenceChecksByIds,
   readEvidenceChecks,
   readRequiredEvidenceCheckIds,
 } from '../evidence/index.mjs';
+import { isBoundEvidenceCheckResult } from '../evidence/execution-tokens.mjs';
 
 function evidenceCheckResultForDefinition(evidenceCheckResults, evidenceCheck) {
-  const definitionDigest = evidenceCheckDefinitionDigest(evidenceCheck);
   return (evidenceCheckResults ?? []).find(
-    (result) => result.id === evidenceCheck.id && result.definition_digest === definitionDigest,
+    (result) => result.id === evidenceCheck.id && isBoundEvidenceCheckResult(result, evidenceCheck),
   ) ?? null;
 }
 
@@ -91,11 +90,17 @@ export function buildRequiredEvidenceChecks({
     (evidenceCheckPlan.evidenceChecks ?? []).map((evidenceCheck) => evidenceCheck.id),
   );
   return evidenceChecksByIds(config, readRequiredEvidenceCheckIds(config)).map((evidenceCheck) => {
-    const result = evidenceCheckResultForDefinition(evidenceCheckResults, evidenceCheck);
+    const plannedEvidenceCheck = (evidenceCheckPlan.evidenceChecks ?? []).find(
+      (check) => check.id === evidenceCheck.id,
+    );
+    const result = plannedEvidenceCheck
+      ? evidenceCheckResultForDefinition(evidenceCheckResults, plannedEvidenceCheck)
+      : null;
     const selected = selectedEvidenceCheckIds.has(evidenceCheck.id);
     const observed = Boolean(result);
-    const failure = evidenceCheckFailure?.id === evidenceCheck.id
-      && evidenceCheckFailure.definition_digest === evidenceCheckDefinitionDigest(evidenceCheck)
+    const failure = plannedEvidenceCheck
+      && evidenceCheckFailure?.id === evidenceCheck.id
+      && isBoundEvidenceCheckResult(evidenceCheckFailure, plannedEvidenceCheck)
       ? evidenceCheckFailure
       : null;
     const state = !selected

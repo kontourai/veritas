@@ -32,6 +32,7 @@ function transportFor(serverDef) {
     command: serverDef.command,
     args: serverDef.args ?? [],
     env: serverDef.env,
+    stderr: 'ignore',
   };
   return process.platform === 'win32'
     ? new StdioClientTransport(options)

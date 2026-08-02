@@ -1,5 +1,4 @@
 import { uniqueStrings } from '../util/strings.mjs';
-import { createHash } from 'node:crypto';
 import { assertExternalToolConfig } from './external-tools.mjs';
 import { readEvidenceInventoryManifestPaths } from './suites.mjs';
 
@@ -76,30 +75,9 @@ function uniqueExplicitEvidenceCheckId(command, usedIds) {
 
 export function evidenceCheckLabel(evidenceCheck) {
   if ((evidenceCheck.runner ?? 'bash') === 'mcp') {
-    return `${evidenceCheck.tool}@${evidenceCheck.server?.command ?? 'mcp'}`;
+    return `mcp:${evidenceCheck.id}`;
   }
   return evidenceCheck.command;
-}
-
-export function evidenceCheckDefinitionDigest(evidenceCheck) {
-  const runner = evidenceCheck.runner ?? 'bash';
-  const definition = runner === 'bash'
-    ? { runner, command: evidenceCheck.command }
-    : {
-        runner,
-        server: evidenceCheck.server ?? {},
-        tool: evidenceCheck.tool,
-        input: evidenceCheck.input ?? {},
-      };
-  return createHash('sha256').update(stableJson(definition)).digest('hex');
-}
-
-function stableJson(value) {
-  if (Array.isArray(value)) return `[${value.map((item) => stableJson(item)).join(',')}]`;
-  if (value && typeof value === 'object') {
-    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
-  }
-  return JSON.stringify(value);
 }
 
 function assertEvidenceCheckConfig(config) {

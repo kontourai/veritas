@@ -1,5 +1,8 @@
 import { runBash, createMcpServerPool } from '../runner/index.mjs';
-import { evidenceCheckDefinitionDigest, evidenceCheckLabel } from '../evidence/index.mjs';
+import {
+  evidenceCheckLabel,
+} from '../evidence/index.mjs';
+import { bindEvidenceCheckExecution, bindEvidenceCheckResult } from '../evidence/execution-tokens.mjs';
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
 /**
@@ -13,7 +16,6 @@ const DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS = 10 * 60_000;
 function buildEvidenceCheckResult(evidenceCheck, runner, label, result) {
   return {
     id: evidenceCheck.id,
-    definition_digest: evidenceCheckDefinitionDigest(evidenceCheck),
     runner,
     label,
     passed: runner === 'mcp' ? !result.isError : result.passed,
@@ -21,7 +23,7 @@ function buildEvidenceCheckResult(evidenceCheck, runner, label, result) {
     signal: runner === 'bash' ? result.signal ?? null : null,
     stdout: runner === 'bash' ? result.stdout ?? '' : '',
     stderr: runner === 'bash' ? result.stderr ?? '' : '',
-    content: runner === 'mcp' ? redactMcpContent(result.content ?? [], evidenceCheck) : [],
+    ...(runner === 'bash' ? { content: [] } : {}),
     isError: runner === 'mcp' ? result.isError ?? false : false,
     timedOut: runner === 'bash' ? result.timedOut ?? false : false,
     durationMs: result.durationMs ?? 0,
@@ -39,7 +41,6 @@ function buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs) {
     phase: 'evidence-check',
     reason: evidenceCheckResult.timedOut ? 'timeout' : 'failed',
     id: evidenceCheckResult.id,
-    definition_digest: evidenceCheckResult.definition_digest,
     runner,
     label,
     message: evidenceCheckResult.timedOut
@@ -57,33 +58,9 @@ function buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs) {
   };
 }
 
-function redactMcpContent(content, evidenceCheck) {
-  const secrets = [...secretStrings(evidenceCheck.server?.env), ...secretStrings(evidenceCheck.input)];
-  return redactValue(content, secrets);
-}
-
-function secretStrings(value) {
-  if (typeof value === 'string') return value.length > 0 ? [value] : [];
-  if (Array.isArray(value)) return value.flatMap((item) => secretStrings(item));
-  if (value && typeof value === 'object') return Object.values(value).flatMap((item) => secretStrings(item));
-  return [];
-}
-
-function redactValue(value, secrets) {
-  if (typeof value === 'string') {
-    return secrets.reduce((redacted, secret) => redacted.split(secret).join('[REDACTED]'), value);
-  }
-  if (Array.isArray(value)) return value.map((item) => redactValue(item, secrets));
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, redactValue(item, secrets)]));
-  }
-  return value;
-}
-
 function buildEvidenceCheckRunnerErrorResult(evidenceCheck, runner, label, timedOut) {
   return {
     id: evidenceCheck.id,
-    definition_digest: evidenceCheckDefinitionDigest(evidenceCheck),
     runner,
     label,
     passed: false,
@@ -91,7 +68,7 @@ function buildEvidenceCheckRunnerErrorResult(evidenceCheck, runner, label, timed
     signal: null,
     stdout: '',
     stderr: '',
-    content: [],
+    ...(runner === 'bash' ? { content: [] } : {}),
     isError: runner === 'mcp',
     timedOut,
     durationMs: 0,
@@ -110,6 +87,7 @@ async function runEvidenceChecks({ evidenceChecks, requiredEvidenceCheckIds, roo
     ...evidenceChecks.filter((evidenceCheck) => requiredIds.has(evidenceCheck.id)),
     ...evidenceChecks.filter((evidenceCheck) => !requiredIds.has(evidenceCheck.id)),
   ];
+  executionPlan.forEach(bindEvidenceCheckExecution);
   const pool = createMcpServerPool({ signal });
   try {
     for (const evidenceCheck of executionPlan) {
@@ -132,23 +110,35 @@ async function runEvidenceChecks({ evidenceChecks, requiredEvidenceCheckIds, roo
             { signal, timeoutMs: checkTimeoutMs },
           )
           : await runBash(evidenceCheck.command, { cwd: rootDir, signal, timeoutMs: checkTimeoutMs });
-        const evidenceCheckResult = buildEvidenceCheckResult(evidenceCheck, runner, label, result);
+        const evidenceCheckResult = bindEvidenceCheckResult(
+          buildEvidenceCheckResult(evidenceCheck, runner, label, result),
+          evidenceCheck,
+        );
         evidenceCheckResults.push(evidenceCheckResult);
         onOutput?.(evidenceCheckResult);
         if (!evidenceCheckResult.passed && requiredIds.has(evidenceCheck.id) && !evidenceCheckFailure) {
-          evidenceCheckFailure = buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs);
+          evidenceCheckFailure = bindEvidenceCheckResult(
+            buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs),
+            evidenceCheck,
+          );
         }
       } catch (error) {
-        const evidenceCheckResult = buildEvidenceCheckRunnerErrorResult(
+        const evidenceCheckResult = bindEvidenceCheckResult(
+          buildEvidenceCheckRunnerErrorResult(
+            evidenceCheck,
+            runner,
+            label,
+            runner === 'mcp' && isMcpTimeout(error),
+          ),
           evidenceCheck,
-          runner,
-          label,
-          runner === 'mcp' && isMcpTimeout(error),
         );
         evidenceCheckResults.push(evidenceCheckResult);
         onOutput?.(evidenceCheckResult);
         if (requiredIds.has(evidenceCheck.id) && !evidenceCheckFailure) {
-          evidenceCheckFailure = buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs);
+          evidenceCheckFailure = bindEvidenceCheckResult(
+            buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs),
+            evidenceCheck,
+          );
         }
       }
     }

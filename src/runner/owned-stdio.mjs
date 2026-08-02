@@ -30,7 +30,7 @@ export class OwnedStdioClientTransport {
         cwd: this.server.cwd,
         detached: true,
         windowsHide: true,
-        stdio: ['pipe', 'pipe', this.server.stderr ?? 'inherit'],
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       child.once('error', reject);
       child.once('spawn', () => {
@@ -39,6 +39,7 @@ export class OwnedStdioClientTransport {
       });
       child.on('error', (error) => this.onerror?.(error));
       child.stdout?.on('data', (chunk) => this.#onData(chunk));
+      child.stderr?.resume();
       child.stdout?.on('error', (error) => this.onerror?.(error));
       child.stdin?.on('error', (error) => this.onerror?.(error));
       child.on('exit', () => {

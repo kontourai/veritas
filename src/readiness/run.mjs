@@ -133,6 +133,7 @@ export async function runMergeReadiness(
       rootDir,
       evidenceCheckResults,
       evidenceCheckFailure,
+      evidenceCheckPlan,
       evidenceCheckExecutionSkipped: options.skipEvidenceCheck === true || runtime.runEvidenceChecks === false,
       workingTree,
       baselineCiFastStatus:

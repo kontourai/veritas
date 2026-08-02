@@ -676,10 +676,6 @@
         "id": {
           "type": "string"
         },
-        "definition_digest": {
-          "type": "string",
-          "pattern": "^[a-f0-9]{64}$"
-        },
         "runner": {
           "enum": [
             "bash",

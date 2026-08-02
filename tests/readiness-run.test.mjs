@@ -6,7 +6,6 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import Ajv from 'ajv/dist/2020.js';
 import { writeBootstrapStarterKit } from '../src/bootstrap.mjs';
-import { evidenceCheckDefinitionDigest } from '../src/evidence/index.mjs';
 import { runMergeReadiness } from '../src/readiness/run.mjs';
 import { buildRequiredEvidenceChecks } from '../src/report/evidence-checks.mjs';
 import { buildFeedbackSummary } from '../src/report/format.mjs';
@@ -216,7 +215,6 @@ test('required evidence result association rejects the same ID with a different 
     evidenceCheckPlan: { evidenceChecks: config.evidence.evidenceChecks },
     evidenceCheckResults: [{
       id: 'required-completion',
-      definition_digest: '1'.repeat(64),
       passed: true,
     }],
   });
@@ -265,7 +263,6 @@ test('Merge Readiness reports a typed evidence-check timeout and phase progress'
     phase: 'evidence-check',
     reason: 'timeout',
     id: result.evidenceCheckResults[0].id,
-    definition_digest: result.evidenceCheckResults[0].definition_digest,
     runner: 'bash',
     label: result.evidenceCheckResults[0].label,
     message: 'Evidence Check command timed out after 50ms',
@@ -326,26 +323,23 @@ await server.connect(new StdioServerTransport());
     { appendHistory: false, onReadinessPhase: (phase) => phases.push(phase) },
   );
 
-  const evidenceCheck = repoMap.evidence.evidenceChecks[0];
   assert.equal(result.currentStatus, 'fail');
   assert.equal(result.evidenceCheckResults.length, 1);
   assert.equal(result.evidenceCheckResults[0].timedOut, true);
   assert.deepEqual(result.evidenceCheckFailure, {
     phase: 'evidence-check',
     reason: 'timeout',
-    id: evidenceCheck.id,
-    definition_digest: evidenceCheckDefinitionDigest(evidenceCheck),
+    id: 'required-evidence-check',
     runner: 'mcp',
-    label: `scan@${process.execPath}`,
+    label: 'mcp:required-evidence-check',
     message: 'MCP Evidence Check timed out after 50ms',
   });
   assert.deepEqual(result.reportResult.record.required_evidence_checks.map((check) => check.state), ['timedout']);
-  assert.match(result.evidenceCheckFailure.definition_digest, /^[a-f0-9]{64}$/);
   const serializedResult = JSON.stringify(result);
   const evidenceArtifact = readFileSync(join(rootDir, result.reportResult.artifactPath), 'utf8');
   for (const secret of ['server-env-secret-never-export', 'input-secret-never-export']) {
-    assert.doesNotMatch(serializedResult, new RegExp(secret));
-    assert.doesNotMatch(evidenceArtifact, new RegExp(secret));
+    assert.ok(!serializedResult.includes(secret));
+    assert.ok(!evidenceArtifact.includes(secret));
   }
   assert.throws(
     () => execFileSync(
@@ -356,6 +350,7 @@ await server.connect(new StdioServerTransport());
     (error) => {
       assert.equal(error.status, 1);
       assert.doesNotMatch(error.stdout, /server-env-secret-never-export|input-secret-never-export/);
+      assert.doesNotMatch(error.stderr, /server-env-secret-never-export|input-secret-never-export/);
       return true;
     },
   );
@@ -411,7 +406,7 @@ await server.connect(new StdioServerTransport());
   assert.equal(result.currentStatus, 'fail');
 });
 
-test('MCP result content redacts configured server and input secrets', async () => {
+test('MCP execution exports only structural diagnostics', async () => {
   const rootDir = initCommittedRepo('veritas-readiness-run-mcp-redaction-');
   const serverPath = join(rootDir, 'mcp-server.mjs');
   const sdkRoot = resolve('node_modules/@modelcontextprotocol/sdk/dist/esm');
@@ -420,10 +415,13 @@ import { Server } from '${pathToFileURL(join(sdkRoot, 'server/index.js')).href}'
 import { StdioServerTransport } from '${pathToFileURL(join(sdkRoot, 'server/stdio.js')).href}';
 import { CallToolRequestSchema } from '${pathToFileURL(join(sdkRoot, 'types.js')).href}';
 const server = new Server({ name: 'veritas-readiness-redaction-test', version: '1.0.0' }, { capabilities: { tools: {} } });
-server.setRequestHandler(CallToolRequestSchema, async (request) => ({
-  content: [{ type: 'text', text: process.env.MCP_SECRET + ':' + request.params.arguments.api_key }],
-  isError: true,
-}));
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const raw = [process.argv[2], process.env.MCP_ENV_SECRET_KEY, request.params.arguments.nested_input_secret_key, request.params.arguments.nested.extra_value].join('|');
+  const payload = [raw, Buffer.from(raw).toString('base64'), Buffer.from(raw).toString('hex'), [...raw].reverse().join(''), raw + raw].join('|');
+  process.stderr.write(payload.join('|') + '\\n');
+  if (request.params.name === 'throw') throw new Error(payload.join('|'));
+  return { content: [{ type: 'text', text: payload.join('|') }], isError: true };
+});
 await server.connect(new StdioServerTransport());
 `);
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
@@ -435,19 +433,28 @@ await server.connect(new StdioServerTransport());
   });
   const repoMapPath = join(rootDir, '.veritas/repo-map.json');
   const repoMap = JSON.parse(readFileSync(repoMapPath, 'utf8'));
-  repoMap.evidence.evidenceChecks[0] = {
-    ...repoMap.evidence.evidenceChecks[0],
+  const serverArgsSecret = 'mcp-server-arg-secret';
+  const environmentKey = 'MCP_ENV_SECRET_KEY';
+  const environmentSecret = 'alpha';
+  const nestedInputKey = 'nested_input_secret_key';
+  const nestedInputSecret = 'input-secret-never-export';
+  const nestedValue = 'nested-value-never-export';
+  const sharedMcpDefinition = {
     runner: 'mcp',
     server: {
       command: process.execPath,
-      args: [serverPath],
-      env: { MCP_SECRET: 'server-output-secret-never-export' },
+      args: [serverPath, serverArgsSecret],
+      env: { [environmentKey]: environmentSecret },
     },
-    tool: 'scan',
-    input: { api_key: 'input-output-secret-never-export' },
+    input: { [nestedInputKey]: nestedInputSecret, nested: { extra_value: nestedValue } },
+    method: 'validation',
     timeoutMs: 1_000,
   };
-  delete repoMap.evidence.evidenceChecks[0].command;
+  repoMap.evidence.evidenceChecks = [
+    { id: 'mcp-content', tool: 'content', ...sharedMcpDefinition },
+    { id: 'mcp-error', tool: 'throw', ...sharedMcpDefinition },
+  ];
+  repoMap.evidence.requiredEvidenceCheckIds = ['mcp-content', 'mcp-error'];
   writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
   commitAll(rootDir, 'Bootstrap MCP redaction fixture');
 
@@ -458,14 +465,43 @@ await server.connect(new StdioServerTransport());
     { appendHistory: false },
   );
 
-  assert.equal(result.evidenceCheckResults[0].passed, false);
-  assert.equal(result.evidenceCheckResults[0].content[0].text, '[REDACTED]:[REDACTED]');
+  assert.deepEqual(result.evidenceCheckResults.map((check) => check.id), ['mcp-content', 'mcp-error']);
+  assert.ok(result.evidenceCheckResults.every((check) => check.passed === false));
+  assert.ok(result.evidenceCheckResults.every((check) => !Object.hasOwn(check, 'content')));
   const serializedResult = JSON.stringify(result);
+  assert.doesNotMatch(serializedResult, /definition_digest|definition_identity/);
   const evidenceArtifact = readFileSync(join(rootDir, result.reportResult.artifactPath), 'utf8');
-  for (const secret of ['server-output-secret-never-export', 'input-output-secret-never-export']) {
-    assert.doesNotMatch(serializedResult, new RegExp(secret));
-    assert.doesNotMatch(evidenceArtifact, new RegExp(secret));
+  const raw = [serverArgsSecret, environmentSecret, nestedInputSecret, nestedValue].join('|');
+  const forbidden = [
+    serverArgsSecret,
+    environmentKey,
+    environmentSecret,
+    nestedInputKey,
+    nestedInputSecret,
+    nestedValue,
+    Buffer.from(raw).toString('base64'),
+    Buffer.from(raw).toString('hex'),
+    [...raw].reverse().join(''),
+    raw + raw,
+  ];
+  for (const secret of forbidden) {
+    assert.ok(!serializedResult.includes(secret), `run result leaked ${secret}`);
+    assert.ok(!evidenceArtifact.includes(secret), `evidence artifact leaked ${secret}`);
   }
+  assert.ok(!['alpha', 'bravo', 'charlie', 'delta'].some((candidate) => serializedResult.includes(candidate)));
+  assert.throws(
+    () => execFileSync(
+      process.execPath,
+      [join(repoRootDir, 'bin/veritas.mjs'), 'readiness', '--root', rootDir, '--working-tree', '--format', 'json'],
+      { cwd: rootDir, encoding: 'utf8', stdio: 'pipe' },
+    ),
+    (error) => {
+      assert.equal(error.status, 1);
+      const cliOutput = `${error.stdout}${error.stderr}`;
+      for (const secret of forbidden) assert.ok(!cliOutput.includes(secret), `CLI leaked ${secret}`);
+      return true;
+    },
+  );
 });
 
 test('Merge Readiness terminates a Flow Agents-shaped redirected descendant in diff scope', async () => {
