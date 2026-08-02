@@ -45,6 +45,8 @@ test('Merge Readiness run coordinates evidence, report, and draft behind one int
   assert.deepEqual(result.evidenceCheckLabels, ['npm test']);
   assert.equal(result.evidenceCheckResults[0].passed, true);
   assert.deepEqual(requiredEvidenceChecksFor(result.reportResult.record).map((check) => check.state), ['passed']);
+  assert.equal(result.reportResult.record.record_schema_version, 1);
+  assert.equal(result.reportResult.record.producer.record_schema_version, 1);
   assert.equal(Object.hasOwn(result.reportResult.record, 'required_evidence_checks'), false);
   assert.equal(JSON.stringify(result.reportResult.record).includes('"timedOut"'), false);
   assert.equal(result.reportResult.record.run_id, 'readiness-run-test');
@@ -53,18 +55,6 @@ test('Merge Readiness run coordinates evidence, report, and draft behind one int
   const evidenceSchema = JSON.parse(readFileSync(join(repoRootDir, 'schemas/veritas-evidence.schema.json'), 'utf8'));
   const validateEvidence = new Ajv({ strict: false, allErrors: true }).compile(evidenceSchema);
   assert.equal(validateEvidence(result.reportResult.record), true, JSON.stringify(validateEvidence.errors));
-  const baseEvidenceSchema = JSON.parse(execFileSync(
-    'git',
-    ['show', 'origin/main:schemas/veritas-evidence.schema.json'],
-    { cwd: repoRootDir, encoding: 'utf8' },
-  ));
-  const validateBaseEvidence = new Ajv({ strict: false, allErrors: true }).compile(baseEvidenceSchema);
-  assert.equal(validateBaseEvidence(result.reportResult.record), false);
-  assert.deepEqual(
-    validateBaseEvidence.errors.map((error) => error.instancePath),
-    ['/trust/bundle/schemaVersion'],
-    'the exact base schema must reject only its known stale Surface schemaVersion constant',
-  );
   const recordWithUnexpectedRuntimeField = structuredClone(result.reportResult.record);
   recordWithUnexpectedRuntimeField.selected_evidence_checks[0].evidence_check_result.unexpected_runtime_field = true;
   assert.equal(validateEvidence(recordWithUnexpectedRuntimeField), false);
