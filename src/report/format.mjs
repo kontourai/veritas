@@ -1,3 +1,5 @@
+import { requiredEvidenceChecksFor } from '../surface/readiness.mjs';
+
 function formatTriState(value) {
   if (value === true) return 'yes';
   if (value === false) return 'no';
@@ -7,6 +9,7 @@ function formatTriState(value) {
 export function buildMarkdownSummary(record, artifactPath) {
   const triggeredEvidenceChecks = record.triggered_evidence_checks ?? [];
   const selectedEvidenceCheckLabels = record.selected_evidence_check_labels ?? [];
+  const requiredEvidenceChecks = requiredEvidenceChecksFor(record);
   const policyPassCount = record.policy_results.filter((result) => result.passed === true).length;
   const policyFailCount = record.policy_results.filter((result) => result.passed === false).length;
   const policyMetadataOnlyCount = record.policy_results.filter(
@@ -27,6 +30,7 @@ export function buildMarkdownSummary(record, artifactPath) {
     }`,
     `- **Selected evidenceCheck labels:** \`${selectedEvidenceCheckLabels.join(', ') || 'none'}\``,
     `- **Evidence Check selection:** ${record.evidence_check_resolution_source}`,
+    `- **Required Evidence Checks:** ${requiredEvidenceChecks.length ? requiredEvidenceChecks.map((check) => `${check.id} (${check.state})`).join(', ') : 'none'}`,
     `- **Evidence inventories:** ${record.readiness_coverage?.evidence_inventory_count ?? 0} total, ${record.readiness_coverage?.required_inventory_count ?? 0} required, ${record.readiness_coverage?.candidate_inventory_count ?? 0} candidate, ${record.readiness_coverage?.move_to_test_inventory_count ?? 0} move-to-test, ${record.readiness_coverage?.retire_inventory_count ?? 0} retiring`,
     `- **External tool results:** ${record.external_tool_results?.length ?? 0}`,
     `- **Uncovered path result:** ${record.uncovered_path_result}`,
@@ -64,6 +68,13 @@ export function buildMarkdownSummary(record, artifactPath) {
       if (item.review_trigger) {
         lines.push(`  - Review trigger: ${item.review_trigger}`);
       }
+    }
+  }
+
+  if (requiredEvidenceChecks.length > 0) {
+    lines.push('', '### Required Evidence Checks');
+    for (const check of requiredEvidenceChecks) {
+      lines.push(`- ${check.id}: ${check.state} — ${check.label}`);
     }
   }
 
@@ -110,16 +121,32 @@ export function feedbackStatusForPolicyResult(result) {
   return 'INFO';
 }
 
-function summarizeFeedbackCounts(record, evidenceCheckFailure = null) {
-  let failures = evidenceCheckFailure ? 1 : 0;
+function evidenceCheckFailureIsRepresentedByRequiredState(record, evidenceCheckFailure) {
+  return Boolean(evidenceCheckFailure?.id
+    && requiredEvidenceChecksFor(record ?? {}).some((check) => check.id === evidenceCheckFailure.id));
+}
+
+function summarizeFeedbackCounts(record, evidenceCheckFailure = null, evidenceCheckResults = []) {
+  let failures = evidenceCheckFailure && !evidenceCheckFailureIsRepresentedByRequiredState(record, evidenceCheckFailure) ? 1 : 0;
   let warnings = 0;
   let passes = 0;
+  const requiredEvidenceChecks = requiredEvidenceChecksFor(record ?? {});
+  const requiredEvidenceCheckIds = new Set(requiredEvidenceChecks.map((check) => check.id));
+
+  for (const result of evidenceCheckResults) {
+    if (!result.passed && !requiredEvidenceCheckIds.has(result.id)) warnings += 1;
+  }
 
   for (const result of record?.policy_results ?? []) {
     const status = feedbackStatusForPolicyResult(result);
     if (status === 'FAIL') failures += 1;
     if (status === 'WARN') warnings += 1;
     if (status === 'PASS') passes += 1;
+  }
+
+  for (const check of requiredEvidenceChecks) {
+    if (check.state !== 'passed') failures += 1;
+    else passes += 1;
   }
 
   for (const item of record?.evidence_inventory_results ?? []) {
@@ -152,6 +179,7 @@ export function buildFeedbackSummary({
   standardsFeedbackArtifactPath = null,
   evidenceCheckLabels = [],
   evidenceCheckCommands = [],
+  evidenceCheckResults = [],
   evidenceCheckRan = false,
   evidenceCheckFailure = null,
 } = {}) {
@@ -165,14 +193,30 @@ export function buildFeedbackSummary({
   ];
 
   if (evidenceCheckRan) {
-    if (evidenceCheckFailure) {
+    if (evidenceCheckFailure && !evidenceCheckFailureIsRepresentedByRequiredState(record, evidenceCheckFailure)) {
       lines.push(`FAIL  evidence-check: ${evidenceCheckFailure.label}`);
       lines.push(`      -> ${evidenceCheckFailure.message}`);
-    } else {
+    } else if (evidenceCheckResults.length > 0) {
+      const requiredEvidenceCheckIds = new Set(requiredEvidenceChecksFor(record ?? {}).map((check) => check.id));
+      for (const result of evidenceCheckResults) {
+        if (result.passed) {
+          lines.push(`PASS  evidence-check: ${result.label}`);
+        } else if (!requiredEvidenceCheckIds.has(result.id)) {
+          lines.push(`WARN  evidence-check: ${result.label}`);
+          lines.push('      -> Optional diagnostic failed; it does not block canonical merge readiness.');
+        }
+      }
+    } else if (!evidenceCheckFailure) {
       for (const label of resolvedEvidenceCheckLabels) {
         lines.push(`PASS  evidence-check: ${label}`);
       }
     }
+  }
+
+  for (const check of requiredEvidenceChecksFor(record ?? {})) {
+    if (check.state === 'passed') continue;
+    lines.push(`FAIL  required-evidence-check:${check.id}: ${check.state}`);
+    lines.push(`      -> Run ${check.label} and record an acceptable result before merge readiness can be verified.`);
   }
 
   for (const result of record?.policy_results ?? []) {
@@ -220,7 +264,7 @@ export function buildFeedbackSummary({
     );
   }
 
-  const counts = summarizeFeedbackCounts(record, evidenceCheckFailure);
+  const counts = summarizeFeedbackCounts(record, evidenceCheckFailure, evidenceCheckResults);
   const nouns = [
     `${counts.failures} ${counts.failures === 1 ? 'failure' : 'failures'}`,
     `${counts.warnings} ${counts.warnings === 1 ? 'warning' : 'warnings'}`,

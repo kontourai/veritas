@@ -11,6 +11,7 @@ import {
 } from '../attestations.mjs';
 import {
   evidenceCheckRecordsForCommands,
+  publicRepoMapConfig,
 } from '../evidence/index.mjs';
 import {
   formatTriState,
@@ -127,7 +128,7 @@ export async function generateVeritasReport(
 
   const config = loadRepoMap(repoMapPath);
   const repoStandards = loadRepoStandards(repoStandardsPath);
-  const evidenceCheckPlan = resolveEvidenceCheckPlan({
+  const evidenceCheckPlan = options.evidenceCheckPlan ?? resolveEvidenceCheckPlan({
     files,
     config,
     rootDir,
@@ -180,7 +181,7 @@ export async function generateVeritasReport(
 
   return {
     rootDir,
-    config,
+    config: publicRepoMapConfig(config),
     record,
     artifactPath: relativeArtifactPath,
     claimInputPaths,

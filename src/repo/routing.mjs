@@ -26,6 +26,7 @@ export function resolveEvidenceCheckPlan({
   } = classifyNodes(files, config, rootDir);
   const uncoveredPathPolicy = readUncoveredPathPolicy(config);
   const evidenceCheckRoutes = readEvidenceCheckRoutes(config);
+  const requiredEvidenceCheckIds = readRequiredEvidenceCheckIds(config);
   const matchedRoutes = evidenceCheckRoutes.filter((route) => routeMatchesAnyComponent(route, affectedNodes));
   let evidenceChecks = [];
   let resolutionSource = 'none';
@@ -40,16 +41,13 @@ export function resolveEvidenceCheckPlan({
     evidenceChecks = evidenceChecksByIds(config, uniqueStrings(matchedRoutes.flatMap((route) => route.evidenceCheckIds ?? [])));
     if (affectedNodes.some((nodeId) => !routedComponentIds.has(nodeId))) {
       const defaultEvidenceCheckIds = readDefaultEvidenceCheckIds(config);
-      const requiredEvidenceCheckIds = readRequiredEvidenceCheckIds(config);
-      const fallbackEvidenceChecks = evidenceChecksByIds(config, defaultEvidenceCheckIds.length > 0 ? defaultEvidenceCheckIds : requiredEvidenceCheckIds);
+      const fallbackEvidenceChecks = evidenceChecksByIds(config, defaultEvidenceCheckIds);
       const seenEvidenceCheckIds = new Set(evidenceChecks.map((evidenceCheck) => evidenceCheck.id));
       evidenceChecks = [...evidenceChecks, ...fallbackEvidenceChecks.filter((evidenceCheck) => !seenEvidenceCheckIds.has(evidenceCheck.id))];
     }
     resolutionSource = 'surface';
   } else {
     const defaultEvidenceCheckIds = readDefaultEvidenceCheckIds(config);
-    const requiredEvidenceCheckIds = readRequiredEvidenceCheckIds(config);
-
     if (defaultEvidenceCheckIds.length > 0) {
       evidenceChecks = evidenceChecksByIds(config, defaultEvidenceCheckIds);
       resolutionSource = 'default';
@@ -58,6 +56,12 @@ export function resolveEvidenceCheckPlan({
       resolutionSource = 'required';
     }
   }
+  const selectedEvidenceCheckIds = new Set(evidenceChecks.map((evidenceCheck) => evidenceCheck.id));
+  const requiredEvidenceChecks = evidenceChecksByIds(config, requiredEvidenceCheckIds);
+  evidenceChecks = [
+    ...evidenceChecks,
+    ...requiredEvidenceChecks.filter((evidenceCheck) => !selectedEvidenceCheckIds.has(evidenceCheck.id)),
+  ];
   const evidenceCheckCommands = evidenceChecks.flatMap((evidenceCheck) => (evidenceCheck.runner ?? 'bash') === 'mcp' ? [] : [evidenceCheck.command]);
 
   return {
@@ -70,6 +74,7 @@ export function resolveEvidenceCheckPlan({
     uncoveredPathResult: unmatchedFiles.length > 0 ? uncoveredPathPolicy : 'clear',
     evidenceCheckCommands,
     evidenceChecks,
+    requiredEvidenceCheckIds,
     resolutionSource,
   };
 }

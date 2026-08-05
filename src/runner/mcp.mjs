@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { OwnedStdioClientTransport } from './owned-stdio.mjs';
 
 function serverKey(serverDef) {
@@ -27,24 +26,25 @@ function remainingTimeout(deadline) {
   return remaining;
 }
 
-function transportFor(serverDef) {
+function transportFor(serverDef, { maxBufferBytes } = {}) {
   const options = {
     command: serverDef.command,
     args: serverDef.args ?? [],
     env: serverDef.env,
+    stderr: 'ignore',
   };
-  return process.platform === 'win32'
-    ? new StdioClientTransport(options)
-    : new OwnedStdioClientTransport(options);
+  return new OwnedStdioClientTransport(options, { maxBufferBytes });
 }
 
 class McpServerPool {
   #connections = new Map();
   #signal;
+  #maxBufferBytes;
   #closed = false;
 
-  constructor({ signal } = {}) {
+  constructor({ signal, maxBufferBytes } = {}) {
     this.#signal = signal ?? null;
+    this.#maxBufferBytes = maxBufferBytes;
   }
 
   async #getOrConnect(serverDef, { signal, deadline } = {}) {
@@ -61,26 +61,34 @@ class McpServerPool {
   }
 
   async #connect(serverDef, connection, { signal, deadline } = {}) {
-    const transport = connection.transport = transportFor(serverDef);
+    const transport = connection.transport = transportFor(serverDef, {
+      maxBufferBytes: this.#maxBufferBytes,
+    });
     const client = new Client({ name: 'veritas-runner', version: '1.0.0' });
     try {
       const timeoutMs = remainingTimeout(deadline);
-      await client.connect(transport, {
-        ...(signal ? { signal } : {}),
-        ...(timeoutMs ? { timeout: timeoutMs, maxTotalTimeout: timeoutMs } : {}),
-      });
+      const failure = transport.waitForFailure();
+      try {
+        await Promise.race([client.connect(transport, {
+          ...(signal ? { signal } : {}),
+          ...(timeoutMs ? { timeout: timeoutMs, maxTotalTimeout: timeoutMs } : {}),
+        }), failure.promise]);
+      } finally {
+        failure.cancel();
+      }
+      if (transport.failure) throw transport.failure;
       connection.client = client;
       if (this.#closed || connection.closed) {
         void client.close().catch(() => {});
         throw new Error('MCP server pool closed during connection');
       }
-      return { client };
+      return { client, transport };
     } catch (error) {
       // StdioClientTransport.close() is itself bounded, but can wait several
       // seconds for a hostile child. Begin closure without extending the
       // evidence-check deadline or making pool.close wait for it.
       void transport.close().catch(() => {});
-      throw error;
+      throw transport.failure ?? error;
     }
   }
 
@@ -97,16 +105,23 @@ class McpServerPool {
     if (callSignal?.aborted) throw abortError();
 
     const startedAt = Date.now();
-    const { client } = await this.#getOrConnect(serverDef, { signal: callSignal, deadline });
+    const { client, transport } = await this.#getOrConnect(serverDef, { signal: callSignal, deadline });
+    if (transport.failure) throw transport.failure;
     const remainingMs = remainingTimeout(deadline);
-    const result = await client.callTool(
-      { name: toolName, arguments: input ?? {} },
-      undefined,
-      {
-        ...(callSignal ? { signal: callSignal } : {}),
-        ...(remainingMs ? { timeout: remainingMs, maxTotalTimeout: remainingMs } : {}),
-      },
-    );
+    const failure = transport.waitForFailure();
+    let result;
+    try {
+      result = await Promise.race([client.callTool(
+        { name: toolName, arguments: input ?? {} },
+        undefined,
+        {
+          ...(callSignal ? { signal: callSignal } : {}),
+          ...(remainingMs ? { timeout: remainingMs, maxTotalTimeout: remainingMs } : {}),
+        },
+      ), failure.promise]);
+    } finally {
+      failure.cancel();
+    }
     return {
       content: result.content,
       isError: result.isError ?? false,

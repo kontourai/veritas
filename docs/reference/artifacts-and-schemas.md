@@ -109,6 +109,19 @@ Attestations are immutable authority-backed records for protected standards hash
 - `.veritas/repo-standards/default.repo-standards.json`
 - `.veritas/authority/default.authority-settings.json`
 
+The Repo Map integrity value is a stable, recursively redacted public policy projection. New
+attestations declare `repoMapHashAlgorithm: "public-policy-v1"`. MCP server arguments,
+environment, and tool input are runtime execution inputs; they are never part of a protected-policy
+hash in an attestation, governance state, trust projection, CLI output, or init recommendation.
+Changes to public policy remain hash-sensitive.
+
+Unmarked historical attestations use the retired raw-file algorithm. Veritas privately compares that
+historical digest only to establish whether the file is unchanged; it never emits the raw digest or
+the legacy attestation's nested Surface content hash. An unchanged legacy attestation remains valid
+and receives a nonblocking migration recommendation. Any legacy file mismatch fails closed and
+requires a policy-change attestation because Veritas cannot safely infer whether the change was
+secret-only or policy-relevant.
+
 The active pointer lives at `.veritas/attestations/HEAD` as JSON with `currentAttestationId`. New `policy-change` attestations supersede older records by setting `priorAttestationId`; old records stay tracked for auditability.
 
 New attestation write paths require `metadata.approvalRef`, supplied through `--approval-ref`, to point at the explicit human approval that authorized the record. Existing historical attestations without this field remain readable, but agents must not create new authority-backed attestations without a durable approval reference.
@@ -302,6 +315,7 @@ An evidence artifact records:
 - which work areas were matched
 - which evidenceCheck commands were selected
 - which evidence-check objects were selected, including method and Surface claim mapping
+- Repo Map `required_evidence_check_ids` plus selected evidence-check results. During an active readiness run, Veritas holds the richer required-check state (`passed`, `failed`, `missing`, `skipped`, or `timedout`) in process-local runtime state and projects it into the readiness claim and evidence without adding a new field to the version-1 evidence record
 - evidence-check inventory results when the current Repo Map declares inventory manifests
 - generated readiness coverage that shows required, candidate, advisory, move-to-test, and retiring check groups
 - optional external tool results from evidenceChecks, such as Fallow audit JSON (advisory or blocking)
@@ -348,6 +362,12 @@ Current Repo Map files use explicit check objects. `runner` defaults to `bash`; 
 
 MCP checks use `runner: "mcp"` with a stdio server definition, tool name, and optional JSON input. `timeoutMs`, when present, is a positive integer and bounds one complete check: MCP initialization plus the tool call share that single deadline. Current routing still refers to `evidenceChecks[].id`, so bash and MCP checks can be mixed in `requiredEvidenceCheckIds`, `defaultEvidenceCheckIds`, and `evidenceCheckRoutes`.
 
+`requiredEvidenceCheckIds` are a canonical Merge Readiness requirement, not a fallback route. Veritas unions them with work-area routes, defaults, and an explicit `--evidence-check-command`, deduplicated by stable id while retaining deterministic selection order in the report. At execution time it runs required checks first, then optional diagnostics, so an optional failure cannot starve a required result. A required check that is missing, skipped, timed out, fails, or has a runner error leaves the readiness verdict `not-ready` and the trust-bundle claim `rejected`. Optional routed diagnostics remain visible without becoming globally blocking.
+
+MCP execution configuration and tool responses are runtime-only. Generated evidence records retain only structural MCP outcome fields; they never retain MCP server arguments, environment, input, response content, or subprocess stderr. These runtime values are also excluded from every durable Repo Map integrity hash; they are execution inputs rather than protected policy identity. The in-memory association between a result and its exact execution definition is intentionally non-persistent, so a prior record cannot be replayed to satisfy a required Evidence Check in a later readiness run.
+
+Owned MCP stdio uses Windows command-shim resolution (for example `npx` can resolve to `npx.cmd`) and a safe inherited environment, bounded stdout, contained stderr, and owned-process cleanup. The `win32` resolver has platform-injected unit coverage; end-to-end Windows process cleanup remains **NOT_VERIFIED** until a live Windows lane runs it.
+
 ```json
 {
   "id": "dep-scan",
@@ -384,7 +404,7 @@ Evidence Checks may optionally declare an external tool artifact. Veritas reads 
 
 External tool artifacts must stay under `.veritas/`. Use advisory mode for existing repos until findings are cleaned up or baselined.
 
-Selected check records include `runner`, `label`, and an optional `evidence_check_result`. Bash results carry `exitCode`, `signal`, `stdout`, and `stderr`; MCP results carry `content` and `isError`. Both runners include `id`, `passed`, and `durationMs`.
+Selected check records include `runner`, `label`, and an optional `evidence_check_result`. Bash results carry `exitCode`, `signal`, `stdout`, and `stderr`; MCP results carry structural status only (`id`, `runner`, `label`, `passed`, `isError`, and `durationMs`). Timeout classification remains active-run state and is projected as a required-evidence transparency gap without extending the version-1 record. MCP response content, stderr, server configuration, and inputs never appear in generated output.
 
 Repo Maps can also declare grouped evidence-check inventories:
 
@@ -430,11 +450,12 @@ After validation, Veritas calls Surface's public `buildTrustReport` API and pers
 | Evidence field | Surface mapping | Classification |
 | --- | --- | --- |
 | `run_id`, `timestamp`, `source_ref`, `source_kind`, `source_scope` | Surface input source, claim/evidence/event timestamps, integrity refs, and evidence metadata | Surface-mapped |
-| `integrity` | Source anchor, file fingerprints, and producer configuration hashes attached to claims/evidence so verified status can be traced to concrete inputs | Surface-mapped |
+| `integrity` | Source anchor, file fingerprints, and producer configuration hashes attached to claims/evidence so verified status can be traced to concrete inputs. Repo Map hashes use the public redacted projection, never MCP server arguments, environment, or input values | Surface-mapped |
 | `resolved_phase`, `resolved_workstream`, `matched_artifacts`, `triggered_evidence_checks`, `files`, `unresolved_files` | Claim and evidence metadata that explains why Veritas selected the surface | Surface-mapped |
 | `components` | `Claim`, `Evidence`, and `VerificationEvent` records on `veritas.affected-surface` | Surface-mapped |
 | `component_details`, `file_nodes` | Surface ownership and boundary metadata for matched files | Surface-mapped |
 | `selected_evidence_check_ids`, `selected_evidence_check_labels`, `selected_evidence_checks`, `evidence_check_resolution_source` | `Claim`, `Evidence`, `VerificationPolicy`, and `VerificationEvent` records on `veritas.evidence-checks` | Surface-mapped |
+| `repo_map.required_evidence_check_ids` plus selected evidence results | Required Evidence Check state is derived for the readiness claim and evidence, including process-local missing/skipped/timedout transparency gaps that reject canonical readiness | Surface-mapped |
 | `uncovered_path_result`, `baseline_ci_fast_passed` | Evidence Check claim status, verification events, and metadata for evidenceCheck confidence | Surface-mapped |
 | `evidence_inventory_results` | `Claim`, `Evidence`, `VerificationEvent`, and metadata records on `veritas.evidence-inventories` | Surface-mapped |
 | `readiness_coverage` | A readiness coverage claim/evidence pair plus metadata used by Surface report generation | Surface-mapped |

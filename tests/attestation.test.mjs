@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildTrustReport } from '@kontourai/surface';
+import Ajv from 'ajv/dist/2020.js';
 import {
   createAttestation,
   buildExplainText,
@@ -11,6 +13,12 @@ import {
   inspectAttestationStatus,
   writeBootstrapStarterKit,
 } from '../src/index.mjs';
+import {
+  readAttestationHead as readAttestationHeadFromEngine,
+  readCurrentAttestation as readCurrentAttestationFromEngine,
+} from '../src/engine.mjs';
+import { hashProtectedStandards } from '../src/attestations/protected-standards.mjs';
+import { validateTrustBundleSchema } from '../src/surface/trust-bundle-validator.mjs';
 import {
   commitAll,
   repoRootDir,
@@ -30,6 +38,13 @@ function bootstrapVeritasRepo(prefix = 'veritas-attest-') {
     evidenceCheck: 'npm test',
     force: true,
   });
+  // These fixtures isolate attestation behavior. They intentionally have no
+  // canonical required Evidence Check, so --skip-evidence-check is a
+  // non-blocking diagnostic setup rather than a merge-readiness bypass.
+  const repoMapPath = join(rootDir, '.veritas/repo-map.json');
+  const repoMap = JSON.parse(readFileSync(repoMapPath, 'utf8'));
+  repoMap.evidence.requiredEvidenceCheckIds = [];
+  writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
   commitAll(rootDir, 'Bootstrap Veritas');
   return rootDir;
 }
@@ -61,6 +76,82 @@ function governanceClaim(claims) {
 }
 
 const HUMAN_APPROVAL_REF = 'test://human-approved-attestation';
+
+function sha256Dictionary(value, path = '$', dictionary = {}) {
+  if (typeof value === 'string' && /^sha256:[0-9a-f]{64}$/.test(value)) {
+    dictionary[path] = value;
+  } else if (Array.isArray(value)) {
+    value.forEach((item, index) => sha256Dictionary(item, `${path}[${index}]`, dictionary));
+  } else if (value && typeof value === 'object') {
+    for (const [key, child] of Object.entries(value)) {
+      sha256Dictionary(child, `${path}.${key}`, dictionary);
+    }
+  }
+  return dictionary;
+}
+
+function assertGeneratedReportSchemas(rootDir, report) {
+  const schema = JSON.parse(readFileSync(join(repoRootDir, 'schemas/veritas-evidence.schema.json'), 'utf8'));
+  const validateEvidence = new Ajv({ strict: false, allErrors: true }).compile(schema);
+  const artifact = JSON.parse(readFileSync(join(rootDir, report.artifactPath), 'utf8'));
+  assert.equal(validateEvidence(artifact), true, JSON.stringify(validateEvidence.errors));
+  const trustValidation = validateTrustBundleSchema(report.record.trust.bundle);
+  assert.equal(trustValidation.valid, true, trustValidation.errors.join('; '));
+}
+
+function rewriteCurrentAttestationAsLegacy(rootDir) {
+  const head = readJsonFromAbsolute(join(rootDir, '.veritas/attestations/HEAD'));
+  const path = join(rootDir, '.veritas/attestations', `${head.currentAttestationId}.attestation.json`);
+  const attestation = readJsonFromAbsolute(path);
+  const rawRepoMapHash = `sha256:${createHash('sha256')
+    .update(readFileSync(join(rootDir, '.veritas/repo-map.json')))
+    .digest('hex')}`;
+  attestation.repoMapHash = rawRepoMapHash;
+  delete attestation.repoMapHashAlgorithm;
+  attestation.surface.contentHash = createHash('sha256').update(rawRepoMapHash).digest('hex');
+  // Historical Veritas IDs were derived from this raw file digest as well as
+  // the other protected-standard hashes. Model that persisted filename and
+  // HEAD pointer exactly: a public replacement must not be an oracle for it.
+  const timestamp = attestation.attestedAt.replace(/[^0-9A-Za-z]+/g, '-').replace(/-$/, '');
+  const digest = createHash('sha256')
+    .update(`${attestation.kind}:${attestation.attestedAt}:${attestation.repoStandardsHash}:${rawRepoMapHash}:${attestation.authoritySettingsHash}`)
+    .digest('hex')
+    .slice(0, 12);
+  const legacyAttestationId = `${attestation.kind}-${timestamp}-${digest}`;
+  attestation.id = legacyAttestationId;
+  attestation.surface.claim.id = `veritas.attestation.${legacyAttestationId}`;
+  attestation.surface.event.id = `veritas.attestation.${legacyAttestationId}.verified`;
+  attestation.surface.event.claimId = `veritas.attestation.${legacyAttestationId}`;
+  const legacyPath = join(rootDir, '.veritas/attestations', `${legacyAttestationId}.attestation.json`);
+  unlinkSync(path);
+  writeFileSync(legacyPath, `${JSON.stringify(attestation, null, 2)}\n`);
+  writeFileSync(join(rootDir, '.veritas/attestations/HEAD'), `${JSON.stringify({ currentAttestationId: legacyAttestationId }, null, 2)}\n`);
+  return {
+    rawRepoMapHash,
+    legacyAttestationId,
+    legacySurfaceContentHash: attestation.surface.contentHash,
+  };
+}
+
+async function durableRepoMapHashOutputs(rootDir, runId) {
+  const report = await generateVeritasReport({
+    rootDir,
+    includeAttestationGate: true,
+    skipEvidenceCheck: true,
+    runId,
+    timestamp: '2026-05-11T00:00:00.000Z',
+  }, { rootDir }, ['package.json']);
+  const attestation = JSON.parse(readFileSync(
+    join(rootDir, '.veritas/attestations', `${readJsonFromAbsolute(join(rootDir, '.veritas/attestations/HEAD')).currentAttestationId}.attestation.json`),
+    'utf8',
+  ));
+  return {
+    integrity: report.record.integrity,
+    governance_state: report.record.governance_state,
+    attestation,
+    trust: report.record.trust,
+  };
+}
 
 function configureResolvedApprovalPolicy(rootDir, options = {}) {
   const authorityPath = join(rootDir, '.veritas/authority/default.authority-settings.json');
@@ -102,6 +193,7 @@ test('bootstrap attestation records protected standards hashes and status detect
   });
 
   assert.match(result.path, /\.veritas\/attestations\/.+\.attestation\.json$/);
+  assert.equal(result.attestation.repoMapHashAlgorithm, 'public-policy-v1');
   const current = inspectAttestationStatus(rootDir, { now: '2026-05-11T00:00:00.000Z' });
   assert.equal(current.state, 'current');
   assert.equal(current.expired, false);
@@ -114,6 +206,232 @@ test('bootstrap attestation records protected standards hashes and status detect
   const drifted = inspectAttestationStatus(rootDir, { now: '2026-05-11T00:00:00.000Z' });
   assert.equal(drifted.state, 'drifted');
   assert.deepEqual(drifted.drift.map((item) => item.field), ['repoStandardsHash']);
+});
+
+test('legacy unchanged attestation stays current without exposing raw Repo Map hash material', async () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-legacy-unchanged-');
+  const repoMapPath = join(rootDir, '.veritas/repo-map.json');
+  const repoMap = readJsonFromAbsolute(repoMapPath);
+  repoMap.evidence.evidenceChecks = [{
+    id: 'legacy-mcp',
+    runner: 'mcp',
+    server: { command: 'npx', args: ['-y', 'legacy-low-entropy-secret'], env: { TOKEN: 'legacy-low-entropy-secret' } },
+    tool: 'scan',
+    input: { token: 'legacy-low-entropy-secret' },
+    method: 'validation',
+  }];
+  writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
+  createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Legacy-compatible approval.',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+  const { rawRepoMapHash, legacyAttestationId, legacySurfaceContentHash } = rewriteCurrentAttestationAsLegacy(rootDir);
+
+  const status = inspectAttestationStatus(rootDir, { now: '2026-05-11T00:00:00.000Z' });
+  assert.equal(status.state, 'current');
+  assert.equal(status.attestation.repoMapHash, undefined);
+  assert.equal(status.attestation.surface, undefined);
+  assert.equal(status.attestation.repoMapHashAlgorithm, 'legacy-file-v0');
+  assert.equal(status.migrationRecommendation.status, 'recommended');
+  assert.notEqual(status.currentAttestationId, legacyAttestationId);
+  assert.match(status.currentAttestationId, /^legacy-attestation-v0:/);
+  assert.equal(readAttestationHeadFromEngine(rootDir), status.currentAttestationId);
+  assert.equal(readCurrentAttestationFromEngine(rootDir).id, status.currentAttestationId);
+  assert.equal(readCurrentAttestationFromEngine(rootDir).surface, undefined);
+
+  const report = await generateVeritasReport({
+    rootDir,
+    includeAttestationGate: true,
+    skipEvidenceCheck: true,
+    runId: 'legacy-sanitized-output',
+    timestamp: '2026-05-11T00:00:00.000Z',
+  }, { rootDir }, ['package.json']);
+  const cliOutput = execFileSync('node', [
+    join(repoRootDir, 'bin/veritas.mjs'), 'attest', 'status', '--root', rootDir,
+  ], { cwd: rootDir, encoding: 'utf8' });
+  const claims = await attestationSurfaceClaims(rootDir, { runId: 'legacy-sanitized-claims' });
+  const durableOutputs = JSON.stringify({
+    status,
+    engine: readCurrentAttestationFromEngine(rootDir),
+    governance: report.record.governance_state,
+    trust: report.record.trust,
+    claims,
+    cli: parseCliJson(cliOutput),
+  });
+  for (const forbidden of [rawRepoMapHash, legacyAttestationId, legacySurfaceContentHash, 'legacy-low-entropy-secret']) {
+    assert.equal(durableOutputs.includes(forbidden), false, `durable output must not expose ${forbidden}`);
+  }
+  assert.equal(report.record.governance_state.state, 'current');
+  assertGeneratedReportSchemas(rootDir, report);
+});
+
+test('policy-change successors replace historical raw ID links with the opaque legacy reference', async () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-legacy-successor-');
+  createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Historical approval.',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+  const { rawRepoMapHash, legacyAttestationId, legacySurfaceContentHash } = rewriteCurrentAttestationAsLegacy(rootDir);
+  const historicalReference = inspectAttestationStatus(rootDir).currentAttestationId;
+  const policyPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
+  const policy = readJsonFromAbsolute(policyPath);
+  policy.description = `${policy.description} Reviewed successor.`;
+  writeFileSync(policyPath, `${JSON.stringify(policy, null, 2)}\n`);
+
+  const successor = createAttestation({
+    rootDir,
+    kind: 'policy-change',
+    actor: 'brian',
+    notes: 'Migrate the legacy attestation after review.',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-12T00:00:00.000Z',
+  });
+  const status = inspectAttestationStatus(rootDir);
+  const report = await generateVeritasReport({
+    rootDir,
+    includeAttestationGate: true,
+    skipEvidenceCheck: true,
+    runId: 'legacy-successor-output',
+    timestamp: '2026-05-12T00:00:00.000Z',
+  }, { rootDir }, ['package.json']);
+
+  assert.equal(successor.attestation.priorAttestationId, historicalReference);
+  assert.equal(successor.attestation.metadata.supersedes, historicalReference);
+  assert.equal(status.state, 'current');
+  assert.equal(status.attestation.priorAttestationId, historicalReference);
+  assert.equal(status.attestation.metadata.supersedes, historicalReference);
+  const durableOutputs = JSON.stringify({ successor, status, engine: readCurrentAttestationFromEngine(rootDir), report });
+  for (const forbidden of [rawRepoMapHash, legacyAttestationId, legacySurfaceContentHash]) {
+    assert.equal(durableOutputs.includes(forbidden), false, `successor output must not expose ${forbidden}`);
+  }
+});
+
+test('legacy public references are indistinguishable across raw Repo Map hash candidates', () => {
+  const roots = ['alpha', 'beta'].map((secret) => {
+    const rootDir = bootstrapVeritasRepo(`veritas-attest-legacy-candidate-${secret}-`);
+    const repoMapPath = join(rootDir, '.veritas/repo-map.json');
+    const repoMap = readJsonFromAbsolute(repoMapPath);
+    repoMap.evidence.evidenceChecks = [{
+      id: 'candidate', runner: 'mcp',
+      server: { command: 'npx', args: ['-y', `candidate-${secret}`] },
+      tool: 'scan', input: { token: `candidate-${secret}` }, method: 'validation',
+    }];
+    writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
+    createAttestation({
+      rootDir, kind: 'bootstrap', actor: 'brian', notes: 'Historical approval.',
+      approvalRef: HUMAN_APPROVAL_REF, attestedAt: '2026-05-10T00:00:00.000Z',
+    });
+    return { rootDir, ...rewriteCurrentAttestationAsLegacy(rootDir) };
+  });
+  const [first, second] = roots;
+  assert.notEqual(first.legacyAttestationId, second.legacyAttestationId);
+  const firstReference = readAttestationHeadFromEngine(first.rootDir);
+  const secondReference = readAttestationHeadFromEngine(second.rootDir);
+  assert.equal(firstReference, secondReference);
+  for (const candidate of roots) {
+    const publicOutput = JSON.stringify({
+      head: readAttestationHeadFromEngine(candidate.rootDir),
+      current: readCurrentAttestationFromEngine(candidate.rootDir),
+      status: inspectAttestationStatus(candidate.rootDir),
+    });
+    for (const forbidden of [candidate.rawRepoMapHash, candidate.legacyAttestationId, `candidate-${candidate === first ? 'alpha' : 'beta'}`]) {
+      assert.equal(publicOutput.includes(forbidden), false, 'public legacy output must not distinguish raw candidates');
+    }
+  }
+});
+
+test('legacy Repo Map file drift fails closed with redacted schema-compatible evidence', async () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-legacy-drift-');
+  createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Legacy-compatible approval.',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+  const { rawRepoMapHash } = rewriteCurrentAttestationAsLegacy(rootDir);
+  const repoMapPath = join(rootDir, '.veritas/repo-map.json');
+  const repoMap = readJsonFromAbsolute(repoMapPath);
+  repoMap.graph.defaultResolution.workstream = 'Changed after legacy attestation';
+  writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
+
+  const status = inspectAttestationStatus(rootDir, { now: '2026-05-11T00:00:00.000Z' });
+  assert.equal(status.state, 'drifted');
+  assert.deepEqual(status.drift, [{ field: 'repoMapHash', attested: null, current: null }]);
+  assert.equal(JSON.stringify(status).includes(rawRepoMapHash), false);
+  const report = await generateVeritasReport({
+    rootDir,
+    includeAttestationGate: true,
+    skipEvidenceCheck: true,
+    runId: 'legacy-redacted-drift',
+    timestamp: '2026-05-11T00:00:00.000Z',
+  }, { rootDir }, ['package.json']);
+  assert.deepEqual(report.record.governance_state.drift, status.drift);
+  assert.equal(JSON.stringify(report).includes(rawRepoMapHash), false);
+  assertGeneratedReportSchemas(rootDir, report);
+});
+
+test('all durable Repo Map hash outputs redact MCP runtime inputs and retain public-policy drift', async () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-redacted-hash-');
+  const repoMapPath = join(rootDir, '.veritas/repo-map.json');
+  const repoMap = JSON.parse(readFileSync(repoMapPath, 'utf8'));
+  repoMap.evidence.evidenceChecks = [{
+    id: 'mcp-runtime-check',
+    runner: 'mcp',
+    server: {
+      command: 'npx',
+      args: ['-y', 'low-entropy-secret-alpha'],
+      env: { TOKEN: 'low-entropy-secret-alpha' },
+    },
+    tool: 'scan',
+    input: { token: 'low-entropy-secret-alpha' },
+    method: 'validation',
+  }];
+  writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
+
+  const firstHashes = hashProtectedStandards(rootDir);
+  createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Reviewed redacted Repo Map policy.',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+  assert.equal(inspectAttestationStatus(rootDir).attestation.repoMapHashAlgorithm, 'public-policy-v1');
+  const firstOutputs = await durableRepoMapHashOutputs(rootDir, 'redacted-repo-map-hash');
+
+  const replacement = JSON.parse(readFileSync(repoMapPath, 'utf8'));
+  replacement.evidence.evidenceChecks[0].server.args = ['-y', 'low-entropy-secret-beta'];
+  replacement.evidence.evidenceChecks[0].server.env.TOKEN = 'low-entropy-secret-beta';
+  replacement.evidence.evidenceChecks[0].input.token = 'low-entropy-secret-beta';
+  writeFileSync(repoMapPath, `${JSON.stringify(replacement, null, 2)}\n`);
+
+  const secondHashes = hashProtectedStandards(rootDir);
+  const secondOutputs = await durableRepoMapHashOutputs(rootDir, 'redacted-repo-map-hash');
+  const allOutput = JSON.stringify({ firstOutputs, secondOutputs });
+  assert.equal(allOutput.includes('low-entropy-secret-alpha'), false);
+  assert.equal(allOutput.includes('low-entropy-secret-beta'), false);
+  assert.equal(secondHashes.repoMapHash, firstHashes.repoMapHash);
+  assert.deepEqual(sha256Dictionary(secondOutputs), sha256Dictionary(firstOutputs));
+  assert.equal(firstOutputs.integrity.configRefs.repoMap.hash, firstHashes.repoMapHash);
+  assert.ok(firstOutputs.governance_state.protectedStandards.hashes.repoMapHash);
+  assert.equal(firstOutputs.attestation.repoMapHash, firstHashes.repoMapHash);
+  assert.ok(firstOutputs.trust.bundle);
+
+  replacement.graph.defaultResolution.workstream = 'Changed public policy';
+  writeFileSync(repoMapPath, `${JSON.stringify(replacement, null, 2)}\n`);
+  assert.notEqual(hashProtectedStandards(rootDir).repoMapHash, firstHashes.repoMapHash);
+  assert.equal(inspectAttestationStatus(rootDir).state, 'drifted');
 });
 
 test('policy-change attestation chains to prior attestation and refreshes drift', () => {
@@ -822,6 +1140,35 @@ test('admissibility warning does not fail readiness (PASS with annotation)', () 
   // Should PASS (not fail) and contain admissibility warning annotation
   assert.match(output, /PASS\s+policy-changes-require-attestation/);
   assert.match(output, /admissibility warning/);
+});
+
+test('a generated record with governance admissibility fields conforms to the evidence schema', async () => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-governance-schema-');
+  createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Setup',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2020-01-01T00:00:00.000Z',
+    authorizing: { kind: 'explicit-statement', statement: 'banana orange grape' },
+    validUntilDays: 36500,
+  });
+  const result = await generateVeritasReport({
+    rootDir,
+    includeAttestationGate: true,
+    skipEvidenceCheck: true,
+    workingTree: true,
+    runId: 'governance-schema-conformance',
+  }, { rootDir }, ['package.json']);
+  const schema = JSON.parse(readFileSync(join(repoRootDir, 'schemas/veritas-evidence.schema.json'), 'utf8'));
+  const validate = new Ajv({ strict: false, allErrors: true }).compile(schema);
+  assert.equal(validate(result.record), true, JSON.stringify(validate.errors));
+  assert.equal(typeof result.record.governance_state.admissibilityWarning, 'boolean');
+  assert.ok(
+    result.record.governance_state.admissibilityWarningReason === null ||
+      typeof result.record.governance_state.admissibilityWarningReason === 'string',
+  );
 });
 
 test('CLI --executed-by requires --authorizing-statement or exchange pair', () => {

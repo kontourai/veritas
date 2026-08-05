@@ -47,15 +47,17 @@ Run Veritas:
 npx veritas readiness --working-tree --skip-evidence-check
 ```
 
-`--skip-evidence-check` skips the configured evidence-check command (e.g. `npm test`) so this walkthrough can focus on the standards output. In a real repo, omit this flag and let Veritas run the project tests.
+`--skip-evidence-check` skips the configured evidence-check command (e.g. `npm test`) so this walkthrough can focus on the standards output. It deliberately produces diagnostic-only, not-ready Merge Readiness whenever required Evidence Checks exist. In a real repo, omit this flag and let Veritas run the project tests.
 
 The starter standards report the missing companion test requirement:
 
 ```text
 FAIL  api-routes-require-api-tests: Changed files matched app/api/** but no companion changes matched tests/api/**.
       -> app/api/projects/route.ts
+FAIL  required-evidence-check:required-evidence-check: skipped
+      -> Run npm test and record an acceptable result before merge readiness can be verified.
 
-1 failure · 0 warnings · run `veritas readiness --check evidence` for full evidence
+2 failures · 0 warnings · run `veritas readiness --check evidence` for full evidence
 ```
 
 ## 3. Add The Companion Test
@@ -82,8 +84,10 @@ Now the requirement passes:
 
 ```text
 PASS  api-routes-require-api-tests: Changed files matched app/api/** and included required companion changes under tests/api/**.
+FAIL  required-evidence-check:required-evidence-check: skipped
+      -> Run npm test and record an acceptable result before merge readiness can be verified.
 
-0 failures · 0 warnings · run `veritas readiness --check evidence` for full evidence
+1 failure · 0 warnings · run `veritas readiness --check evidence` for full evidence
 ```
 
-In a real repo, remove `--skip-evidence-check` and let the configured evidenceCheck run the project test or verify command.
+In a real repo, remove `--skip-evidence-check` and let the configured Evidence Check run the project test or verify command; only an observed passing required result can verify Merge Readiness.

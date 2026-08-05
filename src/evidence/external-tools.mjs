@@ -83,7 +83,8 @@ function externalToolActions(payload) {
     }));
 }
 
-export function buildExternalToolResults({ evidenceChecks, rootDir }) {
+export function buildExternalToolResults({ evidenceChecks, rootDir, requiredEvidenceCheckIds = [] }) {
+  const requiredIds = new Set(requiredEvidenceCheckIds);
   return evidenceChecks
     .filter((evidenceCheck) => evidenceCheck.externalTool)
     .map((evidenceCheck) => {
@@ -96,7 +97,7 @@ export function buildExternalToolResults({ evidenceChecks, rootDir }) {
           command: evidenceCheck.command,
           evidence_check_id: evidenceCheck.id,
           verdict: 'missing',
-          blocking: externalTool.blocking,
+          blocking: requiredIds.has(evidenceCheck.id) && externalTool.blocking,
           summary: { message: `External tool artifact ${externalTool.artifactPath} was not found.` },
           artifact_path: externalTool.artifactPath,
           actions: [],
@@ -108,7 +109,7 @@ export function buildExternalToolResults({ evidenceChecks, rootDir }) {
         command: evidenceCheck.command,
         evidence_check_id: evidenceCheck.id,
         verdict: normalizeExternalToolVerdict(payload),
-        blocking: externalTool.blocking,
+        blocking: requiredIds.has(evidenceCheck.id) && externalTool.blocking,
         summary: externalToolSummary(payload),
         artifact_path: externalTool.artifactPath,
         actions: externalToolActions(payload),

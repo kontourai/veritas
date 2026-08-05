@@ -40,6 +40,7 @@
     "attestedAt": { "type": "string", "format": "date-time" },
     "repoStandardsHash": { "type": "string" },
     "repoMapHash": { "type": "string" },
+    "repoMapHashAlgorithm": { "type": "string", "const": "public-policy-v1" },
     "authoritySettingsHash": { "type": "string" },
     "priorAttestationId": { "type": ["string", "null"] },
     "validUntilDays": { "type": "integer", "minimum": 1 },

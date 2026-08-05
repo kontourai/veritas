@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { evidenceCheckLabel } from '../evidence/index.mjs';
+import { evidenceCheckLabel, publicEvidenceCheck } from '../evidence/index.mjs';
 import {
   generateVeritasReport,
   resolveVeritasPaths,
@@ -33,6 +33,34 @@ function assertWorkflowDeadline(deadline, phase) {
 
 function isProcessTimeout(error) {
   return error?.code === 'ETIMEDOUT' || error?.killed === true;
+}
+
+function safeEvidenceCheckForResult(evidenceCheck) {
+  return publicEvidenceCheck(evidenceCheck);
+}
+
+function safeEvidenceCheckPlanForResult(evidenceCheckPlan) {
+  return {
+    ...evidenceCheckPlan,
+    evidenceChecks: (evidenceCheckPlan.evidenceChecks ?? []).map(safeEvidenceCheckForResult),
+  };
+}
+
+function safeReportResultForResult(reportResult) {
+  return {
+    ...reportResult,
+    config: reportResult.config
+      ? {
+          ...reportResult.config,
+          evidence: reportResult.config.evidence
+            ? {
+                ...reportResult.config.evidence,
+                evidenceChecks: (reportResult.config.evidence.evidenceChecks ?? []).map(safeEvidenceCheckForResult),
+              }
+            : reportResult.config.evidence,
+        }
+      : reportResult.config,
+  };
 }
 
 export async function runMergeReadiness(
@@ -75,7 +103,8 @@ export async function runMergeReadiness(
   });
   const evidenceChecks = evidenceCheckPlan.evidenceChecks ?? [];
   const evidenceCheckLabels = evidenceChecks.map((evidenceCheck) => evidenceCheckLabel(evidenceCheck));
-  if (!options.skipEvidenceCheck && evidenceChecks.length === 0) {
+  const evidenceCheckExecutionSkipped = options.skipEvidenceCheck === true || runtime.runEvidenceChecks === false;
+  if (!evidenceCheckExecutionSkipped && evidenceChecks.length === 0) {
     throw new Error(
       'veritas readiness requires an evidenceCheck command or configured evidenceCheck',
     );
@@ -83,16 +112,20 @@ export async function runMergeReadiness(
 
   let evidenceCheckFailure = null;
   let evidenceCheckResults = [];
-  if (!options.skipEvidenceCheck) {
+  if (!evidenceCheckExecutionSkipped) {
     const result = await runEvidenceCheckPlan({
       evidenceChecks,
       rootDir,
       runtime,
       evidenceCheckTimeoutMs: options.evidenceCheckTimeoutMs,
+      requiredEvidenceCheckIds: evidenceCheckPlan.requiredEvidenceCheckIds,
     });
     evidenceCheckFailure = result.evidenceCheckFailure;
     evidenceCheckResults = result.evidenceCheckResults;
   }
+  const allRequiredEvidencePassed = evidenceCheckPlan.requiredEvidenceCheckIds.every((id) => (
+    evidenceCheckResults.find((result) => result.id === id)?.passed === true
+  ));
 
   assertWorkflowDeadline(workflowDeadline, 'report');
   runtime.onReadinessPhase?.({ phase: 'report' });
@@ -101,10 +134,16 @@ export async function runMergeReadiness(
       ...options,
       rootDir,
       evidenceCheckResults,
+      evidenceCheckFailure,
+      evidenceCheckPlan,
+      evidenceCheckExecutionSkipped,
       workingTree,
       baselineCiFastStatus:
-        options.baselineCiFastStatus ??
-        (options.skipEvidenceCheck ? undefined : evidenceCheckFailure ? 'failed' : 'success'),
+        evidenceCheckExecutionSkipped
+          ? undefined
+          : allRequiredEvidencePassed
+            ? (options.baselineCiFastStatus ?? (evidenceCheckFailure ? 'failed' : 'success'))
+            : 'failed',
       explicitEvidenceCheckCommand: options.evidenceCheckCommand,
       includeAttestationGate: runtime.includeAttestationGate ?? true,
     },
@@ -144,12 +183,13 @@ export async function runMergeReadiness(
     finishedAt,
     actor,
     options: standardsFeedbackOptions,
-    evidenceCheckPlan,
-    evidenceChecks,
+    evidenceCheckPlan: safeEvidenceCheckPlanForResult(evidenceCheckPlan),
+    evidenceChecks: evidenceChecks.map(safeEvidenceCheckForResult),
     evidenceCheckLabels,
     evidenceCheckFailure,
     evidenceCheckResults,
-    reportResult,
+    evidenceCheckExecutionSkipped,
+    reportResult: safeReportResultForResult(reportResult),
     draftResult,
     standardsFeedbackResult,
     currentStatus,

@@ -663,6 +663,7 @@ test("packed package supports the documented CommonJS dynamic import", (t) => {
     "@modelcontextprotocol/sdk",
     "ajv",
     "ajv-formats",
+    "cross-spawn",
     "hachure",
     "picomatch",
   ]) {

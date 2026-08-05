@@ -55,6 +55,11 @@ runtime root. Use `--projection-output <repo-relative-file>` to retain an additi
 explicit location for CI upload or inspection. The explicit destination is caller-owned and is not
 automatically ignored; existing files require `--force`.
 
+`readiness --format json` adds a runtime-only `readiness` envelope with the overall status/verdict,
+every required Evidence Check's `passed`, `failed`, `missing`, `skipped`, or `timedout` state, and
+per-check remediation. It is intentionally outside the generated version-1 evidence record so
+orchestrators can enforce the current run without changing that durable schema.
+
 ### `--version`
 
 Prints the installed `@kontourai/veritas` package version and exits successfully. Use it to record
@@ -114,7 +119,7 @@ Guided initialization splits setup into a reviewed artifact flow:
 - `--explore` inspects the repo and emits a recommendation JSON without writing starter files.
 - `--guided --answers <answers.json>` folds owner-provided boundaries, style, evidence-check, and instruction-target choices into the recommendation.
 - `--output` is intentionally constrained to `.veritas/init-plans/` so reviewed setup plans stay repo-local and obvious.
-- `--apply --plan <path>` is the only guided write path. It validates the plan schema, target root, payload hashes, and overwrite rules before writing.
+- `--apply --plan <path>` is the only guided write path. It validates the plan schema, target root, and the exact matching path sets in `required_artifact_paths`, `artifact_payloads`, public `artifact_hashes`, and the local private exact-byte integrity record before checking payload hashes or overwrite rules. This rejects omitted, extra, and renamed starter artifacts even when every remaining entry is authentic. Plans use schema version 2; regenerate an older plan with `--explore` or `--guided` before applying it.
 - Re-authoring an already-governed repository preserves its authored Repo Standards, authority settings, governance guidance, and repository context by default. Deterministically discovered work areas are appended only when their paths are not already covered. An owner may explicitly request starter replacement with `replaceExistingGovernance: true` in guided answers.
 - Brownfield repos with existing guidance or convergence scripts also receive an `existing_verification` inventory and a recommended evidence-check inventory. Unknown catch evidence stays candidate/advisory until a maintainer supplies owner and review evidence.
 - Unknown init flags fail before any files are written.
@@ -129,7 +134,7 @@ npx @kontourai/veritas attest policy-change --actor <id> --approval-ref <ref> --
 npx @kontourai/veritas attest status [--root <path>]
 ```
 
-`bootstrap` records the first reviewed hashes for the current protected standards files: `.veritas/repo-map.json`, `.veritas/repo-standards/default.repo-standards.json`, and `.veritas/authority/default.authority-settings.json`. `policy-change` records a reviewed successor and requires an explanation in `--message`. Both write paths require `--approval-ref`, a durable reference to the explicit human approval that authorized the attestation. `status` reports the current attestation, age, expiry, and hash drift.
+`bootstrap` records the first reviewed hashes for the current protected standards files: `.veritas/repo-map.json`, `.veritas/repo-standards/default.repo-standards.json`, and `.veritas/authority/default.authority-settings.json`. New attestations declare `repoMapHashAlgorithm: "public-policy-v1"`; the Repo Map hash is its recursively redacted public policy projection, so MCP server arguments, environment, and tool input are runtime execution inputs rather than protected policy identity. Unmarked historical records remain valid when their legacy file digest still matches, receive a nonblocking migration recommendation, and never expose that legacy digest in `attest status`. A legacy file mismatch fails closed and requires a policy-change attestation. `policy-change` records a reviewed successor and requires an explanation in `--message`. Both write paths require `--approval-ref`, a durable reference to the explicit human approval that authorized the attestation. `status` reports the current attestation, age, expiry, and hash drift.
 
 The built-in requirement `policy-changes-require-attestation` fails when the active attestation no longer matches protected standards.
 
@@ -342,6 +347,8 @@ npx @kontourai/veritas readiness [--root <path>] [--repo-map <path>] [--repo-sta
 If `accepted_without_major_rewrite`, `required_followup`, and `time_to_green_minutes` are not all present, the command stops after report plus draft. Feedback mode prints the report path, standards-feedback draft path, and run id in the footer. JSON mode returns the orchestration object with the suggested feedback-record command.
 
 Evidence Check commands are executed as tokenized argv, not through an implicit shell. Keep each command to one executable plus arguments, or move compound shell logic into a real script.
+
+`--skip-evidence-check` is a deliberate diagnostic-only mode. It may generate guidance and a report, but when the Repo Map declares `requiredEvidenceCheckIds`, those checks are recorded as `skipped` and canonical Merge Readiness remains `not-ready` / `rejected`. An explicit `--evidence-check-command` is additive diagnostic evidence: it does not replace configured required checks.
 
 External tool evidenceChecks follow the same rule. For tools such as Fallow, put shell-sensitive behavior like `2>/dev/null || true` inside a script, have that script write a JSON artifact under `.veritas/`, and point the check's `externalTool.artifactPath` at that file. Advisory external tool findings appear as warnings in feedback; blocking external tool findings fail the run.
 

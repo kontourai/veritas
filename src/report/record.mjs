@@ -1,6 +1,7 @@
 import { normalizeRepoPath } from '../paths.mjs';
 import { evaluateRepoStandards } from '../rules/evaluate.mjs';
 import { produceSurfaceStateForVeritasRecord } from '../surface/producer.mjs';
+import { setReadinessRuntime } from '../surface/readiness-runtime.mjs';
 import { buildAttestationPolicyResult } from '../attestations.mjs';
 import {
   readDefaultEvidenceCheckIds,
@@ -13,6 +14,7 @@ import {
 import {
   buildAllEvidenceChecks,
   buildEvidenceRecommendations,
+  buildRequiredEvidenceChecks,
   buildSelectedEvidenceChecks,
   resolveSelectedEvidenceCheckSources,
 } from './evidence-checks.mjs';
@@ -148,6 +150,7 @@ function buildBaseEvidenceRecord({
     external_tool_results: buildExternalToolResults({
       evidenceChecks: selectedEvidenceCheckSources,
       rootDir,
+      requiredEvidenceCheckIds: readRequiredEvidenceCheckIds(config),
     }),
     uncovered_path_result: evidenceCheckPlan.uncoveredPathResult,
     baseline_ci_fast_passed: baselineCiFastPassed,
@@ -210,6 +213,13 @@ export async function buildEvidenceRecord({
     evidenceCheckResults: options.evidenceCheckResults,
   });
   const selectedEvidenceCheckIds = selectedEvidenceChecks.map((evidenceCheck) => evidenceCheck.id);
+  const requiredEvidenceChecks = buildRequiredEvidenceChecks({
+    config,
+    evidenceCheckPlan,
+    evidenceCheckResults: options.evidenceCheckResults,
+    evidenceCheckFailure: options.evidenceCheckFailure,
+    evidenceCheckExecutionSkipped: options.evidenceCheckExecutionSkipped,
+  });
   const evidenceInventoryResults = loadEvidenceInventoryResults(config, rootDir, selectedEvidenceCheckIds);
   const allEvidenceChecks = buildAllEvidenceChecks(config, selectedEvidenceCheckIds);
   const sourceRef = resolveSourceRef({
@@ -256,12 +266,15 @@ export async function buildEvidenceRecord({
     rootDir,
     options,
   });
+  setReadinessRuntime(record, { requiredEvidenceChecks });
   const surface = await produceSurfaceStateForVeritasRecord(record, {
     rootDir,
     repoMapConfig: config,
   });
-  return {
+  const result = {
     ...record,
     trust: surface,
   };
+  setReadinessRuntime(result, { requiredEvidenceChecks });
+  return result;
 }

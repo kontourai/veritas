@@ -1,5 +1,8 @@
 import { runBash, createMcpServerPool } from '../runner/index.mjs';
-import { evidenceCheckLabel } from '../evidence/index.mjs';
+import {
+  evidenceCheckLabel,
+} from '../evidence/index.mjs';
+import { bindEvidenceCheckExecution, bindEvidenceCheckResult } from '../evidence/execution-tokens.mjs';
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
 /**
@@ -10,8 +13,19 @@ import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
  */
 const DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS = 10 * 60_000;
 
+function attachRuntimeTimeout(result, timedOut) {
+  // record_schema_version 1 has no timedOut result field. Keep it available to
+  // the live readiness decision without serializing a schema-incompatible
+  // property into evidence artifacts or public JSON.
+  Object.defineProperty(result, 'timedOut', {
+    value: Boolean(timedOut),
+    enumerable: false,
+  });
+  return result;
+}
+
 function buildEvidenceCheckResult(evidenceCheck, runner, label, result) {
-  return {
+  return attachRuntimeTimeout({
     id: evidenceCheck.id,
     runner,
     label,
@@ -20,11 +34,26 @@ function buildEvidenceCheckResult(evidenceCheck, runner, label, result) {
     signal: runner === 'bash' ? result.signal ?? null : null,
     stdout: runner === 'bash' ? result.stdout ?? '' : '',
     stderr: runner === 'bash' ? result.stderr ?? '' : '',
-    content: runner === 'mcp' ? result.content ?? [] : [],
+    ...(runner === 'bash' ? { content: [] } : {}),
     isError: runner === 'mcp' ? result.isError ?? false : false,
-    timedOut: runner === 'bash' ? result.timedOut ?? false : false,
     durationMs: result.durationMs ?? 0,
-  };
+  }, runner === 'bash' ? result.timedOut ?? false : false);
+}
+
+function deepFreeze(value, seen = new Set()) {
+  if (!value || typeof value !== 'object' || seen.has(value)) return value;
+  seen.add(value);
+  for (const child of Object.values(value)) deepFreeze(child, seen);
+  return Object.freeze(value);
+}
+
+function emitEvidenceCheckOutput(onOutput, canonicalResult) {
+  if (!onOutput) return;
+  try {
+    onOutput(deepFreeze(structuredClone(canonicalResult)));
+  } catch {
+    // Observers are diagnostic only and cannot affect readiness authority.
+  }
 }
 
 function buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs) {
@@ -36,36 +65,59 @@ function buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs) {
       : (evidenceCheckResult.exitCode ?? evidenceCheckResult.signal ?? 'unknown status');
   return {
     phase: 'evidence-check',
-    reason: runner === 'bash' && evidenceCheckResult.timedOut ? 'timeout' : 'failed',
+    reason: evidenceCheckResult.timedOut ? 'timeout' : 'failed',
     id: evidenceCheckResult.id,
     runner,
     label,
-    message: runner === 'mcp'
-      ? status
-      : evidenceCheckResult.timedOut
-        ? `Evidence Check command ${status}`
+    message: evidenceCheckResult.timedOut
+      ? runner === 'mcp'
+        ? `MCP Evidence Check timed out after ${checkTimeoutMs}ms`
+        : `Evidence Check command ${status}`
+      : runner === 'mcp'
+        ? status
         : `Evidence Check command exited with ${status}`,
     ...(runner === 'bash' ? {
       stdout: evidenceCheckResult.stdout,
       stderr: evidenceCheckResult.stderr,
       exitCode: evidenceCheckResult.exitCode,
-    } : {
-      content: evidenceCheckResult.content,
-      isError: evidenceCheckResult.isError,
-    }),
+    } : {}),
   };
+}
+
+function buildEvidenceCheckRunnerErrorResult(evidenceCheck, runner, label, timedOut) {
+  return attachRuntimeTimeout({
+    id: evidenceCheck.id,
+    runner,
+    label,
+    passed: false,
+    exitCode: null,
+    signal: null,
+    stdout: '',
+    stderr: '',
+    ...(runner === 'bash' ? { content: [] } : {}),
+    isError: runner === 'mcp',
+    durationMs: 0,
+  }, timedOut);
 }
 
 function isMcpTimeout(error) {
   return error?.code === ErrorCode.RequestTimeout;
 }
 
-async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, onPhase, evidenceCheckTimeoutMs = DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS }) {
+async function runEvidenceChecks({ evidenceChecks, requiredEvidenceCheckIds, rootDir, signal, onOutput, onPhase, evidenceCheckTimeoutMs = DEFAULT_EVIDENCE_CHECK_TIMEOUT_MS }) {
   let evidenceCheckFailure = null;
   const evidenceCheckResults = [];
+  const requiredIds = new Set(requiredEvidenceCheckIds ?? evidenceChecks.map((evidenceCheck) => evidenceCheck.id));
+  const executionPlan = [
+    ...evidenceChecks.filter((evidenceCheck) => requiredIds.has(evidenceCheck.id)),
+    ...evidenceChecks.filter((evidenceCheck) => !requiredIds.has(evidenceCheck.id)),
+  ];
+  // Definitions stay caller-owned and mutable as normal configuration objects;
+  // their execution association is private object identity, not a property.
+  executionPlan.forEach(bindEvidenceCheckExecution);
   const pool = createMcpServerPool({ signal });
   try {
-    for (const evidenceCheck of evidenceChecks) {
+    for (const evidenceCheck of executionPlan) {
       const runner = evidenceCheck.runner ?? 'bash';
       const label = evidenceCheckLabel(evidenceCheck);
       const checkTimeoutMs = evidenceCheck.timeoutMs ?? evidenceCheckTimeoutMs;
@@ -85,25 +137,36 @@ async function runEvidenceChecks({ evidenceChecks, rootDir, signal, onOutput, on
             { signal, timeoutMs: checkTimeoutMs },
           )
           : await runBash(evidenceCheck.command, { cwd: rootDir, signal, timeoutMs: checkTimeoutMs });
-        const evidenceCheckResult = buildEvidenceCheckResult(evidenceCheck, runner, label, result);
+        const evidenceCheckResult = deepFreeze(bindEvidenceCheckResult(
+          buildEvidenceCheckResult(evidenceCheck, runner, label, result),
+          evidenceCheck,
+        ));
         evidenceCheckResults.push(evidenceCheckResult);
-        onOutput?.(evidenceCheckResult);
-        if (!evidenceCheckResult.passed) {
-          evidenceCheckFailure = buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs);
-          break;
+        if (!evidenceCheckResult.passed && requiredIds.has(evidenceCheck.id) && !evidenceCheckFailure) {
+          evidenceCheckFailure = deepFreeze(bindEvidenceCheckResult(
+            buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs),
+            evidenceCheck,
+          ));
         }
+        emitEvidenceCheckOutput(onOutput, evidenceCheckResult);
       } catch (error) {
-        evidenceCheckFailure = {
-          phase: 'evidence-check',
-          reason: runner === 'mcp' && isMcpTimeout(error) ? 'timeout' : 'runner-error',
-          id: evidenceCheck.id,
-          runner,
-          label,
-          message: runner === 'mcp' && isMcpTimeout(error)
-            ? `MCP Evidence Check timed out after ${checkTimeoutMs}ms`
-            : error.message,
-        };
-        break;
+        const evidenceCheckResult = deepFreeze(bindEvidenceCheckResult(
+          buildEvidenceCheckRunnerErrorResult(
+            evidenceCheck,
+            runner,
+            label,
+            runner === 'mcp' && isMcpTimeout(error),
+          ),
+          evidenceCheck,
+        ));
+        evidenceCheckResults.push(evidenceCheckResult);
+        if (requiredIds.has(evidenceCheck.id) && !evidenceCheckFailure) {
+          evidenceCheckFailure = deepFreeze(bindEvidenceCheckResult(
+            buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs),
+            evidenceCheck,
+          ));
+        }
+        emitEvidenceCheckOutput(onOutput, evidenceCheckResult);
       }
     }
   } finally {
@@ -117,6 +180,7 @@ export async function runEvidenceCheckPlan({
   rootDir,
   runtime = {},
   evidenceCheckTimeoutMs,
+  requiredEvidenceCheckIds,
 }) {
   if (runtime.runEvidenceChecks === false) {
     return {
@@ -125,19 +189,25 @@ export async function runEvidenceCheckPlan({
     };
   }
 
+  // This clone is the authority-bearing execution definition. Callers retain
+  // their mutable config objects, while results are associated only with this
+  // private, deeply immutable plan for the lifetime of the returned outcome.
+  const executionEvidenceChecks = deepFreeze(structuredClone(evidenceChecks));
   const controller = new AbortController();
   const onSignal = () => controller.abort();
   process.once('SIGINT', onSignal);
   process.once('SIGTERM', onSignal);
   try {
-    return await runEvidenceChecks({
-      evidenceChecks,
+    const outcome = await runEvidenceChecks({
+      evidenceChecks: executionEvidenceChecks,
+      requiredEvidenceCheckIds,
       rootDir,
       signal: controller.signal,
       onOutput: runtime.onEvidenceCheckOutput,
       onPhase: runtime.onReadinessPhase,
       evidenceCheckTimeoutMs,
     });
+    return outcome;
   } finally {
     process.off('SIGINT', onSignal);
     process.off('SIGTERM', onSignal);

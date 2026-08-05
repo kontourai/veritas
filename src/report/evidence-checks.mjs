@@ -2,21 +2,23 @@ import { uniqueStrings } from '../util/strings.mjs';
 import {
   evidenceCheckLabel,
   evidenceCheckRecordsForCommands,
+  evidenceChecksByIds,
   readEvidenceChecks,
+  readRequiredEvidenceCheckIds,
 } from '../evidence/index.mjs';
+import { isBoundEvidenceCheckResult } from '../evidence/execution-tokens.mjs';
 
-function evidenceCheckResultById(evidenceCheckResults, id) {
-  return (evidenceCheckResults ?? []).find((result) => result.id === id) ?? null;
+function evidenceCheckResultForDefinition(evidenceCheckResults, evidenceCheck) {
+  return (evidenceCheckResults ?? []).find(
+    (result) => result.id === evidenceCheck.id && isBoundEvidenceCheckResult(result, evidenceCheck),
+  ) ?? null;
 }
 
 function evidenceCheckResultSummary(result) {
   if (!result) return null;
   if (result.passed) return 'All evidence checks passed.';
   if (result.runner === 'mcp') {
-    const text = result.content?.find((content) => content.type === 'text')?.text;
-    return text
-      ? `MCP tool error: ${text.split('\n')[0]}`
-      : 'MCP tool returned an error.';
+    return 'MCP Evidence Check reported failure.';
   }
   const status = result.exitCode !== null && result.exitCode !== undefined
     ? `exit code ${result.exitCode}`
@@ -60,7 +62,7 @@ export function buildSelectedEvidenceChecks({ evidenceChecks, evidenceCheckResul
   return evidenceChecks.map((evidenceCheck) => {
     const label = evidenceCheckLabel(evidenceCheck);
     const runner = evidenceCheck.runner ?? 'bash';
-    const evidenceCheckResult = evidenceCheckResultById(evidenceCheckResults, evidenceCheck.id);
+    const evidenceCheckResult = evidenceCheckResultForDefinition(evidenceCheckResults, evidenceCheck);
     return {
       id: evidenceCheck.id,
       runner,
@@ -70,6 +72,53 @@ export function buildSelectedEvidenceChecks({ evidenceChecks, evidenceCheckResul
       surface_claim_ids: uniqueStrings(evidenceCheck.surfaceClaimIds ?? []),
       summary: evidenceCheckResultSummary(evidenceCheckResult) ?? evidenceCheck.summary ?? `Evidence Check ${evidenceCheck.id}: ${label}`,
       ...(evidenceCheckResult ? { evidence_check_result: evidenceCheckResult } : {}),
+    };
+  });
+}
+
+export function buildRequiredEvidenceChecks({
+  config,
+  evidenceCheckPlan,
+  evidenceCheckResults,
+  evidenceCheckFailure,
+  evidenceCheckExecutionSkipped = false,
+}) {
+  const selectedEvidenceCheckIds = new Set(
+    (evidenceCheckPlan.evidenceChecks ?? []).map((evidenceCheck) => evidenceCheck.id),
+  );
+  return evidenceChecksByIds(config, readRequiredEvidenceCheckIds(config)).map((evidenceCheck) => {
+    const plannedEvidenceCheck = (evidenceCheckPlan.evidenceChecks ?? []).find(
+      (check) => check.id === evidenceCheck.id,
+    );
+    const result = plannedEvidenceCheck
+      ? evidenceCheckResultForDefinition(evidenceCheckResults, plannedEvidenceCheck)
+      : null;
+    const selected = selectedEvidenceCheckIds.has(evidenceCheck.id);
+    const observed = Boolean(result);
+    const failure = plannedEvidenceCheck
+      && evidenceCheckFailure?.id === evidenceCheck.id
+      && isBoundEvidenceCheckResult(evidenceCheckFailure, plannedEvidenceCheck)
+      ? evidenceCheckFailure
+      : null;
+    const state = !selected
+      ? 'missing'
+      : evidenceCheckExecutionSkipped
+        ? 'skipped'
+        : result?.timedOut || failure?.reason === 'timeout'
+          ? 'timedout'
+          : result
+            ? (result.passed ? 'passed' : 'failed')
+            : 'missing';
+    return {
+      id: evidenceCheck.id,
+      label: evidenceCheckLabel(evidenceCheck),
+      runner: evidenceCheck.runner ?? 'bash',
+      selected,
+      observed,
+      imported: false,
+      passed: result ? result.passed : null,
+      state,
+      ...(failure && !result ? { failure_reason: failure.reason } : {}),
     };
   });
 }

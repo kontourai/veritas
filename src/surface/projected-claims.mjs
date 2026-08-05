@@ -2,6 +2,7 @@ import { SURFACE_TRUST_POLICIES } from './policies.mjs';
 import { surfacePolicyImpact } from './evidence-projection.mjs';
 import {
   readinessIntegrityScope,
+  requiredEvidenceChecksFor,
   readinessSurfaceStatus,
   readinessVerdict,
 } from './readiness.mjs';
@@ -89,6 +90,7 @@ function buildReadinessVerdictClaim(record, policyResultClaimItems = []) {
       verdict,
       promotionAllowed: record.promotion_allowed,
       uncoveredPathResult: record.uncovered_path_result,
+      requiredEvidenceChecks: requiredEvidenceChecksFor(record),
       sourceRef: record.integrity?.sourceRef ?? record.source_ref,
     },
     status: readinessSurfaceStatus(record),
@@ -109,6 +111,7 @@ function buildReadinessVerdictClaim(record, policyResultClaimItems = []) {
         policyResultCount: record.policy_results?.length ?? 0,
         derivedRequirementClaimIds,
         selectedEvidenceCheckCount: record.selected_evidence_checks?.length ?? 0,
+        requiredEvidenceChecks: requiredEvidenceChecksFor(record),
         readinessCoveragePresent: Boolean(record.readiness_coverage),
       },
       integrity: readinessIntegrityScope(record),

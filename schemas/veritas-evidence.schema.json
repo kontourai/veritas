@@ -1075,6 +1075,34 @@
             "null"
           ]
         },
+        "admissibilityWarning": {
+          "type": "boolean"
+        },
+        "admissibilityWarningReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "migrationRecommendation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "message"
+          ],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "recommended"
+              ]
+            },
+            "message": {
+              "type": "string"
+            }
+          }
+        },
         "protectedStandards": {
           "type": "object",
           "additionalProperties": false,
@@ -1234,7 +1262,7 @@
       ],
       "properties": {
         "schemaVersion": {
-          "const": 2
+          "enum": [5, 6, 7]
         },
         "source": {
           "type": "string"

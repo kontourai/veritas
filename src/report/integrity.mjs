@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { assertWithinDir, normalizeRepoPath, relativeRepoPath } from '../paths.mjs';
 import { resolveGitHead, stagedDiffSha256 } from '../shell.mjs';
+import { publicRepoMapConfig, stablePublicJson } from '../evidence/public-config.mjs';
 
 function sha256Hex(value) {
   return createHash('sha256').update(value).digest('hex');
@@ -18,14 +19,6 @@ export function resolveSourceRef({ explicitSourceRef, rootDir, sourceKind = 'exp
 
 function sha256Ref(value) {
   return `sha256:${sha256Hex(value)}`;
-}
-
-function stableStringify(value) {
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
-  if (value && typeof value === 'object') {
-    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
-  }
-  return JSON.stringify(value);
 }
 
 function fileIntegrityRef(rootDir, repoPath) {
@@ -50,9 +43,13 @@ function fileIntegrityRef(rootDir, repoPath) {
   }
 }
 
-function configIntegrityRef({ name, value, path, rootDir }) {
+function configIntegrityRef({ name, value, path, rootDir, durableValue = null }) {
   const ref = { name };
   if (path && rootDir) ref.path = relativeRepoPath(rootDir, path);
+  if (durableValue !== null) {
+    ref.hash = sha256Ref(stablePublicJson(durableValue));
+    return ref;
+  }
   try {
     if (path && existsSync(path)) {
       ref.hash = sha256Ref(readFileSync(path));
@@ -62,7 +59,7 @@ function configIntegrityRef({ name, value, path, rootDir }) {
     ref.status = 'unreadable';
     ref.error = error.message;
   }
-  ref.hash = sha256Ref(stableStringify(value ?? null));
+  ref.hash = sha256Ref(stablePublicJson(value ?? null));
   return ref;
 }
 
@@ -90,6 +87,10 @@ export function buildEvidenceIntegrity({
         value: config,
         path: sources.repoMapPath,
         rootDir,
+        // A raw Repo Map can contain MCP credentials. Its durable identity is
+        // therefore calculated from the same recursively redacted projection
+        // exposed by public report APIs, never the on-disk secret bytes.
+        durableValue: publicRepoMapConfig(config),
       }),
       repoStandards: configIntegrityRef({
         name: repoStandards.name ?? 'repo-standards',

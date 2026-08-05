@@ -66,6 +66,7 @@ import {
   resolveWorkstream,
   writeBootstrapStarterKit,
 } from '../src/index.mjs';
+import { applyInitRecommendation, buildInitRecommendation } from '../src/bootstrap/recommendation.mjs';
 import { SURFACE_TRUST_POLICIES } from '../src/surface/policies.mjs';
 import {
   repoRootDir,
@@ -87,6 +88,13 @@ const realNpmPath = execFileSync('which', ['npm'], { encoding: 'utf8' }).trim();
 
 function executableBits(path) {
   return statSync(path).mode & 0o111;
+}
+
+function disableRequiredEvidenceChecks(rootDir) {
+  const repoMapPath = join(rootDir, '.veritas/repo-map.json');
+  const repoMap = readJsonFromAbsolute(repoMapPath);
+  repoMap.evidence.requiredEvidenceCheckIds = [];
+  writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
 }
 writeFileSync(
   join(testBinDir, 'npm'),
@@ -1395,7 +1403,7 @@ test('work-area boundary fails closed without actor and reports owner outcomes',
   }
 });
 
-test('work-area evidence routing prefers work-area routes, then default, then required checks', () => {
+test('work-area, default, and explicit evidence routing always compose required checks once', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-evidence-check-plan-'));
   writeFileSync(join(rootDir, 'package.json'), '{}');
   mkdirp(join(rootDir, 'scripts'));
@@ -1447,7 +1455,7 @@ test('work-area evidence routing prefers work-area routes, then default, then re
     files: ['scripts/build-viewer.mjs'],
     rootDir,
   });
-  assert.deepEqual(surfacePlan.evidenceCheckCommands, ['npm run viewer:build']);
+  assert.deepEqual(surfacePlan.evidenceCheckCommands, ['npm run viewer:build', 'npm run required-evidence-check']);
   assert.equal(surfacePlan.resolutionSource, 'surface');
 
   const defaultPlan = resolveEvidenceCheckCommands({
@@ -1455,7 +1463,7 @@ test('work-area evidence routing prefers work-area routes, then default, then re
     files: ['packages/core/index.ts'],
     rootDir,
   });
-  assert.deepEqual(defaultPlan.evidenceCheckCommands, ['npm run default-evidence-check']);
+  assert.deepEqual(defaultPlan.evidenceCheckCommands, ['npm run default-evidence-check', 'npm run required-evidence-check']);
   assert.equal(defaultPlan.resolutionSource, 'default');
 
   const mixedPlan = resolveEvidenceCheckCommands({
@@ -1463,8 +1471,53 @@ test('work-area evidence routing prefers work-area routes, then default, then re
     files: ['scripts/build-viewer.mjs', 'packages/core/index.ts'],
     rootDir,
   });
-  assert.deepEqual(mixedPlan.evidenceCheckCommands, ['npm run viewer:build', 'npm run default-evidence-check']);
+  assert.deepEqual(mixedPlan.evidenceCheckCommands, ['npm run viewer:build', 'npm run default-evidence-check', 'npm run required-evidence-check']);
   assert.equal(mixedPlan.resolutionSource, 'surface');
+
+  const explicitPlan = resolveEvidenceCheckCommands({
+    repoMapPath: writeTempRepoMap(rootDir, repoMap),
+    files: ['scripts/build-viewer.mjs'],
+    rootDir,
+    explicitEvidenceCheckCommand: 'npm run diagnostic',
+  });
+  assert.deepEqual(explicitPlan.evidenceCheckCommands, ['npm run diagnostic', 'npm run required-evidence-check']);
+  assert.equal(explicitPlan.resolutionSource, 'explicit');
+
+  repoMap.evidence.evidenceChecks.push({
+    id: 'npm-run-diagnostic',
+    command: 'npm run canonical-required',
+    method: 'validation',
+  });
+  repoMap.evidence.requiredEvidenceCheckIds = ['npm-run-diagnostic'];
+  const collisionPlan = resolveEvidenceCheckCommands({
+    repoMapPath: writeTempRepoMap(rootDir, repoMap),
+    files: ['scripts/build-viewer.mjs'],
+    rootDir,
+    explicitEvidenceCheckCommand: 'npm run diagnostic',
+  });
+  assert.deepEqual(collisionPlan.evidenceCheckCommands, ['npm run diagnostic', 'npm run canonical-required']);
+  assert.notEqual(collisionPlan.evidenceChecks[0].id, 'npm-run-diagnostic');
+  assert.equal(collisionPlan.evidenceChecks[1].id, 'npm-run-diagnostic');
+  repoMap.evidence.evidenceChecks.push(
+    { id: 'explicit-command-npm-run-diagnostic', command: 'npm run occupied-explicit-id', method: 'validation' },
+    { id: 'explicit-command-npm-run-diagnostic-2', command: 'npm run occupied-explicit-id-suffix', method: 'validation' },
+  );
+  repoMap.evidence.requiredEvidenceCheckIds = ['explicit-command-npm-run-diagnostic-2'];
+  const occupiedNamespacePlan = resolveEvidenceCheckCommands({
+    repoMapPath: writeTempRepoMap(rootDir, repoMap),
+    files: ['scripts/build-viewer.mjs'],
+    rootDir,
+    explicitEvidenceCheckCommand: 'npm run diagnostic',
+  });
+  assert.equal(occupiedNamespacePlan.evidenceChecks[0].id, 'explicit-command-npm-run-diagnostic-3');
+  assert.deepEqual(
+    occupiedNamespacePlan.evidenceChecks.map((check) => [check.id, check.command]),
+    [
+      ['explicit-command-npm-run-diagnostic-3', 'npm run diagnostic'],
+      ['explicit-command-npm-run-diagnostic-2', 'npm run occupied-explicit-id-suffix'],
+    ],
+  );
+  repoMap.evidence.requiredEvidenceCheckIds = ['required-evidence-check'];
 
   delete repoMap.evidence.defaultEvidenceCheckIds;
   const requiredPlan = resolveEvidenceCheckCommands({
@@ -2366,6 +2419,100 @@ test('init apply requires an untampered plan artifact', () => {
   assert.equal(existsSync(join(rootDir, '.veritas/repo-map.json')), false);
 });
 
+test('init apply binds the complete canonical artifact set before accepting plan hashes', () => {
+  function planWithPrivateIntegrity(rootDir) {
+    const recommendation = buildInitRecommendation({ rootDir, projectName: 'integrity-fixture' });
+    const privateArtifactPayloadHashes = Object.fromEntries(
+      Object.entries(recommendation.artifact_payloads).map(([path, payload]) => [
+        path,
+        createHash('sha256').update(payload).digest('hex'),
+      ]),
+    );
+    return { recommendation, privateArtifactPayloadHashes };
+  }
+
+  function rootWithPackage(prefix) {
+    const rootDir = mkdtempSync(join(tmpdir(), prefix));
+    writeFileSync(join(rootDir, 'package.json'), '{}\n');
+    return rootDir;
+  }
+
+  const normalRoot = rootWithPackage('veritas-init-exact-plan-');
+  const normal = planWithPrivateIntegrity(normalRoot);
+  applyInitRecommendation({
+    rootDir: normalRoot,
+    ...normal,
+    requirePrivateArtifactIntegrity: true,
+  });
+  assert.deepEqual(
+    normal.recommendation.required_artifact_paths,
+    Object.keys(normal.recommendation.artifact_payloads).sort(),
+  );
+  for (const path of normal.recommendation.required_artifact_paths) {
+    assert.equal(existsSync(join(normalRoot, path)), true, `${path} was written by the exact plan`);
+  }
+
+  const deletedPublicRoot = rootWithPackage('veritas-init-deleted-public-');
+  const deletedPublic = planWithPrivateIntegrity(deletedPublicRoot);
+  delete deletedPublic.recommendation.artifact_payloads['.veritas/repo-map.json'];
+  delete deletedPublic.recommendation.artifact_hashes['.veritas/repo-map.json'];
+  assert.throws(
+    () => applyInitRecommendation({
+      rootDir: deletedPublicRoot,
+      ...deletedPublic,
+      requirePrivateArtifactIntegrity: true,
+    }),
+    /artifact set mismatch/,
+  );
+  assert.equal(existsSync(join(deletedPublicRoot, '.veritas/repo-map.json')), false);
+
+  const deletedPrivateRoot = rootWithPackage('veritas-init-deleted-private-');
+  const deletedPrivate = planWithPrivateIntegrity(deletedPrivateRoot);
+  delete deletedPrivate.privateArtifactPayloadHashes['.veritas/repo-map.json'];
+  assert.throws(
+    () => applyInitRecommendation({
+      rootDir: deletedPrivateRoot,
+      ...deletedPrivate,
+      requirePrivateArtifactIntegrity: true,
+    }),
+    /artifact set mismatch/,
+  );
+
+  const extraPrivateRoot = rootWithPackage('veritas-init-extra-private-');
+  const extraPrivate = planWithPrivateIntegrity(extraPrivateRoot);
+  extraPrivate.privateArtifactPayloadHashes['.veritas/unexpected.json'] = 'a'.repeat(64);
+  assert.throws(
+    () => applyInitRecommendation({
+      rootDir: extraPrivateRoot,
+      ...extraPrivate,
+      requirePrivateArtifactIntegrity: true,
+    }),
+    /artifact set mismatch/,
+  );
+
+  const renamedRoot = rootWithPackage('veritas-init-renamed-artifact-');
+  const renamed = planWithPrivateIntegrity(renamedRoot);
+  const originalPath = '.veritas/repo-map.json';
+  const renamedPath = '.veritas/renamed-repo-map.json';
+  renamed.recommendation.artifact_payloads[renamedPath] = renamed.recommendation.artifact_payloads[originalPath];
+  renamed.recommendation.artifact_hashes[renamedPath] = renamed.recommendation.artifact_hashes[originalPath];
+  delete renamed.recommendation.artifact_payloads[originalPath];
+  delete renamed.recommendation.artifact_hashes[originalPath];
+  renamed.recommendation.required_artifact_paths = renamed.recommendation.required_artifact_paths.map((path) => (
+    path === originalPath ? renamedPath : path
+  )).sort();
+  assert.throws(
+    () => applyInitRecommendation({
+      rootDir: renamedRoot,
+      ...renamed,
+      requirePrivateArtifactIntegrity: true,
+    }),
+    /artifact set mismatch/,
+  );
+  assert.equal(existsSync(join(renamedRoot, originalPath)), false);
+  assert.equal(existsSync(join(renamedRoot, renamedPath)), false);
+});
+
 test('init apply rejects plan artifact paths outside the target root', () => {
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-init-apply-escape-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
@@ -2391,6 +2538,7 @@ test('init apply rejects plan artifact paths outside the target root', () => {
   const tampered = readJsonFromAbsolute(planPath);
   tampered.artifact_payloads[escapedPath] = 'escaped\n';
   tampered.artifact_hashes[escapedPath] = createHash('sha256').update('escaped\n').digest('hex');
+  tampered.required_artifact_paths.push(escapedPath);
   const tamperedPath = join(rootDir, '.veritas/init-plans/escape.json');
   writeFileSync(tamperedPath, `${JSON.stringify(tampered, null, 2)}\n`, 'utf8');
 
@@ -2667,6 +2815,7 @@ test('report input resolution keeps branch-diff and working-tree modes explicit'
 test('report CLI can measure the full working tree', () => {
   const rootDir = initCommittedRepo('veritas-working-tree-cli-');
   writeBootstrapStarterKit({ rootDir, projectName: 'Working Tree Demo' });
+  disableRequiredEvidenceChecks(rootDir);
   commitAll(rootDir, 'Bootstrap starter kit');
 
   writeFileSync(join(rootDir, 'package.json'), '{\"name\":\"demo\"}\n');
@@ -2712,6 +2861,7 @@ test('report CLI can measure the full working tree', () => {
 test('report CLI can emit an empty current-state artifact for a clean working tree', () => {
   const rootDir = initCommittedRepo('veritas-working-tree-clean-');
   writeBootstrapStarterKit({ rootDir, projectName: 'Clean Working Tree Demo' });
+  disableRequiredEvidenceChecks(rootDir);
   commitAll(rootDir, 'Bootstrap starter kit');
 
   const stdout = execFileSync(
@@ -2747,6 +2897,7 @@ test('report CLI can emit an empty current-state artifact for a clean working tr
 test('readiness CLI emits the canonical trust bundle for Flow Kit gates', () => {
   const rootDir = initCommittedRepo('veritas-trust-bundle-cli-');
   writeBootstrapStarterKit({ rootDir, projectName: 'Trust Bundle Demo' });
+  disableRequiredEvidenceChecks(rootDir);
   commitAll(rootDir, 'Bootstrap starter kit');
 
   const stdout = execFileSync(
@@ -2783,6 +2934,7 @@ test('readiness CLI emits the canonical trust bundle for Flow Kit gates', () => 
 test('report CLI preserves branch-diff behavior', () => {
   const rootDir = initCommittedRepo('veritas-branch-diff-cli-');
   writeBootstrapStarterKit({ rootDir, projectName: 'Branch Diff Demo' });
+  disableRequiredEvidenceChecks(rootDir);
   commitAll(rootDir, 'Bootstrap starter kit');
 
   writeFileSync(join(rootDir, 'package.json'), '{\"name\":\"demo\"}\n');
@@ -3699,6 +3851,7 @@ test('readiness check reports primitive-first governance findings as policy resu
     ],
     { cwd: repoRootDir, encoding: 'utf8' },
   );
+  disableRequiredEvidenceChecks(rootDir);
   const policyPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
   const repoStandards = readJsonFromAbsolute(policyPath);
   repoStandards.rules.push({
@@ -3814,6 +3967,7 @@ test('readiness check records run history and reuses fail-to-pass time to green'
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-run-history-'));
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   writeBootstrapStarterKit({ rootDir, projectName: 'Run History Demo', evidenceCheck: 'node -e process.exit(0)' });
+  disableRequiredEvidenceChecks(rootDir);
   execFileSync('git', ['init'], { cwd: rootDir, stdio: 'ignore' });
   execFileSync('git', ['config', 'user.email', 'veritas@example.com'], { cwd: rootDir });
   execFileSync('git', ['config', 'user.name', 'Veritas Test'], { cwd: rootDir });
