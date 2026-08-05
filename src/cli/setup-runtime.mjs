@@ -14,7 +14,16 @@ export function runClaudeCodePreToolUseCli(argv = process.argv.slice(2), default
     actor: options.actor,
     stdinText,
   });
-  process.stdout.write(`${JSON.stringify({ decision: result.decision, reason: result.reason }, null, 2)}\n`);
+  const output = { decision: result.decision, reason: result.reason };
+  if (result.exceptionPath) output.exceptionPath = result.exceptionPath;
+  process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
+  if (result.skipped) {
+    process.stderr.write(
+      `Veritas: PreToolUse gate skipped (VERITAS_HOOK_SKIP=1); bypass recorded in ${result.exceptionPath}\n`,
+    );
+  }
+  // Claude Code's PreToolUse protocol treats exit 2 as "block"; any other
+  // non-zero exit is a non-blocking error and the tool call proceeds.
   if (result.decision === 'block') {
     process.exitCode = 2;
   }

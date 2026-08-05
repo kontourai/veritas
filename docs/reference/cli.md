@@ -42,11 +42,11 @@ Breaking evidence-check migration notes live in [../MIGRATING.md](../MIGRATING.m
 Runs the requested check. Without `--check`, this is the agent-facing feedback path.
 
 ```bash
-npx @kontourai/veritas readiness [--check evidence|boundaries|coverage] [--root <path>] [--working-tree]
+npx @kontourai/veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree]
 npx @kontourai/veritas readiness --check boundaries --actor cli-team [--diff main]
 ```
 
-`readiness` is the recommended current front door for evidenceCheck execution, generated evidence, standards feedback drafting, and change guidance. `readiness --check boundaries` replaces `boundaries check`. `readiness --check coverage` is the current command for readiness coverage. `readiness --check evidence` is the current command for the lower-level generated evidence path.
+`readiness` is the recommended current front door for evidenceCheck execution, generated evidence, standards feedback drafting, and change guidance. `readiness --check boundaries` replaces `boundaries check`. `readiness --check coverage` is the current command for readiness coverage. `readiness --check evidence` is the current command for the lower-level generated evidence path. `readiness --check config` validates this repo's Repo Map and Repo Standards against the schemas Veritas publishes for them.
 
 Evidence-check processes have bounded cancellation and per-check deadlines. Embedders may set `runtime.workflowTimeoutMs` for an overall readiness deadline; Veritas checks that deadline before report, finalization, and completion. Report generation and filesystem-backed feedback finalization remain synchronous repository operations: they receive explicit bounded Git diff resolution, but a caller cannot preempt an already-running filesystem operation once that finalization phase has started. The workflow deadline is therefore observed at phase boundaries, not a claim of universal mid-operation cancellation.
 
@@ -184,7 +184,21 @@ npx @kontourai/veritas hooks claude-code apply [--root <path>] [--force]
 npx @kontourai/veritas hooks claude-code pre-tool-use [--root <path>] [--file <path>] [--actor <id>]
 ```
 
-`pre-tool-use` reads the Claude hook JSON payload from stdin, extracts `tool_input.file_path` or `tool_input.path`, resolves the actor from `--actor`, `VERITAS_ACTOR`, or the current attestation, and returns hook protocol JSON. Deny-enforced failures return `decision: "block"` and exit non-zero. Set `VERITAS_EXCEPTION_RULE` and `VERITAS_EXCEPTION_REASON` to allow a specific denied rule and append an exception record.
+`pre-tool-use` reads the Claude hook JSON payload from stdin, extracts `tool_input.file_path` or `tool_input.path`, resolves the actor from `--actor`, `VERITAS_ACTOR`, or the current attestation, and returns hook protocol JSON.
+
+Exit codes follow the Claude Code PreToolUse protocol, where **exit 2 is the only code that blocks the tool call** — any other non-zero exit is reported as a non-blocking hook error and the edit proceeds:
+
+| Decision | Exit code | Effect in Claude Code |
+|----------|-----------|-----------------------|
+| `block` (deny-enforced failure) | `2` | the edit is blocked and the reason is returned to the agent |
+| `approve` | `0` | the edit proceeds |
+
+This is the only Veritas mechanism that can block an edit, so both ways past it are recorded to `.kontourai/veritas/standards-feedback/exceptions.jsonl`:
+
+- `VERITAS_EXCEPTION_RULE` + `VERITAS_EXCEPTION_REASON` allow one specific denied rule and append a `rule-exception` record.
+- `VERITAS_HOOK_SKIP=1` skips evaluation entirely and appends a `hook-skip` record (set `VERITAS_HOOK_SKIP_REASON` to say why). Unlike the generated git and runtime hooks, the PreToolUse gate resolves this bypass inside Veritas rather than in the shell body, so a skipped gate still leaves a record in the repo.
+
+Both records carry the resolved actor, the file, and a timestamp, and both count toward the `exception_count` reported by standards feedback.
 
 ### `integrations`
 
@@ -500,6 +514,20 @@ Printed helper surfaces:
 - a tracked Codex hooks config plus optional target inspection status
 - a Claude Code PreToolUse hook that injects `veritas explain` context before file edits
 
+### `readiness --check config`
+
+Validates this repo's governance config against the JSON Schemas Veritas publishes for it.
+
+```bash
+npx @kontourai/veritas readiness --check config [--root <path>] [--repo-map <path>] [--repo-standards <path>] [--format json]
+```
+
+Checks `.veritas/repo-map.json` against `schemas/veritas-repo-map.schema.json` and `.veritas/repo-standards/default.repo-standards.json` against `schemas/veritas-repo-standards.schema.json`, printing one `PASS` / `FAIL` / `SKIP` line per artifact and **exiting 1 if either is invalid**. This is the gateable form of the check — put it in CI or a pre-push lane to make config drift an authoring-time error.
+
+The same validation runs whenever Veritas loads either artifact, but loading only **warns**: these loaders sit on the Claude Code PreToolUse gate's path, and a hard failure there would block every edit in the repo until the config was repaired. Set `VERITAS_STRICT_CONFIG=1` to turn the warning into a load failure today. A future major version makes that the default.
+
+Both schemas set `additionalProperties: false`, so a field the schema does not define — a rule attribute Veritas never reads, for example — is reported rather than silently ignored.
+
 ### `setup`
 
 Installs or repairs first-class repo setup.
@@ -615,9 +643,13 @@ They can also produce a `pre-push` hook that:
 
 `print codex-hook` and `apply codex-hook` produce a tracked Codex config that installs the runtime hook as a `Stop` hook.
 
+The Claude Code PreToolUse hook (`.veritas/hooks/pre-tool-use.sh`) deliberately does **not** skip itself in the shell body. It always calls `veritas hooks claude-code pre-tool-use`, which honours `VERITAS_HOOK_SKIP=1` and records the bypass before approving.
+
 ## Environment Variables
 
-- `VERITAS_HOOK_SKIP=1`: skips generated git/runtime hook execution
+- `VERITAS_HOOK_SKIP=1`: skips generated git/runtime hook execution. For the Claude Code PreToolUse gate it skips evaluation but appends a `hook-skip` record to `.kontourai/veritas/standards-feedback/exceptions.jsonl`
+- `VERITAS_HOOK_SKIP_REASON`: optional free-text reason stored on that `hook-skip` record
+- `VERITAS_STRICT_CONFIG=1`: makes a Repo Map or Repo Standards file that fails schema validation a hard load failure instead of a warning
 
 Do not set either skip variable in CI if the CI lane is meant to enforce evidenceCheck execution.
 

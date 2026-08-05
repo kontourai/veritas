@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.5.6](https://github.com/kontourai/veritas/compare/v1.5.5...v1.5.6) (2026-08-02)
+
+
+### Fixes
+
+* expose governance block apply command ([4eb40a2](https://github.com/kontourai/veritas/commit/4eb40a2f34cb8f734e61d78866628282fd82b6ba))
+* **hooks:** smoke-test the installed PreToolUse gate and record hook skips ([#205](https://github.com/kontourai/veritas/issues/205)) ([8533476](https://github.com/kontourai/veritas/commit/85334763c10b5b336c6b0088c51a286101224600))
+* **load:** validate Repo Standards and Repo Map against the schemas Veritas ships ([#207](https://github.com/kontourai/veritas/issues/207)) ([18ab762](https://github.com/kontourai/veritas/commit/18ab76240840c6bbdf56dc53c92fd11da17d5f94)), closes [#196](https://github.com/kontourai/veritas/issues/196)
+
 ## [1.5.5](https://github.com/kontourai/veritas/compare/v1.5.4...v1.5.5) (2026-08-01)
 
 

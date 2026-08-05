@@ -171,6 +171,21 @@
         ]
       },
       {
+        "id": "delivery.kits",
+        "kind": "delivery-area",
+        "label": "kits/**",
+        "patterns": [
+          "kits/"
+        ],
+        "owners": [
+          "delivery-team"
+        ],
+        "boundary": "strict",
+        "boundaryAllow": [
+          "repo-core"
+        ]
+      },
+      {
         "id": "tooling.scripts",
         "kind": "tooling-area",
         "label": "scripts/**",

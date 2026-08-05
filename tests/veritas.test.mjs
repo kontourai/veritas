@@ -1590,7 +1590,7 @@ test('CLI entrypoints expose help text for publishable operator surfaces', () =>
     { cwd: repoRootDir, encoding: 'utf8' },
   );
   assert.match(mainHelp, /veritas init/);
-  assert.match(mainHelp, /veritas readiness \[--check evidence\|boundaries\|coverage\]/);
+  assert.match(mainHelp, /veritas readiness \[--check evidence\|boundaries\|coverage\|config\]/);
   assert.match(mainHelp, /veritas feedback marker/);
   assert.match(mainHelp, /veritas feedback marker-suite/);
   assert.doesNotMatch(mainHelp, /Deprecated shims/);

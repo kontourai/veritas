@@ -4,6 +4,7 @@ export { runInitCli } from './init.mjs';
 export { runAttestCli } from './attest.mjs';
 export { runReadinessCheckCli } from './readiness-check.mjs';
 export { runClaimCli } from './claims.mjs';
+export { runRepoConfigCheckCli, validateRepoConfig } from './config-check.mjs';
 export {
   runPrintPackageScriptsCli,
   runPrintCiSnippetCli,
