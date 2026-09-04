@@ -8,17 +8,19 @@
 - **Triggered evidenceChecks:** .veritas/**, bin/**, docs/**, root manifests, schemas/**, src/**, tests/**
 - **Selected evidenceCheck labels:** `npm run verify, npm run veritas:vocab:check, npm run veritas:fallow:advisory`
 - **Evidence Check selection:** default
+- **Required Evidence Checks:** required-evidence-check (missing)
 - **Evidence inventories:** 0 total, 0 required, 0 candidate, 0 move-to-test, 0 retiring
 - **External tool results:** 1
 - **Uncovered path result:** clear
 - **Baseline `ci:fast` passed:** yes
 - **Report transport:** local-json
-- **Policy results:** 9 passed, 0 failed, 0 metadata-only
+- **Policy results:** 8 passed, 1 failed, 0 metadata-only
 - **Artifact:** `.kontourai/veritas/evidence/veritas-repo-conformance.json`
 
 ### Policy Results
 - required-veritas-operational-artifacts: pass — All required repository artifacts are present.
-- required-veritas-cli-artifacts: pass — All required repository artifacts are present.
+- required-veritas-cli-artifacts: fail — Some required repository artifacts are missing.
+  - Artifact: package-lock.json
 - required-veritas-reference-artifacts: pass — All required repository artifacts are present.
 - required-veritas-schema-artifacts: pass — All required repository artifacts are present.
 - ai-instruction-files-synced: pass — All required AI instruction files contain the canonical Veritas governance block.
@@ -27,8 +29,11 @@
 - canonical-veritas-vocabulary: pass — All matched files use canonical Veritas vocabulary.
 - repeatable-governance-uses-veritas-primitives: pass — Repeatable governance checks are represented by Veritas primitives.
 
+### Required Evidence Checks
+- required-evidence-check: missing — npm run verify
+
 ### External Tool Results
-- fallow:fallow-advisory: missing / advisory — .kontourai/veritas/external/fallow-audit.json
+- fallow:fallow-advisory: warn / advisory — .kontourai/veritas/external/fallow-audit.json
 
 ### Readiness Coverage
 - Readiness coverage has owners, review triggers, and no unknown catch-evidence inventories.

@@ -5,7 +5,7 @@
   "mode": "observe",
   "evidence": {
     "artifact_path": ".kontourai/veritas/evidence/veritas-repo-conformance.json",
-    "artifact_digest": "16e2657a00b619449b1880ccb2db6ab7de617aa98c13ecd89e5ce34f05ca0f58",
+    "artifact_digest": "ef68cefe3e392c006cedd9621c82d0ee14050e377a0198914a881095f00c4cbb",
     "timestamp": "2026-04-21T22:00:00.000Z",
     "source_ref": "refs/heads/main",
     "source_kind": "explicit-files",
@@ -55,10 +55,15 @@
         "owner": "repo-core",
         "rollback_switch": null,
         "implemented": true,
-        "passed": true,
+        "passed": false,
         "status": "info",
-        "summary": "All required repository artifacts are present.",
-        "findings": []
+        "summary": "Some required repository artifacts are missing.",
+        "findings": [
+          {
+            "kind": "missing-artifact",
+            "artifact": "package-lock.json"
+          }
+        ]
       },
       {
         "rule_id": "required-veritas-reference-artifacts",

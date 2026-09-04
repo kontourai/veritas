@@ -47,7 +47,8 @@
       },
       "match": {
         "artifacts": [
-          "package-lock.json",
+          "pnpm-lock.yaml",
+          "pnpm-workspace.yaml",
           "package.json",
           "bin/veritas.mjs",
           "bin/veritas-report.mjs"
