@@ -8,6 +8,7 @@
 - **Triggered evidenceChecks:** .veritas/**, bin/**, docs/**, root manifests, schemas/**, src/**, tests/**
 - **Selected evidenceCheck labels:** `npm run verify, npm run veritas:vocab:check, npm run veritas:fallow:advisory`
 - **Evidence Check selection:** default
+- **Required Evidence Checks:** required-evidence-check (missing)
 - **Evidence inventories:** 0 total, 0 required, 0 candidate, 0 move-to-test, 0 retiring
 - **External tool results:** 1
 - **Uncovered path result:** clear
@@ -27,8 +28,11 @@
 - canonical-veritas-vocabulary: pass — All matched files use canonical Veritas vocabulary.
 - repeatable-governance-uses-veritas-primitives: pass — Repeatable governance checks are represented by Veritas primitives.
 
+### Required Evidence Checks
+- required-evidence-check: missing — npm run verify
+
 ### External Tool Results
-- fallow:fallow-advisory: missing / advisory — .kontourai/veritas/external/fallow-audit.json
+- fallow:fallow-advisory: warn / advisory — .kontourai/veritas/external/fallow-audit.json
 
 ### Readiness Coverage
 - Readiness coverage has owners, review triggers, and no unknown catch-evidence inventories.

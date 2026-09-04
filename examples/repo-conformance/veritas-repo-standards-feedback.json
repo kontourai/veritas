@@ -5,7 +5,7 @@
   "mode": "observe",
   "evidence": {
     "artifact_path": ".kontourai/veritas/evidence/veritas-repo-conformance.json",
-    "artifact_digest": "16e2657a00b619449b1880ccb2db6ab7de617aa98c13ecd89e5ce34f05ca0f58",
+    "artifact_digest": "1ff190e9d574df2eaf8bde86e649f7feb86424282f4e9e1c5831743a44a0c6ad",
     "timestamp": "2026-04-21T22:00:00.000Z",
     "source_ref": "refs/heads/main",
     "source_kind": "explicit-files",
