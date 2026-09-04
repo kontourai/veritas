@@ -21,13 +21,13 @@
       },
       {
         "path": ".veritas/repo-map.json",
-        "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-        "sizeBytes": 8799
+        "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+        "sizeBytes": 8829
       },
       {
         "path": ".veritas/repo-standards/default.repo-standards.json",
-        "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-        "sizeBytes": 15074
+        "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+        "sizeBytes": 15104
       },
       {
         "path": ".veritas/authority/default.authority-settings.json",
@@ -46,8 +46,8 @@
       },
       {
         "path": "package.json",
-        "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-        "sizeBytes": 3999
+        "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+        "sizeBytes": 4064
       },
       {
         "path": "bin/veritas.mjs",
@@ -61,30 +61,30 @@
       },
       {
         "path": "docs/reference/cli.md",
-        "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-        "sizeBytes": 37071
+        "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+        "sizeBytes": 38727
       },
       {
         "path": "schemas/veritas-evidence.schema.json",
-        "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-        "sizeBytes": 29242
+        "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+        "sizeBytes": 29893
       },
       {
         "path": "tests/veritas.test.mjs",
-        "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-        "sizeBytes": 223475
+        "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+        "sizeBytes": 230257
       }
     ],
     "configRefs": {
       "repoMap": {
         "name": "veritas",
         "path": ".veritas/repo-map.json",
-        "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+        "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
       },
       "repoStandards": {
         "name": "veritas-default",
         "path": ".veritas/repo-standards/default.repo-standards.json",
-        "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+        "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
       },
       "authoritySettings": {
         "name": "authority-settings",
@@ -433,13 +433,179 @@
       "format": "veritas-fallow-advisory-v1",
       "command": "npm run veritas:fallow:advisory",
       "evidence_check_id": "fallow-advisory",
-      "verdict": "missing",
+      "verdict": "warn",
       "blocking": false,
       "summary": {
-        "message": "External tool artifact .kontourai/veritas/external/fallow-audit.json was not found."
+        "dead_code_issues": 184,
+        "duplication_clone_groups": 19,
+        "duplicated_lines": 424,
+        "duplication_percent": 2.1951850893088274,
+        "complexity_findings": 305,
+        "average_maintainability": 88.6
       },
       "artifact_path": ".kontourai/veritas/external/fallow-audit.json",
-      "actions": []
+      "actions": [
+        {
+          "type": "apply-refactoring",
+          "description": "2 complex functions lack test coverage path, add tests before modifying",
+          "auto_fixable": false,
+          "paths": [
+            "src/surface/readiness-authority.mjs"
+          ]
+        },
+        {
+          "type": "suppress-line",
+          "description": "Suppress the underlying complexity finding",
+          "auto_fixable": false,
+          "paths": [
+            "src/surface/readiness-authority.mjs"
+          ]
+        },
+        {
+          "type": "apply-refactoring",
+          "description": "Remove 5 unused exports to reduce surface area (50% dead)",
+          "auto_fixable": false,
+          "paths": [
+            "src/bootstrap.mjs"
+          ]
+        },
+        {
+          "type": "suppress-line",
+          "description": "Suppress the underlying complexity finding",
+          "auto_fixable": false,
+          "paths": [
+            "src/bootstrap.mjs"
+          ]
+        },
+        {
+          "type": "apply-refactoring",
+          "description": "Remove 8 unused exports to reduce surface area (89% dead)",
+          "auto_fixable": false,
+          "paths": [
+            "src/cli/setup-print.mjs"
+          ]
+        },
+        {
+          "type": "suppress-line",
+          "description": "Suppress the underlying complexity finding",
+          "auto_fixable": false,
+          "paths": [
+            "src/cli/setup-print.mjs"
+          ]
+        },
+        {
+          "type": "apply-refactoring",
+          "description": "Remove 6 unused exports to reduce surface area (67% dead)",
+          "auto_fixable": false,
+          "paths": [
+            "src/cli/setup-apply.mjs"
+          ]
+        },
+        {
+          "type": "suppress-line",
+          "description": "Suppress the underlying complexity finding",
+          "auto_fixable": false,
+          "paths": [
+            "src/cli/setup-apply.mjs"
+          ]
+        },
+        {
+          "type": "apply-refactoring",
+          "description": "Split high-impact file (75 LOC), 5 dependents amplify every change",
+          "auto_fixable": false,
+          "paths": [
+            "src/claims/store.mjs"
+          ]
+        },
+        {
+          "type": "suppress-line",
+          "description": "Suppress the underlying complexity finding",
+          "auto_fixable": false,
+          "paths": [
+            "src/claims/store.mjs"
+          ]
+        },
+        {
+          "type": "apply-refactoring",
+          "description": "7 complex functions lack test coverage path, add tests before modifying",
+          "auto_fixable": false,
+          "paths": [
+            "src/explain.mjs"
+          ]
+        },
+        {
+          "type": "suppress-line",
+          "description": "Suppress the underlying complexity finding",
+          "auto_fixable": false,
+          "paths": [
+            "src/explain.mjs"
+          ]
+        },
+        {
+          "type": "apply-refactoring",
+          "description": "4 complex functions lack test coverage path, add tests before modifying",
+          "auto_fixable": false,
+          "paths": [
+            "src/evidence/external-tools.mjs"
+          ]
+        },
+        {
+          "type": "suppress-line",
+          "description": "Suppress the underlying complexity finding",
+          "auto_fixable": false,
+          "paths": [
+            "src/evidence/external-tools.mjs"
+          ]
+        },
+        {
+          "type": "apply-refactoring",
+          "description": "Split high-impact file (362 LOC), 3 dependents amplify every change",
+          "auto_fixable": false,
+          "paths": [
+            "src/report/format.mjs"
+          ]
+        },
+        {
+          "type": "suppress-line",
+          "description": "Suppress the underlying complexity finding",
+          "auto_fixable": false,
+          "paths": [
+            "src/report/format.mjs"
+          ]
+        },
+        {
+          "type": "apply-refactoring",
+          "description": "Split high-impact file (4 LOC), 9 dependents amplify every change",
+          "auto_fixable": false,
+          "paths": [
+            "src/util/strings.mjs"
+          ]
+        },
+        {
+          "type": "suppress-line",
+          "description": "Suppress the underlying complexity finding",
+          "auto_fixable": false,
+          "paths": [
+            "src/util/strings.mjs"
+          ]
+        },
+        {
+          "type": "apply-refactoring",
+          "description": "Split high-impact file (68 LOC), 6 dependents amplify every change",
+          "auto_fixable": false,
+          "paths": [
+            "src/surface/primitives.mjs"
+          ]
+        },
+        {
+          "type": "suppress-line",
+          "description": "Suppress the underlying complexity finding",
+          "auto_fixable": false,
+          "paths": [
+            "src/surface/primitives.mjs"
+          ]
+        }
+      ]
     }
   ],
   "uncovered_path_result": "clear",
@@ -1132,12 +1298,24 @@
           "subjectType": "repository-change",
           "subjectId": "veritas-default:refs-heads-main",
           "value": {
-            "verdict": "ready",
+            "verdict": "not-ready",
             "promotionAllowed": true,
             "uncoveredPathResult": "clear",
+            "requiredEvidenceChecks": [
+              {
+                "id": "required-evidence-check",
+                "label": "npm run verify",
+                "runner": "bash",
+                "selected": true,
+                "observed": false,
+                "imported": false,
+                "passed": null,
+                "state": "missing"
+              }
+            ],
             "sourceRef": "refs/heads/main"
           },
-          "status": "verified",
+          "status": "rejected",
           "impactLevel": "high",
           "verificationPolicyId": "veritas.readiness-verdict",
           "derivedFrom": [
@@ -1196,6 +1374,18 @@
                 "veritas.policy.veritas.veritas-default.required-veritas-schema-artifacts"
               ],
               "selectedEvidenceCheckCount": 3,
+              "requiredEvidenceChecks": [
+                {
+                  "id": "required-evidence-check",
+                  "label": "npm run verify",
+                  "runner": "bash",
+                  "selected": true,
+                  "observed": false,
+                  "imported": false,
+                  "passed": null,
+                  "state": "missing"
+                }
+              ],
               "readinessCoveragePresent": true
             },
             "integrity": {
@@ -1212,13 +1402,13 @@
                 },
                 {
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                  "sizeBytes": 8799
+                  "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                  "sizeBytes": 8829
                 },
                 {
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                  "sizeBytes": 15074
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                  "sizeBytes": 15104
                 },
                 {
                   "path": ".veritas/authority/default.authority-settings.json",
@@ -1237,8 +1427,8 @@
                 },
                 {
                   "path": "package.json",
-                  "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                  "sizeBytes": 3999
+                  "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                  "sizeBytes": 4064
                 },
                 {
                   "path": "bin/veritas.mjs",
@@ -1252,30 +1442,30 @@
                 },
                 {
                   "path": "docs/reference/cli.md",
-                  "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                  "sizeBytes": 37071
+                  "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                  "sizeBytes": 38727
                 },
                 {
                   "path": "schemas/veritas-evidence.schema.json",
-                  "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                  "sizeBytes": 29242
+                  "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                  "sizeBytes": 29893
                 },
                 {
                   "path": "tests/veritas.test.mjs",
-                  "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                  "sizeBytes": 223475
+                  "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                  "sizeBytes": 230257
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -1336,12 +1526,12 @@
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -1361,12 +1551,12 @@
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -1417,20 +1607,20 @@
               "fileRefs": [
                 {
                   "path": "docs/reference/cli.md",
-                  "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                  "sizeBytes": 37071
+                  "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                  "sizeBytes": 38727
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -1442,20 +1632,20 @@
             "fileIntegrity": [
               {
                 "path": "docs/reference/cli.md",
-                "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                "sizeBytes": 37071
+                "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                "sizeBytes": 38727
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -1511,13 +1701,13 @@
                 },
                 {
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                  "sizeBytes": 8799
+                  "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                  "sizeBytes": 8829
                 },
                 {
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                  "sizeBytes": 15074
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                  "sizeBytes": 15104
                 },
                 {
                   "path": ".veritas/authority/default.authority-settings.json",
@@ -1529,12 +1719,12 @@
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -1551,13 +1741,13 @@
               },
               {
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                "sizeBytes": 8799
+                "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                "sizeBytes": 8829
               },
               {
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                "sizeBytes": 15074
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                "sizeBytes": 15104
               },
               {
                 "path": ".veritas/authority/default.authority-settings.json",
@@ -1569,12 +1759,12 @@
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -1635,20 +1825,20 @@
                 },
                 {
                   "path": "package.json",
-                  "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                  "sizeBytes": 3999
+                  "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                  "sizeBytes": 4064
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -1670,20 +1860,20 @@
               },
               {
                 "path": "package.json",
-                "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                "sizeBytes": 3999
+                "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                "sizeBytes": 4064
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -1734,20 +1924,20 @@
               "fileRefs": [
                 {
                   "path": "schemas/veritas-evidence.schema.json",
-                  "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                  "sizeBytes": 29242
+                  "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                  "sizeBytes": 29893
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -1759,20 +1949,20 @@
             "fileIntegrity": [
               {
                 "path": "schemas/veritas-evidence.schema.json",
-                "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                "sizeBytes": 29242
+                "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                "sizeBytes": 29893
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -1831,12 +2021,12 @@
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -1856,12 +2046,12 @@
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -1912,20 +2102,20 @@
               "fileRefs": [
                 {
                   "path": "tests/veritas.test.mjs",
-                  "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                  "sizeBytes": 223475
+                  "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                  "sizeBytes": 230257
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -1937,20 +2127,20 @@
             "fileIntegrity": [
               {
                 "path": "tests/veritas.test.mjs",
-                "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                "sizeBytes": 223475
+                "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                "sizeBytes": 230257
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -1968,11 +2158,10 @@
           "method": "validation",
           "sourceRef": "veritas-repo-conformance",
           "sourceLocator": "selected_evidence_checks",
-          "excerptOrSummary": "All evidence checks passed.",
+          "excerptOrSummary": "Required Evidence Check required-evidence-check is missing; an acceptable result is required for merge readiness.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
           "integrityRef": "refs/heads/main",
-          "passing": true,
           "blocking": true,
           "metadata": {
             "sourceKind": "explicit-files",
@@ -2008,13 +2197,13 @@
                 },
                 {
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                  "sizeBytes": 8799
+                  "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                  "sizeBytes": 8829
                 },
                 {
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                  "sizeBytes": 15074
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                  "sizeBytes": 15104
                 },
                 {
                   "path": ".veritas/authority/default.authority-settings.json",
@@ -2033,8 +2222,8 @@
                 },
                 {
                   "path": "package.json",
-                  "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                  "sizeBytes": 3999
+                  "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                  "sizeBytes": 4064
                 },
                 {
                   "path": "bin/veritas.mjs",
@@ -2048,30 +2237,30 @@
                 },
                 {
                   "path": "docs/reference/cli.md",
-                  "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                  "sizeBytes": 37071
+                  "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                  "sizeBytes": 38727
                 },
                 {
                   "path": "schemas/veritas-evidence.schema.json",
-                  "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                  "sizeBytes": 29242
+                  "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                  "sizeBytes": 29893
                 },
                 {
                   "path": "tests/veritas.test.mjs",
-                  "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                  "sizeBytes": 223475
+                  "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                  "sizeBytes": 230257
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -2088,13 +2277,13 @@
               },
               {
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                "sizeBytes": 8799
+                "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                "sizeBytes": 8829
               },
               {
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                "sizeBytes": 15074
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                "sizeBytes": 15104
               },
               {
                 "path": ".veritas/authority/default.authority-settings.json",
@@ -2113,8 +2302,8 @@
               },
               {
                 "path": "package.json",
-                "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                "sizeBytes": 3999
+                "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                "sizeBytes": 4064
               },
               {
                 "path": "bin/veritas.mjs",
@@ -2128,30 +2317,30 @@
               },
               {
                 "path": "docs/reference/cli.md",
-                "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                "sizeBytes": 37071
+                "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                "sizeBytes": 38727
               },
               {
                 "path": "schemas/veritas-evidence.schema.json",
-                "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                "sizeBytes": 29242
+                "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                "sizeBytes": 29893
               },
               {
                 "path": "tests/veritas.test.mjs",
-                "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                "sizeBytes": 223475
+                "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                "sizeBytes": 230257
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -2164,13 +2353,23 @@
             "expectedResult": "all checks pass",
             "observedResult": {
               "expected": "all checks pass",
-              "status": "passed",
-              "summary": "All evidence checks passed."
+              "status": "missing",
+              "summary": "Required Evidence Check required-evidence-check is missing; an acceptable result is required for merge readiness."
             },
             "evidenceCheckResolutionSource": "default",
             "baselineCiFastPassed": true,
             "evidenceCheckId": "required-evidence-check",
             "evidenceCheckRunner": "bash",
+            "requiredEvidenceCheck": {
+              "id": "required-evidence-check",
+              "label": "npm run verify",
+              "runner": "bash",
+              "selected": true,
+              "observed": false,
+              "imported": false,
+              "passed": null,
+              "state": "missing"
+            },
             "surfaceClaimIds": []
           }
         },
@@ -2186,7 +2385,7 @@
           "collectedBy": "veritas",
           "integrityRef": "refs/heads/main",
           "passing": true,
-          "blocking": true,
+          "blocking": false,
           "metadata": {
             "sourceKind": "explicit-files",
             "sourceScope": [
@@ -2221,13 +2420,13 @@
                 },
                 {
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                  "sizeBytes": 8799
+                  "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                  "sizeBytes": 8829
                 },
                 {
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                  "sizeBytes": 15074
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                  "sizeBytes": 15104
                 },
                 {
                   "path": ".veritas/authority/default.authority-settings.json",
@@ -2246,8 +2445,8 @@
                 },
                 {
                   "path": "package.json",
-                  "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                  "sizeBytes": 3999
+                  "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                  "sizeBytes": 4064
                 },
                 {
                   "path": "bin/veritas.mjs",
@@ -2261,30 +2460,30 @@
                 },
                 {
                   "path": "docs/reference/cli.md",
-                  "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                  "sizeBytes": 37071
+                  "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                  "sizeBytes": 38727
                 },
                 {
                   "path": "schemas/veritas-evidence.schema.json",
-                  "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                  "sizeBytes": 29242
+                  "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                  "sizeBytes": 29893
                 },
                 {
                   "path": "tests/veritas.test.mjs",
-                  "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                  "sizeBytes": 223475
+                  "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                  "sizeBytes": 230257
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -2301,13 +2500,13 @@
               },
               {
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                "sizeBytes": 8799
+                "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                "sizeBytes": 8829
               },
               {
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                "sizeBytes": 15074
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                "sizeBytes": 15104
               },
               {
                 "path": ".veritas/authority/default.authority-settings.json",
@@ -2326,8 +2525,8 @@
               },
               {
                 "path": "package.json",
-                "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                "sizeBytes": 3999
+                "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                "sizeBytes": 4064
               },
               {
                 "path": "bin/veritas.mjs",
@@ -2341,30 +2540,30 @@
               },
               {
                 "path": "docs/reference/cli.md",
-                "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                "sizeBytes": 37071
+                "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                "sizeBytes": 38727
               },
               {
                 "path": "schemas/veritas-evidence.schema.json",
-                "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                "sizeBytes": 29242
+                "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                "sizeBytes": 29893
               },
               {
                 "path": "tests/veritas.test.mjs",
-                "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                "sizeBytes": 223475
+                "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                "sizeBytes": 230257
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -2434,13 +2633,13 @@
                 },
                 {
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                  "sizeBytes": 8799
+                  "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                  "sizeBytes": 8829
                 },
                 {
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                  "sizeBytes": 15074
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                  "sizeBytes": 15104
                 },
                 {
                   "path": ".veritas/authority/default.authority-settings.json",
@@ -2459,8 +2658,8 @@
                 },
                 {
                   "path": "package.json",
-                  "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                  "sizeBytes": 3999
+                  "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                  "sizeBytes": 4064
                 },
                 {
                   "path": "bin/veritas.mjs",
@@ -2474,30 +2673,30 @@
                 },
                 {
                   "path": "docs/reference/cli.md",
-                  "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                  "sizeBytes": 37071
+                  "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                  "sizeBytes": 38727
                 },
                 {
                   "path": "schemas/veritas-evidence.schema.json",
-                  "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                  "sizeBytes": 29242
+                  "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                  "sizeBytes": 29893
                 },
                 {
                   "path": "tests/veritas.test.mjs",
-                  "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                  "sizeBytes": 223475
+                  "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                  "sizeBytes": 230257
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -2514,13 +2713,13 @@
               },
               {
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                "sizeBytes": 8799
+                "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                "sizeBytes": 8829
               },
               {
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                "sizeBytes": 15074
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                "sizeBytes": 15104
               },
               {
                 "path": ".veritas/authority/default.authority-settings.json",
@@ -2539,8 +2738,8 @@
               },
               {
                 "path": "package.json",
-                "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                "sizeBytes": 3999
+                "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                "sizeBytes": 4064
               },
               {
                 "path": "bin/veritas.mjs",
@@ -2554,30 +2753,30 @@
               },
               {
                 "path": "docs/reference/cli.md",
-                "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                "sizeBytes": 37071
+                "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                "sizeBytes": 38727
               },
               {
                 "path": "schemas/veritas-evidence.schema.json",
-                "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                "sizeBytes": 29242
+                "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                "sizeBytes": 29893
               },
               {
                 "path": "tests/veritas.test.mjs",
-                "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                "sizeBytes": 223475
+                "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                "sizeBytes": 230257
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -2639,13 +2838,13 @@
                 },
                 {
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                  "sizeBytes": 8799
+                  "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                  "sizeBytes": 8829
                 },
                 {
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                  "sizeBytes": 15074
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                  "sizeBytes": 15104
                 },
                 {
                   "path": ".veritas/authority/default.authority-settings.json",
@@ -2664,8 +2863,8 @@
                 },
                 {
                   "path": "package.json",
-                  "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                  "sizeBytes": 3999
+                  "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                  "sizeBytes": 4064
                 },
                 {
                   "path": "bin/veritas.mjs",
@@ -2679,30 +2878,30 @@
                 },
                 {
                   "path": "docs/reference/cli.md",
-                  "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                  "sizeBytes": 37071
+                  "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                  "sizeBytes": 38727
                 },
                 {
                   "path": "schemas/veritas-evidence.schema.json",
-                  "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                  "sizeBytes": 29242
+                  "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                  "sizeBytes": 29893
                 },
                 {
                   "path": "tests/veritas.test.mjs",
-                  "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                  "sizeBytes": 223475
+                  "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                  "sizeBytes": 230257
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -2719,13 +2918,13 @@
               },
               {
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                "sizeBytes": 8799
+                "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                "sizeBytes": 8829
               },
               {
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                "sizeBytes": 15074
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                "sizeBytes": 15104
               },
               {
                 "path": ".veritas/authority/default.authority-settings.json",
@@ -2744,8 +2943,8 @@
               },
               {
                 "path": "package.json",
-                "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                "sizeBytes": 3999
+                "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                "sizeBytes": 4064
               },
               {
                 "path": "bin/veritas.mjs",
@@ -2759,30 +2958,30 @@
               },
               {
                 "path": "docs/reference/cli.md",
-                "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                "sizeBytes": 37071
+                "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                "sizeBytes": 38727
               },
               {
                 "path": "schemas/veritas-evidence.schema.json",
-                "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                "sizeBytes": 29242
+                "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                "sizeBytes": 29893
               },
               {
                 "path": "tests/veritas.test.mjs",
-                "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                "sizeBytes": 223475
+                "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                "sizeBytes": 230257
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -2844,13 +3043,13 @@
                 },
                 {
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                  "sizeBytes": 8799
+                  "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                  "sizeBytes": 8829
                 },
                 {
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                  "sizeBytes": 15074
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                  "sizeBytes": 15104
                 },
                 {
                   "path": ".veritas/authority/default.authority-settings.json",
@@ -2869,8 +3068,8 @@
                 },
                 {
                   "path": "package.json",
-                  "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                  "sizeBytes": 3999
+                  "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                  "sizeBytes": 4064
                 },
                 {
                   "path": "bin/veritas.mjs",
@@ -2884,30 +3083,30 @@
                 },
                 {
                   "path": "docs/reference/cli.md",
-                  "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                  "sizeBytes": 37071
+                  "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                  "sizeBytes": 38727
                 },
                 {
                   "path": "schemas/veritas-evidence.schema.json",
-                  "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                  "sizeBytes": 29242
+                  "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                  "sizeBytes": 29893
                 },
                 {
                   "path": "tests/veritas.test.mjs",
-                  "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                  "sizeBytes": 223475
+                  "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                  "sizeBytes": 230257
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -2924,13 +3123,13 @@
               },
               {
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                "sizeBytes": 8799
+                "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                "sizeBytes": 8829
               },
               {
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                "sizeBytes": 15074
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                "sizeBytes": 15104
               },
               {
                 "path": ".veritas/authority/default.authority-settings.json",
@@ -2949,8 +3148,8 @@
               },
               {
                 "path": "package.json",
-                "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                "sizeBytes": 3999
+                "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                "sizeBytes": 4064
               },
               {
                 "path": "bin/veritas.mjs",
@@ -2964,30 +3163,30 @@
               },
               {
                 "path": "docs/reference/cli.md",
-                "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                "sizeBytes": 37071
+                "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                "sizeBytes": 38727
               },
               {
                 "path": "schemas/veritas-evidence.schema.json",
-                "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                "sizeBytes": 29242
+                "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                "sizeBytes": 29893
               },
               {
                 "path": "tests/veritas.test.mjs",
-                "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                "sizeBytes": 223475
+                "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                "sizeBytes": 230257
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -3049,13 +3248,13 @@
                 },
                 {
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                  "sizeBytes": 8799
+                  "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                  "sizeBytes": 8829
                 },
                 {
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                  "sizeBytes": 15074
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                  "sizeBytes": 15104
                 },
                 {
                   "path": ".veritas/authority/default.authority-settings.json",
@@ -3074,8 +3273,8 @@
                 },
                 {
                   "path": "package.json",
-                  "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                  "sizeBytes": 3999
+                  "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                  "sizeBytes": 4064
                 },
                 {
                   "path": "bin/veritas.mjs",
@@ -3089,30 +3288,30 @@
                 },
                 {
                   "path": "docs/reference/cli.md",
-                  "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                  "sizeBytes": 37071
+                  "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                  "sizeBytes": 38727
                 },
                 {
                   "path": "schemas/veritas-evidence.schema.json",
-                  "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                  "sizeBytes": 29242
+                  "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                  "sizeBytes": 29893
                 },
                 {
                   "path": "tests/veritas.test.mjs",
-                  "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                  "sizeBytes": 223475
+                  "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                  "sizeBytes": 230257
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -3129,13 +3328,13 @@
               },
               {
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                "sizeBytes": 8799
+                "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                "sizeBytes": 8829
               },
               {
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                "sizeBytes": 15074
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                "sizeBytes": 15104
               },
               {
                 "path": ".veritas/authority/default.authority-settings.json",
@@ -3154,8 +3353,8 @@
               },
               {
                 "path": "package.json",
-                "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                "sizeBytes": 3999
+                "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                "sizeBytes": 4064
               },
               {
                 "path": "bin/veritas.mjs",
@@ -3169,30 +3368,30 @@
               },
               {
                 "path": "docs/reference/cli.md",
-                "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                "sizeBytes": 37071
+                "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                "sizeBytes": 38727
               },
               {
                 "path": "schemas/veritas-evidence.schema.json",
-                "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                "sizeBytes": 29242
+                "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                "sizeBytes": 29893
               },
               {
                 "path": "tests/veritas.test.mjs",
-                "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                "sizeBytes": 223475
+                "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                "sizeBytes": 230257
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -3254,13 +3453,13 @@
                 },
                 {
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                  "sizeBytes": 8799
+                  "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                  "sizeBytes": 8829
                 },
                 {
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                  "sizeBytes": 15074
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                  "sizeBytes": 15104
                 },
                 {
                   "path": ".veritas/authority/default.authority-settings.json",
@@ -3279,8 +3478,8 @@
                 },
                 {
                   "path": "package.json",
-                  "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                  "sizeBytes": 3999
+                  "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                  "sizeBytes": 4064
                 },
                 {
                   "path": "bin/veritas.mjs",
@@ -3294,30 +3493,30 @@
                 },
                 {
                   "path": "docs/reference/cli.md",
-                  "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                  "sizeBytes": 37071
+                  "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                  "sizeBytes": 38727
                 },
                 {
                   "path": "schemas/veritas-evidence.schema.json",
-                  "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                  "sizeBytes": 29242
+                  "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                  "sizeBytes": 29893
                 },
                 {
                   "path": "tests/veritas.test.mjs",
-                  "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                  "sizeBytes": 223475
+                  "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                  "sizeBytes": 230257
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -3334,13 +3533,13 @@
               },
               {
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                "sizeBytes": 8799
+                "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                "sizeBytes": 8829
               },
               {
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                "sizeBytes": 15074
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                "sizeBytes": 15104
               },
               {
                 "path": ".veritas/authority/default.authority-settings.json",
@@ -3359,8 +3558,8 @@
               },
               {
                 "path": "package.json",
-                "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                "sizeBytes": 3999
+                "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                "sizeBytes": 4064
               },
               {
                 "path": "bin/veritas.mjs",
@@ -3374,30 +3573,30 @@
               },
               {
                 "path": "docs/reference/cli.md",
-                "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                "sizeBytes": 37071
+                "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                "sizeBytes": 38727
               },
               {
                 "path": "schemas/veritas-evidence.schema.json",
-                "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                "sizeBytes": 29242
+                "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                "sizeBytes": 29893
               },
               {
                 "path": "tests/veritas.test.mjs",
-                "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                "sizeBytes": 223475
+                "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                "sizeBytes": 230257
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -3459,13 +3658,13 @@
                 },
                 {
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                  "sizeBytes": 8799
+                  "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                  "sizeBytes": 8829
                 },
                 {
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                  "sizeBytes": 15074
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                  "sizeBytes": 15104
                 },
                 {
                   "path": ".veritas/authority/default.authority-settings.json",
@@ -3484,8 +3683,8 @@
                 },
                 {
                   "path": "package.json",
-                  "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                  "sizeBytes": 3999
+                  "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                  "sizeBytes": 4064
                 },
                 {
                   "path": "bin/veritas.mjs",
@@ -3499,30 +3698,30 @@
                 },
                 {
                   "path": "docs/reference/cli.md",
-                  "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                  "sizeBytes": 37071
+                  "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                  "sizeBytes": 38727
                 },
                 {
                   "path": "schemas/veritas-evidence.schema.json",
-                  "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                  "sizeBytes": 29242
+                  "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                  "sizeBytes": 29893
                 },
                 {
                   "path": "tests/veritas.test.mjs",
-                  "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                  "sizeBytes": 223475
+                  "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                  "sizeBytes": 230257
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -3539,13 +3738,13 @@
               },
               {
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                "sizeBytes": 8799
+                "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                "sizeBytes": 8829
               },
               {
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                "sizeBytes": 15074
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                "sizeBytes": 15104
               },
               {
                 "path": ".veritas/authority/default.authority-settings.json",
@@ -3564,8 +3763,8 @@
               },
               {
                 "path": "package.json",
-                "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                "sizeBytes": 3999
+                "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                "sizeBytes": 4064
               },
               {
                 "path": "bin/veritas.mjs",
@@ -3579,30 +3778,30 @@
               },
               {
                 "path": "docs/reference/cli.md",
-                "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                "sizeBytes": 37071
+                "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                "sizeBytes": 38727
               },
               {
                 "path": "schemas/veritas-evidence.schema.json",
-                "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                "sizeBytes": 29242
+                "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                "sizeBytes": 29893
               },
               {
                 "path": "tests/veritas.test.mjs",
-                "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                "sizeBytes": 223475
+                "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                "sizeBytes": 230257
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -3664,13 +3863,13 @@
                 },
                 {
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                  "sizeBytes": 8799
+                  "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                  "sizeBytes": 8829
                 },
                 {
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                  "sizeBytes": 15074
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                  "sizeBytes": 15104
                 },
                 {
                   "path": ".veritas/authority/default.authority-settings.json",
@@ -3689,8 +3888,8 @@
                 },
                 {
                   "path": "package.json",
-                  "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                  "sizeBytes": 3999
+                  "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                  "sizeBytes": 4064
                 },
                 {
                   "path": "bin/veritas.mjs",
@@ -3704,30 +3903,30 @@
                 },
                 {
                   "path": "docs/reference/cli.md",
-                  "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                  "sizeBytes": 37071
+                  "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                  "sizeBytes": 38727
                 },
                 {
                   "path": "schemas/veritas-evidence.schema.json",
-                  "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                  "sizeBytes": 29242
+                  "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                  "sizeBytes": 29893
                 },
                 {
                   "path": "tests/veritas.test.mjs",
-                  "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                  "sizeBytes": 223475
+                  "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                  "sizeBytes": 230257
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -3744,13 +3943,13 @@
               },
               {
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                "sizeBytes": 8799
+                "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                "sizeBytes": 8829
               },
               {
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                "sizeBytes": 15074
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                "sizeBytes": 15104
               },
               {
                 "path": ".veritas/authority/default.authority-settings.json",
@@ -3769,8 +3968,8 @@
               },
               {
                 "path": "package.json",
-                "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                "sizeBytes": 3999
+                "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                "sizeBytes": 4064
               },
               {
                 "path": "bin/veritas.mjs",
@@ -3784,30 +3983,30 @@
               },
               {
                 "path": "docs/reference/cli.md",
-                "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                "sizeBytes": 37071
+                "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                "sizeBytes": 38727
               },
               {
                 "path": "schemas/veritas-evidence.schema.json",
-                "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                "sizeBytes": 29242
+                "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                "sizeBytes": 29893
               },
               {
                 "path": "tests/veritas.test.mjs",
-                "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                "sizeBytes": 223475
+                "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                "sizeBytes": 230257
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -3869,13 +4068,13 @@
                 },
                 {
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                  "sizeBytes": 8799
+                  "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                  "sizeBytes": 8829
                 },
                 {
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                  "sizeBytes": 15074
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                  "sizeBytes": 15104
                 },
                 {
                   "path": ".veritas/authority/default.authority-settings.json",
@@ -3894,8 +4093,8 @@
                 },
                 {
                   "path": "package.json",
-                  "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                  "sizeBytes": 3999
+                  "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                  "sizeBytes": 4064
                 },
                 {
                   "path": "bin/veritas.mjs",
@@ -3909,30 +4108,30 @@
                 },
                 {
                   "path": "docs/reference/cli.md",
-                  "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                  "sizeBytes": 37071
+                  "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                  "sizeBytes": 38727
                 },
                 {
                   "path": "schemas/veritas-evidence.schema.json",
-                  "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                  "sizeBytes": 29242
+                  "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                  "sizeBytes": 29893
                 },
                 {
                   "path": "tests/veritas.test.mjs",
-                  "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                  "sizeBytes": 223475
+                  "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                  "sizeBytes": 230257
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -3949,13 +4148,13 @@
               },
               {
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                "sizeBytes": 8799
+                "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                "sizeBytes": 8829
               },
               {
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                "sizeBytes": 15074
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                "sizeBytes": 15104
               },
               {
                 "path": ".veritas/authority/default.authority-settings.json",
@@ -3974,8 +4173,8 @@
               },
               {
                 "path": "package.json",
-                "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                "sizeBytes": 3999
+                "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                "sizeBytes": 4064
               },
               {
                 "path": "bin/veritas.mjs",
@@ -3989,30 +4188,30 @@
               },
               {
                 "path": "docs/reference/cli.md",
-                "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                "sizeBytes": 37071
+                "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                "sizeBytes": 38727
               },
               {
                 "path": "schemas/veritas-evidence.schema.json",
-                "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                "sizeBytes": 29242
+                "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                "sizeBytes": 29893
               },
               {
                 "path": "tests/veritas.test.mjs",
-                "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                "sizeBytes": 223475
+                "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                "sizeBytes": 230257
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -4074,13 +4273,13 @@
                 },
                 {
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                  "sizeBytes": 8799
+                  "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                  "sizeBytes": 8829
                 },
                 {
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                  "sizeBytes": 15074
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                  "sizeBytes": 15104
                 },
                 {
                   "path": ".veritas/authority/default.authority-settings.json",
@@ -4099,8 +4298,8 @@
                 },
                 {
                   "path": "package.json",
-                  "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                  "sizeBytes": 3999
+                  "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                  "sizeBytes": 4064
                 },
                 {
                   "path": "bin/veritas.mjs",
@@ -4114,30 +4313,30 @@
                 },
                 {
                   "path": "docs/reference/cli.md",
-                  "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                  "sizeBytes": 37071
+                  "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                  "sizeBytes": 38727
                 },
                 {
                   "path": "schemas/veritas-evidence.schema.json",
-                  "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                  "sizeBytes": 29242
+                  "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                  "sizeBytes": 29893
                 },
                 {
                   "path": "tests/veritas.test.mjs",
-                  "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                  "sizeBytes": 223475
+                  "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                  "sizeBytes": 230257
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -4154,13 +4353,13 @@
               },
               {
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                "sizeBytes": 8799
+                "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                "sizeBytes": 8829
               },
               {
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                "sizeBytes": 15074
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                "sizeBytes": 15104
               },
               {
                 "path": ".veritas/authority/default.authority-settings.json",
@@ -4179,8 +4378,8 @@
               },
               {
                 "path": "package.json",
-                "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                "sizeBytes": 3999
+                "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                "sizeBytes": 4064
               },
               {
                 "path": "bin/veritas.mjs",
@@ -4194,30 +4393,30 @@
               },
               {
                 "path": "docs/reference/cli.md",
-                "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                "sizeBytes": 37071
+                "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                "sizeBytes": 38727
               },
               {
                 "path": "schemas/veritas-evidence.schema.json",
-                "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                "sizeBytes": 29242
+                "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                "sizeBytes": 29893
               },
               {
                 "path": "tests/veritas.test.mjs",
-                "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                "sizeBytes": 223475
+                "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                "sizeBytes": 230257
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -4239,12 +4438,12 @@
           "method": "validation",
           "sourceRef": "veritas-repo-conformance",
           "sourceLocator": "readiness",
-          "excerptOrSummary": "Veritas readiness verdict is ready for the evaluated repository change.",
+          "excerptOrSummary": "Veritas readiness verdict is not ready because blocking requirements or evidence failed.",
           "observedAt": "2026-04-21T22:00:00.000Z",
           "collectedBy": "veritas",
           "integrityRef": "refs/heads/main",
-          "passing": true,
-          "blocking": false,
+          "passing": false,
+          "blocking": true,
           "metadata": {
             "sourceKind": "explicit-files",
             "sourceScope": [
@@ -4279,13 +4478,13 @@
                 },
                 {
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                  "sizeBytes": 8799
+                  "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                  "sizeBytes": 8829
                 },
                 {
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                  "sizeBytes": 15074
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                  "sizeBytes": 15104
                 },
                 {
                   "path": ".veritas/authority/default.authority-settings.json",
@@ -4304,8 +4503,8 @@
                 },
                 {
                   "path": "package.json",
-                  "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                  "sizeBytes": 3999
+                  "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                  "sizeBytes": 4064
                 },
                 {
                   "path": "bin/veritas.mjs",
@@ -4319,30 +4518,30 @@
                 },
                 {
                   "path": "docs/reference/cli.md",
-                  "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                  "sizeBytes": 37071
+                  "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                  "sizeBytes": 38727
                 },
                 {
                   "path": "schemas/veritas-evidence.schema.json",
-                  "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                  "sizeBytes": 29242
+                  "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                  "sizeBytes": 29893
                 },
                 {
                   "path": "tests/veritas.test.mjs",
-                  "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                  "sizeBytes": 223475
+                  "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                  "sizeBytes": 230257
                 }
               ],
               "configRefs": {
                 "repoMap": {
                   "name": "veritas",
                   "path": ".veritas/repo-map.json",
-                  "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                  "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
                 },
                 "repoStandards": {
                   "name": "veritas-default",
                   "path": ".veritas/repo-standards/default.repo-standards.json",
-                  "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                  "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
                 },
                 "authoritySettings": {
                   "name": "authority-settings",
@@ -4359,13 +4558,13 @@
               },
               {
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086",
-                "sizeBytes": 8799
+                "hash": "sha256:ea6350659a57c6368385e9bc2d424e621a3d95fee1f709e8276b1b877d689f2d",
+                "sizeBytes": 8829
               },
               {
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab",
-                "sizeBytes": 15074
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+                "sizeBytes": 15104
               },
               {
                 "path": ".veritas/authority/default.authority-settings.json",
@@ -4384,8 +4583,8 @@
               },
               {
                 "path": "package.json",
-                "hash": "sha256:09d1b7d736690d4404ebaf44c1df3575298bc43f31dcb0d9cd13aafa31b66a32",
-                "sizeBytes": 3999
+                "hash": "sha256:d30c954da880a19a0a0eb6f10a9cc96c49db4170658d83483103aefc0c620551",
+                "sizeBytes": 4064
               },
               {
                 "path": "bin/veritas.mjs",
@@ -4399,30 +4598,30 @@
               },
               {
                 "path": "docs/reference/cli.md",
-                "hash": "sha256:c4381a658a53adb836b4fd50fab1063a12f9bc8ba74ef0f31f3debb1a2901513",
-                "sizeBytes": 37071
+                "hash": "sha256:1504cdc8a348c5acd799a583dd0990f3a3dc66913f911a82dea4db2b3ab66bd5",
+                "sizeBytes": 38727
               },
               {
                 "path": "schemas/veritas-evidence.schema.json",
-                "hash": "sha256:d528a3bc2534054491128584554dab13fc543df5294663eee85d8bc39bf2ee08",
-                "sizeBytes": 29242
+                "hash": "sha256:c7327a665db7ac15237ada9b94563f3bed06f45f5168d8512606d0f5089fefd1",
+                "sizeBytes": 29893
               },
               {
                 "path": "tests/veritas.test.mjs",
-                "hash": "sha256:d2b55a4646d138769f9680739936603eed9a14267360c4d5a21e1c0cb7325a3b",
-                "sizeBytes": 223475
+                "hash": "sha256:921eecc47ee99961d940b61c15d75dea72508a172728230129d7a9b66a0331c8",
+                "sizeBytes": 230257
               }
             ],
             "configIntegrity": {
               "repoMap": {
                 "name": "veritas",
                 "path": ".veritas/repo-map.json",
-                "hash": "sha256:cd08c4ab44fb888771120b4da7635275093263cee2e06583115408801c807086"
+                "hash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab"
               },
               "repoStandards": {
                 "name": "veritas-default",
                 "path": ".veritas/repo-standards/default.repo-standards.json",
-                "hash": "sha256:f145098ce654cac64526b84b0c24c5b3df44e08133762544d56f566365f99dab"
+                "hash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3"
               },
               "authoritySettings": {
                 "name": "authority-settings",
@@ -4430,8 +4629,8 @@
                 "hash": "sha256:192e1eeec727a0c18a372b76c4ed194eaa4faef0f6c6080f25a808aeeb660946"
               }
             },
-            "readinessVerdict": "ready",
-            "readinessStatus": "verified",
+            "readinessVerdict": "not-ready",
+            "readinessStatus": "rejected",
             "promotionAllowed": true,
             "uncoveredPathResult": "clear",
             "policyResults": {
@@ -4446,9 +4645,27 @@
                 "fallow-advisory"
               ],
               "failed": [],
+              "required": [
+                {
+                  "id": "required-evidence-check",
+                  "label": "npm run verify",
+                  "runner": "bash",
+                  "selected": true,
+                  "observed": false,
+                  "imported": false,
+                  "passed": null,
+                  "state": "missing"
+                }
+              ],
               "baselineCiFastPassed": true
             },
             "transparencyGapHints": [
+              {
+                "type": "provenance_gap",
+                "severity": "high",
+                "message": "Required Evidence Check required-evidence-check is missing; run it and record an acceptable result before merge readiness can be verified.",
+                "blocking": true
+              },
               {
                 "type": "provenance_gap",
                 "severity": "medium",
@@ -4684,18 +4901,6 @@
           "verifiedAt": "2026-04-21T22:00:00.000Z"
         },
         {
-          "id": "veritas-repo-conformance.evidence-check.required-evidence-check.verified",
-          "claimId": "veritas.evidence-check.npm-run-verify",
-          "status": "verified",
-          "actor": "veritas",
-          "method": "npm run verify",
-          "evidenceIds": [
-            "veritas-repo-conformance.evidence-check.required-evidence-check.evidence"
-          ],
-          "createdAt": "2026-04-21T22:00:00.000Z",
-          "verifiedAt": "2026-04-21T22:00:00.000Z"
-        },
-        {
           "id": "veritas-repo-conformance.evidence-check.fallow-advisory.verified",
           "claimId": "veritas.evidence-check.npm-run-veritas-fallow-advisory",
           "status": "verified",
@@ -4825,17 +5030,16 @@
           "notes": "Repeatable repo governance checks should be represented by Veritas primitives before they become local helper scripts."
         },
         {
-          "id": "veritas-repo-conformance.readiness-verdict.verified",
+          "id": "veritas-repo-conformance.readiness-verdict.rejected",
           "claimId": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main",
-          "status": "verified",
+          "status": "rejected",
           "actor": "veritas",
           "method": "readiness verdict",
           "evidenceIds": [
             "veritas-repo-conformance.readiness-verdict.evidence"
           ],
           "createdAt": "2026-04-21T22:00:00.000Z",
-          "verifiedAt": "2026-04-21T22:00:00.000Z",
-          "notes": "Veritas readiness verdict is ready for the evaluated repository change."
+          "notes": "Veritas readiness verdict is not ready because blocking requirements or evidence failed."
         }
       ],
       "claimGroups": [
@@ -5259,13 +5463,13 @@
         "totalClaims": 25,
         "byStatus": {
           "unknown": 6,
-          "proposed": 1,
+          "proposed": 2,
           "assumed": 0,
-          "verified": 18,
+          "verified": 16,
           "stale": 0,
           "disputed": 0,
           "superseded": 0,
-          "rejected": 0,
+          "rejected": 1,
           "revoked": 0
         },
         "byFacet": {
@@ -5286,14 +5490,15 @@
         },
         "transparencyGapsByType": {
           "contradiction": 0,
-          "provenance_gap": 7,
-          "policy_violation": 7,
+          "provenance_gap": 8,
+          "policy_violation": 8,
           "freshness_breach": 0,
           "corroboration_absent": 0,
           "unsupported_inference": 0
         },
         "highImpactUnsupported": [
           "veritas.governance",
+          "veritas.evidence-check.npm-run-verify",
           "veritas.evidence-check.npm-run-veritas-fallow-advisory"
         ],
         "staleClaims": [],
@@ -5485,7 +5690,7 @@
         },
         {
           "id": "veritas.evidence-check.npm-run-verify",
-          "status": "verified",
+          "status": "proposed",
           "subjectType": "repository",
           "subjectId": "veritas",
           "facet": "veritas.evidence-check",
@@ -5639,16 +5844,28 @@
         },
         {
           "id": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main",
-          "status": "verified",
+          "status": "rejected",
           "subjectType": "repository-change",
           "subjectId": "veritas-default:refs-heads-main",
           "facet": "veritas.readiness",
           "claimType": "software-readiness-verdict",
           "fieldOrBehavior": "mergeReadiness",
           "value": {
-            "verdict": "ready",
+            "verdict": "not-ready",
             "promotionAllowed": true,
             "uncoveredPathResult": "clear",
+            "requiredEvidenceChecks": [
+              {
+                "id": "required-evidence-check",
+                "label": "npm run verify",
+                "runner": "bash",
+                "selected": true,
+                "observed": false,
+                "imported": false,
+                "passed": null,
+                "state": "missing"
+              }
+            ],
             "sourceRef": "refs/heads/main"
           },
           "verificationPolicyId": "veritas.readiness-verdict",
@@ -5785,7 +6002,31 @@
           ]
         },
         {
+          "id": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main.gap.evidence-veritas-repo-conformance.readiness-verdict.evidence",
+          "claimId": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main",
+          "type": "policy_violation",
+          "severity": "high",
+          "message": "Evidence explicitly reported a non-passing result.",
+          "policyId": "veritas.readiness-verdict",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "evidenceIds": [
+            "veritas-repo-conformance.readiness-verdict.evidence"
+          ]
+        },
+        {
           "id": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main.gap.hint-1",
+          "claimId": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main",
+          "type": "provenance_gap",
+          "severity": "high",
+          "message": "Required Evidence Check required-evidence-check is missing; run it and record an acceptable result before merge readiness can be verified.",
+          "policyId": "veritas.readiness-verdict",
+          "createdAt": "2026-04-21T22:00:00.000Z",
+          "evidenceIds": [
+            "veritas-repo-conformance.readiness-verdict.evidence"
+          ]
+        },
+        {
+          "id": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main.gap.hint-2",
           "claimId": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main",
           "type": "provenance_gap",
           "severity": "medium",
@@ -5905,7 +6146,21 @@
         ],
         "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main": [
           {
+            "id": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main.gap.evidence-veritas-repo-conformance.readiness-verdict.evidence",
+            "type": "policy_violation",
+            "severity": "high",
+            "message": "Evidence explicitly reported a non-passing result.",
+            "policyId": "veritas.readiness-verdict"
+          },
+          {
             "id": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main.gap.hint-1",
+            "type": "provenance_gap",
+            "severity": "high",
+            "message": "Required Evidence Check required-evidence-check is missing; run it and record an acceptable result before merge readiness can be verified.",
+            "policyId": "veritas.readiness-verdict"
+          },
+          {
+            "id": "veritas.veritas-repo-conformance.readiness-verdict.refs-heads-main.gap.hint-2",
             "type": "provenance_gap",
             "severity": "medium",
             "message": "No active governance attestation was available; Veritas used producer authority fallback.",
