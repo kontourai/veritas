@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "id": "policy-change-2026-09-04T03-21-36-199Z-79d0556d450a",
+  "kind": "policy-change",
+  "actor": {
+    "id": "brian",
+    "displayName": "Brian Anderson",
+    "identityEvidence": {
+      "gitEmail": "brian.anderson@kontourai.io",
+      "signingKeyFingerprint": null
+    }
+  },
+  "attestedAt": "2026-09-04T03:21:36.199Z",
+  "repoStandardsHash": "sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3",
+  "repoMapHash": "sha256:469fa3397bdae9cfc312afc497fc8379b1df66564e42ba99c6e5230d49d551ab",
+  "repoMapHashAlgorithm": "public-policy-v1",
+  "authoritySettingsHash": "sha256:192e1eeec727a0c18a372b76c4ed194eaa4faef0f6c6080f25a808aeeb660946",
+  "priorAttestationId": "legacy-attestation-v0:2946f13053bc9fcf",
+  "validUntilDays": 90,
+  "notes": "Root manifests move to pnpm-lock.yaml and pnpm-workspace.yaml for the npm to pnpm 11 migration; owner-approved in session.",
+  "metadata": {
+    "protectedStandardsPaths": {
+      "repoStandardsPath": ".veritas/repo-standards/default.repo-standards.json",
+      "repoMapPath": ".veritas/repo-map.json",
+      "authoritySettingsPath": ".veritas/authority/default.authority-settings.json"
+    },
+    "supersedes": "legacy-attestation-v0:2946f13053bc9fcf",
+    "approvalRef": "kontourai/veritas#220",
+    "approvalRefPolicy": {
+      "mode": "reference-only",
+      "matchedPrefix": null,
+      "requiresResolution": false
+    },
+    "approvalResolution": null
+  },
+  "surface": {
+    "claim": {
+      "id": "veritas.attestation.policy-change-2026-09-04T03-21-36-199Z-79d0556d450a",
+      "subjectType": "veritas-protected-standards",
+      "subjectId": "protected-standards",
+      "facet": "veritas.attestations",
+      "claimType": "veritas-human-attestation",
+      "fieldOrBehavior": "policy-change",
+      "value": {
+        "contentHash": "a871a0742ce0d149d15dc923e38a9ee7f8338797964a6617311916099bdfe240",
+        "validUntil": "2026-12-03T03:21:36.199Z"
+      },
+      "createdAt": "2026-09-04T03:21:36.199Z",
+      "updatedAt": "2026-09-04T03:21:36.199Z",
+      "status": "verified",
+      "impactLevel": "high",
+      "confidenceBasis": {
+        "sourceQuality": "strong",
+        "reviewerAuthority": "human",
+        "evidenceStrength": "strong",
+        "impactLevel": "high"
+      }
+    },
+    "evidence": {
+      "id": "evidence.attestation.veritas.attestation.policy-change-2026-09-04T03-21-36-199Z-79d0556d450a",
+      "claimId": "veritas.attestation.policy-change-2026-09-04T03-21-36-199Z-79d0556d450a",
+      "evidenceType": "attestation",
+      "method": "attestation",
+      "sourceRef": "veritas:protected-standards",
+      "excerptOrSummary": "Root manifests move to pnpm-lock.yaml and pnpm-workspace.yaml for the npm to pnpm 11 migration; owner-approved in session.",
+      "observedAt": "2026-09-04T03:21:36.199Z",
+      "collectedBy": "brian",
+      "integrityRef": "a871a0742ce0d149d15dc923e38a9ee7f8338797964a6617311916099bdfe240",
+      "metadata": {
+        "actor": {
+          "id": "brian",
+          "displayName": "Brian Anderson"
+        },
+        "attestedAt": "2026-09-04T03:21:36.199Z",
+        "validUntil": "2026-12-03T03:21:36.199Z",
+        "contentHash": "a871a0742ce0d149d15dc923e38a9ee7f8338797964a6617311916099bdfe240"
+      },
+      "sourceLocator": ".veritas/attestations"
+    },
+    "event": {
+      "id": "veritas.attestation.policy-change-2026-09-04T03-21-36-199Z-79d0556d450a.verified",
+      "claimId": "veritas.attestation.policy-change-2026-09-04T03-21-36-199Z-79d0556d450a",
+      "status": "verified",
+      "actor": "brian",
+      "method": "human attestation",
+      "evidenceIds": [
+        "evidence.attestation.veritas.attestation.policy-change-2026-09-04T03-21-36-199Z-79d0556d450a"
+      ],
+      "createdAt": "2026-09-04T03:21:36.199Z",
+      "verifiedAt": "2026-09-04T03:21:36.199Z"
+    }
+  }
+}
