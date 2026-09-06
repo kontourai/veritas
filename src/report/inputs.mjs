@@ -15,14 +15,26 @@ function gitExecOptions(rootDir, timeoutMs) {
 export function listChangedFiles(fromRef, toRef, rootDir, { timeoutMs } = {}) {
   if (!fromRef || !toRef) return [];
 
-  return execFileSync(
+  return parseDiffPaths(execFileSync(
     'git',
-    ['diff', '--name-only', '--diff-filter=ACMR', fromRef, toRef],
+    ['diff', '--name-status', '--find-renames', '--diff-filter=ACMRD', fromRef, toRef],
     gitExecOptions(rootDir, timeoutMs),
-  )
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
+  ));
+}
+
+function parseDiffPaths(output) {
+  const paths = new Set();
+  for (const line of output.split('\n').filter(Boolean)) {
+    const fields = line.split('\t');
+    const status = fields[0] ?? '';
+    if (status.startsWith('R') || status.startsWith('C')) {
+      if (fields[1]) paths.add(fields[1]);
+      if (fields[2]) paths.add(fields[2]);
+    } else if (fields[1]) {
+      paths.add(fields[1]);
+    }
+  }
+  return [...paths].sort();
 }
 
 function listGitFiles(args, rootDir, timeoutMs) {
@@ -40,23 +52,17 @@ export function listWorkingTreeFiles(
   const files = new Set();
 
   if (staged) {
-    for (const file of listGitFiles(
-      ['diff', '--cached', '--name-only', '--diff-filter=ACMR'],
-      rootDir,
-      timeoutMs,
-    )) {
-      files.add(file);
-    }
+    for (const file of parseDiffPaths(execFileSync('git',
+      ['diff', '--cached', '--name-status', '--find-renames', '--diff-filter=ACMRD'],
+      gitExecOptions(rootDir, timeoutMs),
+    ))) files.add(file);
   }
 
   if (unstaged) {
-    for (const file of listGitFiles(
-      ['diff', '--name-only', '--diff-filter=ACMR'],
-      rootDir,
-      timeoutMs,
-    )) {
-      files.add(file);
-    }
+    for (const file of parseDiffPaths(execFileSync('git',
+      ['diff', '--name-status', '--find-renames', '--diff-filter=ACMRD'],
+      gitExecOptions(rootDir, timeoutMs),
+    ))) files.add(file);
   }
 
   if (untracked) {
