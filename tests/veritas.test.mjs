@@ -2812,6 +2812,26 @@ test('report input resolution keeps branch-diff and working-tree modes explicit'
   assert.deepEqual(workingTreeInputs.files, ['staged.txt']);
 });
 
+test('report inputs preserve deletions and both sides of renames', () => {
+  const rootDir = initCommittedRepo('veritas-report-inputs-renames-');
+  writeFileSync(join(rootDir, 'deleted.txt'), 'deleted\n');
+  writeFileSync(join(rootDir, 'old-name.txt'), 'renamed\n');
+  commitAll(rootDir, 'Add rename fixtures');
+  execFileSync('git', ['rm', 'deleted.txt'], { cwd: rootDir, encoding: 'utf8' });
+  execFileSync('git', ['mv', 'old-name.txt', 'new-name.txt'], {
+    cwd: rootDir,
+    encoding: 'utf8',
+  });
+  commitAll(rootDir, 'Delete and rename files');
+
+  const inputs = resolveReportInputs(
+    [],
+    { changedFrom: 'HEAD~1', changedTo: 'HEAD' },
+    rootDir,
+  );
+  assert.deepEqual(inputs.files, ['deleted.txt', 'new-name.txt', 'old-name.txt']);
+});
+
 test('report CLI can measure the full working tree', () => {
   const rootDir = initCommittedRepo('veritas-working-tree-cli-');
   writeBootstrapStarterKit({ rootDir, projectName: 'Working Tree Demo' });
