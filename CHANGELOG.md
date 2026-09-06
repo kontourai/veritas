@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.6.0](https://github.com/kontourai/veritas/compare/v1.5.6...v1.6.0) (2026-09-06)
+
+
+### Features
+
+* **kit:** declare builder.build workflow routing ([#208](https://github.com/kontourai/veritas/issues/208)) ([f89c73c](https://github.com/kontourai/veritas/commit/f89c73cf2db234552db80b6946391f1e47507eb7))
+
+
+### Fixes
+
+* **report:** preserve deleted and renamed input paths ([#222](https://github.com/kontourai/veritas/issues/222)) ([f4eed3a](https://github.com/kontourai/veritas/commit/f4eed3a2038b66c3c0dad8a6b1c34e214a7f579c))
+
 ## [1.5.6](https://github.com/kontourai/veritas/compare/v1.5.5...v1.5.6) (2026-08-02)
 
 
