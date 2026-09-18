@@ -253,6 +253,7 @@
         "boolean",
         "null"
       ],
+      "description": "Rollup of the required evidence checks' own results in this run: true when every required evidence check passed, false when any failed, null when evidence-check execution was skipped. Historical name; it does not report an external ci:fast lane run.",
       "x_surface_mapping": "mapped",
       "x_surface_targets": [
         "claim",

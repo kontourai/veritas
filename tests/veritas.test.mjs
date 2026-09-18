@@ -6574,3 +6574,30 @@ test('script suggestion helper returns the expected keys', () => {
     'prepush',
   ]);
 });
+
+test('the markdown summary states the derivation of the required-evidence-checks rollup, not a ci:fast lane claim', () => {
+  // The rollup field's historical name (`baseline_ci_fast_passed`) reads as a
+  // claim about the external ci:fast lane. It is nothing of the sort: it is
+  // derived from the required evidence checks' own results in this run
+  // (src/readiness/run.mjs). A reader — human or agent — gating a merge off
+  // the old label was invited into a wrong diagnosis (station#2210 follow-up:
+  // the field misled the operator into suspecting an unearned readiness PASS).
+  // The report must say what the value derives from, and must not assert a
+  // ci:fast lane claim it does not make.
+  const markdown = buildMarkdownSummary({
+    repo_map: { name: 'rollup-labeling', kind: 'library', report_transport: 'local' },
+    source_kind: 'working-tree',
+    source_scope: [],
+    resolved_phase: 'build',
+    resolved_workstream: 'governance',
+    components: [],
+    policy_results: [],
+    evidence_check_resolution_source: 'none',
+    baseline_ci_fast_passed: true,
+    recommendations: [],
+  }, '.veritas/report.json');
+
+  assert.match(markdown, /Required evidence checks passed:\*\* yes/);
+  assert.match(markdown, /derived from the required evidence checks' own results/);
+  assert.doesNotMatch(markdown, /Baseline `ci:fast` passed/);
+});
