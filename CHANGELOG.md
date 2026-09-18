@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.6.1](https://github.com/kontourai/veritas/compare/v1.6.0...v1.6.1) (2026-09-18)
+
+
+### Fixes
+
+* **report:** the required-evidence-checks rollup states its own derivation ([#229](https://github.com/kontourai/veritas/issues/229)) ([c6269a1](https://github.com/kontourai/veritas/commit/c6269a13799e63971020eda9c2f9b0aad126a2bd))
+
 ## [1.6.0](https://github.com/kontourai/veritas/compare/v1.5.6...v1.6.0) (2026-09-06)
 
 
