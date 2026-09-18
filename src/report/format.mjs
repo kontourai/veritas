@@ -34,7 +34,7 @@ export function buildMarkdownSummary(record, artifactPath) {
     `- **Evidence inventories:** ${record.readiness_coverage?.evidence_inventory_count ?? 0} total, ${record.readiness_coverage?.required_inventory_count ?? 0} required, ${record.readiness_coverage?.candidate_inventory_count ?? 0} candidate, ${record.readiness_coverage?.move_to_test_inventory_count ?? 0} move-to-test, ${record.readiness_coverage?.retire_inventory_count ?? 0} retiring`,
     `- **External tool results:** ${record.external_tool_results?.length ?? 0}`,
     `- **Uncovered path result:** ${record.uncovered_path_result}`,
-    `- **Baseline \`ci:fast\` passed:** ${formatTriState(record.baseline_ci_fast_passed)}`,
+    `- **Required evidence checks passed:** ${formatTriState(record.baseline_ci_fast_passed)} (recorded as \`baseline_ci_fast_passed\`; derived from the required evidence checks' own results in this run, not from an external \`ci:fast\` lane)`,
     `- **Report transport:** ${record.repo_map.report_transport}`,
     `- **Policy results:** ${policyPassCount} passed, ${policyFailCount} failed, ${policyMetadataOnlyCount} metadata-only`,
     `- **Artifact:** \`${artifactPath}\``,

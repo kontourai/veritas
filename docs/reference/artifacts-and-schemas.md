@@ -456,7 +456,7 @@ After validation, Veritas calls Surface's public `buildTrustReport` API and pers
 | `component_details`, `file_nodes` | Surface ownership and boundary metadata for matched files | Surface-mapped |
 | `selected_evidence_check_ids`, `selected_evidence_check_labels`, `selected_evidence_checks`, `evidence_check_resolution_source` | `Claim`, `Evidence`, `VerificationPolicy`, and `VerificationEvent` records on `veritas.evidence-checks` | Surface-mapped |
 | `repo_map.required_evidence_check_ids` plus selected evidence results | Required Evidence Check state is derived for the readiness claim and evidence, including process-local missing/skipped/timedout transparency gaps that reject canonical readiness | Surface-mapped |
-| `uncovered_path_result`, `baseline_ci_fast_passed` | Evidence Check claim status, verification events, and metadata for evidenceCheck confidence | Surface-mapped |
+| `uncovered_path_result`, `baseline_ci_fast_passed` | Evidence Check claim status, verification events, and metadata for evidenceCheck confidence. `baseline_ci_fast_passed` is a historical name: it is derived from the required evidence checks' own results in this run (`src/readiness/run.mjs`), not from an external `ci:fast` lane run. | Surface-mapped |
 | `evidence_inventory_results` | `Claim`, `Evidence`, `VerificationEvent`, and metadata records on `veritas.evidence-inventories` | Surface-mapped |
 | `readiness_coverage` | A readiness coverage claim/evidence pair plus metadata used by Surface report generation | Surface-mapped |
 | readiness verdict projection | A `software-readiness-verdict` claim, evidence, and event with integrity scope and authority trace metadata | Surface-mapped |
