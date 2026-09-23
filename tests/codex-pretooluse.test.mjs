@@ -91,6 +91,16 @@ test('Codex PreToolUse denies strict-area edits and pathless patches', () => {
   assert.match(pathless.reason, /no parseable file path/);
 });
 
+test('Codex PreToolUse still denies every strict-area edit after a briefing', () => {
+  const rootDir = fixture();
+  const stdinText = JSON.stringify({ session_id: 'repeat-denial', tool_name: 'apply_patch', tool_input: { command: patch('.veritas/repo-map.json') } });
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const result = evaluateCodexPreToolUse({ rootDir, actor: 'other', stdinText });
+    assert.equal(result.decision, 'block');
+    assert.match(result.reason, /work-area-boundary/);
+  }
+});
+
 test('Codex PreToolUse records an explicit hook skip as a bypass', () => {
   const rootDir = fixture();
   const before = process.env.VERITAS_HOOK_SKIP;
@@ -143,4 +153,21 @@ test('installed Codex hook config routes a real CLI invocation with model-visibl
     input: JSON.stringify({ cwd: rootDir, tool_name: 'apply_patch', tool_input: { command: patch('docs/notes.md') } }),
   });
   assert.match(JSON.parse(blocked).hookSpecificOutput.additionalContext, /notes-review/);
+});
+
+test('installed Codex hook briefs once per session while preserving repeated policy decisions', () => {
+  const rootDir = fixture();
+  const input = JSON.stringify({
+    session_id: 'codex-briefing-smoke', cwd: rootDir, tool_name: 'apply_patch',
+    tool_input: { command: patch('docs/notes.md') },
+  });
+  const run = () => JSON.parse(execFileSync(process.execPath, [
+    'bin/veritas.mjs', 'hooks', 'codex', 'pre-tool-use', '--root', rootDir,
+  ], { encoding: 'utf8', input }));
+  const first = run();
+  assert.equal(first.decision, 'approve');
+  assert.match(first.hookSpecificOutput.additionalContext, /notes-review/);
+  const second = run();
+  assert.equal(second.decision, 'approve');
+  assert.equal(second.hookSpecificOutput, undefined);
 });
