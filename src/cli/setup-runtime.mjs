@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseApplyArgs, parsePreToolUseArgs } from '../args.mjs';
 import { evaluatePreToolUse } from '../hooks.mjs';
+import { formatPreToolUseGuidance } from '../hooks/pre-tool-use.mjs';
 import { runtimeIntegrationFor } from '../integrations/runtime-integrations.mjs';
 
 export function runClaudeCodePreToolUseCli(argv = process.argv.slice(2), defaults = {}) {
@@ -15,6 +16,13 @@ export function runClaudeCodePreToolUseCli(argv = process.argv.slice(2), default
     stdinText,
   });
   const output = { decision: result.decision, reason: result.reason };
+  if (result.guidance?.rules?.length > 0 && !result.skipped) {
+    output.guidance = result.guidance;
+    output.hookSpecificOutput = {
+      hookEventName: 'PreToolUse',
+      additionalContext: formatPreToolUseGuidance(result.guidance),
+    };
+  }
   if (result.exceptionPath) output.exceptionPath = result.exceptionPath;
   process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
   if (result.skipped) {

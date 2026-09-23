@@ -97,6 +97,7 @@ export {
 
 // --- Boundaries / explain LOGIC (the `veritas explain` producer; CLI runners stay in the bin) ---
 export {
+  buildExplainGuidance,
   buildExplainText,
   checkBoundaries,
 } from './explain.mjs';

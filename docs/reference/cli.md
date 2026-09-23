@@ -185,6 +185,7 @@ npx @kontourai/veritas hooks claude-code pre-tool-use [--root <path>] [--file <p
 ```
 
 `pre-tool-use` reads the Claude hook JSON payload from stdin, extracts `tool_input.file_path` or `tool_input.path`, resolves the actor from `--actor`, `VERITAS_ACTOR`, or the current attestation, and returns hook protocol JSON.
+For an allowed edit with matching rules, it includes the path-selected `explain` guidance in `hookSpecificOutput.additionalContext`. An `Edit`, `MultiEdit`, or `Write` call without a file path blocks because no path-specific guidance or boundary check can run. The generated hook covers those three edit tools; shell commands and runtimes without a pre-edit hook still need an explicit path briefing.
 
 Exit codes follow the Claude Code PreToolUse protocol, where **exit 2 is the only code that blocks the tool call** — any other non-zero exit is reported as a non-blocking hook error and the edit proceeds:
 
@@ -267,10 +268,12 @@ Prints only the standards explanation relevant to a requirement, work area, or f
 ```bash
 npx @kontourai/veritas explain required-veritas-schema-artifacts
 npx @kontourai/veritas explain --file src/index.mjs
+npx @kontourai/veritas explain --file src/index.mjs --json
 npx @kontourai/veritas explain --work-area app.src
 ```
 
 Output is capped to fit an agent context window and includes the local governance excerpt plus matching rule `explain` blocks.
+`--json` returns a versioned selector and the same matching rule IDs, enforcement levels, linked `evidenceCheckIds`, summaries, `mustDo`, `mustNotDo`, examples, and context links for runtime hooks and kit adapters. It is guidance, not evidence that the agent followed a rule or that a behavioral check passed.
 
 ### `boundaries check` (legacy)
 

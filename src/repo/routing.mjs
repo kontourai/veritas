@@ -1,6 +1,7 @@
 import { classifyNodes } from './classify.mjs';
 import { matchesPatternsForAnyFile } from '../util/patterns.mjs';
 import { uniqueStrings } from '../util/strings.mjs';
+import { resolveRuleEvidenceBindings } from '../evidence/rule-bindings.mjs';
 import {
   readEvidenceCheckRoutes,
   readDefaultEvidenceCheckIds,
@@ -15,6 +16,7 @@ export function resolveEvidenceCheckPlan({
   files,
   config,
   rootDir,
+  repoStandards,
   explicitEvidenceCheckCommand,
 }) {
   const {
@@ -26,7 +28,15 @@ export function resolveEvidenceCheckPlan({
   } = classifyNodes(files, config, rootDir);
   const uncoveredPathPolicy = readUncoveredPathPolicy(config);
   const evidenceCheckRoutes = readEvidenceCheckRoutes(config);
-  const requiredEvidenceCheckIds = readRequiredEvidenceCheckIds(config);
+  const globalRequiredEvidenceCheckIds = readRequiredEvidenceCheckIds(config);
+  const ruleEvidenceBindings = resolveRuleEvidenceBindings({ repoStandards, config, files, rootDir });
+  const ruleEvidenceCheckIds = uniqueStrings(ruleEvidenceBindings.flatMap((binding) => binding.evidenceCheckIds));
+  const requiredEvidenceCheckIds = uniqueStrings([
+    ...globalRequiredEvidenceCheckIds,
+    ...ruleEvidenceBindings
+      .filter((binding) => binding.enforcementLevel === 'Require')
+      .flatMap((binding) => binding.evidenceCheckIds),
+  ]);
   const matchedRoutes = evidenceCheckRoutes.filter((route) => routeMatchesAnyComponent(route, affectedNodes));
   let evidenceChecks = [];
   let resolutionSource = 'none';
@@ -51,13 +61,13 @@ export function resolveEvidenceCheckPlan({
     if (defaultEvidenceCheckIds.length > 0) {
       evidenceChecks = evidenceChecksByIds(config, defaultEvidenceCheckIds);
       resolutionSource = 'default';
-    } else if (requiredEvidenceCheckIds.length > 0) {
-      evidenceChecks = evidenceChecksByIds(config, requiredEvidenceCheckIds);
+    } else if (globalRequiredEvidenceCheckIds.length > 0) {
+      evidenceChecks = evidenceChecksByIds(config, globalRequiredEvidenceCheckIds);
       resolutionSource = 'required';
     }
   }
   const selectedEvidenceCheckIds = new Set(evidenceChecks.map((evidenceCheck) => evidenceCheck.id));
-  const requiredEvidenceChecks = evidenceChecksByIds(config, requiredEvidenceCheckIds);
+  const requiredEvidenceChecks = evidenceChecksByIds(config, uniqueStrings([...requiredEvidenceCheckIds, ...ruleEvidenceCheckIds]));
   evidenceChecks = [
     ...evidenceChecks,
     ...requiredEvidenceChecks.filter((evidenceCheck) => !selectedEvidenceCheckIds.has(evidenceCheck.id)),
@@ -75,6 +85,7 @@ export function resolveEvidenceCheckPlan({
     evidenceCheckCommands,
     evidenceChecks,
     requiredEvidenceCheckIds,
+    ruleEvidenceBindings,
     resolutionSource,
   };
 }

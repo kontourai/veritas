@@ -24,7 +24,7 @@ the `@kontourai/veritas/engine` subpath (the package root `@kontourai/veritas` r
 plus thin CLIs (`veritas readiness`/`explain`/`init`). It starts from repo-local governance intent
 and produces evidence-backed readiness state. The repo-installed **product surface** it once
 shipped — init scaffold, hook setup, standards authoring, just-in-time agent guidance — is owned by
-the flow-agents **Veritas Governance Kit** (`kits/veritas-governance`), which wraps the engine via
+this repository's root-installable **Veritas Governance Kit** (`kit.json`), which wraps the engine via
 CLI + artifacts and reimplements no evaluation; see the [Engine / Surface Seam](engine-surface-seam.md).
 Surface is the portable transparency projection. Flow, Flow Agents, and Builder Kit consume
 readiness or trust state as inputs; they do not own Veritas evaluation semantics.

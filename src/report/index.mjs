@@ -131,6 +131,7 @@ export async function generateVeritasReport(
   const evidenceCheckPlan = options.evidenceCheckPlan ?? resolveEvidenceCheckPlan({
     files,
     config,
+    repoStandards,
     rootDir,
     explicitEvidenceCheckCommand: options.explicitEvidenceCheckCommand,
   });
@@ -190,7 +191,7 @@ export async function generateVeritasReport(
   };
 }
 
-export function resolveEvidenceCheckCommands({ repoMapPath, files = [], rootDir, explicitEvidenceCheckCommand }) {
+export function resolveEvidenceCheckCommands({ repoMapPath, repoStandardsPath, files = [], rootDir, explicitEvidenceCheckCommand }) {
   if (!repoMapPath || !rootDir) {
     return {
       evidenceCheckCommands: explicitEvidenceCheckCommand ? [explicitEvidenceCheckCommand] : [],
@@ -208,6 +209,7 @@ export function resolveEvidenceCheckCommands({ repoMapPath, files = [], rootDir,
   return resolveEvidenceCheckPlan({
     files,
     config,
+    repoStandards: repoStandardsPath ? loadRepoStandards(repoStandardsPath) : undefined,
     rootDir,
     explicitEvidenceCheckCommand,
   });

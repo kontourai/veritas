@@ -78,7 +78,7 @@ export async function runMergeReadiness(
   const actor = runtime.actor ?? process.env.VERITAS_ACTOR ?? 'unknown';
   const workingTree = options.workingTree || (!options.changedFrom && !options.changedTo);
   runtime.onReadinessPhase?.({ phase: 'scope-resolution' });
-  const { repoMapPath } = resolveVeritasPaths(
+  const { repoMapPath, repoStandardsPath } = resolveVeritasPaths(
     { ...options, rootDir },
     { ...defaults, rootDir },
   );
@@ -97,6 +97,7 @@ export async function runMergeReadiness(
   assertWorkflowDeadline(workflowDeadline, 'scope-resolution');
   const evidenceCheckPlan = resolveEvidenceCheckCommands({
     repoMapPath,
+    repoStandardsPath,
     files: reportInputs.files,
     rootDir,
     explicitEvidenceCheckCommand: options.evidenceCheckCommand,

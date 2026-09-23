@@ -155,6 +155,7 @@ export {
   RULE_EVALUATORS,
 } from './rules/evaluate.mjs';
 export {
+  buildExplainGuidance,
   buildExplainText,
   runExplainCli,
   checkBoundaries,

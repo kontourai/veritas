@@ -2,22 +2,10 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadRepoMap, loadRepoStandards } from './load.mjs';
 import { normalizeRepoPath, veritasArtifactPath } from './paths.mjs';
-import { matchesPatterns } from './util/patterns.mjs';
+import { ruleMatchesFile } from './rules/applicability.mjs';
 import { evaluateWorkAreaBoundaryRule } from './rules/evaluate.mjs';
 import { resolveVeritasPaths, listChangedFiles, listWorkingTreeFiles } from './report/index.mjs';
 import { parseTokens } from './args.mjs';
-
-function ruleMatchesFile(rule, filePath) {
-  if (!filePath) return false;
-  const match = rule.match ?? {};
-  if (Array.isArray(match.artifacts)) return matchesPatterns(filePath, match.artifacts);
-  if (Array.isArray(match['governance-block'])) return matchesPatterns(filePath, match['governance-block']);
-  if (typeof match['if-changed'] === 'string' || typeof match['then-require'] === 'string') {
-    return matchesPatterns(filePath, [match['if-changed'], match['then-require']].filter(Boolean));
-  }
-  if (Array.isArray(match.files)) return matchesPatterns(filePath, match.files);
-  return false;
-}
 
 function ruleMatchesWorkAreaNode(rule, node, config) {
   if (!node) return false;
@@ -109,15 +97,43 @@ function latestSurfaceReportForRule(rootDir, ruleId) {
   return null;
 }
 
-export function buildExplainText({ rootDir, repoMap, repoStandards, ruleId, filePath, workArea }) {
+function selectExplainRules({ rootDir, repoMap, repoStandards, ruleId, filePath, workArea }) {
   const normalizedFile = filePath ? normalizeRepoPath(filePath, rootDir) : null;
   const allRules = [...(repoStandards.rules ?? []), ...syntheticPolicyRules()];
-  const selectedRules = allRules.filter((rule) => {
+  return allRules.filter((rule) => {
     if (ruleId) return rule.id === ruleId;
     if (normalizedFile) return ruleMatchesFile(rule, normalizedFile);
     if (workArea) return ruleMatchesWorkAreaNode(rule, workArea, repoMap);
     return false;
   });
+}
+
+export function buildExplainGuidance({ rootDir, repoMap, repoStandards, ruleId, filePath, workArea }) {
+  const rules = selectExplainRules({ rootDir, repoMap, repoStandards, ruleId, filePath, workArea });
+  return {
+    schemaVersion: 1,
+    selector: filePath
+      ? { kind: 'file', value: normalizeRepoPath(filePath, rootDir) }
+      : workArea
+        ? { kind: 'work-area', value: workArea }
+        : { kind: 'rule', value: ruleId ?? null },
+    rules: rules.map((rule) => ({
+      id: rule.id,
+      kind: rule.kind,
+      enforcementLevel: rule.enforcementLevel,
+      evidenceCheckIds: rule.evidenceCheckIds ?? [],
+      summary: rule.explain?.summary ?? rule.message,
+      mustDo: rule.explain?.mustDo ?? [],
+      mustNotDo: rule.explain?.mustNotDo ?? [],
+      exampleGood: rule.explain?.exampleGood ?? null,
+      exampleBad: rule.explain?.exampleBad ?? null,
+      contextLinks: rule.explain?.contextLinks ?? [],
+    })),
+  };
+}
+
+export function buildExplainText({ rootDir, repoMap, repoStandards, ruleId, filePath, workArea }) {
+  const selectedRules = selectExplainRules({ rootDir, repoMap, repoStandards, ruleId, filePath, workArea });
   const lines = [
     'Veritas JIT Context',
     '',
@@ -146,6 +162,7 @@ export function runExplainCli(argv = process.argv.slice(2), defaults = {}) {
     '--repo-standards': { type: 'string', key: 'repoStandardsPath' },
     '--file': { type: 'string', key: 'filePath' },
     '--work-area': { type: 'string', key: 'workArea' },
+    '--json': { type: 'flag', key: 'json' },
   });
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const { repoMapPath, repoStandardsPath } = resolveVeritasPaths({ ...options, rootDir }, { ...defaults, rootDir });
@@ -153,15 +170,19 @@ export function runExplainCli(argv = process.argv.slice(2), defaults = {}) {
   const repoMap = loadRepoMap(repoMapPath);
   const repoStandards = loadRepoStandards(repoStandardsPath);
   const selectorIsRule = [...(repoStandards.rules ?? []), ...syntheticPolicyRules()].some((rule) => rule.id === selector);
-  const text = buildExplainText({
+  const input = {
     rootDir,
     repoMap,
     repoStandards,
     ruleId: options.filePath || options.workArea ? null : selectorIsRule ? selector : null,
     filePath: options.filePath ?? (!options.workArea && !selectorIsRule && selector?.includes('/') ? selector : null),
     workArea: options.workArea ?? (!options.filePath && !selectorIsRule && selector && !selector.includes('/') ? selector : null),
-  });
-  process.stdout.write(text);
+  };
+  if (options.json) {
+    process.stdout.write(`${JSON.stringify(buildExplainGuidance(input), null, 2)}\n`);
+  } else {
+    process.stdout.write(buildExplainText(input));
+  }
 }
 
 export function checkBoundaries({ rootDir, repoMap, actor, files }) {
