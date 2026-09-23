@@ -9,6 +9,16 @@ Veritas is intentionally agent-agnostic. These integration notes show where the 
 - use `npx @kontourai/veritas apply stop-hook --tool claude-code` when you want Stop-hook feedback at turn end
 - use the generated git/runtime hooks when you want post-change automation instead of manual invocation
 
+## Codex
+
+- install the Git-backed Veritas Governance Kit through Flow Agents, then use
+  `flow-agents kit provision veritas-governance --target .` after reviewing its
+  dry run; it installs the declared `.codex/hooks.json` PreToolUse asset
+- use `/hooks` in Codex to review and trust that exact project hook definition;
+  a provisioned file alone does not establish that the host runs it
+- the hook asks Veritas for guidance before path-bearing `apply_patch` edits;
+  `veritas readiness` still owns post-change rule and Evidence Check verdicts
+
 ## Cursor
 
 - keep Repo Map and Repo Standards files in the repo, not in editor-only settings

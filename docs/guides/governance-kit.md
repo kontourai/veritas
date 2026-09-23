@@ -20,7 +20,20 @@ npx @kontourai/flow-agents kit activate \
 
 Flow Agents shallow-clones the repository, validates the root `kit.json`, records source and
 content-hash provenance, and activates the declared flows, skills, and docs. Git installation
-does not execute repository scripts or install the Veritas npm package.
+does not execute repository scripts, install the Veritas npm package, or provision
+host hooks. The activated `setup-governance` skill uses Flow Agents's separate,
+reviewed provision step for the declared Codex hook:
+
+```bash
+flow-agents kit provision veritas-governance --target . --dry-run
+flow-agents kit provision veritas-governance --target .
+```
+
+The provision declares `host: codex` and `kind: hook`, so Flow Agents routes its
+explicit target through Conduit's Codex adapter and records a content-safe
+installation receipt. Its explicit `hooks-json` merge preserves existing host
+hooks and refuses a conflicting command definition. Codex itself must trust
+the new or changed hook definition before use.
 
 ## Set up the engine
 

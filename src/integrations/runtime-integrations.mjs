@@ -200,7 +200,7 @@ export function CodexRuntimeIntegration(rootDir, options = {}) {
   return defineRuntimeIntegration({
     name: 'codex',
     installPreToolUseHook() {
-      return { installed: false, reason: 'Codex PreToolUse hook is not part of the current integration.' };
+      return { installed: true, reason: 'Codex PreToolUse is included in the installed codex hooks artifact.' };
     },
     installStopHook() {
       const gitHook = applyGitHook({

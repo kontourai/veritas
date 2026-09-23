@@ -101,7 +101,8 @@
         "label": "governance Flow Kit",
         "patterns": [
           "flows/",
-          "skills/"
+          "skills/",
+          "provisions/"
         ],
         "owners": [
           "governance-team"

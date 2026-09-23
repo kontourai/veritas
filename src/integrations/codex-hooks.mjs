@@ -14,6 +14,19 @@ export function buildCodexSessionLogCaptureCommand() {
 export function buildSuggestedCodexHookConfig() {
   return {
     hooks: {
+      PreToolUse: [
+        {
+          matcher: 'apply_patch|Edit|Write',
+          hooks: [
+            {
+              type: 'command',
+              command: 'npm exec -- veritas hooks codex pre-tool-use',
+              statusMessage: 'Loading Veritas guidance for edited files',
+              timeout: 30,
+            },
+          ],
+        },
+      ],
       Stop: [
         {
           matcher: '.*',
