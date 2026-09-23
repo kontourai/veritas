@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.7.2](https://github.com/kontourai/veritas/compare/v1.7.1...v1.7.2) (2026-09-23)
+
+
+### Fixes
+
+* honor schema nodeIds for evidence routes ([5babdd5](https://github.com/kontourai/veritas/commit/5babdd594ebaf0b0657d3f9e7a4272e20ccaf450))
+
 ## [1.7.1](https://github.com/kontourai/veritas/compare/v1.7.0...v1.7.1) (2026-09-23)
 
 
