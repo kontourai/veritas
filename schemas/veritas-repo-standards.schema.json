@@ -46,6 +46,13 @@
             "type": "string",
             "enum": ["Observe", "Guide", "Require"]
           },
+          "evidenceCheckIds": {
+            "description": "Existing Repo Map evidence checks that must execute when a changed file matches this rule. Guide reports a missing or failed check as advisory; Require blocks readiness.",
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          },
           "enforcement": {
             "description": "Derived runtime hard-gate flag (not authored): 'deny' makes the PreToolUse hook block on a failing hard-invariant; 'advisory' records only. Defaulted from classification in src/rules/result.mjs.",
             "type": "string",

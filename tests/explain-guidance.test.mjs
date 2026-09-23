@@ -18,6 +18,7 @@ test('structured explain and text explain select the same rules for a file', () 
     kind: 'required-artifacts',
     classification: 'promotable-policy',
     enforcementLevel: 'Guide',
+    evidenceCheckIds: [map.evidence.evidenceChecks[0].id],
     message: 'Review docs.',
     explain: { summary: 'Review docs intent.', mustDo: ['Verify the source.'] },
     match: { artifacts: ['docs/notes.md'] },
@@ -28,6 +29,7 @@ test('structured explain and text explain select the same rules for a file', () 
   const structured = buildExplainGuidance(input);
   const text = buildExplainText(input);
   assert.deepEqual(structured.rules.map((rule) => rule.id), ['docs-review']);
+  assert.deepEqual(structured.rules[0].evidenceCheckIds, [map.evidence.evidenceChecks[0].id]);
   assert.match(text, /Rule: docs-review/);
 
   const output = execFileSync(process.execPath, [

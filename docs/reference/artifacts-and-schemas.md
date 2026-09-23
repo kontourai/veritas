@@ -178,6 +178,16 @@ A current Repo Standards file provides:
 - match payloads used by the current evaluator
 - per-requirement `explain` blocks (`summary`, `mustDo`, `mustNotDo`, `exampleGood`, `exampleBad`, `contextLinks`)
 - ownership and rollback metadata
+- optional `evidenceCheckIds` that bind a changed matching file to existing Repo Map evidence checks
+
+When `evidenceCheckIds` is present, Veritas selects each named check for a changed
+file matched by the same rule path selector used by `explain --file`. An unknown
+check ID is a configuration error. A missing, skipped, or failed result makes
+that rule unverified: `Guide` reports a warning, while `Require` blocks
+readiness. The result must come from the selected check definition in the
+current run; an unrelated or unbound result cannot satisfy the rule. An
+unchanged file does not run its rule-linked check. This link proves check
+execution and outcome, so the check itself must exercise the behavior claimed.
 
 Supported rule kinds:
 

@@ -12,6 +12,7 @@ export function formatPreToolUseGuidance(guidance) {
   const lines = [`Veritas guidance for ${JSON.stringify(guidance.selector.value)}:`];
   for (const rule of guidance.rules.slice(0, 12)) {
     lines.push(`Rule ${rule.id} (${rule.enforcementLevel}): ${rule.summary}`);
+    if (rule.evidenceCheckIds.length > 0) lines.push(`Evidence checks: ${rule.evidenceCheckIds.join(', ')}`);
     for (const item of rule.mustDo) lines.push(`Do: ${item}`);
     for (const item of rule.mustNotDo) lines.push(`Do not: ${item}`);
     if (rule.exampleGood) lines.push(`Good: ${rule.exampleGood}`);

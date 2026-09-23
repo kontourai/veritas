@@ -34,13 +34,11 @@ Product language should use:
 - **Guide**: provide correction or review feedback
 - **Require**: require fresh evidence or authority-backed exception
 
-Current schema values map roughly to:
+The schema uses `enforcementLevel`; `stage` is not a current field. An optional
+`evidenceCheckIds` list names Repo Map checks to execute when a changed file
+matches the rule. Check execution and rule satisfaction are separate facts.
 
-- `recommend` -> Observe or Guide, depending on output
-- `warn` -> Guide
-- `block` -> Require
-
-The point of keeping both classification and enforcement/stage metadata is that they answer different questions:
+The point of keeping both classification and enforcement metadata is that they answer different questions:
 
 - Classification: what kind of requirement is this?
 - Enforcement: how strongly should Veritas apply it right now?

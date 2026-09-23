@@ -86,7 +86,7 @@ export function buildRequiredEvidenceChecks({
   const selectedEvidenceCheckIds = new Set(
     (evidenceCheckPlan.evidenceChecks ?? []).map((evidenceCheck) => evidenceCheck.id),
   );
-  return evidenceChecksByIds(config, readRequiredEvidenceCheckIds(config)).map((evidenceCheck) => {
+  return evidenceChecksByIds(config, evidenceCheckPlan.requiredEvidenceCheckIds ?? readRequiredEvidenceCheckIds(config)).map((evidenceCheck) => {
     const plannedEvidenceCheck = (evidenceCheckPlan.evidenceChecks ?? []).find(
       (check) => check.id === evidenceCheck.id,
     );

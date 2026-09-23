@@ -2,22 +2,10 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadRepoMap, loadRepoStandards } from './load.mjs';
 import { normalizeRepoPath, veritasArtifactPath } from './paths.mjs';
-import { matchesPatterns } from './util/patterns.mjs';
+import { ruleMatchesFile } from './rules/applicability.mjs';
 import { evaluateWorkAreaBoundaryRule } from './rules/evaluate.mjs';
 import { resolveVeritasPaths, listChangedFiles, listWorkingTreeFiles } from './report/index.mjs';
 import { parseTokens } from './args.mjs';
-
-function ruleMatchesFile(rule, filePath) {
-  if (!filePath) return false;
-  const match = rule.match ?? {};
-  if (Array.isArray(match.artifacts)) return matchesPatterns(filePath, match.artifacts);
-  if (Array.isArray(match['governance-block'])) return matchesPatterns(filePath, match['governance-block']);
-  if (typeof match['if-changed'] === 'string' || typeof match['then-require'] === 'string') {
-    return matchesPatterns(filePath, [match['if-changed'], match['then-require']].filter(Boolean));
-  }
-  if (Array.isArray(match.files)) return matchesPatterns(filePath, match.files);
-  return false;
-}
 
 function ruleMatchesWorkAreaNode(rule, node, config) {
   if (!node) return false;
@@ -133,6 +121,7 @@ export function buildExplainGuidance({ rootDir, repoMap, repoStandards, ruleId, 
       id: rule.id,
       kind: rule.kind,
       enforcementLevel: rule.enforcementLevel,
+      evidenceCheckIds: rule.evidenceCheckIds ?? [],
       summary: rule.explain?.summary ?? rule.message,
       mustDo: rule.explain?.mustDo ?? [],
       mustNotDo: rule.explain?.mustNotDo ?? [],

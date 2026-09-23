@@ -273,7 +273,7 @@ npx @kontourai/veritas explain --work-area app.src
 ```
 
 Output is capped to fit an agent context window and includes the local governance excerpt plus matching rule `explain` blocks.
-`--json` returns a versioned selector and the same matching rule IDs, enforcement levels, summaries, `mustDo`, `mustNotDo`, examples, and context links for runtime hooks and kit adapters. It is guidance, not evidence that the agent followed a rule or that a behavioral check passed.
+`--json` returns a versioned selector and the same matching rule IDs, enforcement levels, linked `evidenceCheckIds`, summaries, `mustDo`, `mustNotDo`, examples, and context links for runtime hooks and kit adapters. It is guidance, not evidence that the agent followed a rule or that a behavioral check passed.
 
 ### `boundaries check` (legacy)
 

@@ -19,6 +19,7 @@ import {
   resolveSelectedEvidenceCheckSources,
 } from './evidence-checks.mjs';
 import { buildEvidenceIntegrity, resolveSourceRef } from './integrity.mjs';
+import { bindRuleEvidenceResults } from './rule-evidence.mjs';
 import {
   parseBaselineCiFastStatus,
   resolveEvidenceCheckPlan,
@@ -46,8 +47,9 @@ function resolvePolicyResultSet({
   normalizedFiles,
   config,
   options,
+  evidenceCheckPlan,
 }) {
-  const policyResults =
+  const initialPolicyResults =
     options.policyResults ??
     evaluateRepoStandards(repoStandards, {
       rootDir,
@@ -55,6 +57,11 @@ function resolvePolicyResultSet({
       config,
       actor: options.actor,
     });
+  const policyResults = bindRuleEvidenceResults({
+    policyResults: initialPolicyResults,
+    evidenceCheckPlan,
+    evidenceCheckResults: options.evidenceCheckResults,
+  });
   const governanceState = options.governanceState ?? options.attestationStatus;
   const resolvedPolicyResults = governanceState
     ? [
@@ -89,7 +96,7 @@ function buildRepoMapSnapshot({
     default_resolution: config.graph.defaultResolution,
     non_sliceable_invariants: config.graph.nonSliceableInvariants,
     evidenceChecks: allEvidenceChecks.map(({ selected, ...evidenceCheck }) => evidenceCheck),
-    required_evidence_check_ids: readRequiredEvidenceCheckIds(config),
+    required_evidence_check_ids: evidenceCheckPlan.requiredEvidenceCheckIds ?? readRequiredEvidenceCheckIds(config),
     default_evidence_check_ids: readDefaultEvidenceCheckIds(config),
     evidence_check_routes: serializeEvidenceCheckRoutes(config),
     uncovered_path_policy: evidenceCheckPlan.uncoveredPathPolicy,
@@ -150,7 +157,7 @@ function buildBaseEvidenceRecord({
     external_tool_results: buildExternalToolResults({
       evidenceChecks: selectedEvidenceCheckSources,
       rootDir,
-      requiredEvidenceCheckIds: readRequiredEvidenceCheckIds(config),
+      requiredEvidenceCheckIds: evidenceCheckPlan.requiredEvidenceCheckIds ?? readRequiredEvidenceCheckIds(config),
     }),
     uncovered_path_result: evidenceCheckPlan.uncoveredPathResult,
     baseline_ci_fast_passed: baselineCiFastPassed,
@@ -190,6 +197,7 @@ export async function buildEvidenceRecord({
     resolveEvidenceCheckPlan({
       files,
       config,
+      repoStandards,
       rootDir,
       explicitEvidenceCheckCommand: options.explicitEvidenceCheckCommand,
     });
@@ -206,6 +214,7 @@ export async function buildEvidenceRecord({
     normalizedFiles,
     config,
     options,
+    evidenceCheckPlan,
   });
   const selectedEvidenceCheckSources = resolveSelectedEvidenceCheckSources(config, evidenceCheckPlan);
   const selectedEvidenceChecks = buildSelectedEvidenceChecks({
