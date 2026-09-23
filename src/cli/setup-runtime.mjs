@@ -6,6 +6,7 @@ import { evaluatePreToolUse } from '../hooks.mjs';
 import { formatPreToolUseGuidance } from '../hooks/pre-tool-use.mjs';
 import { runtimeIntegrationFor } from '../integrations/runtime-integrations.mjs';
 import { evaluateCodexPreToolUse } from '../hooks/codex-pre-tool-use.mjs';
+import { prepareGuidanceBriefing } from '../hooks/guidance-briefing.mjs';
 
 function codexHookRoot(options, defaults, stdinText) {
   if (options.rootDir) return resolve(options.rootDir);
@@ -32,6 +33,9 @@ export function runCodexPreToolUseCli(argv = process.argv.slice(2), defaults = {
   const stdinText = readFileSync(0, 'utf8');
   const rootDir = codexHookRoot(options, defaults, stdinText);
   const result = evaluateCodexPreToolUse({ rootDir, stdinText, actor: options.actor });
+  const briefing = result.decision === 'block'
+    ? { guidanceContext: '' }
+    : prepareGuidanceBriefing({ rootDir, stdinText, guidanceContext: result.guidanceContext });
   const output = { decision: result.decision, reason: result.reason, paths: result.paths };
   if (result.exceptionPath) output.exceptionPath = result.exceptionPath;
   if (result.decision === 'block') {
@@ -41,13 +45,14 @@ export function runCodexPreToolUseCli(argv = process.argv.slice(2), defaults = {
       permissionDecisionReason: result.reason,
     };
     process.exitCode = 2;
-  } else if (result.guidanceContext) {
+  } else if (briefing.guidanceContext) {
     output.hookSpecificOutput = {
       hookEventName: 'PreToolUse',
-      additionalContext: result.guidanceContext,
+      additionalContext: briefing.guidanceContext,
     };
   }
   process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
+  briefing.record?.();
   if (result.skipped) {
     process.stderr.write(`Veritas: Codex PreToolUse gate skipped; bypass recorded in ${result.exceptionPath}\n`);
   }
@@ -63,16 +68,22 @@ export function runClaudeCodePreToolUseCli(argv = process.argv.slice(2), default
     actor: options.actor,
     stdinText,
   });
+  const guidanceContext = result.guidance?.rules?.length > 0 && !result.skipped
+    ? formatPreToolUseGuidance(result.guidance) : '';
+  const briefing = result.decision === 'block'
+    ? { guidanceContext: '' }
+    : prepareGuidanceBriefing({ rootDir, stdinText, guidanceContext });
   const output = { decision: result.decision, reason: result.reason };
-  if (result.guidance?.rules?.length > 0 && !result.skipped) {
+  if (briefing.guidanceContext) {
     output.guidance = result.guidance;
     output.hookSpecificOutput = {
       hookEventName: 'PreToolUse',
-      additionalContext: formatPreToolUseGuidance(result.guidance),
+      additionalContext: briefing.guidanceContext,
     };
   }
   if (result.exceptionPath) output.exceptionPath = result.exceptionPath;
   process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
+  briefing.record?.();
   if (result.skipped) {
     process.stderr.write(
       `Veritas: PreToolUse gate skipped (VERITAS_HOOK_SKIP=1); bypass recorded in ${result.exceptionPath}\n`,
