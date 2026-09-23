@@ -39,5 +39,16 @@
       "path": "docs/guides/governance-kit.md",
       "description": "Git installation, activation, engine setup, and readiness-gate guide."
     }
+  ],
+  "provisions": [
+    {
+      "id": "veritas-governance.codex-pre-edit-hook",
+      "path": "provisions/codex-hooks.json",
+      "target": ".codex/hooks.json",
+      "host": "codex",
+      "kind": "hook",
+      "merge": "hooks-json",
+      "description": "Codex PreToolUse hook that asks Veritas for path-specific guidance before file edits."
+    }
   ]
 }

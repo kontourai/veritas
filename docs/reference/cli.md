@@ -194,12 +194,26 @@ Exit codes follow the Claude Code PreToolUse protocol, where **exit 2 is the onl
 | `block` (deny-enforced failure) | `2` | the edit is blocked and the reason is returned to the agent |
 | `approve` | `0` | the edit proceeds |
 
-This is the only Veritas mechanism that can block an edit, so both ways past it are recorded to `.kontourai/veritas/standards-feedback/exceptions.jsonl`:
+The Veritas pre-edit hooks can block path-bearing edits. Both explicit bypasses are recorded to `.kontourai/veritas/standards-feedback/exceptions.jsonl`:
 
 - `VERITAS_EXCEPTION_RULE` + `VERITAS_EXCEPTION_REASON` allow one specific denied rule and append a `rule-exception` record.
 - `VERITAS_HOOK_SKIP=1` skips evaluation entirely and appends a `hook-skip` record (set `VERITAS_HOOK_SKIP_REASON` to say why). Unlike the generated git and runtime hooks, the PreToolUse gate resolves this bypass inside Veritas rather than in the shell body, so a skipped gate still leaves a record in the repo.
 
 Both records carry the resolved actor, the file, and a timestamp, and both count toward the `exception_count` reported by standards feedback.
+
+### `hooks codex`
+
+The Governance Kit declares a `.codex/hooks.json` provision installed through
+`flow-agents kit provision`. Its `PreToolUse` handler invokes
+`veritas hooks codex pre-tool-use`. Codex sends `apply_patch` contents in
+`tool_input.command`; Veritas extracts all `Update`, `Add`, `Delete`, and `Move`
+paths, evaluates each against the Repo Standards, and returns matching guidance
+as `hookSpecificOutput.additionalContext`. A malformed or pathless patch is
+denied with exit 2. A supported strict-area refusal also uses Codex's
+`permissionDecision: "deny"` output. Shell commands can edit files without a
+parseable patch path, so this hook does not claim to cover them; required
+readiness checks still run after a change. Codex project hooks must be reviewed
+and trusted in `/hooks` before they execute.
 
 ### `integrations`
 

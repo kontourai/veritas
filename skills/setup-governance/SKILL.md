@@ -93,7 +93,25 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    npm exec -- veritas setup repo-hooks
    ```
 
-9. After a maintainer reviews the generated standards and map, record bootstrap authority:
+9. For a Codex host, use Flow Agents's Kit provisioner to install the reviewed
+   Veritas hook declaration. Inspect the dry run and the exact target first:
+
+   ```bash
+   flow-agents kit provision veritas-governance --target . --dry-run
+   flow-agents kit provision veritas-governance --target .
+   npm exec -- veritas integrations codex status --target-hooks-file .codex/hooks.json
+   ```
+
+   Ordinary Kit provisions are create-only by default. This declared host hook
+   uses Flow Agents's `hooks-json` merge through Conduit: existing unrelated
+   handlers remain, an identical handler is not duplicated, and a conflicting
+   command definition refuses before writing. Never force-replace an existing
+   `.codex/hooks.json` to bypass that refusal. Codex requires its own trust review of
+   the new or changed project hook in `/hooks`; a copied file alone is not proof
+   the runtime executes it. For Claude Code, install and inspect the supported
+   Veritas PreToolUse integration through `veritas integrations claude-code`.
+
+10. After a maintainer reviews the generated standards and map, record bootstrap authority:
 
    ```bash
    npm exec -- veritas attest bootstrap \
@@ -102,7 +120,7 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
      --non-interactive
    ```
 
-10. Run the first readiness check:
+11. Run the first readiness check:
 
    ```bash
    npm exec -- veritas readiness --working-tree

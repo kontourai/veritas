@@ -1,9 +1,57 @@
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { parseApplyArgs, parsePreToolUseArgs } from '../args.mjs';
 import { evaluatePreToolUse } from '../hooks.mjs';
 import { formatPreToolUseGuidance } from '../hooks/pre-tool-use.mjs';
 import { runtimeIntegrationFor } from '../integrations/runtime-integrations.mjs';
+import { evaluateCodexPreToolUse } from '../hooks/codex-pre-tool-use.mjs';
+
+function codexHookRoot(options, defaults, stdinText) {
+  if (options.rootDir) return resolve(options.rootDir);
+  let cwd = defaults.rootDir ?? process.cwd();
+  try {
+    const payload = JSON.parse(stdinText);
+    if (typeof payload?.cwd === 'string' && payload.cwd.length > 0) cwd = payload.cwd;
+  } catch {
+    // The evaluator reports malformed input as a blocking decision.
+  }
+  try {
+    return execFileSync('git', ['rev-parse', '--show-toplevel'], {
+      cwd,
+      encoding: 'utf8',
+      windowsHide: true,
+    }).trim();
+  } catch {
+    return resolve(cwd);
+  }
+}
+
+export function runCodexPreToolUseCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parsePreToolUseArgs(argv);
+  const stdinText = readFileSync(0, 'utf8');
+  const rootDir = codexHookRoot(options, defaults, stdinText);
+  const result = evaluateCodexPreToolUse({ rootDir, stdinText, actor: options.actor });
+  const output = { decision: result.decision, reason: result.reason, paths: result.paths };
+  if (result.exceptionPath) output.exceptionPath = result.exceptionPath;
+  if (result.decision === 'block') {
+    output.hookSpecificOutput = {
+      hookEventName: 'PreToolUse',
+      permissionDecision: 'deny',
+      permissionDecisionReason: result.reason,
+    };
+    process.exitCode = 2;
+  } else if (result.guidanceContext) {
+    output.hookSpecificOutput = {
+      hookEventName: 'PreToolUse',
+      additionalContext: result.guidanceContext,
+    };
+  }
+  process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
+  if (result.skipped) {
+    process.stderr.write(`Veritas: Codex PreToolUse gate skipped; bypass recorded in ${result.exceptionPath}\n`);
+  }
+}
 
 export function runClaudeCodePreToolUseCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parsePreToolUseArgs(argv);

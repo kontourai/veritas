@@ -18,6 +18,7 @@ import {
   runIntegrationsCli,
   runSetupRepoHooksCli,
   runClaudeCodePreToolUseCli,
+  runCodexPreToolUseCli,
   runPrintClaudeCodePreToolUseHookCli,
   runApplyClaudeCodePreToolUseHookCli,
   runApplyGovernanceBlocksCli,
@@ -303,8 +304,10 @@ if (subcommand === '--version' || subcommand === '-V') {
   // (`veritas hooks claude-code pre-tool-use "$@"`, src/hooks/suggestions.mjs — veritas#119);
   // `print`/`apply` render and install that hook.
   const [runtime, action, ...hookArgs] = args;
-  const HOOK_USAGE = 'Usage:\n  veritas hooks claude-code print [--root <path>]\n  veritas hooks claude-code apply [--root <path>] [--output <path>] [--force]\n  veritas hooks claude-code pre-tool-use [--file <path>] [--actor <id>] [--root <path>]\n';
-  if (runtime !== 'claude-code') {
+  const HOOK_USAGE = 'Usage:\n  veritas hooks claude-code print [--root <path>]\n  veritas hooks claude-code apply [--root <path>] [--output <path>] [--force]\n  veritas hooks claude-code pre-tool-use [--file <path>] [--actor <id>] [--root <path>]\n  veritas hooks codex pre-tool-use [--actor <id>] [--root <path>]\n';
+  if (runtime === 'codex' && action === 'pre-tool-use') {
+    runCodexPreToolUseCli(hookArgs, { rootDir: cwd });
+  } else if (runtime !== 'claude-code') {
     writeStderr(HOOK_USAGE);
     process.exitCode = 1;
   } else if (action === 'pre-tool-use') {
