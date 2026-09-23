@@ -1444,7 +1444,7 @@ test('work-area, default, and explicit evidence routing always compose required 
       requiredEvidenceCheckIds: ['required-evidence-check'],
       defaultEvidenceCheckIds: ['default-evidence-check'],
       evidenceCheckRoutes: [
-        { componentIds: ['tooling.scripts'], evidenceCheckIds: ['viewer-build', 'viewer-build'] },
+        { nodeIds: ['tooling.scripts'], evidenceCheckIds: ['viewer-build', 'viewer-build'] },
       ],
       uncoveredPathPolicy: 'warn',
     },
