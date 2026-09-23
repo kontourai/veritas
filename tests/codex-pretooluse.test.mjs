@@ -143,6 +143,7 @@ test('installed Codex hook config routes a real CLI invocation with model-visibl
   });
   assert.equal(result.status, 0, result.stderr);
   const output = JSON.parse(result.stdout);
+  assert.deepEqual(Object.keys(output), ['hookSpecificOutput']);
   assert.equal(output.hookSpecificOutput.hookEventName, 'PreToolUse');
   assert.match(output.hookSpecificOutput.additionalContext, /notes-review/);
 
@@ -165,9 +166,24 @@ test('installed Codex hook briefs once per session while preserving repeated pol
     'bin/veritas.mjs', 'hooks', 'codex', 'pre-tool-use', '--root', rootDir,
   ], { encoding: 'utf8', input }));
   const first = run();
-  assert.equal(first.decision, 'approve');
+  assert.deepEqual(Object.keys(first), ['hookSpecificOutput']);
   assert.match(first.hookSpecificOutput.additionalContext, /notes-review/);
   const second = run();
-  assert.equal(second.decision, 'approve');
-  assert.equal(second.hookSpecificOutput, undefined);
+  assert.deepEqual(second, {});
+});
+
+test('Codex CLI emits the supported deny shape without legacy decision fields', () => {
+  const rootDir = fixture();
+  const result = spawnSync(process.execPath, [
+    'bin/veritas.mjs', 'hooks', 'codex', 'pre-tool-use', '--root', rootDir, '--actor', 'other',
+  ], {
+    encoding: 'utf8',
+    input: JSON.stringify({ cwd: rootDir, tool_name: 'apply_patch', tool_input: { command: patch('.veritas/repo-map.json') } }),
+  });
+  assert.equal(result.status, 2);
+  const output = JSON.parse(result.stdout);
+  assert.deepEqual(Object.keys(output), ['hookSpecificOutput']);
+  assert.equal(output.hookSpecificOutput.hookEventName, 'PreToolUse');
+  assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
+  assert.match(output.hookSpecificOutput.permissionDecisionReason, /work-area-boundary/);
 });
