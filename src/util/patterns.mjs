@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import picomatch from 'picomatch';
@@ -44,13 +44,14 @@ function readAllTrackedFiles(rootDir) {
   }
 }
 
-export function matchedFilesForRule(rule, { rootDir, changedFiles = [] }) {
+export function matchedFilesForRule(rule, { rootDir, changedFiles = [], preEdit = false }) {
   const patterns = rule.match?.files;
   if (!Array.isArray(patterns)) return [];
   const candidates = changedFiles.length > 0 ? changedFiles : readAllTrackedFiles(rootDir);
   return candidates
     .map((file) => normalizeRepoPath(file, rootDir))
-    .filter((file) => matchesPatterns(file, patterns));
+    .filter((file) => matchesPatterns(file, patterns))
+    .filter((file) => !preEdit || existsSync(resolve(rootDir, file)));
 }
 
 export function readRepoTextFile(rootDir, filePath) {

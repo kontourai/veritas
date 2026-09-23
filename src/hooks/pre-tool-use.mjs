@@ -189,6 +189,7 @@ export function evaluatePreToolUse({
   const policyResults = evaluateRepoStandards(repoStandards, {
     rootDir,
     changedFiles: [relativeFile],
+    preEdit: true,
     config,
     actor: effectiveActor,
   });
