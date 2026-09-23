@@ -75,6 +75,47 @@ test('Codex PreToolUse presents matching guidance before an allowed edit', () =>
   assert.match(result.guidanceContext, /Do: Check the named owner/);
 });
 
+test('Codex PreToolUse defers content checks until a newly added file exists', () => {
+  const rootDir = fixture();
+  const standardsPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
+  const standards = JSON.parse(readFileSync(standardsPath, 'utf8'));
+  standards.rules.push({
+    id: 'new-file-header', kind: 'required-pattern', classification: 'hard-invariant',
+    enforcementLevel: 'Require', enforcement: 'deny', message: 'New notes need a header.',
+    explain: { summary: 'Add the required header.' },
+    match: { files: ['docs/new.md'], pattern: '^# Required header' },
+  });
+  writeFileSync(standardsPath, `${JSON.stringify(standards, null, 2)}\n`);
+  const addInput = JSON.stringify({
+    cwd: rootDir, tool_name: 'apply_patch',
+    tool_input: { command: '*** Begin Patch\n*** Add File: docs/new.md\n+# Required header\n*** End Patch' },
+  });
+  const before = evaluateCodexPreToolUse({ rootDir, stdinText: addInput });
+  assert.equal(before.decision, 'approve');
+  assert.match(before.guidanceContext, /new-file-header/);
+  const cli = spawnSync(process.execPath, [
+    'bin/veritas.mjs', 'hooks', 'codex', 'pre-tool-use', '--root', rootDir,
+  ], { encoding: 'utf8', input: addInput });
+  assert.equal(cli.status, 0, cli.stderr);
+
+  const strictAdd = evaluateCodexPreToolUse({
+    rootDir, actor: 'other',
+    stdinText: JSON.stringify({
+      tool_name: 'apply_patch',
+      tool_input: { command: '*** Begin Patch\n*** Add File: .veritas/new-policy.json\n+{}\n*** End Patch' },
+    }),
+  });
+  assert.equal(strictAdd.decision, 'block');
+  assert.match(strictAdd.reason, /work-area-boundary/);
+
+  writeFileSync(join(rootDir, 'docs/new.md'), 'Missing the required header.\n');
+  const existing = evaluateCodexPreToolUse({ rootDir, stdinText: addInput });
+  assert.equal(existing.decision, 'block');
+  assert.match(existing.reason, /new-file-header/);
+  writeFileSync(join(rootDir, 'docs/new.md'), '# Required header\n');
+  assert.equal(evaluateCodexPreToolUse({ rootDir, stdinText: addInput }).decision, 'approve');
+});
+
 test('Codex PreToolUse denies strict-area edits and pathless patches', () => {
   const rootDir = fixture();
   const denied = evaluateCodexPreToolUse({

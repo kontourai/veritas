@@ -24,6 +24,7 @@ export { evaluatePrimitiveFirstGovernanceRule } from './primitive-first.mjs';
  * @typedef {Object} RuleContext
  * @property {string} rootDir
  * @property {string[]} [changedFiles]
+ * @property {boolean} [preEdit] Defer content checks for a path that does not exist yet.
  * @property {object} [config] Repo Map config; required for work-area-boundary.
  * @property {object} [repoStandards] Active Repo Standards config; required for primitive references.
  * @property {string|null} [actor] Resolved actor for boundary rules.
