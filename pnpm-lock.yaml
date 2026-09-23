@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@kontourai/surface':
-        specifier: ^2.0.0
-        version: 2.14.0
+        specifier: ^3.2.0
+        version: 3.2.0
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.30.0(zod@4.4.3)
@@ -46,8 +46,8 @@ packages:
     peerDependencies:
       hono: ^4
 
-  '@kontourai/surface@2.14.0':
-    resolution: {integrity: sha512-OiSOUHStjZvfWJe1nXXm3vfbgUvkc3Dc3THqTXbMK70wjKAHfDgz06TwBLeRp3oNJKEIh9xNDYCFT+TqQ7EYrQ==}
+  '@kontourai/surface@3.2.0':
+    resolution: {integrity: sha512-6Ju1nZyweSH6teovVv8ULdVQr8R3sgY+QTXvWtphlF8HZJwh5ntPyXvN+yfdTdv2YJ6d0zQPLcTRCz8C0fH1Ug==}
     engines: {node: '>=22'}
     hasBin: true
 
@@ -608,7 +608,7 @@ snapshots:
     dependencies:
       hono: 4.12.27
 
-  '@kontourai/surface@2.14.0':
+  '@kontourai/surface@3.2.0':
     optionalDependencies:
       '@sigstore/sign': 5.0.0
       '@sigstore/verify': 4.1.2
