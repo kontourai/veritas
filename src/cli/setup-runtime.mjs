@@ -36,8 +36,9 @@ export function runCodexPreToolUseCli(argv = process.argv.slice(2), defaults = {
   const briefing = result.decision === 'block'
     ? { guidanceContext: '' }
     : prepareGuidanceBriefing({ rootDir, stdinText, guidanceContext: result.guidanceContext });
-  const output = { decision: result.decision, reason: result.reason, paths: result.paths };
-  if (result.exceptionPath) output.exceptionPath = result.exceptionPath;
+  // Codex treats the legacy top-level `decision: "approve"` as a hook failure.
+  // Keep evaluator diagnostics internal; emit only fields in Codex's hook protocol.
+  const output = {};
   if (result.decision === 'block') {
     output.hookSpecificOutput = {
       hookEventName: 'PreToolUse',
