@@ -10,6 +10,7 @@ import {
   evidenceCheckRecordsForCommands,
   readUncoveredPathPolicy,
   routeMatchesAnyComponent,
+  routeNodeIds,
 } from '../evidence/index.mjs';
 
 export function resolveEvidenceCheckPlan({
@@ -46,7 +47,7 @@ export function resolveEvidenceCheckPlan({
     resolutionSource = 'explicit';
   } else if (matchedRoutes.length > 0) {
     const routedComponentIds = new Set(
-      matchedRoutes.flatMap((route) => (route.componentIds ?? []).filter((componentId) => affectedNodes.includes(componentId))),
+      matchedRoutes.flatMap((route) => routeNodeIds(route).filter((nodeId) => affectedNodes.includes(nodeId))),
     );
     evidenceChecks = evidenceChecksByIds(config, uniqueStrings(matchedRoutes.flatMap((route) => route.evidenceCheckIds ?? [])));
     if (affectedNodes.some((nodeId) => !routedComponentIds.has(nodeId))) {

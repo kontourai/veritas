@@ -192,13 +192,18 @@ export function readUncoveredPathPolicy(config) {
   return 'warn';
 }
 
+/** nodeIds is the published Repo Map field; componentIds is legacy input. */
+export function routeNodeIds(route) {
+  return route.nodeIds ?? route.componentIds ?? [];
+}
+
 export function routeMatchesAnyComponent(route, components) {
-  return (route.componentIds ?? []).some((componentId) => components.includes(componentId));
+  return routeNodeIds(route).some((nodeId) => components.includes(nodeId));
 }
 
 export function serializeEvidenceCheckRoutes(config) {
   return readEvidenceCheckRoutes(config).map((route) => ({
-    component_ids: uniqueStrings(route.componentIds ?? []),
+    component_ids: uniqueStrings(routeNodeIds(route)),
     evidence_check_ids: uniqueStrings(route.evidenceCheckIds ?? []),
   }));
 }
