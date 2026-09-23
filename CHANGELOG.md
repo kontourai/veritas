@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.7.0](https://github.com/kontourai/veritas/compare/v1.6.1...v1.7.0) (2026-09-23)
+
+
+### Features
+
+* add Codex pre-edit guidance hook to Governance Kit ([f764443](https://github.com/kontourai/veritas/commit/f764443521bb779e3eeba6e67f4f17f7084544df))
+* add Codex pre-edit guidance hook to Governance Kit ([#234](https://github.com/kontourai/veritas/issues/234)) ([7dccfb6](https://github.com/kontourai/veritas/commit/7dccfb6115f426dfb12126193bbe67c19f3a06fc))
+* bind scoped standards to executable evidence checks ([7a5c0ae](https://github.com/kontourai/veritas/commit/7a5c0aef8649eae8546586ec7a25035e8cd31246))
+* deliver path guidance and bind rules to checks ([#232](https://github.com/kontourai/veritas/issues/232)) ([c0247e2](https://github.com/kontourai/veritas/commit/c0247e2cb72bcaef24ce1075c6cf78816fec7ac1))
+* deliver path-specific explain guidance before edits ([9c2b2f2](https://github.com/kontourai/veritas/commit/9c2b2f23c0ae84eafa881e34e7ebd09181bc4aa4))
+
+
+### Fixes
+
+* map Governance Kit provisions into conformance ([a194d9d](https://github.com/kontourai/veritas/commit/a194d9da34ac281fdd251c0fd452841a83579653))
+
 ## [1.6.1](https://github.com/kontourai/veritas/compare/v1.6.0...v1.6.1) (2026-09-18)
 
 
