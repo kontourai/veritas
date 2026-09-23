@@ -12,7 +12,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createAttestation, writeBootstrapStarterKit } from '../src/index.mjs';
 import {
@@ -44,6 +44,23 @@ function bootstrapGovernedRepo(prefix) {
   governanceNode.boundary = 'strict';
   governanceNode.boundaryAllow = ['repo-core'];
   writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
+  const standardsPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
+  const standards = JSON.parse(readFileSync(standardsPath, 'utf8'));
+  standards.rules.push({
+    id: 'notes-review',
+    kind: 'required-artifacts',
+    classification: 'promotable-policy',
+    enforcementLevel: 'Guide',
+    message: 'Review note changes.',
+    explain: {
+      summary: 'Review the note owner before editing.',
+      mustDo: ['Check the named owner.'],
+    },
+    match: { artifacts: [ALLOWED_FILE] },
+  });
+  writeFileSync(standardsPath, `${JSON.stringify(standards, null, 2)}\n`);
+  mkdirSync(join(rootDir, 'docs'), { recursive: true });
+  writeFileSync(join(rootDir, ALLOWED_FILE), '# Notes\n');
   commitAll(rootDir, 'Bootstrap Veritas');
   createAttestation({
     rootDir,
@@ -107,7 +124,24 @@ test('installed PreToolUse hook exits 0 and approves an allowed edit', () => {
   const result = runInstalledHook(rootDir, ALLOWED_FILE);
 
   assert.equal(result.status, 0, `expected exit 0, got ${result.status}: ${result.stdout}${result.stderr}`);
-  assert.equal(parseCliJson(result.stdout).decision, 'approve');
+  const payload = parseCliJson(result.stdout);
+  assert.equal(payload.decision, 'approve');
+  assert.deepEqual(payload.guidance.rules.map((rule) => rule.id), ['notes-review']);
+  assert.equal(payload.hookSpecificOutput.hookEventName, 'PreToolUse');
+  assert.match(payload.hookSpecificOutput.additionalContext, /Do: Check the named owner/);
+});
+
+test('installed PreToolUse hook blocks a pathless edit instead of silently approving it', () => {
+  const rootDir = bootstrapGovernedRepo('veritas-pretool-smoke-pathless-');
+  installClaudeCodeIntegration(rootDir);
+  const result = spawnSync(join(rootDir, '.veritas/hooks/pre-tool-use.sh'), [], {
+    cwd: rootDir,
+    encoding: 'utf8',
+    input: JSON.stringify({ tool_name: 'Edit', tool_input: {} }),
+    env: cleanGitEnv(),
+  });
+  assert.equal(result.status, 2);
+  assert.match(parseCliJson(result.stdout).reason, /no file path/);
 });
 
 test('installed PreToolUse hook records VERITAS_HOOK_SKIP bypasses instead of exiting silently', () => {

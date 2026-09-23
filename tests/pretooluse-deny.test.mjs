@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   createAttestation,
@@ -27,6 +27,24 @@ function bootstrapRepo() {
   governanceNode.boundary = 'strict';
   governanceNode.boundaryAllow = ['repo-core'];
   writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`);
+  const standardsPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
+  const standards = JSON.parse(readFileSync(standardsPath, 'utf8'));
+  standards.rules.push({
+    id: 'notes-review',
+    kind: 'required-artifacts',
+    classification: 'promotable-policy',
+    enforcementLevel: 'Guide',
+    message: 'Review note changes.',
+    explain: {
+      summary: 'Review the note owner before editing.',
+      mustDo: ['Check the named owner.'],
+      mustNotDo: ['Do not invent an owner.'],
+    },
+    match: { artifacts: ['docs/notes.md'] },
+  });
+  writeFileSync(standardsPath, `${JSON.stringify(standards, null, 2)}\n`);
+  mkdirSync(join(rootDir, 'docs'), { recursive: true });
+  writeFileSync(join(rootDir, 'docs/notes.md'), '# Notes\n');
   commitAll(rootDir, 'Bootstrap Veritas');
   createAttestation({
     rootDir,
@@ -65,6 +83,19 @@ test('Claude Code PreToolUse allows edits when checks pass', () => {
   });
 
   assert.equal(result.decision, 'approve');
+  assert.deepEqual(result.guidance.rules.map((rule) => rule.id), ['notes-review']);
+  assert.deepEqual(result.guidance.rules[0].mustDo, ['Check the named owner.']);
+});
+
+test('Claude Code PreToolUse blocks a known edit tool with no path to brief', () => {
+  const rootDir = bootstrapRepo();
+  const result = evaluatePreToolUse({
+    rootDir,
+    stdinText: JSON.stringify({ tool_name: 'Edit', tool_input: {} }),
+  });
+
+  assert.equal(result.decision, 'block');
+  assert.match(result.reason, /no file path/);
 });
 
 test('Claude Code PreToolUse blocks malformed payloads', () => {

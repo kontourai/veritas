@@ -29,7 +29,7 @@ const MAIN_USAGE = `Usage:
   veritas --version
   veritas init [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--template <name>] [--force]
   veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree] [--actor <id>] [--format feedback|json|trust-bundle] [--projection-output <path>]
-  veritas explain <ruleId|workArea|filePath> [--file <path>] [--work-area <id>] [--root <path>]
+  veritas explain <ruleId|workArea|filePath> [--file <path>] [--work-area <id>] [--json] [--root <path>]
   veritas attest bootstrap --actor <id> --approval-ref <ref> [--root <path>] [--non-interactive] [--valid-until-days <days>]
   veritas attest policy-change --actor <id> --approval-ref <ref> --message <text> [--root <path>] [--valid-until-days <days>]
   veritas attest recommendation <id> --accept|--reject --actor <id> [--approval-ref <ref>] [--message <text>] [--root <path>]

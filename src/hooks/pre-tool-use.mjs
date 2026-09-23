@@ -4,6 +4,25 @@ import { loadRepoMap, loadRepoStandards } from '../load.mjs';
 import { relativeRepoPath, veritasArtifactPath } from '../paths.mjs';
 import { evaluateWorkAreaBoundaryRule, evaluateRepoStandards } from '../rules/evaluate.mjs';
 import { readCurrentAttestation } from '../attestations.mjs';
+import { buildExplainGuidance } from '../explain.mjs';
+
+const EDIT_TOOLS = new Set(['Edit', 'MultiEdit', 'Write']);
+
+export function formatPreToolUseGuidance(guidance) {
+  const lines = [`Veritas guidance for ${JSON.stringify(guidance.selector.value)}:`];
+  for (const rule of guidance.rules.slice(0, 12)) {
+    lines.push(`Rule ${rule.id} (${rule.enforcementLevel}): ${rule.summary}`);
+    for (const item of rule.mustDo) lines.push(`Do: ${item}`);
+    for (const item of rule.mustNotDo) lines.push(`Do not: ${item}`);
+    if (rule.exampleGood) lines.push(`Good: ${rule.exampleGood}`);
+    if (rule.exampleBad) lines.push(`Bad: ${rule.exampleBad}`);
+    for (const link of rule.contextLinks) lines.push(`Context: ${link}`);
+  }
+  if (guidance.rules.length > 12) {
+    lines.push(`${guidance.rules.length - 12} more rule(s): run veritas explain --file with the exact intended path.`);
+  }
+  return lines.join('\n');
+}
 
 function normalizeHookFilePath(rootDir, filePath) {
   if (!filePath) return null;
@@ -140,6 +159,15 @@ export function evaluatePreToolUse({
     };
   }
   if (!relativeFile) {
+    if (EDIT_TOOLS.has(payload.tool_name)) {
+      return {
+        decision: 'block',
+        reason: `${payload.tool_name} supplied no file path; Veritas cannot select pre-edit guidance.`,
+        file: null,
+        actor: resolveHookActor(rootDir, actor),
+        results: [],
+      };
+    }
     return {
       decision: 'approve',
       reason: 'No file path found in PreToolUse payload.',
@@ -151,6 +179,12 @@ export function evaluatePreToolUse({
   const config = loadRepoMap(resolve(rootDir, '.veritas/repo-map.json'));
   const repoStandards = loadRepoStandards(resolve(rootDir, '.veritas/repo-standards/default.repo-standards.json'));
   const effectiveActor = resolveHookActor(rootDir, actor);
+  const guidance = buildExplainGuidance({
+    rootDir,
+    repoMap: config,
+    repoStandards,
+    filePath: relativeFile,
+  });
   const policyResults = evaluateRepoStandards(repoStandards, {
     rootDir,
     changedFiles: [relativeFile],
@@ -184,6 +218,7 @@ export function evaluatePreToolUse({
         file: relativeFile,
         actor: effectiveActor,
         results,
+        guidance,
         exceptions: [exception],
         exceptionPath: writeExceptionRecord(rootDir, exception),
       };
@@ -196,6 +231,7 @@ export function evaluatePreToolUse({
       file: relativeFile,
       actor: effectiveActor,
       results,
+      guidance,
     };
   }
   return {
@@ -204,5 +240,6 @@ export function evaluatePreToolUse({
     file: relativeFile,
     actor: effectiveActor,
     results,
+    guidance,
   };
 }
