@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.7.4](https://github.com/kontourai/veritas/compare/v1.7.3...v1.7.4) (2026-09-23)
+
+
+### Fixes
+
+* allow pre-edit guidance for new files ([#241](https://github.com/kontourai/veritas/issues/241)) ([6894e18](https://github.com/kontourai/veritas/commit/6894e1811684ea641314a951f85f72bd73f85028))
+
 ## [1.7.3](https://github.com/kontourai/veritas/compare/v1.7.2...v1.7.3) (2026-09-23)
 
 
