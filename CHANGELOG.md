@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.7.5](https://github.com/kontourai/veritas/compare/v1.7.4...v1.7.5) (2026-09-29)
+
+
+### Fixes
+
+* **init:** record a repository-relative target_root in init plans ([#246](https://github.com/kontourai/veritas/issues/246)) ([3e94acb](https://github.com/kontourai/veritas/commit/3e94acb3bb367abbce963ef43db3270f0dbe285c))
+
 ## [1.7.4](https://github.com/kontourai/veritas/compare/v1.7.3...v1.7.4) (2026-09-23)
 
 
