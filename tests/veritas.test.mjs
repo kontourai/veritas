@@ -2,9 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   chmodSync,
+  cpSync,
   existsSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   statSync,
   symlinkSync,
   unlinkSync,
@@ -1747,7 +1749,7 @@ test('init explore persists a read-only recommendation artifact by default', () 
   const recommendation = parseCliJson(stdout);
 
   assert.equal(recommendation.mode, 'explore');
-  assert.equal(recommendation.target_root, rootDir);
+  assert.equal(recommendation.target_root, '.');
   assert.equal(recommendation.evidenceCheck, 'npm run verify');
   assert.equal(recommendation.recommended_evidence_checks[0].command, 'npm run verify');
   assert.ok(recommendation.artifact_payloads['.veritas/repo-map.json']);
@@ -1764,6 +1766,127 @@ test('init explore persists a read-only recommendation artifact by default', () 
     readJsonFromAbsolute(join(rootDir, '.veritas/init-plans/explore.json')).output_path,
     '.veritas/init-plans/explore.json',
   );
+});
+
+function initPlanFixtureRoot(prefix) {
+  const rootDir = mkdtempSync(join(tmpdir(), prefix));
+  writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { verify: 'node -e "process.exit(0)"' } }));
+  writeFileSync(join(rootDir, 'AGENTS.md'), '# Agents\n');
+  return rootDir;
+}
+
+test('init plan recorded in one checkout applies from a moved or copied checkout without leaking its path', () => {
+  const recordedRoot = initPlanFixtureRoot('veritas-init-portable-recorded-');
+  execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'init', '--explore', '--root', recordedRoot],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  );
+  const planText = readFileSync(join(recordedRoot, '.veritas/init-plans/explore.json'), 'utf8');
+  assert.equal(JSON.parse(planText).target_root, '.');
+  for (const localPath of new Set([recordedRoot, realpathSync(recordedRoot)])) {
+    assert.equal(planText.includes(localPath), false, 'committed plan must not record the local checkout path');
+  }
+
+  // A moved or copied checkout: the whole working tree, including the gitignored
+  // .kontourai/ integrity record, at a different path. A fresh clone is covered below.
+  const otherRoot = mkdtempSync(join(tmpdir(), 'veritas-init-portable-other-'));
+  cpSync(recordedRoot, otherRoot, { recursive: true });
+  const applied = spawnSync(
+    'npm',
+    ['exec', '--', 'veritas', 'init', '--apply', '--plan', '.veritas/init-plans/explore.json', '--root', otherRoot],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  );
+  assert.equal(applied.status, 0, applied.stderr);
+  assert.equal(applied.stderr.includes('Warning:'), false, applied.stderr);
+  assert.equal(existsSync(join(otherRoot, '.veritas/repo-map.json')), true);
+  assert.equal(existsSync(join(recordedRoot, '.veritas/repo-map.json')), false);
+});
+
+test('init plan from a fresh clone without the local integrity record is refused', () => {
+  const recordedRoot = initPlanFixtureRoot('veritas-init-fresh-recorded-');
+  execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'init', '--explore', '--root', recordedRoot],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  );
+  assert.equal(existsSync(join(recordedRoot, '.kontourai')), true, 'explore must write the local integrity record');
+  // A fresh clone gets committed files only; the gitignored .kontourai/ record stays behind.
+  const cloneRoot = mkdtempSync(join(tmpdir(), 'veritas-init-fresh-clone-'));
+  cpSync(recordedRoot, cloneRoot, {
+    recursive: true,
+    filter: (source) => !source.split(/[\\/]/).includes('.kontourai'),
+  });
+  assert.equal(existsSync(join(cloneRoot, '.veritas/init-plans/explore.json')), true);
+  assert.equal(existsSync(join(cloneRoot, '.kontourai')), false);
+  const applied = spawnSync(
+    'npm',
+    ['exec', '--', 'veritas', 'init', '--apply', '--plan', '.veritas/init-plans/explore.json', '--root', cloneRoot],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  );
+  assert.notEqual(applied.status, 0);
+  assert.match(applied.stderr, /local private integrity record is missing/);
+  assert.equal(existsSync(join(cloneRoot, '.veritas/repo-map.json')), false);
+});
+
+test('init apply accepts a legacy absolute target_root with a warning and rejects other relative roots', () => {
+  const recordedRoot = initPlanFixtureRoot('veritas-init-legacy-recorded-');
+  execFileSync(
+    'npm',
+    ['exec', '--', 'veritas', 'init', '--explore', '--root', recordedRoot],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  );
+  const planPath = join(recordedRoot, '.veritas/init-plans/explore.json');
+  const legacyPlan = { ...JSON.parse(readFileSync(planPath, 'utf8')), target_root: recordedRoot };
+  writeFileSync(planPath, `${JSON.stringify(legacyPlan, null, 2)}\n`);
+  // Copied checkout, integrity record included.
+  const otherRoot = mkdtempSync(join(tmpdir(), 'veritas-init-legacy-other-'));
+  cpSync(recordedRoot, otherRoot, { recursive: true });
+  const applied = spawnSync(
+    'npm',
+    ['exec', '--', 'veritas', 'init', '--apply', '--plan', '.veritas/init-plans/explore.json', '--root', otherRoot],
+    { cwd: repoRootDir, encoding: 'utf8' },
+  );
+  assert.equal(applied.status, 0, applied.stderr);
+  assert.match(applied.stderr, /Warning: .*legacy absolute target_root \(.*\) that differs from the apply root/);
+  assert.equal(existsSync(join(otherRoot, '.veritas/repo-map.json')), true);
+
+  const sameRoot = initPlanFixtureRoot('veritas-init-legacy-same-');
+  const sameRecommendation = { ...buildInitRecommendation({ rootDir: sameRoot }), target_root: sameRoot };
+  const sameResult = applyInitRecommendation({ rootDir: sameRoot, recommendation: sameRecommendation });
+  assert.equal(sameResult.warnings.length, 1);
+  assert.match(sameResult.warnings[0], /legacy absolute target_root; regenerate/);
+
+  const portableRoot = initPlanFixtureRoot('veritas-init-portable-api-');
+  const portableResult = applyInitRecommendation({
+    rootDir: portableRoot,
+    recommendation: buildInitRecommendation({ rootDir: portableRoot }),
+  });
+  assert.deepEqual(portableResult.warnings, []);
+
+  if (process.platform !== 'win32') {
+    for (const targetRoot of ['C:\\Users\\someone\\repo', 'D:/work/repo', '\\\\server\\share\\repo']) {
+      const windowsRoot = initPlanFixtureRoot('veritas-init-windows-root-');
+      const recommendation = { ...buildInitRecommendation({ rootDir: windowsRoot }), target_root: targetRoot };
+      assert.throws(
+        () => applyInitRecommendation({ rootDir: windowsRoot, recommendation }),
+        /recorded on another OS .*re-record the plan with `veritas init --explore`/,
+        `target_root ${targetRoot} must get the other-OS message`,
+      );
+      assert.equal(existsSync(join(windowsRoot, '.veritas/repo-map.json')), false);
+    }
+  }
+
+  for (const targetRoot of ['../elsewhere', 'sub', '', undefined, 42]) {
+    const rejectRoot = initPlanFixtureRoot('veritas-init-bad-root-');
+    const recommendation = { ...buildInitRecommendation({ rootDir: rejectRoot }), target_root: targetRoot };
+    assert.throws(
+      () => applyInitRecommendation({ rootDir: rejectRoot, recommendation }),
+      /target_root must be "\."/,
+      `target_root ${String(targetRoot)} must be rejected`,
+    );
+    assert.equal(existsSync(join(rejectRoot, '.veritas/repo-map.json')), false);
+  }
 });
 
 test('init explore deterministically inventories Station, Ops, and declared external authority shapes', () => {

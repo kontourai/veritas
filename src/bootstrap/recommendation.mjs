@@ -23,6 +23,10 @@ import { assertWithinDir, veritasArtifactPath, veritasArtifactRepoPath } from '.
 import { publicRepoMapPolicyIdentity } from '../evidence/public-config.mjs';
 
 const INIT_RECOMMENDATION_SCHEMA_VERSION = 2;
+// Plans are committed and applied from other clones and CI, so the target root
+// is recorded repository-relative: it always means the --root the plan is
+// applied to. Older plans recorded an absolute path; see targetRootWarnings.
+const PORTABLE_TARGET_ROOT = '.';
 const GOVERNANCE_CORE_PATHS = [
   '.veritas/README.md',
   '.veritas/GOVERNANCE.md',
@@ -343,7 +347,7 @@ export function buildInitRecommendation({
   return {
     schema_version: INIT_RECOMMENDATION_SCHEMA_VERSION,
     mode,
-    target_root: resolve(rootDir),
+    target_root: PORTABLE_TARGET_ROOT,
     project_name: projectName,
     evidenceCheck: resolvedEvidenceCheck,
     repo_insights: repoInsights,
@@ -382,6 +386,33 @@ export function buildInitRecommendation({
   };
 }
 
+// Returns warnings for a legacy absolute target_root; throws for anything else
+// that is not the portable value. An absolute path recorded on another machine
+// or checkout cannot be compared meaningfully (moved checkouts and worktrees use
+// different paths), so it is accepted with a warning rather than guessed at.
+// target_root does not bind a plan to its checkout; see validateInitRecommendation.
+function targetRootWarnings(targetRoot, rootDir) {
+  if (targetRoot === PORTABLE_TARGET_ROOT) return [];
+  if (typeof targetRoot === 'string' && !isAbsolute(targetRoot) && /^(?:[A-Za-z]:[\\/]|\\\\)/.test(targetRoot)) {
+    throw new Error(
+      `Init recommendation target_root was recorded on another OS (${targetRoot}); re-record the plan with \`veritas init --explore\`.`,
+    );
+  }
+  if (typeof targetRoot !== 'string' || !isAbsolute(targetRoot)) {
+    throw new Error(
+      `Init recommendation target_root must be "${PORTABLE_TARGET_ROOT}" (or a legacy absolute path): ${String(targetRoot)}`,
+    );
+  }
+  if (resolve(targetRoot) === resolve(rootDir)) {
+    return [
+      `Init recommendation records a legacy absolute target_root; regenerate the plan to record "${PORTABLE_TARGET_ROOT}".`,
+    ];
+  }
+  return [
+    `Init recommendation records a legacy absolute target_root (${targetRoot}) that differs from the apply root; applying to ${resolve(rootDir)}. Regenerate the plan to record "${PORTABLE_TARGET_ROOT}".`,
+  ];
+}
+
 function validateInitRecommendation({
   recommendation,
   rootDir,
@@ -394,9 +425,12 @@ function validateInitRecommendation({
   if (recommendation.schema_version !== INIT_RECOMMENDATION_SCHEMA_VERSION) {
     throw new Error(`Unsupported init recommendation schema_version: ${String(recommendation.schema_version)}`);
   }
-  if (resolve(recommendation.target_root) !== resolve(rootDir)) {
-    throw new Error(`Init recommendation target_root does not match current root: ${recommendation.target_root}`);
-  }
+  // What binds a plan to the checkout it was recorded in is the local private
+  // integrity record (exact payload bytes, kept under the gitignored
+  // .kontourai/ directory), not target_root and not the public artifact_hashes,
+  // which are recomputed from the plan's own payloads and so only check the
+  // plan against itself.
+  const warnings = targetRootWarnings(recommendation.target_root, rootDir);
   const payloadPaths = artifactPathSet(recommendation.artifact_payloads, 'artifact_payloads');
   const publicHashPaths = artifactPathSet(recommendation.artifact_hashes, 'artifact_hashes');
   const requiredPaths = requiredArtifactPathSet(recommendation.required_artifact_paths);
@@ -430,6 +464,7 @@ function validateInitRecommendation({
       throw new Error(`init recommendation payload hash mismatch: ${path}`);
     }
   }
+  return warnings;
 }
 
 export function applyInitRecommendation({
@@ -439,7 +474,7 @@ export function applyInitRecommendation({
   privateArtifactPayloadHashes = null,
   requirePrivateArtifactIntegrity = false,
 }) {
-  validateInitRecommendation({
+  const warnings = validateInitRecommendation({
     recommendation,
     rootDir,
     privateArtifactPayloadHashes,
@@ -490,5 +525,6 @@ export function applyInitRecommendation({
       ...(ignoreResult.changed ? [ignoreResult.path] : []),
     ],
     generatedOutputIgnores: ignoreResult.addedEntries,
+    warnings,
   };
 }

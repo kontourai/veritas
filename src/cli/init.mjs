@@ -92,6 +92,7 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
       privateArtifactPayloadHashes: readPrivateInitPlanIntegrity(rootDir, planPath),
       requirePrivateArtifactIntegrity: true,
     });
+    for (const warning of result.warnings) process.stderr.write(`Warning: ${warning}\n`);
     process.stderr.write(
       `Next Steps\n\nSuggested CODEOWNERS block for protected standards (not written automatically):\n\n${result.codeownersBlock}\n\n`,
     );
