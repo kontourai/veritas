@@ -388,11 +388,16 @@ export function buildInitRecommendation({
 
 // Returns warnings for a legacy absolute target_root; throws for anything else
 // that is not the portable value. An absolute path recorded on another machine
-// or checkout cannot be compared meaningfully (clones, worktrees, and CI use
+// or checkout cannot be compared meaningfully (moved checkouts and worktrees use
 // different paths), so it is accepted with a warning rather than guessed at.
-// The artifact set and payloads stay bound by the hash checks below.
+// target_root does not bind a plan to its checkout; see validateInitRecommendation.
 function targetRootWarnings(targetRoot, rootDir) {
   if (targetRoot === PORTABLE_TARGET_ROOT) return [];
+  if (typeof targetRoot === 'string' && !isAbsolute(targetRoot) && /^(?:[A-Za-z]:[\\/]|\\\\)/.test(targetRoot)) {
+    throw new Error(
+      `Init recommendation target_root was recorded on another OS (${targetRoot}); re-record the plan with \`veritas init --explore\`.`,
+    );
+  }
   if (typeof targetRoot !== 'string' || !isAbsolute(targetRoot)) {
     throw new Error(
       `Init recommendation target_root must be "${PORTABLE_TARGET_ROOT}" (or a legacy absolute path): ${String(targetRoot)}`,
@@ -404,7 +409,7 @@ function targetRootWarnings(targetRoot, rootDir) {
     ];
   }
   return [
-    `Init recommendation records a legacy absolute target_root from another checkout (${targetRoot}); applying it to ${resolve(rootDir)}. Regenerate the plan to record "${PORTABLE_TARGET_ROOT}".`,
+    `Init recommendation records a legacy absolute target_root (${targetRoot}) that differs from the apply root; applying to ${resolve(rootDir)}. Regenerate the plan to record "${PORTABLE_TARGET_ROOT}".`,
   ];
 }
 
@@ -420,6 +425,11 @@ function validateInitRecommendation({
   if (recommendation.schema_version !== INIT_RECOMMENDATION_SCHEMA_VERSION) {
     throw new Error(`Unsupported init recommendation schema_version: ${String(recommendation.schema_version)}`);
   }
+  // What binds a plan to the checkout it was recorded in is the local private
+  // integrity record (exact payload bytes, kept under the gitignored
+  // .kontourai/ directory), not target_root and not the public artifact_hashes,
+  // which are recomputed from the plan's own payloads and so only check the
+  // plan against itself.
   const warnings = targetRootWarnings(recommendation.target_root, rootDir);
   const payloadPaths = artifactPathSet(recommendation.artifact_payloads, 'artifact_payloads');
   const publicHashPaths = artifactPathSet(recommendation.artifact_hashes, 'artifact_hashes');
