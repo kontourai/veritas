@@ -33,7 +33,10 @@
               "type": ["string", "null"],
               "description": "GitHub noreply address when the configured Git user.email already is one; otherwise null. A personal address is never recorded."
             },
-            "signingKeyFingerprint": { "type": ["string", "null"] }
+            "signingKeyFingerprint": {
+              "type": ["string", "null"],
+              "description": "The configured Git user.signingkey when it is a hex key id or a SHA256: fingerprint; otherwise null. A key file path or literal key is never recorded."
+            }
           },
           "additionalProperties": false
         }
