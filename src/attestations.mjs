@@ -216,12 +216,22 @@ export function writePendingAttestationMarker(rootDir, options = {}) {
   };
 }
 
+// Attestations are committed, often to public repositories, so a personal
+// `user.email` must never be written. Only an address that is already a GitHub
+// noreply address is recorded; anything else becomes null. Nothing verifies
+// against this value.
+const GITHUB_NOREPLY_EMAIL = /^[^@\s]+@users\.noreply\.github\.com$/i;
+
+function publishableGitEmail(email) {
+  return typeof email === 'string' && GITHUB_NOREPLY_EMAIL.test(email) ? email : null;
+}
+
 function buildActor(rootDir, actorId, displayName) {
   return {
     id: actorId,
     displayName: displayName ?? readGitConfig(rootDir, 'user.name') ?? actorId,
     identityEvidence: {
-      gitEmail: readGitConfig(rootDir, 'user.email'),
+      gitEmail: publishableGitEmail(readGitConfig(rootDir, 'user.email')),
       signingKeyFingerprint: readGitConfig(rootDir, 'user.signingkey'),
     },
   };

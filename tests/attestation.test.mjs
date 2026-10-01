@@ -208,6 +208,48 @@ test('bootstrap attestation records protected standards hashes and status detect
   assert.deepEqual(drifted.drift.map((item) => item.field), ['repoStandardsHash']);
 });
 
+function attestWithGitEmail(email) {
+  const rootDir = bootstrapVeritasRepo();
+  execFileSync('git', ['config', 'user.email', email], { cwd: rootDir, encoding: 'utf8' });
+  const result = createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Initial human approval.',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+  return { result, written: readFileSync(join(rootDir, result.path), 'utf8') };
+}
+
+test('a fresh attestation never writes a personal git email into the committed file', () => {
+  const { result, written } = attestWithGitEmail('dev@example.com');
+
+  assert.equal(written.includes('dev@example.com'), false);
+  assert.equal(written.includes('example.com'), false);
+  assert.equal(JSON.parse(written).actor.identityEvidence.gitEmail, null);
+  assert.equal(result.attestation.actor.identityEvidence.gitEmail, null);
+
+  // The schema still requires the key, so null must stay a valid value.
+  const schema = JSON.parse(readFileSync(join(repoRootDir, 'schemas/veritas-attestation.schema.json'), 'utf8'));
+  const validateActor = new Ajv({ allErrors: true, strict: false }).compile(schema.properties.actor);
+  assert.equal(validateActor(JSON.parse(written).actor), true, JSON.stringify(validateActor.errors));
+});
+
+test('a fresh attestation keeps a git email that is already a GitHub noreply address', () => {
+  const noreply = '12345+octocat@users.noreply.github.com';
+  const { written } = attestWithGitEmail(noreply);
+  assert.equal(JSON.parse(written).actor.identityEvidence.gitEmail, noreply);
+});
+
+test('a fresh attestation drops look-alike addresses that are not GitHub noreply', () => {
+  for (const email of ['dev@users.noreply.github.com.example.com', 'dev@noreply.example.com']) {
+    const { written } = attestWithGitEmail(email);
+    assert.equal(written.includes(email), false);
+    assert.equal(JSON.parse(written).actor.identityEvidence.gitEmail, null);
+  }
+});
+
 test('legacy unchanged attestation stays current without exposing raw Repo Map hash material', async () => {
   const rootDir = bootstrapVeritasRepo('veritas-attest-legacy-unchanged-');
   const repoMapPath = join(rootDir, '.veritas/repo-map.json');

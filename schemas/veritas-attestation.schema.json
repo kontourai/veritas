@@ -29,7 +29,10 @@
           "type": "object",
           "required": ["gitEmail", "signingKeyFingerprint"],
           "properties": {
-            "gitEmail": { "type": ["string", "null"] },
+            "gitEmail": {
+              "type": ["string", "null"],
+              "description": "GitHub noreply address when the configured Git user.email already is one; otherwise null. A personal address is never recorded."
+            },
             "signingKeyFingerprint": { "type": ["string", "null"] }
           },
           "additionalProperties": false

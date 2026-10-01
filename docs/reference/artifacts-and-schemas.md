@@ -103,6 +103,8 @@ Important distinction:
 
 Defined by [schemas/veritas-attestation.schema.json](../../schemas/veritas-attestation.schema.json).
 
+`actor.identityEvidence.gitEmail` is a required key that may be `null`. New attestations record it only when the configured Git `user.email` is already a GitHub noreply address, and record `null` otherwise, so a personal address is never committed. Nothing verifies against the value.
+
 Attestations are immutable authority-backed records for protected standards hashes:
 
 - `.veritas/repo-map.json`
