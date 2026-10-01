@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.7.6](https://github.com/kontourai/veritas/compare/v1.7.5...v1.7.6) (2026-10-01)
+
+
+### Fixes
+
+* **attestations:** stop writing the Git user.email into attestations ([#249](https://github.com/kontourai/veritas/issues/249)) ([a654a98](https://github.com/kontourai/veritas/commit/a654a9884b7e47d425a6b40ed3906ec5b5f88a54))
+
 ## [1.7.5](https://github.com/kontourai/veritas/compare/v1.7.4...v1.7.5) (2026-09-29)
 
 
