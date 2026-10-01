@@ -216,13 +216,31 @@ export function writePendingAttestationMarker(rootDir, options = {}) {
   };
 }
 
+// Attestations are committed, often to public repositories, so raw Git identity
+// config must never be written: `user.email` can be a personal address, and
+// `user.signingkey` can be a home-directory path or an SSH literal key whose
+// comment is an address. Only values in a known non-personal shape are
+// recorded; anything else becomes null. Nothing verifies against these values.
+const GITHUB_NOREPLY_EMAIL = /^[^@\s]+@users\.noreply\.github\.com$/i;
+const SIGNING_KEY_ID = /^(?:0x)?[0-9a-f]{8,64}$/i;
+const SIGNING_KEY_SHA256_FINGERPRINT = /^SHA256:[A-Za-z0-9+/]{43}=?$/;
+
+function publishableGitEmail(email) {
+  return typeof email === 'string' && GITHUB_NOREPLY_EMAIL.test(email) ? email : null;
+}
+
+function publishableSigningKey(value) {
+  if (typeof value !== 'string') return null;
+  return SIGNING_KEY_ID.test(value) || SIGNING_KEY_SHA256_FINGERPRINT.test(value) ? value : null;
+}
+
 function buildActor(rootDir, actorId, displayName) {
   return {
     id: actorId,
     displayName: displayName ?? readGitConfig(rootDir, 'user.name') ?? actorId,
     identityEvidence: {
-      gitEmail: readGitConfig(rootDir, 'user.email'),
-      signingKeyFingerprint: readGitConfig(rootDir, 'user.signingkey'),
+      gitEmail: publishableGitEmail(readGitConfig(rootDir, 'user.email')),
+      signingKeyFingerprint: publishableSigningKey(readGitConfig(rootDir, 'user.signingkey')),
     },
   };
 }

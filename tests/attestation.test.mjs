@@ -208,6 +208,97 @@ test('bootstrap attestation records protected standards hashes and status detect
   assert.deepEqual(drifted.drift.map((item) => item.field), ['repoStandardsHash']);
 });
 
+// Writes one attestation per Git identity config and returns the committed
+// file text, so assertions see exactly what would be published.
+function attestWithGitIdentity(config) {
+  const rootDir = bootstrapVeritasRepo();
+  for (const [key, value] of Object.entries(config)) {
+    execFileSync('git', ['config', key, value], { cwd: rootDir, encoding: 'utf8' });
+  }
+  const result = createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Initial human approval.',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+  const written = readFileSync(join(rootDir, result.path), 'utf8');
+  return { result, written, identityEvidence: JSON.parse(written).actor.identityEvidence };
+}
+
+function assertActorMatchesSchema(written) {
+  // The schema still requires both keys, so null must stay a valid value.
+  const schema = JSON.parse(readFileSync(join(repoRootDir, 'schemas/veritas-attestation.schema.json'), 'utf8'));
+  const validateActor = new Ajv({ allErrors: true, strict: false }).compile(schema.properties.actor);
+  assert.equal(validateActor(JSON.parse(written).actor), true, JSON.stringify(validateActor.errors));
+}
+
+test('a fresh attestation never writes a personal git email into the committed file', () => {
+  const { result, written, identityEvidence } = attestWithGitIdentity({ 'user.email': 'dev@example.com' });
+
+  assert.equal(written.includes('dev@example.com'), false);
+  assert.equal(written.includes('example.com'), false);
+  assert.equal(identityEvidence.gitEmail, null);
+  assert.equal(result.attestation.actor.identityEvidence.gitEmail, null);
+  assertActorMatchesSchema(written);
+});
+
+test('a fresh attestation keeps a git email that is already a GitHub noreply address', () => {
+  const noreply = '12345+octocat@users.noreply.github.com';
+  const { identityEvidence } = attestWithGitIdentity({ 'user.email': noreply });
+  assert.equal(identityEvidence.gitEmail, noreply);
+});
+
+for (const [label, email] of [
+  ['a suffix after the noreply domain', 'dev@users.noreply.github.com.example.com'],
+  ['another noreply domain', 'dev@noreply.example.com'],
+  ['the bare github.com domain', 'dev@github.com'],
+  ['another github.com subdomain', 'dev@evil.github.com'],
+  ['a domain that only ends with the noreply domain', 'dev@xusers.noreply.github.com'],
+  ['a second @ before the noreply domain', 'a@b@users.noreply.github.com'],
+  ['a noreply line followed by a real address', '1+octocat@users.noreply.github.com\ndev@example.com'],
+  ['a real address followed by a noreply line', 'dev@example.com\n1+octocat@users.noreply.github.com'],
+]) {
+  test(`a fresh attestation drops a git email with ${label}`, () => {
+    const { written, identityEvidence } = attestWithGitIdentity({ 'user.email': email });
+    assert.equal(identityEvidence.gitEmail, null);
+    assert.equal(written.includes('dev@'), false);
+    assert.equal(written.includes('a@b'), false);
+    assert.equal(written.includes('octocat'), false);
+  });
+}
+
+for (const [label, signingKey, leaks] of [
+  ['a key file path', '/home/dev/.ssh/id_ed25519.pub', ['/home/dev', 'id_ed25519']],
+  [
+    'an SSH literal key with an address comment',
+    'key::ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFixtureKeyMaterialOnly0000000000000000000000 dev@example.com',
+    ['dev@example.com', 'ssh-ed25519', 'AAAAC3'],
+  ],
+  ['a hex id followed by other text', '3AA5C34371567BD2 dev@example.com', ['dev@example.com', '3AA5C34371567BD2']],
+  ['text followed by a hex id', 'dev 3AA5C34371567BD2', ['3AA5C34371567BD2']],
+]) {
+  test(`a fresh attestation drops a signing key that is ${label}`, () => {
+    const { written, identityEvidence } = attestWithGitIdentity({ 'user.signingkey': signingKey });
+    assert.equal(identityEvidence.signingKeyFingerprint, null);
+    for (const leak of leaks) assert.equal(written.includes(leak), false, leak);
+    assertActorMatchesSchema(written);
+  });
+}
+
+for (const signingKey of [
+  '3AA5C34371567BD2',
+  '0x3AA5C34371567BD2',
+  'SHA256:uNiVztksCsDhcc0u9e8BujQXVUpKZIDTMczCvj3tD2s',
+]) {
+  test(`a fresh attestation keeps the signing key id or fingerprint ${signingKey}`, () => {
+    const { written, identityEvidence } = attestWithGitIdentity({ 'user.signingkey': signingKey });
+    assert.equal(identityEvidence.signingKeyFingerprint, signingKey);
+    assertActorMatchesSchema(written);
+  });
+}
+
 test('legacy unchanged attestation stays current without exposing raw Repo Map hash material', async () => {
   const rootDir = bootstrapVeritasRepo('veritas-attest-legacy-unchanged-');
   const repoMapPath = join(rootDir, '.veritas/repo-map.json');
