@@ -24,8 +24,8 @@ importers:
         specifier: ^7.0.6
         version: 7.0.6
       hachure:
-        specifier: ^0.15.0
-        version: 0.15.0
+        specifier: ^0.18.0
+        version: 0.18.0
       picomatch:
         specifier: ^4.0.4
         version: 4.0.5
@@ -280,8 +280,8 @@ packages:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
 
-  hachure@0.15.0:
-    resolution: {integrity: sha512-4YKLShbDKG+k52lJvH9shup7UYAX7pW+EA8c/4dx3RQFqCmORHl9gjJrM9vUljuTml/haTJgWYPd1G1MWmrm8Q==}
+  hachure@0.18.0:
+    resolution: {integrity: sha512-DnSAPYqUxPEehNLPBoFoRNGeCNo8JdeB/Yy6DOFBPJg5zo+WcxZSx5RiR/Y6BQCSPkOqS7H5DYwTcx5H9lBTmw==}
     hasBin: true
 
   has-symbols@1.1.0:
@@ -909,7 +909,7 @@ snapshots:
 
   gopd@1.2.0: {}
 
-  hachure@0.15.0: {}
+  hachure@0.18.0: {}
 
   has-symbols@1.1.0: {}
 
