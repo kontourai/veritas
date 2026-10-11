@@ -159,6 +159,21 @@
         ]
       },
       {
+        "id": "delivery.trust-evidence",
+        "kind": "delivery-area",
+        "label": "delivery trust evidence",
+        "patterns": [
+          "delivery/"
+        ],
+        "owners": [
+          "delivery-team"
+        ],
+        "boundary": "strict",
+        "boundaryAllow": [
+          "repo-core"
+        ]
+      },
+      {
         "id": "delivery.kits",
         "kind": "delivery-area",
         "label": "kits/**",
