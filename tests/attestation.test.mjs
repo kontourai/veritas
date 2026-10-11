@@ -405,6 +405,74 @@ test('policy-change successors replace historical raw ID links with the opaque l
   }
 });
 
+test('attest status and readiness explain a successor link to a legacy attestation (#258)', () => {
+  const cli = join(repoRootDir, 'bin/veritas.mjs');
+  const runCli = (args) => execFileSync('node', [cli, ...args, '--root', rootDir], { cwd: rootDir, encoding: 'utf8' });
+  const rootDir = bootstrapVeritasRepo('veritas-attest-legacy-link-');
+  runCli(['attest', 'bootstrap', '--actor', 'brian', '--approval-ref', HUMAN_APPROVAL_REF, '--non-interactive']);
+  const { rawRepoMapHash, legacyAttestationId } = rewriteCurrentAttestationAsLegacy(rootDir);
+  const historicalReference = parseCliJson(runCli(['attest', 'status'])).currentAttestationId;
+  assert.match(historicalReference, /^legacy-attestation-v0:[0-9a-f]{16}$/);
+
+  const policyPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
+  const policy = readJsonFromAbsolute(policyPath);
+  policy.description = `${policy.description} Reviewed successor.`;
+  writeFileSync(policyPath, `${JSON.stringify(policy, null, 2)}\n`);
+  const successor = parseCliJson(runCli([
+    'attest', 'policy-change', '--actor', 'brian', '--approval-ref', HUMAN_APPROVAL_REF,
+    '--message', 'Migrate the legacy attestation after review.',
+  ]));
+  assert.equal(successor.attestation.priorAttestationId, historicalReference);
+
+  const statusOutput = runCli(['attest', 'status']);
+  const status = parseCliJson(statusOutput);
+  assert.equal(status.state, 'current');
+  assert.equal(status.currentAttestationId, successor.attestation.id);
+  assert.equal(status.priorAttestationLink.reference, historicalReference);
+  assert.equal(status.priorAttestationLink.form, 'legacy-reference');
+  assert.equal(status.priorAttestationLink.resolved, true);
+  assert.match(status.priorAttestationLink.explanation, /predates repoMapHashAlgorithm "public-policy-v1"/);
+  assert.match(status.priorAttestationLink.explanation, /not a broken chain/);
+  assert.match(status.priorAttestationLink.explanation, /matches exactly one tracked attestation record/);
+
+  const readinessOutput = runCli(['readiness', '--skip-evidence-check', '--working-tree']);
+  const passLine = readinessOutput.split('\n').find((line) => /PASS\s+policy-changes-require-attestation/.test(line));
+  assert.ok(passLine, readinessOutput);
+  assert.ok(passLine.includes(`linked by the opaque reference ${historicalReference} (matches one tracked record)`), passLine);
+
+  for (const forbidden of [rawRepoMapHash, legacyAttestationId]) {
+    assert.equal(`${statusOutput}${readinessOutput}`.includes(forbidden), false, `output must not expose ${forbidden}`);
+  }
+
+  // The legacy record leaving the tracked set must flip `resolved`, not keep
+  // reporting a verified link.
+  unlinkSync(join(rootDir, '.veritas/attestations', `${legacyAttestationId}.attestation.json`));
+  const orphaned = parseCliJson(runCli(['attest', 'status']));
+  assert.equal(orphaned.priorAttestationLink.form, 'legacy-reference');
+  assert.equal(orphaned.priorAttestationLink.resolved, false);
+  assert.match(orphaned.priorAttestationLink.explanation, /does not match exactly one tracked attestation record/);
+});
+
+test('attest status links an ordinary successor to the HEAD attestation id', () => {
+  const cli = join(repoRootDir, 'bin/veritas.mjs');
+  const rootDir = bootstrapVeritasRepo('veritas-attest-ordinary-link-');
+  const runCli = (args) => execFileSync('node', [cli, ...args, '--root', rootDir], { cwd: rootDir, encoding: 'utf8' });
+  const bootstrap = parseCliJson(runCli(['attest', 'bootstrap', '--actor', 'brian', '--approval-ref', HUMAN_APPROVAL_REF, '--non-interactive']));
+  const policyPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
+  const policy = readJsonFromAbsolute(policyPath);
+  policy.description = `${policy.description} Ordinary successor.`;
+  writeFileSync(policyPath, `${JSON.stringify(policy, null, 2)}\n`);
+  const successor = parseCliJson(runCli([
+    'attest', 'policy-change', '--actor', 'brian', '--approval-ref', HUMAN_APPROVAL_REF, '--message', 'Ordinary review.',
+  ]));
+  assert.equal(successor.attestation.priorAttestationId, bootstrap.attestation.id);
+  const status = parseCliJson(runCli(['attest', 'status']));
+  assert.deepEqual(
+    { reference: status.priorAttestationLink.reference, form: status.priorAttestationLink.form, resolved: status.priorAttestationLink.resolved },
+    { reference: bootstrap.attestation.id, form: 'attestation-id', resolved: true },
+  );
+});
+
 test('legacy public references are indistinguishable across raw Repo Map hash candidates', () => {
   const roots = ['alpha', 'beta'].map((secret) => {
     const rootDir = bootstrapVeritasRepo(`veritas-attest-legacy-candidate-${secret}-`);

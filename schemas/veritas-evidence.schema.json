@@ -1085,6 +1085,35 @@
             "null"
           ]
         },
+        "priorAttestationLink": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reference",
+            "form",
+            "resolved",
+            "explanation"
+          ],
+          "properties": {
+            "reference": {
+              "type": "string"
+            },
+            "form": {
+              "type": "string",
+              "enum": [
+                "attestation-id",
+                "legacy-reference",
+                "unresolved"
+              ]
+            },
+            "resolved": {
+              "type": "boolean"
+            },
+            "explanation": {
+              "type": "string"
+            }
+          }
+        },
         "migrationRecommendation": {
           "type": "object",
           "additionalProperties": false,

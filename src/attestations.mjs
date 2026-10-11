@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { basename, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { loadJson } from './load.mjs';
@@ -91,6 +91,59 @@ function publicPriorAttestationId(rootDir, priorAttestationId) {
   if (!existsSync(path)) return UNRESOLVED_ATTESTATION_REFERENCE;
   const prior = loadJson(path, 'prior attestation');
   return publicAttestationId(prior);
+}
+
+function countTrackedAttestationsWithPublicId(rootDir, publicId) {
+  const dir = attestationsDir(rootDir);
+  if (!existsSync(dir)) return 0;
+  let matches = 0;
+  for (const name of readdirSync(dir)) {
+    if (!name.endsWith('.attestation.json')) continue;
+    let record;
+    try {
+      record = loadJson(resolve(dir, name), 'attestation');
+    } catch {
+      continue;
+    }
+    if (record && typeof record === 'object' && publicAttestationId(record) === publicId) matches += 1;
+  }
+  return matches;
+}
+
+// Explains how the active attestation links to its predecessor. A successor of
+// an unmarked historical record links by the opaque legacy reference, never by
+// the stored id, because that id's digest suffix was derived from the raw Repo
+// Map file hash. Without this explanation the link reads as a broken chain.
+// `resolved` is computed by matching the reference against tracked records and
+// reports only a boolean, so it reveals nothing about the redacted id.
+function describePriorAttestationLink(rootDir, attestation) {
+  if (typeof attestation.priorAttestationId !== 'string' || !attestation.priorAttestationId) return null;
+  const reference = publicPriorAttestationId(rootDir, attestation.priorAttestationId);
+  if (reference === UNRESOLVED_ATTESTATION_REFERENCE) {
+    return {
+      reference,
+      form: 'unresolved',
+      resolved: false,
+      explanation: 'The prior attestation this record names is not tracked under .veritas/attestations.',
+    };
+  }
+  if (!reference.startsWith(`${LEGACY_ATTESTATION_REFERENCE_PREFIX}:`)) {
+    return {
+      reference,
+      form: 'attestation-id',
+      resolved: true,
+      explanation: 'The prior attestation is linked by its attestation id.',
+    };
+  }
+  const resolved = countTrackedAttestationsWithPublicId(rootDir, reference) === 1;
+  return {
+    reference,
+    form: 'legacy-reference',
+    resolved,
+    explanation: `The prior attestation predates repoMapHashAlgorithm "${REPO_MAP_HASH_ALGORITHM}". Its stored id embeds a digest of the raw Repo Map file, so Veritas links it by an opaque ${LEGACY_ATTESTATION_REFERENCE_PREFIX} reference derived only from its actor id, attestedAt, and kind. This is the expected migration link, not a broken chain. ${resolved
+      ? 'The reference matches exactly one tracked attestation record.'
+      : 'The reference does not match exactly one tracked attestation record.'}`,
+  };
 }
 
 function publicAttestationReference(rootDir, attestation) {
@@ -521,6 +574,7 @@ export function inspectAttestationStatus(rootDir, options = {}) {
   const attestedAt = new Date(current.attestedAt);
   const ageDays = Math.floor((now.getTime() - attestedAt.getTime()) / 86_400_000);
   const validUntil = new Date(attestedAt.getTime() + current.validUntilDays * 86_400_000);
+  const priorAttestationLink = describePriorAttestationLink(rootDir, current);
   return {
     state: drift.length > 0 ? 'drifted' : 'current',
     currentAttestationId: publicAttestationId(current),
@@ -531,6 +585,7 @@ export function inspectAttestationStatus(rootDir, options = {}) {
     ageDays,
     validUntil: validUntil.toISOString(),
     protectedStandards,
+    ...(priorAttestationLink ? { priorAttestationLink } : {}),
     ...(legacyRepoMapHash ? {
       migrationRecommendation: {
         status: 'recommended',
@@ -540,6 +595,11 @@ export function inspectAttestationStatus(rootDir, options = {}) {
     admissibilityWarning: current.admissibilityWarning ?? false,
     admissibilityWarningReason: current.admissibilityWarningReason ?? null,
   };
+}
+
+function legacyPriorLinkNote(link) {
+  if (link?.form !== 'legacy-reference') return '';
+  return ` It supersedes a pre-${REPO_MAP_HASH_ALGORITHM} attestation linked by the opaque reference ${link.reference} (${link.resolved ? 'matches one tracked record' : 'matches no single tracked record'}); see \`veritas attest status\` priorAttestationLink.`;
 }
 
 export function buildAttestationPolicyResult(status) {
@@ -616,7 +676,7 @@ export function buildAttestationPolicyResult(status) {
     implemented: true,
     passed: true,
     status: 'pass',
-    summary: `Active attestation ${status.currentAttestationId} matches current protected standards hashes${passAnnotation}.`,
+    summary: `Active attestation ${status.currentAttestationId} matches current protected standards hashes${passAnnotation}.${legacyPriorLinkNote(status.priorAttestationLink)}`,
     findings: admissibilityWarningCount > 0 ? [{
       kind: 'admissibility-warning',
       artifact: status.currentAttestationId,
