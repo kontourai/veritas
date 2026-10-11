@@ -7,7 +7,6 @@
 | Path | Domain | What it verifies |
 | --- | --- | --- |
 | `*.test.mjs` | Core product and integration behavior | Readiness, governance, claims, plugins, repo conformance, reference fixtures, runner behavior, and broad CLI/product flows. `veritas.test.mjs` is intentionally broad and should be split only in scoped follow-up work. |
-| `browser/` | Documentation site browser checks | Playwright config, local docs-site server, and browser specs for generated documentation pages. |
 | `cli/` | Focused CLI behavior | CLI-specific flows that are narrow enough to keep out of the larger top-level integration files. |
 | `integrations/` | Agent/runtime integrations | Integration behavior for external agent runtimes, currently including Claude Code session log handling. |
 | `standards-feedback/` | Standards feedback subsystem | Filesystem observation and recommendation generation for standards-feedback records and drafts. |
@@ -28,11 +27,10 @@ Run the pre-push content and reference checks:
 npm run verify
 ```
 
-Run docs browser checks after changing the generated docs site or browser specs:
+Run the docs gate (links, anchors, published-doc reachability, and MCP topics) after changing documentation or `docs-kit.json`:
 
 ```bash
-npm run docs:pages:build
-npm run docs:pages:test:browser
+npm run docs:check
 ```
 
 Run Veritas self-governance checks after code or governance-relevant documentation changes:

@@ -48,39 +48,6 @@ jobs:
       - name: Coverage Gate
         run: npm run test:coverage:check
 
-  docs-browser:
-    name: Docs browser
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: pnpm
-
-      - name: Install
-        run: pnpm install --frozen-lockfile
-
-      - name: Build Pages Source
-        run: npm run docs:pages:build
-
-      - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: .site-src
-          destination: .site-dist
-
-      - name: Install Playwright browser
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Browser test rendered docs
-        run: npm run docs:pages:test:browser
-
   # The publish job's environment, exercised on every pull request.
   #
   # `npm publish` is the one step of the release path that no ordinary check

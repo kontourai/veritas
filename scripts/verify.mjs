@@ -1,5 +1,4 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
 import { dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -421,34 +420,14 @@ assert(
   'CI workflow must run npm test.',
 );
 
-const pagesWorkflow = readText('.github/workflows/pages.yml');
+const docsWorkflow = readText('.github/workflows/docs.yml');
 assert(
-  pagesWorkflow.includes('npm run docs:pages:build'),
-  'Pages workflow must build the docs site through the local pages build script.',
+  docsWorkflow.includes('uses: kontourai/.github/.github/workflows/docs-gate.yml@main'),
+  'Docs workflow must run the shared docs-kit gate.',
 );
 assert(
-  pagesWorkflow.includes('actions/checkout@v7'),
-  'Pages workflow must use the current checkout action.',
-);
-assert(
-  pagesWorkflow.includes('actions/setup-node@v7'),
-  'Pages workflow must use the current setup-node action.',
-);
-assert(
-  pagesWorkflow.includes('actions/configure-pages@v6'),
-  'Pages workflow must use the current configure-pages action.',
-);
-assert(
-  pagesWorkflow.includes('actions/upload-pages-artifact@v5'),
-  'Pages workflow must use the current upload-pages-artifact action.',
-);
-assert(
-  pagesWorkflow.includes('actions/deploy-pages'),
-  'Pages workflow must deploy to GitHub Pages.',
-);
-assert(
-  pagesWorkflow.includes('actions/deploy-pages@v5'),
-  'Pages workflow must use the current deploy-pages action.',
+  docsWorkflow.includes('uses: kontourai/.github/.github/workflows/docs-pages.yml@main'),
+  'Docs workflow must publish Pages through the shared docs-kit Pages workflow.',
 );
 
 const publishWorkflow = readText('.github/workflows/publish-npm.yml');
@@ -517,23 +496,6 @@ assert(
   conformanceWorkflow.includes('actions/github-script@v9'),
   'Repo Conformance workflow must use the current github-script action.',
 );
-
-execFileSync('node', ['scripts/build-pages-site.mjs'], {
-  cwd: rootDir,
-  encoding: 'utf8',
-});
-assert(fileExists('.site-src/index.md'), 'Pages build must emit the root index page.');
-assert(
-  readText('.site-src/_config.yml').includes('  - .github'),
-  'Pages build config must explicitly include the .github path for published workflow links.',
-);
-assert(fileExists('.site-src/CONTRIBUTING.md'), 'Pages build must include CONTRIBUTING.md.');
-assert(fileExists('.site-src/examples/repo-conformance/README.md'), 'Pages build must include the repo conformance README.');
-assert(fileExists('.site-src/package.json'), 'Pages build must include package.json for linked publish docs.');
-assert(fileExists('.site-src/.github/workflows/veritas-conformance.yml'), 'Pages build must include workflow files referenced by the docs.');
-assert(fileExists('.site-src/.github/workflows/ci.yml'), 'Pages build must include the CI workflow file.');
-assert(fileExists('.site-src/.github/workflows/pages.yml'), 'Pages build must include the Pages workflow file.');
-assert(fileExists('.site-src/.github/workflows/publish-npm.yml'), 'Pages build must include the npm publish workflow file.');
 
 const designDoc = readText('docs/design/product-core-and-repo-map.md');
 assert(

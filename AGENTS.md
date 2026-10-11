@@ -15,8 +15,10 @@ npm test
 npm run veritas:evidence-check
 npm run veritas:conformance
 npm run veritas:conformance:report
-node scripts/build-pages-site.mjs
+npm run docs:check
 ```
+
+Docs are published with docs-kit: `docs-kit.json` lists the published docs and MCP topics, `npm run docs:check` is the gate, and when you change code a document `covers`, update that document.
 
 The tracked repo hook is `.githooks/pre-push`; local checkouts must set `core.hooksPath=.githooks` to use it.
 
