@@ -57,8 +57,8 @@
     "veritas-report": "bin/veritas-report.mjs"
   },
   "scripts": {
-    "docs:check": "npx -y github:kontourai/docs-kit#482fb2e691fe7686f79a9a4da8bc2247384b85c3 docs-kit check",
-    "docs:build": "npx -y github:kontourai/docs-kit#482fb2e691fe7686f79a9a4da8bc2247384b85c3 docs-kit build",
+    "docs:check": "npx -y github:kontourai/docs-kit#efe0bfe4ad247861ef661c907f6354d6167fa3be docs-kit check",
+    "docs:build": "npx -y github:kontourai/docs-kit#efe0bfe4ad247861ef661c907f6354d6167fa3be docs-kit build",
     "verify": "node scripts/check-content-boundary.cjs && node scripts/check-hachure-boundary.mjs && node scripts/check-no-flow-agents-dep.mjs && node scripts/verify.mjs",
     "test:prepush": "npm run verify",
     "prepush": "npm run test:prepush",

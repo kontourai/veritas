@@ -274,5 +274,9 @@
     "docs/design/implementation-backlog.md",
     "docs/design/reality-check-plan.md",
     "docs/resource-contract-audit.md"
-  ]
+  ],
+  "redirects": {
+    "CONTRIBUTING.html": "docs/README.md#work-on-veritas-itself",
+    "examples/repo-conformance/README.html": "docs/guides/repo-conformance.md#where-to-inspect-current-examples"
+  }
 }
