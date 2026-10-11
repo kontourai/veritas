@@ -4,10 +4,10 @@
   "title": "Veritas",
   "tagline": "Merge autonomy for AI-authored code: evidence-backed readiness reports against your repo's own standards.",
   "repo": "kontourai/veritas",
-  "landing": "README.md",
+  "landing": "docs/site-index.md",
   "documents": [
     {
-      "source": "docs/site-index.md",
+      "source": "README.md",
       "section": "Start Here"
     },
     {
