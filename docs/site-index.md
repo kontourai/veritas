@@ -1,5 +1,6 @@
+# Earn merge autonomy for AI-authored code.
+
 <div class="hero">
-<h1 class="hero-tagline">Earn merge autonomy for AI-authored code.</h1>
 
 <p class="hero-subtitle">Veritas turns repo standards into evidence-backed readiness reports, change guidance, and protected governance so teams can move faster without making human review the bottleneck for every routine change.</p>
 

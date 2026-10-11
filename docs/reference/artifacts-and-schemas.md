@@ -281,7 +281,7 @@ The match shape is explicit: each candidate selects files, looks for a JavaScrip
       ],
       "helperExemptions": [
         {
-          "name": "docs:pages:build",
+          "name": "docs:build",
           "rationale": "Docs site build helper; it produces site output and does not decide Requirement satisfaction."
         }
       ]
