@@ -30,7 +30,7 @@ That means the npm package is not only the CLI binary. It also publishes the sch
 This repo now ships three core automation lanes:
 
 - [CI](../../.github/workflows/ci.yml) runs `npm run verify`, `npm test`, and the line-coverage gate on Node 20 and Node 22
-- [Docs Pages](../../.github/workflows/pages.yml) builds the Markdown docs into a GitHub Pages site
+- [Docs](../../.github/workflows/docs.yml) runs the shared docs-kit gate on every pull request and publishes the GitHub Pages site and `docs-bundle.json` from `main`
 - [Publish NPM](../../.github/workflows/publish-npm.yml) verifies on Node 20 and Node 22, then publishes `@kontourai/veritas` on tag pushes like `v0.4.0`
 
 ## What We Need From You
@@ -43,7 +43,7 @@ To make the Pages workflow live, you need repo admin access and should:
 2. go to `Pages`
 3. set the source to `GitHub Actions`
 
-Once that is enabled, the `Docs Pages` workflow can deploy the generated site to:
+Once that is enabled, the `Docs` workflow can deploy the generated site to:
 
 - `https://kontourai.github.io/veritas/`
 
@@ -88,7 +88,7 @@ So the normal release path is:
 1. Enable GitHub Pages from Actions.
 2. Confirm npm trusted publishing is configured for `kontourai/veritas` and workflow `publish-npm.yml`.
 3. Run the CI workflow on `main`.
-4. Run the Docs Pages workflow once manually.
+4. Run the Docs workflow once manually.
 5. Confirm the package metadata looks right on npm:
    - package name
    - homepage

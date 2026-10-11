@@ -1,0 +1,278 @@
+{
+  "schemaVersion": 1,
+  "product": "veritas",
+  "title": "Veritas",
+  "tagline": "Merge autonomy for AI-authored code: evidence-backed readiness reports against your repo's own standards.",
+  "repo": "kontourai/veritas",
+  "landing": "docs/site-index.md",
+  "documents": [
+    {
+      "source": "README.md",
+      "section": "Start Here"
+    },
+    {
+      "source": "docs/README.md",
+      "section": "Start Here"
+    },
+    {
+      "source": "docs/guides/getting-started.md",
+      "section": "Start Here"
+    },
+    {
+      "source": "docs/guides/walkthrough.md",
+      "section": "Start Here"
+    },
+    {
+      "source": "docs/concepts.md",
+      "section": "Concepts"
+    },
+    {
+      "source": "docs/veritas-and-surface.md",
+      "section": "Concepts"
+    },
+    {
+      "source": "docs/design/agent-activation.md",
+      "section": "Concepts"
+    },
+    {
+      "source": "docs/design/repo-standards.md",
+      "section": "Concepts"
+    },
+    {
+      "source": "docs/design/evidence-inventories.md",
+      "section": "Concepts"
+    },
+    {
+      "source": "docs/design/standards-feedback.md",
+      "section": "Concepts"
+    },
+    {
+      "source": "docs/design/product-core-and-repo-map.md",
+      "section": "Concepts"
+    },
+    {
+      "source": "docs/architecture/surface-veritas-boundary.md",
+      "section": "Concepts"
+    },
+    {
+      "source": "docs/guides/start-your-next-project.md",
+      "section": "Guides"
+    },
+    {
+      "source": "docs/guides/brownfield-adoption.md",
+      "section": "Guides"
+    },
+    {
+      "source": "docs/guides/tune-for-your-team.md",
+      "section": "Guides"
+    },
+    {
+      "source": "docs/guides/attestation.md",
+      "section": "Guides"
+    },
+    {
+      "source": "docs/guides/agent-runtime-integrations.md",
+      "section": "Guides"
+    },
+    {
+      "source": "docs/guides/deep-integration-template.md",
+      "section": "Guides"
+    },
+    {
+      "source": "docs/guides/governance-kit.md",
+      "section": "Guides"
+    },
+    {
+      "source": "docs/claim-authoring.md",
+      "section": "Guides"
+    },
+    {
+      "source": "docs/plugin-authoring.md",
+      "section": "Guides"
+    },
+    {
+      "source": "docs/guides/recommendations.md",
+      "section": "Guides"
+    },
+    {
+      "source": "docs/guides/fallow-integration.md",
+      "section": "Guides"
+    },
+    {
+      "source": "docs/guides/repo-conformance.md",
+      "section": "Guides"
+    },
+    {
+      "source": "docs/MIGRATING.md",
+      "section": "Guides"
+    },
+    {
+      "source": "docs/reference/cli.md",
+      "section": "Reference",
+      "covers": [
+        "bin/veritas.mjs"
+      ]
+    },
+    {
+      "source": "docs/reference/artifacts-and-schemas.md",
+      "section": "Reference",
+      "covers": [
+        "schemas/**"
+      ]
+    },
+    {
+      "source": "docs/reference/env-vars.md",
+      "section": "Reference"
+    },
+    {
+      "source": "docs/reference/glossary.md",
+      "section": "Reference"
+    },
+    {
+      "source": "docs/reference/examples.md",
+      "section": "Reference"
+    },
+    {
+      "source": "docs/reference/telemetry-and-read-models.md",
+      "section": "Reference"
+    },
+    {
+      "source": "docs/reference/benchmarking.md",
+      "section": "Reference"
+    },
+    {
+      "source": "docs/architecture/developer-architecture.md",
+      "section": "Contribute"
+    },
+    {
+      "source": "docs/architecture/engine-surface-seam.md",
+      "section": "Contribute"
+    },
+    {
+      "source": "docs/design/schema-evolution.md",
+      "section": "Contribute"
+    },
+    {
+      "source": "docs/design/terminology-decisions.md",
+      "section": "Contribute"
+    },
+    {
+      "source": "docs/design/roadmap.md",
+      "section": "Contribute"
+    },
+    {
+      "source": "docs/design/standards-feedback-roadmap.md",
+      "section": "Contribute"
+    },
+    {
+      "source": "docs/guides/publish-and-release.md",
+      "section": "Contribute"
+    },
+    {
+      "source": "docs/RELEASING.md",
+      "section": "Contribute"
+    }
+  ],
+  "topics": [
+    {
+      "id": "install",
+      "title": "Install and first readiness check",
+      "source": "docs/guides/getting-started.md#install"
+    },
+    {
+      "id": "readiness-reports",
+      "title": "Readiness reports and merge readiness",
+      "source": "docs/concepts.md#readiness-reports"
+    },
+    {
+      "id": "repo-standards",
+      "title": "Repo Standards and Requirements",
+      "source": "docs/concepts.md#requirements"
+    },
+    {
+      "id": "evidence-checks",
+      "title": "Evidence Checks and evidence freshness",
+      "source": "docs/concepts.md#evidence"
+    },
+    {
+      "id": "verification-authority",
+      "title": "Verification Authority",
+      "source": "docs/concepts.md#authority"
+    },
+    {
+      "id": "repo-map",
+      "title": "Repo Map, Work Areas, and Change Boundaries",
+      "source": "docs/concepts.md#boundaries"
+    },
+    {
+      "id": "enforcement-levels",
+      "title": "Enforcement levels: Observe, Guide, Require",
+      "source": "docs/concepts.md#enforcement"
+    },
+    {
+      "id": "protected-standards",
+      "title": "Protected Standards",
+      "source": "docs/concepts.md#protected-standards"
+    },
+    {
+      "id": "standards-feedback",
+      "title": "Standards Feedback",
+      "source": "docs/concepts.md#standards-feedback"
+    },
+    {
+      "id": "cli",
+      "title": "CLI commands",
+      "source": "docs/reference/cli.md#commands"
+    },
+    {
+      "id": "readiness-cli",
+      "title": "The readiness command",
+      "source": "docs/reference/cli.md#readiness"
+    },
+    {
+      "id": "readiness-orchestration",
+      "title": "How readiness runs evidence checks",
+      "source": "docs/reference/cli.md#readiness-orchestration"
+    },
+    {
+      "id": "readiness-config-check",
+      "title": "Checking readiness configuration",
+      "source": "docs/reference/cli.md#readiness---check-config"
+    },
+    {
+      "id": "how-it-works",
+      "title": "How Veritas is built",
+      "source": "docs/architecture/developer-architecture.md"
+    },
+    {
+      "id": "artifacts",
+      "title": "Generated artifacts and schemas",
+      "source": "docs/reference/artifacts-and-schemas.md#repo-local-generated-artifacts"
+    },
+    {
+      "id": "attestation",
+      "title": "Attestation and approval records",
+      "source": "docs/guides/attestation.md#bootstrap-attestation"
+    },
+    {
+      "id": "agent-integrations",
+      "title": "Agent runtime integrations and hooks",
+      "source": "docs/guides/agent-runtime-integrations.md#agent-runtime-integrations"
+    },
+    {
+      "id": "governance-kit",
+      "title": "Governance Kit via Flow Agents",
+      "source": "docs/guides/governance-kit.md#install-from-git"
+    },
+    {
+      "id": "surface",
+      "title": "Veritas and Surface",
+      "source": "docs/veritas-and-surface.md#how-they-relate"
+    }
+  ],
+  "exclude": [
+    "docs/design/implementation-backlog.md",
+    "docs/design/reality-check-plan.md",
+    "docs/resource-contract-audit.md"
+  ]
+}
