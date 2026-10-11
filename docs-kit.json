@@ -225,6 +225,26 @@
       "source": "docs/reference/cli.md#commands"
     },
     {
+      "id": "readiness-cli",
+      "title": "The readiness command",
+      "source": "docs/reference/cli.md#readiness"
+    },
+    {
+      "id": "readiness-orchestration",
+      "title": "How readiness runs evidence checks",
+      "source": "docs/reference/cli.md#readiness-orchestration"
+    },
+    {
+      "id": "readiness-config-check",
+      "title": "Checking readiness configuration",
+      "source": "docs/reference/cli.md#readiness---check-config"
+    },
+    {
+      "id": "how-it-works",
+      "title": "How Veritas is built",
+      "source": "docs/architecture/developer-architecture.md"
+    },
+    {
       "id": "artifacts",
       "title": "Generated artifacts and schemas",
       "source": "docs/reference/artifacts-and-schemas.md#repo-local-generated-artifacts"
