@@ -13,11 +13,17 @@ function ancestryStepScript() {
   return block.split('\n').map((line) => line.slice(10)).join('\n');
 }
 
+// Git hooks export GIT_DIR, GIT_INDEX_FILE and friends; inherited, they would point
+// these commands at the repository under test instead of the scratch repos.
+const scratchEnv = Object.fromEntries(
+  Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')),
+);
+
 function git(cwd, ...args) {
   const result = spawnSync('git', [
     '-c', 'user.name=t', '-c', 'user.email=t@example.invalid',
     '-c', 'init.defaultBranch=main', '-c', 'core.hooksPath=/dev/null', ...args,
-  ], { cwd, encoding: 'utf8' });
+  ], { cwd, encoding: 'utf8', env: scratchEnv });
   assert.equal(result.status, 0, `git ${args.join(' ')}: ${result.stderr}`);
   return result.stdout.trim();
 }
@@ -57,7 +63,7 @@ test('publish main-ancestry check accepts a tag behind main and refuses one off 
       return spawnSync('bash', ['-e', '-c', script], {
         cwd: workspace,
         encoding: 'utf8',
-        env: { ...process.env, GITHUB_SHA: git(workspace, 'rev-parse', 'HEAD') },
+        env: { ...scratchEnv, GITHUB_SHA: git(workspace, 'rev-parse', 'HEAD') },
       });
     };
 
