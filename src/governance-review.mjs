@@ -71,12 +71,12 @@ function observe(rootDir, planPath) {
   return {basis, basisDigest: hash(JSON.stringify(basis)), plan};
 }
 
-export async function createGovernanceSurveyReview({rootDir, planPath, hostRoot, expiresAt}) {
+export async function createGovernanceSurveyReview({rootDir, planPath, hostRoot, expiresAt, surveyApi}) {
   const root = fs.realpathSync(rootDir), host = privateRoot(hostRoot, root);
   const deadline = Date.parse(expiresAt);
   requireValue(Number.isFinite(deadline) && deadline > Date.now(), 'A future review expiry is required');
   const observed = observe(root, path.resolve(root, planPath));
-  const api = await import('@kontourai/survey/review-workbench');
+  const api = surveyApi ?? await import('@kontourai/survey/review-workbench');
   key(host, true);
   const id = randomUUID(), at = new Date().toISOString();
   const candidate = (name, value, target) => ({id: name, role: 'proposed', value,
@@ -112,9 +112,9 @@ function session(hostRoot, sessionPath) {
 /** Optional host resolver is configured server-side, never through browser/MCP input.
  * This records a disposition; it never applies standards or creates an attestation.
  */
-async function governanceReviewProducer({hostRoot, sessionPath, resolveAuthority}) {
+async function governanceReviewProducer({hostRoot, sessionPath, resolveAuthority, surveyApi}) {
   const initial = session(hostRoot, sessionPath);
-  const api = await import('@kontourai/survey/review-workbench');
+  const api = surveyApi ?? await import('@kontourai/survey/review-workbench');
   return {sessionPath: initial.file, binding: initial.domain.binding, apply: async () => {
     const {host, content, domain} = session(hostRoot, sessionPath);
     const derived = api.deriveReviewSessionApplyResultForSnapshot({snapshot: domain.snapshot, events: content.events, requiredResolvedItems: 'all'});
@@ -154,15 +154,17 @@ async function governanceReviewProducer({hostRoot, sessionPath, resolveAuthority
 
 
 /** Domain producer for the native Flow Agents kit review host. */
-export async function prepareKitReview({input, host = {}}) {
+export async function prepareKitReview({input, host = {}, services}) {
   const fields = ['rootDir', 'planPath', 'hostRoot', 'expiresAt'];
   requireValue(input && typeof input === 'object' && !Array.isArray(input), 'Review input must be an object');
   requireValue(Object.keys(input).every(name => fields.includes(name)), 'Unsupported governance review input; authority comes only from the trusted host');
   for (const name of fields) requireValue(typeof input[name] === 'string' && input[name].trim() && input[name].length <= 4096, `Review requires a bounded ${name}`);
   requireValue(host && typeof host === 'object' && Object.keys(host).every(name => name === 'resolveAuthority'), 'Unsupported trusted review host context');
   requireValue(host.resolveAuthority === undefined || typeof host.resolveAuthority === 'function', 'Host authority resolver must be a function');
-  const created = await createGovernanceSurveyReview(input);
-  return governanceReviewProducer({hostRoot: input.hostRoot, sessionPath: created.sessionFile, resolveAuthority: host.resolveAuthority});
+  const surveyApi = services?.survey;
+  requireValue(services === undefined || (services && typeof services === 'object' && Object.keys(services).every(name => name === 'survey') && typeof surveyApi?.bindReviewQueue === 'function' && typeof surveyApi?.deriveReviewSessionApplyResultForSnapshot === 'function'), 'Survey services must come from the trusted native host');
+  const created = await createGovernanceSurveyReview({...input, surveyApi});
+  return governanceReviewProducer({hostRoot: input.hostRoot, sessionPath: created.sessionFile, resolveAuthority: host.resolveAuthority, surveyApi});
 }
 
 /** Compatibility transport for existing standalone consumers. New hosts use

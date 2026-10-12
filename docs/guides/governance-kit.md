@@ -212,3 +212,10 @@ AI-DLC's requirements checkpoint uses the same Survey transport but its own
 signed pending request, artifact basis and original execution budget. Both kits
 use Plumb's shared observations; Veritas retains standards evaluation and AI-DLC
 retains methodology-specific sensor checks.
+
+The native host supplies `services.survey` from its own installed Survey package
+(`bindReviewQueue` and `deriveReviewSessionApplyResultForSnapshot`). The producer
+uses those public methods without requiring a separate Survey package next to
+the Git-installed kit. This service object is a trusted in-memory argument,
+never serialized request data or reviewer authority. Standalone compatibility
+hosting still uses its optional Survey peer.
