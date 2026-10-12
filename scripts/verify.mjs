@@ -447,6 +447,15 @@ assert(
   publishWorkflow.includes('Verify Tagged Commit Is On Main'),
   'Publish workflow must verify that the tagged commit is reachable from main.',
 );
+{
+  const ancestryStep = publishWorkflow.match(/- name: Verify Tagged Commit Is On Main\n {8}run: \|\n((?: {10}.*\n|\n)+)/)?.[1] ?? '';
+  const commands = ancestryStep.split('\n').filter((line) => !line.trimStart().startsWith('#'));
+  assert(
+    commands.some((line) => /git fetch\b.*\borigin main\b/.test(line))
+      && !commands.some((line) => /git fetch\b.*--depth/.test(line)),
+    'Publish workflow must fetch main without --depth for the ancestry check; a shallow fetch rejects tags behind main\'s tip.',
+  );
+}
 assert(
   publishWorkflow.includes('Verify Tag Matches Package Version'),
   'Publish workflow must verify the pushed tag matches package.json version.',
