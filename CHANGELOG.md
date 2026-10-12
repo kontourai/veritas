@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.10.0](https://github.com/kontourai/veritas/compare/v1.9.0...v1.10.0) (2026-10-12)
+
+
+### Features
+
+* adopt native Flow Agents Survey review hosting ([#265](https://github.com/kontourai/veritas/issues/265)) ([41769a7](https://github.com/kontourai/veritas/commit/41769a7cd2f5904c612a63f78a3577ccb9353c0e))
+* adopt the native Flow Agents Survey review producer ([a915950](https://github.com/kontourai/veritas/commit/a9159507b837233badf0bd42582d81a1942a4ba1))
+
+
+### Fixes
+
+* consume Survey services from the native review host ([8a06e07](https://github.com/kontourai/veritas/commit/8a06e077ec3e6ca0a4ea9110e779d753db972874))
+
 ## [1.9.0](https://github.com/kontourai/veritas/compare/v1.8.0...v1.9.0) (2026-10-12)
 
 
