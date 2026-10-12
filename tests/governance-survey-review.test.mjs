@@ -5,7 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {buildReviewSessionEvents} from '@kontourai/survey/review-workbench';
-import {createGovernanceSurveyReview, serveGovernanceSurveyReview} from '../src/governance-review.mjs';
+import {startReviewConsoleServer} from '@kontourai/survey/review-console';
+import {createGovernanceSurveyReview, serveGovernanceSurveyReview, prepareKitReview} from '../src/governance-review.mjs';
 
 async function fixture(t, action = 'approve', options = {}) {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'veritas-survey-')), rootDir = path.join(base, 'repo'), hostRoot = path.join(base, 'host');
@@ -17,8 +18,14 @@ async function fixture(t, action = 'approve', options = {}) {
   fs.writeFileSync(path.join(rootDir, 'README.md'), 'Controlled repository\n'); git(['add', '.']); git(['commit', '-m', 'fixture']);
   execFileSync(process.execPath, [path.resolve('bin/veritas.mjs'), 'init', '--explore', '--root', rootDir, '--output', '.veritas/init-plans/review.json'], {env, stdio: 'pipe'});
   const planPath = path.join(rootDir, '.veritas/init-plans/review.json');
-  const review = await createGovernanceSurveyReview({rootDir, hostRoot, planPath, expiresAt: options.expiresAt ?? new Date(Date.now() + 60000).toISOString()});
-  const server = await serveGovernanceSurveyReview({hostRoot, sessionPath: review.sessionFile, ...options}); t.after(() => server.close());
+  const input = {rootDir, hostRoot, planPath, expiresAt: options.expiresAt ?? new Date(Date.now() + 60000).toISOString()};
+  const producer = await prepareKitReview({input, host: options.resolveAuthority ? {resolveAuthority: options.resolveAuthority} : {}});
+  const contentBeforeServing = JSON.parse(fs.readFileSync(producer.sessionPath));
+  const review = {sessionFile: producer.sessionPath, basisDigest: contentBeforeServing.veritas.domain.basisDigest};
+  const server = options.compatibility
+    ? await serveGovernanceSurveyReview({hostRoot, sessionPath: review.sessionFile, ...options})
+    : await startReviewConsoleServer({sessionPath: producer.sessionPath, producerApply: {binding: producer.binding, apply: producer.apply}});
+  t.after(() => server.close());
   const content = JSON.parse(fs.readFileSync(review.sessionFile));
   const snapshot = {...content.snapshot, decisionsByItemName: Object.fromEntries(content.snapshot.items.map(item => [item.metadata.name, item.metadata.name === 'workflow-decision' ? action === 'could-not-confirm' ? action : 'select-proposed' : 'accept-proposed'])), selectedCandidateIdsByItemName: {'workflow-decision': action}, notesByItemName: {'workflow-decision': action === 'request-changes' || action === 'could-not-confirm' ? 'Resolve the owner question' : ''}};
   const events = buildReviewSessionEvents(snapshot, content.session.metadata.name).filter(event => event.spec.eventType.startsWith('decision-') || event.spec.eventType === 'note-changed');
@@ -82,4 +89,16 @@ test('the original review deadline expires without renewal or a decision', async
   await new Promise(resolve => setTimeout(resolve, 3100));
   assert.equal((await f.apply()).status, 409);
   assert.equal(fs.existsSync(path.join(f.hostRoot, f.content.session.metadata.name + '.decision.json')), false);
+});
+
+
+test('standalone compatibility server uses the same admitted producer disposition', async t => {
+  const f = await fixture(t, 'approve', {compatibility: true});
+  assert.equal((await f.apply()).status, 200);
+  assert.equal(f.receipt().decisionKind, 'host-observed-operator-interaction');
+});
+
+test('request JSON cannot inject host approval or arbitrary review fields', async () => {
+  await assert.rejects(() => prepareKitReview({input: {rootDir: '/tmp', planPath: 'plan', hostRoot: '/tmp', expiresAt: 'date', resolveAuthority: {approvedBy: 'human'}}}), /authority comes only/);
+  await assert.rejects(() => prepareKitReview({input: {rootDir: '/tmp', planPath: 'plan', hostRoot: '/tmp', expiresAt: 'date'}, host: {resolveAuthority: {status: 'approved'}}}), /must be a function/);
 });

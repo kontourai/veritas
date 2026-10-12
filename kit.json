@@ -50,5 +50,10 @@
       "merge": "hooks-json",
       "description": "Codex PreToolUse hook that asks Veritas for path-specific guidance before file edits."
     }
-  ]
+  ],
+  "review": {
+    "contract": "kontour.kit.review_request@1.0",
+    "module": "src/governance-review.mjs",
+    "export": "prepareKitReview"
+  }
 }

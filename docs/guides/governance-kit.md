@@ -100,17 +100,43 @@ outcomes: approve, decline, request changes with a note, or could not confirm.
 The review does not provide missing owner answers, apply standards, write an
 attestation, attach Flow evidence, or advance a gate.
 
-Install the compatible optional peer in the bootstrap or host environment:
+Use Flow Agents's native review interface with this installed kit. The host
+opens Survey and manages the transport; Veritas supplies the current plan queue
+and domain admission. After installing and activating the kit in a separate
+bootstrap directory, generate the plan in the target repository:
 
 ```sh
-npm install --save-exact @kontourai/survey@8.1.0
 npm exec -- veritas init --explore --output .veritas/init-plans/proposal.json
 mkdir -p /absolute/private/veritas-review-host
 chmod 700 /absolute/private/veritas-review-host
-npm exec -- veritas review --plan .veritas/init-plans/proposal.json \
-  --host-root /absolute/private/veritas-review-host \
-  --expires-at 2026-10-13T12:00:00Z
 ```
+
+Write a private review request with absolute paths and your chosen expiry:
+
+```json
+{
+  "schema": "kontour.kit.review_request",
+  "version": "1.0",
+  "kit_id": "veritas-governance",
+  "input": {
+    "rootDir": "/absolute/path/to/project",
+    "planPath": "/absolute/path/to/project/.veritas/init-plans/proposal.json",
+    "hostRoot": "/absolute/private/veritas-review-host",
+    "expiresAt": "2026-10-13T12:00:00Z"
+  }
+}
+```
+
+```sh
+flow-agents kit review veritas-governance --dest /absolute/kit-bootstrap \
+  --request /absolute/private/governance-review-request.json
+```
+
+This requires a Flow Agents release exposing `kit review` and this kit's declared
+`review` producer. The existing `veritas review` command and
+`serveGovernanceSurveyReview` API remain standalone compatibility interfaces;
+new kit use should select the native host. The standalone evaluation engine has
+no Flow Agents dependency.
 
 Choose a future expiry for the actual review; the command never renews it. Open
 the returned loopback URL, inspect every artifact card, select the disposition,
@@ -142,22 +168,28 @@ Ctrl-C closes this command's own server.
 
 ### Trusted host integration
 
-The optional kit module is separate from the standalone evaluation engine:
+The optional producer remains separate from the standalone evaluation engine.
+A trusted Flow Agents host supplies identity resolution through a server-side
+callback, rather than putting authority in the JSON request:
 
 ```js
-import {
-  createGovernanceSurveyReview,
-  serveGovernanceSurveyReview,
-} from '@kontourai/veritas/governance-review';
+import {openInstalledKitReview} from '@kontourai/flow-agents/kit-review';
 
-const review = await createGovernanceSurveyReview({
-  rootDir, planPath, hostRoot, expiresAt,
-});
-const consoleServer = await serveGovernanceSurveyReview({
-  hostRoot, sessionPath: review.sessionFile,
-  resolveAuthority: async request => approvalService.resolveCurrentReviewer(request),
+const consoleServer = await openInstalledKitReview({
+  kitId: 'veritas-governance', dest: bootstrapDir, requestFile,
+  host: {
+    resolveAuthority: async request => approvalService.resolveCurrentReviewer(request),
+  },
 });
 ```
+
+The root kit manifest declares `prepareKitReview` under
+`kontour.kit.review_request@1.0`. The producer returns a private `sessionPath`,
+Survey queue `binding`, and domain `apply` callback. Flow Agents checks installed
+content integrity before loading it and again before application. Survey keeps
+its event/session lock; Veritas rechecks the exact plan, checkout and expiry and
+records the disposition. No callback or authority assertion is accepted from the
+serialized request or browser.
 
 `approvalService` is a host-owned integration, not supplied by Veritas. It must
 authenticate the reviewer, confirm membership and permission for this change,
