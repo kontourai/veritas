@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.9.0](https://github.com/kontourai/veritas/compare/v1.8.0...v1.9.0) (2026-10-12)
+
+
+### Features
+
+* review Governance Kit plans through optional Survey transports ([#263](https://github.com/kontourai/veritas/issues/263)) ([b40e299](https://github.com/kontourai/veritas/commit/b40e299955337ed32bc8760ca6cd2126c14c97e1))
+* review governance plans through optional Survey transports ([c810a56](https://github.com/kontourai/veritas/commit/c810a56e20fed10cb0fe1872ac8d89160cd1fa2b))
+
+
+### Fixes
+
+* keep Survey adapter inside governed source areas ([95d2447](https://github.com/kontourai/veritas/commit/95d244791a16399a369e8f3fa08a2b73728b94a3))
+
 ## [1.8.0](https://github.com/kontourai/veritas/compare/v1.7.6...v1.8.0) (2026-10-12)
 
 
