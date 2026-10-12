@@ -28,6 +28,7 @@ import {
 
 const MAIN_USAGE = `Usage:
   veritas --version
+  veritas review --plan <path> --host-root <private-directory> --expires-at <ISO-date> [--root <path>] [--port <number>]
   veritas init [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--template <name>] [--force]
   veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree] [--actor <id>] [--format feedback|json|trust-bundle] [--projection-output <path>]
   veritas explain <ruleId|workArea|filePath> [--file <path>] [--work-area <id>] [--json] [--root <path>]
@@ -157,6 +158,13 @@ if (subcommand === '--version' || subcommand === '-V') {
   writeStdout(`${packageManifest.version}\n`);
 } else if (!subcommand || isHelpToken(subcommand)) {
   writeStdout(MAIN_USAGE);
+} else if (subcommand === 'review') {
+  if (args.some(isHelpToken)) {
+    writeStdout('Usage:\n  veritas review --plan <path> --host-root <private-directory> --expires-at <ISO-date> [--root <path>] [--port <number>]\n');
+  } else {
+    const {runGovernanceReviewCli} = await import('../kit-runtime/review-cli.mjs');
+    await runGovernanceReviewCli(args);
+  }
 } else if (subcommand === 'init') {
   if (args.some(isHelpToken)) {
     writeStdout('Usage:\n  veritas init [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--template <name>] [--force] [--non-interactive]\n  veritas init --explore [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--output <path>]\n  veritas init --guided --answers <path> [--root <path>] [--project-name <name>] [--output <path>]\n  veritas init --apply --plan <path> [--root <path>] [--force]\n');
