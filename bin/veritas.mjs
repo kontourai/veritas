@@ -162,7 +162,7 @@ if (subcommand === '--version' || subcommand === '-V') {
   if (args.some(isHelpToken)) {
     writeStdout('Usage:\n  veritas review --plan <path> --host-root <private-directory> --expires-at <ISO-date> [--root <path>] [--port <number>]\n');
   } else {
-    const {runGovernanceReviewCli} = await import('../kit-runtime/review-cli.mjs');
+    const {runGovernanceReviewCli} = await import('../src/cli/governance-review.mjs');
     await runGovernanceReviewCli(args);
   }
 } else if (subcommand === 'init') {

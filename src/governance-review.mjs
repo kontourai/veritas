@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createHash, createHmac, randomBytes, randomUUID, timingSafeEqual} from 'node:crypto';
-import {isApprovalResolverResultAccepted, summarizeApprovalResolverResult} from '../src/approval-resolvers.mjs';
+import {isApprovalResolverResultAccepted, summarizeApprovalResolverResult} from './approval-resolvers.mjs';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
 const read = file => JSON.parse(fs.readFileSync(file, 'utf8'));

@@ -43,8 +43,7 @@
     "repo-maps/",
     "repo-standards/",
     "docs/",
-    "examples/",
-    "kit-runtime/"
+    "examples/"
   ],
   "publishConfig": {
     "access": "public"
@@ -52,7 +51,7 @@
   "exports": {
     ".": "./src/engine.mjs",
     "./engine": "./src/engine.mjs",
-    "./governance-review": "./kit-runtime/survey-review.mjs"
+    "./governance-review": "./src/governance-review.mjs"
   },
   "bin": {
     "veritas": "bin/veritas.mjs",

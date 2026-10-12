@@ -1,5 +1,5 @@
 import {parseArgs} from 'node:util';
-import {createGovernanceSurveyReview, serveGovernanceSurveyReview} from './survey-review.mjs';
+import {createGovernanceSurveyReview, serveGovernanceSurveyReview} from '../governance-review.mjs';
 
 export async function runGovernanceReviewCli(args) {
   const {values} = parseArgs({args, options: {root: {type: 'string'}, plan: {type: 'string'}, 'host-root': {type: 'string'}, 'expires-at': {type: 'string'}, port: {type: 'string'}}});

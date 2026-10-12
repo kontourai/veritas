@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {buildReviewSessionEvents} from '@kontourai/survey/review-workbench';
-import {createGovernanceSurveyReview, serveGovernanceSurveyReview} from '../kit-runtime/survey-review.mjs';
+import {createGovernanceSurveyReview, serveGovernanceSurveyReview} from '../src/governance-review.mjs';
 
 async function fixture(t, action = 'approve', options = {}) {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'veritas-survey-')), rootDir = path.join(base, 'repo'), hostRoot = path.join(base, 'host');
