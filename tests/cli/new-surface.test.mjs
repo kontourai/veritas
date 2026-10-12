@@ -19,7 +19,8 @@ test('top-level help centers the primary verb-noun surface', () => {
   assert.match(output, /veritas recommendation list\|show <id>\|decide <id>/);
   assert.doesNotMatch(output, /Deprecated shims/);
   assert.doesNotMatch(output, /veritas readiness check/);
-  assert.ok(output.split('\n').length <= 24);
+  assert.match(output, /veritas review --plan/);
+  assert.ok(output.split('\n').length <= 25);
 });
 
 test('top-level version reports the package version', () => {

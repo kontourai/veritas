@@ -20,6 +20,8 @@ Define what good looks like for your repo. Veritas checks each change against th
 > the standalone CLI directly, as in the Quickstart, or adopt the kit inside a Flow Agents setup —
 > both drive the same engine. See the [Engine / Surface Seam](docs/architecture/engine-surface-seam.md).
 
+Optional [Survey plan review](docs/guides/governance-kit.md#review-a-standards-plan-with-survey) lets maintainers inspect proposed standards and record decisions before the existing governance workflow applies them. Local reviews retain their operator identity claim; a trusted host resolves human authority separately.
+
 ## Quickstart
 
 Inside a git repository:

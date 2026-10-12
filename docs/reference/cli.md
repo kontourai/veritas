@@ -689,3 +689,14 @@ The exact JSON varies by command, but the operator-facing contract is stable:
 - veritas readiness defaults to feedback text; `--format json` returns orchestration status plus the artifact paths it created
 
 For the artifact fields themselves, see [Artifacts and Schemas](artifacts-and-schemas.md).
+
+### `review`
+
+`veritas review --plan <path> --host-root <private-directory> --expires-at <ISO-date>
+[--root <path>] [--port <0..65535>]` creates and serves an optional Survey review
+of a current init plan. It requires Survey 8.1.x, a Git checkout and a mode-0700
+host directory outside it. Port 0 selects an available loopback port. SIGINT or
+SIGTERM closes its server. The JSON startup line includes the URL, private session
+file, basis digest and expiry. Its optional public adapter is `@kontourai/veritas/governance-review`. It records
+operator dispositions, never protected standards or human attestations. See [the Governance Kit guide](../guides/governance-kit.md#review-a-standards-plan-with-survey)
+for decision semantics, MCP, bounds, and trusted host authority integration.

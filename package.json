@@ -50,7 +50,8 @@
   },
   "exports": {
     ".": "./src/engine.mjs",
-    "./engine": "./src/engine.mjs"
+    "./engine": "./src/engine.mjs",
+    "./governance-review": "./src/governance-review.mjs"
   },
   "bin": {
     "veritas": "bin/veritas.mjs",
@@ -99,5 +100,16 @@
     "cross-spawn": "^7.0.6",
     "hachure": "^0.15.0",
     "picomatch": "^4.0.4"
+  },
+  "peerDependencies": {
+    "@kontourai/survey": ">=8.1.0 <9"
+  },
+  "peerDependenciesMeta": {
+    "@kontourai/survey": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@kontourai/survey": "8.1.0"
   }
 }

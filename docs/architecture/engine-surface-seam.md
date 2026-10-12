@@ -324,3 +324,14 @@ The property is nonenumerable because evidence record schema v1 has no shared
 observation field. JSON, canonical trust-bundle projection and the existing
 private execution-definition association remain unchanged. A serialized or
 reflectively copied result does not acquire execution authority.
+
+
+### Optional plan-review transport
+
+`src/governance-review.mjs` is an optional Governance Kit adapter, exposed through
+`@kontourai/veritas/governance-review` and the thin `veritas review` CLI. The
+standalone evaluation engine does not import it. Its dynamic Survey imports are
+an optional peer; it reads producer plans and records dispositions without
+applying standards, writing attestations or owning Flow continuation. Host-resolved
+identity is an explicit server callback; local CLI/MCP identity stays an operator
+observation. See the [Governance Kit guide](../guides/governance-kit.md#review-a-standards-plan-with-survey).
