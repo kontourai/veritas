@@ -22,7 +22,7 @@ reasoning, and unresolved owner questions. Start the activated
 `veritas-governance.standards-authoring` Flow Definition and attach a verified
 `standards-authoring-approval` claim to its `human-approval-gate`.
 
-For an optional visual review, follow the [Survey plan review guide](../../docs/guides/governance-kit.md#review-a-standards-plan-with-survey). Local Survey decisions are operator dispositions; they do not supply human authority or the verified approval claim. A trusted host must resolve that authority separately.
+For visual review through `flow-agents kit review veritas-governance`, follow the [Survey plan review guide](../../docs/guides/governance-kit.md#review-a-standards-plan-with-survey). Local Survey decisions are operator dispositions; they do not supply human authority or the verified approval claim. A trusted host must resolve that authority separately.
 
 Only after that gate passes:
 

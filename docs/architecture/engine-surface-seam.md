@@ -329,7 +329,9 @@ reflectively copied result does not acquire execution authority.
 ### Optional plan-review transport
 
 `src/governance-review.mjs` is an optional Governance Kit adapter, exposed through
-`@kontourai/veritas/governance-review` and the thin `veritas review` CLI. The
+`@kontourai/veritas/governance-review`. Its declared `prepareKitReview` producer
+is hosted by native `flow-agents kit review veritas-governance`; the thin
+`veritas review` CLI remains a standalone compatibility path. The
 standalone evaluation engine does not import it. Its dynamic Survey imports are
 an optional peer; it reads producer plans and records dispositions without
 applying standards, writing attestations or owning Flow continuation. Host-resolved
