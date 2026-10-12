@@ -2,6 +2,10 @@
 
 [![npm version](https://img.shields.io/npm/v/%40kontourai%2Fveritas)](https://www.npmjs.com/package/@kontourai/veritas)
 [![CI](https://github.com/kontourai/veritas/actions/workflows/ci.yml/badge.svg)](https://github.com/kontourai/veritas/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-kontourai.github.io-blue)](https://kontourai.github.io/veritas/)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
+[Documentation](https://kontourai.github.io/veritas/) · [kontourai.io/veritas](https://kontourai.io/veritas/)
 
 Veritas helps teams earn merge autonomy for AI-authored code by making repo standards executable, evidence-backed, and inspectable.
 
