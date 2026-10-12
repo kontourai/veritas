@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.8.0](https://github.com/kontourai/veritas/compare/v1.7.6...v1.8.0) (2026-10-12)
+
+
+### Features
+
+* consume Plumb shared check observations ([f3ac25c](https://github.com/kontourai/veritas/commit/f3ac25c8c5d4d43f7c49c12acf4e045397c42e94))
+* consume shared Plumb check observations in Veritas ([#262](https://github.com/kontourai/veritas/issues/262)) ([1b79006](https://github.com/kontourai/veritas/commit/1b7900698f979cfb79ca26a3e66e379062e326f4))
+
+
+### Fixes
+
+* **attestations:** explain successor links to legacy attestations ([#259](https://github.com/kontourai/veritas/issues/259)) ([bf25572](https://github.com/kontourai/veritas/commit/bf25572fbed3fa817bef7e5a059fc5b95a2728ed)), closes [#258](https://github.com/kontourai/veritas/issues/258)
+
+
+### Documentation
+
+* adopt docs-kit gate, Pages site, and MCP bundle ([#254](https://github.com/kontourai/veritas/issues/254)) ([3abdcb3](https://github.com/kontourai/veritas/commit/3abdcb33b626ab2010fd846512c0919665377b5a))
+* **readme:** add Docs and License badges and documentation links to the header ([#261](https://github.com/kontourai/veritas/issues/261)) ([56d895a](https://github.com/kontourai/veritas/commit/56d895aa5e4d4a17eef6d987831ad5aa8d10ca75))
+* redirect pre-docs-kit page URLs that no longer resolve ([#257](https://github.com/kontourai/veritas/issues/257)) ([b291b2b](https://github.com/kontourai/veritas/commit/b291b2be1d16ff49a7b97e7a926ed0b041140069))
+
 ## [1.7.6](https://github.com/kontourai/veritas/compare/v1.7.5...v1.7.6) (2026-10-01)
 
 
