@@ -91,6 +91,7 @@
     "check:no-flow-agents-dep": "node scripts/check-no-flow-agents-dep.mjs"
   },
   "dependencies": {
+    "@kontourai/plumb": "0.2.0",
     "@kontourai/surface": "^2.0.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "ajv": "^8.17.1",

@@ -303,3 +303,24 @@ Layer Doctrine's no-reach-past-your-neighbor rule, and it is now enforced execut
 kit must not import the engine as a library is enforced flow-agents-side by
 `scripts/check-layer-boundary.mjs`. "Kits declare process; the anchor enforces" (ADR 0017/0022) —
 and now the layer edges enforce too.
+
+## Shared check observation plumbing
+
+The evaluation engine consumes the dependency-free `@kontourai/plumb/checks`
+API to normalize actual evidence-check execution observations. Veritas still
+owns check definitions, execution custody, required/optional policy, findings
+and readiness evaluation. Plumb does not import Flow Agents or supply governance
+semantics. The Governance Kit continues to consume the engine through CLI and
+artifacts.
+
+Live evidence-check results expose an immutable `checkObservation` property.
+Its basis is explicitly `veritas-check-definition`: the digest identifies the
+private declared check, not repository source bytes. The enclosing readiness
+run retains its independent source/evidence association. A command's nonzero
+exit remains failed; an unavailable execution remains unverified; timeout
+behavior and process custody remain with Veritas's runners.
+
+The property is nonenumerable because evidence record schema v1 has no shared
+observation field. JSON, canonical trust-bundle projection and the existing
+private execution-definition association remain unchanged. A serialized or
+reflectively copied result does not acquire execution authority.
