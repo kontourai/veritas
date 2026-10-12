@@ -10,6 +10,11 @@ allowBuilds: {}
 #   minimumReleaseAgeExclude:
 #     - some-package@1.2.3
 minimumReleaseAge: 1440
+# This delivery consumes our source-reviewed shared-check release immediately.
+# Registry gitHead 28acbe7f505325aff9e7c049ca1afcfc0ad2c62e binds the exact
+# release to merged plumb#43; the exception applies only to this version.
+minimumReleaseAgeExclude:
+  - '@kontourai/plumb@0.2.0'
 
 # mise supplies node and pnpm on developer machines; CI installs the exact
 # version pinned in package.json. Do not reject a same-major pnpm from mise.

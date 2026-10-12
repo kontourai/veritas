@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@kontourai/plumb':
+        specifier: 0.2.0
+        version: 0.2.0
       '@kontourai/surface':
         specifier: ^2.0.0
         version: 2.14.0
@@ -41,6 +44,11 @@ packages:
     engines: {node: '>=18.14.1'}
     peerDependencies:
       hono: ^4
+
+  '@kontourai/plumb@0.2.0':
+    resolution: {integrity: sha512-LiYmwDpsBiAjeHFSqbtA51CGjdOKY0l+r/tneqV9aPdT4Ct+5zq7o6fH5NbRhoTW2h9sqiIZL0SOA69CSGJlnA==}
+    engines: {node: '>=22'}
+    hasBin: true
 
   '@kontourai/surface@2.14.0':
     resolution: {integrity: sha512-OiSOUHStjZvfWJe1nXXm3vfbgUvkc3Dc3THqTXbMK70wjKAHfDgz06TwBLeRp3oNJKEIh9xNDYCFT+TqQ7EYrQ==}
@@ -583,6 +591,8 @@ snapshots:
   '@hono/node-server@1.19.14(hono@4.12.27)':
     dependencies:
       hono: 4.12.27
+
+  '@kontourai/plumb@0.2.0': {}
 
   '@kontourai/surface@2.14.0':
     optionalDependencies:

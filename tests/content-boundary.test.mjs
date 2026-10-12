@@ -658,15 +658,8 @@ test("packed package supports the documented CommonJS dynamic import", (t) => {
   const tarball = path.join(packDir, packed[0].filename);
   execFileSync("tar", ["-xzf", tarball, "--strip-components=1", "-C", packageDir]);
   const sourceModules = path.resolve("node_modules");
-  for (const dependency of [
-    "@kontourai/surface",
-    "@modelcontextprotocol/sdk",
-    "ajv",
-    "ajv-formats",
-    "cross-spawn",
-    "hachure",
-    "picomatch",
-  ]) {
+  const packedManifest = JSON.parse(readFileSync(path.join(packageDir, 'package.json'), 'utf8'));
+  for (const dependency of Object.keys(packedManifest.dependencies ?? {})) {
     const destination = path.join(consumerDir, "node_modules", ...dependency.split("/"));
     mkdirSync(path.dirname(destination), { recursive: true });
     symlinkSync(path.join(sourceModules, ...dependency.split("/")), destination, "dir");

@@ -4,6 +4,10 @@ import {
 } from '../evidence/index.mjs';
 import { bindEvidenceCheckExecution, bindEvidenceCheckResult } from '../evidence/execution-tokens.mjs';
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+import { createHash } from 'node:crypto';
+import { observeCheck } from '@kontourai/plumb/checks';
+
+const definitionDigest = definition => createHash('sha256').update(JSON.stringify(definition)).digest('hex');
 
 /**
  * Default per-evidence-check timeout (ms). Without it, a bash check waiting on
@@ -73,6 +77,8 @@ function buildEvidenceCheckFailure(evidenceCheckResult, checkTimeoutMs) {
       ? runner === 'mcp'
         ? `MCP Evidence Check timed out after ${checkTimeoutMs}ms`
         : `Evidence Check command ${status}`
+      : evidenceCheckResult.checkObservation?.status === 'not_verified'
+        ? 'Evidence Check observation or current definition could not be confirmed'
       : runner === 'mcp'
         ? status
         : `Evidence Check command exited with ${status}`,
@@ -121,6 +127,9 @@ async function runEvidenceChecks({ evidenceChecks, requiredEvidenceCheckIds, roo
       const runner = evidenceCheck.runner ?? 'bash';
       const label = evidenceCheckLabel(evidenceCheck);
       const checkTimeoutMs = evidenceCheck.timeoutMs ?? evidenceCheckTimeoutMs;
+      // This basis describes the declared check, not repository bytes. The
+      // enclosing readiness run retains its own source/evidence bindings.
+      const checkBasis = { kind: 'veritas-check-definition', id: evidenceCheck.id, digest: definitionDigest(evidenceCheck) };
       onPhase?.({
         phase: 'evidence-check',
         id: evidenceCheck.id,
@@ -137,10 +146,19 @@ async function runEvidenceChecks({ evidenceChecks, requiredEvidenceCheckIds, roo
             { signal, timeoutMs: checkTimeoutMs },
           )
           : await runBash(evidenceCheck.command, { cwd: rootDir, signal, timeoutMs: checkTimeoutMs });
-        const evidenceCheckResult = deepFreeze(bindEvidenceCheckResult(
-          buildEvidenceCheckResult(evidenceCheck, runner, label, result),
-          evidenceCheck,
-        ));
+        const candidate = buildEvidenceCheckResult(evidenceCheck, runner, label, result);
+        const observation = await observeCheck({
+          id: checkBasis.id,
+          basis: checkBasis,
+          evidence: [],
+          run: () => ({ status: candidate.passed ? 'pass' : 'fail', findings: [] }),
+          verifyCurrent: basis => definitionDigest(evidenceCheck) === basis.digest,
+        });
+        candidate.passed = observation.status === 'pass';
+        // Schema v1 has no generic check envelope. Preserve its serialized
+        // format, and expose the immutable shared observation to live callers.
+        Object.defineProperty(candidate, 'checkObservation', { value: observation, enumerable: false });
+        const evidenceCheckResult = deepFreeze(bindEvidenceCheckResult(candidate, evidenceCheck));
         evidenceCheckResults.push(evidenceCheckResult);
         if (!evidenceCheckResult.passed && requiredIds.has(evidenceCheck.id) && !evidenceCheckFailure) {
           evidenceCheckFailure = deepFreeze(bindEvidenceCheckResult(
@@ -150,15 +168,19 @@ async function runEvidenceChecks({ evidenceChecks, requiredEvidenceCheckIds, roo
         }
         emitEvidenceCheckOutput(onOutput, evidenceCheckResult);
       } catch (error) {
-        const evidenceCheckResult = deepFreeze(bindEvidenceCheckResult(
-          buildEvidenceCheckRunnerErrorResult(
+        const candidate = buildEvidenceCheckRunnerErrorResult(
             evidenceCheck,
             runner,
             label,
             runner === 'mcp' && isMcpTimeout(error),
-          ),
-          evidenceCheck,
-        ));
+          );
+        const observation = await observeCheck({
+          id: checkBasis.id, basis: checkBasis, evidence: [],
+          run: () => { throw error; },
+          verifyCurrent: basis => definitionDigest(evidenceCheck) === basis.digest,
+        });
+        Object.defineProperty(candidate, 'checkObservation', { value: observation, enumerable: false });
+        const evidenceCheckResult = deepFreeze(bindEvidenceCheckResult(candidate, evidenceCheck));
         evidenceCheckResults.push(evidenceCheckResult);
         if (requiredIds.has(evidenceCheck.id) && !evidenceCheckFailure) {
           evidenceCheckFailure = deepFreeze(bindEvidenceCheckResult(
