@@ -134,6 +134,7 @@ export async function generateVeritasReport(
     repoStandards,
     rootDir,
     explicitEvidenceCheckCommand: options.explicitEvidenceCheckCommand,
+    classificationScope: { ...reportInputs.classificationScope, repoMapPath },
   });
   const attestationStatus = options.includeAttestationGate
     ? inspectAttestationStatus(rootDir, {
@@ -151,6 +152,7 @@ export async function generateVeritasReport(
       sourceKind: reportInputs.sourceKind,
       sourceScope: reportInputs.sourceScope,
       evidenceCheckPlan,
+      classificationScope: { ...reportInputs.classificationScope, repoMapPath },
       integritySources: {
         repoMapPath,
         repoStandardsPath,
@@ -191,7 +193,7 @@ export async function generateVeritasReport(
   };
 }
 
-export function resolveEvidenceCheckCommands({ repoMapPath, repoStandardsPath, files = [], rootDir, explicitEvidenceCheckCommand }) {
+export function resolveEvidenceCheckCommands({ repoMapPath, repoStandardsPath, files = [], rootDir, explicitEvidenceCheckCommand, classificationScope }) {
   if (!repoMapPath || !rootDir) {
     return {
       evidenceCheckCommands: explicitEvidenceCheckCommand ? [explicitEvidenceCheckCommand] : [],
@@ -212,6 +214,7 @@ export function resolveEvidenceCheckCommands({ repoMapPath, repoStandardsPath, f
     repoStandards: repoStandardsPath ? loadRepoStandards(repoStandardsPath) : undefined,
     rootDir,
     explicitEvidenceCheckCommand,
+    classificationScope: { ...classificationScope, repoMapPath },
   });
 }
 

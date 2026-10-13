@@ -128,7 +128,7 @@ function evidenceCheckFailureIsRepresentedByRequiredState(record, evidenceCheckF
 
 function summarizeFeedbackCounts(record, evidenceCheckFailure = null, evidenceCheckResults = []) {
   let failures = evidenceCheckFailure && !evidenceCheckFailureIsRepresentedByRequiredState(record, evidenceCheckFailure) ? 1 : 0;
-  let warnings = 0;
+  let warnings = (record?.recommendations ?? []).filter((item) => item.kind === 'base-map-unavailable').length;
   let passes = 0;
   const requiredEvidenceChecks = requiredEvidenceChecksFor(record ?? {});
   const requiredEvidenceCheckIds = new Set(requiredEvidenceChecks.map((check) => check.id));
@@ -211,6 +211,10 @@ export function buildFeedbackSummary({
         lines.push(`PASS  evidence-check: ${label}`);
       }
     }
+  }
+
+  for (const item of record?.recommendations ?? []) {
+    if (item.kind === 'base-map-unavailable') lines.push(`WARN  ${item.kind}: ${item.message}`);
   }
 
   for (const check of requiredEvidenceChecksFor(record ?? {})) {
