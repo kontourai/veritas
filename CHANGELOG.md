@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.10.1](https://github.com/kontourai/veritas/compare/v1.10.0...v1.10.1) (2026-10-13)
+
+
+### Fixes
+
+* include declared kit provisions in the npm package ([#267](https://github.com/kontourai/veritas/issues/267)) ([f57afd5](https://github.com/kontourai/veritas/commit/f57afd53bf7bf4e28674ed349e7c8e69605a8b4a))
+
 ## [1.10.0](https://github.com/kontourai/veritas/compare/v1.9.0...v1.10.0) (2026-10-12)
 
 
