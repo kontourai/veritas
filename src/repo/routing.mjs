@@ -25,6 +25,7 @@ export function resolveEvidenceCheckPlan({
     affectedNodes,
     affectedEvidenceChecks,
     unmatchedFiles,
+    classificationWarnings,
     matchedNodes,
     fileNodes,
   } = classifyNodes(files, config, rootDir, classificationScope);
@@ -82,6 +83,7 @@ export function resolveEvidenceCheckPlan({
     matchedNodes,
     fileNodes,
     unmatchedFiles,
+    classificationWarnings,
     uncoveredPathPolicy,
     uncoveredPathResult: unmatchedFiles.length > 0 ? uncoveredPathPolicy : 'clear',
     evidenceCheckCommands,

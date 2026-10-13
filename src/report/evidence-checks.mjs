@@ -34,7 +34,8 @@ function evidenceCheckResultSummary(result) {
 
 export function buildEvidenceRecommendations(evidenceCheckPlan) {
   const { unmatchedFiles } = evidenceCheckPlan;
-  if (!unmatchedFiles.length) return [];
+  const warnings = evidenceCheckPlan.classificationWarnings ?? [];
+  if (!unmatchedFiles.length) return warnings;
 
   const unresolvedMessage =
     evidenceCheckPlan.uncoveredPathResult === 'fail'
@@ -44,6 +45,7 @@ export function buildEvidenceRecommendations(evidenceCheckPlan) {
         : 'Some files do not match a configured work area and need manual review.';
 
   return [
+    ...warnings,
     {
       kind: 'unmatched-files',
       severity: evidenceCheckPlan.uncoveredPathResult,

@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { gitReadOptions, resolveCommitRef } from '../repo/git.mjs';
 import { isDeepStrictEqual } from 'node:util';
 
 export { summarizeGovernanceTrend } from './governance-trend.mjs';
@@ -6,11 +7,7 @@ export { summarizeGovernanceTrend } from './governance-trend.mjs';
 const governanceRoots = ['.veritas/repo-map.json', '.veritas/repo-standards', '.veritas/authority'];
 
 function git(rootDir, args) {
-  return execFileSync('git', args, {
-    cwd: rootDir,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  return execFileSync('git', args, gitReadOptions(rootDir));
 }
 
 function isGovernancePath(filePath) {
@@ -25,13 +22,15 @@ function readGovernanceJsonAtRef(rootDir, ref, filePath) {
   try {
     return {
       exists: true,
-      value: JSON.parse(git(rootDir, ['show', `${ref}:${filePath}`])),
+      value: JSON.parse(git(rootDir, ['show', `${ref}:./${filePath}`, '--'])),
     };
   } catch (error) {
+    if (error instanceof SyntaxError) return { exists: true, unreadable: true, value: null };
     const detail = `${error.stderr ?? ''}${error.stdout ?? ''}${error.message ?? ''}`;
     if (
       detail.includes('exists on disk, but not in') ||
       detail.includes('does not exist in') ||
+      detail.includes('bad revision') ||
       detail.includes('Path \'.') ||
       detail.includes('Path ".')
     ) {
@@ -156,11 +155,14 @@ export function classifyGovernanceSurface({
     };
   }
 
+  const baseCommit = resolveCommitRef(changedFrom, rootDir);
+  const headCommit = resolveCommitRef(changedTo, rootDir);
   const diffPaths = git(rootDir, [
     'diff',
+    '--relative',
     '--name-only',
-    changedFrom,
-    changedTo,
+    baseCommit,
+    headCommit,
     '--',
     ...governanceRoots,
   ])
@@ -169,13 +171,13 @@ export function classifyGovernanceSurface({
     .filter(Boolean)
     .filter(isGovernancePath);
   const changedPathSet = new Set(diffPaths);
-  const basePaths = listGovernancePathsAtRef(rootDir, changedFrom);
-  const headPaths = listGovernancePathsAtRef(rootDir, changedTo);
+  const basePaths = listGovernancePathsAtRef(rootDir, baseCommit);
+  const headPaths = listGovernancePathsAtRef(rootDir, headCommit);
   const candidatePaths = Array.from(new Set([...basePaths, ...headPaths, ...diffPaths])).sort();
 
   const fileAssessments = candidatePaths.map((filePath) => {
-    const baseSnapshot = readGovernanceJsonAtRef(rootDir, changedFrom, filePath);
-    const headSnapshot = readGovernanceJsonAtRef(rootDir, changedTo, filePath);
+    const baseSnapshot = readGovernanceJsonAtRef(rootDir, baseCommit, filePath);
+    const headSnapshot = readGovernanceJsonAtRef(rootDir, headCommit, filePath);
 
     if (!baseSnapshot.exists && headSnapshot.exists) {
       return {
@@ -193,6 +195,10 @@ export function classifyGovernanceSurface({
         additive: false,
         semantic_change: true,
       };
+    }
+
+    if (baseSnapshot.unreadable || headSnapshot.unreadable) {
+      return { path: filePath, status: 'modified-protected-standards', additive: false, semantic_change: true };
     }
 
     if (isDeepStrictEqual(baseSnapshot.value, headSnapshot.value)) {

@@ -1,6 +1,5 @@
-import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { resolveCommitRef } from '../repo/git.mjs';
 import { resolveSourceRef } from './integrity.mjs';
 
 function gitExecOptions(rootDir, timeoutMs) {
@@ -17,9 +16,11 @@ function gitExecOptions(rootDir, timeoutMs) {
 export function listChangedFiles(fromRef, toRef, rootDir, { timeoutMs } = {}) {
   if (!fromRef || !toRef) return [];
 
+  const fromCommit = resolveCommitRef(fromRef, rootDir, timeoutMs);
+  const toCommit = resolveCommitRef(toRef, rootDir, timeoutMs);
   return parseDiffPaths(execFileSync(
     'git',
-    ['diff', '--name-status', '--find-renames', '--diff-filter=ACMRD', fromRef, toRef],
+    ['diff', '--relative', '--name-status', '--find-renames', '--diff-filter=ACMRD', fromCommit, toCommit, '--'],
     gitExecOptions(rootDir, timeoutMs),
   ));
 }
@@ -55,21 +56,21 @@ export function listWorkingTreeFiles(
 
   if (staged) {
     for (const file of parseDiffPaths(execFileSync('git',
-      ['diff', '--cached', '--name-status', '--find-renames', '--diff-filter=ACMRD'],
+      ['diff', '--relative', '--cached', '--name-status', '--find-renames', '--diff-filter=ACMRD', '--'],
       gitExecOptions(rootDir, timeoutMs),
     ))) files.add(file);
   }
 
   if (unstaged) {
     for (const file of parseDiffPaths(execFileSync('git',
-      ['diff', '--name-status', '--find-renames', '--diff-filter=ACMRD'],
+      ['diff', '--relative', '--name-status', '--find-renames', '--diff-filter=ACMRD', '--'],
       gitExecOptions(rootDir, timeoutMs),
     ))) files.add(file);
   }
 
   if (untracked) {
     for (const file of listGitFiles(
-      ['ls-files', '--others', '--exclude-standard'],
+      ['ls-files', '--others', '--exclude-standard', '--'],
       rootDir,
       timeoutMs,
     )) {
@@ -100,18 +101,21 @@ export function resolveReportInputs(explicitFiles, options, rootDir, { gitTimeou
         'branch-diff reporting requires both --changed-from and --changed-to',
       );
     }
+    const baseRef = resolveCommitRef(options.changedFrom, rootDir, gitTimeoutMs);
+    const headRef = resolveCommitRef(options.changedTo, rootDir, gitTimeoutMs);
     const sourceRef = options.sourceRef ?? `${options.changedFrom}..${options.changedTo}`;
     return {
       files: listChangedFiles(
-        options.changedFrom,
-        options.changedTo,
+        baseRef,
+        headRef,
         rootDir,
         { timeoutMs: gitTimeoutMs },
       ),
       classificationScope: {
-        baseRef: options.changedFrom,
+        baseRef,
+        gitTimeoutMs,
         removedFiles: listGitFiles(
-          ['diff', '--no-renames', '--name-only', '--diff-filter=D', options.changedFrom, options.changedTo],
+          ['diff', '--relative', '--no-renames', '--name-only', '--diff-filter=D', baseRef, headRef, '--'],
           rootDir,
           gitTimeoutMs,
         ),
@@ -147,7 +151,15 @@ export function resolveReportInputs(explicitFiles, options, rootDir, { gitTimeou
       files,
       classificationScope: {
         baseRef: 'HEAD',
-        removedFiles: files.filter((file) => !existsSync(resolve(rootDir, file))),
+        gitTimeoutMs,
+        removedFiles: [...new Set(uniqueScopes.flatMap((scope) => {
+          if (scope === 'untracked') return [];
+          return listGitFiles(
+            ['diff', '--relative', ...(scope === 'staged' ? ['--cached'] : []), '--no-renames', '--name-only', '--diff-filter=D', '--'],
+            rootDir,
+            gitTimeoutMs,
+          );
+        }))].filter((file) => files.includes(file)),
       },
       sourceKind: 'working-tree',
       sourceScope: uniqueScopes,
