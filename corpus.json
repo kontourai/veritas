@@ -15,7 +15,7 @@
     {
       "product": "survey",
       "via": "@kontourai/survey",
-      "for": "Review proposed standards through bound queues and persisted decision events."
+      "for": "Optionally review proposed standards through bound queues and persisted decisions."
     }
   ],
   "product": "veritas",
