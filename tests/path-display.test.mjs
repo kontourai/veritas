@@ -130,3 +130,13 @@ test('plain content-boundary output escapes DEL without changing JSON-quoted ide
   const output = formatContentBoundaryResult([{ filePath: path, line: 1, label: 'fixture' }]);
   assert.equal(output, 'Content boundary check failed:\n- "a\\u007fb":1 "fixture"');
 });
+
+test('bootstrap Markdown contains path and command backticks', async () => {
+  const { buildBootstrapReadme } = await import('../src/bootstrap/readme.mjs');
+  const path = 'root`\n## forged';
+  const output = buildBootstrapReadme({ projectName: path, evidenceCheck: path, repoInsights: {
+    repoKind: 'application', sourceRoots: [path], productRoots: [path], toolingRoots: [path], testRoots: [path], matchedScripts: [],
+  } });
+  assert.doesNotMatch(output, /^## forged/m);
+  assert.equal(output.split('``root`\\n## forged``').length - 1, 6);
+});

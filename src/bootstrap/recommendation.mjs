@@ -241,7 +241,7 @@ function buildArtifactPayloads({ rootDir, projectName, evidenceCheck, repoInsigh
   const recommendationSummary = [
     `- Mode: guided initialization artifact`,
     `- Repo kind: \`${repoInsights.repoKind}\``,
-    `- Evidence Check: \`${evidenceCheck}\``,
+    `- Evidence Check: ${markdownCode(evidenceCheck)}`,
     `- Selected instruction targets: ${selectedInstructionTargets.map((target) => markdownCode(target.path)).join(', ') || '`none`'}`,
   ].join('\n');
   const governanceBlock = buildGovernanceBlock();
