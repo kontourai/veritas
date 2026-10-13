@@ -336,4 +336,7 @@ standalone evaluation engine does not import it. Its dynamic Survey imports are
 an optional peer; it reads producer plans and records dispositions without
 applying standards, writing attestations or owning Flow continuation. Host-resolved
 identity is an explicit server callback; local CLI/MCP identity stays an operator
-observation. See the [Governance Kit guide](../guides/governance-kit.md#review-a-standards-plan-with-survey).
+observation. Its optional serializable queue presentation comes from the actual
+observed plan and is retained in Veritas's HMAC-sealed domain; it changes display
+labels and context while canonical events and admission remain separate.
+See the [Governance Kit guide](../guides/governance-kit.md#review-a-standards-plan-with-survey).

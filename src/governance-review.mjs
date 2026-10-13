@@ -92,8 +92,25 @@ export async function createGovernanceSurveyReview({rootDir, planPath, hostRoot,
     items.push(card(`artifact-${items.length}`, name, [{...candidate(name, value, name), locator: {scheme: 'structured-field', excerpt: value}}], 'Inspect the current and proposed bytes. Accepting this card acknowledges inspection; the separate decision controls disposition.'));
   }
   items.push(card('workflow-decision', 'Decision for this exact standards proposal', actions.map(action => candidate(action, action, action)), 'Approve recommends this plan. A trusted host must independently resolve human authority before it can authorize application. Request changes needs a correction note; Could not confirm leaves approval unresolved.', {candidateSetStatus: 'conflict'}));
+  // Display hints come only from the observed plan and are retained inside its
+  // producer seal. They neither replace source bytes nor authorize application.
+  const presentation = {
+    title: 'Standards plan review',
+    context: [
+      `Plan: ${path.relative(root, observed.basis.planPath).replaceAll('\\', '/')}`,
+      `Source revision: ${observed.basis.head}`,
+      ...(Array.isArray(observed.plan.reasoning_summary) ? observed.plan.reasoning_summary : observed.plan.reasoning_summary === undefined ? [] : [JSON.stringify(observed.plan.reasoning_summary)]),
+      `Review expires: ${expiresAt}`,
+      'Inspect every proposal, then choose a disposition. Recording this review does not apply standards or create an attestation. Owner answers and authority remain subject to the existing governance workflow.',
+    ].join('\n'),
+    items: Object.fromEntries(items.map(item => [item.metadata.name,
+      item.metadata.name === 'workflow-decision'
+        ? {title: 'Decision', kind: 'choice', candidateLabels: {approve: 'Approve', 'request-changes': 'Request changes', decline: 'Decline'}}
+        : {title: item.metadata.name === 'plan-context' ? 'Reasoning and owner questions' : path.basename(item.spec.target), kind: 'acknowledgment'},
+    ])),
+  };
   const snapshot = {items, activeItemName: items[0].metadata.name, notesByItemName: {}, decisionsByItemName: {}, reviewedAt: at, actorId: 'host-observed:local-operator'};
-  const domain = {id, rootDir: root, planPath: observed.basis.planPath, basisDigest: observed.basisDigest, expiresAt, snapshot, binding: api.bindReviewQueue(snapshot, {sessionName: id})};
+  const domain = {id, rootDir: root, planPath: observed.basis.planPath, basisDigest: observed.basisDigest, expiresAt, snapshot, presentation, binding: api.bindReviewQueue(snapshot, {sessionName: id})};
   const sessionFile = path.join(host, `${id}.json`);
   fs.writeFileSync(sessionFile, JSON.stringify({session: {apiVersion: 'survey.kontourai.io/v1alpha1', kind: 'ReviewSession', metadata: {name: id}}, snapshot, events: [], veritas: {domain, signature: sign(host, domain)}}, null, 2) + '\n', {flag: 'wx', mode: 0o600});
   return {sessionFile, basisDigest: domain.basisDigest, expiresAt, decisionKind: 'host-observed-operator-interaction'};
@@ -115,7 +132,7 @@ function session(hostRoot, sessionPath) {
 async function governanceReviewProducer({hostRoot, sessionPath, resolveAuthority, surveyApi}) {
   const initial = session(hostRoot, sessionPath);
   const api = surveyApi ?? await import('@kontourai/survey/review-workbench');
-  return {sessionPath: initial.file, binding: initial.domain.binding, apply: async () => {
+  return {sessionPath: initial.file, binding: initial.domain.binding, ...(initial.domain.presentation ? {presentation: structuredClone(initial.domain.presentation)} : {}), apply: async () => {
     const {host, content, domain} = session(hostRoot, sessionPath);
     const derived = api.deriveReviewSessionApplyResultForSnapshot({snapshot: domain.snapshot, events: content.events, requiredResolvedItems: 'all'});
     requireValue(derived.ok, 'Resolve every review item');
@@ -145,7 +162,7 @@ async function governanceReviewProducer({hostRoot, sessionPath, resolveAuthority
       authority = {...summarizeApprovalResolverResult(authority), scope: {reviewBasisDigest: domain.basisDigest}};
       current();
     }
-    const summary = action === 'approve' ? (authority ? 'Plan review recorded with host-resolved authority; apply through the existing governance workflow' : 'Plan approval recommended; human authority remains unresolved and application is not authorized') : action === 'request-changes' ? 'Correction requested; regenerate the plan and obtain a new review' : action === 'decline' ? 'Plan declined; application is not authorized' : 'Could not confirm; application is not authorized';
+    const summary = action === 'approve' ? (authority ? 'Plan review recorded with host-resolved authority. Continue through the existing admitted plan apply and attestation workflow; this review did not change standards.' : 'Plan approval recommendation recorded. Resolve the existing owner-answer and human-authority requirements before plan application; this review did not change standards or create an attestation.') : action === 'request-changes' ? 'Correction request recorded. Regenerate the plan and obtain a new review; this review did not change standards.' : action === 'decline' ? 'Plan decline recorded. Application is not authorized.' : 'Could-not-confirm review recorded. Application is not authorized.';
     const receipt = {schemaVersion: 1, id: domain.id, intent, authority, decisionKind: authority ? 'host-resolved-approval' : 'host-observed-operator-interaction', recordedAt: new Date().toISOString(), expiresAt: domain.expiresAt, summary};
     fs.writeFileSync(receiptPath, JSON.stringify({receipt, signature: sign(host, receipt)}, null, 2) + '\n', {flag: 'wx', mode: 0o600});
     return {reference: `veritas-review:${domain.id}`, summary};
@@ -173,5 +190,5 @@ export async function prepareKitReview({input, host = {}, services}) {
 export async function serveGovernanceSurveyReview({hostRoot, sessionPath, port = 0, resolveAuthority}) {
   const producer = await governanceReviewProducer({hostRoot, sessionPath, resolveAuthority});
   const {startReviewConsoleServer} = await import('@kontourai/survey/review-console');
-  return startReviewConsoleServer({sessionPath: producer.sessionPath, port, producerApply: {binding: producer.binding, apply: producer.apply}});
+  return startReviewConsoleServer({sessionPath: producer.sessionPath, port, ...(producer.presentation ? {presentation: producer.presentation} : {}), producerApply: {binding: producer.binding, apply: producer.apply}});
 }
