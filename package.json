@@ -36,6 +36,7 @@
     "README.md",
     "kit.json",
     "bin/",
+    "provisions/",
     "flows/",
     "skills/",
     "src/",

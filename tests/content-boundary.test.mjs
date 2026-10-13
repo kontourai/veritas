@@ -659,6 +659,13 @@ test("packed package supports the documented CommonJS dynamic import", (t) => {
   execFileSync("tar", ["-xzf", tarball, "--strip-components=1", "-C", packageDir]);
   const sourceModules = path.resolve("node_modules");
   const packedManifest = JSON.parse(readFileSync(path.join(packageDir, 'package.json'), 'utf8'));
+  const kit = JSON.parse(readFileSync(path.join(packageDir, 'kit.json'), 'utf8'));
+  const declaredPaths = ['flows', 'skills', 'docs', 'provisions'].flatMap(kind => (kit[kind] ?? []).map(entry => entry.path));
+  if (kit.execution) declaredPaths.push(kit.execution.module);
+  if (kit.review) declaredPaths.push(kit.review.module);
+  const packedFiles = new Set(packed[0].files.map(entry => entry.path));
+  for (const declared of declaredPaths) assert.ok(packedFiles.has(declared), `Packed Kit omits declared asset: ${declared}`);
+
   for (const dependency of Object.keys(packedManifest.dependencies ?? {})) {
     const destination = path.join(consumerDir, "node_modules", ...dependency.split("/"));
     mkdirSync(path.dirname(destination), { recursive: true });
