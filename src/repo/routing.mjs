@@ -19,14 +19,16 @@ export function resolveEvidenceCheckPlan({
   rootDir,
   repoStandards,
   explicitEvidenceCheckCommand,
+  classificationScope,
 }) {
   const {
     affectedNodes,
     affectedEvidenceChecks,
     unmatchedFiles,
+    classificationWarnings,
     matchedNodes,
     fileNodes,
-  } = classifyNodes(files, config, rootDir);
+  } = classifyNodes(files, config, rootDir, classificationScope);
   const uncoveredPathPolicy = readUncoveredPathPolicy(config);
   const evidenceCheckRoutes = readEvidenceCheckRoutes(config);
   const globalRequiredEvidenceCheckIds = readRequiredEvidenceCheckIds(config);
@@ -81,6 +83,7 @@ export function resolveEvidenceCheckPlan({
     matchedNodes,
     fileNodes,
     unmatchedFiles,
+    classificationWarnings,
     uncoveredPathPolicy,
     uncoveredPathResult: unmatchedFiles.length > 0 ? uncoveredPathPolicy : 'clear',
     evidenceCheckCommands,

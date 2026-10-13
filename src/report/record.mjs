@@ -56,6 +56,7 @@ function resolvePolicyResultSet({
       changedFiles: normalizedFiles,
       config,
       actor: options.actor,
+      classificationScope: options.classificationScope,
     });
   const policyResults = bindRuleEvidenceResults({
     policyResults: initialPolicyResults,

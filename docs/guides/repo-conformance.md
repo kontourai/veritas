@@ -53,6 +53,17 @@ The self-hosting flow should prove that:
 5. CI can publish readiness/conformance summaries without committing generated output
 6. optional external evidence checks can be captured without becoming required before they are trusted
 
+For branch diffs, removed files and old rename endpoints resolve against the Repo Map
+read from the base revision in Git. Working-tree removals use the committed `HEAD`
+map. Git paths and map reads are relative to the Veritas root, including nested roots.
+Working-tree removals come from Git deletion and rename data, including case-only
+renames. Remaining paths use the current map. Removed protected paths remain visible
+in affected work areas; a path unresolved by its applicable map still makes health red.
+If the base map is absent, malformed, or cannot be read within the Git timeout,
+removed paths use the current map and the report includes a `base-map-unavailable`
+warning with the reason. Branch-diff revisions must resolve to commits before
+Git diff or map reads run. Map changes still require a current policy-change attestation.
+
 ## Where To Inspect Current Examples
 
 - [examples/repo-conformance/veritas-repo-report.json](../../examples/repo-conformance/veritas-repo-report.json)

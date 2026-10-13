@@ -1,13 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
+import { createAttestation, writeBootstrapStarterKit } from '../src/index.mjs';
 import { dirname, join } from 'node:path';
 import {
   classifyGovernanceSurface,
   renderGovernanceSurfaceLine,
   summarizeGovernanceTrend,
 } from '../src/conformance/run.mjs';
-import { commitAll, initCommittedRepo, mkdirp } from './helpers.mjs';
+import { cleanGitEnv, commitAll, initCommittedRepo, mkdirp, repoRootDir } from './helpers.mjs';
 
 function writeJsonFile(rootDir, relativePath, value) {
   const path = join(rootDir, relativePath);
@@ -204,3 +207,58 @@ test('governance trend summary includes recent classification counts', () => {
   assert.equal(trend.latest_non_clean_run_id, 'current-run');
   assert.equal(trend.latest_non_clean_classification, 'additive-only');
 });
+
+for (const scenario of [
+  { name: 'protected rename with map swap', rename: true, swap: true, covered: true },
+  { name: 'protected deletion with pattern removed', swap: true, covered: true },
+  { name: 'unmapped base deletion remains red despite HEAD coverage', swap: true, headCoverage: true, covered: false },
+  { name: 'pure protected rename with unchanged map', rename: true, covered: true },
+]) {
+  test(`conformance health: ${scenario.name}`, async (t) => {
+    const rootDir = initCommittedRepo('veritas-removed-path-health-');
+    writeBootstrapStarterKit({ rootDir, projectName: 'removed-path-fixture', force: true });
+    for (const path of ['.githooks', '.veritas/hooks', '.veritas/runtime']) {
+      cpSync(join(repoRootDir, path), join(rootDir, path), { recursive: true });
+    }
+    const mapPath = join(rootDir, '.veritas/repo-map.json');
+    const map = JSON.parse(readFileSync(mapPath, 'utf8'));
+    map.graph.nodes = [
+      { id: 'governance.config', label: 'configuration', kind: 'protected-area', patterns: ['.veritas/', '.githooks/', '.gitignore'] },
+      { id: 'governance.manifest', label: 'manifest', kind: 'protected-area', patterns: scenario.covered ? ['old-manifest.json', 'new-manifest.json'] : [] },
+    ];
+    map.evidence.requiredEvidenceCheckIds = [];
+    map.evidence.uncoveredPathPolicy = 'warn';
+    writeJsonFile(rootDir, '.veritas/repo-map.json', map);
+    writeJsonFile(rootDir, '.veritas/repo-standards/default.repo-standards.json', { version: 1, name: 'removed-path-health', rules: [] });
+    writeFileSync(join(rootDir, 'old-manifest.json'), '{"manifest":"protected"}\n');
+    createAttestation({ rootDir, kind: 'bootstrap', actor: 'brian', approvalRef: 'test://approved-bootstrap', notes: 'Fixture bootstrap.' });
+    commitAll(rootDir, 'Base protected manifest');
+    if (scenario.rename) renameSync(join(rootDir, 'old-manifest.json'), join(rootDir, 'new-manifest.json'));
+    else unlinkSync(join(rootDir, 'old-manifest.json'));
+    if (scenario.swap) {
+      map.graph.nodes[1].patterns = scenario.headCoverage ? ['old-manifest.json'] : scenario.rename ? ['new-manifest.json'] : [];
+      writeJsonFile(rootDir, '.veritas/repo-map.json', map);
+      createAttestation({ rootDir, kind: 'policy-change', actor: 'brian', approvalRef: 'test://approved-policy-change', notes: 'Fixture map update.' });
+    }
+    const scriptUrl = pathToFileURL(join(repoRootDir, 'scripts/repo-conformance-status.mjs')).href;
+    for (const scope of ['working-tree', 'branch-diff']) {
+      if (scope === 'branch-diff') commitAll(rootDir, 'Change manifest');
+      await t.test(scope, () => {
+        const result = spawnSync(process.execPath, ['--input-type=module', '-e', `
+          import { runRepoConformanceStatus } from ${JSON.stringify(scriptUrl)};
+          const result = await runRepoConformanceStatus({ rootDir: process.cwd(), changedFrom: ${scope === 'branch-diff' ? "'HEAD~1'" : 'undefined'}, changedTo: ${scope === 'branch-diff' ? "'HEAD'" : 'undefined'}, isCi: true, failOnAlerts: true });
+          console.log(JSON.stringify({ health: result.healthStatus, report: result.report.record, draft: result.draft.record }));
+        `], { cwd: rootDir, encoding: 'utf8', env: { ...cleanGitEnv(), CI: 'true' } });
+        assert.equal(result.status, scenario.covered ? 0 : 1, result.stderr + result.stdout);
+        const output = JSON.parse(result.stdout);
+        assert.equal(output.health, scenario.covered ? 'green' : 'red');
+        assert.deepEqual(output.report.unresolved_files, scenario.covered ? [] : ['old-manifest.json']);
+        if (scenario.covered) {
+          assert.ok(output.report.components.includes('governance.manifest'));
+          assert.equal(output.report.file_nodes['old-manifest.json'][0].kind, 'protected-area');
+          assert.equal(output.draft.governance.protected_standards_touched, true);
+        }
+      });
+    }
+  });
+}
