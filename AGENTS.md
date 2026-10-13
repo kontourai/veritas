@@ -18,7 +18,7 @@ npm run veritas:conformance:report
 npm run docs:check
 ```
 
-Docs are published with docs-kit: `docs-kit.json` lists the published docs and MCP topics, `npm run docs:check` is the gate, and when you change code a document `covers`, update that document.
+Docs are published with docs-kit: `corpus.json` lists the published docs and MCP topics, `npm run docs:check` is the gate, and when you change code a document `covers`, update that document.
 
 The tracked repo hook is `.githooks/pre-push`; local checkouts must set `core.hooksPath=.githooks` to use it.
 
