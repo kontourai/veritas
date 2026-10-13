@@ -1,5 +1,23 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "purpose": "Help AI-authored changes earn merge autonomy against the repository’s executable standards.",
+  "builtOn": [
+    {
+      "product": "plumb",
+      "via": "@kontourai/plumb",
+      "for": "Observe evidence-check executions and bind their results to readiness."
+    },
+    {
+      "product": "surface",
+      "via": "@kontourai/surface",
+      "for": "Assemble governance claims, validate attestations, and derive readiness trust reports."
+    },
+    {
+      "product": "survey",
+      "via": "@kontourai/survey",
+      "for": "Optionally review proposed standards through bound queues and persisted decisions."
+    }
+  ],
   "product": "veritas",
   "title": "Veritas",
   "tagline": "Merge autonomy for AI-authored code: evidence-backed readiness reports against your repo's own standards.",

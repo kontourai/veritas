@@ -15,7 +15,7 @@ npm test                        # run the full test suite
 npm run veritas:evidence-check  # run the evidenceCheck
 npm run veritas:conformance         # full readiness check + repo conformance report
 npm run veritas:conformance:report  # evidence report only
-npm run docs:check              # docs-kit gate: links, anchors, reachability, topics
+npm run docs:check              # Corpus gate: links, anchors, reachability, topics
 ```
 
 The tracked repo hook is `.githooks/pre-push`; local checkouts must set `core.hooksPath=.githooks` to use it.
@@ -47,7 +47,7 @@ These are expected. The messages are not failures.
 
 ## Site
 
-The GitHub Pages site and the `docs-bundle.json` served by the Kontour docs MCP are built by docs-kit from the documents and topics listed in `docs-kit.json`. `.github/workflows/docs.yml` gates pull requests and publishes from `main`. Run `npm run docs:check` after any docs change; when you change code a document `covers`, update that document.
+The GitHub Pages site and the `docs-bundle.json` served by the Kontour docs MCP are built by docs-kit from the documents and topics listed in `corpus.json`. `.github/workflows/docs.yml` gates pull requests and publishes from `main`. Run `npm run docs:check` after any docs change; when you change code a document `covers`, update that document.
 
 <!-- veritas:governance-block:start -->
 This repo uses Veritas for AI governance. Read `.veritas/GOVERNANCE.md` before making changes.

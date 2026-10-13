@@ -27,7 +27,7 @@ Run the pre-push content and reference checks:
 npm run verify
 ```
 
-Run the docs gate (links, anchors, published-doc reachability, and MCP topics) after changing documentation or `docs-kit.json`:
+Run the docs gate (links, anchors, published-doc reachability, and MCP topics) after changing documentation or `corpus.json`:
 
 ```bash
 npm run docs:check
