@@ -27,6 +27,7 @@ export { evaluatePrimitiveFirstGovernanceRule } from './primitive-first.mjs';
  * @property {boolean} [preEdit] Defer content checks for a path that does not exist yet.
  * @property {object} [config] Repo Map config; required for work-area-boundary.
  * @property {object} [repoStandards] Active Repo Standards config; required for primitive references.
+ * @property {object} [classificationScope] Base revision and removed paths for change classification.
  * @property {string|null} [actor] Resolved actor for boundary rules.
  */
 
@@ -153,7 +154,7 @@ function actorAllowedAcrossBoundary(actor, node) {
 }
 
 /** @param {RuleContext} context */
-export function evaluateWorkAreaBoundaryRule(rule, { changedFiles = [], config, rootDir, actor }) {
+export function evaluateWorkAreaBoundaryRule(rule, { changedFiles = [], config, rootDir, actor, classificationScope }) {
   const effectiveActor = actor ?? process.env.VERITAS_ACTOR ?? null;
   if (!effectiveActor) {
     return buildRuleResult(rule, {
@@ -168,7 +169,7 @@ export function evaluateWorkAreaBoundaryRule(rule, { changedFiles = [], config, 
       }],
     });
   }
-  const classification = classifyNodes(changedFiles, config, rootDir);
+  const classification = classifyNodes(changedFiles, config, rootDir, classificationScope);
   const findings = [];
 
   for (const [file, nodes] of Object.entries(classification.fileNodes ?? {})) {

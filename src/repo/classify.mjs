@@ -1,8 +1,16 @@
+import { execFileSync } from 'node:child_process';
+import { relative, resolve } from 'node:path';
 import { normalizeRepoPath } from '../paths.mjs';
 import { matchesPatterns } from '../util/patterns.mjs';
 import { uniqueStrings } from '../util/strings.mjs';
 
-export function classifyNodes(files, config, rootDir) {
+export function classifyNodes(files, config, rootDir, { baseRef, removedFiles = [], repoMapPath } = {}) {
+  const removedPaths = new Set(removedFiles.map((file) => normalizeRepoPath(file, rootDir)));
+  const baseNodes = removedPaths.size > 0
+    ? JSON.parse(execFileSync('git', [
+        'show', `${baseRef}:${relative(rootDir, resolve(rootDir, repoMapPath ?? '.veritas/repo-map.json')).replaceAll('\\', '/')}`,
+      ], { cwd: rootDir, encoding: 'utf8', windowsHide: true })).graph.nodes
+    : [];
   const matchedNodeIds = new Set();
   const matchedLaneLabels = new Set();
   const matchedNodes = [];
@@ -12,7 +20,7 @@ export function classifyNodes(files, config, rootDir) {
   for (const file of files) {
     const normalized = normalizeRepoPath(file, rootDir);
     let matched = false;
-    for (const node of config.graph.nodes) {
+    for (const node of removedPaths.has(normalized) ? baseNodes : config.graph.nodes) {
       if (matchesPatterns(normalized, node.patterns)) {
         matchedNodeIds.add(node.id);
         matchedLaneLabels.add(node.label);

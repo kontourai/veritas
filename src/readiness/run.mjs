@@ -99,6 +99,7 @@ export async function runMergeReadiness(
     repoMapPath,
     repoStandardsPath,
     files: reportInputs.files,
+    classificationScope: reportInputs.classificationScope,
     rootDir,
     explicitEvidenceCheckCommand: options.evidenceCheckCommand,
   });

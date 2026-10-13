@@ -19,6 +19,7 @@ export function resolveEvidenceCheckPlan({
   rootDir,
   repoStandards,
   explicitEvidenceCheckCommand,
+  classificationScope,
 }) {
   const {
     affectedNodes,
@@ -26,7 +27,7 @@ export function resolveEvidenceCheckPlan({
     unmatchedFiles,
     matchedNodes,
     fileNodes,
-  } = classifyNodes(files, config, rootDir);
+  } = classifyNodes(files, config, rootDir, classificationScope);
   const uncoveredPathPolicy = readUncoveredPathPolicy(config);
   const evidenceCheckRoutes = readEvidenceCheckRoutes(config);
   const globalRequiredEvidenceCheckIds = readRequiredEvidenceCheckIds(config);

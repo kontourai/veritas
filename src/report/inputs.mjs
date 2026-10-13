@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { resolveSourceRef } from './integrity.mjs';
 
@@ -106,6 +108,14 @@ export function resolveReportInputs(explicitFiles, options, rootDir, { gitTimeou
         rootDir,
         { timeoutMs: gitTimeoutMs },
       ),
+      classificationScope: {
+        baseRef: options.changedFrom,
+        removedFiles: listGitFiles(
+          ['diff', '--no-renames', '--name-only', '--diff-filter=D', options.changedFrom, options.changedTo],
+          rootDir,
+          gitTimeoutMs,
+        ),
+      },
       sourceKind: 'branch-diff',
       sourceScope: [
         ...(options.changedFrom ? [`changed-from:${options.changedFrom}`] : []),
@@ -124,16 +134,21 @@ export function resolveReportInputs(explicitFiles, options, rootDir, { gitTimeou
 
   if (workingTreeScopes.length > 0) {
     const uniqueScopes = [...new Set(workingTreeScopes)];
+    const files = listWorkingTreeFiles(
+      {
+        staged: uniqueScopes.includes('staged'),
+        unstaged: uniqueScopes.includes('unstaged'),
+        untracked: uniqueScopes.includes('untracked'),
+      },
+      rootDir,
+      { timeoutMs: gitTimeoutMs },
+    );
     return {
-      files: listWorkingTreeFiles(
-        {
-          staged: uniqueScopes.includes('staged'),
-          unstaged: uniqueScopes.includes('unstaged'),
-          untracked: uniqueScopes.includes('untracked'),
-        },
-        rootDir,
-        { timeoutMs: gitTimeoutMs },
-      ),
+      files,
+      classificationScope: {
+        baseRef: 'HEAD',
+        removedFiles: files.filter((file) => !existsSync(resolve(rootDir, file))),
+      },
       sourceKind: 'working-tree',
       sourceScope: uniqueScopes,
       sourceRef: resolveSourceRef({
