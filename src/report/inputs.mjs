@@ -20,21 +20,21 @@ export function listChangedFiles(fromRef, toRef, rootDir, { timeoutMs } = {}) {
   const toCommit = resolveCommitRef(toRef, rootDir, timeoutMs);
   return parseDiffPaths(execFileSync(
     'git',
-    ['diff', '--relative', '--name-status', '--find-renames', '--diff-filter=ACMRD', fromCommit, toCommit, '--'],
+    ['diff', '--relative', '--name-status', '-z', '--find-renames', '--diff-filter=ACMRDT', fromCommit, toCommit, '--'],
     gitExecOptions(rootDir, timeoutMs),
   ));
 }
 
 function parseDiffPaths(output) {
   const paths = new Set();
-  for (const line of output.split('\n').filter(Boolean)) {
-    const fields = line.split('\t');
-    const status = fields[0] ?? '';
+  const fields = output.split('\0');
+  for (let index = 0; index < fields.length && fields[index];) {
+    const status = fields[index++];
+    const file = fields[index++];
+    if (file) paths.add(file);
     if (status.startsWith('R') || status.startsWith('C')) {
-      if (fields[1]) paths.add(fields[1]);
-      if (fields[2]) paths.add(fields[2]);
-    } else if (fields[1]) {
-      paths.add(fields[1]);
+      const destination = fields[index++];
+      if (destination) paths.add(destination);
     }
   }
   return [...paths].sort();
@@ -42,8 +42,7 @@ function parseDiffPaths(output) {
 
 function listGitFiles(args, rootDir, timeoutMs) {
   return execFileSync('git', args, gitExecOptions(rootDir, timeoutMs))
-    .split('\n')
-    .map((line) => line.trim())
+    .split('\0')
     .filter(Boolean);
 }
 
@@ -56,21 +55,21 @@ export function listWorkingTreeFiles(
 
   if (staged) {
     for (const file of parseDiffPaths(execFileSync('git',
-      ['diff', '--relative', '--cached', '--name-status', '--find-renames', '--diff-filter=ACMRD', '--'],
+      ['diff', '--relative', '--cached', '--name-status', '-z', '--find-renames', '--diff-filter=ACMRDT', '--'],
       gitExecOptions(rootDir, timeoutMs),
     ))) files.add(file);
   }
 
   if (unstaged) {
     for (const file of parseDiffPaths(execFileSync('git',
-      ['diff', '--relative', '--name-status', '--find-renames', '--diff-filter=ACMRD', '--'],
+      ['diff', '--relative', '--name-status', '-z', '--find-renames', '--diff-filter=ACMRDT', '--'],
       gitExecOptions(rootDir, timeoutMs),
     ))) files.add(file);
   }
 
   if (untracked) {
     for (const file of listGitFiles(
-      ['ls-files', '--others', '--exclude-standard', '--'],
+      ['ls-files', '-z', '--others', '--exclude-standard', '--'],
       rootDir,
       timeoutMs,
     )) {
@@ -115,7 +114,7 @@ export function resolveReportInputs(explicitFiles, options, rootDir, { gitTimeou
         baseRef,
         gitTimeoutMs,
         removedFiles: listGitFiles(
-          ['diff', '--relative', '--no-renames', '--name-only', '--diff-filter=D', baseRef, headRef, '--'],
+          ['diff', '--relative', '--no-renames', '--name-only', '-z', '--diff-filter=D', baseRef, headRef, '--'],
           rootDir,
           gitTimeoutMs,
         ),
@@ -155,7 +154,7 @@ export function resolveReportInputs(explicitFiles, options, rootDir, { gitTimeou
         removedFiles: [...new Set(uniqueScopes.flatMap((scope) => {
           if (scope === 'untracked') return [];
           return listGitFiles(
-            ['diff', '--relative', ...(scope === 'staged' ? ['--cached'] : []), '--no-renames', '--name-only', '--diff-filter=D', '--'],
+            ['diff', '--relative', ...(scope === 'staged' ? ['--cached'] : []), '--no-renames', '--name-only', '-z', '--diff-filter=D', '--'],
             rootDir,
             gitTimeoutMs,
           );

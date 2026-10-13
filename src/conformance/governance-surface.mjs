@@ -44,9 +44,8 @@ function readGovernanceJsonAtRef(rootDir, ref, filePath) {
 
 function listGovernancePathsAtRef(rootDir, ref) {
   try {
-    return git(rootDir, ['ls-tree', '-r', '--name-only', ref, '--', ...governanceRoots])
-      .split(/\r?\n/u)
-      .map((filePath) => filePath.trim())
+    return git(rootDir, ['ls-tree', '-r', '--name-only', '-z', ref, '--', ...governanceRoots])
+      .split('\0')
       .filter(Boolean)
       .filter(isGovernancePath)
       .sort();
@@ -160,13 +159,13 @@ export function classifyGovernanceSurface({
     'diff',
     '--relative',
     '--name-only',
+    '-z',
     baseCommit,
     headCommit,
     '--',
     ...governanceRoots,
   ])
-    .split(/\r?\n/u)
-    .map((filePath) => filePath.trim())
+    .split('\0')
     .filter(Boolean)
     .filter(isGovernancePath);
   const changedPathSet = new Set(diffPaths);

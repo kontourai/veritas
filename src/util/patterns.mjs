@@ -34,11 +34,11 @@ export function matchesPatternsForAnyFile(files, patterns) {
 
 function readAllTrackedFiles(rootDir) {
   try {
-    return execFileSync('git', ['ls-files'], {
+    return execFileSync('git', ['ls-files', '-z'], {
       cwd: rootDir,
       encoding: 'utf8',
       windowsHide: true,
-    }).split(/\r?\n/).filter(Boolean);
+    }).split('\0').filter(Boolean);
   } catch {
     return [];
   }

@@ -1,16 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cpSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, readFileSync, renameSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { createAttestation, writeBootstrapStarterKit } from '../src/index.mjs';
+import { createAttestation, evaluateRepoStandards, writeBootstrapStarterKit } from '../src/index.mjs';
 import { dirname, join } from 'node:path';
 import {
   classifyGovernanceSurface,
   renderGovernanceSurfaceLine,
   summarizeGovernanceTrend,
 } from '../src/conformance/run.mjs';
-import { cleanGitEnv, commitAll, initCommittedRepo, mkdirp, repoRootDir } from './helpers.mjs';
+import { cleanGitEnv, execGitFixture, commitAll, initCommittedRepo, mkdirp, repoRootDir } from './helpers.mjs';
 
 function writeJsonFile(rootDir, relativePath, value) {
   const path = join(rootDir, relativePath);
@@ -262,3 +262,75 @@ for (const scenario of [
     }
   });
 }
+
+for (const scenario of [
+  { name: 'protected file becomes symlink', protected: true, symlink: true, path: 'manifest.json' },
+  { name: 'protected symlink becomes file', protected: true, symlink: false, path: 'manifest.json' },
+  { name: 'protected non-ASCII path resolves', protected: true, path: 'café.json' },
+  { name: 'unprotected type change', protected: false, symlink: true, path: 'ordinary.json' },
+]) {
+  test(`conformance visibility: ${scenario.name}`, async (t) => {
+    const rootDir = initCommittedRepo('veritas-typechange-');
+    writeBootstrapStarterKit({ rootDir, projectName: 'typechange-fixture', force: true });
+    for (const path of ['.githooks', '.veritas/hooks', '.veritas/runtime']) {
+      cpSync(join(repoRootDir, path), join(rootDir, path), { recursive: true });
+    }
+    const map = JSON.parse(readFileSync(join(rootDir, '.veritas/repo-map.json'), 'utf8'));
+    map.graph.nodes = [
+      { id: 'governance.config', label: 'configuration', kind: 'protected-area', patterns: ['.veritas/', '.githooks/', '.gitignore'] },
+      { id: scenario.protected ? 'governance.manifest' : 'fixture.target', label: 'target', kind: scenario.protected ? 'protected-area' : 'component', patterns: [scenario.path] },
+    ];
+    map.evidence.requiredEvidenceCheckIds = [];
+    writeJsonFile(rootDir, '.veritas/repo-map.json', map);
+    writeJsonFile(rootDir, '.veritas/repo-standards/default.repo-standards.json', { version: 1, name: 'typechange', rules: [] });
+    // Keep the link target tracked and unchanged so only the named path changes.
+    writeFileSync(join(rootDir, '.veritas/link-target.json'), '{}\n');
+    if (scenario.symlink === false) symlinkSync('.veritas/link-target.json', join(rootDir, scenario.path));
+    else writeFileSync(join(rootDir, scenario.path), '{}\n');
+    createAttestation({ rootDir, kind: 'bootstrap', actor: 'brian', approvalRef: 'test://approved-bootstrap', notes: 'Fixture bootstrap.' });
+    commitAll(rootDir, 'Base fixture');
+    unlinkSync(join(rootDir, scenario.path));
+    if (scenario.symlink === true) symlinkSync('.veritas/link-target.json', join(rootDir, scenario.path));
+    else writeFileSync(join(rootDir, scenario.path), '{"changed":true}\n');
+    const scriptUrl = pathToFileURL(join(repoRootDir, 'scripts/repo-conformance-status.mjs')).href;
+    for (const scope of ['unstaged', 'staged', 'branch-diff']) {
+      if (scope === 'staged') execGitFixture(['add', '--all'], { cwd: rootDir });
+      if (scope === 'branch-diff') commitAll(rootDir, 'Change fixture');
+      await t.test(scope, () => {
+        const result = spawnSync(process.execPath, ['--input-type=module', '-e', `
+          import { runRepoConformanceStatus } from ${JSON.stringify(scriptUrl)};
+          const result = await runRepoConformanceStatus({ rootDir: process.cwd(), changedFrom: ${scope === 'branch-diff' ? "'HEAD~1'" : 'undefined'}, changedTo: ${scope === 'branch-diff' ? "'HEAD'" : 'undefined'}, isCi: true, failOnAlerts: true });
+          console.log(JSON.stringify({ report: result.report.record, draft: result.draft.record }));
+        `], { cwd: rootDir, encoding: 'utf8', env: { ...cleanGitEnv(), CI: 'true' } });
+        assert.equal(result.status, 0, result.stderr + result.stdout);
+        const output = JSON.parse(result.stdout);
+        assert.deepEqual(output.report.unresolved_files, []);
+        assert.deepEqual(Object.keys(output.report.file_nodes), [scenario.path]);
+        assert.equal(output.report.file_nodes[scenario.path][0].kind, scenario.protected ? 'protected-area' : 'component');
+        assert.ok(output.report.components.includes(scenario.protected ? 'governance.manifest' : 'fixture.target'));
+        assert.equal(output.draft.governance.protected_standards_touched, scenario.protected);
+      });
+    }
+  });
+}
+
+test('Protected Standards resolves non-ASCII governance paths', () => {
+  const rootDir = createGovernanceRepo();
+  writeJsonFile(rootDir, '.veritas/authority/café.json', { name: 'café' });
+  commitAll(rootDir, 'Add non-ASCII authority');
+  const result = classifyGovernanceSurface({ rootDir, changedFrom: 'HEAD~1', changedTo: 'HEAD' });
+  assert.deepEqual(result.changed_paths, ['.veritas/authority/café.json']);
+  assert.deepEqual(result.semantic_changed_paths, ['.veritas/authority/café.json']);
+});
+
+test('standing policy evaluates tracked non-ASCII paths', () => {
+  const rootDir = initCommittedRepo('veritas-unicode-policy-');
+  writeFileSync(join(rootDir, 'café.json'), 'forbidden-content\n');
+  commitAll(rootDir, 'Add policy target');
+  const results = evaluateRepoStandards({ version: 1, name: 'unicode', rules: [{
+    id: 'content', kind: 'forbidden-pattern', classification: 'hard-invariant',
+    enforcementLevel: 'Require', message: 'Reject forbidden content.',
+    match: { files: ['café.json'], pattern: 'forbidden-content' },
+  }] }, { rootDir, changedFiles: [] });
+  assert.equal(results[0].passed, false);
+});
