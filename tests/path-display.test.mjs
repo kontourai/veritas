@@ -101,7 +101,7 @@ test('report and feedback path contexts contain controls and embedded backticks'
   writeFileSync(join(rootDir, 'b-protected.json'), '{"changed":true}\n');
   commitAll(rootDir, 'Change');
   const output = runConformance(rootDir);
-  const path = 'a`\n## forged\r\t\x1b\x7f[link](url)<img>**';
+  const path = 'a`\n## forged\r\t\x1b\x7f[link](url)<img>** @octocat &#10;';
   const record = output.report.record;
   record.policy_results = [{ rule_id: 'path', passed: false, enforcementLevel: 'Require', summary: path, findings: [{ artifact: path, diagnostic: path, remediation: path }] }];
   record.recommendations = [{ message: path, files: [path] }];
@@ -115,12 +115,13 @@ test('report and feedback path contexts contain controls and embedded backticks'
   for (const text of markdown) {
     assert.doesNotMatch(text, /^## forged/m);
     assert.doesNotMatch(text, /[\x00-\x08\x0b-\x1f\x7f]/);
-    assert.ok(text.includes('``a`\\n## forged\\r\\t\\x1b\\x7f[link](url)<img>**``'));
+    assert.doesNotMatch(text.replace(/(`+)([\s\S]*?)\1/g, ''), /@octocat|#10/);
+    assert.ok(text.includes('``a`\\n## forged\\r\\t\\x1b\\x7f[link](url)<img>** @octocat &#10;``'));
   }
   const plain = buildFeedbackSummary({ record, reportArtifactPath: path, draftArtifactPath: path, standardsFeedbackArtifactPath: path });
   assert.doesNotMatch(plain, /^## forged/m);
   assert.doesNotMatch(plain, /[\x00-\x08\x0b-\x1f\x7f]/);
-  assert.ok(plain.includes('a`\\n## forged\\r\\t\\x1b\\x7f[link](url)<img>**'));
+  assert.ok(plain.includes('a`\\n## forged\\r\\t\\x1b\\x7f[link](url)<img>** @octocat &#10;'));
   assert.equal(record.policy_results[0].findings[0].artifact, path, 'renderers must not mutate JSON inputs');
 });
 
@@ -139,4 +140,59 @@ test('bootstrap Markdown contains path and command backticks', async () => {
   } });
   assert.doesNotMatch(output, /^## forged/m);
   assert.equal(output.split('``root`\\n## forged``').length - 1, 6);
+});
+
+for (const path of [
+  '.veritas/repo-standards/@octocat ping.json',
+  '.veritas/repo-standards/&#10; issue.json',
+  '.veritas/repo-standards/x\u202enosj.dlrow.json',
+  '.veritas/repo-standards/zw\u200bsp\ufeffjoin\u200d.json',
+  '.veritas/repo-standards/nel\u0085.json',
+]) {
+  test(`inert path identity: ${JSON.stringify(path)}`, () => {
+    const rootDir = fixture();
+    commitAll(rootDir, 'Base');
+    writeFileSync(join(rootDir, path), '{}\n');
+    commitAll(rootDir, 'Add adversarial path');
+    const summaryPath = join(rootDir, 'step-summary.md');
+    const output = runConformance(rootDir, summaryPath);
+    assert.ok(output.report.record.files.includes(path));
+    assert.ok(output.governance.changed_paths.includes(path));
+    assert.ok(output.governance.summary.includes(path), 'JSON summaries retain raw paths');
+    const latest = readFileSync(join(rootDir, '.kontourai/veritas/repo-conformance/latest.md'), 'utf8');
+    assert.equal(latest, output.markdown);
+    const line = latest.split('\n').find((line) => line.startsWith('- **Governance surface:**'));
+    assert.equal(line, '- **Governance surface:** `' + displayText(output.governance.summary) + '`');
+    for (const markdown of [latest, readFileSync(summaryPath, 'utf8'), output.report.markdownSummary, output.draft.markdownSummary]) {
+      assert.doesNotMatch(markdown, /\p{Cf}|[\x80-\x9f\u2028\u2029]/u);
+      // Every occurrence of a mention/reference-bearing path stays inside a code span.
+      const escapedPath = displayText(path);
+      for (const textLine of markdown.split('\n').filter((line) => line.includes(escapedPath))) {
+        const outsideCode = textLine.replace(/`[^`]*`/g, '');
+        assert.ok(!outsideCode.includes(escapedPath), textLine);
+      }
+    }
+  });
+}
+
+test('Unicode display makes invisible codepoints visible across Markdown and plain renderers', async () => {
+  const { quotedText } = await import('../src/util/display.mjs');
+  const { formatContentBoundaryResult } = await import('../src/conformance/content-boundary.mjs');
+  const { formatPreToolUseGuidance } = await import('../src/hooks/pre-tool-use.mjs');
+  const path = 'bidi\u202e-zero\u200b-nel\u0085-ls\u2028-ps\u2029-tag\u{e0001}.json';
+  const visible = 'bidi\\u202e-zero\\u200b-nel\\u0085-ls\\u2028-ps\\u2029-tag\\u{e0001}.json';
+  assert.equal(displayText(path), visible);
+  assert.equal(markdownCode(path), '`' + visible + '`');
+  const controls = Array.from({ length: 32 }, (_, index) => String.fromCharCode(0x80 + index)).join('');
+  assert.doesNotMatch(displayText(controls), /[\x80-\x9f]/);
+  assert.equal(JSON.parse(quotedText(path)), path, 'quoted text preserves path identity');
+  for (const rendered of [
+    formatContentBoundaryResult([{ filePath: path, line: 1, label: path }]),
+    formatPreToolUseGuidance({ selector: { value: path }, rules: [] }),
+  ]) {
+    assert.doesNotMatch(rendered, /\p{Cf}|[\x80-\x9f\u2028\u2029]/u);
+    assert.ok(rendered.includes('\\u202e'));
+    assert.ok(rendered.includes('\\u200b'));
+    assert.ok(rendered.includes('\\u0085'));
+  }
 });

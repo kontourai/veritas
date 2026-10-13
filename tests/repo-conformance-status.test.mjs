@@ -50,7 +50,7 @@ test('Protected Standards is clean when no PR refs are supplied', () => {
   assert.equal(result.classification, 'clean');
   assert.equal(result.evaluated, false);
   assert.equal(result.summary, 'clean (no PR base/head diff)');
-  assert.equal(renderGovernanceSurfaceLine(result), '- **Governance surface:** clean (no PR base/head diff)');
+  assert.equal(renderGovernanceSurfaceLine(result), '- **Governance surface:** `clean (no PR base/head diff)`');
 });
 
 test('Protected Standards treats added governance files as additive-only', () => {
@@ -79,7 +79,7 @@ test('Protected Standards treats added governance files as additive-only', () =>
   ]);
   assert.equal(
     renderGovernanceSurfaceLine(result),
-    '- **Governance surface:** additive-only (.veritas/authority/release.authority-settings.json added)',
+    '- **Governance surface:** `additive-only (.veritas/authority/release.authority-settings.json added)`',
   );
 });
 

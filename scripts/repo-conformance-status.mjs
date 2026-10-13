@@ -1,4 +1,4 @@
-import { markdownCode, markdownText } from '../src/util/display.mjs';
+import { markdownCode } from '../src/util/display.mjs';
 import { mkdirSync, writeFileSync, appendFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -56,7 +56,7 @@ function buildMarkdown({
   if (alerts.length > 0) {
     markdown.push('### Alerts', '');
     for (const alert of alerts) {
-      markdown.push(`- **${alert.severity}:** ${markdownText(alert.message)}`);
+      markdown.push(`- **${alert.severity}:** ${markdownCode(alert.message)}`);
     }
     markdown.push('');
   }
@@ -66,11 +66,11 @@ function buildMarkdown({
     '<summary>Scope and Verification</summary>',
     '',
     `- **Generated at:** ${timestamp}`,
-    `- **Source:** ${report.record.source_kind} (${report.record.source_scope.map(markdownText).join(', ')})`,
-    `- **Phase:** ${report.record.resolved_phase}`,
-    `- **Workstream:** ${report.record.resolved_workstream}`,
+    `- **Source:** ${report.record.source_kind} (${report.record.source_scope.map(markdownCode).join(', ')})`,
+    `- **Phase:** ${markdownCode(report.record.resolved_phase)}`,
+    `- **Workstream:** ${markdownCode(report.record.resolved_workstream)}`,
     `- **Affected nodes:** ${affectedNodes.length > 0 ? affectedNodes.map(markdownCode).join(', ') : 'none'}`,
-    `- **Affected evidenceChecks:** ${affectedEvidenceChecks.length > 0 ? affectedEvidenceChecks.map(markdownText).join(', ') : 'none'}`,
+    `- **Affected evidenceChecks:** ${affectedEvidenceChecks.length > 0 ? affectedEvidenceChecks.map(markdownCode).join(', ') : 'none'}`,
     `- **Evidence Check selection:** ${report.record.evidence_check_resolution_source}`,
     `- **Uncovered path result:** ${report.record.uncovered_path_result}`,
     `- **Report artifact:** ${markdownCode(report.artifactPath)}`,
@@ -86,7 +86,7 @@ function buildMarkdown({
   for (const result of report.record.policy_results) {
     const status =
       result.passed === true ? 'pass' : result.passed === false ? 'fail' : 'metadata-only';
-    markdown.push(`- **${result.rule_id}**: ${status} — ${markdownText(result.summary)}`);
+    markdown.push(`- **${markdownCode(result.rule_id)}**: ${status} — ${markdownCode(result.summary)}`);
   }
 
   markdown.push(

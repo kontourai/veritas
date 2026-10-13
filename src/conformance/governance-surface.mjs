@@ -1,4 +1,4 @@
-import { markdownText } from '../util/display.mjs';
+import { markdownCode } from '../util/display.mjs';
 import { execFileSync } from 'node:child_process';
 import { gitReadOptions, resolveCommitRef } from '../repo/git.mjs';
 import { isDeepStrictEqual } from 'node:util';
@@ -249,5 +249,5 @@ export function classifyGovernanceSurface({
 }
 
 export function renderGovernanceSurfaceLine(governanceSurface) {
-  return `- **Governance surface:** ${markdownText(governanceSurface.summary)}`;
+  return `- **Governance surface:** ${markdownCode(governanceSurface.summary)}`;
 }

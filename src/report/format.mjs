@@ -1,4 +1,4 @@
-import { displayText, markdownCode, markdownText } from '../util/display.mjs';
+import { displayText, markdownCode } from '../util/display.mjs';
 import { requiredEvidenceChecksFor } from '../surface/readiness.mjs';
 
 function formatTriState(value) {
@@ -19,19 +19,19 @@ export function buildMarkdownSummary(record, artifactPath) {
   const lines = [
     '## Veritas Report',
     '',
-    `- **Repo map:** ${record.repo_map.name} (${record.repo_map.kind})`,
-    `- **Source:** ${record.source_kind} (${record.source_scope.map(markdownText).join(', ')})`,
-    `- **Phase:** ${record.resolved_phase}`,
-    `- **Workstream:** ${record.resolved_workstream}`,
+    `- **Repo map:** ${markdownCode(record.repo_map.name)} (${record.repo_map.kind})`,
+    `- **Source:** ${record.source_kind} (${record.source_scope.map(markdownCode).join(', ')})`,
+    `- **Phase:** ${markdownCode(record.resolved_phase)}`,
+    `- **Workstream:** ${markdownCode(record.resolved_workstream)}`,
     `- **Components:** ${
-      record.components.length ? record.components.map(markdownText).join(', ') : 'none'
+      record.components.length ? record.components.map(markdownCode).join(', ') : 'none'
     }`,
     `- **Triggered evidenceChecks:** ${
-      triggeredEvidenceChecks.length ? triggeredEvidenceChecks.map(markdownText).join(', ') : 'none'
+      triggeredEvidenceChecks.length ? triggeredEvidenceChecks.map(markdownCode).join(', ') : 'none'
     }`,
     `- **Selected evidenceCheck labels:** ${markdownCode(selectedEvidenceCheckLabels.join(', ') || 'none')}`,
     `- **Evidence Check selection:** ${record.evidence_check_resolution_source}`,
-    `- **Required Evidence Checks:** ${requiredEvidenceChecks.length ? requiredEvidenceChecks.map((check) => `${check.id} (${check.state})`).join(', ') : 'none'}`,
+    `- **Required Evidence Checks:** ${requiredEvidenceChecks.length ? requiredEvidenceChecks.map((check) => `${markdownCode(check.id)} (${check.state})`).join(', ') : 'none'}`,
     `- **Evidence inventories:** ${record.readiness_coverage?.evidence_inventory_count ?? 0} total, ${record.readiness_coverage?.required_inventory_count ?? 0} required, ${record.readiness_coverage?.candidate_inventory_count ?? 0} candidate, ${record.readiness_coverage?.move_to_test_inventory_count ?? 0} move-to-test, ${record.readiness_coverage?.retire_inventory_count ?? 0} retiring`,
     `- **External tool results:** ${record.external_tool_results?.length ?? 0}`,
     `- **Uncovered path result:** ${record.uncovered_path_result}`,
@@ -46,14 +46,14 @@ export function buildMarkdownSummary(record, artifactPath) {
     for (const result of record.policy_results) {
       const status =
         result.passed === true ? 'pass' : result.passed === false ? 'fail' : 'metadata-only';
-      lines.push(`- ${result.rule_id}: ${status} — ${markdownText(result.summary)}`);
+      lines.push(`- ${markdownCode(result.rule_id)}: ${status} — ${markdownCode(result.summary)}`);
       for (const finding of result.findings ?? []) {
         if (finding.artifact) {
-          const diagnostic = finding.diagnostic ? ` (${markdownText(finding.diagnostic)})` : '';
+          const diagnostic = finding.diagnostic ? ` (${markdownCode(finding.diagnostic)})` : '';
           lines.push(`  - Artifact: ${markdownCode(finding.artifact)}${diagnostic}`);
         }
         if (finding.remediation) {
-          lines.push(`    - Remediation: ${markdownText(finding.remediation)}`);
+          lines.push(`    - Remediation: ${markdownCode(finding.remediation)}`);
         }
       }
     }
@@ -64,10 +64,10 @@ export function buildMarkdownSummary(record, artifactPath) {
     for (const item of record.evidence_inventory_results) {
       const selected = item.selected ? 'selected' : 'not selected';
       lines.push(
-        `- ${item.id}: ${item.disposition} / ${item.verification_weight} (${selected}) — ${item.rationale || 'No rationale recorded.'}`,
+        `- ${markdownCode(item.id)}: ${item.disposition} / ${item.verification_weight} (${selected}) — ${markdownCode(item.rationale || 'No rationale recorded.')}`,
       );
       if (item.review_trigger) {
-        lines.push(`  - Review trigger: ${item.review_trigger}`);
+        lines.push(`  - Review trigger: ${markdownCode(item.review_trigger)}`);
       }
     }
   }
@@ -75,7 +75,7 @@ export function buildMarkdownSummary(record, artifactPath) {
   if (requiredEvidenceChecks.length > 0) {
     lines.push('', '### Required Evidence Checks');
     for (const check of requiredEvidenceChecks) {
-      lines.push(`- ${check.id}: ${check.state} — ${check.label}`);
+      lines.push(`- ${markdownCode(check.id)}: ${check.state} — ${markdownCode(check.label)}`);
     }
   }
 
@@ -91,10 +91,10 @@ export function buildMarkdownSummary(record, artifactPath) {
 
   if (record.readiness_coverage) {
     lines.push('', '### Readiness Coverage');
-    lines.push(`- ${markdownText(record.readiness_coverage.recommendation)}`);
+    lines.push(`- ${markdownCode(record.readiness_coverage.recommendation)}`);
     if (record.readiness_coverage.stale_or_unknown_inventory_ids.length > 0) {
       lines.push(
-        `- Review candidates: ${record.readiness_coverage.stale_or_unknown_inventory_ids.join(', ')}`,
+        `- Review candidates: ${record.readiness_coverage.stale_or_unknown_inventory_ids.map(markdownCode).join(', ')}`,
       );
     }
   }
@@ -102,7 +102,7 @@ export function buildMarkdownSummary(record, artifactPath) {
   if (record.recommendations.length > 0) {
     lines.push('', '### Recommendations');
     for (const recommendation of record.recommendations) {
-      lines.push(`- ${markdownText(recommendation.message)}`);
+      lines.push(`- ${markdownCode(recommendation.message)}`);
       if (recommendation.files?.length) {
         lines.push(`  - Files: ${recommendation.files.map(markdownCode).join(', ')}`);
       }
@@ -322,17 +322,17 @@ export function buildStandardsFeedbackMarkdownSummary(record, artifactPath) {
   }
 
   if (record.measurements.false_positive_rules.length > 0) {
-    lines.push(`- **False-positive rules:** ${record.measurements.false_positive_rules.join(', ')}`);
+    lines.push(`- **False-positive rules:** ${record.measurements.false_positive_rules.map(markdownCode).join(', ')}`);
   }
 
   if (record.measurements.missed_issues.length > 0) {
-    lines.push(`- **Missed issues:** ${record.measurements.missed_issues.join(', ')}`);
+    lines.push(`- **Missed issues:** ${record.measurements.missed_issues.map(markdownCode).join(', ')}`);
   }
 
   if (record.notes.length > 0) {
     lines.push('', '### Notes');
     for (const note of record.notes) {
-      lines.push(`- ${note}`);
+      lines.push(`- ${markdownCode(note)}`);
     }
   }
 

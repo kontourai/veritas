@@ -1,4 +1,4 @@
-import { displayText } from '../util/display.mjs';
+import { displayText, quotedText } from '../util/display.mjs';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadRepoMap, loadRepoStandards } from '../load.mjs';
@@ -10,7 +10,7 @@ import { buildExplainGuidance } from '../explain.mjs';
 const EDIT_TOOLS = new Set(['Edit', 'MultiEdit', 'Write']);
 
 export function formatPreToolUseGuidance(guidance) {
-  const lines = [`Veritas guidance for ${JSON.stringify(guidance.selector.value).replace(/\x7f/g, '\\u007f')}:`];
+  const lines = [`Veritas guidance for ${quotedText(guidance.selector.value)}:`];
   for (const rule of guidance.rules.slice(0, 12)) {
     lines.push(`Rule ${rule.id} (${rule.enforcementLevel}): ${rule.summary}`);
     if (rule.evidenceCheckIds.length > 0) lines.push(`Evidence checks: ${rule.evidenceCheckIds.join(', ')}`);
