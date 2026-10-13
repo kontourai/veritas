@@ -15,7 +15,7 @@ npm test                        # run the full test suite
 npm run veritas:evidence-check  # run the evidenceCheck
 npm run veritas:conformance         # full readiness check + repo conformance report
 npm run veritas:conformance:report  # evidence report only
-npm run docs:check              # docs-kit gate: links, anchors, reachability, topics
+npm run docs:check              # Corpus gate: links, anchors, reachability, topics
 ```
 
 The tracked repo hook is `.githooks/pre-push`; local checkouts must set `core.hooksPath=.githooks` to use it.
