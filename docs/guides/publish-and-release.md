@@ -30,7 +30,7 @@ That means the npm package is not only the CLI binary. It also publishes the sch
 This repo now ships three core automation lanes:
 
 - [CI](../../.github/workflows/ci.yml) runs `npm run verify`, `npm test`, and the line-coverage gate on Node 20 and Node 22
-- [Docs](../../.github/workflows/docs.yml) runs the shared docs-kit gate on every pull request and publishes the GitHub Pages site and `docs-bundle.json` from `main`
+- [Docs](../../.github/workflows/docs.yml) runs the shared Corpus gate on every pull request and publishes the GitHub Pages site and `docs-bundle.json` from `main`
 - [Publish NPM](../../.github/workflows/publish-npm.yml) verifies on Node 20 and Node 22, then publishes `@kontourai/veritas` on tag pushes like `v0.4.0`
 
 ## What We Need From You
