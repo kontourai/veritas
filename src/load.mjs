@@ -1,3 +1,4 @@
+import { displayText } from './util/display.mjs';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
@@ -24,7 +25,7 @@ export function formatConfigValidationReport({
   const shown = validation.errors.slice(0, limit);
   const remaining = validation.errors.length - shown.length;
   const lines = [
-    `${label} at ${filePath} does not validate against ${validation.schema}:`,
+    `${label} at ${displayText(filePath)} does not validate against ${validation.schema}:`,
     ...shown.map((error) => `  - ${error}`),
   ];
   if (remaining > 0) lines.push(`  - ... and ${remaining} more`);
@@ -60,7 +61,7 @@ export function loadJson(filePath, label = filePath, options = {}) {
     const data = JSON.parse(raw);
     return options.includeRaw ? { data, raw } : data;
   } catch (error) {
-    throw new Error(`Failed to load ${label} at ${filePath}: ${error.message}`);
+    throw new Error(`Failed to load ${label} at ${displayText(filePath)}: ${error.message}`);
   }
 }
 

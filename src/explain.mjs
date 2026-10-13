@@ -1,3 +1,4 @@
+import { displayText } from './util/display.mjs';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadRepoMap, loadRepoStandards } from './load.mjs';
@@ -35,7 +36,7 @@ function explainRuleBlock(rule) {
   for (const item of explain.mustNotDo ?? []) lines.push(`Do not: ${item}`);
   if (explain.exampleGood) lines.push(`Good: ${explain.exampleGood}`);
   if (explain.exampleBad) lines.push(`Bad: ${explain.exampleBad}`);
-  for (const link of explain.contextLinks ?? []) lines.push(`Context: ${link}`);
+  for (const link of explain.contextLinks ?? []) lines.push(`Context: ${displayText(link)}`);
   return lines;
 }
 
@@ -222,9 +223,9 @@ export function runBoundariesCheckCli(argv = process.argv.slice(2), defaults = {
     files,
   });
   const status = result.passed ? 'PASS' : 'FAIL';
-  process.stdout.write(`${status} ${result.rule_id}: ${result.summary}\n`);
+  process.stdout.write(`${status} ${result.rule_id}: ${displayText(result.summary)}\n`);
   for (const finding of result.findings) {
-    process.stdout.write(`      -> ${finding.artifact} (${finding.node}): ${finding.remediation}\n`);
+    process.stdout.write(`      -> ${displayText(finding.artifact)} (${finding.node}): ${displayText(finding.remediation)}\n`);
   }
   if (!result.passed) process.exitCode = 1;
 }

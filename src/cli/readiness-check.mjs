@@ -1,3 +1,4 @@
+import { displayText } from '../util/display.mjs';
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { parseReadinessArgs } from '../args.mjs';
@@ -19,7 +20,7 @@ function normalizeOutputFormat(format, defaultFormat) {
 
 function handleSurfaceValidationCliError(error) {
   if (error?.exitCode !== 2) throw error;
-  process.stderr.write(`${error.message}\n`);
+  process.stderr.write(`${displayText(error.message)}\n`);
   process.exitCode = 2;
   return null;
 }

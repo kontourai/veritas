@@ -1,3 +1,4 @@
+import { displayText } from '../util/display.mjs';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -55,7 +56,7 @@ export function runCodexPreToolUseCli(argv = process.argv.slice(2), defaults = {
   process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
   briefing.record?.();
   if (result.skipped) {
-    process.stderr.write(`Veritas: Codex PreToolUse gate skipped; bypass recorded in ${result.exceptionPath}\n`);
+    process.stderr.write(`Veritas: Codex PreToolUse gate skipped; bypass recorded in ${displayText(result.exceptionPath)}\n`);
   }
 }
 
@@ -87,7 +88,7 @@ export function runClaudeCodePreToolUseCli(argv = process.argv.slice(2), default
   briefing.record?.();
   if (result.skipped) {
     process.stderr.write(
-      `Veritas: PreToolUse gate skipped (VERITAS_HOOK_SKIP=1); bypass recorded in ${result.exceptionPath}\n`,
+      `Veritas: PreToolUse gate skipped (VERITAS_HOOK_SKIP=1); bypass recorded in ${displayText(result.exceptionPath)}\n`,
     );
   }
   // Claude Code's PreToolUse protocol treats exit 2 as "block"; any other

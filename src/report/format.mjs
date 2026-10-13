@@ -1,3 +1,4 @@
+import { displayText, markdownCode, markdownText } from '../util/display.mjs';
 import { requiredEvidenceChecksFor } from '../surface/readiness.mjs';
 
 function formatTriState(value) {
@@ -19,16 +20,16 @@ export function buildMarkdownSummary(record, artifactPath) {
     '## Veritas Report',
     '',
     `- **Repo map:** ${record.repo_map.name} (${record.repo_map.kind})`,
-    `- **Source:** ${record.source_kind} (${record.source_scope.join(', ')})`,
+    `- **Source:** ${record.source_kind} (${record.source_scope.map(markdownText).join(', ')})`,
     `- **Phase:** ${record.resolved_phase}`,
     `- **Workstream:** ${record.resolved_workstream}`,
     `- **Components:** ${
-      record.components.length ? record.components.join(', ') : 'none'
+      record.components.length ? record.components.map(markdownText).join(', ') : 'none'
     }`,
     `- **Triggered evidenceChecks:** ${
-      triggeredEvidenceChecks.length ? triggeredEvidenceChecks.join(', ') : 'none'
+      triggeredEvidenceChecks.length ? triggeredEvidenceChecks.map(markdownText).join(', ') : 'none'
     }`,
-    `- **Selected evidenceCheck labels:** \`${selectedEvidenceCheckLabels.join(', ') || 'none'}\``,
+    `- **Selected evidenceCheck labels:** ${markdownCode(selectedEvidenceCheckLabels.join(', ') || 'none')}`,
     `- **Evidence Check selection:** ${record.evidence_check_resolution_source}`,
     `- **Required Evidence Checks:** ${requiredEvidenceChecks.length ? requiredEvidenceChecks.map((check) => `${check.id} (${check.state})`).join(', ') : 'none'}`,
     `- **Evidence inventories:** ${record.readiness_coverage?.evidence_inventory_count ?? 0} total, ${record.readiness_coverage?.required_inventory_count ?? 0} required, ${record.readiness_coverage?.candidate_inventory_count ?? 0} candidate, ${record.readiness_coverage?.move_to_test_inventory_count ?? 0} move-to-test, ${record.readiness_coverage?.retire_inventory_count ?? 0} retiring`,
@@ -37,7 +38,7 @@ export function buildMarkdownSummary(record, artifactPath) {
     `- **Required evidence checks passed:** ${formatTriState(record.baseline_ci_fast_passed)} (recorded as \`baseline_ci_fast_passed\`; derived from the required evidence checks' own results in this run, not from an external \`ci:fast\` lane)`,
     `- **Report transport:** ${record.repo_map.report_transport}`,
     `- **Policy results:** ${policyPassCount} passed, ${policyFailCount} failed, ${policyMetadataOnlyCount} metadata-only`,
-    `- **Artifact:** \`${artifactPath}\``,
+    `- **Artifact:** ${markdownCode(artifactPath)}`,
   ];
 
   if (record.policy_results.length > 0) {
@@ -45,14 +46,14 @@ export function buildMarkdownSummary(record, artifactPath) {
     for (const result of record.policy_results) {
       const status =
         result.passed === true ? 'pass' : result.passed === false ? 'fail' : 'metadata-only';
-      lines.push(`- ${result.rule_id}: ${status} — ${result.summary}`);
+      lines.push(`- ${result.rule_id}: ${status} — ${markdownText(result.summary)}`);
       for (const finding of result.findings ?? []) {
         if (finding.artifact) {
-          const diagnostic = finding.diagnostic ? ` (${finding.diagnostic})` : '';
-          lines.push(`  - Artifact: ${finding.artifact}${diagnostic}`);
+          const diagnostic = finding.diagnostic ? ` (${markdownText(finding.diagnostic)})` : '';
+          lines.push(`  - Artifact: ${markdownCode(finding.artifact)}${diagnostic}`);
         }
         if (finding.remediation) {
-          lines.push(`    - Remediation: ${finding.remediation}`);
+          lines.push(`    - Remediation: ${markdownText(finding.remediation)}`);
         }
       }
     }
@@ -83,14 +84,14 @@ export function buildMarkdownSummary(record, artifactPath) {
     for (const result of record.external_tool_results) {
       const weight = result.blocking ? 'blocking' : 'advisory';
       lines.push(
-        `- ${result.tool}:${result.evidence_check_id}: ${result.verdict} / ${weight} — ${result.artifact_path}`,
+        `- ${result.tool}:${result.evidence_check_id}: ${result.verdict} / ${weight} — ${markdownCode(result.artifact_path)}`,
       );
     }
   }
 
   if (record.readiness_coverage) {
     lines.push('', '### Readiness Coverage');
-    lines.push(`- ${record.readiness_coverage.recommendation}`);
+    lines.push(`- ${markdownText(record.readiness_coverage.recommendation)}`);
     if (record.readiness_coverage.stale_or_unknown_inventory_ids.length > 0) {
       lines.push(
         `- Review candidates: ${record.readiness_coverage.stale_or_unknown_inventory_ids.join(', ')}`,
@@ -101,9 +102,9 @@ export function buildMarkdownSummary(record, artifactPath) {
   if (record.recommendations.length > 0) {
     lines.push('', '### Recommendations');
     for (const recommendation of record.recommendations) {
-      lines.push(`- ${recommendation.message}`);
+      lines.push(`- ${markdownText(recommendation.message)}`);
       if (recommendation.files?.length) {
-        lines.push(`  - Files: ${recommendation.files.join(', ')}`);
+        lines.push(`  - Files: ${recommendation.files.map(markdownCode).join(', ')}`);
       }
     }
   } else {
@@ -185,7 +186,7 @@ export function buildFeedbackSummary({
 } = {}) {
   const resolvedEvidenceCheckLabels = evidenceCheckLabels.length > 0 ? evidenceCheckLabels : evidenceCheckCommands;
   const affectedNodes = record?.components?.length
-    ? record.components.join(', ')
+    ? record.components.map(displayText).join(', ')
     : 'no matched nodes';
   const files = record?.files ?? [];
   const lines = [
@@ -195,7 +196,7 @@ export function buildFeedbackSummary({
   if (evidenceCheckRan) {
     if (evidenceCheckFailure && !evidenceCheckFailureIsRepresentedByRequiredState(record, evidenceCheckFailure)) {
       lines.push(`FAIL  evidence-check: ${evidenceCheckFailure.label}`);
-      lines.push(`      -> ${evidenceCheckFailure.message}`);
+      lines.push(`      -> ${displayText(evidenceCheckFailure.message)}`);
     } else if (evidenceCheckResults.length > 0) {
       const requiredEvidenceCheckIds = new Set(requiredEvidenceChecksFor(record ?? {}).map((check) => check.id));
       for (const result of evidenceCheckResults) {
@@ -214,7 +215,7 @@ export function buildFeedbackSummary({
   }
 
   for (const item of record?.recommendations ?? []) {
-    if (item.kind === 'base-map-unavailable') lines.push(`WARN  ${item.kind}: ${item.message}`);
+    if (item.kind === 'base-map-unavailable') lines.push(`WARN  ${item.kind}: ${displayText(item.message)}`);
   }
 
   for (const check of requiredEvidenceChecksFor(record ?? {})) {
@@ -226,15 +227,15 @@ export function buildFeedbackSummary({
   for (const result of record?.policy_results ?? []) {
     const status = feedbackStatusForPolicyResult(result);
     if (status === 'INFO') continue;
-    lines.push(`${status.padEnd(5)} ${result.rule_id}: ${result.summary}`);
+    lines.push(`${status.padEnd(5)} ${result.rule_id}: ${displayText(result.summary)}`);
     for (const finding of result.findings ?? []) {
       const target = finding.artifact ?? finding.path ?? finding.required;
       if (target) {
-        const diagnostic = finding.diagnostic ? ` [${finding.diagnostic}]` : '';
-        lines.push(`      -> ${target}${diagnostic}`);
+        const diagnostic = finding.diagnostic ? ` [${displayText(finding.diagnostic)}]` : '';
+        lines.push(`      -> ${displayText(target)}${diagnostic}`);
       }
       if (finding.remediation) {
-        lines.push(`         ${finding.remediation}`);
+        lines.push(`         ${displayText(finding.remediation)}`);
       }
     }
   }
@@ -256,7 +257,7 @@ export function buildFeedbackSummary({
     lines.push(
       `${status.padEnd(5)} external-tool:${result.tool}: ${result.verdict} / ${result.blocking ? 'blocking' : 'advisory'}`,
     );
-    lines.push(`      -> ${result.artifact_path}`);
+    lines.push(`      -> ${displayText(result.artifact_path)}`);
   }
 
   for (const claim of record?.trust?.report?.claims ?? []) {
@@ -264,7 +265,7 @@ export function buildFeedbackSummary({
     const transparencyGaps = record.trust.report.transparencyGapsByClaimId?.[claim.id] ?? [];
     const reason = transparencyGaps[0]?.message ?? `Surface derived status is ${claim.status}.`;
     lines.push(
-      `WARN  surface-status: claim "${claim.id}" is ${claim.status.toUpperCase()} (${reason})`,
+      `WARN  surface-status: claim "${claim.id}" is ${claim.status.toUpperCase()} (${displayText(reason)})`,
     );
   }
 
@@ -282,9 +283,9 @@ export function buildFeedbackSummary({
   }
 
   const footer = [];
-  if (reportArtifactPath) footer.push(`report: ${reportArtifactPath}`);
-  if (draftArtifactPath) footer.push(`standards feedback draft: ${draftArtifactPath}`);
-  if (standardsFeedbackArtifactPath) footer.push(`standards feedback: ${standardsFeedbackArtifactPath}`);
+  if (reportArtifactPath) footer.push(`report: ${displayText(reportArtifactPath)}`);
+  if (draftArtifactPath) footer.push(`standards feedback draft: ${displayText(draftArtifactPath)}`);
+  if (standardsFeedbackArtifactPath) footer.push(`standards feedback: ${displayText(standardsFeedbackArtifactPath)}`);
   if (record?.run_id) footer.push(`run: ${record.run_id}`);
   if (footer.length > 0) {
     lines.push(footer.join(' · '));
@@ -304,8 +305,8 @@ export function buildStandardsFeedbackMarkdownSummary(record, artifactPath) {
     `- **Run ID:** ${record.run_id}`,
     `- **Mode:** ${record.mode}`,
     `- **Authority settings:** ${record.authority_settings_id}`,
-    `- **Evidence artifact:** \`${record.evidence.artifact_path}\``,
-    `- **Standards feedback artifact:** \`${artifactPath}\``,
+    `- **Evidence artifact:** ${markdownCode(record.evidence.artifact_path)}`,
+    `- **Standards feedback artifact:** ${markdownCode(artifactPath)}`,
     `- **Accepted without major rewrite:** ${record.outcome.accepted_without_major_rewrite ? 'yes' : 'no'}`,
     `- **Required follow-up:** ${record.outcome.required_followup ? 'yes' : 'no'}`,
     `- **Reviewer confidence:** ${record.outcome.reviewer_confidence}`,
@@ -317,7 +318,7 @@ export function buildStandardsFeedbackMarkdownSummary(record, artifactPath) {
   ];
 
   if (record.governance.changed_paths.length > 0) {
-    lines.push(`- **Governance paths:** ${record.governance.changed_paths.join(', ')}`);
+    lines.push(`- **Governance paths:** ${record.governance.changed_paths.map(markdownCode).join(', ')}`);
   }
 
   if (record.measurements.false_positive_rules.length > 0) {
@@ -345,8 +346,8 @@ export function buildStandardsFeedbackDraftMarkdownSummary(record, artifactPath,
     `- **Run ID:** ${record.run_id}`,
     `- **Mode:** ${record.mode}`,
     `- **Authority settings:** ${record.authority_settings_id}`,
-    `- **Evidence artifact:** \`${record.evidence.artifact_path}\``,
-    `- **Draft artifact:** \`${artifactPath}\``,
+    `- **Evidence artifact:** ${markdownCode(record.evidence.artifact_path)}`,
+    `- **Draft artifact:** ${markdownCode(artifactPath)}`,
     `- **Missing confirmation fields:** ${record.missing_confirmation_fields.join(', ')}`,
     `- **Protected standards touched:** ${record.governance.protected_standards_touched ? 'yes' : 'no'}`,
     `- **Governance classification:** ${record.governance.classification}`,
@@ -354,11 +355,11 @@ export function buildStandardsFeedbackDraftMarkdownSummary(record, artifactPath,
     '',
     '### Next Step',
     '',
-    `\`${suggestedRecordCommand}\``,
+    `${markdownCode(suggestedRecordCommand)}`,
   ];
 
   if (record.governance.changed_paths.length > 0) {
-    lines.splice(8, 0, `- **Governance paths:** ${record.governance.changed_paths.join(', ')}`);
+    lines.splice(8, 0, `- **Governance paths:** ${record.governance.changed_paths.map(markdownCode).join(', ')}`);
   }
 
   return `${lines.join('\n')}\n`;

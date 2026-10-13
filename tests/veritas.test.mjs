@@ -775,9 +775,9 @@ test('governance block diagnostics distinguish absent files, markers, and exact 
     evidence_check_resolution_source: 'none',
     recommendations: [],
   }, '.veritas/report.json');
-  assert.match(markdown, /Artifact: NO_MARKERS\.md \(missing-governance-markers\)/);
-  assert.match(markdown, /Artifact: STALE\.md \(stale-governance-content\)/);
-  assert.match(markdown, /Artifact: MISSING\.md \(missing-governance-file\)/);
+  assert.match(markdown, /Artifact: `NO_MARKERS\.md` \(missing-governance-markers\)/);
+  assert.match(markdown, /Artifact: `STALE\.md` \(stale-governance-content\)/);
+  assert.match(markdown, /Artifact: `MISSING\.md` \(missing-governance-file\)/);
   assert.doesNotMatch(markdown, new RegExp(staleCommand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
 

@@ -320,7 +320,7 @@ export function formatContentBoundaryResult(findings) {
     "Content boundary check failed:",
     ...findings.map(
       ({ filePath, line, label }) =>
-        `- ${JSON.stringify(filePath)}:${line} ${JSON.stringify(label)}`,
+        `- ${JSON.stringify(filePath).replace(/\x7f/g, '\\u007f')}:${line} ${JSON.stringify(label)}`,
     ),
   ].join("\n");
 }

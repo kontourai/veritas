@@ -1,3 +1,4 @@
+import { markdownCode } from '../util/display.mjs';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { basename, dirname, isAbsolute, resolve } from 'node:path';
@@ -241,7 +242,7 @@ function buildArtifactPayloads({ rootDir, projectName, evidenceCheck, repoInsigh
     `- Mode: guided initialization artifact`,
     `- Repo kind: \`${repoInsights.repoKind}\``,
     `- Evidence Check: \`${evidenceCheck}\``,
-    `- Selected instruction targets: ${selectedInstructionTargets.map((target) => `\`${target.path}\``).join(', ') || '`none`'}`,
+    `- Selected instruction targets: ${selectedInstructionTargets.map((target) => markdownCode(target.path)).join(', ') || '`none`'}`,
   ].join('\n');
   const governanceBlock = buildGovernanceBlock();
   const generatedReadme = buildBootstrapReadme({

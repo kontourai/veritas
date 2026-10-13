@@ -1,3 +1,4 @@
+import { displayText } from '../util/display.mjs';
 import { parseArgs } from '../args.mjs';
 import {
   generateVeritasReport,
@@ -18,7 +19,7 @@ function normalizeOutputFormat(format, defaultFormat) {
 
 function handleSurfaceValidationCliError(error) {
   if (error?.exitCode !== 2) throw error;
-  process.stderr.write(`${error.message}\n`);
+  process.stderr.write(`${displayText(error.message)}\n`);
   process.exitCode = 2;
   return null;
 }

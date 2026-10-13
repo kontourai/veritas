@@ -1,3 +1,4 @@
+import { markdownText } from '../src/util/display.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -99,7 +100,7 @@ for (const baseMap of ['absent', 'malformed', 'no-graph']) {
       assert.deepEqual(warning.files, ['old-manifest.json']);
       assert.match(warning.message, /base Repo Map unavailable.*current Repo Map/);
       assert.match(warning.message, baseMap === 'absent' ? /does not exist|exists on disk|bad revision/ : baseMap === 'malformed' ? /invalid JSON/ : /no valid graph.nodes/);
-      assert.ok(result.markdown.includes(warning.message));
+      assert.ok(result.markdown.includes(markdownText(warning.message)));
       if (baseMap === 'malformed' && scope === 'branch-diff') {
         assert.equal(result.governance.classification, 'protected-standards-modification');
       }
