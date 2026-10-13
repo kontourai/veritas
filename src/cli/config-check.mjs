@@ -1,3 +1,4 @@
+import { displayText } from '../util/display.mjs';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseTokens } from '../args.mjs';
@@ -45,11 +46,11 @@ function formatHuman(report) {
   const lines = [];
   for (const result of report.results) {
     if (result.status === 'missing') {
-      lines.push(`SKIP ${result.label} (${result.file} not found)`);
+      lines.push(`SKIP ${result.label} (${displayText(result.file)} not found)`);
       continue;
     }
     if (result.status === 'valid') {
-      lines.push(`PASS ${result.label} (${result.file}) validates against ${result.schema}`);
+      lines.push(`PASS ${result.label} (${displayText(result.file)}) validates against ${result.schema}`);
       continue;
     }
     lines.push(`FAIL ${formatConfigValidationReport({

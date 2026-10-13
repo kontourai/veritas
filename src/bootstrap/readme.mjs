@@ -1,3 +1,5 @@
+import { markdownCode } from '../util/display.mjs';
+
 export function buildBootstrapReadme({
   projectName,
   evidenceCheck = 'npm test',
@@ -22,7 +24,7 @@ export function buildBootstrapReadme({
 
   return `# Veritas Starter Kit
 
-This repo was bootstrapped for \`${projectName}\` with a conservative starter kit for agent-guided development.
+This repo was bootstrapped for ${markdownCode(projectName)} with a conservative starter kit for agent-guided development.
 
 ## Generated Files
 
@@ -37,30 +39,30 @@ This repo was bootstrapped for \`${projectName}\` with a conservative starter ki
 - Repo kind: \`${repoInsights.repoKind}\`
 - Source roots: ${
     repoInsights.sourceRoots.length > 0
-      ? `\`${repoInsights.sourceRoots.join('`, `')}\``
+      ? repoInsights.sourceRoots.map(markdownCode).join(', ')
       : !hasNoDetectedRoots
         ? '`none detected`'
         : '`src/` (conservative starter fallback)'
   }
 - Product roots: ${
     productRoots.length > 0
-      ? `\`${productRoots.join('`, `')}\``
+      ? productRoots.map(markdownCode).join(', ')
       : '`none detected`'
   }
 - Tooling roots: ${
     (repoInsights.toolingRoots ?? []).length > 0
-      ? `\`${repoInsights.toolingRoots.join('`, `')}\``
+      ? repoInsights.toolingRoots.map(markdownCode).join(', ')
       : '`none`'
   }
 - Test roots: ${
     repoInsights.testRoots.length > 0
-      ? `\`${repoInsights.testRoots.join('`, `')}\``
+      ? repoInsights.testRoots.map(markdownCode).join(', ')
       : '`tests/` (default)'
   }
 - GitHub workflows detected: \`${repoInsights.hasWorkflows ? 'yes' : 'no'}\`
 - Matching scripts seen: ${
     repoInsights.matchedScripts.length > 0
-      ? `\`${repoInsights.matchedScripts.join('`, `')}\``
+      ? repoInsights.matchedScripts.map(markdownCode).join(', ')
       : '`none`'
   }
 
@@ -100,7 +102,7 @@ npx @kontourai/veritas readiness --check evidence \\
 
 ## Suggested Evidence Check
 
-\`${evidenceCheck}\`
+${markdownCode(evidenceCheck)}
 
 ## Work-Area Evidence Routing
 

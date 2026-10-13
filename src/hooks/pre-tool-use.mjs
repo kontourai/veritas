@@ -1,3 +1,4 @@
+import { displayText, quotedText } from '../util/display.mjs';
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadRepoMap, loadRepoStandards } from '../load.mjs';
@@ -9,7 +10,7 @@ import { buildExplainGuidance } from '../explain.mjs';
 const EDIT_TOOLS = new Set(['Edit', 'MultiEdit', 'Write']);
 
 export function formatPreToolUseGuidance(guidance) {
-  const lines = [`Veritas guidance for ${JSON.stringify(guidance.selector.value)}:`];
+  const lines = [`Veritas guidance for ${quotedText(guidance.selector.value)}:`];
   for (const rule of guidance.rules.slice(0, 12)) {
     lines.push(`Rule ${rule.id} (${rule.enforcementLevel}): ${rule.summary}`);
     if (rule.evidenceCheckIds.length > 0) lines.push(`Evidence checks: ${rule.evidenceCheckIds.join(', ')}`);
@@ -17,7 +18,7 @@ export function formatPreToolUseGuidance(guidance) {
     for (const item of rule.mustNotDo) lines.push(`Do not: ${item}`);
     if (rule.exampleGood) lines.push(`Good: ${rule.exampleGood}`);
     if (rule.exampleBad) lines.push(`Bad: ${rule.exampleBad}`);
-    for (const link of rule.contextLinks) lines.push(`Context: ${link}`);
+    for (const link of rule.contextLinks) lines.push(`Context: ${displayText(link)}`);
   }
   if (guidance.rules.length > 12) {
     lines.push(`${guidance.rules.length - 12} more rule(s): run veritas explain --file with the exact intended path.`);
@@ -80,10 +81,10 @@ function formatDenyReason(results) {
   return results
     .map((result) => {
       const findings = (result.findings ?? [])
-        .map((finding) => finding.artifact ?? finding.path ?? finding.required ?? finding.kind)
+        .map((finding) => displayText(finding.artifact ?? finding.path ?? finding.required ?? finding.kind ?? ''))
         .filter(Boolean)
         .join(', ');
-      return findings ? `${result.rule_id}: ${result.summary} (${findings})` : `${result.rule_id}: ${result.summary}`;
+      return findings ? `${result.rule_id}: ${displayText(result.summary)} (${findings})` : `${result.rule_id}: ${displayText(result.summary)}`;
     })
     .join('\n');
 }

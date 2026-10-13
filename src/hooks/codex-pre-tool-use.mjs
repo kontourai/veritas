@@ -1,3 +1,4 @@
+import { displayText } from '../util/display.mjs';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { evaluatePreToolUse, formatPreToolUseGuidance } from './pre-tool-use.mjs';
@@ -73,7 +74,7 @@ export function evaluateCodexPreToolUse({ rootDir, stdinText, actor } = {}) {
   if (blocked.length > 0) {
     return {
       decision: 'block',
-      reason: blocked.map((result) => `${result.file ?? 'unknown path'}: ${result.reason}`).join('\n'),
+      reason: blocked.map((result) => `${displayText(result.file ?? 'unknown path')}: ${result.reason}`).join('\n'),
       paths,
     };
   }
