@@ -10,7 +10,7 @@ Pin a release tag, branch, or commit through the Git URL fragment or `--ref`:
 
 ```bash
 npx @kontourai/flow-agents kit install \
-  https://github.com/kontourai/veritas.git#v1.8.0 \
+  https://github.com/kontourai/veritas.git#v1.10.0 \
   --dest .
 
 npx @kontourai/flow-agents kit activate \
@@ -219,3 +219,11 @@ uses those public methods without requiring a separate Survey package next to
 the Git-installed kit. This service object is a trusted in-memory argument,
 never serialized request data or reviewer authority. Standalone compatibility
 hosting still uses its optional Survey peer.
+
+## Package contents
+
+The npm artifact retains every file referenced by the root Kit manifest,
+including the Codex hook provision and native review producer. Installing the
+standalone engine and installing/activating a Kit remain distinct operations;
+packaging a provision does not apply it. A clean packed-artifact check verifies
+all declared flow, skill, doc, provision and execution/review module paths.
