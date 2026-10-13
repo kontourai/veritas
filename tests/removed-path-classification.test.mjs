@@ -149,8 +149,8 @@ for (const changedFrom of ['missing-review-base', '.veritas/repo-map.json', '--o
   });
 }
 
-test('base-map Git read times out and reports the current-map fallback', () => {
-  const { rootDir } = fixture();
+test('base-map Git read times out and reports the current-map fallback', async (t) => {
+  const { rootDir, gitRoot } = fixture();
   unlinkSync(join(rootDir, 'old-manifest.json'));
   const binDir = join(rootDir, 'node_modules', 'transport-bin');
   mkdirp(binDir);
@@ -166,8 +166,17 @@ fi
 exec '${gitPath}' "$@"
 `);
   chmodSync(wrapper, 0o755);
-  const result = output(health(rootDir, { env: { PATH: `${binDir}:${process.env.PATH}` } }));
-  assert.equal(result.health, 'green');
-  const warning = result.report.recommendations.find((item) => item.kind === 'base-map-unavailable');
-  assert.match(warning?.message, /ETIMEDOUT|timed out/);
+  for (const scope of ['working-tree', 'branch-diff']) {
+    if (scope === 'branch-diff') commitAll(gitRoot, 'Delete manifest before stalled transport');
+    await t.test(scope, () => {
+      const result = output(health(rootDir, {
+        ...(scope === 'branch-diff' ? { changedFrom: 'HEAD~1', changedTo: 'HEAD' } : {}),
+        env: { PATH: `${binDir}:${process.env.PATH}` },
+      }));
+      assert.equal(result.health, 'green');
+      const warning = result.report.recommendations.find((item) => item.kind === 'base-map-unavailable');
+      assert.match(warning?.message, /ETIMEDOUT|timed out/);
+      if (scope === 'branch-diff') assert.equal(result.governance.classification, 'protected-standards-modification');
+    });
+  }
 });

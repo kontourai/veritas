@@ -25,7 +25,6 @@ function readGovernanceJsonAtRef(rootDir, ref, filePath) {
       value: JSON.parse(git(rootDir, ['show', `${ref}:./${filePath}`, '--'])),
     };
   } catch (error) {
-    if (error instanceof SyntaxError) return { exists: true, unreadable: true, value: null };
     const detail = `${error.stderr ?? ''}${error.stdout ?? ''}${error.message ?? ''}`;
     if (
       detail.includes('exists on disk, but not in') ||
@@ -39,7 +38,7 @@ function readGovernanceJsonAtRef(rootDir, ref, filePath) {
         value: null,
       };
     }
-    throw error;
+    return { exists: true, unreadable: true, value: null };
   }
 }
 
