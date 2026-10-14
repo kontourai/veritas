@@ -260,6 +260,10 @@ plain `npx --no @kontourai/veritas`.
 Hooks Veritas already wrote keep the earlier command until you refresh them:
 
 - Claude Code: run `npx --no @kontourai/veritas integrations claude-code install --force`.
+  **Back up `.claude/settings.json` first.** In this release the install replaces the whole
+  `PreToolUse` and `PostSession` lists in that file with the Veritas handlers, so any handler of
+  your own under those events is deleted; only `Stop` keeps your handlers. After installing,
+  compare with the backup and add your own handlers back.
 - Codex: run `npx --no @kontourai/veritas integrations codex install --force` with the same option
   you installed with. In the hooks file it replaces the handlers v1.11.1 and v1.11.2 wrote, matched
   by their exact command.

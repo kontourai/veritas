@@ -6,7 +6,7 @@ import { basename, dirname, join } from 'node:path';
 import { writeBootstrapStarterKit } from '../src/index.mjs';
 import { buildSuggestedCodexHookConfig } from '../src/integrations/codex-hooks.mjs';
 import { buildClaudeCodeSessionLogCaptureCommand } from '../src/hooks/suggestions.mjs';
-import { cleanGitEnv, commitAll, initCommittedRepo, installLocalVeritasBin, repoRootDir } from './helpers.mjs';
+import { cleanGitEnv, commitAll, disableGitAutoMaintenance, initCommittedRepo, installLocalVeritasBin, repoRootDir } from './helpers.mjs';
 import { tempDir } from './temp-dir.mjs';
 
 // Agent runtimes run these hook commands in the agent's working directory. In a pnpm workspace
@@ -359,6 +359,7 @@ test('an install without a .bin link runs itself, not a .bin/veritas in a parent
 test('an install without a .bin link runs itself, not another veritas on PATH', (t) => {
   const repo = tempDir(t, 'veritas-no-bin-link-');
   spawnSync('git', ['init', '-q'], { cwd: repo, env: cleanGitEnv() });
+  disableGitAutoMaintenance(repo);
   writeFileSync(join(repo, 'package.json'), `${JSON.stringify({ name: 'repo', version: '1.0.0' })}\n`);
   mkdirSync(join(repo, 'sub'));
   installVeritasWithoutBinLink(repo);
