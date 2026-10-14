@@ -240,6 +240,21 @@ Files Veritas already wrote keep the earlier spelling until you refresh them:
 `integrations codex status` with a hooks file reports `integrationInstalled: false`, for a
 configuration written with the earlier spelling.
 
+## Governance Block Targets: One List for `apply` and Readiness
+
+`apply governance-blocks` and the `ai-instruction-files-synced` requirement now read the same
+instruction files: the Repo Map's `activation.aiInstructionFiles` plus the paths in the
+requirement's `match['governance-block']`. Two things change:
+
+- An explicit empty `aiInstructionFiles: []` now means "no instruction files". Earlier releases
+  treated it as unset, so `apply governance-blocks` created `AGENTS.md` and `CLAUDE.md` in a
+  repository `init` had recorded as having none. It now writes nothing and reports that in its
+  `message`.
+- Readiness now also checks a file listed only in `activation.aiInstructionFiles`. A required
+  entry that is missing, or any listed file whose block is stale, is reported by
+  `ai-instruction-files-synced`. `npx --no @kontourai/veritas apply governance-blocks` fixes both,
+  because it writes exactly those files. To stop checking a file, remove it from both lists.
+
 ## The Governance Block Runs `npx --no @kontourai/veritas readiness`
 
 The governance block in `AGENTS.md`, `CLAUDE.md` and the other configured instruction files now

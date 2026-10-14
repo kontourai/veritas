@@ -602,6 +602,16 @@ Write restrictions are intentional:
 AI instruction targets, replacing content only between Veritas governance
 markers; unknown `apply` targets fail closed.
 
+`apply governance-blocks` and the `governance-block` requirement read the same target list:
+the Repo Map's `activation.aiInstructionFiles` together with the paths in each
+`governance-block` requirement's `match`. A path a requirement names is required; a Repo Map
+entry keeps its own `required` flag, and a missing optional target is neither created nor
+reported. A list that is present counts even when it is empty: `init` writes `[]` to both lists
+for a repository with no instruction files, and then `apply governance-blocks` writes nothing and
+says so in its `message`. Only a repository with neither list configured gets the built-in
+defaults, `AGENTS.md` and `CLAUDE.md`, plus `.cursorrules` when it exists. Both lists are read
+from `.veritas/repo-map.json` and `.veritas/repo-standards/default.repo-standards.json`.
+
 The block it writes tells agents to run `npx --no @kontourai/veritas readiness`, which runs only an
 installed Veritas. In a repository without `@kontourai/veritas` as a dependency, npx refuses with
 `npx canceled due to missing packages`; add it as a development dependency so the block's command

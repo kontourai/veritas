@@ -26,31 +26,93 @@ function defaultInstructionTargets(rootDir) {
   return targets;
 }
 
-function normalizeGovernanceTargets(config = {}, rootDir = process.cwd()) {
-  const configuredTargets = config.activation?.aiInstructionFiles;
-  const rawTargets =
-    Array.isArray(configuredTargets) && configuredTargets.length > 0
-      ? configuredTargets
-      : defaultInstructionTargets(rootDir);
-
-  return rawTargets.map((target) => {
-    if (typeof target === 'string') {
-      return { path: target, tool: null, required: true };
-    }
-    return {
-      path: target.path,
-      tool: target.tool ?? null,
-      required: target.required !== false,
-    };
-  });
+function normalizeGovernanceTarget(target) {
+  if (typeof target === 'string') {
+    return { path: target, tool: null, required: true };
+  }
+  return {
+    path: target.path,
+    tool: target.tool ?? null,
+    required: target.required !== false,
+  };
 }
 
-function loadGovernanceTargetConfig({ rootDir, repoMapPath } = {}) {
-  const resolvedRepoMapPath = repoMapPath ?? resolve(rootDir, '.veritas/repo-map.json');
-  if (!existsSync(resolvedRepoMapPath)) {
-    return {};
+/**
+ * The single answer to "which AI instruction files carry the governance block",
+ * shared by `apply governance-blocks` and the `governance-block` readiness rule.
+ *
+ * Two settings name these files: the Repo Map's `activation.aiInstructionFiles`
+ * and each `governance-block` rule's `match['governance-block']`. `init` writes
+ * both from the same selection, and writes `[]` to both when the repository has
+ * no instruction files, so an explicit `[]` is a recorded choice of "none", not
+ * an unset value. The schemas set no `minItems` on either list.
+ *
+ * - A list that is present counts as configured, even when it is empty.
+ * - When either list is configured, the targets are the union of the configured
+ *   lists. A path named by a rule is required, because readiness requires it; a
+ *   Repo Map entry keeps its own `required` flag.
+ * - Only when neither list is configured do the built-in defaults apply.
+ *
+ * @param {object} options
+ * @param {string} options.rootDir
+ * @param {object} [options.repoMap] Repo Map config.
+ * @param {object[]|null} [options.governanceRules] `governance-block` rules, or
+ *   null when no Repo Standards were loaded.
+ */
+export function resolveGovernanceBlockTargets({ rootDir, repoMap, governanceRules = null } = {}) {
+  const mapTargets = repoMap?.activation?.aiInstructionFiles;
+  const mapConfigured = Array.isArray(mapTargets);
+  const rules = Array.isArray(governanceRules) ? governanceRules : [];
+  const rulesConfigured = rules.length > 0;
+
+  if (!mapConfigured && !rulesConfigured) {
+    return { source: 'default', targets: defaultInstructionTargets(rootDir) };
   }
-  return loadJson(resolvedRepoMapPath, 'Repo Map');
+
+  const byPath = new Map();
+  const add = (target) => {
+    const existing = byPath.get(target.path);
+    if (!existing) {
+      byPath.set(target.path, target);
+      return;
+    }
+    byPath.set(target.path, {
+      path: target.path,
+      tool: existing.tool ?? target.tool,
+      required: existing.required || target.required,
+    });
+  };
+
+  if (mapConfigured) {
+    for (const target of mapTargets) add(normalizeGovernanceTarget(target));
+  }
+  for (const rule of rules) {
+    const rulePaths = rule.match?.['governance-block'];
+    for (const path of Array.isArray(rulePaths) ? rulePaths : []) {
+      add({ path, tool: null, required: true });
+    }
+  }
+
+  return { source: 'configured', targets: [...byPath.values()] };
+}
+
+function loadOptionalJson(filePath, label) {
+  return existsSync(filePath) ? loadJson(filePath, label) : null;
+}
+
+function loadGovernanceTargetSources({ rootDir, repoMapPath, repoStandardsPath } = {}) {
+  const repoMap = loadOptionalJson(
+    repoMapPath ?? resolve(rootDir, '.veritas/repo-map.json'),
+    'Repo Map',
+  );
+  const repoStandards = loadOptionalJson(
+    repoStandardsPath ?? resolve(rootDir, '.veritas/repo-standards/default.repo-standards.json'),
+    'Repo Standards',
+  );
+  const governanceRules = Array.isArray(repoStandards?.rules)
+    ? repoStandards.rules.filter((rule) => rule?.kind === 'governance-block')
+    : null;
+  return { repoMap: repoMap ?? {}, governanceRules };
 }
 
 function resolveTargetPath(rootDir, targetPath) {
@@ -156,11 +218,16 @@ export function inspectGovernanceBlockFile({ rootDir, filePath, block = buildGov
 export function applyGovernanceBlocks({
   rootDir,
   repoMapPath,
+  repoStandardsPath,
   force = false,
   block = buildGovernanceBlock(),
 } = {}) {
-  const config = loadGovernanceTargetConfig({ rootDir, repoMapPath });
-  const targets = normalizeGovernanceTargets(config, rootDir);
+  const { repoMap, governanceRules } = loadGovernanceTargetSources({
+    rootDir,
+    repoMapPath,
+    repoStandardsPath,
+  });
+  const { targets } = resolveGovernanceBlockTargets({ rootDir, repoMap, governanceRules });
   const applied = [];
   const skipped = [];
 
@@ -194,5 +261,11 @@ export function applyGovernanceBlocks({
     block,
     applied,
     skipped,
+    ...(targets.length === 0
+      ? {
+          message:
+            'No AI instruction files are configured: activation.aiInstructionFiles in the Repo Map and the governance-block requirement both list none. Nothing was written.',
+        }
+      : {}),
   };
 }

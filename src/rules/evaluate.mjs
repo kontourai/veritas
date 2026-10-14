@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { inspectGovernanceBlockFile } from '../governance.mjs';
+import { inspectGovernanceBlockFile, resolveGovernanceBlockTargets } from '../governance.mjs';
 import { classifyNodes } from '../repo/classify.mjs';
 import { matchesPatterns } from '../util/patterns.mjs';
 import { uniqueStrings } from '../util/strings.mjs';
@@ -52,10 +52,23 @@ export function evaluateRequiredArtifactsRule(rule, { rootDir }) {
 }
 
 /** @param {RuleContext} context */
-export function evaluateGovernanceBlockRule(rule, { rootDir }) {
-  const targets = rule.match?.['governance-block'] ?? [];
+export function evaluateGovernanceBlockRule(rule, { rootDir, config }) {
+  // The same resolver as `apply governance-blocks`: this rule's paths plus the
+  // Repo Map's activation.aiInstructionFiles, so the remediation writes exactly
+  // the files this rule checks.
+  const { targets } = resolveGovernanceBlockTargets({
+    rootDir,
+    repoMap: config,
+    governanceRules: [rule],
+  });
   const findings = targets
-    .map((artifact) => inspectGovernanceBlockFile({ rootDir, filePath: artifact }))
+    .map((target) => ({
+      target,
+      status: inspectGovernanceBlockFile({ rootDir, filePath: target.path }),
+    }))
+    // apply skips a missing optional target, so readiness does not require it.
+    .filter(({ target, status }) => status.exists || target.required)
+    .map(({ status }) => status)
     .filter((status) => !status.canonical)
     .map((status) => ({
       kind: status.exists
