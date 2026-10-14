@@ -1,6 +1,6 @@
-import test from 'node:test';
+import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync as makeTempDir, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -23,6 +23,17 @@ import { runPrintCodexHookCli } from '../src/cli/setup-print.mjs';
 import { buildStandardsFeedbackRecordCommand } from '../src/standards-feedback/artifacts.mjs';
 
 const repoRootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+
+// The fixtures below are small; remove them so repeated runs do not fill the temp directory.
+const tempDirs = [];
+const mkdtempSync = (prefix) => {
+  const dir = makeTempDir(prefix);
+  tempDirs.push(dir);
+  return dir;
+};
+after(() => {
+  for (const dir of tempDirs) rmSync(dir, { recursive: true, force: true });
+});
 
 // `npx` and `npm exec` fall back to the registry when there is no local bin, and install without
 // prompting when there is no terminal. Agents run without one. Anything Veritas ships (the docs,
