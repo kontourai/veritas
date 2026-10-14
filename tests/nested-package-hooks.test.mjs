@@ -116,7 +116,9 @@ function plantedVeritas(dir, marker) {
   return packageDir;
 }
 
-test('the walk stops at the git root, so a node_modules planted in a parent outside the repository never runs', () => {
+// A parent directory, outside any repository, with a planted Veritas install, and a git repository
+// inside it with a package.json and no install of its own.
+function plantedParent({ withPackageJson = true, repoName = 'repo' } = {}) {
   const parent = mkdtempSync(join(tmpdir(), 'veritas-planted-parent-'));
   const marker = join(parent, 'planted-ran');
   const planted = plantedVeritas(parent, marker);
@@ -124,18 +126,78 @@ test('the walk stops at the git root, so a node_modules planted in a parent outs
   mkdirSync(join(parent, 'node_modules/.bin'), { recursive: true });
   symlinkSync(planted, join(parent, 'node_modules/@kontourai/veritas'), 'dir');
   symlinkSync('../@kontourai/veritas/bin/veritas.js', join(parent, 'node_modules/.bin/veritas'));
-  const repo = join(parent, 'repo');
-  mkdirSync(repo);
+  const repo = join(parent, repoName);
+  mkdirSync(join(repo, 'sub'), { recursive: true });
   spawnSync('git', ['init', '-q'], { cwd: repo, env: cleanGitEnv() });
-  writeFileSync(join(repo, 'package.json'), `${JSON.stringify({ name: 'repo', version: '1.0.0' })}\n`);
-  const cache = mkdtempSync(join(tmpdir(), 'veritas-empty-npm-cache-'));
+  if (withPackageJson) writeFileSync(join(repo, 'package.json'), `${JSON.stringify({ name: 'repo', version: '1.0.0' })}\n`);
+  return { parent, repo, marker, cache: mkdtempSync(join(tmpdir(), 'veritas-empty-npm-cache-')) };
+}
 
-  // PWD is the logical path a shell that cd'd there would pass on. On macOS the temporary directory
-  // sits behind a symlink, so the walk must compare physical paths to stop at git's root.
-  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: repo, input: editPayload(repo), env: { npm_config_cache: cache, PWD: repo } });
+function assertRefusedWithoutPlanted(result, marker) {
+  assert.equal(existsSync(marker), false, `the planted parent package must not run:\n${result.stderr}`);
   assert.equal(result.status, 1, result.stderr);
   assert.match(result.stderr, /npx canceled due to missing packages/);
-  assert.equal(existsSync(marker), false, 'the planted parent package must not run');
+}
+
+test('the walk stops at the git root, so a node_modules planted in a parent outside the repository never runs', () => {
+  const { repo, marker, cache } = plantedParent();
+  // PWD is the logical path a shell that cd'd there would pass on. On macOS the temporary directory
+  // sits behind a symlink, so the walk must use physical paths to reach git's root.
+  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: repo, input: editPayload(repo), env: { npm_config_cache: cache, PWD: repo } });
+  assertRefusedWithoutPlanted(result, marker);
+});
+
+test('the git root is matched by identity when the working directory is typed in another case', (t) => {
+  const { parent, repo, marker, cache } = plantedParent({ repoName: 'victim' });
+  if (!existsSync(join(parent, 'VICTIM'))) {
+    t.skip('case-sensitive filesystem: a case-mismatched path cannot name the repository');
+    return;
+  }
+  const typed = join(parent, 'VICTIM', 'SUB');
+  assert.equal(existsSync(join(repo, 'sub')), true);
+  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: typed, input: editPayload(typed), env: { npm_config_cache: cache, PWD: typed } });
+  assertRefusedWithoutPlanted(result, marker);
+});
+
+test('a GIT_DIR and GIT_WORK_TREE naming another repository do not let the walk escape', () => {
+  const { repo, marker, cache } = plantedParent();
+  const other = mkdtempSync(join(tmpdir(), 'veritas-other-repo-'));
+  spawnSync('git', ['init', '-q'], { cwd: other, env: cleanGitEnv() });
+  const result = runHook(CODEX_PRE_TOOL_USE, {
+    cwd: repo,
+    input: editPayload(repo),
+    env: { npm_config_cache: cache, GIT_DIR: join(other, '.git'), GIT_WORK_TREE: other },
+  });
+  assertRefusedWithoutPlanted(result, marker);
+});
+
+test('outside a git repository the walk passes no prefix, so a planted parent never runs', () => {
+  const { parent, marker, cache } = plantedParent();
+  const dir = join(parent, 'not-a-repo');
+  mkdirSync(dir);
+  writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: 'not-a-repo', version: '1.0.0' })}\n`);
+  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: dir, input: editPayload(dir), env: { npm_config_cache: cache } });
+  assertRefusedWithoutPlanted(result, marker);
+});
+
+// Stated limit, pinned so it stays visible: in a repository with no package.json, plain npx does
+// npm's own upward search for the nearest package.json or node_modules, which can pass the git
+// root. The walk does not widen this; it is npm's behaviour, and the released spelling did the same.
+test('stated limit: a repository with no package.json gets npm\'s own upward search past the git root', () => {
+  const { repo, marker, cache } = plantedParent({ withPackageJson: false });
+  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: repo, input: editPayload(repo), env: { npm_config_cache: cache } });
+  assert.equal(existsSync(marker), true, `npm's upward search is expected to reach the planted parent:\n${result.stderr}`);
+});
+
+test('the walk follows physical paths, so a symlinked entry into a nested package still finds the root install', () => {
+  const { rootDir, packageDir } = pnpmWorkspace({ installVeritas: true });
+  const outside = mkdtempSync(join(tmpdir(), 'veritas-symlinked-entry-'));
+  const entry = join(outside, 'entry');
+  symlinkSync(packageDir, entry, 'dir');
+  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: entry, input: editPayload(entry), env: { VERITAS_HOOK_SKIP: '1', PWD: entry } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stderr, /npx canceled/);
+  assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
 });
 
 test('with no local install the hook commands fall back to a global Veritas', () => {
