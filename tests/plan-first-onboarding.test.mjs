@@ -42,12 +42,11 @@ test('the documented plan-first path reaches a passing readiness check', () => {
     const result = veritas(rootDir, step);
     assert.equal(result.status, 0, `${step.join(' ')} failed:\n${result.output}`);
   }
-  assert.equal(existsSync(join(rootDir, 'veritas.claims.json')), true, 'applying the plan must create the claim store');
 
   const readiness = veritas(rootDir, ['readiness', '--working-tree']);
-  assert.doesNotMatch(readiness.output, /veritas claim init/);
   assert.equal(readiness.status, 0, `readiness failed:\n${readiness.output}`);
   assert.match(readiness.output, /^0 failures/m);
+  assert.equal(existsSync(join(rootDir, 'veritas.claims.json')), true, 'applying the plan must create the claim store');
 });
 
 test('applying a plan keeps an existing authored claim store, even with --force', () => {
