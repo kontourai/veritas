@@ -1,8 +1,11 @@
+import { resolveActor } from '../util/actor.mjs';
 import { surfaceSafeId } from './primitives.mjs';
 
-function buildReadinessAuthorityTrace(record) {
+// `actor` is the readiness run's resolved actor (see resolveActor); it is a projection input, not a
+// record field. A current attestation's actor still names the authority when there is one.
+function buildReadinessAuthorityTrace(record, { actor: runActor = null } = {}) {
   const governanceState = record.governance_state;
-  const actor = governanceState?.attestation?.actor ?? process.env.VERITAS_ACTOR ?? record.owner ?? 'veritas';
+  const actor = governanceState?.attestation?.actor ?? resolveActor(runActor) ?? record.owner ?? 'veritas';
   const protectedStandards = governanceState?.protectedStandards ?? null;
   return {
     kind: governanceState?.attestation ? 'governance-attestation' : 'producer-fallback',
@@ -21,13 +24,13 @@ function buildReadinessAuthorityTrace(record) {
   };
 }
 
-export function buildReadinessAuthorityTraceRecord(record, claim, evidenceId) {
+export function buildReadinessAuthorityTraceRecord(record, claim, evidenceId, { actor = null } = {}) {
   const governanceState = record.governance_state;
-  const metadataTrace = buildReadinessAuthorityTrace(record);
+  const metadataTrace = buildReadinessAuthorityTrace(record, { actor });
   const attestationActor = governanceState?.attestation?.actor;
   const actorRef = attestationActor
     ? `actor:${surfaceSafeId(attestationActor)}`
-    : `system:${surfaceSafeId(process.env.VERITAS_ACTOR ?? record.owner ?? 'veritas')}`;
+    : `system:${surfaceSafeId(resolveActor(actor) ?? record.owner ?? 'veritas')}`;
   const authorityRef = governanceState?.currentAttestationId
     ? `attestation:${surfaceSafeId(governanceState.currentAttestationId)}`
     : 'producer:veritas';

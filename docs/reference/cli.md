@@ -49,7 +49,7 @@ npx --no @kontourai/veritas readiness [--check evidence|boundaries|coverage|conf
 npx --no @kontourai/veritas readiness --check boundaries --actor cli-team [--diff main]
 ```
 
-`--actor <id>` names the governance actor for any `work-area-boundary` requirement the Repo Standards declare. It takes precedence over `VERITAS_ACTOR`; with neither, that requirement fails closed.
+`--actor <id>` names the governance actor for the run: any `work-area-boundary` requirement the Repo Standards declare, the readiness-verdict authority trace when no current attestation names one, and run history. It takes precedence over `VERITAS_ACTOR`, and an empty value counts as unset; with neither, a `work-area-boundary` requirement fails closed.
 
 `readiness` is the recommended current front door for evidenceCheck execution, generated evidence, standards feedback drafting, and change guidance. `readiness --check boundaries` replaces `boundaries check`. `readiness --check coverage` is the current command for readiness coverage. `readiness --check evidence` is the current command for the lower-level generated evidence path. `readiness --check config` validates this repo's Repo Map and Repo Standards against the schemas Veritas publishes for them.
 

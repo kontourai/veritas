@@ -4,6 +4,7 @@ import { inspectGovernanceBlockFile } from '../governance.mjs';
 import { classifyNodes } from '../repo/classify.mjs';
 import { matchesPatterns } from '../util/patterns.mjs';
 import { uniqueStrings } from '../util/strings.mjs';
+import { resolveActor } from '../util/actor.mjs';
 import {
   evaluateForbiddenPatternRule,
   evaluateHeaderRequiredRule,
@@ -155,7 +156,7 @@ function actorAllowedAcrossBoundary(actor, node) {
 
 /** @param {RuleContext} context */
 export function evaluateWorkAreaBoundaryRule(rule, { changedFiles = [], config, rootDir, actor, classificationScope }) {
-  const effectiveActor = actor ?? process.env.VERITAS_ACTOR ?? null;
+  const effectiveActor = resolveActor(actor);
   if (!effectiveActor) {
     return buildRuleResult(rule, {
       implemented: true,

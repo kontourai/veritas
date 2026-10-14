@@ -46,4 +46,4 @@ Optional free-text reason recorded on the `hook-skip` record written by the Clau
 
 ### `VERITAS_ACTOR`
 
-Provides the governance actor for `veritas readiness --check boundaries` and for `work-area-boundary` requirements evaluated by `veritas readiness` when `--actor` is not supplied. `--actor` takes precedence.
+Provides the governance actor for `veritas readiness` when `--actor` is not supplied or is empty. A readiness run resolves one actor and uses it for `work-area-boundary` requirements (including `--check boundaries`), for the readiness-verdict authority trace in the trust bundle (unless a current attestation names the actor), and for run history. `--actor` takes precedence.

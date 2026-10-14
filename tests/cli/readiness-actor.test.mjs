@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { writeBootstrapStarterKit } from '../../src/bootstrap.mjs';
+import { runMergeReadiness } from '../../src/readiness/run.mjs';
 import { readRunHistory } from '../../src/standards-feedback/run-history.mjs';
 import { commitAll, initCommittedRepo, repoRootDir } from '../helpers.mjs';
 
@@ -51,6 +52,12 @@ function readiness(rootDir, args, env = {}) {
   );
 }
 
+function readinessVerdictAuthorityTrace(bundle) {
+  const traces = bundle.authorityTrace.filter((trace) => trace.id.includes('.readiness-verdict.'));
+  assert.equal(traces.length, 1, JSON.stringify(bundle.authorityTrace));
+  return traces[0];
+}
+
 const OWNER_PASS = /^PASS\s+declared-work-area-boundary: Actor owner-team stayed within owned or allowed work areas\.$/m;
 const MISSING_ACTOR = /^FAIL\s+declared-work-area-boundary: work-area-boundary requires --actor or VERITAS_ACTOR; refusing to silently pass\.$/m;
 
@@ -92,4 +99,58 @@ test('readiness --check coverage reads --actor for the work-area-boundary rule',
   const withoutActor = readiness(rootDir, ['--check', 'coverage', '--format', 'feedback']);
   assert.equal(withoutActor.status, 0, withoutActor.stdout + withoutActor.stderr);
   assert.match(withoutActor.stdout, MISSING_ACTOR);
+});
+
+test('readiness --actor names the authority trace actor over VERITAS_ACTOR', (t) => {
+  const rootDir = strictOwnedFixture(t);
+  const result = readiness(
+    rootDir,
+    ['--actor', 'owner-team', '--run-id', 'actor-trace', '--format', 'trust-bundle'],
+    { VERITAS_ACTOR: 'rogue' },
+  );
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  const streamed = readinessVerdictAuthorityTrace(JSON.parse(result.stdout));
+  assert.equal(streamed.actorRef, 'system:owner-team');
+  assert.equal(streamed.metadata.actor, 'owner-team');
+
+  const evidence = JSON.parse(readFileSync(join(rootDir, '.kontourai/veritas/evidence/actor-trace.json'), 'utf8'));
+  const stored = readinessVerdictAuthorityTrace(evidence.trust.bundle);
+  assert.equal(stored.actorRef, 'system:owner-team');
+  assert.equal(stored.metadata.actor, 'owner-team');
+});
+
+test('readiness --actor with an empty value names no actor', (t) => {
+  const unset = strictOwnedFixture(t);
+  const failed = readiness(unset, ['--actor', '']);
+  assert.equal(failed.status, 1, failed.stdout + failed.stderr);
+  assert.match(failed.stdout, MISSING_ACTOR);
+  assert.deepEqual(readRunHistory(unset).map((entry) => [entry.actor, entry.status]), [['unknown', 'fail']]);
+
+  const fromEnv = strictOwnedFixture(t);
+  const passed = readiness(fromEnv, ['--actor', ''], { VERITAS_ACTOR: 'owner-team' });
+  assert.equal(passed.status, 0, passed.stdout + passed.stderr);
+  assert.match(passed.stdout, OWNER_PASS);
+});
+
+test('an embedder runtime.actor feeds the rule, the authority trace, and run history alike', async (t) => {
+  const rootDir = strictOwnedFixture(t);
+  const previousActor = process.env.VERITAS_ACTOR;
+  process.env.VERITAS_ACTOR = 'rogue-env';
+  t.after(() => {
+    if (previousActor === undefined) delete process.env.VERITAS_ACTOR;
+    else process.env.VERITAS_ACTOR = previousActor;
+  });
+
+  const result = await runMergeReadiness(
+    { rootDir, workingTree: true, actor: 'rogue-option', runId: 'embedder-actor' },
+    { rootDir },
+    [],
+    { actor: 'owner-team' },
+  );
+
+  const rule = result.reportResult.record.policy_results.find((entry) => entry.rule_id === 'declared-work-area-boundary');
+  assert.equal(rule.passed, true, JSON.stringify(rule));
+  assert.equal(readinessVerdictAuthorityTrace(result.reportResult.record.trust.bundle).actorRef, 'system:owner-team');
+  assert.equal(result.actor, 'owner-team');
+  assert.deepEqual(readRunHistory(rootDir).map((entry) => entry.actor), ['owner-team']);
 });

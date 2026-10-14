@@ -8,6 +8,7 @@ import {
 } from '../report/index.mjs';
 import { runEvidenceCheckPlan } from './evidence-check-runner.mjs';
 import { finalizeReadinessArtifacts, hasReadinessOutcomeInputs } from './feedback-artifacts.mjs';
+import { resolveActor } from '../util/actor.mjs';
 
 export { hasReadinessOutcomeInputs };
 
@@ -75,8 +76,10 @@ export async function runMergeReadiness(
   const workflowDeadline = runtime.workflowTimeoutMs > 0
     ? Date.now() + runtime.workflowTimeoutMs
     : null;
-  // The same actor the work-area-boundary rule sees: --actor beats VERITAS_ACTOR.
-  const actor = runtime.actor ?? options.actor ?? process.env.VERITAS_ACTOR ?? 'unknown';
+  // One actor for the whole run: the work-area-boundary rule, the readiness authority trace, and
+  // run history all use it. An embedder's runtime.actor beats --actor, which beats VERITAS_ACTOR.
+  const resolvedActor = resolveActor(runtime.actor, options.actor);
+  const actor = resolvedActor ?? 'unknown';
   const workingTree = options.workingTree || (!options.changedFrom && !options.changedTo);
   runtime.onReadinessPhase?.({ phase: 'scope-resolution' });
   const { repoMapPath, repoStandardsPath } = resolveVeritasPaths(
@@ -136,6 +139,7 @@ export async function runMergeReadiness(
     {
       ...options,
       rootDir,
+      actor: resolvedActor,
       evidenceCheckResults,
       evidenceCheckFailure,
       evidenceCheckPlan,
