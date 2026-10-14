@@ -25,7 +25,7 @@ Codex is the reference deep integration because it can run a stop hook and an en
 The generated Codex hook config now wires:
 
 - `Stop`: runs `.veritas/hooks/agent-runtime.sh`, which keeps the existing readiness-check feedback loop.
-- `PostSession`: normalizes runtime-specific session-log inputs into `VERITAS_SESSION_LOG_PATH`, then runs `npx --no @kontourai/veritas feedback observe --session-log "$VERITAS_SESSION_LOG_PATH"` when a session log path is available. It looks upward from the working directory to the git root for the nearest directory with Veritas installed and passes it to `npx --prefix`, so a nested package without its own install reaches the root one.
+- `PostSession`: normalizes runtime-specific session-log inputs into `VERITAS_SESSION_LOG_PATH`, then runs `npx --no @kontourai/veritas feedback observe --session-log "$VERITAS_SESSION_LOG_PATH"` when a session log path is available. It looks upward from the working directory to the git root for the nearest directory with Veritas installed and runs that install's `bin/veritas.mjs` with `node`, so a nested package without its own install reaches the root one and no other `veritas` on `PATH` runs instead.
 - Fallback: when only `CODEX_SESSION_ID` is present, the hook reads `$HOME/.codex/sessions/$CODEX_SESSION_ID.json`.
 
 `veritas feedback observe` defensively reads session log events and fills a standards-feedback draft under `.kontourai/veritas/standards-feedback-drafts/`:
