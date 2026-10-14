@@ -616,7 +616,7 @@ export function inspectAttestationStatus(rootDir, options = {}) {
 
 function legacyPriorLinkNote(link) {
   if (link?.form !== 'legacy-reference') return '';
-  return ` It supersedes a pre-${REPO_MAP_HASH_ALGORITHM} attestation linked by the opaque reference ${link.reference} (${link.resolved ? 'matches one tracked record' : 'matches no single tracked record'}); see \`veritas attest status\` priorAttestationLink.`;
+  return ` It supersedes a pre-${REPO_MAP_HASH_ALGORITHM} attestation linked by the opaque reference ${link.reference} (${link.resolved ? 'matches one tracked record' : 'matches no single tracked record'}); see \`npx --no @kontourai/veritas attest status\` priorAttestationLink.`;
 }
 
 export function buildAttestationPolicyResult(status) {
@@ -646,7 +646,7 @@ export function buildAttestationPolicyResult(status) {
         current: item.current,
         remediation: entryError && nonRegularField(item.field)
           ? 'Restore each listed protected standards file as a regular file at its protected path, then recheck readiness.'
-          : 'Run veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference> after authority review.',
+          : 'Run `npx --no @kontourai/veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference>` after authority review.',
       })),
     };
   }
@@ -665,7 +665,7 @@ export function buildAttestationPolicyResult(status) {
       findings: [{
         kind: 'missing-attestation',
         artifact: ATTESTATIONS_DIR,
-        remediation: 'Run veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive.',
+        remediation: 'Run `npx --no @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive`.',
       }],
     };
   }
@@ -684,7 +684,7 @@ export function buildAttestationPolicyResult(status) {
       findings: [{
         kind: 'expired-attestation',
         artifact: status.currentAttestationId,
-        remediation: 'Run veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference> to refresh attestation.',
+        remediation: 'Run `npx --no @kontourai/veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference>` to refresh attestation.',
       }],
     };
   }

@@ -30,7 +30,7 @@ Set this once your config validates cleanly, to keep it that way. `veritas readi
 
 ### `VERITAS_SESSION_LOG_PATH`
 
-Provides the Veritas-owned session log path used by generated runtime hooks before they call `veritas feedback observe --session-log`.
+Provides the Veritas-owned session log path used by generated runtime hooks before they run `npx --no @kontourai/veritas feedback observe --session-log`. The hooks look upward from the working directory to the git root for the nearest directory with Veritas installed and pass it to `npx --prefix`, so a nested package without its own install reaches the root one.
 
 Runtime-specific variables such as `CODEX_TRANSCRIPT_PATH` and `CLAUDE_TRANSCRIPT_PATH` may be read by generated hooks because those names are owned by the host runtime. Hooks normalize them into `VERITAS_SESSION_LOG_PATH` before invoking Veritas.
 

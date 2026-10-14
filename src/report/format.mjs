@@ -274,12 +274,12 @@ export function buildFeedbackSummary({
     `${counts.failures} ${counts.failures === 1 ? 'failure' : 'failures'}`,
     `${counts.warnings} ${counts.warnings === 1 ? 'warning' : 'warnings'}`,
   ];
-  lines.push('', `${nouns.join(' · ')} · run \`veritas readiness --check evidence\` for full generated evidence`);
+  lines.push('', `${nouns.join(' · ')} · run \`npx --no @kontourai/veritas readiness --check evidence\` for full generated evidence`);
   const openRecommendationCount = (record?.trust?.report?.claims ?? [])
     .filter((claim) => claim.claimType === 'veritas-recommendation' && claim.status === 'proposed')
     .length;
   if (openRecommendationCount > 0) {
-    lines.push(`recommendations: ${openRecommendationCount} open · run \`veritas recommendation list\` to review`);
+    lines.push(`recommendations: ${openRecommendationCount} open · run \`npx --no @kontourai/veritas recommendation list\` to review`);
   }
 
   const footer = [];

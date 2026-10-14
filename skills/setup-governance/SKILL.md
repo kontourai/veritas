@@ -130,7 +130,7 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    `.codex/hooks.json` to bypass that refusal. Codex requires its own trust review of
    the new or changed project hook in `/hooks`; a copied file alone is not proof
    the runtime executes it. For Claude Code, install and inspect the supported
-   Veritas PreToolUse integration through `veritas integrations claude-code`.
+   Veritas PreToolUse integration through `npx --no @kontourai/veritas integrations claude-code`.
 
 10. After a maintainer reviews the generated standards and map, record bootstrap authority:
 

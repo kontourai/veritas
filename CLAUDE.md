@@ -49,7 +49,9 @@ These are expected. The messages are not failures.
 
 The GitHub Pages site and the `docs-bundle.json` served by the Kontour docs MCP are built by docs-kit from the documents and topics listed in `corpus.json`. `.github/workflows/docs.yml` gates pull requests and publishes from `main`. Run `npm run docs:check` after any docs change; when you change code a document `covers`, update that document.
 
+Inside this checkout `npx --no @kontourai/veritas` cannot resolve Veritas itself, so run `npm run veritas:readiness` where the block below says `npx --no @kontourai/veritas readiness`.
+
 <!-- veritas:governance-block:start -->
 This repo uses Veritas for AI governance. Read `.veritas/GOVERNANCE.md` before making changes.
-After changes, run `veritas readiness` and address any FAIL lines before finishing.
+After changes, run `npx --no @kontourai/veritas readiness` and address any FAIL lines before finishing.
 <!-- veritas:governance-block:end -->

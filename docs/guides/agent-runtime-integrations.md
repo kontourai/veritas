@@ -24,7 +24,7 @@ Veritas is intentionally agent-agnostic. These integration notes show where the 
 - keep Repo Map and Repo Standards files in the repo, not in editor-only settings
 - point Cursor rules or project instructions at the repo-local Veritas governance block
 - use `npx --no @kontourai/veritas apply stop-hook --tool cursor` to generate a thin wrapper around `.veritas/hooks/stop.sh`
-- prefer `veritas readiness --check evidence` for review-only generated evidence and `veritas readiness` for evidence-check plus standards-feedback paths
+- prefer `npx --no @kontourai/veritas readiness --check evidence` for review-only generated evidence and `npx --no @kontourai/veritas readiness` for evidence-check plus standards-feedback paths
 
 ## GitHub Copilot Workspace
 

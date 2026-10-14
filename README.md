@@ -64,7 +64,7 @@ PASS  required-veritas-artifacts: All required repository artifacts are present.
 PASS  ai-instruction-files-synced: All required AI instruction files contain the canonical Veritas governance block.
 PASS  prefer-veritas-routed-delivery: All required repository artifacts are present.
 
-0 failures · 0 warnings · run `veritas readiness --check evidence` for full generated evidence
+0 failures · 0 warnings · run `npx --no @kontourai/veritas readiness --check evidence` for full generated evidence
 ```
 
 ## Governance Kit
@@ -125,7 +125,7 @@ PASS  no-console-log-in-app: No matched files contain forbidden pattern console\
 PASS  centralize-env-access: No matched files contain forbidden pattern process\.env\.(?!NODE_ENV).
 WARN  surface-status: claim "veritas.policy.fix-sv-caught.nextjs-typescript.api-routes-require-api-tests" is DISPUTED (Evidence explicitly reported a non-passing result.)
 
-0 failures · 2 warnings · run `veritas readiness --check evidence` for full generated evidence
+0 failures · 2 warnings · run `npx --no @kontourai/veritas readiness --check evidence` for full generated evidence
 ```
 
 After adding the missing API test and rerunning:
@@ -141,7 +141,7 @@ PASS  api-routes-require-api-tests: Changed files matched app/api/** and include
 PASS  no-console-log-in-app: No matched files contain forbidden pattern console\.log.
 PASS  centralize-env-access: No matched files contain forbidden pattern process\.env\.(?!NODE_ENV).
 
-0 failures · 0 warnings · run `veritas readiness --check evidence` for full generated evidence
+0 failures · 0 warnings · run `npx --no @kontourai/veritas readiness --check evidence` for full generated evidence
 ```
 
 That is the point: the agent gets the missing requirement before it declares done, and reviewers can inspect the evidence instead of rediscovering the repo standards from the diff.

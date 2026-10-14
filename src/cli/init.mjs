@@ -114,7 +114,7 @@ export function runInitCli(argv = process.argv.slice(2), defaults = {}) {
   } else {
     result.attestation = {
       status: 'not-recorded',
-      suggestedCommand: `veritas attest bootstrap --actor <authority-id> --approval-ref <approval-reference> --non-interactive --root ${rootDir}`,
+      suggestedCommand: `npx --no @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <approval-reference> --non-interactive --root ${rootDir}`,
     };
   }
 

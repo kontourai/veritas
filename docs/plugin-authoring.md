@@ -66,7 +66,7 @@ Add plugin entries to `.veritas/repo-map.json`:
 List loaded plugins:
 
 ```bash
-veritas plugin list
+npx --no @kontourai/veritas plugin list
 ```
 
 ## Scaffold Claims
@@ -74,7 +74,7 @@ veritas plugin list
 Plugins may expose `scaffoldClaims(repoName)` to create default claim definitions:
 
 ```bash
-veritas claim scaffold --plugin @vendor/veritas-plugin
+npx --no @kontourai/veritas claim scaffold --plugin @vendor/veritas-plugin
 ```
 
 The scaffold command adds missing claims and policy templates to `veritas.claims.json`; it does not duplicate existing claim IDs.

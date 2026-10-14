@@ -80,7 +80,7 @@ Veritas requires a committed claim store at `veritas.claims.json`. Per-run claim
 
 To migrate:
 
-1. Run `veritas claim init` in the repo root.
+1. Run `npx --no @kontourai/veritas claim init` in the repo root.
 2. Review the generated claim IDs, surfaces, policies, and metadata.
 3. Commit `veritas.claims.json`.
 4. Update any automation that referenced run-scoped claim IDs to use the stable authored claim IDs.
@@ -124,7 +124,7 @@ After:
 }
 ```
 
-Owned repos can update `.veritas/repo-map.json` manually or rerun `veritas init --force` and reapply local policy edits.
+Owned repos can update `.veritas/repo-map.json` manually or rerun `npx --no @kontourai/veritas init --force` and reapply local policy edits.
 
 ## Evidence Check Commands No Longer Run Through a Shell
 
@@ -239,3 +239,43 @@ Files Veritas already wrote keep the earlier spelling until you refresh them:
 `integrations claude-code status` reports `postSessionConfigured: false`, and
 `integrations codex status` with a hooks file reports `integrationInstalled: false`, for a
 configuration written with the earlier spelling.
+
+## The Governance Block Runs `npx --no @kontourai/veritas readiness`
+
+The governance block in `AGENTS.md`, `CLAUDE.md` and the other configured instruction files now
+says `npx --no @kontourai/veritas readiness` instead of `veritas readiness`. A bare `veritas` is on
+`PATH` only inside an npm script or with a global install. An agent that recovers from "command not
+found" by putting `npx` in front of it downloads the unscoped `veritas` package, which belongs to
+another project and has no executable, so the command fails after fetching unrelated code.
+
+The `ai-instruction-files-synced` requirement compares each block with the current one, so after
+you upgrade, a block written by an earlier release is a `stale-governance-content` mismatch:
+
+- At the starter Enforcement Level, Guide, readiness reports a WARN for the requirement and a
+  second WARN, `surface-status`, for its claim being DISPUTED. Readiness still passes.
+- If you raised the requirement to Require, readiness reports a FAIL until you refresh the blocks.
+
+Refresh them with:
+
+```bash
+npx --no @kontourai/veritas apply governance-blocks
+```
+
+This replaces only the text between the governance markers, including a block edited by hand, and
+needs no `--force`.
+
+`npx --no` runs only an installed Veritas: a dependency of the nearest package, or a global
+install. It refuses with `npx canceled due to missing packages` in a repository without
+`@kontourai/veritas` as a dependency, and also in a nested directory with its own `package.json`
+that is not a workspace of the root, even when the root has the dependency; run readiness from the
+root there. If your block was edited to fetch a pinned version from the registry, add
+`@kontourai/veritas` as a development dependency before you refresh the block. Keeping the edited
+block instead is a WARN at Guide and a FAIL at Require.
+
+`apply governance-blocks` refreshes only the instruction-file blocks. Files an earlier `init` wrote
+keep the bare spelling until you edit them by hand:
+
+- `.veritas/GOVERNANCE.md` names the attestation command agents may prepare in the earlier
+  spelling, and its first lines lead the text `explain` prints. Change that command to
+  `npx --no @kontourai/veritas attest ...`.
+- `.veritas/README.md` and `package.json` scripts: see the previous section.

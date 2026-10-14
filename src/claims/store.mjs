@@ -15,7 +15,7 @@ export function claimStoreExists(rootDir = process.cwd()) {
 export function loadVeritasClaimStore(rootDir = process.cwd()) {
   const path = veritasClaimStorePath(rootDir);
   if (!existsSync(path)) {
-    throw new Error('veritas.claims.json is required. Run `veritas claim init` and commit the generated claim store.');
+    throw new Error('veritas.claims.json is required. Run `npx --no @kontourai/veritas claim init` and commit the generated claim store.');
   }
   if (typeof Surface.loadClaimStore === 'function') {
     return Surface.loadClaimStore(path);

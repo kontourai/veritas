@@ -398,7 +398,7 @@ function targetRootWarnings(targetRoot, rootDir) {
   if (targetRoot === PORTABLE_TARGET_ROOT) return [];
   if (typeof targetRoot === 'string' && !isAbsolute(targetRoot) && /^(?:[A-Za-z]:[\\/]|\\\\)/.test(targetRoot)) {
     throw new Error(
-      `Init recommendation target_root was recorded on another OS (${targetRoot}); re-record the plan with \`veritas init --explore\`.`,
+      `Init recommendation target_root was recorded on another OS (${targetRoot}); re-record the plan with \`npx --no @kontourai/veritas init --explore\`.`,
     );
   }
   if (typeof targetRoot !== 'string' || !isAbsolute(targetRoot)) {

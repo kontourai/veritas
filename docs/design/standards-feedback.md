@@ -16,10 +16,10 @@ That second record lets Veritas measure effectiveness instead of only intent.
 The current CLI command group is:
 
 ```bash
-veritas feedback draft
-veritas feedback record
-veritas feedback summary
-veritas feedback recommend
+npx --no @kontourai/veritas feedback draft
+npx --no @kontourai/veritas feedback record
+npx --no @kontourai/veritas feedback summary
+npx --no @kontourai/veritas feedback recommend
 ```
 
 These commands are the current standards-feedback and standards-recommendation surfaces.

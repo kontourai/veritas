@@ -1,6 +1,6 @@
 ---
 name: "consult-standards"
-description: "Get just-in-time Veritas governance guidance for a file or work area before editing it by running `veritas explain`; use in repositories with an active `.veritas/` configuration."
+description: "Get just-in-time Veritas governance guidance for a file or work area before editing it by running `npx --no @kontourai/veritas explain`; use in repositories with an active `.veritas/` configuration."
 ---
 
 # Consult Repo Standards
@@ -18,7 +18,7 @@ it is not an error.
 
 The installed Claude Code `PreToolUse` hook presents matching guidance automatically before
 `Edit`, `MultiEdit`, and `Write` calls with a path. Other runtimes can request the structured
-form with `veritas explain --file <path> --json`; they should do so at task admission or before
+form with `npx --no @kontourai/veritas explain --file <path> --json`; they should do so at task admission or before
 the first edit of that path. A hook briefing is not behavioral test evidence.
 
 This is read-only guidance. It does not evaluate a Flow gate, mutate Repo Standards, or replace

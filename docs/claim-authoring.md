@@ -7,20 +7,20 @@ Claims are authored once in `veritas.claims.json`, committed to the repository, 
 Scaffold a claim store from your repo configuration:
 
 ```bash
-veritas claim init
+npx --no @kontourai/veritas claim init
 git add veritas.claims.json
 ```
 
 ## Managing Claims
 
-Use `veritas claim` to maintain the store:
+Use `npx --no @kontourai/veritas claim` to maintain the store:
 
 ```bash
-veritas claim list
-veritas claim add --type software-evidence-check --facet veritas.evidence-check --subject-type repository --subject-id my-repo --field "npm test" --metadata '{"command":"npm test"}'
-veritas claim edit --claim-id my-repo.veritas-evidence-check.npm-test --impact high
-veritas claim remove --claim-id my-repo.veritas-evidence-check.npm-test
-veritas claim validate
+npx --no @kontourai/veritas claim list
+npx --no @kontourai/veritas claim add --type software-evidence-check --facet veritas.evidence-check --subject-type repository --subject-id my-repo --field "npm test" --metadata '{"command":"npm test"}'
+npx --no @kontourai/veritas claim edit --claim-id my-repo.veritas-evidence-check.npm-test --impact high
+npx --no @kontourai/veritas claim remove --claim-id my-repo.veritas-evidence-check.npm-test
+npx --no @kontourai/veritas claim validate
 ```
 
 Claims without evidence collected in a given run retain their previous status through the staleness model rather than disappearing. Run artifacts are dynamic; claims are stable declarations owned by the repository.

@@ -50,7 +50,7 @@ function reportInvalidConfig({ label, filePath, validation, options }) {
   process.stderr.write(
     `Veritas: ${report}\n`
     + '  Veritas is evaluating it anyway; fields the schema does not define are ignored by the runtime.\n'
-    + '  Run `veritas readiness --check config` for the full list. This becomes a hard load failure in a\n'
+    + '  Run `npx --no @kontourai/veritas readiness --check config` for the full list. This becomes a hard load failure in a\n'
     + '  future major version; set VERITAS_STRICT_CONFIG=1 to opt in now.\n',
   );
 }
