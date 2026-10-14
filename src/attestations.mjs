@@ -20,11 +20,10 @@ export {
 } from './attestations/protected-standards.mjs';
 import {
   describeNonRegularProtectedStandardsEntries,
-  findNonRegularProtectedStandardsEntries,
   hashProtectedStandards,
+  inspectProtectedStandards,
   matchesLegacyRepoMapHash,
   REPO_MAP_HASH_ALGORITHM,
-  resolveProtectedStandardsPaths,
   sha256Hex,
 } from './attestations/protected-standards.mjs';
 import { computeAdmissibilityWarning } from './attestations/collection.mjs';
@@ -515,8 +514,10 @@ function compareProtectedStandardsHashes(rootDir, current, hashes, legacyRepoMap
       attested: current[field],
       current: hashes[field],
     }));
+  // A null current hash marks a protected entry that is not a regular file:
+  // it drifts whatever its content, and is never read through a link.
   if (legacyRepoMapHash
-    && !matchesLegacyRepoMapHash(rootDir, current.repoMapHash, options)) {
+    && (hashes.repoMapHash === null || !matchesLegacyRepoMapHash(rootDir, current.repoMapHash, options))) {
     // Preserve the drift record contract without exposing either the legacy
     // raw digest or a derived value that could test candidate runtime inputs.
     drift.push({ field: 'repoMapHash', attested: null, current: null });
@@ -534,25 +535,17 @@ function compareProtectedStandardsHashes(rootDir, current, hashes, legacyRepoMap
 export function inspectAttestationStatus(rootDir, options = {}) {
   const current = readCurrentAttestationRecord(rootDir);
   const pending = existsSync(pendingPath(rootDir));
-  const nonRegularEntries = findNonRegularProtectedStandardsEntries(rootDir, options);
   const protectedStandards = (() => {
-    if (nonRegularEntries.length > 0) {
-      const paths = resolveProtectedStandardsPaths(rootDir, options);
-      return {
-        paths: Object.fromEntries(Object.entries(paths)
-          .map(([key, path]) => [key, relativeRepoPath(rootDir, path)])),
-        error: describeNonRegularProtectedStandardsEntries(nonRegularEntries),
-      };
-    }
     try {
-      const hashes = hashProtectedStandards(rootDir, options);
+      const { hashes, nonRegular, paths } = inspectProtectedStandards(rootDir, options);
       return {
         hashes: {
           repoStandardsHash: hashes.repoStandardsHash,
           repoMapHash: hashes.repoMapHash,
           authoritySettingsHash: hashes.authoritySettingsHash,
         },
-        paths: hashes.paths,
+        paths,
+        ...(nonRegular.length > 0 ? { error: describeNonRegularProtectedStandardsEntries(nonRegular) } : {}),
       };
     } catch (error) {
       return {
@@ -585,16 +578,13 @@ export function inspectAttestationStatus(rootDir, options = {}) {
     };
   }
   const legacyRepoMapHash = isLegacyRepoMapHash(current);
-  const drift = nonRegularEntries.length > 0
-    // A protected file that is not a regular file at its protected path has no
-    // attestable hash, so each such entry drifts whatever its content.
-    ? nonRegularEntries.map(({ field }) => ({
-      field,
-      attested: field === 'repoMapHash' && legacyRepoMapHash ? null : current[field],
-      current: null,
-    }))
-    : compareProtectedStandardsHashes(rootDir, current, protectedStandards.hashes
-      ?? hashProtectedStandards(rootDir, options), legacyRepoMapHash, options);
+  const drift = compareProtectedStandardsHashes(
+    rootDir,
+    current,
+    protectedStandards.hashes ?? hashProtectedStandards(rootDir, options),
+    legacyRepoMapHash,
+    options,
+  );
   const now = options.now ? new Date(options.now) : new Date();
   const attestedAt = new Date(current.attestedAt);
   const ageDays = Math.floor((now.getTime() - attestedAt.getTime()) / 86_400_000);
@@ -629,9 +619,11 @@ function legacyPriorLinkNote(link) {
 
 export function buildAttestationPolicyResult(status) {
   if (status.state === 'drifted' || status.state === 'broken-head') {
-    // Status records an error beside drift only for protected files that are
-    // not regular files; a fresh attestation cannot fix that, so say so.
+    // Status records an error beside drift, and a null current hash, only for
+    // protected files that are not regular files. A fresh attestation cannot
+    // fix those, so say so.
     const entryError = status.state === 'drifted' ? status.protectedStandards?.error : null;
+    const nonRegularField = (field) => status.protectedStandards?.hashes?.[field] === null;
     return {
       rule_id: 'policy-changes-require-attestation',
       classification: 'hard-invariant',
@@ -650,7 +642,7 @@ export function buildAttestationPolicyResult(status) {
         artifact: item.field,
         attested: item.attested,
         current: item.current,
-        remediation: entryError
+        remediation: entryError && nonRegularField(item.field)
           ? 'Restore each listed protected standards file as a regular file at its protected path, then recheck readiness.'
           : 'Run veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference> after authority review.',
       })),

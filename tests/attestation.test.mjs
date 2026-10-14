@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
+  chmodSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -16,6 +17,8 @@ import { dirname, join, relative } from 'node:path';
 import { buildTrustReport } from '@kontourai/surface';
 import Ajv from 'ajv/dist/2020.js';
 import {
+  buildAttestationPolicyResult,
+  buildGovernanceArtifactClaims,
   createAttestation,
   buildExplainText,
   generateVeritasReport,
@@ -1085,29 +1088,29 @@ const PROTECTED_ENTRY_CASES = [
     label: 'the repo standards file',
     swapPath: '.veritas/repo-standards/default.repo-standards.json',
     field: 'repoStandardsHash',
-    entryType: 'symbolic-link',
+    described: '.veritas/repo-standards/default.repo-standards.json is a symbolic link',
   },
   {
     label: 'the repo map file',
     swapPath: '.veritas/repo-map.json',
     field: 'repoMapHash',
-    entryType: 'symbolic-link',
+    described: '.veritas/repo-map.json is a symbolic link',
   },
   {
     label: 'the authority settings file',
     swapPath: '.veritas/authority/default.authority-settings.json',
     field: 'authoritySettingsHash',
-    entryType: 'symbolic-link',
+    described: '.veritas/authority/default.authority-settings.json is a symbolic link',
   },
   {
     label: 'the authority settings parent directory',
     swapPath: '.veritas/authority',
     field: 'authoritySettingsHash',
-    entryType: 'symbolic-link-parent',
+    described: '.veritas/authority/default.authority-settings.json is under a symbolic link at .veritas/authority',
   },
 ];
 
-for (const { label, swapPath, field, entryType } of PROTECTED_ENTRY_CASES) {
+for (const { label, swapPath, field, described } of PROTECTED_ENTRY_CASES) {
   test(`${label} swapped for a symbolic link to an identical copy is drift in working-tree and branch-diff scopes`, (t) => {
     const { rootDir, attestation } = bootstrapAttestedRepo();
     assert.equal(cliAttestStatus(rootDir).state, 'current');
@@ -1118,7 +1121,8 @@ for (const { label, swapPath, field, entryType } of PROTECTED_ENTRY_CASES) {
     const status = cliAttestStatus(rootDir);
     assert.equal(status.state, 'drifted');
     assert.deepEqual(status.drift, [{ field, attested: attestation[field], current: null }]);
-    assert.match(status.protectedStandards.error, new RegExp(`\\(${entryType}`));
+    assert.ok(status.protectedStandards.error.includes(described), status.protectedStandards.error);
+    assert.equal(status.protectedStandards.hashes[field], null);
 
     for (const scope of [['--working-tree'], ['--changed-from', baseRevision, '--changed-to', 'HEAD']]) {
       const readiness = cliReadiness(rootDir, scope);
@@ -1178,6 +1182,145 @@ test('restoring an identical regular file is current again, and an ordinary cont
     attestationPolicyLine(edited.stdout).trim(),
     'FAIL  policy-changes-require-attestation: Current protected standards hashes do not match the active attestation.',
   );
+});
+
+const AUTHORITY_SETTINGS_PATH = '.veritas/authority/default.authority-settings.json';
+
+// Each replaces the authority settings file with a non-regular entry. FIFOs
+// are only ever inspected here, never read, so status cannot block on one.
+const NON_REGULAR_FINAL_ENTRY_CASES = [
+  {
+    label: 'a directory',
+    described: 'is a directory',
+    replace: (path) => mkdirSync(path),
+  },
+  {
+    label: 'a named pipe',
+    described: 'is a named pipe',
+    replace: (path) => execFileSync('mkfifo', [path]),
+  },
+  {
+    label: 'a dangling symbolic link',
+    described: 'is a symbolic link',
+    replace: (path) => symlinkSync('missing-authority-settings.json', path),
+  },
+];
+
+for (const { label, described, replace } of NON_REGULAR_FINAL_ENTRY_CASES) {
+  test(`a protected path holding ${label} is drift and names the entry type`, (t) => {
+    if (process.platform === 'win32') {
+      t.skip('POSIX entry types');
+      return;
+    }
+    const { rootDir, attestation } = bootstrapAttestedRepo();
+    const path = join(rootDir, AUTHORITY_SETTINGS_PATH);
+    unlinkSync(path);
+    replace(path);
+
+    const result = spawnSync('node', [veritasCli, 'attest', 'status', '--root', rootDir], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      timeout: 60_000,
+    });
+    assert.equal(result.error, undefined);
+    assert.equal(result.status, 0, result.stderr);
+    const status = JSON.parse(result.stdout);
+    assert.equal(status.state, 'drifted');
+    assert.deepEqual(status.drift, [
+      { field: 'authoritySettingsHash', attested: attestation.authoritySettingsHash, current: null },
+    ]);
+    assert.equal(
+      status.protectedStandards.error,
+      `Protected standards must be regular files at their protected paths: ${AUTHORITY_SETTINGS_PATH} ${described}.`,
+    );
+    const policy = buildAttestationPolicyResult(status);
+    assert.equal(policy.status, 'fail');
+    assert.match(policy.findings[0].remediation, /^Restore each listed protected standards file/);
+  });
+}
+
+test('a protected entry that cannot be inspected yields a state, not a crash, and fails closed', (t) => {
+  if (process.platform === 'win32' || process.getuid?.() === 0) {
+    t.skip('needs POSIX permissions enforced for this user');
+    return;
+  }
+  const { rootDir, attestation } = bootstrapAttestedRepo();
+  const unattestedRoot = bootstrapVeritasRepo('veritas-attest-uninspectable-');
+  const lockedDirs = [rootDir, unattestedRoot].map((root) => join(root, '.veritas/authority'));
+  for (const dir of lockedDirs) chmodSync(dir, 0o000);
+  t.after(() => { for (const dir of lockedDirs) chmodSync(dir, 0o755); });
+
+  const described = `Protected standards must be regular files at their protected paths: ${AUTHORITY_SETTINGS_PATH} could not be inspected (EACCES at ${AUTHORITY_SETTINGS_PATH}).`;
+  const attested = cliAttestStatus(rootDir);
+  assert.equal(attested.state, 'drifted');
+  assert.deepEqual(attested.drift, [
+    { field: 'authoritySettingsHash', attested: attestation.authoritySettingsHash, current: null },
+  ]);
+  assert.equal(attested.protectedStandards.error, described);
+  assert.equal(buildAttestationPolicyResult(attested).status, 'fail');
+
+  const unattested = cliAttestStatus(unattestedRoot);
+  assert.equal(unattested.state, 'missing');
+  assert.equal(unattested.protectedStandards.error, described);
+});
+
+test('a non-regular entry keeps the hashes of the regular ones, so verified artifact claims carry a hash', async (t) => {
+  const { rootDir, attestation } = bootstrapAttestedRepo();
+  if (!swapForSymlinkToCopy(t, rootDir, '.veritas/repo-standards/default.repo-standards.json')) return;
+
+  const report = await generateVeritasReport({
+    rootDir,
+    includeAttestationGate: true,
+    skipEvidenceCheck: true,
+    runId: 'attestation-non-regular-entry',
+    timestamp: '2026-05-11T00:00:00.000Z',
+  }, { rootDir }, ['package.json']);
+  assertGeneratedReportSchemas(rootDir, report);
+
+  // The record-level projection of each protected artifact, built from the
+  // generated record exactly as a consumer of the public API would.
+  const artifactClaims = [];
+  buildGovernanceArtifactClaims({ record: report.record, claims: artifactClaims, evidence: [], events: [] });
+  const byArtifact = Object.fromEntries(artifactClaims.map((claim) => [claim.value.artifact, claim]));
+  assert.equal(byArtifact['repo-standards'].status, 'disputed');
+  assert.equal(byArtifact['repo-standards'].value.currentHash, null);
+  for (const [artifact, field] of [['repo-map', 'repoMapHash'], ['authority-settings', 'authoritySettingsHash']]) {
+    assert.equal(byArtifact[artifact].status, 'verified', artifact);
+    assert.equal(byArtifact[artifact].value.currentHash, attestation[field], artifact);
+  }
+  assert.deepEqual(report.record.governance_state.protectedStandards.hashes, {
+    repoStandardsHash: null,
+    repoMapHash: attestation.repoMapHash,
+    authoritySettingsHash: attestation.authoritySettingsHash,
+  });
+});
+
+test('a protected path under a top-level directory whose name starts with two dots is checked from the repo root', (t) => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-dotdot-');
+  const repoStandardsPath = '..standards/default.repo-standards.json';
+  mkdirSync(join(rootDir, '..standards'));
+  cpSync(join(rootDir, '.veritas/repo-standards/default.repo-standards.json'), join(rootDir, repoStandardsPath));
+  const { attestation } = createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Initial human approval.',
+    approvalRef: HUMAN_APPROVAL_REF,
+    repoStandardsPath,
+  });
+  commitAll(rootDir, 'Attest standards under a dot-dot-named directory');
+  const readiness = () => runVeritas(rootDir, [
+    'readiness', '--skip-evidence-check', '--working-tree', '--repo-standards', repoStandardsPath,
+  ]);
+  assert.match(attestationPolicyLine(readiness().stdout), /^PASS\s+policy-changes-require-attestation/);
+
+  if (!swapForSymlinkToCopy(t, rootDir, '..standards')) return;
+  const status = inspectAttestationStatus(rootDir, { repoStandardsPath });
+  assert.deepEqual(status.drift, [{ field: 'repoStandardsHash', attested: attestation.repoStandardsHash, current: null }]);
+  assert.ok(status.protectedStandards.error.includes(`${repoStandardsPath} is under a symbolic link at ..standards`));
+  const swapped = readiness();
+  assert.notEqual(swapped.status, 0);
+  assert.match(attestationPolicyLine(swapped.stdout), /^FAIL\s+policy-changes-require-attestation/, swapped.stdout);
 });
 
 test('an unchanged regular trust root keeps the hashes of a real committed attestation', () => {
