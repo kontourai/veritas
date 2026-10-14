@@ -101,6 +101,10 @@ npx @kontourai/veritas attest policy-change \
 
 Veritas compares the active attestation to the current protected standards. If the hashes no longer match, `veritas readiness` reports that the standards need fresh authority before merge readiness can be trusted.
 
+Each protected standards file must be a regular file at its protected path. If the file, or any directory between the repo root and the file, is a symbolic link, the file counts as drift even when the linked content is byte-identical, because the governing bytes would then live outside the protected location. A directory, named pipe, or other non-regular entry at the path counts as drift too, and so does an entry that cannot be inspected. Status reports that file's current hash as `null`, and the readiness message names the path and what it is. `veritas attest` refuses to record an attestation in that state. To clear it, restore a regular file at the protected path. Restoring the attested bytes makes the status `current` again; different bytes need a fresh `policy-change` attestation.
+
+When a protected path given with a CLI flag such as `--repo-standards`, `--repo-map`, or `--authority-settings` lies outside the repo root, Veritas checks only the final entry. Directories above it are not checked for symbolic links.
+
 ## Status
 
 ```bash
