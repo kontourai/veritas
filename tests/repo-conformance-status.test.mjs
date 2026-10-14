@@ -365,7 +365,8 @@ function runPairStep(t, rootDir, prHeadSha) {
   const result = spawnSync('bash', ['-c', workflowStepScript(PAIR_STEP)], {
     cwd: rootDir,
     encoding: 'utf8',
-    env: { ...cleanGitEnv(), GITHUB_ENV: envFile, PR_HEAD_SHA: prHeadSha },
+    // An undefined head models a payload without the field: the variable is absent.
+    env: { ...cleanGitEnv(), GITHUB_ENV: envFile, ...(prHeadSha === undefined ? {} : { PR_HEAD_SHA: prHeadSha }) },
   });
   if (result.error) throw result.error;
   const env = Object.fromEntries(readFileSync(envFile, 'utf8').split('\n').filter(Boolean).map((line) => {
@@ -431,6 +432,28 @@ test('the conformance pairing step refuses a checkout that is not the merge of t
   assert.notEqual(wrongHead.status, 0);
   assert.match(wrongHead.stdout, /refusing to diff one revision pair and evaluate another/);
   assert.deepEqual(wrongHead.env, {});
+
+  for (const [label, prHeadSha, message] of [
+    ['an absent head', undefined, /::error::PR_HEAD_SHA is empty/],
+    ['an empty head', '', /::error::PR_HEAD_SHA is empty/],
+    ['a head that is not in the checkout', 'deadbeef'.repeat(5), /::error::Pull request head deadbeef\w* is not a commit in this checkout/],
+  ]) {
+    const result = runPairStep(t, rootDir, prHeadSha);
+    assert.notEqual(result.status, 0, label);
+    assert.match(result.stdout, message, `${label}: ${result.stdout}${result.stderr}`);
+    assert.deepEqual(result.env, {}, label);
+  }
+
+  // An octopus merge whose second parent is the PR head is still not the
+  // two-parent merge ref; its first-parent diff would miss the third parent.
+  const octopusSha = execGitFixture([
+    'commit-tree', '-p', baseSha, '-p', headSha, '-p', `${baseSha}~1`, '-m', 'octopus', 'HEAD^{tree}',
+  ], { cwd: rootDir, encoding: 'utf8' }).trim();
+  execGitFixture(['checkout', '--detach', octopusSha], { cwd: rootDir, encoding: 'utf8' });
+  const octopus = runPairStep(t, rootDir, headSha);
+  assert.notEqual(octopus.status, 0);
+  assert.match(octopus.stdout, /refusing to diff one revision pair and evaluate another/);
+  assert.deepEqual(octopus.env, {});
 
   execGitFixture(['checkout', '--detach', headSha], { cwd: rootDir, encoding: 'utf8' });
   const notAMerge = runPairStep(t, rootDir, headSha);

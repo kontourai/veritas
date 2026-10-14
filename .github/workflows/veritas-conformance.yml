@@ -55,8 +55,15 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
+          if [ -z "${PR_HEAD_SHA:-}" ]; then
+            echo "::error::PR_HEAD_SHA is empty, so HEAD cannot be checked against the pull request head; refusing to pair a diff with an unverified tree."
+            exit 1
+          fi
+          if ! expected_head="$(git rev-parse --verify --quiet "${PR_HEAD_SHA}^{commit}")"; then
+            echo "::error::Pull request head $PR_HEAD_SHA is not a commit in this checkout; refusing to pair a diff with an unverified tree."
+            exit 1
+          fi
           read -r merge base head extra <<< "$(git rev-list --parents -n 1 HEAD)"
-          expected_head="$(git rev-parse --verify "${PR_HEAD_SHA}^{commit}")"
           if [ -z "${head:-}" ] || [ -n "${extra:-}" ] || [ "$head" != "$expected_head" ]; then
             echo "::error::HEAD $merge is not the merge of pull request head $PR_HEAD_SHA into its base; refusing to diff one revision pair and evaluate another."
             exit 1
