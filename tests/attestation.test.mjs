@@ -39,8 +39,8 @@ import {
   readJsonFromAbsolute,
 } from './helpers.mjs';
 
-function bootstrapVeritasRepo(prefix = 'veritas-attest-') {
-  const rootDir = initCommittedRepo(prefix);
+function bootstrapVeritasRepo(t, prefix = 'veritas-attest-') {
+  const rootDir = initCommittedRepo(t, prefix);
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({
     scripts: { test: 'node -e "process.exit(0)"' },
   }, null, 2));
@@ -193,8 +193,8 @@ function writeOfflineApprovalRecord(rootDir, id, record) {
   return path;
 }
 
-test('bootstrap attestation records protected standards hashes and status detects drift', () => {
-  const rootDir = bootstrapVeritasRepo();
+test('bootstrap attestation records protected standards hashes and status detects drift', (t) => {
+  const rootDir = bootstrapVeritasRepo(t);
   const result = createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -222,8 +222,8 @@ test('bootstrap attestation records protected standards hashes and status detect
 
 // Writes one attestation per Git identity config and returns the committed
 // file text, so assertions see exactly what would be published.
-function attestWithGitIdentity(config) {
-  const rootDir = bootstrapVeritasRepo();
+function attestWithGitIdentity(t, config) {
+  const rootDir = bootstrapVeritasRepo(t);
   for (const [key, value] of Object.entries(config)) {
     execFileSync('git', ['config', key, value], { cwd: rootDir, encoding: 'utf8' });
   }
@@ -246,8 +246,8 @@ function assertActorMatchesSchema(written) {
   assert.equal(validateActor(JSON.parse(written).actor), true, JSON.stringify(validateActor.errors));
 }
 
-test('a fresh attestation never writes a personal git email into the committed file', () => {
-  const { result, written, identityEvidence } = attestWithGitIdentity({ 'user.email': 'dev@example.com' });
+test('a fresh attestation never writes a personal git email into the committed file', (t) => {
+  const { result, written, identityEvidence } = attestWithGitIdentity(t, { 'user.email': 'dev@example.com' });
 
   assert.equal(written.includes('dev@example.com'), false);
   assert.equal(written.includes('example.com'), false);
@@ -256,9 +256,9 @@ test('a fresh attestation never writes a personal git email into the committed f
   assertActorMatchesSchema(written);
 });
 
-test('a fresh attestation keeps a git email that is already a GitHub noreply address', () => {
+test('a fresh attestation keeps a git email that is already a GitHub noreply address', (t) => {
   const noreply = '12345+octocat@users.noreply.github.com';
-  const { identityEvidence } = attestWithGitIdentity({ 'user.email': noreply });
+  const { identityEvidence } = attestWithGitIdentity(t, { 'user.email': noreply });
   assert.equal(identityEvidence.gitEmail, noreply);
 });
 
@@ -272,8 +272,8 @@ for (const [label, email] of [
   ['a noreply line followed by a real address', '1+octocat@users.noreply.github.com\ndev@example.com'],
   ['a real address followed by a noreply line', 'dev@example.com\n1+octocat@users.noreply.github.com'],
 ]) {
-  test(`a fresh attestation drops a git email with ${label}`, () => {
-    const { written, identityEvidence } = attestWithGitIdentity({ 'user.email': email });
+  test(`a fresh attestation drops a git email with ${label}`, (t) => {
+    const { written, identityEvidence } = attestWithGitIdentity(t, { 'user.email': email });
     assert.equal(identityEvidence.gitEmail, null);
     assert.equal(written.includes('dev@'), false);
     assert.equal(written.includes('a@b'), false);
@@ -291,8 +291,8 @@ for (const [label, signingKey, leaks] of [
   ['a hex id followed by other text', '3AA5C34371567BD2 dev@example.com', ['dev@example.com', '3AA5C34371567BD2']],
   ['text followed by a hex id', 'dev 3AA5C34371567BD2', ['3AA5C34371567BD2']],
 ]) {
-  test(`a fresh attestation drops a signing key that is ${label}`, () => {
-    const { written, identityEvidence } = attestWithGitIdentity({ 'user.signingkey': signingKey });
+  test(`a fresh attestation drops a signing key that is ${label}`, (t) => {
+    const { written, identityEvidence } = attestWithGitIdentity(t, { 'user.signingkey': signingKey });
     assert.equal(identityEvidence.signingKeyFingerprint, null);
     for (const leak of leaks) assert.equal(written.includes(leak), false, leak);
     assertActorMatchesSchema(written);
@@ -304,15 +304,15 @@ for (const signingKey of [
   '0x3AA5C34371567BD2',
   'SHA256:uNiVztksCsDhcc0u9e8BujQXVUpKZIDTMczCvj3tD2s',
 ]) {
-  test(`a fresh attestation keeps the signing key id or fingerprint ${signingKey}`, () => {
-    const { written, identityEvidence } = attestWithGitIdentity({ 'user.signingkey': signingKey });
+  test(`a fresh attestation keeps the signing key id or fingerprint ${signingKey}`, (t) => {
+    const { written, identityEvidence } = attestWithGitIdentity(t, { 'user.signingkey': signingKey });
     assert.equal(identityEvidence.signingKeyFingerprint, signingKey);
     assertActorMatchesSchema(written);
   });
 }
 
-test('legacy unchanged attestation stays current without exposing raw Repo Map hash material', async () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-legacy-unchanged-');
+test('legacy unchanged attestation stays current without exposing raw Repo Map hash material', async (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-legacy-unchanged-');
   const repoMapPath = join(rootDir, '.veritas/repo-map.json');
   const repoMap = readJsonFromAbsolute(repoMapPath);
   repoMap.evidence.evidenceChecks = [{
@@ -372,8 +372,8 @@ test('legacy unchanged attestation stays current without exposing raw Repo Map h
   assertGeneratedReportSchemas(rootDir, report);
 });
 
-test('policy-change successors replace historical raw ID links with the opaque legacy reference', async () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-legacy-successor-');
+test('policy-change successors replace historical raw ID links with the opaque legacy reference', async (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-legacy-successor-');
   createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -417,10 +417,10 @@ test('policy-change successors replace historical raw ID links with the opaque l
   }
 });
 
-test('attest status and readiness explain a successor link to a legacy attestation (#258)', () => {
+test('attest status and readiness explain a successor link to a legacy attestation (#258)', (t) => {
   const cli = join(repoRootDir, 'bin/veritas.mjs');
   const runCli = (args) => execFileSync('node', [cli, ...args, '--root', rootDir], { cwd: rootDir, encoding: 'utf8' });
-  const rootDir = bootstrapVeritasRepo('veritas-attest-legacy-link-');
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-legacy-link-');
   runCli(['attest', 'bootstrap', '--actor', 'brian', '--approval-ref', HUMAN_APPROVAL_REF, '--non-interactive']);
   const { rawRepoMapHash, legacyAttestationId } = rewriteCurrentAttestationAsLegacy(rootDir);
   const historicalReference = parseCliJson(runCli(['attest', 'status'])).currentAttestationId;
@@ -465,9 +465,9 @@ test('attest status and readiness explain a successor link to a legacy attestati
   assert.match(orphaned.priorAttestationLink.explanation, /does not match exactly one tracked attestation record/);
 });
 
-test('attest status links an ordinary successor to the HEAD attestation id', () => {
+test('attest status links an ordinary successor to the HEAD attestation id', (t) => {
   const cli = join(repoRootDir, 'bin/veritas.mjs');
-  const rootDir = bootstrapVeritasRepo('veritas-attest-ordinary-link-');
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-ordinary-link-');
   const runCli = (args) => execFileSync('node', [cli, ...args, '--root', rootDir], { cwd: rootDir, encoding: 'utf8' });
   const bootstrap = parseCliJson(runCli(['attest', 'bootstrap', '--actor', 'brian', '--approval-ref', HUMAN_APPROVAL_REF, '--non-interactive']));
   const policyPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
@@ -485,9 +485,9 @@ test('attest status links an ordinary successor to the HEAD attestation id', () 
   );
 });
 
-test('legacy public references are indistinguishable across raw Repo Map hash candidates', () => {
+test('legacy public references are indistinguishable across raw Repo Map hash candidates', (t) => {
   const roots = ['alpha', 'beta'].map((secret) => {
-    const rootDir = bootstrapVeritasRepo(`veritas-attest-legacy-candidate-${secret}-`);
+    const rootDir = bootstrapVeritasRepo(t, `veritas-attest-legacy-candidate-${secret}-`);
     const repoMapPath = join(rootDir, '.veritas/repo-map.json');
     const repoMap = readJsonFromAbsolute(repoMapPath);
     repoMap.evidence.evidenceChecks = [{
@@ -519,8 +519,8 @@ test('legacy public references are indistinguishable across raw Repo Map hash ca
   }
 });
 
-test('legacy Repo Map file drift fails closed with redacted schema-compatible evidence', async () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-legacy-drift-');
+test('legacy Repo Map file drift fails closed with redacted schema-compatible evidence', async (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-legacy-drift-');
   createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -551,8 +551,8 @@ test('legacy Repo Map file drift fails closed with redacted schema-compatible ev
   assertGeneratedReportSchemas(rootDir, report);
 });
 
-test('all durable Repo Map hash outputs redact MCP runtime inputs and retain public-policy drift', async () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-redacted-hash-');
+test('all durable Repo Map hash outputs redact MCP runtime inputs and retain public-policy drift', async (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-redacted-hash-');
   const repoMapPath = join(rootDir, '.veritas/repo-map.json');
   const repoMap = JSON.parse(readFileSync(repoMapPath, 'utf8'));
   repoMap.evidence.evidenceChecks = [{
@@ -605,8 +605,8 @@ test('all durable Repo Map hash outputs redact MCP runtime inputs and retain pub
   assert.equal(inspectAttestationStatus(rootDir).state, 'drifted');
 });
 
-test('policy-change attestation chains to prior attestation and refreshes drift', () => {
-  const rootDir = bootstrapVeritasRepo();
+test('policy-change attestation chains to prior attestation and refreshes drift', (t) => {
+  const rootDir = bootstrapVeritasRepo(t);
   const bootstrap = createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -632,8 +632,8 @@ test('policy-change attestation chains to prior attestation and refreshes drift'
   assert.equal(inspectAttestationStatus(rootDir).state, 'current');
 });
 
-test('expired attestation is warned but not drifted', () => {
-  const rootDir = bootstrapVeritasRepo();
+test('expired attestation is warned but not drifted', (t) => {
+  const rootDir = bootstrapVeritasRepo(t);
   createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -648,8 +648,8 @@ test('expired attestation is warned but not drifted', () => {
   assert.equal(status.expired, true);
 });
 
-test('surface input projects current governance artifact claims distinctly from policy results', async () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-surface-current-');
+test('surface input projects current governance artifact claims distinctly from policy results', async (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-surface-current-');
   createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -672,12 +672,12 @@ test('surface input projects current governance artifact claims distinctly from 
   assert.equal(authoredGovernance.facet, 'veritas.governance');
 });
 
-test('surface input projects missing, drifted, and expired governance attestation states', async () => {
-  const missingRoot = bootstrapVeritasRepo('veritas-attest-surface-missing-');
+test('surface input projects missing, drifted, and expired governance attestation states', async (t) => {
+  const missingRoot = bootstrapVeritasRepo(t, 'veritas-attest-surface-missing-');
   const missingClaims = await attestationSurfaceClaims(missingRoot, { runId: 'missing-governance-claims' });
   assert.equal(governanceClaim(missingClaims).status, 'disputed');
 
-  const driftRoot = bootstrapVeritasRepo('veritas-attest-surface-drift-');
+  const driftRoot = bootstrapVeritasRepo(t, 'veritas-attest-surface-drift-');
   createAttestation({
     rootDir: driftRoot,
     kind: 'bootstrap',
@@ -693,7 +693,7 @@ test('surface input projects missing, drifted, and expired governance attestatio
   const driftClaims = await attestationSurfaceClaims(driftRoot, { runId: 'drift-governance-claims' });
   assert.equal(governanceClaim(driftClaims).status, 'disputed');
 
-  const expiredRoot = bootstrapVeritasRepo('veritas-attest-surface-expired-');
+  const expiredRoot = bootstrapVeritasRepo(t, 'veritas-attest-surface-expired-');
   createAttestation({
     rootDir: expiredRoot,
     kind: 'bootstrap',
@@ -710,8 +710,8 @@ test('surface input projects missing, drifted, and expired governance attestatio
   assert.equal(governanceClaim(expiredClaims).status, 'stale');
 });
 
-test('readiness check prints a warning for expired attestation', () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-expired-readiness-');
+test('readiness check prints a warning for expired attestation', (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-expired-readiness-');
   createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -734,8 +734,8 @@ test('readiness check prints a warning for expired attestation', () => {
   assert.match(output, /expired/i);
 });
 
-test('attestation rule is visible to explain context', () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-explain-');
+test('attestation rule is visible to explain context', (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-explain-');
   const text = buildExplainText({
     rootDir,
     repoMap: readJsonFromAbsolute(join(rootDir, '.veritas/repo-map.json')),
@@ -746,8 +746,8 @@ test('attestation rule is visible to explain context', () => {
   assert.match(text, /Readiness checks fail on drift until a valid authority records a fresh attestation/);
 });
 
-test('attestation refuses CI or bot actors', () => {
-  const rootDir = bootstrapVeritasRepo();
+test('attestation refuses CI or bot actors', (t) => {
+  const rootDir = bootstrapVeritasRepo(t);
   assert.throws(
     () => createAttestation({
       rootDir,
@@ -759,8 +759,8 @@ test('attestation refuses CI or bot actors', () => {
   );
 });
 
-test('attestation requires an explicit human approval reference', () => {
-  const rootDir = bootstrapVeritasRepo();
+test('attestation requires an explicit human approval reference', (t) => {
+  const rootDir = bootstrapVeritasRepo(t);
   assert.throws(
     () => createAttestation({
       rootDir,
@@ -772,8 +772,8 @@ test('attestation requires an explicit human approval reference', () => {
   );
 });
 
-test('attestation approval reference can be constrained by authority settings', () => {
-  const rootDir = bootstrapVeritasRepo();
+test('attestation approval reference can be constrained by authority settings', (t) => {
+  const rootDir = bootstrapVeritasRepo(t);
   const authorityPath = join(rootDir, '.veritas/authority/default.authority-settings.json');
   const authoritySettings = JSON.parse(readFileSync(authorityPath, 'utf8'));
   authoritySettings.review_preferences.attestation_approval_ref_policy = {
@@ -804,8 +804,8 @@ test('attestation approval reference can be constrained by authority settings', 
   assert.equal(result.attestation.metadata.approvalRefPolicy.matchedPrefix, 'servicenow:change/');
 });
 
-test('attestation records normalized resolver-backed approval metadata', () => {
-  const rootDir = bootstrapVeritasRepo();
+test('attestation records normalized resolver-backed approval metadata', (t) => {
+  const rootDir = bootstrapVeritasRepo(t);
   const authorityPath = join(rootDir, '.veritas/authority/default.authority-settings.json');
   const authoritySettings = JSON.parse(readFileSync(authorityPath, 'utf8'));
   authoritySettings.review_preferences.attestation_approval_ref_policy = {
@@ -839,8 +839,8 @@ test('attestation records normalized resolver-backed approval metadata', () => {
   assert.equal(result.attestation.metadata.approvalResolution.failureReason, null);
 });
 
-test('resolved approval reference policy rejects unresolved resolver results', () => {
-  const rootDir = bootstrapVeritasRepo();
+test('resolved approval reference policy rejects unresolved resolver results', (t) => {
+  const rootDir = bootstrapVeritasRepo(t);
   const authorityPath = join(rootDir, '.veritas/authority/default.authority-settings.json');
   const authoritySettings = JSON.parse(readFileSync(authorityPath, 'utf8'));
   authoritySettings.review_preferences.attestation_approval_ref_policy = {
@@ -877,8 +877,8 @@ test('resolved approval reference policy rejects unresolved resolver results', (
   );
 });
 
-test('resolved approval reference policy uses offline approval records', () => {
-  const rootDir = bootstrapVeritasRepo();
+test('resolved approval reference policy uses offline approval records', (t) => {
+  const rootDir = bootstrapVeritasRepo(t);
   configureResolvedApprovalPolicy(rootDir);
   writeOfflineApprovalRecord(rootDir, 'chg-123', {
     scope: {
@@ -901,8 +901,8 @@ test('resolved approval reference policy uses offline approval records', () => {
   assert.match(result.attestation.metadata.approvalResolution.evidenceHash, /^sha256:/);
 });
 
-test('resolved approval reference policy blocks missing, rejected, expired, and out-of-scope offline records before write', () => {
-  const rootDir = bootstrapVeritasRepo();
+test('resolved approval reference policy blocks missing, rejected, expired, and out-of-scope offline records before write', (t) => {
+  const rootDir = bootstrapVeritasRepo(t);
   configureResolvedApprovalPolicy(rootDir);
   writeOfflineApprovalRecord(rootDir, 'rejected', {
     status: 'rejected',
@@ -939,8 +939,8 @@ test('resolved approval reference policy blocks missing, rejected, expired, and 
   assert.equal(existsSync(join(rootDir, '.veritas/attestations/HEAD')), false);
 });
 
-test('CLI bootstrap can satisfy resolved policy with an offline approval record', () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-offline-cli-');
+test('CLI bootstrap can satisfy resolved policy with an offline approval record', (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-offline-cli-');
   configureResolvedApprovalPolicy(rootDir);
   writeOfflineApprovalRecord(rootDir, 'cli-approved', {
     scope: {
@@ -965,8 +965,8 @@ test('CLI bootstrap can satisfy resolved policy with an offline approval record'
   assert.equal(result.attestation.metadata.approvalResolution.authorityRef, 'cli-approved');
 });
 
-test('CLI bootstrap writes tracked attestation and readiness check fails on protected standards drift until policy-change attestation', () => {
-  const rootDir = bootstrapVeritasRepo();
+test('CLI bootstrap writes tracked attestation and readiness check fails on protected standards drift until policy-change attestation', (t) => {
+  const rootDir = bootstrapVeritasRepo(t);
   const cli = join(repoRootDir, 'bin/veritas.mjs');
   const bootstrapOutput = execFileSync('node', [
     cli,
@@ -1052,8 +1052,8 @@ function attestationPolicyLine(output) {
   return output.split('\n').find((line) => /policy-changes-require-attestation/.test(line)) ?? '';
 }
 
-function bootstrapAttestedRepo() {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-entry-');
+function bootstrapAttestedRepo(t) {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-entry-');
   const bootstrap = runVeritas(rootDir, [
     'attest', 'bootstrap', '--actor', 'brian', '--approval-ref', HUMAN_APPROVAL_REF, '--non-interactive',
   ]);
@@ -1112,7 +1112,7 @@ const PROTECTED_ENTRY_CASES = [
 
 for (const { label, swapPath, field, described } of PROTECTED_ENTRY_CASES) {
   test(`${label} swapped for a symbolic link to an identical copy is drift in working-tree and branch-diff scopes`, (t) => {
-    const { rootDir, attestation } = bootstrapAttestedRepo();
+    const { rootDir, attestation } = bootstrapAttestedRepo(t);
     assert.equal(cliAttestStatus(rootDir).state, 'current');
     const baseRevision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: rootDir, encoding: 'utf8' }).trim();
     if (!swapForSymlinkToCopy(t, rootDir, swapPath)) return;
@@ -1148,7 +1148,7 @@ for (const { label, swapPath, field, described } of PROTECTED_ENTRY_CASES) {
 }
 
 test('restoring an identical regular file is current again, and an ordinary content edit is still drift', (t) => {
-  const { rootDir, attestation } = bootstrapAttestedRepo();
+  const { rootDir, attestation } = bootstrapAttestedRepo(t);
   const swapPath = '.veritas/repo-standards/default.repo-standards.json';
   const attestedBytes = readFileSync(join(rootDir, swapPath));
   if (!swapForSymlinkToCopy(t, rootDir, swapPath)) return;
@@ -1212,7 +1212,7 @@ for (const { label, described, replace } of NON_REGULAR_FINAL_ENTRY_CASES) {
       t.skip('POSIX entry types');
       return;
     }
-    const { rootDir, attestation } = bootstrapAttestedRepo();
+    const { rootDir, attestation } = bootstrapAttestedRepo(t);
     const path = join(rootDir, AUTHORITY_SETTINGS_PATH);
     unlinkSync(path);
     replace(path);
@@ -1244,28 +1244,32 @@ test('a protected entry that cannot be inspected yields a state, not a crash, an
     t.skip('needs POSIX permissions enforced for this user');
     return;
   }
-  const { rootDir, attestation } = bootstrapAttestedRepo();
-  const unattestedRoot = bootstrapVeritasRepo('veritas-attest-uninspectable-');
+  const { rootDir, attestation } = bootstrapAttestedRepo(t);
+  const unattestedRoot = bootstrapVeritasRepo(t, 'veritas-attest-uninspectable-');
   const lockedDirs = [rootDir, unattestedRoot].map((root) => join(root, '.veritas/authority'));
+  // Restore access before the test ends: the directories' cleanup was registered first, so it runs
+  // first, and it cannot remove a directory it is not allowed to read.
   for (const dir of lockedDirs) chmodSync(dir, 0o000);
-  t.after(() => { for (const dir of lockedDirs) chmodSync(dir, 0o755); });
+  try {
+    const described = `Protected standards must be regular files at their protected paths: ${AUTHORITY_SETTINGS_PATH} could not be inspected (EACCES at ${AUTHORITY_SETTINGS_PATH}).`;
+    const attested = cliAttestStatus(rootDir);
+    assert.equal(attested.state, 'drifted');
+    assert.deepEqual(attested.drift, [
+      { field: 'authoritySettingsHash', attested: attestation.authoritySettingsHash, current: null },
+    ]);
+    assert.equal(attested.protectedStandards.error, described);
+    assert.equal(buildAttestationPolicyResult(attested).status, 'fail');
 
-  const described = `Protected standards must be regular files at their protected paths: ${AUTHORITY_SETTINGS_PATH} could not be inspected (EACCES at ${AUTHORITY_SETTINGS_PATH}).`;
-  const attested = cliAttestStatus(rootDir);
-  assert.equal(attested.state, 'drifted');
-  assert.deepEqual(attested.drift, [
-    { field: 'authoritySettingsHash', attested: attestation.authoritySettingsHash, current: null },
-  ]);
-  assert.equal(attested.protectedStandards.error, described);
-  assert.equal(buildAttestationPolicyResult(attested).status, 'fail');
-
-  const unattested = cliAttestStatus(unattestedRoot);
-  assert.equal(unattested.state, 'missing');
-  assert.equal(unattested.protectedStandards.error, described);
+    const unattested = cliAttestStatus(unattestedRoot);
+    assert.equal(unattested.state, 'missing');
+    assert.equal(unattested.protectedStandards.error, described);
+  } finally {
+    for (const dir of lockedDirs) chmodSync(dir, 0o755);
+  }
 });
 
 test('a non-regular entry keeps the hashes of the regular ones, so verified artifact claims carry a hash', async (t) => {
-  const { rootDir, attestation } = bootstrapAttestedRepo();
+  const { rootDir, attestation } = bootstrapAttestedRepo(t);
   if (!swapForSymlinkToCopy(t, rootDir, '.veritas/repo-standards/default.repo-standards.json')) return;
 
   const report = await generateVeritasReport({
@@ -1296,7 +1300,7 @@ test('a non-regular entry keeps the hashes of the regular ones, so verified arti
 });
 
 test('a protected path under a top-level directory whose name starts with two dots is checked from the repo root', (t) => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-dotdot-');
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-dotdot-');
   const repoStandardsPath = '..standards/default.repo-standards.json';
   mkdirSync(join(rootDir, '..standards'));
   cpSync(join(rootDir, '.veritas/repo-standards/default.repo-standards.json'), join(rootDir, repoStandardsPath));
@@ -1328,7 +1332,7 @@ for (const [field, swapPath] of [
   ['repoMapHash', '.veritas/repo-map.json'],
 ]) {
   test(`a non-regular entry drifts even against a hand-edited null attested ${field}`, (t) => {
-    const { rootDir, attestation } = bootstrapAttestedRepo();
+    const { rootDir, attestation } = bootstrapAttestedRepo(t);
     const recordPath = join(rootDir, '.veritas/attestations', `${attestation.id}.attestation.json`);
     const record = readJsonFromAbsolute(recordPath);
     record[field] = null;
@@ -1345,7 +1349,7 @@ for (const [field, swapPath] of [
 }
 
 test('a legacy attestation drifts when its Repo Map is swapped for a symbolic link to an identical copy', (t) => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-legacy-link-');
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-legacy-link-');
   createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -1369,7 +1373,7 @@ test('a legacy attestation drifts when its Repo Map is swapped for a symbolic li
 });
 
 test('remediation is per file when content drift and a non-regular entry occur together', (t) => {
-  const { rootDir } = bootstrapAttestedRepo();
+  const { rootDir } = bootstrapAttestedRepo(t);
   const policyPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
   const policy = JSON.parse(readFileSync(policyPath, 'utf8'));
   policy.description = `${policy.description} Edited after attestation.`;
@@ -1384,7 +1388,7 @@ test('remediation is per file when content drift and a non-regular entry occur t
   assert.match(remediation.authoritySettingsHash, /^Restore each listed protected standards file/);
 });
 
-test('an unchanged regular trust root keeps the hashes of a real committed attestation', () => {
+test('an unchanged regular trust root keeps the hashes of a real committed attestation', (t) => {
   // These fixture files are byte-for-byte the protected standards this repo
   // attested in policy-change-2026-10-13T19-13-53-170Z-9ab453bfd7b4 (copied
   // from the commit that recorded it), and the record is that committed file.
@@ -1399,7 +1403,7 @@ test('an unchanged regular trust root keeps the hashes of a real committed attes
   };
   const expectedContentHash = 'e9b2c1f78c224b084ef83c846a93c317d584a9a303168834c27d0515434158c5';
 
-  const rootDir = initCommittedRepo('veritas-attest-compat-');
+  const rootDir = initCommittedRepo(t, 'veritas-attest-compat-');
   for (const [fixture, target] of [
     ['repo-map.json', '.veritas/repo-map.json'],
     ['default.repo-standards.json', '.veritas/repo-standards/default.repo-standards.json'],
@@ -1583,8 +1587,8 @@ test('computeAdmissibilityWarning no warning when statement overlaps with field 
 
 // --- Integration tests: createAttestation with authorizing ---
 
-test('createAttestation persists explicit-statement authorizing block', () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-authorizing-explicit-');
+test('createAttestation persists explicit-statement authorizing block', (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-authorizing-explicit-');
   const result = createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -1598,8 +1602,8 @@ test('createAttestation persists explicit-statement authorizing block', () => {
   assert.equal(result.attestation.authorizing.statement, 'Reviewed policy.');
 });
 
-test('createAttestation persists exchange authorizing block', () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-authorizing-exchange-');
+test('createAttestation persists exchange authorizing block', (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-authorizing-exchange-');
   const result = createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -1620,8 +1624,8 @@ test('createAttestation persists exchange authorizing block', () => {
   assert.equal(result.attestation.authorizing.source, 'slack://team-channel');
 });
 
-test('createAttestation persists authorized-action authorizing block', () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-authorizing-action-');
+test('createAttestation persists authorized-action authorizing block', (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-authorizing-action-');
   const result = createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -1641,8 +1645,8 @@ test('createAttestation persists authorized-action authorizing block', () => {
   assert.equal(result.attestation.authorizing.action, 'affirmed-control');
 });
 
-test('createAttestation without authorizing is still valid (old-record compat)', () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-no-authorizing-');
+test('createAttestation without authorizing is still valid (old-record compat)', (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-no-authorizing-');
   const result = createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -1658,8 +1662,8 @@ test('createAttestation without authorizing is still valid (old-record compat)',
   assert.equal(status.admissibilityWarning, false);
 });
 
-test('admissibility warning is set when explicit-statement has no overlap', () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-admis-warn-');
+test('admissibility warning is set when explicit-statement has no overlap', (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-admis-warn-');
   const result = createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -1676,8 +1680,8 @@ test('admissibility warning is set when explicit-statement has no overlap', () =
   assert.equal(status.state, 'current');
 });
 
-test('admissibility warning is NOT set when explicit-statement overlaps with notes', () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-admis-pass-');
+test('admissibility warning is NOT set when explicit-statement overlaps with notes', (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-admis-pass-');
   const result = createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -1692,8 +1696,8 @@ test('admissibility warning is NOT set when explicit-statement overlaps with not
   assert.equal(status.admissibilityWarning, false);
 });
 
-test('admissibility warning does not fail readiness (PASS with annotation)', () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-admis-readiness-');
+test('admissibility warning does not fail readiness (PASS with annotation)', (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-admis-readiness-');
   createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -1718,8 +1722,8 @@ test('admissibility warning does not fail readiness (PASS with annotation)', () 
   assert.match(output, /admissibility warning/);
 });
 
-test('a generated record with governance admissibility fields conforms to the evidence schema', async () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-governance-schema-');
+test('a generated record with governance admissibility fields conforms to the evidence schema', async (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-governance-schema-');
   createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -1747,8 +1751,8 @@ test('a generated record with governance admissibility fields conforms to the ev
   );
 });
 
-test('CLI --executed-by requires --authorizing-statement or exchange pair', () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-execby-err-');
+test('CLI --executed-by requires --authorizing-statement or exchange pair', (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-execby-err-');
   const cli = join(repoRootDir, 'bin/veritas.mjs');
   assert.throws(
     () => execFileSync('node', [
@@ -1769,8 +1773,8 @@ test('CLI --executed-by requires --authorizing-statement or exchange pair', () =
   );
 });
 
-test('CLI --executed-by with --authorizing-statement creates explicit-statement block', () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-execby-stmt-');
+test('CLI --executed-by with --authorizing-statement creates explicit-statement block', (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-execby-stmt-');
   const cli = join(repoRootDir, 'bin/veritas.mjs');
   const output = execFileSync('node', [
     cli,
@@ -1788,8 +1792,8 @@ test('CLI --executed-by with --authorizing-statement creates explicit-statement 
   assert.equal(result.attestation.authorizing.statement, 'Reviewed and approved the initial standards');
 });
 
-test('CLI exchange flags require both prompt and response', () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-exchange-err-');
+test('CLI exchange flags require both prompt and response', (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-exchange-err-');
   const cli = join(repoRootDir, 'bin/veritas.mjs');
   assert.throws(
     () => execFileSync('node', [
@@ -1810,8 +1814,8 @@ test('CLI exchange flags require both prompt and response', () => {
   );
 });
 
-test('CLI attest status shows admissibility warning', () => {
-  const rootDir = bootstrapVeritasRepo('veritas-attest-status-admis-');
+test('CLI attest status shows admissibility warning', (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-status-admis-');
   createAttestation({
     rootDir,
     kind: 'bootstrap',

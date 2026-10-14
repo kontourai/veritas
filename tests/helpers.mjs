@@ -1,8 +1,8 @@
-import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { tempDir } from './temp-dir.mjs';
 
 export function readJson(relativePath) {
   return JSON.parse(readFileSync(new URL(relativePath, import.meta.url), 'utf8'));
@@ -72,8 +72,8 @@ export function mkdirp(path) {
   mkdirSync(path, { recursive: true });
 }
 
-export function initCommittedRepo(prefix) {
-  const rootDir = mkdtempSync(join(tmpdir(), prefix));
+export function initCommittedRepo(t, prefix) {
+  const rootDir = tempDir(t, prefix);
   execGitFixture(['init', '-b', 'main'], { cwd: rootDir, encoding: 'utf8' });
   execGitFixture(['config', 'user.name', 'Veritas Tests'], {
     cwd: rootDir,

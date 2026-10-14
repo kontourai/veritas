@@ -10,16 +10,16 @@ import {
 } from '../../src/index.mjs';
 import { commitAll, initCommittedRepo } from '../helpers.mjs';
 
-function bootstrapRepo() {
-  const rootDir = initCommittedRepo('veritas-fs-observer-');
+function bootstrapRepo(t) {
+  const rootDir = initCommittedRepo(t, 'veritas-fs-observer-');
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { test: 'node -e "process.exit(0)"' } }, null, 2));
   writeBootstrapStarterKit({ rootDir, projectName: 'fs-observer-fixture', evidenceCheck: 'npm test', force: true });
   commitAll(rootDir, 'Bootstrap Veritas');
   return rootDir;
 }
 
-test('filesystem observer infers standards feedback fields without session log', () => {
-  const rootDir = bootstrapRepo();
+test('filesystem observer infers standards feedback fields without session log', (t) => {
+  const rootDir = bootstrapRepo(t);
   appendRunHistory(rootDir, {
     run_id: 'fail-run',
     started_at: '2026-05-10T00:00:00.000Z',
@@ -71,8 +71,8 @@ test('filesystem observer infers standards feedback fields without session log',
   assert.equal(typeof result.draft.prefilled_outcome.accepted_without_major_rewrite, 'boolean');
 });
 
-test('filesystem observer scopes time to green to the active run transition', () => {
-  const rootDir = bootstrapRepo();
+test('filesystem observer scopes time to green to the active run transition', (t) => {
+  const rootDir = bootstrapRepo(t);
   appendRunHistory(rootDir, {
     run_id: 'old-fail',
     started_at: '2026-05-09T00:00:00.000Z',
@@ -121,8 +121,8 @@ test('filesystem observer scopes time to green to the active run transition', ()
   assert.equal(result.draft.prefilled_measurements.time_to_green_minutes, 4);
 });
 
-test('filesystem observer rejects draft run ids that would escape output directories', () => {
-  const rootDir = bootstrapRepo();
+test('filesystem observer rejects draft run ids that would escape output directories', (t) => {
+  const rootDir = bootstrapRepo(t);
   mkdirSync(join(rootDir, '.kontourai/veritas/evidence'), { recursive: true });
   const evidence = {
     record_schema_version: 1,

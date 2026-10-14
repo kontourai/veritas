@@ -1,9 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
 import {
   collectPluginEvidence,
   getPlugin,
@@ -13,6 +12,7 @@ import {
 } from '../src/index.mjs';
 import npmAuditPlugin from '../examples/plugins/npm-audit.mjs';
 import { repoRootDir } from './helpers.mjs';
+import { tempDir } from './temp-dir.mjs';
 
 function plugin(name = `test-plugin-${Date.now()}`) {
   return {
@@ -43,10 +43,10 @@ test('registerPlugin adds and retrieves a plugin', () => {
   assert.ok(listPlugins().some((registered) => registered.name === 'registry-plugin'));
 });
 
-test('collectPluginEvidence calls importEvidence for matching claim types and attaches attribution', () => {
+test('collectPluginEvidence calls importEvidence for matching claim types and attaches attribution', (t) => {
   const item = { ...plugin('collector-plugin'), _inputFile: 'collector-output.txt' };
   registerPlugin(item);
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-plugin-collector-'));
+  const rootDir = tempDir(t, 'veritas-plugin-collector-');
   writeFileSync(join(rootDir, 'collector-output.txt'), 'collector passed\n');
   const evidence = collectPluginEvidence({
     claims: [{
@@ -65,9 +65,9 @@ test('collectPluginEvidence calls importEvidence for matching claim types and at
   assert.equal(evidence[0].metadata._plugin.author.name, 'Test Author');
 });
 
-test('collectPluginEvidence skips plugins with no matching claims and missing input files', () => {
+test('collectPluginEvidence skips plugins with no matching claims and missing input files', (t) => {
   registerPlugin({ ...plugin('skip-plugin'), _inputFile: 'missing-output.txt' });
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-plugin-skip-'));
+  const rootDir = tempDir(t, 'veritas-plugin-skip-');
   const noMatch = collectPluginEvidence({ claims: [{ id: 'claim.other', claimType: 'other' }] }, {
     rootDir,
     runId: 'plugin-run',
@@ -82,8 +82,8 @@ test('collectPluginEvidence skips plugins with no matching claims and missing in
   assert.deepEqual(missingInput, []);
 });
 
-test('loadPluginsFromConfig imports repo-relative plugin modules', async () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-plugin-load-'));
+test('loadPluginsFromConfig imports repo-relative plugin modules', async (t) => {
+  const rootDir = tempDir(t, 'veritas-plugin-load-');
   writeFileSync(join(rootDir, 'plugin.mjs'), 'export default { name: "loaded-plugin", version: "1.0.0", author: { name: "Loader" }, claimTypes: [], importEvidence() { return []; } };\n');
   await loadPluginsFromConfig({ plugins: [{ package: './plugin.mjs', inputFile: 'tool.json' }] }, rootDir);
   assert.equal(getPlugin('loaded-plugin')._inputFile, 'tool.json');
@@ -108,8 +108,8 @@ test('reference npm-audit plugin scaffolds claims and imports evidence', () => {
   assert.match(evidence[0].excerptOrSummary, /1 high/);
 });
 
-test('veritas plugin list and claim scaffold use configured plugins', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-plugin-cli-'));
+test('veritas plugin list and claim scaffold use configured plugins', (t) => {
+  const rootDir = tempDir(t, 'veritas-plugin-cli-');
   mkdirSync(join(rootDir, '.veritas'), { recursive: true });
   writeFileSync(join(rootDir, 'plugin.mjs'), `
 export default {

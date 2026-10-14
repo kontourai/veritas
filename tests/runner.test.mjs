@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { runBash, createMcpServerPool } from '../src/runner/index.mjs';
 import { resolveOwnedStdioCommand } from '../src/runner/owned-stdio.mjs';
+import { tempDir } from './temp-dir.mjs';
 
 function writeMcpTestServer(dir) {
   const serverPath = join(dir, 'server.mjs');
@@ -115,8 +115,8 @@ test('OwnedStdio resolves Windows command shims with injected platform inputs', 
   );
 });
 
-test('McpServerPool deduplicates server processes and closes cleanly', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-runner-'));
+test('McpServerPool deduplicates server processes and closes cleanly', async (t) => {
+  const dir = tempDir(t, 'veritas-mcp-runner-');
   const countPath = join(dir, 'count.txt');
   const serverPath = writeMcpTestServer(dir);
   writeFileSync(countPath, '0');
@@ -136,8 +136,8 @@ test('McpServerPool deduplicates server processes and closes cleanly', async () 
   }
 });
 
-test('McpServerPool does not inherit ambient credentials into an MCP server', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-safe-env-'));
+test('McpServerPool does not inherit ambient credentials into an MCP server', async (t) => {
+  const dir = tempDir(t, 'veritas-mcp-safe-env-');
   const serverPath = writeMcpTestServer(dir);
   const original = process.env.VERITAS_AMBIENT_MCP_SECRET;
   process.env.VERITAS_AMBIENT_MCP_SECRET = 'ambient-secret-must-not-reach-server';
@@ -166,8 +166,8 @@ test('McpServerPool does not inherit ambient credentials into an MCP server', as
 });
 
 for (const mode of ['stdout-overflow-no-newline', 'stdout-overflow-frame']) {
-  test(`McpServerPool rejects and cleans up ${mode} output`, { timeout: 5_000 }, async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-stdout-overflow-'));
+  test(`McpServerPool rejects and cleans up ${mode} output`, { timeout: 5_000 }, async (t) => {
+    const dir = tempDir(t, 'veritas-mcp-stdout-overflow-');
     const markerPath = join(dir, 'descendant-ran');
     const serverPath = writeMcpTestServer(dir);
     const pool = createMcpServerPool({ maxBufferBytes: 256 });
@@ -192,8 +192,8 @@ for (const mode of ['stdout-overflow-no-newline', 'stdout-overflow-frame']) {
   });
 }
 
-test('McpServerPool preserves the stdout overflow diagnostic after connection', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-post-connect-overflow-'));
+test('McpServerPool preserves the stdout overflow diagnostic after connection', async (t) => {
+  const dir = tempDir(t, 'veritas-mcp-post-connect-overflow-');
   const serverPath = writeMcpTestServer(dir);
   const pool = createMcpServerPool({ maxBufferBytes: 256 });
   try {
@@ -210,8 +210,8 @@ test('McpServerPool preserves the stdout overflow diagnostic after connection', 
   }
 });
 
-test('McpServerPool bounds a stalled MCP initialization and does not wait to close it', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-connect-timeout-'));
+test('McpServerPool bounds a stalled MCP initialization and does not wait to close it', async (t) => {
+  const dir = tempDir(t, 'veritas-mcp-connect-timeout-');
   const serverPath = writeMcpTestServer(dir);
   const pool = createMcpServerPool();
   const startedAt = Date.now();
@@ -233,8 +233,8 @@ test('McpServerPool bounds a stalled MCP initialization and does not wait to clo
   }
 });
 
-test('McpServerPool bounds a stalled MCP tool call and does not wait to close it', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-tool-timeout-'));
+test('McpServerPool bounds a stalled MCP tool call and does not wait to close it', async (t) => {
+  const dir = tempDir(t, 'veritas-mcp-tool-timeout-');
   const serverPath = writeMcpTestServer(dir);
   const pool = createMcpServerPool();
   const startedAt = Date.now();
@@ -256,8 +256,8 @@ test('McpServerPool bounds a stalled MCP tool call and does not wait to close it
   }
 });
 
-test('McpServerPool applies one absolute timeout across MCP connect and tool call', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-cumulative-timeout-'));
+test('McpServerPool applies one absolute timeout across MCP connect and tool call', async (t) => {
+  const dir = tempDir(t, 'veritas-mcp-cumulative-timeout-');
   const serverPath = writeMcpTestServer(dir);
   const pool = createMcpServerPool();
   const startedAt = Date.now();
@@ -279,8 +279,8 @@ test('McpServerPool applies one absolute timeout across MCP connect and tool cal
 
 test('McpServerPool closes the POSIX process group containing an MCP descendant', {
   skip: process.platform === 'win32' && 'Windows falls back to direct-child termination',
-}, async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'veritas-mcp-descendant-timeout-'));
+}, async (t) => {
+  const dir = tempDir(t, 'veritas-mcp-descendant-timeout-');
   const markerPath = join(dir, 'descendant-ran');
   const serverPath = writeMcpTestServer(dir);
   const pool = createMcpServerPool();
@@ -328,8 +328,8 @@ test('runBash kills a hanging command at timeoutMs and flags timedOut', async ()
   assert.notEqual(result.signal, null, 'killed via signal, not a clean exit');
 });
 
-test('runBash timeout terminates descendants that keep output pipes open', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'veritas-bash-descendant-'));
+test('runBash timeout terminates descendants that keep output pipes open', async (t) => {
+  const dir = tempDir(t, 'veritas-bash-descendant-');
   const markerPath = join(dir, 'descendant-ran');
   const childScriptPath = join(dir, 'descendant.mjs');
   writeFileSync(

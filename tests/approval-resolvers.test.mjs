@@ -1,8 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
 import {
   approvalResolverRejectionReason,
   buildApprovalResolverRequest,
@@ -12,6 +11,7 @@ import {
   resolveOfflineApprovalReference,
   summarizeApprovalResolverResult,
 } from '../src/index.mjs';
+import { tempDir } from './temp-dir.mjs';
 
 function writeOfflineApprovalRecord(rootDir, id, record) {
   const dir = join(rootDir, '.veritas/authority/approval-records');
@@ -107,8 +107,8 @@ test('approval reference policy modes classify resolution requirements', () => {
   );
 });
 
-test('offline approval resolver reads repo-local approval records', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-offline-approval-'));
+test('offline approval resolver reads repo-local approval records', (t) => {
+  const rootDir = tempDir(t, 'veritas-offline-approval-');
   writeOfflineApprovalRecord(rootDir, 'chg-123', {
     scope: {
       attestationKinds: ['bootstrap'],
@@ -133,8 +133,8 @@ test('offline approval resolver reads repo-local approval records', () => {
   assert.match(result.evidenceHash, /^sha256:/);
 });
 
-test('offline approval resolver rejects escaped file references and out-of-scope records', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-offline-approval-'));
+test('offline approval resolver rejects escaped file references and out-of-scope records', (t) => {
+  const rootDir = tempDir(t, 'veritas-offline-approval-');
   writeOfflineApprovalRecord(rootDir, 'wrong-kind', {
     scope: {
       attestationKinds: ['policy-change'],

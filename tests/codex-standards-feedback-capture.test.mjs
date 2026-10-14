@@ -1,18 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { buildCodexStandardsFeedbackDraft, observeCodexStandardsFeedback } from '../src/index.mjs';
 import { repoRootDir, readJson } from './helpers.mjs';
+import { tempDir } from './temp-dir.mjs';
 
-function tempRoot() {
-  return mkdtempSync(join(tmpdir(), 'veritas-codex-feedback-'));
+function tempRoot(t) {
+  return tempDir(t, 'veritas-codex-feedback-');
 }
 
-test('Codex standards feedback capture derives time to green and accepted result', () => {
-  const rootDir = tempRoot();
+test('Codex standards feedback capture derives time to green and accepted result', (t) => {
+  const rootDir = tempRoot(t);
   const sessionLogPath = join(rootDir, 'session.json');
   const sessionLog = {
     session_id: 'codex-green',
@@ -53,8 +53,8 @@ test('Codex standards feedback capture derives time to green and accepted result
   assert.equal(draft.prefilled_measurements.exception_count, 0);
 });
 
-test('Codex standards feedback capture marks major rewrites and CLI writes a draft', () => {
-  const rootDir = tempRoot();
+test('Codex standards feedback capture marks major rewrites and CLI writes a draft', (t) => {
+  const rootDir = tempRoot(t);
   const sessionLogPath = join(rootDir, 'session.json');
   const sessionLog = {
     session_id: 'codex-rewrite',
@@ -109,8 +109,8 @@ test('Codex standards feedback capture marks major rewrites and CLI writes a dra
   assert.equal(readJson(artifactPath).run_id, 'codex-rewrite');
 });
 
-test('Codex standards feedback capture rejects draft run ids that would escape output directories', () => {
-  const rootDir = tempRoot();
+test('Codex standards feedback capture rejects draft run ids that would escape output directories', (t) => {
+  const rootDir = tempRoot(t);
   const sessionLogPath = join(rootDir, 'session.json');
   const sessionLog = {
     session_id: '../../outside',
@@ -141,8 +141,8 @@ test('Codex standards feedback capture rejects draft run ids that would escape o
   assert.equal(existsSync(join(rootDir, 'outside.json')), false);
 });
 
-test('Codex standards feedback capture records reason when session log schema is unrecognized', () => {
-  const rootDir = tempRoot();
+test('Codex standards feedback capture records reason when session log schema is unrecognized', (t) => {
+  const rootDir = tempRoot(t);
   const sessionLogPath = join(rootDir, 'session.json');
   const sessionLog = { session_id: 'codex-empty', unexpected: true };
 
@@ -158,8 +158,8 @@ test('Codex standards feedback capture records reason when session log schema is
   });
 });
 
-test('Codex standards feedback capture records reason when no failing run is observed', () => {
-  const rootDir = tempRoot();
+test('Codex standards feedback capture records reason when no failing run is observed', (t) => {
+  const rootDir = tempRoot(t);
   const sessionLogPath = join(rootDir, 'session.json');
   const sessionLog = {
     session_id: 'codex-no-fail',
@@ -181,8 +181,8 @@ test('Codex standards feedback capture records reason when no failing run is obs
   });
 });
 
-test('Codex standards feedback capture records reason when no passing run is observed', () => {
-  const rootDir = tempRoot();
+test('Codex standards feedback capture records reason when no passing run is observed', (t) => {
+  const rootDir = tempRoot(t);
   const sessionLogPath = join(rootDir, 'session.json');
   const sessionLog = {
     session_id: 'codex-no-pass',
@@ -204,8 +204,8 @@ test('Codex standards feedback capture records reason when no passing run is obs
   });
 });
 
-test('Codex standards feedback capture records reason when churn threshold cannot apply', () => {
-  const rootDir = tempRoot();
+test('Codex standards feedback capture records reason when churn threshold cannot apply', (t) => {
+  const rootDir = tempRoot(t);
   const sessionLogPath = join(rootDir, 'session.json');
   const sessionLog = {
     session_id: 'codex-no-files',

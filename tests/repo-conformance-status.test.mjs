@@ -18,8 +18,8 @@ function writeJsonFile(rootDir, relativePath, value) {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
-function createGovernanceRepo(prefix = 'veritas-conformance-governance-') {
-  const rootDir = initCommittedRepo(prefix);
+function createGovernanceRepo(t, prefix = 'veritas-conformance-governance-') {
+  const rootDir = initCommittedRepo(t, prefix);
   mkdirp(join(rootDir, '.veritas/repo-standards'));
   mkdirp(join(rootDir, '.veritas/team'));
   writeJsonFile(rootDir, '.veritas/repo-map.json', {
@@ -53,8 +53,8 @@ test('Protected Standards is clean when no PR refs are supplied', () => {
   assert.equal(renderGovernanceSurfaceLine(result), '- **Governance surface:** `clean (no PR base/head diff)`');
 });
 
-test('Protected Standards treats added governance files as additive-only', () => {
-  const rootDir = createGovernanceRepo('veritas-conformance-additive-');
+test('Protected Standards treats added governance files as additive-only', (t) => {
+  const rootDir = createGovernanceRepo(t, 'veritas-conformance-additive-');
   writeJsonFile(rootDir, '.veritas/authority/release.authority-settings.json', {
     name: 'release',
     reviewers: ['maintainer', 'ops'],
@@ -83,8 +83,8 @@ test('Protected Standards treats added governance files as additive-only', () =>
   );
 });
 
-test('Protected Standards stays clean for semantic no-op formatting changes', () => {
-  const rootDir = createGovernanceRepo('veritas-conformance-clean-');
+test('Protected Standards stays clean for semantic no-op formatting changes', (t) => {
+  const rootDir = createGovernanceRepo(t, 'veritas-conformance-clean-');
   writeFileSync(
     join(rootDir, '.veritas/repo-map.json'),
     '{\n  "graph": {\n    "version": 1\n  },\n  "name": "demo"\n}\n',
@@ -105,8 +105,8 @@ test('Protected Standards stays clean for semantic no-op formatting changes', ()
   assert.equal(result.summary, 'clean (no semantic governance changes)');
 });
 
-test('Protected Standards treats removals as protected standards modifications', () => {
-  const rootDir = createGovernanceRepo('veritas-conformance-protected-standards-');
+test('Protected Standards treats removals as protected standards modifications', (t) => {
+  const rootDir = createGovernanceRepo(t, 'veritas-conformance-protected-standards-');
   unlinkSync(join(rootDir, '.veritas/authority/default.authority-settings.json'));
   commitAll(rootDir, 'Remove default authority settings');
 
@@ -127,8 +127,8 @@ test('Protected Standards treats removals as protected standards modifications',
   ]);
 });
 
-test('Protected Standards treats governance renames as protected standards modifications', () => {
-  const rootDir = createGovernanceRepo('veritas-conformance-rename-');
+test('Protected Standards treats governance renames as protected standards modifications', (t) => {
+  const rootDir = createGovernanceRepo(t, 'veritas-conformance-rename-');
   const originalPath = join(rootDir, '.veritas/authority/default.authority-settings.json');
   const renamedPath = join(rootDir, '.veritas/authority/release.authority-settings.json');
   writeFileSync(
@@ -166,8 +166,8 @@ test('Protected Standards treats governance renames as protected standards modif
   ]);
 });
 
-test('governance trend summary includes recent classification counts', () => {
-  const rootDir = createGovernanceRepo('veritas-conformance-trend-');
+test('governance trend summary includes recent classification counts', (t) => {
+  const rootDir = createGovernanceRepo(t, 'veritas-conformance-trend-');
   mkdirp(join(rootDir, '.kontourai/veritas/repo-conformance'));
   writeJsonFile(rootDir, '.kontourai/veritas/repo-conformance/older-clean.json', {
     run_id: 'older-clean',
@@ -215,7 +215,7 @@ for (const scenario of [
   { name: 'pure protected rename with unchanged map', rename: true, covered: true },
 ]) {
   test(`conformance health: ${scenario.name}`, async (t) => {
-    const rootDir = initCommittedRepo('veritas-removed-path-health-');
+    const rootDir = initCommittedRepo(t, 'veritas-removed-path-health-');
     writeBootstrapStarterKit({ rootDir, projectName: 'removed-path-fixture', force: true });
     for (const path of ['.githooks', '.veritas/hooks', '.veritas/runtime']) {
       cpSync(join(repoRootDir, path), join(rootDir, path), { recursive: true });
@@ -270,7 +270,7 @@ for (const scenario of [
   { name: 'unprotected type change', protected: false, symlink: true, path: 'ordinary.json' },
 ]) {
   test(`conformance visibility: ${scenario.name}`, async (t) => {
-    const rootDir = initCommittedRepo('veritas-typechange-');
+    const rootDir = initCommittedRepo(t, 'veritas-typechange-');
     writeBootstrapStarterKit({ rootDir, projectName: 'typechange-fixture', force: true });
     for (const path of ['.githooks', '.veritas/hooks', '.veritas/runtime']) {
       cpSync(join(repoRootDir, path), join(rootDir, path), { recursive: true });
@@ -314,8 +314,8 @@ for (const scenario of [
   });
 }
 
-test('Protected Standards resolves non-ASCII governance paths', () => {
-  const rootDir = createGovernanceRepo();
+test('Protected Standards resolves non-ASCII governance paths', (t) => {
+  const rootDir = createGovernanceRepo(t);
   writeJsonFile(rootDir, '.veritas/authority/café.json', { name: 'café' });
   commitAll(rootDir, 'Add non-ASCII authority');
   const result = classifyGovernanceSurface({ rootDir, changedFrom: 'HEAD~1', changedTo: 'HEAD' });
@@ -323,8 +323,8 @@ test('Protected Standards resolves non-ASCII governance paths', () => {
   assert.deepEqual(result.semantic_changed_paths, ['.veritas/authority/café.json']);
 });
 
-test('standing policy evaluates tracked non-ASCII paths', () => {
-  const rootDir = initCommittedRepo('veritas-unicode-policy-');
+test('standing policy evaluates tracked non-ASCII paths', (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-unicode-policy-');
   writeFileSync(join(rootDir, 'café.json'), 'forbidden-content\n');
   commitAll(rootDir, 'Add policy target');
   const results = evaluateRepoStandards({ version: 1, name: 'unicode', rules: [{

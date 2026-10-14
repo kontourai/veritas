@@ -1,8 +1,7 @@
-import test, { after } from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync as makeTempDir, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PREVIOUS_CODEX_HOOK_COMMANDS } from '../src/integrations/codex-hook-history.mjs';
@@ -21,19 +20,9 @@ import { inspectRuntimeIntegrationStatus } from '../src/integrations/runtime-int
 import { buildConformanceAlerts } from '../src/conformance/run.mjs';
 import { runPrintCodexHookCli } from '../src/cli/setup-print.mjs';
 import { buildStandardsFeedbackRecordCommand } from '../src/standards-feedback/artifacts.mjs';
+import { tempDir } from './temp-dir.mjs';
 
 const repoRootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-
-// The fixtures below are small; remove them so repeated runs do not fill the temp directory.
-const tempDirs = [];
-const mkdtempSync = (prefix) => {
-  const dir = makeTempDir(prefix);
-  tempDirs.push(dir);
-  return dir;
-};
-after(() => {
-  for (const dir of tempDirs) rmSync(dir, { recursive: true, force: true });
-});
 
 // `npx` and `npm exec` fall back to the registry when there is no local bin, and install without
 // prompting when there is no terminal. Agents run without one. Anything Veritas ships (the docs,
@@ -521,8 +510,8 @@ function captureStdout(run) {
   return output;
 }
 
-function gitRepo(prefix) {
-  const rootDir = mkdtempSync(join(tmpdir(), prefix));
+function gitRepo(t, prefix) {
+  const rootDir = tempDir(t, prefix);
   execFileSync('git', ['init', '-q'], { cwd: rootDir });
   return rootDir;
 }
@@ -543,8 +532,8 @@ function assertRunsInstalledVeritas(label, { texts = {}, values = {} }) {
 // What Veritas writes into adopter repositories and prints as next steps, rendered by the code that
 // produces it. The governance block is copied into every adopter's AGENTS.md and CLAUDE.md and is
 // the most-read line.
-test('generated instruction files and readiness results run only the installed Veritas', () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-bare-instruction-'));
+test('generated instruction files and readiness results run only the installed Veritas', (t) => {
+  const rootDir = tempDir(t, 'veritas-bare-instruction-');
   writeFileSync(join(rootDir, 'NO_MARKERS.md'), '# Local\n');
   writeFileSync(join(rootDir, 'STALE.md'), '<!-- veritas:governance-block:start -->\nold\n<!-- veritas:governance-block:end -->\n');
   writeFileSync(join(rootDir, 'DUPLICATE.md'), `${buildGovernanceBlock()}\n${buildGovernanceBlock()}\n`);
@@ -625,14 +614,14 @@ test('the readiness feedback footer runs only the installed Veritas', () => {
   assertRunsInstalledVeritas('feedback', { texts: { footer: summary } });
 });
 
-test('init, setup, integration status and conformance next steps run only the installed Veritas', () => {
-  const initRoot = gitRepo('veritas-bare-init-');
+test('init, setup, integration status and conformance next steps run only the installed Veritas', (t) => {
+  const initRoot = gitRepo(t, 'veritas-bare-init-');
   writeFileSync(join(initRoot, 'AGENTS.md'), '# Agents\n');
   writeFileSync(join(initRoot, 'CLAUDE.md'), '# Claude\n');
   const init = JSON.parse(execFileSync(process.execPath, [join(repoRootDir, 'bin/veritas.mjs'), 'init', '--root', initRoot], {
     cwd: initRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
   }));
-  const recommendation = buildInitRecommendation({ rootDir: gitRepo('veritas-bare-plan-') });
+  const recommendation = buildInitRecommendation({ rootDir: gitRepo(t, 'veritas-bare-plan-') });
   const explained = buildExplainGuidance({
     rootDir: initRoot,
     repoMap: JSON.parse(readFileSync(join(initRoot, '.veritas/repo-map.json'), 'utf8')),
@@ -653,20 +642,20 @@ test('init, setup, integration status and conformance next steps run only the in
   );
   const initWritten = ['.veritas/GOVERNANCE.md', '.veritas/README.md', 'AGENTS.md', 'CLAUDE.md']
     .map((path) => [`init wrote ${path}`, readFileSync(join(initRoot, path), 'utf8')]);
-  const hooksRoot = gitRepo('veritas-bare-hooks-');
+  const hooksRoot = gitRepo(t, 'veritas-bare-hooks-');
   const setup = setupRepoHooks({ rootDir: hooksRoot });
 
   // Every branch of the status next steps: nothing installed; then hooks, runtime hook and Codex
   // artifact present but not executable, with a Codex home and with a hooks file checked.
-  const bareRoot = gitRepo('veritas-bare-status-');
+  const bareRoot = gitRepo(t, 'veritas-bare-status-');
   const missing = inspectRuntimeIntegrationStatus(bareRoot);
-  const presentRoot = gitRepo('veritas-bare-present-');
+  const presentRoot = gitRepo(t, 'veritas-bare-present-');
   execFileSync('git', ['config', 'core.hooksPath', '.githooks'], { cwd: presentRoot });
   for (const file of ['.githooks/post-commit', '.githooks/pre-push', '.veritas/hooks/agent-runtime.sh', '.veritas/runtime/codex-hooks.json']) {
     mkdirSync(dirname(join(presentRoot, file)), { recursive: true });
     writeFileSync(join(presentRoot, file), '#!/bin/sh\n', { mode: 0o644 });
   }
-  const codexHome = mkdtempSync(join(tmpdir(), 'veritas-bare-codex-home-'));
+  const codexHome = tempDir(t, 'veritas-bare-codex-home-');
   const present = inspectRuntimeIntegrationStatus(presentRoot, { codexHome });
   const targeted = inspectRuntimeIntegrationStatus(presentRoot, { targetHooksFile: '.codex/hooks.json' });
   const alerts = [missing, present].flatMap((status) => buildConformanceAlerts(

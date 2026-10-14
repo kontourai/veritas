@@ -1,18 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createHmac} from 'node:crypto';
 import {buildReviewSessionEvents, renderReviewWorkbenchHtml} from '@kontourai/survey/review-workbench';
 import {startReviewConsoleServer} from '@kontourai/survey/review-console';
 import {createGovernanceSurveyReview, serveGovernanceSurveyReview, prepareKitReview} from '../src/governance-review.mjs';
+import { tempDir } from './temp-dir.mjs';
 
 async function fixture(t, action = 'approve', options = {}) {
-  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'veritas-survey-')), rootDir = path.join(base, 'repo'), hostRoot = path.join(base, 'host');
+  const base = tempDir(t, 'veritas-survey-'), rootDir = path.join(base, 'repo'), hostRoot = path.join(base, 'host');
   fs.mkdirSync(rootDir); fs.mkdirSync(hostRoot, {mode: 0o700});
-  t.after(() => fs.rmSync(base, {recursive: true, force: true}));
   const env = {...process.env}; for (const key of Object.keys(env)) if (key.startsWith('GIT_')) delete env[key];
   const git = args => execFileSync('git', args, {cwd: rootDir, env, stdio: 'pipe'});
   git(['init']); git(['config', 'user.email', 'fixture@example.invalid']); git(['config', 'user.name', 'Fixture']);

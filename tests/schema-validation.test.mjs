@@ -10,9 +10,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
 import {
   REPO_MAP_SCHEMA,
   REPO_STANDARDS_SCHEMA,
@@ -25,6 +24,7 @@ import {
 } from '../src/index.mjs';
 import { buildStarterRepoMap, buildStarterRepoStandards } from '../src/bootstrap/starter-artifacts.mjs';
 import { repoRootDir } from './helpers.mjs';
+import { tempDir } from './temp-dir.mjs';
 
 function readRepoJson(relativePath) {
   return JSON.parse(readFileSync(join(repoRootDir, relativePath), 'utf8'));
@@ -44,8 +44,8 @@ function withCapturedStderr(fn) {
   }
 }
 
-function writeConfigFixture(prefix, { repoMap, repoStandards }) {
-  const rootDir = mkdtempSync(join(tmpdir(), prefix));
+function writeConfigFixture(t, prefix, { repoMap, repoStandards }) {
+  const rootDir = tempDir(t, prefix);
   mkdirSync(join(rootDir, '.veritas/repo-standards'), { recursive: true });
   if (repoMap) {
     writeFileSync(join(rootDir, '.veritas/repo-map.json'), `${JSON.stringify(repoMap, null, 2)}\n`);
@@ -146,8 +146,8 @@ test('cross-file $ref in the marker suite report schema resolves', () => {
   );
 });
 
-test('loadRepoStandards warns on schema-invalid config and still returns it', () => {
-  const rootDir = writeConfigFixture('veritas-schema-warn-', { repoStandards: driftedRepoStandards() });
+test('loadRepoStandards warns on schema-invalid config and still returns it', (t) => {
+  const rootDir = writeConfigFixture(t, 'veritas-schema-warn-', { repoStandards: driftedRepoStandards() });
   const path = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
 
   const { result, stderr } = withCapturedStderr(() => loadRepoStandards(path));
@@ -159,8 +159,8 @@ test('loadRepoStandards warns on schema-invalid config and still returns it', ()
   assert.match(stderr, /veritas readiness --check config/);
 });
 
-test('loadRepoStandards warns once per file rather than on every load', () => {
-  const rootDir = writeConfigFixture('veritas-schema-dedupe-', { repoStandards: driftedRepoStandards() });
+test('loadRepoStandards warns once per file rather than on every load', (t) => {
+  const rootDir = writeConfigFixture(t, 'veritas-schema-dedupe-', { repoStandards: driftedRepoStandards() });
   const path = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
 
   const { stderr } = withCapturedStderr(() => {
@@ -173,8 +173,8 @@ test('loadRepoStandards warns once per file rather than on every load', () => {
   assert.equal(occurrences, 1, `expected one warning, got ${occurrences}`);
 });
 
-test('strict mode turns an invalid config into a load failure', () => {
-  const rootDir = writeConfigFixture('veritas-schema-strict-', { repoStandards: driftedRepoStandards() });
+test('strict mode turns an invalid config into a load failure', (t) => {
+  const rootDir = writeConfigFixture(t, 'veritas-schema-strict-', { repoStandards: driftedRepoStandards() });
   const path = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
 
   assert.throws(
@@ -183,8 +183,8 @@ test('strict mode turns an invalid config into a load failure', () => {
   );
 });
 
-test('a valid config loads without warning', () => {
-  const rootDir = writeConfigFixture('veritas-schema-clean-', {
+test('a valid config loads without warning', (t) => {
+  const rootDir = writeConfigFixture(t, 'veritas-schema-clean-', {
     repoStandards: readRepoJson('repo-standards/work-agent-convergence.repo-standards.json'),
     repoMap: readRepoJson('repo-maps/work-agent.repo-map.json'),
   });
@@ -197,8 +197,8 @@ test('a valid config loads without warning', () => {
   assert.equal(stderr, '');
 });
 
-test('validateRepoConfig reports per-artifact status', () => {
-  const rootDir = writeConfigFixture('veritas-schema-report-', {
+test('validateRepoConfig reports per-artifact status', (t) => {
+  const rootDir = writeConfigFixture(t, 'veritas-schema-report-', {
     repoStandards: driftedRepoStandards(),
     repoMap: readRepoJson('repo-maps/work-agent.repo-map.json'),
   });
@@ -216,12 +216,12 @@ test('validateRepoConfig reports per-artifact status', () => {
   assert.equal(byLabel['Repo Standards'].schema, REPO_STANDARDS_SCHEMA);
 });
 
-test('readiness --check config exits 1 on a drifted config and 0 on a clean one', () => {
-  const driftedRoot = writeConfigFixture('veritas-standards-cli-bad-', {
+test('readiness --check config exits 1 on a drifted config and 0 on a clean one', (t) => {
+  const driftedRoot = writeConfigFixture(t, 'veritas-standards-cli-bad-', {
     repoStandards: driftedRepoStandards(),
     repoMap: readRepoJson('repo-maps/work-agent.repo-map.json'),
   });
-  const cleanRoot = writeConfigFixture('veritas-standards-cli-good-', {
+  const cleanRoot = writeConfigFixture(t, 'veritas-standards-cli-good-', {
     repoStandards: readRepoJson('repo-standards/work-agent-convergence.repo-standards.json'),
     repoMap: readRepoJson('repo-maps/work-agent.repo-map.json'),
   });
@@ -241,8 +241,8 @@ test('readiness --check config exits 1 on a drifted config and 0 on a clean one'
   assert.doesNotMatch(clean, /^FAIL/m);
 });
 
-test('readiness --check config --format json is machine readable', () => {
-  const rootDir = writeConfigFixture('veritas-standards-cli-json-', {
+test('readiness --check config --format json is machine readable', (t) => {
+  const rootDir = writeConfigFixture(t, 'veritas-standards-cli-json-', {
     repoStandards: driftedRepoStandards(),
     repoMap: readRepoJson('repo-maps/work-agent.repo-map.json'),
   });

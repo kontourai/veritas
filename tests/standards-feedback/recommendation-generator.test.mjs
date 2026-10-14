@@ -1,8 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
 import {
   buildSurfaceTrustBundle,
   createAttestation,
@@ -13,6 +12,7 @@ import {
   generateRuleRecommendations,
   writeGeneratedRecommendations,
 } from '../../src/standards-feedback/recommendations.mjs';
+import { tempDir } from '../temp-dir.mjs';
 
 function writeJson(path, value) {
   mkdirSync(dirname(path), { recursive: true });
@@ -43,8 +43,8 @@ function writeOfflineApprovalRecord(rootDir, id, record) {
   });
 }
 
-function setupRepo() {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-recommendations-'));
+function setupRepo(t) {
+  const rootDir = tempDir(t, 'veritas-recommendations-');
   writeJson(join(rootDir, '.veritas/repo-map.json'), {
     schemaVersion: 1,
     name: 'recommendation-test',
@@ -109,16 +109,16 @@ function setupRepo() {
   return rootDir;
 }
 
-test('standards feedback recommendation generator covers exception and missing surface heuristics', () => {
-  const rootDir = setupRepo();
+test('standards feedback recommendation generator covers exception and missing surface heuristics', (t) => {
+  const rootDir = setupRepo(t);
   const recommendations = generateRuleRecommendations({ rootDir, inactiveRunThreshold: 3 });
   assert.ok(recommendations.some((recommendation) => recommendation.type === 'rule-enforcement-relaxation' && recommendation.target === 'strict-rule'));
   assert.ok(recommendations.some((recommendation) => recommendation.type === 'rule-retirement' && recommendation.target === 'quiet-rule'));
   assert.ok(recommendations.some((recommendation) => recommendation.type === 'surface-node-addition' && recommendation.target === 'unknown/path.ts'));
 });
 
-test('recommendation artifacts can be accepted and surface as proposed claims before decision', async () => {
-  const rootDir = setupRepo();
+test('recommendation artifacts can be accepted and surface as proposed claims before decision', async (t) => {
+  const rootDir = setupRepo(t);
   createAttestation({
     rootDir,
     kind: 'bootstrap',
@@ -205,8 +205,8 @@ test('recommendation artifacts can be accepted and surface as proposed claims be
   assert.equal(rule.enforcementLevel, 'Guide');
 });
 
-test('recommendation rejection records decision and suppresses immediate regeneration', () => {
-  const rootDir = setupRepo();
+test('recommendation rejection records decision and suppresses immediate regeneration', (t) => {
+  const rootDir = setupRepo(t);
   const recommendation = generateRuleRecommendations({ rootDir, now: '2026-05-10T00:00:00.000Z' })
     .find((item) => item.type === 'rule-enforcement-relaxation');
   writeGeneratedRecommendations({ rootDir, recommendations: [recommendation] });
@@ -235,8 +235,8 @@ test('recommendation rejection records decision and suppresses immediate regener
   assert.equal(regenerated.some((item) => item.id === recommendation.id), false);
 });
 
-test('recommendation acceptance blocks invalid resolved approval before mutating standards', () => {
-  const rootDir = setupRepo();
+test('recommendation acceptance blocks invalid resolved approval before mutating standards', (t) => {
+  const rootDir = setupRepo(t);
   createAttestation({
     rootDir,
     kind: 'bootstrap',

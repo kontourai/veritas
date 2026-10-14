@@ -6,8 +6,8 @@ import { join } from 'node:path';
 import { buildExplainGuidance, buildExplainText, writeBootstrapStarterKit } from '../src/index.mjs';
 import { initCommittedRepo } from './helpers.mjs';
 
-test('structured explain and text explain select the same rules for a file', () => {
-  const rootDir = initCommittedRepo('veritas-explain-guidance-');
+test('structured explain and text explain select the same rules for a file', (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-explain-guidance-');
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { test: 'node --version' } }));
   writeBootstrapStarterKit({ rootDir, projectName: 'guidance-fixture', evidenceCheck: 'npm test', force: true });
   const map = JSON.parse(readFileSync(join(rootDir, '.veritas/repo-map.json'), 'utf8'));

@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { chmodSync, existsSync, mkdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { writeBootstrapStarterKit } from '../src/index.mjs';
 import { buildSuggestedCodexHookConfig } from '../src/integrations/codex-hooks.mjs';
 import { buildClaudeCodeSessionLogCaptureCommand } from '../src/hooks/suggestions.mjs';
 import { cleanGitEnv, commitAll, initCommittedRepo, installLocalVeritasBin, repoRootDir } from './helpers.mjs';
+import { tempDir } from './temp-dir.mjs';
 
 // Agent runtimes run these hook commands in the agent's working directory. In a pnpm workspace
 // that can be packages/a, a package with its own package.json and no Veritas of its own: npx looks
@@ -17,8 +17,8 @@ const CODEX_PRE_TOOL_USE = codexHooks.PreToolUse[0].hooks[0].command;
 const CODEX_POST_SESSION = codexHooks.PostSession[0].hooks[0].command;
 const CLAUDE_POST_SESSION = buildClaudeCodeSessionLogCaptureCommand();
 
-function pnpmWorkspace({ installVeritas }) {
-  const rootDir = initCommittedRepo('veritas-nested-package-');
+function pnpmWorkspace(t, { installVeritas }) {
+  const rootDir = initCommittedRepo(t, 'veritas-nested-package-');
   writeFileSync(join(rootDir, 'package.json'), `${JSON.stringify({
     name: 'workspace-root',
     private: true,
@@ -76,8 +76,8 @@ const editPayload = (cwd) => JSON.stringify({
   tool_input: { command: ['*** Begin Patch', '*** Update File: packages/a/index.js', '@@', '-old', '+new', '*** End Patch'].join('\n') },
 });
 
-test('Codex and Claude Code hook commands find a root-installed Veritas from a nested package', () => {
-  const { rootDir, packageDir } = pnpmWorkspace({ installVeritas: true });
+test('Codex and Claude Code hook commands find a root-installed Veritas from a nested package', (t) => {
+  const { rootDir, packageDir } = pnpmWorkspace(t, { installVeritas: true });
 
   // PreToolUse: VERITAS_HOOK_SKIP makes Veritas record the bypass under the root it resolved, which
   // proves the command reached Veritas from packages/a and evaluated the root's governance.
@@ -97,9 +97,9 @@ test('Codex and Claude Code hook commands find a root-installed Veritas from a n
   }
 });
 
-test('the nested-package hook commands still refuse when no directory has Veritas installed', () => {
-  const { packageDir } = pnpmWorkspace({ installVeritas: false });
-  const cache = mkdtempSync(join(tmpdir(), 'veritas-empty-npm-cache-'));
+test('the nested-package hook commands still refuse when no directory has Veritas installed', (t) => {
+  const { packageDir } = pnpmWorkspace(t, { installVeritas: false });
+  const cache = tempDir(t, 'veritas-empty-npm-cache-');
   const result = runHook(CODEX_PRE_TOOL_USE, { cwd: packageDir, input: editPayload(packageDir), env: { npm_config_cache: cache } });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /npx canceled due to missing packages/);
@@ -119,8 +119,8 @@ function plantedVeritas(dir, marker) {
 
 // A parent directory, outside any repository, with a planted Veritas install, and a git repository
 // inside it with a package.json and no install of its own.
-function plantedParent({ withPackageJson = true, repoName = 'repo' } = {}) {
-  const parent = mkdtempSync(join(tmpdir(), 'veritas-planted-parent-'));
+function plantedParent(t, { withPackageJson = true, repoName = 'repo' } = {}) {
+  const parent = tempDir(t, 'veritas-planted-parent-');
   const marker = join(parent, 'planted-ran');
   const planted = plantedVeritas(parent, marker);
   mkdirSync(join(parent, 'node_modules/@kontourai'), { recursive: true });
@@ -131,7 +131,7 @@ function plantedParent({ withPackageJson = true, repoName = 'repo' } = {}) {
   mkdirSync(join(repo, 'sub'), { recursive: true });
   spawnSync('git', ['init', '-q'], { cwd: repo, env: cleanGitEnv() });
   if (withPackageJson) writeFileSync(join(repo, 'package.json'), `${JSON.stringify({ name: 'repo', version: '1.0.0' })}\n`);
-  return { parent, repo, marker, cache: mkdtempSync(join(tmpdir(), 'veritas-empty-npm-cache-')) };
+  return { parent, repo, marker, cache: tempDir(t, 'veritas-empty-npm-cache-') };
 }
 
 function assertRefusedWithoutPlanted(result, marker) {
@@ -140,8 +140,8 @@ function assertRefusedWithoutPlanted(result, marker) {
   assert.match(result.stderr, /npx canceled due to missing packages/);
 }
 
-test('the walk stops at the git root, so a node_modules planted in a parent outside the repository never runs', () => {
-  const { repo, marker, cache } = plantedParent();
+test('the walk stops at the git root, so a node_modules planted in a parent outside the repository never runs', (t) => {
+  const { repo, marker, cache } = plantedParent(t);
   // PWD is the logical path a shell that cd'd there would pass on. On macOS the temporary directory
   // sits behind a symlink, so the walk must use physical paths to reach git's root.
   const result = runHook(CODEX_PRE_TOOL_USE, { cwd: repo, input: editPayload(repo), env: { npm_config_cache: cache, PWD: repo } });
@@ -149,7 +149,7 @@ test('the walk stops at the git root, so a node_modules planted in a parent outs
 });
 
 test('the git root is matched by identity when the working directory is typed in another case', (t) => {
-  const { rootDir, packageDir } = pnpmWorkspace({ installVeritas: true });
+  const { rootDir, packageDir } = pnpmWorkspace(t, { installVeritas: true });
   // The repository root itself is typed in another case: git reports it in its canonical case,
   // while the typed path keeps the case it was entered in. A string compare never matches, the walk
   // never reaches the root, and the root install is lost.
@@ -167,15 +167,15 @@ test('the git root is matched by identity when the working directory is typed in
   assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
 
   // And a case-mismatched path still never lets a planted parent run.
-  const { parent, marker, cache } = plantedParent({ repoName: 'victim' });
+  const { parent, marker, cache } = plantedParent(t, { repoName: 'victim' });
   const victim = join(parent, 'VICTIM', 'SUB');
   const refused = runHook(CODEX_PRE_TOOL_USE, { cwd: victim, input: editPayload(victim), env: { npm_config_cache: cache, PWD: victim } });
   assertRefusedWithoutPlanted(refused, marker);
 });
 
-test('a GIT_DIR and GIT_WORK_TREE naming another repository do not let the walk escape', () => {
-  const { repo, marker, cache } = plantedParent();
-  const other = mkdtempSync(join(tmpdir(), 'veritas-other-repo-'));
+test('a GIT_DIR and GIT_WORK_TREE naming another repository do not let the walk escape', (t) => {
+  const { repo, marker, cache } = plantedParent(t);
+  const other = tempDir(t, 'veritas-other-repo-');
   spawnSync('git', ['init', '-q'], { cwd: other, env: cleanGitEnv() });
   const result = runHook(CODEX_PRE_TOOL_USE, {
     cwd: repo,
@@ -185,8 +185,8 @@ test('a GIT_DIR and GIT_WORK_TREE naming another repository do not let the walk 
   assertRefusedWithoutPlanted(result, marker);
 });
 
-test('outside a git repository the walk passes no prefix, so a planted parent never runs', () => {
-  const { parent, marker, cache } = plantedParent();
+test('outside a git repository the walk passes no prefix, so a planted parent never runs', (t) => {
+  const { parent, marker, cache } = plantedParent(t);
   const dir = join(parent, 'not-a-repo');
   mkdirSync(dir);
   writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: 'not-a-repo', version: '1.0.0' })}\n`);
@@ -197,15 +197,15 @@ test('outside a git repository the walk passes no prefix, so a planted parent ne
 // Stated limit, pinned so it stays visible: in a repository with no package.json, plain npx does
 // npm's own upward search for the nearest package.json or node_modules, which can pass the git
 // root. The walk does not widen this; it is npm's behaviour, and the released spelling did the same.
-test('stated limit: a repository with no package.json gets npm\'s own upward search past the git root', () => {
-  const { repo, marker, cache } = plantedParent({ withPackageJson: false });
+test('stated limit: a repository with no package.json gets npm\'s own upward search past the git root', (t) => {
+  const { repo, marker, cache } = plantedParent(t, { withPackageJson: false });
   const result = runHook(CODEX_PRE_TOOL_USE, { cwd: repo, input: editPayload(repo), env: { npm_config_cache: cache } });
   assert.equal(existsSync(marker), true, `npm's upward search is expected to reach the planted parent:\n${result.stderr}`);
 });
 
-test('the walk follows physical paths, so a symlinked entry into a nested package still finds the root install', () => {
-  const { rootDir, packageDir } = pnpmWorkspace({ installVeritas: true });
-  const outside = mkdtempSync(join(tmpdir(), 'veritas-symlinked-entry-'));
+test('the walk follows physical paths, so a symlinked entry into a nested package still finds the root install', (t) => {
+  const { rootDir, packageDir } = pnpmWorkspace(t, { installVeritas: true });
+  const outside = tempDir(t, 'veritas-symlinked-entry-');
   const entry = join(outside, 'entry');
   symlinkSync(packageDir, entry, 'dir');
   const result = runHook(CODEX_PRE_TOOL_USE, { cwd: entry, input: editPayload(entry), env: { VERITAS_HOOK_SKIP: '1', PWD: entry } });
@@ -214,10 +214,10 @@ test('the walk follows physical paths, so a symlinked entry into a nested packag
   assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
 });
 
-test('with no local install the hook commands fall back to a global Veritas', () => {
-  const { rootDir, packageDir } = pnpmWorkspace({ installVeritas: false });
+test('with no local install the hook commands fall back to a global Veritas', (t) => {
+  const { rootDir, packageDir } = pnpmWorkspace(t, { installVeritas: false });
   // A global install the way `npm install -g` lays it out under a prefix.
-  const globalPrefix = mkdtempSync(join(tmpdir(), 'veritas-global-prefix-'));
+  const globalPrefix = tempDir(t, 'veritas-global-prefix-');
   mkdirSync(join(globalPrefix, 'lib/node_modules/@kontourai'), { recursive: true });
   mkdirSync(join(globalPrefix, 'bin'), { recursive: true });
   symlinkSync(repoRootDir, join(globalPrefix, 'lib/node_modules/@kontourai/veritas'), 'dir');
@@ -232,8 +232,8 @@ test('with no local install the hook commands fall back to a global Veritas', ()
   assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
 });
 
-test('outside a git repository the hook commands skip the walk and run the local Veritas', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'veritas-no-git-'));
+test('outside a git repository the hook commands skip the walk and run the local Veritas', (t) => {
+  const dir = tempDir(t, 'veritas-no-git-');
   writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: 'no-git', version: '1.0.0' })}\n`);
   installLocalVeritasBin(dir);
   const result = runHook(CODEX_PRE_TOOL_USE, { cwd: dir, input: JSON.stringify({ cwd: dir, tool_name: 'Bash', tool_input: { command: 'ls' } }) });
@@ -241,11 +241,11 @@ test('outside a git repository the hook commands skip the walk and run the local
   JSON.parse(result.stdout);
 });
 
-test('the Codex PreToolUse hook carries the plain invocation for Windows, where hooks run through PowerShell', () => {
+test('the Codex PreToolUse hook carries the plain invocation for Windows, where hooks run through PowerShell', (t) => {
   const handler = codexHooks.PreToolUse[0].hooks[0];
   assert.equal(handler.commandWindows, 'npx --no @kontourai/veritas hooks codex pre-tool-use');
   // Windows is not exercised here; the same invocation run from the root reaches Veritas.
-  const { rootDir } = pnpmWorkspace({ installVeritas: true });
+  const { rootDir } = pnpmWorkspace(t, { installVeritas: true });
   const result = runHook(handler.commandWindows, { cwd: rootDir, input: editPayload(rootDir), env: { VERITAS_HOOK_SKIP: '1' } });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
@@ -254,32 +254,28 @@ test('the Codex PreToolUse hook carries the plain invocation for Windows, where 
 // The walk must end on its own. A hang here would stall every agent edit, so these fail fast.
 const WALK_TIMEOUT_MS = 20_000;
 
-test('the walk ends when the working directory has been deleted', () => {
+test('the walk ends when the working directory has been deleted', (t) => {
   // The deleted directory gets a parent of its own. On macOS, every process that asks for a deleted
   // working directory (git, the shell's pwd, node behind npx) takes time that grows with the number
   // of entries in its former parent: about 0.2 s per call at 100,000 entries, against 10 ms when the
   // parent is empty. The shared temporary directory holds every test's leftovers, so deleting there
   // made this test slow in proportion to the host's history, and it timed out under load.
-  const parent = mkdtempSync(join(tmpdir(), 'veritas-deleted-cwd-'));
+  const parent = tempDir(t, 'veritas-deleted-cwd-');
   const dir = join(parent, 'cwd');
   mkdirSync(dir);
-  try {
-    const result = runHook(`cd "${dir}" && rmdir "${dir}" && ${CODEX_PRE_TOOL_USE}`, {
-      cwd: parent,
-      input: editPayload(dir),
-      timeout: WALK_TIMEOUT_MS,
-    });
-    assert.equal(result.signal, null, `the hook command did not terminate within ${WALK_TIMEOUT_MS} ms`);
-    // With no working directory there is nothing to walk; plain npx reports the missing directory.
-    assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /process\.cwd failed|uv_cwd|ENOENT/);
-  } finally {
-    rmSync(parent, { recursive: true, force: true });
-  }
+  const result = runHook(`cd "${dir}" && rmdir "${dir}" && ${CODEX_PRE_TOOL_USE}`, {
+    cwd: parent,
+    input: editPayload(dir),
+    timeout: WALK_TIMEOUT_MS,
+  });
+  assert.equal(result.signal, null, `the hook command did not terminate within ${WALK_TIMEOUT_MS} ms`);
+  // With no working directory there is nothing to walk; plain npx reports the missing directory.
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /process\.cwd failed|uv_cwd|ENOENT/);
 });
 
-test('the walk ends from a working directory whose path is longer than 1024 bytes', () => {
-  const base = mkdtempSync(join(tmpdir(), 'veritas-deep-cwd-'));
+test('the walk ends from a working directory whose path is longer than 1024 bytes', (t) => {
+  const base = tempDir(t, 'veritas-deep-cwd-');
   const level = 'd'.repeat(100);
   // Built with relative steps: an absolute path this long is past macOS's PATH_MAX for most calls.
   const descend = Array.from({ length: 11 }, () => `mkdir ${level} && cd ${level}`).join(' && ');
@@ -287,7 +283,7 @@ test('the walk ends from a working directory whose path is longer than 1024 byte
     const result = runHook(`${descend} && [ "$(pwd -P | wc -c)" -gt 1024 ] && ${CODEX_PRE_TOOL_USE}`, {
       cwd: base,
       input: editPayload(base),
-      env: { npm_config_cache: mkdtempSync(join(tmpdir(), 'veritas-empty-npm-cache-')) },
+      env: { npm_config_cache: tempDir(t, 'veritas-empty-npm-cache-') },
       timeout: WALK_TIMEOUT_MS,
     });
     assert.equal(result.signal, null, `the hook command did not terminate within ${WALK_TIMEOUT_MS} ms`);
@@ -302,11 +298,11 @@ test('the walk ends from a working directory whose path is longer than 1024 byte
 
 // On Linux CI the case-mismatch test skips, so this exercises the identity match there: git names
 // the root with a `/./` segment, the same directory under a different string.
-test('the git root is matched by identity when git spells it differently', () => {
-  const { rootDir, packageDir } = pnpmWorkspace({ installVeritas: true });
+test('the git root is matched by identity when git spells it differently', (t) => {
+  const { rootDir, packageDir } = pnpmWorkspace(t, { installVeritas: true });
   const realGit = spawnSync('sh', ['-c', 'command -v git'], { encoding: 'utf8' }).stdout.trim();
   assert.ok(realGit, 'git must be on PATH');
-  const fakeBin = mkdtempSync(join(tmpdir(), 'veritas-fake-git-'));
+  const fakeBin = tempDir(t, 'veritas-fake-git-');
   const spelledRoot = `${realpathSync(rootDir)}/.`;
   writeFileSync(join(fakeBin, 'git'), [
     '#!/bin/sh',
@@ -329,10 +325,10 @@ test('the git root is matched by identity when git spells it differently', () =>
 // npx runs the bin it finds on a PATH built from the working directory, so with installs in both
 // packages/a and the root the nearest bin runs whichever --prefix the walk passes. The prefix gates
 // only npx's "is it installed" check. This pins the walk's own choice by recording npx's arguments.
-test('the walk passes the nearest install as the prefix', () => {
-  const { rootDir, packageDir } = pnpmWorkspace({ installVeritas: true });
+test('the walk passes the nearest install as the prefix', (t) => {
+  const { rootDir, packageDir } = pnpmWorkspace(t, { installVeritas: true });
   installLocalVeritasBin(packageDir);
-  const fakeBin = mkdtempSync(join(tmpdir(), 'veritas-fake-npx-'));
+  const fakeBin = tempDir(t, 'veritas-fake-npx-');
   const argsFile = join(fakeBin, 'args');
   writeFileSync(join(fakeBin, 'npx'), `#!/bin/sh\nprintf '%s\\n' "$@" > ${JSON.stringify(argsFile)}\n`);
   chmodSync(join(fakeBin, 'npx'), 0o755);

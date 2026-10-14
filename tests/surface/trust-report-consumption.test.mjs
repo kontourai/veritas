@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
 import {
   produceSurfaceStateForVeritasRecord,
 } from '../../src/surface/producer.mjs';
 import { buildFeedbackSummary } from '../../src/report/format.mjs';
 import { SURFACE_TRUST_POLICIES } from '../../src/surface/policies.mjs';
+import { tempDir } from '../temp-dir.mjs';
 
 function baseRecord(exceptions = {}) {
   return {
@@ -48,8 +48,8 @@ function baseRecord(exceptions = {}) {
   };
 }
 
-test('Surface trust report summary is persisted with stale and disputed statuses', async () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-surface-report-consumption-'));
+test('Surface trust report summary is persisted with stale and disputed statuses', async (t) => {
+  const rootDir = tempDir(t, 'veritas-surface-report-consumption-');
   const record = baseRecord({
     policy_results: [{
       rule_id: 'warn-rule',
@@ -131,5 +131,4 @@ test('Surface trust report summary is persisted with stale and disputed statuses
   });
   assert.match(feedback, /WARN  surface-status: claim "veritas\.surface-report-consumption-test\.policy\.warn-rule" is DISPUTED/);
   assert.match(feedback, /WARN  surface-status: claim "veritas\.surface-report-consumption-test\.evidence-inventory\.stale-inventory" is STALE/);
-  rmSync(rootDir, { recursive: true, force: true });
 });

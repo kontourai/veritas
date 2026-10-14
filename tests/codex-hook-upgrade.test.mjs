@@ -29,8 +29,8 @@ function veritas(rootDir, args) {
   return { status: result.status, output: `${result.stdout}\n${result.stderr}` };
 }
 
-test('reinstalling the Codex integration over an older engine leaves one Veritas handler per event', () => {
-  const rootDir = initCommittedRepo('veritas-codex-hook-upgrade-');
+test('reinstalling the Codex integration over an older engine leaves one Veritas handler per event', (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-codex-hook-upgrade-');
   installLocalVeritasBin(rootDir);
   mkdirSync(join(rootDir, '.codex'), { recursive: true });
   const hooksPath = join(rootDir, '.codex/hooks.json');
@@ -70,8 +70,8 @@ test('reinstalling the Codex integration over an older engine leaves one Veritas
   assert.match(status.output, /"integrationInstalled": true/);
 });
 
-test('a Veritas Codex handler without the current Windows override reads as not installed until reinstalled', () => {
-  const rootDir = initCommittedRepo('veritas-codex-hook-windows-');
+test('a Veritas Codex handler without the current Windows override reads as not installed until reinstalled', (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-codex-hook-windows-');
   installLocalVeritasBin(rootDir);
   mkdirSync(join(rootDir, '.codex'), { recursive: true });
   const hooksPath = join(rootDir, '.codex/hooks.json');

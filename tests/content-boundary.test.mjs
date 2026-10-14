@@ -2,18 +2,15 @@ import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
 import {
   closeSync,
-  mkdtempSync,
   mkdirSync,
   openSync,
   readFileSync,
   realpathSync,
   renameSync,
-  rmSync,
   symlinkSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
@@ -26,6 +23,7 @@ import {
   runContentBoundary,
 } from "../src/conformance/content-boundary.mjs";
 import * as packageRoot from "../src/index.mjs";
+import { tempDir } from "./temp-dir.mjs";
 
 const engineUrl = pathToFileURL(
   path.resolve("src/conformance/content-boundary.mjs"),
@@ -40,8 +38,8 @@ function git(rootDir, args, options = {}) {
   });
 }
 
-function makeRepository() {
-  const rootDir = mkdtempSync(path.join(tmpdir(), "veritas-content-boundary-"));
+function makeRepository(t) {
+  const rootDir = tempDir(t, "veritas-content-boundary-");
   git(rootDir, ["init", "-q"]);
   git(rootDir, ["config", "user.name", "Veritas Test"]);
   git(rootDir, ["config", "user.email", "veritas@example.invalid"]);
@@ -120,8 +118,7 @@ test("enumeration uses exact NUL-delimited Git commands and preserves tracked pr
 });
 
 test("tracked and untracked text are scanned while ignored Git files are omitted", (t) => {
-  const rootDir = makeRepository();
-  t.after(() => rmSync(rootDir, { recursive: true, force: true }));
+  const rootDir = makeRepository(t);
   writeFileSync(path.join(rootDir, ".gitignore"), "ignored.txt\n");
   writeFileSync(path.join(rootDir, "tracked.txt"), "clean\n");
   commitAll(rootDir);
@@ -147,8 +144,7 @@ test("tracked and untracked text are scanned while ignored Git files are omitted
 });
 
 test("empty bannedTerms scans no consumer vocabulary of its own", (t) => {
-  const rootDir = makeRepository();
-  t.after(() => rmSync(rootDir, { recursive: true, force: true }));
+  const rootDir = makeRepository(t);
   writeFileSync(
     path.join(rootDir, "tracked-policy.txt"),
     "SYNTHETIC_CONSUMER_SENTINEL_ALPHA\n",
@@ -207,8 +203,7 @@ test("shared engine source declares no built-in banned vocabulary", () => {
 });
 
 test("thin consumer child process fails on a Git-verified untracked file before staging", (t) => {
-  const rootDir = makeRepository();
-  t.after(() => rmSync(rootDir, { recursive: true, force: true }));
+  const rootDir = makeRepository(t);
   const adapter = `#!/usr/bin/env node
 (async () => {
   const { runContentBoundary } = await import(${JSON.stringify(engineUrl)});
@@ -243,8 +238,7 @@ test("thin consumer child process fails on a Git-verified untracked file before 
 });
 
 test("tracked runtime artifacts fail and untracked runtime artifacts are not vocabulary-scanned", (t) => {
-  const rootDir = makeRepository();
-  t.after(() => rmSync(rootDir, { recursive: true, force: true }));
+  const rootDir = makeRepository(t);
   mkdirSync(path.join(rootDir, ".kontourai/flow-agents/tracked"), { recursive: true });
   writeFileSync(path.join(rootDir, ".kontourai/flow-agents/tracked/state.md"), "clean\n");
   commitAll(rootDir);
@@ -346,10 +340,9 @@ test("malformed repository paths are not read outside root", () => {
 });
 
 test("tracked and untracked symlink targets outside the canonical root are never read", (t) => {
-  const parentDir = mkdtempSync(path.join(tmpdir(), "veritas-content-boundary-links-"));
+  const parentDir = tempDir(t, "veritas-content-boundary-links-");
   const rootDir = path.join(parentDir, "repo");
   mkdirSync(rootDir);
-  t.after(() => rmSync(parentDir, { recursive: true, force: true }));
   git(rootDir, ["init", "-q"]);
   git(rootDir, ["config", "user.name", "Veritas Test"]);
   git(rootDir, ["config", "user.email", "veritas@example.invalid"]);
@@ -400,12 +393,11 @@ test("tracked and untracked symlink targets outside the canonical root are never
 });
 
 test("a lexical target swap after canonical resolution cannot redirect the read", (t) => {
-  const parentDir = mkdtempSync(path.join(tmpdir(), "veritas-content-boundary-race-"));
+  const parentDir = tempDir(t, "veritas-content-boundary-race-");
   const rootDir = path.join(parentDir, "repo");
   const swapDir = path.join(rootDir, "swap");
   const target = path.join(swapDir, "target.txt");
   mkdirSync(swapDir, { recursive: true });
-  t.after(() => rmSync(parentDir, { recursive: true, force: true }));
   writeFileSync(target, "clean\n");
   writeFileSync(path.join(parentDir, "outside.txt"), "outside-token\n");
 
@@ -436,14 +428,13 @@ test("a lexical target swap after canonical resolution cannot redirect the read"
 });
 
 test("a persistent ancestor swap opens but never reads or leaks the descriptor", (t) => {
-  const parentDir = mkdtempSync(path.join(tmpdir(), "veritas-content-boundary-parent-race-"));
+  const parentDir = tempDir(t, "veritas-content-boundary-parent-race-");
   const rootDir = path.join(parentDir, "repo");
   const swapDir = path.join(rootDir, "swap");
   const savedDir = path.join(rootDir, "swap-original");
   const outsideDir = path.join(parentDir, "outside-dir");
   mkdirSync(swapDir, { recursive: true });
   mkdirSync(outsideDir);
-  t.after(() => rmSync(parentDir, { recursive: true, force: true }));
   writeFileSync(path.join(swapDir, "target.txt"), "clean\n");
   writeFileSync(path.join(outsideDir, "target.txt"), "outside-token\n");
   const events = [];
@@ -481,14 +472,13 @@ test("a persistent ancestor swap opens but never reads or leaks the descriptor",
 });
 
 test("an ancestor swap-open-restore fails descriptor identity before reading", (t) => {
-  const parentDir = mkdtempSync(path.join(tmpdir(), "veritas-content-boundary-aba-"));
+  const parentDir = tempDir(t, "veritas-content-boundary-aba-");
   const rootDir = path.join(parentDir, "repo");
   const swapDir = path.join(rootDir, "swap");
   const savedDir = path.join(rootDir, "swap-original");
   const outsideDir = path.join(parentDir, "outside-dir");
   mkdirSync(swapDir, { recursive: true });
   mkdirSync(outsideDir);
-  t.after(() => rmSync(parentDir, { recursive: true, force: true }));
   writeFileSync(path.join(swapDir, "target.txt"), "clean\n");
   writeFileSync(path.join(outsideDir, "target.txt"), "outside-token\n");
   const events = [];
@@ -529,8 +519,7 @@ test("an ancestor swap-open-restore fails descriptor identity before reading", (
 });
 
 test("a legacy path-based readFile option cannot reopen content after validation", (t) => {
-  const rootDir = mkdtempSync(path.join(tmpdir(), "veritas-content-boundary-no-path-read-"));
-  t.after(() => rmSync(rootDir, { recursive: true, force: true }));
+  const rootDir = tempDir(t, "veritas-content-boundary-no-path-read-");
   writeFileSync(path.join(rootDir, "clean.txt"), "clean\n");
   let legacyCalls = 0;
 
@@ -550,8 +539,7 @@ test("a legacy path-based readFile option cannot reopen content after validation
 });
 
 test("invalid UTF-8 Git pathname bytes are preserved and fail closed", (t) => {
-  const rootDir = makeRepository();
-  t.after(() => rmSync(rootDir, { recursive: true, force: true }));
+  const rootDir = makeRepository(t);
   const rawName = Buffer.from([0x62, 0x61, 0x64, 0x2d, 0xff, 0x2e, 0x74, 0x78, 0x74]);
   const rawPath = Buffer.concat([Buffer.from(rootDir), Buffer.from(path.sep), rawName]);
   try {
@@ -606,8 +594,7 @@ test("injected invalid UTF-8 pathname bytes fail closed with escaped identity", 
 });
 
 test("newline paths render on one physical line and valid Unicode remains readable", (t) => {
-  const rootDir = makeRepository();
-  t.after(() => rmSync(rootDir, { recursive: true, force: true }));
+  const rootDir = makeRepository(t);
   writeFileSync(path.join(rootDir, "line one\n- forged.txt"), "forbidden\n");
   writeFileSync(path.join(rootDir, "café-東京.txt"), "forbidden\n");
 
@@ -641,11 +628,10 @@ test("control-bearing pathname and label render as one unambiguous record", () =
 });
 
 test("packed package supports the documented CommonJS dynamic import", (t) => {
-  const tempDir = mkdtempSync(path.join(tmpdir(), "veritas-packed-consumer-"));
-  t.after(() => rmSync(tempDir, { recursive: true, force: true }));
-  const packDir = path.join(tempDir, "packs");
-  const packageDir = path.join(tempDir, "consumer", "node_modules", "@kontourai", "veritas");
-  const consumerDir = path.join(tempDir, "consumer");
+  const consumerRoot = tempDir(t, "veritas-packed-consumer-");
+  const packDir = path.join(consumerRoot, "packs");
+  const packageDir = path.join(consumerRoot, "consumer", "node_modules", "@kontourai", "veritas");
+  const consumerDir = path.join(consumerRoot, "consumer");
   mkdirSync(packDir, { recursive: true });
   mkdirSync(packageDir, { recursive: true });
   const packed = JSON.parse(execFileSync("npm", [
@@ -653,7 +639,7 @@ test("packed package supports the documented CommonJS dynamic import", (t) => {
   ], {
     cwd: path.resolve("."),
     encoding: "utf8",
-    env: { ...process.env, npm_config_cache: path.join(tempDir, "npm-cache") },
+    env: { ...process.env, npm_config_cache: path.join(consumerRoot, "npm-cache") },
   }));
   const tarball = path.join(packDir, packed[0].filename);
   execFileSync("tar", ["-xzf", tarball, "--strip-components=1", "-C", packageDir]);

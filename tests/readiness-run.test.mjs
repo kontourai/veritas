@@ -16,8 +16,8 @@ import { requiredEvidenceChecksFor } from '../src/surface/readiness.mjs';
 import { readinessRuntimeEnvelope, runReadinessCheckCli } from '../src/cli/readiness-check.mjs';
 import { commitAll, initCommittedRepo, parseCliJson, repoRootDir } from './helpers.mjs';
 
-test('Merge Readiness run coordinates evidence, report, and draft behind one interface', async () => {
-  const rootDir = initCommittedRepo('veritas-readiness-run-');
+test('Merge Readiness run coordinates evidence, report, and draft behind one interface', async (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-readiness-run-');
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({
     scripts: { test: 'node -e "process.exit(0)"' },
   }, null, 2));
@@ -61,13 +61,13 @@ test('Merge Readiness run coordinates evidence, report, and draft behind one int
   assert.ok(validateEvidence.errors.some((error) => error.keyword === 'additionalProperties'));
 });
 
-test('skipped or no-execution required evidence is diagnostic-only and rejects canonical readiness', async () => {
+test('skipped or no-execution required evidence is diagnostic-only and rejects canonical readiness', async (t) => {
   for (const [label, rawOptions, runtime] of [
     ['skip flag', { skipEvidenceCheck: true }, {}],
     ['runtime no-execution', {}, { runEvidenceChecks: false }],
   ]) {
     const testId = label.replaceAll(' ', '-');
-    const rootDir = initCommittedRepo(`veritas-readiness-${testId}-`);
+    const rootDir = initCommittedRepo(t, `veritas-readiness-${testId}-`);
     writeFileSync(join(rootDir, 'package.json'), JSON.stringify({
       scripts: { test: 'node -e "process.exit(0)"' },
     }, null, 2));
@@ -123,8 +123,8 @@ test('skipped or no-execution required evidence is diagnostic-only and rejects c
   }
 });
 
-test('readiness CLI JSON retains required evidence state when an embedded runtime performs no execution', async () => {
-  const rootDir = initCommittedRepo('veritas-readiness-cli-runtime-no-execution-');
+test('readiness CLI JSON retains required evidence state when an embedded runtime performs no execution', async (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-readiness-cli-runtime-no-execution-');
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({
     scripts: { test: 'node -e "process.exit(0)"' },
   }, null, 2));
@@ -164,8 +164,8 @@ test('readiness CLI JSON retains required evidence state when an embedded runtim
   assert.match(output.readiness.remediation[0].message, /Required Evidence Check required-evidence-check is skipped/);
 });
 
-test('readiness CLI returns failure for skipped required evidence while retaining its diagnostic report', () => {
-  const rootDir = initCommittedRepo('veritas-readiness-cli-skip-required-');
+test('readiness CLI returns failure for skipped required evidence while retaining its diagnostic report', (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-readiness-cli-skip-required-');
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({
     scripts: { test: 'node -e "process.exit(0)"' },
   }, null, 2));
@@ -197,8 +197,8 @@ test('readiness CLI returns failure for skipped required evidence while retainin
   );
 });
 
-test('a failed optional diagnostic cannot block or prevent required Evidence Checks from running', async () => {
-  const rootDir = initCommittedRepo('veritas-readiness-optional-diagnostic-');
+test('a failed optional diagnostic cannot block or prevent required Evidence Checks from running', async (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-readiness-optional-diagnostic-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   writeBootstrapStarterKit({
     rootDir,
@@ -352,8 +352,8 @@ test('repo-map integrity cannot distinguish low-entropy MCP secret candidates', 
   assert.equal(new Set(candidates.map(integrityFor)).size, 1);
 });
 
-test('required evidence cannot be forged by reflective copies or callback mutation', async () => {
-  const rootDir = initCommittedRepo('veritas-readiness-private-association-');
+test('required evidence cannot be forged by reflective copies or callback mutation', async (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-readiness-private-association-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   writeBootstrapStarterKit({
     rootDir,
@@ -418,8 +418,8 @@ test('required evidence cannot be forged by reflective copies or callback mutati
   }
 });
 
-test('Merge Readiness reports a typed evidence-check timeout and phase progress', async () => {
-  const rootDir = initCommittedRepo('veritas-readiness-run-timeout-');
+test('Merge Readiness reports a typed evidence-check timeout and phase progress', async (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-readiness-run-timeout-');
   const markerPath = join(rootDir, 'descendant-ran');
   const childScriptPath = join(rootDir, 'descendant.mjs');
   writeFileSync(
@@ -473,8 +473,8 @@ test('Merge Readiness reports a typed evidence-check timeout and phase progress'
   assert.equal(existsSync(markerPath), false, 'timed-out evidence check descendant must not continue');
 });
 
-test('Merge Readiness reports a typed MCP evidence-check timeout and phase progress', async () => {
-  const rootDir = initCommittedRepo('veritas-readiness-run-mcp-timeout-');
+test('Merge Readiness reports a typed MCP evidence-check timeout and phase progress', async (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-readiness-run-mcp-timeout-');
   const serverPath = join(rootDir, 'mcp-server.mjs');
   const sdkRoot = resolve('node_modules/@modelcontextprotocol/sdk/dist/esm');
   writeFileSync(serverPath, `
@@ -555,8 +555,8 @@ await server.connect(new StdioServerTransport());
   ]);
 });
 
-test('Merge Readiness records every required MCP timeout', async () => {
-  const rootDir = initCommittedRepo('veritas-readiness-run-multi-mcp-timeout-');
+test('Merge Readiness records every required MCP timeout', async (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-readiness-run-multi-mcp-timeout-');
   const serverPath = join(rootDir, 'mcp-server.mjs');
   const sdkRoot = resolve('node_modules/@modelcontextprotocol/sdk/dist/esm');
   writeFileSync(serverPath, `
@@ -602,8 +602,8 @@ await server.connect(new StdioServerTransport());
   assert.equal(result.currentStatus, 'fail');
 });
 
-test('MCP execution exports only structural diagnostics', async () => {
-  const rootDir = initCommittedRepo('veritas-readiness-run-mcp-redaction-');
+test('MCP execution exports only structural diagnostics', async (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-readiness-run-mcp-redaction-');
   const serverPath = join(rootDir, 'mcp-server.mjs');
   const sdkRoot = resolve('node_modules/@modelcontextprotocol/sdk/dist/esm');
   writeFileSync(serverPath, `
@@ -707,8 +707,8 @@ await server.connect(new StdioServerTransport());
   );
 });
 
-test('Merge Readiness terminates a Flow Agents-shaped redirected descendant in diff scope', async () => {
-  const rootDir = initCommittedRepo('veritas-readiness-run-diff-scope-timeout-');
+test('Merge Readiness terminates a Flow Agents-shaped redirected descendant in diff scope', async (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-readiness-run-diff-scope-timeout-');
   const markerPath = join(rootDir, 'redirected-descendant-ran');
   const childScriptPath = join(rootDir, 'redirected-descendant.mjs');
   writeFileSync(
@@ -747,8 +747,8 @@ test('Merge Readiness terminates a Flow Agents-shaped redirected descendant in d
   assert.equal(existsSync(markerPath), false, 'redirected descendant must not outlive diff-scoped readiness');
 });
 
-test('Merge Readiness bounds Git diff scope resolution by the workflow deadline', async () => {
-  const rootDir = initCommittedRepo('veritas-readiness-scope-resolution-timeout-');
+test('Merge Readiness bounds Git diff scope resolution by the workflow deadline', async (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-readiness-scope-resolution-timeout-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   writeBootstrapStarterKit({
     rootDir,

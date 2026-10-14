@@ -12,6 +12,7 @@
 | `standards-feedback/` | Standards feedback subsystem | Filesystem observation and recommendation generation for standards-feedback records and drafts. |
 | `surface/` | Surface projection and consumption | Readiness-derived claim fixtures and trust report consumption behavior at the Veritas-to-Surface boundary. |
 | `helpers.mjs` | Shared test helpers | Temporary repo setup, JSON helpers, command wrappers, and fixtures used across domains. |
+| `temp-dir.mjs` | Temporary directories | `tempDir(t, prefix)` creates a directory under the OS temp dir and removes it when the test ends. Pass `{ after }` from `node:test` instead of `t` at module scope. Tests never create a temp directory any other way; `temp-dir-guard.test.mjs` fails if one does. |
 
 ## Verification Commands
 

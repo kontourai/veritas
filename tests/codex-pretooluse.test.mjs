@@ -12,8 +12,8 @@ import {
 import { codexEditPaths, evaluateCodexPreToolUse } from '../src/hooks/codex-pre-tool-use.mjs';
 import { commitAll, initCommittedRepo, installLocalVeritasBin } from './helpers.mjs';
 
-function fixture() {
-  const rootDir = initCommittedRepo('veritas-codex-pretool-');
+function fixture(t) {
+  const rootDir = initCommittedRepo(t, 'veritas-codex-pretool-');
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { test: 'node --version' } }));
   writeBootstrapStarterKit({ rootDir, projectName: 'codex-hook', evidenceCheck: 'npm test', force: true });
   mkdirSync(join(rootDir, 'docs'), { recursive: true });
@@ -63,8 +63,8 @@ test('Codex patch path parsing includes all changed paths and refuses pathless e
   assert.deepEqual(codexEditPaths({ tool_name: 'apply_patch', tool_input: { command: 'no patch' } }), []);
 });
 
-test('Codex PreToolUse presents matching guidance before an allowed edit', () => {
-  const rootDir = fixture();
+test('Codex PreToolUse presents matching guidance before an allowed edit', (t) => {
+  const rootDir = fixture(t);
   const result = evaluateCodexPreToolUse({
     rootDir,
     stdinText: JSON.stringify({ tool_name: 'apply_patch', tool_input: { command: patch('docs/notes.md', 'docs/other.md') } }),
@@ -75,8 +75,8 @@ test('Codex PreToolUse presents matching guidance before an allowed edit', () =>
   assert.match(result.guidanceContext, /Do: Check the named owner/);
 });
 
-test('Codex PreToolUse defers content checks until a newly added file exists', () => {
-  const rootDir = fixture();
+test('Codex PreToolUse defers content checks until a newly added file exists', (t) => {
+  const rootDir = fixture(t);
   const standardsPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
   const standards = JSON.parse(readFileSync(standardsPath, 'utf8'));
   standards.rules.push({
@@ -116,8 +116,8 @@ test('Codex PreToolUse defers content checks until a newly added file exists', (
   assert.equal(evaluateCodexPreToolUse({ rootDir, stdinText: addInput }).decision, 'approve');
 });
 
-test('Codex PreToolUse denies strict-area edits and pathless patches', () => {
-  const rootDir = fixture();
+test('Codex PreToolUse denies strict-area edits and pathless patches', (t) => {
+  const rootDir = fixture(t);
   const denied = evaluateCodexPreToolUse({
     rootDir, actor: 'other',
     stdinText: JSON.stringify({ tool_name: 'apply_patch', tool_input: { command: patch('.veritas/repo-map.json') } }),
@@ -132,8 +132,8 @@ test('Codex PreToolUse denies strict-area edits and pathless patches', () => {
   assert.match(pathless.reason, /no parseable file path/);
 });
 
-test('Codex PreToolUse still denies every strict-area edit after a briefing', () => {
-  const rootDir = fixture();
+test('Codex PreToolUse still denies every strict-area edit after a briefing', (t) => {
+  const rootDir = fixture(t);
   const stdinText = JSON.stringify({ session_id: 'repeat-denial', tool_name: 'apply_patch', tool_input: { command: patch('.veritas/repo-map.json') } });
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const result = evaluateCodexPreToolUse({ rootDir, actor: 'other', stdinText });
@@ -142,8 +142,8 @@ test('Codex PreToolUse still denies every strict-area edit after a briefing', ()
   }
 });
 
-test('Codex PreToolUse records an explicit hook skip as a bypass', () => {
-  const rootDir = fixture();
+test('Codex PreToolUse records an explicit hook skip as a bypass', (t) => {
+  const rootDir = fixture(t);
   const before = process.env.VERITAS_HOOK_SKIP;
   process.env.VERITAS_HOOK_SKIP = '1';
   try {
@@ -169,8 +169,8 @@ test('the Flow Agents provisioned Codex hook stays identical to the Veritas inst
   assert.deepEqual(kit.provisions.map((item) => item.merge), ['hooks-json']);
 });
 
-test('installed Codex hook config routes a real CLI invocation with model-visible context', () => {
-  const rootDir = fixture();
+test('installed Codex hook config routes a real CLI invocation with model-visible context', (t) => {
+  const rootDir = fixture(t);
   const targetHooksFile = join(rootDir, '.codex/hooks.json');
   applyCodexHook({ rootDir, targetHooksFile });
   const installed = JSON.parse(readFileSync(targetHooksFile, 'utf8'));
@@ -197,8 +197,8 @@ test('installed Codex hook config routes a real CLI invocation with model-visibl
   assert.match(JSON.parse(blocked).hookSpecificOutput.additionalContext, /notes-review/);
 });
 
-test('installed Codex hook briefs once per session while preserving repeated policy decisions', () => {
-  const rootDir = fixture();
+test('installed Codex hook briefs once per session while preserving repeated policy decisions', (t) => {
+  const rootDir = fixture(t);
   const input = JSON.stringify({
     session_id: 'codex-briefing-smoke', cwd: rootDir, tool_name: 'apply_patch',
     tool_input: { command: patch('docs/notes.md') },
@@ -213,8 +213,8 @@ test('installed Codex hook briefs once per session while preserving repeated pol
   assert.deepEqual(second, {});
 });
 
-test('Codex CLI emits the supported deny shape without legacy decision fields', () => {
-  const rootDir = fixture();
+test('Codex CLI emits the supported deny shape without legacy decision fields', (t) => {
+  const rootDir = fixture(t);
   const result = spawnSync(process.execPath, [
     'bin/veritas.mjs', 'hooks', 'codex', 'pre-tool-use', '--root', rootDir, '--actor', 'other',
   ], {

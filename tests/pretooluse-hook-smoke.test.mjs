@@ -26,8 +26,8 @@ import {
 const DENIED_FILE = '.veritas/repo-map.json';
 const ALLOWED_FILE = 'docs/notes.md';
 
-function bootstrapGovernedRepo(prefix) {
-  const rootDir = initCommittedRepo(prefix);
+function bootstrapGovernedRepo(t, prefix) {
+  const rootDir = initCommittedRepo(t, prefix);
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({
     scripts: { test: 'node -e "process.exit(0)"' },
   }, null, 2));
@@ -100,8 +100,8 @@ function readExceptionRecords(rootDir) {
   return readFileSync(path, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
 }
 
-test('installed PreToolUse hook exits 2 and blocks a denied strict-surface edit', () => {
-  const rootDir = bootstrapGovernedRepo('veritas-pretool-smoke-deny-');
+test('installed PreToolUse hook exits 2 and blocks a denied strict-surface edit', (t) => {
+  const rootDir = bootstrapGovernedRepo(t, 'veritas-pretool-smoke-deny-');
   const install = installClaudeCodeIntegration(rootDir);
   assert.equal(install.preToolUse.outputPath, '.veritas/hooks/pre-tool-use.sh');
 
@@ -117,8 +117,8 @@ test('installed PreToolUse hook exits 2 and blocks a denied strict-surface edit'
   assert.match(payload.reason, /work-area-boundary/);
 });
 
-test('installed PreToolUse hook exits 0 and approves an allowed edit', () => {
-  const rootDir = bootstrapGovernedRepo('veritas-pretool-smoke-allow-');
+test('installed PreToolUse hook exits 0 and approves an allowed edit', (t) => {
+  const rootDir = bootstrapGovernedRepo(t, 'veritas-pretool-smoke-allow-');
   installClaudeCodeIntegration(rootDir);
 
   const result = runInstalledHook(rootDir, ALLOWED_FILE);
@@ -131,8 +131,8 @@ test('installed PreToolUse hook exits 0 and approves an allowed edit', () => {
   assert.match(payload.hookSpecificOutput.additionalContext, /Do: Check the named owner/);
 });
 
-test('installed PreToolUse hook blocks a pathless edit instead of silently approving it', () => {
-  const rootDir = bootstrapGovernedRepo('veritas-pretool-smoke-pathless-');
+test('installed PreToolUse hook blocks a pathless edit instead of silently approving it', (t) => {
+  const rootDir = bootstrapGovernedRepo(t, 'veritas-pretool-smoke-pathless-');
   installClaudeCodeIntegration(rootDir);
   const result = spawnSync(join(rootDir, '.veritas/hooks/pre-tool-use.sh'), [], {
     cwd: rootDir,
@@ -144,8 +144,8 @@ test('installed PreToolUse hook blocks a pathless edit instead of silently appro
   assert.match(parseCliJson(result.stdout).reason, /no file path/);
 });
 
-test('installed PreToolUse hook records VERITAS_HOOK_SKIP bypasses instead of exiting silently', () => {
-  const rootDir = bootstrapGovernedRepo('veritas-pretool-smoke-skip-');
+test('installed PreToolUse hook records VERITAS_HOOK_SKIP bypasses instead of exiting silently', (t) => {
+  const rootDir = bootstrapGovernedRepo(t, 'veritas-pretool-smoke-skip-');
   installClaudeCodeIntegration(rootDir);
   assert.deepEqual(readExceptionRecords(rootDir), []);
 
@@ -166,8 +166,8 @@ test('installed PreToolUse hook records VERITAS_HOOK_SKIP bypasses instead of ex
   assert.match(records[0].reason, /Emergency hotfix/);
 });
 
-test('generated PreToolUse hook body invokes a verb the bin actually routes', () => {
-  const rootDir = bootstrapGovernedRepo('veritas-pretool-smoke-route-');
+test('generated PreToolUse hook body invokes a verb the bin actually routes', (t) => {
+  const rootDir = bootstrapGovernedRepo(t, 'veritas-pretool-smoke-route-');
   installClaudeCodeIntegration(rootDir);
   const hookBody = readFileSync(join(rootDir, '.veritas/hooks/pre-tool-use.sh'), 'utf8');
   const invocation = hookBody.match(/^exec npx --no @kontourai\/veritas (.+) "\$@"$/m);
