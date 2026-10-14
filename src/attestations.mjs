@@ -507,22 +507,24 @@ export function assertAttestationApprovalReference({
 }
 
 function compareProtectedStandardsHashes(rootDir, current, hashes, legacyRepoMapHash, options) {
+  // A null current hash marks a protected entry that is not a regular file:
+  // it drifts whatever the attestation holds (even a hand-edited null), and it
+  // is never read through a link.
+  const differs = (field) => hashes[field] === null || current[field] !== hashes[field];
   const drift = ['repoStandardsHash', 'authoritySettingsHash']
-    .filter((field) => current[field] !== hashes[field])
+    .filter(differs)
     .map((field) => ({
       field,
       attested: current[field],
       current: hashes[field],
     }));
-  // A null current hash marks a protected entry that is not a regular file:
-  // it drifts whatever its content, and is never read through a link.
   if (legacyRepoMapHash
     && (hashes.repoMapHash === null || !matchesLegacyRepoMapHash(rootDir, current.repoMapHash, options))) {
     // Preserve the drift record contract without exposing either the legacy
     // raw digest or a derived value that could test candidate runtime inputs.
     drift.push({ field: 'repoMapHash', attested: null, current: null });
   }
-  if (!legacyRepoMapHash && current.repoMapHash !== hashes.repoMapHash) {
+  if (!legacyRepoMapHash && differs('repoMapHash')) {
     drift.push({
       field: 'repoMapHash',
       attested: current.repoMapHash,

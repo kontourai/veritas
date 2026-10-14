@@ -1323,6 +1323,62 @@ test('a protected path under a top-level directory whose name starts with two do
   assert.match(attestationPolicyLine(swapped.stdout), /^FAIL\s+policy-changes-require-attestation/, swapped.stdout);
 });
 
+test('a non-regular entry drifts even against a hand-edited null attested hash', (t) => {
+  const { rootDir, attestation } = bootstrapAttestedRepo();
+  const recordPath = join(rootDir, '.veritas/attestations', `${attestation.id}.attestation.json`);
+  const record = readJsonFromAbsolute(recordPath);
+  record.authoritySettingsHash = null;
+  writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`);
+  if (!swapForSymlinkToCopy(t, rootDir, AUTHORITY_SETTINGS_PATH)) return;
+
+  const status = cliAttestStatus(rootDir);
+  assert.equal(status.state, 'drifted');
+  assert.deepEqual(status.drift, [{ field: 'authoritySettingsHash', attested: null, current: null }]);
+  const readiness = cliReadiness(rootDir, ['--working-tree']);
+  assert.notEqual(readiness.status, 0);
+  assert.match(attestationPolicyLine(readiness.stdout), /^FAIL\s+policy-changes-require-attestation/, readiness.stdout);
+});
+
+test('a legacy attestation drifts when its Repo Map is swapped for a symbolic link to an identical copy', (t) => {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-legacy-link-');
+  createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Legacy-compatible approval.',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+  rewriteCurrentAttestationAsLegacy(rootDir);
+  assert.equal(cliAttestStatus(rootDir).state, 'current');
+  if (!swapForSymlinkToCopy(t, rootDir, '.veritas/repo-map.json')) return;
+
+  // The legacy comparison reads the raw file, which would follow the link
+  // and match; the entry check must win before that read.
+  const status = cliAttestStatus(rootDir);
+  assert.equal(status.state, 'drifted');
+  assert.deepEqual(status.drift, [{ field: 'repoMapHash', attested: null, current: null }]);
+  const readiness = cliReadiness(rootDir, ['--working-tree']);
+  assert.notEqual(readiness.status, 0);
+  assert.match(attestationPolicyLine(readiness.stdout), /^FAIL\s+policy-changes-require-attestation/, readiness.stdout);
+});
+
+test('remediation is per file when content drift and a non-regular entry occur together', (t) => {
+  const { rootDir } = bootstrapAttestedRepo();
+  const policyPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
+  const policy = JSON.parse(readFileSync(policyPath, 'utf8'));
+  policy.description = `${policy.description} Edited after attestation.`;
+  writeFileSync(policyPath, `${JSON.stringify(policy, null, 2)}\n`);
+  if (!swapForSymlinkToCopy(t, rootDir, AUTHORITY_SETTINGS_PATH)) return;
+
+  const result = buildAttestationPolicyResult(cliAttestStatus(rootDir));
+  assert.equal(result.status, 'fail');
+  const remediation = Object.fromEntries(result.findings.map((finding) => [finding.artifact, finding.remediation]));
+  assert.deepEqual(Object.keys(remediation).sort(), ['authoritySettingsHash', 'repoStandardsHash']);
+  assert.match(remediation.repoStandardsHash, /^Run veritas attest policy-change/);
+  assert.match(remediation.authoritySettingsHash, /^Restore each listed protected standards file/);
+});
+
 test('an unchanged regular trust root keeps the hashes of a real committed attestation', () => {
   // These fixture files are byte-for-byte the protected standards this repo
   // attested in policy-change-2026-10-13T19-13-53-170Z-9ab453bfd7b4 (copied
