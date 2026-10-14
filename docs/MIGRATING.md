@@ -279,3 +279,32 @@ keep the bare spelling until you edit them by hand:
   spelling, and its first lines lead the text `explain` prints. Change that command to
   `npx --no @kontourai/veritas attest ...`.
 - `.veritas/README.md` and `package.json` scripts: see the previous section.
+
+## Session-Log Capture Moves to Claude Code `SessionEnd`; Codex Capture Is Removed
+
+Earlier releases installed the standards-feedback session-log capture as a `PostSession` hook for
+both Claude Code and Codex. Neither runtime has a `PostSession` event, so the capture never ran.
+Claude Code ignores the key and `claude doctor` reports it under "Invalid settings" as
+`Unknown hook event "PostSession" was ignored`. Codex does not run it either. The capture
+also read `CLAUDE_TRANSCRIPT_PATH`, `CODEX_TRANSCRIPT_PATH` and `CODEX_SESSION_ID`, which neither
+runtime documents; both pass the session log path as `transcript_path` in the hook input on stdin.
+
+- **Claude Code.** `integrations claude-code install` now writes the capture under `SessionEnd`.
+  It runs `npx --no @kontourai/veritas hooks claude-code session-end`, which reads
+  `transcript_path` from stdin. Reinstalling removes the `PostSession` handler earlier releases
+  wrote, matched by its exact command, and keeps your own `SessionEnd` and `PostSession` handlers.
+  `integrations claude-code status` reports `postSessionConfigured: true` only for the `SessionEnd`
+  handler, so it reports `false` until you reinstall. The handler keeps a 60-second `timeout`,
+  which raises Claude Code's shared `SessionEnd` budget (1.5 seconds by default) to match.
+- **Codex.** `integrations codex install` no longer writes a session-log capture. Codex does have
+  `SessionEnd`, but its transcript is JSONL rollout records that the Codex session log reader does
+  not read, and Codex allows a `SessionEnd` hook at most 3 seconds. Reinstalling with the same
+  `--codex-home` or `--target-hooks-file` option removes the `PostSession` handler earlier releases
+  wrote and keeps every other handler. Until then, `integrations codex status` with that option
+  reports `integrationInstalled: false`. `.veritas/runtime/codex-hooks.json` is rewritten without
+  `PostSession`.
+
+To refresh, run `npx --no @kontourai/veritas integrations claude-code install --force` and
+`npx --no @kontourai/veritas integrations codex install --force` with the option you installed with.
+You can still draft standards feedback from a Claude Code session log by hand with
+`npx --no @kontourai/veritas feedback observe --tool claude-code --session-log <path>`.

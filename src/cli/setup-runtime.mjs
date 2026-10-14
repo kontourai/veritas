@@ -1,5 +1,5 @@
 import { displayText } from '../util/display.mjs';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { parseApplyArgs, parsePreToolUseArgs } from '../args.mjs';
@@ -8,6 +8,7 @@ import { formatPreToolUseGuidance } from '../hooks/pre-tool-use.mjs';
 import { runtimeIntegrationFor } from '../integrations/runtime-integrations.mjs';
 import { evaluateCodexPreToolUse } from '../hooks/codex-pre-tool-use.mjs';
 import { prepareGuidanceBriefing } from '../hooks/guidance-briefing.mjs';
+import { observeSessionLogStandardsFeedback } from '../integrations/session-logs.mjs';
 
 function codexHookRoot(options, defaults, stdinText) {
   if (options.rootDir) return resolve(options.rootDir);
@@ -96,6 +97,35 @@ export function runClaudeCodePreToolUseCli(argv = process.argv.slice(2), default
   if (result.decision === 'block') {
     process.exitCode = 2;
   }
+}
+
+// Claude Code SessionEnd hook: the hook input on stdin names the session log as `transcript_path`
+// (https://code.claude.com/docs/en/hooks#sessionend-input). VERITAS_SESSION_LOG_PATH, when set,
+// takes precedence. The draft is written under the working directory, as `feedback observe` does.
+// Claude Code shows a SessionEnd hook's stderr to the user and cannot be blocked by it, so a missing
+// session log is reported there and is not an error.
+export function runClaudeCodeSessionEndCli(argv = process.argv.slice(2), defaults = {}) {
+  const options = parseApplyArgs(argv);
+  const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
+  const stdinText = readFileSync(0, 'utf8');
+  let transcriptPath = null;
+  try {
+    const payload = JSON.parse(stdinText);
+    if (typeof payload?.transcript_path === 'string' && payload.transcript_path.length > 0) transcriptPath = payload.transcript_path;
+  } catch {
+    // No usable hook input: nothing names a session log unless VERITAS_SESSION_LOG_PATH does.
+  }
+  const sessionLogPath = process.env.VERITAS_SESSION_LOG_PATH || transcriptPath;
+  if (!sessionLogPath) {
+    process.stderr.write('Veritas: the SessionEnd hook input names no transcript_path; no standards feedback draft captured.\n');
+    return;
+  }
+  if (!existsSync(resolve(rootDir, sessionLogPath))) {
+    process.stderr.write(`Veritas: session log not found at ${displayText(sessionLogPath)}; no standards feedback draft captured.\n`);
+    return;
+  }
+  const result = observeSessionLogStandardsFeedback({ sessionLogPath, rootDir, tool: 'claude-code' });
+  process.stdout.write(`${JSON.stringify({ artifactPath: result.artifactPath, reader: result.reader, ...result.draft }, null, 2)}\n`);
 }
 
 export function runIntegrationsCli(tool, action, argv = process.argv.slice(2), defaults = {}) {

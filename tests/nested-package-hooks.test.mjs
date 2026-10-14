@@ -14,8 +14,7 @@ import { tempDir } from './temp-dir.mjs';
 // only under the nearest package root, so a bare `npx --no @kontourai/veritas` refuses there.
 const codexHooks = buildSuggestedCodexHookConfig().hooks;
 const CODEX_PRE_TOOL_USE = codexHooks.PreToolUse[0].hooks[0].command;
-const CODEX_POST_SESSION = codexHooks.PostSession[0].hooks[0].command;
-const CLAUDE_POST_SESSION = buildClaudeCodeSessionLogCaptureCommand();
+const CLAUDE_SESSION_END = buildClaudeCodeSessionLogCaptureCommand();
 
 function pnpmWorkspace(t, { installVeritas }) {
   const rootDir = initCommittedRepo(t, 'veritas-nested-package-');
@@ -58,18 +57,6 @@ function claudeSessionLog(dir) {
   return path;
 }
 
-function sessionLog(dir) {
-  const path = join(dir, 'session.json');
-  writeFileSync(path, `${JSON.stringify({
-    session_id: 'nested-package',
-    events: [
-      { timestamp: '2026-05-09T10:00:00.000Z', command: 'veritas readiness', exit_code: 1, files: ['packages/a/index.js'], reported_lines: 10 },
-      { timestamp: '2026-05-09T10:02:00.000Z', command: 'veritas readiness', exit_code: 0, files: ['packages/a/index.js'], reported_lines: 10 },
-    ],
-  }, null, 2)}\n`);
-  return path;
-}
-
 const editPayload = (cwd) => JSON.stringify({
   cwd,
   tool_name: 'apply_patch',
@@ -87,14 +74,16 @@ test('Codex and Claude Code hook commands find a root-installed Veritas from a n
   JSON.parse(preToolUse.stdout);
   assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
 
-  // PostSession capture runs in the working directory, as before, and writes its draft there.
-  for (const [name, command, log] of [['Codex', CODEX_POST_SESSION, sessionLog], ['Claude Code', CLAUDE_POST_SESSION, claudeSessionLog]]) {
-    const postSession = runHook(command, { cwd: packageDir, env: { VERITAS_SESSION_LOG_PATH: log(packageDir) } });
-    assert.equal(postSession.status, 0, `${name} PostSession: ${postSession.stderr}`);
-    assert.doesNotMatch(postSession.stderr, /npx canceled/);
-    const result = JSON.parse(postSession.stdout);
-    assert.equal(existsSync(join(packageDir, result.artifactPath)), true, `${name} PostSession draft`);
-  }
+  // Claude Code SessionEnd capture runs in the working directory, as before, and writes its draft
+  // there. Claude Code names the session log in the hook input on stdin.
+  const sessionEnd = runHook(CLAUDE_SESSION_END, {
+    cwd: packageDir,
+    input: JSON.stringify({ session_id: 'nested-package', transcript_path: claudeSessionLog(packageDir), cwd: packageDir, hook_event_name: 'SessionEnd', reason: 'other' }),
+  });
+  assert.equal(sessionEnd.status, 0, `Claude Code SessionEnd: ${sessionEnd.stderr}`);
+  assert.doesNotMatch(sessionEnd.stderr, /npx canceled/);
+  const result = JSON.parse(sessionEnd.stdout);
+  assert.equal(existsSync(join(packageDir, result.artifactPath)), true, 'Claude Code SessionEnd draft');
 });
 
 test('the nested-package hook commands still refuse when no directory has Veritas installed', (t) => {

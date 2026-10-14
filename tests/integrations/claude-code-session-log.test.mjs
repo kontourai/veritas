@@ -123,7 +123,7 @@ test('CodexSessionLogReader reads legacy JSON session log shape through the regi
   assert.equal(events.filter((event) => event.kind === 'readiness-check').length, 2);
 });
 
-test('integrations claude-code install wires PreToolUse, Stop, and PostSession hooks', (t) => {
+test('integrations claude-code install wires PreToolUse, Stop, and SessionEnd hooks', (t) => {
   const rootDir = bootstrapRepo(t, 'veritas-claude-install-');
   const cli = join(repoRootDir, 'bin/veritas.mjs');
   const output = execFileSync('node', [
@@ -149,11 +149,8 @@ test('integrations claude-code install wires PreToolUse, Stop, and PostSession h
   assert.equal(parsed.tool, 'claude-code');
   assert.ok(settings.hooks.PreToolUse);
   assert.ok(settings.hooks.Stop);
-  assert.ok(settings.hooks.PostSession);
-  assert.match(
-    settings.hooks.PostSession[0].hooks[0].command,
-    /VERITAS_SESSION_LOG_PATH/,
-  );
+  assert.equal(Object.hasOwn(settings.hooks, 'PostSession'), false);
+  assert.match(settings.hooks.SessionEnd[0].hooks[0].command, /hooks claude-code session-end/);
   assert.equal(status.preToolUseHook.exists, true);
   assert.equal(status.preToolUseHook.executable, true);
   assert.equal(status.stopHook.exists, true);
