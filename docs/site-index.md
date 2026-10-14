@@ -100,13 +100,13 @@ Three commands cover the current workflow:
 
 ```bash
 # Bootstrap the repo standards and repo map
-npx veritas init
+npm exec --no -- veritas init
 
 # Evaluate the current working tree
-npx veritas readiness --working-tree
+npm exec --no -- veritas readiness --working-tree
 
 # Inspect why a file or requirement matters
-npx veritas explain --file src/api/users.ts
+npm exec --no -- veritas explain --file src/api/users.ts
 ```
 
 `veritas readiness` is the first-class command for readiness reports.

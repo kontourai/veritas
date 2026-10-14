@@ -83,9 +83,9 @@ Before considering a brownfield migration complete:
 ```bash
 npm run verify
 npm test
-npm exec -- veritas readiness --check evidence --working-tree
-npm exec -- veritas readiness --check coverage --working-tree
-npm exec -- veritas readiness --working-tree --format feedback
+npm exec --no -- veritas readiness --check evidence --working-tree
+npm exec --no -- veritas readiness --check coverage --working-tree
+npm exec --no -- veritas readiness --working-tree --format feedback
 ```
 
 `readiness --check coverage` is the current command for readiness coverage. Review its output before moving more requirements to Require.

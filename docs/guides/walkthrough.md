@@ -6,7 +6,7 @@ This walkthrough shows the smallest useful Veritas loop: initialize a repo, make
 
 ```bash
 npm install -D @kontourai/veritas
-npx veritas init --template nextjs-typescript
+npm exec --no -- veritas init --template nextjs-typescript
 ```
 
 `--template` is the current CLI flag for selecting a starter template. The product concept is a Repo Standards Template.
@@ -44,7 +44,7 @@ EOF
 Run Veritas:
 
 ```bash
-npx veritas readiness --working-tree --skip-evidence-check
+npm exec --no -- veritas readiness --working-tree --skip-evidence-check
 ```
 
 `--skip-evidence-check` skips the configured evidence-check command (e.g. `npm test`) so this walkthrough can focus on the standards output. It deliberately produces diagnostic-only, not-ready Merge Readiness whenever required Evidence Checks exist. In a real repo, omit this flag and let Veritas run the project tests.
@@ -77,7 +77,7 @@ EOF
 Rerun:
 
 ```bash
-npx veritas readiness --working-tree --skip-evidence-check
+npm exec --no -- veritas readiness --working-tree --skip-evidence-check
 ```
 
 Now the requirement passes:

@@ -23,8 +23,12 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
 
    ```bash
    npm ls @kontourai/veritas --depth=0
-   npm exec -- veritas --version
+   npm exec --no -- veritas --version
    ```
+
+   Always pass `--no`. Without it, `npm exec` falls back to the registry when there is no local bin,
+   and installs without prompting when there is no terminal. The unscoped `veritas` package on npm
+   is a different, third-party project, so a missing local install must fail here, not fetch it.
 
 2. If npm is not the repository's toolchain, or the maintainer explicitly approves an external
    engine instead of a consumer dependency, use the maintainer-approved external engine path.
@@ -81,10 +85,10 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
 
 5. Derive a plan without applying it. Use `"$veritas_engine_path"` or the step 3
    `npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas` prefix in place of
-   `npm exec -- veritas` when following an external engine path:
+   `npm exec --no -- veritas` when following an external engine path:
 
    ```bash
-   npm exec -- veritas init --explore --output .veritas/init-plans/first-pass.json
+   npm exec --no -- veritas init --explore --output .veritas/init-plans/first-pass.json
    ```
 
    Use `init --guided --answers <answers.json> --output <plan>` when owner answers are needed.
@@ -96,13 +100,13 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
 7. Apply only the reviewed plan:
 
    ```bash
-   npm exec -- veritas init --apply --plan .veritas/init-plans/first-pass.json
+   npm exec --no -- veritas init --apply --plan .veritas/init-plans/first-pass.json
    ```
 
 8. Configure or repair tracked repo hooks with explicit approval:
 
    ```bash
-   npm exec -- veritas setup repo-hooks
+   npm exec --no -- veritas setup repo-hooks
    ```
 
 9. For a Codex host, use Flow Agents's Kit provisioner to install the reviewed
@@ -111,7 +115,7 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    ```bash
    flow-agents kit provision veritas-governance --target . --dry-run
    flow-agents kit provision veritas-governance --target .
-   npm exec -- veritas integrations codex status --target-hooks-file .codex/hooks.json
+   npm exec --no -- veritas integrations codex status --target-hooks-file .codex/hooks.json
    ```
 
    Ordinary Kit provisions are create-only by default. This declared host hook
@@ -126,7 +130,7 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
 10. After a maintainer reviews the generated standards and map, record bootstrap authority:
 
    ```bash
-   npm exec -- veritas attest bootstrap \
+   npm exec --no -- veritas attest bootstrap \
      --actor <authority-id> \
      --approval-ref <human-approval-reference> \
      --non-interactive
@@ -135,7 +139,7 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
 11. Run the first readiness check:
 
    ```bash
-   npm exec -- veritas readiness --working-tree
+   npm exec --no -- veritas readiness --working-tree
    ```
 
 Report any unsupported package manager, refused overwrite, missing authority, or failed

@@ -43,13 +43,13 @@ recording bootstrap authority. The shortest reviewed path is:
 
 ```bash
 npm install -D @kontourai/veritas
-npm exec -- veritas init --explore --output .veritas/init-plans/first-pass.json
+npm exec --no -- veritas init --explore --output .veritas/init-plans/first-pass.json
 # Review and approve the generated plan.
-npm exec -- veritas init --apply --plan .veritas/init-plans/first-pass.json
-npm exec -- veritas setup repo-hooks
-npm exec -- veritas attest bootstrap --actor <authority-id> \
+npm exec --no -- veritas init --apply --plan .veritas/init-plans/first-pass.json
+npm exec --no -- veritas setup repo-hooks
+npm exec --no -- veritas attest bootstrap --actor <authority-id> \
   --approval-ref <human-approval-reference> --non-interactive
-npm exec -- veritas readiness --working-tree
+npm exec --no -- veritas readiness --working-tree
 ```
 
 ### Non-npm repositories
@@ -75,7 +75,7 @@ landing between two setup commands. This fetch ignores the repository's `minimum
 quarantine, so consider how recent the release is before approving `v`; a lost or empty `v` is an
 error (`${v:?...}`), not a silent run of whatever is latest. Record the version with the setup evidence, and do not copy
 this command or any literal version into a README or instruction file. A repository that installs
-Veritas as a development dependency uses `npm exec -- veritas ...` instead, which runs the
+Veritas as a development dependency uses `npm exec --no -- veritas ...` instead, which runs the
 version its lockfile resolves. For a repository without a package manifest, init configures a Node
 runtime smoke check so the first readiness run is runnable. Replace that smoke check with the
 repository's real evidenceCheck before promoting it.
@@ -86,7 +86,7 @@ Veritas emits the canonical Hachure trust bundle directly; the kit does not main
 readiness interpretation:
 
 ```bash
-npm exec -- veritas readiness --check evidence --working-tree \
+npm exec --no -- veritas readiness --check evidence --working-tree \
   --format trust-bundle > readiness.bundle.json
 
 flow init
@@ -115,7 +115,7 @@ and domain admission. After installing and activating the kit in a separate
 bootstrap directory, generate the plan in the target repository:
 
 ```sh
-npm exec -- veritas init --explore --output .veritas/init-plans/proposal.json
+npm exec --no -- veritas init --explore --output .veritas/init-plans/proposal.json
 mkdir -p /absolute/private/veritas-review-host
 chmod 700 /absolute/private/veritas-review-host
 ```
@@ -179,7 +179,7 @@ from the project root so npm resolves the Survey version installed there, the on
 session, rather than fetching a different release:
 
 ```sh
-npm exec -- survey-review-mcp \
+npm exec --no -- survey-review-mcp \
   --session /absolute/private/veritas-review-host/RETURNED_SESSION.json
 ```
 

@@ -8,8 +8,8 @@ description: "Get just-in-time Veritas governance guidance for a file or work ar
 Before editing a governed file, ask the Veritas engine what applies:
 
 ```bash
-npm exec -- veritas explain --file src/path/to/file.ts
-npm exec -- veritas explain --work-area <work-area-id>
+npm exec --no -- veritas explain --file src/path/to/file.ts
+npm exec --no -- veritas explain --work-area <work-area-id>
 ```
 
 Read the matching Requirement, Enforcement Level, do/don't guidance, examples, and current
