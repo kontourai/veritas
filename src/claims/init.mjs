@@ -7,7 +7,7 @@ import { claimStoreExists, saveVeritasClaimStore } from './store.mjs';
 
 export async function initClaimStore({ rootDir = process.cwd(), repoName = basename(resolve(rootDir)), dryRun = false, force = false } = {}) {
   if (!dryRun && claimStoreExists(rootDir) && !force) {
-    throw new Error('veritas.claims.json already exists. Use `veritas claim add` to add claims.');
+    throw new Error('veritas.claims.json already exists. Use `npx --no @kontourai/veritas claim add` to add claims.');
   }
   const store = buildClaimStoreFromRepo({ rootDir, repoName });
   if (!dryRun) saveVeritasClaimStore(store, rootDir);

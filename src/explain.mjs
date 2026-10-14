@@ -51,8 +51,8 @@ function syntheticPolicyRules() {
     explain: {
       summary: 'Veritas hashes the redacted public Repo Map policy, Repo Standards, and authority settings as Protected Standards. MCP execution inputs are not policy identity. Readiness checks fail on drift until a valid authority records a fresh attestation.',
       mustDo: [
-        'Run `veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference>` after first installing Veritas governance.',
-        'Run `veritas attest policy-change --actor <authority-id> --approval-ref <human-approval-reference> --message <reason>` after changing Protected Standards files.',
+        'Run `npx --no @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference>` after first installing Veritas governance.',
+        'Run `npx --no @kontourai/veritas attest policy-change --actor <authority-id> --approval-ref <human-approval-reference> --message <reason>` after changing Protected Standards files.',
       ],
       mustNotDo: [
         'Do not treat generated evidence or agent edits as a substitute for authority-backed standards review.',

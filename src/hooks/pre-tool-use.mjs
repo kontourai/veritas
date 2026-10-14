@@ -21,7 +21,7 @@ export function formatPreToolUseGuidance(guidance) {
     for (const link of rule.contextLinks) lines.push(`Context: ${displayText(link)}`);
   }
   if (guidance.rules.length > 12) {
-    lines.push(`${guidance.rules.length - 12} more rule(s): run veritas explain --file with the exact intended path.`);
+    lines.push(`${guidance.rules.length - 12} more rule(s): run \`npx --no @kontourai/veritas explain --file <path>\` with the exact intended path.`);
   }
   return lines.join('\n');
 }

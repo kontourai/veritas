@@ -1,11 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PREVIOUS_CODEX_HOOK_COMMANDS } from '../src/integrations/codex-hook-history.mjs';
 import { buildSuggestedCodexHookConfig } from '../src/integrations/codex-hooks.mjs';
+import { buildGovernanceBlock } from '../src/governance.mjs';
+import { buildGovernanceInstructions } from '../src/bootstrap/guidance.mjs';
+import { buildBootstrapReadme } from '../src/bootstrap/readme.mjs';
+import { evaluateGovernanceBlockRule } from '../src/rules/evaluate.mjs';
 
 const repoRootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -148,6 +153,25 @@ function unsafeExec(line) {
   return problems;
 }
 
+// A bare `veritas` is on PATH only inside an npm script or with a global install. Text that tells a
+// reader to run it sends a shell to "command not found", and the natural recovery, `npx veritas`,
+// runs the unscoped package. Two matchers, both for lowercase `veritas` followed by a subcommand:
+// - in shipped files, after a verb that tells the reader to run it. Naming a command in prose
+//   ("`veritas readiness` is the primary command") and usage or error text that names the command
+//   being invoked ("veritas init requires --plan") are not instructions and are not matched;
+// - in rendered generator output, which is Markdown, any code span that starts with it, verb or not.
+const RUN_VERB = '(?:[Rr]un|[Rr]unning|[Rr]e-?run|[Uu]se|[Uu]sing|[Ww]ith|[Tt]hrough|[Ss]ee|[Vv]ia|[Pp]repare|[Tt]ry|[Cc]all|[Ii]nvoke)';
+const BARE_RUN = new RegExp(`\\b${RUN_VERB}\\s+\\\\?\`?veritas\\s+[a-z]`);
+const BARE_SPAN = /`veritas\s+[a-z]/;
+
+function bareRunInstruction(text) {
+  return BARE_RUN.test(text) ? ['bare veritas in a run instruction'] : [];
+}
+
+function bareRenderedInstruction(text) {
+  return [...bareRunInstruction(text), ...(BARE_SPAN.test(text) ? ['bare veritas in a code span'] : [])];
+}
+
 // Everything the package ships, from package.json `files`: what adopters copy from and the source
 // that generates text into their repos. npm also packs package.json itself, which is deliberately
 // not scanned: its scripts are this repository's own, and they run the checkout's bin through
@@ -210,7 +234,8 @@ test('shipped text and generated source only run an installed Veritas or Survey'
   const offenders = [];
   for (const file of files) {
     for (const { number, text } of logicalLines(readFileSync(join(repoRootDir, file), 'utf8'))) {
-      const problems = unsafeExec(withoutRecordedPastCommands(file, text));
+      const line = withoutRecordedPastCommands(file, text);
+      const problems = [...unsafeExec(line), ...bareRunInstruction(line)];
       if (problems.length > 0) offenders.push(`${file}:${number}: ${problems.join('; ')}: ${text.trim()}`);
     }
   }
@@ -310,4 +335,62 @@ test('line continuations are joined before matching', () => {
   assert.deepEqual(lines.map((line) => line.number), [1, 2, 4]);
   assert.notDeepEqual(unsafeExec(lines[1].text), [], lines[1].text);
   assert.deepEqual(unsafeExec(lines[2].text), [], lines[2].text);
+});
+
+test('the bare-veritas matchers catch run instructions and leave names and usage alone', () => {
+  for (const unsafe of [
+    'After changes, run `veritas readiness` and address any FAIL lines before finishing.',
+    'Run veritas attest bootstrap --actor <authority-id> --non-interactive.',
+    'by running `veritas explain`; use in repositories',
+    'form with `veritas explain --file <path> --json`',
+    'rerun `veritas init --force` and reapply local policy edits',
+    'must re-run `veritas init --explore`',
+    "'Use \\`veritas claim add\\` to add claims.'",
+    'Agents may prepare\n`veritas attest ... --approval-ref <ref>` commands',
+    'run veritas explain --file with the exact intended path.',
+  ]) {
+    assert.notDeepEqual(bareRunInstruction(unsafe), [], unsafe);
+  }
+  for (const safe of [
+    'After changes, run `npx --no @kontourai/veritas readiness` and address any FAIL lines before finishing.',
+    '`veritas readiness` is the primary product command for evaluating a change.',
+    "throw new Error('veritas init --apply requires --plan <path>');",
+    'npm run veritas:check',
+    'run the Veritas `feedback observe --session-log` command',
+    'Use Veritas for AI governance with veritas.claims.json committed.',
+    'Use the `claim` subcommand to maintain the store:',
+  ]) {
+    assert.deepEqual(bareRunInstruction(safe), [], safe);
+  }
+  assert.notDeepEqual(bareRenderedInstruction('The `veritas readiness` command'), []);
+  assert.deepEqual(bareRenderedInstruction('The `npx --no @kontourai/veritas readiness` command'), []);
+  assert.deepEqual(bareRenderedInstruction('Read `veritas.claims.json` and `.veritas/GOVERNANCE.md`.'), []);
+});
+
+// The rendered text Veritas writes into adopter instruction files and readiness results. The
+// governance block is copied into every adopter's AGENTS.md and CLAUDE.md and is the most-read line.
+test('generated instruction text runs only the installed Veritas', () => {
+  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-bare-instruction-'));
+  writeFileSync(join(rootDir, 'NO_MARKERS.md'), '# Local\n');
+  writeFileSync(join(rootDir, 'STALE.md'), '<!-- veritas:governance-block:start -->\nold\n<!-- veritas:governance-block:end -->\n');
+  writeFileSync(join(rootDir, 'DUPLICATE.md'), `${buildGovernanceBlock()}\n${buildGovernanceBlock()}\n`);
+  writeFileSync(join(rootDir, 'MALFORMED.md'), '<!-- veritas:governance-block:end -->\n');
+  const governanceResult = evaluateGovernanceBlockRule(
+    { id: 'ai-instruction-files-synced', kind: 'governance-block', match: { 'governance-block': ['MISSING.md', 'NO_MARKERS.md', 'STALE.md', 'DUPLICATE.md', 'MALFORMED.md'] } },
+    { rootDir },
+  );
+  assert.equal(new Set(governanceResult.findings.map(({ remediation }) => remediation)).size, 4);
+
+  const rendered = {
+    'governance block': buildGovernanceBlock(),
+    '.veritas/GOVERNANCE.md': buildGovernanceInstructions(),
+    '.veritas/README.md': buildBootstrapReadme({ projectName: 'demo' }),
+    'governance-block summary': governanceResult.summary,
+    ...Object.fromEntries(governanceResult.findings.map(({ artifact, remediation }) => [`remediation for ${artifact}`, remediation])),
+  };
+  const offenders = Object.entries(rendered)
+    .filter(([, text]) => bareRenderedInstruction(text).length > 0)
+    .map(([name, text]) => `${name}: ${text}`);
+  assert.deepEqual(offenders, []);
+  assert.match(rendered['governance block'], /run `npx --no @kontourai\/veritas readiness`/);
 });

@@ -51,5 +51,5 @@ The GitHub Pages site and the `docs-bundle.json` served by the Kontour docs MCP 
 
 <!-- veritas:governance-block:start -->
 This repo uses Veritas for AI governance. Read `.veritas/GOVERNANCE.md` before making changes.
-After changes, run `veritas readiness` and address any FAIL lines before finishing.
+After changes, run `npx --no @kontourai/veritas readiness` and address any FAIL lines before finishing.
 <!-- veritas:governance-block:end -->

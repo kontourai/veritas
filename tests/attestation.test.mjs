@@ -1380,7 +1380,7 @@ test('remediation is per file when content drift and a non-regular entry occur t
   assert.equal(result.status, 'fail');
   const remediation = Object.fromEntries(result.findings.map((finding) => [finding.artifact, finding.remediation]));
   assert.deepEqual(Object.keys(remediation).sort(), ['authoritySettingsHash', 'repoStandardsHash']);
-  assert.match(remediation.repoStandardsHash, /^Run veritas attest policy-change/);
+  assert.match(remediation.repoStandardsHash, /^Run `npx --no @kontourai\/veritas attest policy-change /);
   assert.match(remediation.authoritySettingsHash, /^Restore each listed protected standards file/);
 });
 

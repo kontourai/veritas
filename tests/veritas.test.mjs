@@ -742,7 +742,7 @@ test('governance block diagnostics distinguish absent files, markers, and exact 
   assert.equal(result.findings[2].diagnostic, 'stale-governance-content');
   assert.equal(result.findings[0].diagnostic, 'missing-governance-file');
   assert.match(result.summary, /1 missing file, 1 missing canonical marker set, 1 stale canonical block/);
-  assert.match(result.summary, /veritas apply governance-blocks/);
+  assert.match(result.summary, /Run `npx --no @kontourai\/veritas apply governance-blocks` to restore/);
   assert.equal(result.findings.some(({ artifact }) => artifact === 'CANONICAL.md'), false);
   assert.doesNotMatch(JSON.stringify(result), new RegExp(staleCommand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.doesNotMatch(JSON.stringify(result), /Never expose this unrelated instruction/);
@@ -760,7 +760,7 @@ test('governance block diagnostics distinguish absent files, markers, and exact 
   assert.match(feedback, /MISSING\.md \[missing-governance-file\]/);
   assert.match(feedback, /NO_MARKERS\.md \[missing-governance-markers\]/);
   assert.match(feedback, /STALE\.md \[stale-governance-content\]/);
-  assert.match(feedback, /Run `veritas apply governance-blocks` to replace the marker-bounded block/);
+  assert.match(feedback, /Run `npx --no @kontourai\/veritas apply governance-blocks` to replace the marker-bounded block/);
   assert.doesNotMatch(feedback, new RegExp(staleCommand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.doesNotMatch(feedback, /Never expose this unrelated instruction/);
 
@@ -779,6 +779,26 @@ test('governance block diagnostics distinguish absent files, markers, and exact 
   assert.match(markdown, /Artifact: `STALE\.md` \(`stale-governance-content`\)/);
   assert.match(markdown, /Artifact: `MISSING\.md` \(`missing-governance-file`\)/);
   assert.doesNotMatch(markdown, new RegExp(staleCommand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+});
+
+const LEGACY_BARE_GOVERNANCE_BLOCK = [
+  '<!-- veritas:governance-block:start -->',
+  'This repo uses Veritas for AI governance. Read `.veritas/GOVERNANCE.md` before making changes.',
+  'After changes, run `veritas readiness` and address any FAIL lines before finishing.',
+  '<!-- veritas:governance-block:end -->',
+].join('\n');
+const LEGACY_PINNED_GOVERNANCE_BLOCK = LEGACY_BARE_GOVERNANCE_BLOCK.replace(
+  '`veritas readiness`',
+  '`npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas readiness`',
+);
+
+test('the governance block names the installed-only Veritas spelling', () => {
+  assert.equal(buildGovernanceBlock(), [
+    '<!-- veritas:governance-block:start -->',
+    'This repo uses Veritas for AI governance. Read `.veritas/GOVERNANCE.md` before making changes.',
+    'After changes, run `npx --no @kontourai/veritas readiness` and address any FAIL lines before finishing.',
+    '<!-- veritas:governance-block:end -->',
+  ].join('\n'));
 });
 
 test('governance block remediation normalizes partial, reversed, duplicate, and stale blocks idempotently', () => {
@@ -802,17 +822,21 @@ test('governance block remediation normalizes partial, reversed, duplicate, and 
     [
       'duplicate',
       {
-        content: `Before\n${block}\nBetween\n${block.replace('veritas readiness', 'npm exec -- veritas readiness')}\nAfter\n`,
+        content: `Before\n${block}\nBetween\n${block.replace('npx --no @kontourai/veritas readiness', 'npm exec -- veritas readiness')}\nAfter\n`,
         preserved: 'Between',
       },
     ],
     [
       'stale',
       {
-        content: `Before\n${block.replace('veritas readiness', 'npm exec -- veritas readiness')}\nAfter\n`,
+        content: `Before\n${block.replace('npx --no @kontourai/veritas readiness', 'npm exec -- veritas readiness')}\nAfter\n`,
         preserved: 'After',
       },
     ],
+    // The canonical block every release through 1.11.1 wrote, byte for byte.
+    ['legacy-bare', { content: `Before\n${LEGACY_BARE_GOVERNANCE_BLOCK}\nAfter\n`, preserved: 'After' }],
+    // The same block hand-edited to a pinned registry fetch, as some adopters carry it.
+    ['legacy-pinned', { content: `Before\n${LEGACY_PINNED_GOVERNANCE_BLOCK}\nAfter\n`, preserved: 'After' }],
   ]);
 
   for (const [name, { content, preserved }] of malformedCases) {
@@ -844,7 +868,7 @@ test('governance block remediation normalizes partial, reversed, duplicate, and 
       before.findings[0].diagnostic,
       name === 'duplicate'
         ? 'duplicate-governance-markers'
-        : name === 'stale'
+        : ['stale', 'legacy-bare', 'legacy-pinned'].includes(name)
           ? 'stale-governance-content'
           : 'malformed-governance-markers',
     );
@@ -869,6 +893,9 @@ test('governance block remediation normalizes partial, reversed, duplicate, and 
     assert.equal(after.passed, true, `${name} should pass after remediation`);
     if (name === 'stale') {
       assert.doesNotMatch(once, /npm exec -- veritas readiness/);
+    }
+    if (name.startsWith('legacy-')) {
+      assert.equal(once, `Before\n${block}\nAfter\n`, `${name} should be replaced in place`);
     }
     assert.match(once, /Before/);
     assert.equal(once.includes(preserved), true, `${name} should preserve instructions outside valid blocks`);
@@ -897,13 +924,14 @@ test('readiness governance remediation invokes the parsed marker-bounded apply c
   const [before] = evaluateRepoStandards({ rules: [rule] }, { rootDir });
   const command = before.findings[0].remediation.match(/`([^`]+)`/)[1].split(' ');
 
-  assert.deepEqual(command, ['veritas', 'apply', 'governance-blocks']);
+  assert.deepEqual(command, ['npx', '--no', '@kontourai/veritas', 'apply', 'governance-blocks']);
+  const args = command.slice(3);
   assert.match(runLocalVeritas(['apply', 'governance-blocks', '--help']), /veritas apply governance-blocks/);
-  const applied = parseCliJson(runLocalVeritas([...command.slice(1), '--root', rootDir]));
+  const applied = parseCliJson(runLocalVeritas([...args, '--root', rootDir]));
   assert.deepEqual(applied.applied.map((entry) => entry.path), ['AGENTS.md']);
 
   const once = readFileSync(join(rootDir, 'AGENTS.md'), 'utf8');
-  runLocalVeritas([...command.slice(1), '--root', rootDir]);
+  runLocalVeritas([...args, '--root', rootDir]);
   assert.equal(readFileSync(join(rootDir, 'AGENTS.md'), 'utf8'), once);
   assert.equal(evaluateRepoStandards({ rules: [rule] }, { rootDir })[0].passed, true);
 
@@ -1870,7 +1898,7 @@ test('init apply accepts a legacy absolute target_root with a warning and reject
       const recommendation = { ...buildInitRecommendation({ rootDir: windowsRoot }), target_root: targetRoot };
       assert.throws(
         () => applyInitRecommendation({ rootDir: windowsRoot, recommendation }),
-        /recorded on another OS .*re-record the plan with `veritas init --explore`/,
+        /recorded on another OS .*re-record the plan with `npx --no @kontourai\/veritas init --explore`/,
         `target_root ${targetRoot} must get the other-OS message`,
       );
       assert.equal(existsSync(join(windowsRoot, '.veritas/repo-map.json')), false);

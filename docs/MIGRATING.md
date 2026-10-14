@@ -80,7 +80,7 @@ Veritas requires a committed claim store at `veritas.claims.json`. Per-run claim
 
 To migrate:
 
-1. Run `veritas claim init` in the repo root.
+1. Run `npx --no @kontourai/veritas claim init` in the repo root.
 2. Review the generated claim IDs, surfaces, policies, and metadata.
 3. Commit `veritas.claims.json`.
 4. Update any automation that referenced run-scoped claim IDs to use the stable authored claim IDs.
@@ -124,7 +124,7 @@ After:
 }
 ```
 
-Owned repos can update `.veritas/repo-map.json` manually or rerun `veritas init --force` and reapply local policy edits.
+Owned repos can update `.veritas/repo-map.json` manually or rerun `npx --no @kontourai/veritas init --force` and reapply local policy edits.
 
 ## Evidence Check Commands No Longer Run Through a Shell
 

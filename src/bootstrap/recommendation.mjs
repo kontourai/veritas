@@ -398,7 +398,7 @@ function targetRootWarnings(targetRoot, rootDir) {
   if (targetRoot === PORTABLE_TARGET_ROOT) return [];
   if (typeof targetRoot === 'string' && !isAbsolute(targetRoot) && /^(?:[A-Za-z]:[\\/]|\\\\)/.test(targetRoot)) {
     throw new Error(
-      `Init recommendation target_root was recorded on another OS (${targetRoot}); re-record the plan with \`veritas init --explore\`.`,
+      `Init recommendation target_root was recorded on another OS (${targetRoot}); re-record the plan with \`npx --no @kontourai/veritas init --explore\`.`,
     );
   }
   if (typeof targetRoot !== 'string' || !isAbsolute(targetRoot)) {
@@ -477,7 +477,7 @@ function workAreaIds(store) {
 }
 
 // Names the work areas a kept claim store lacks or has beyond the applied Repo Map, so an owner can
-// bring the authored store in line with `veritas claim add` or `veritas claim remove`.
+// bring the authored store in line with the `claim add` and `claim remove` commands.
 function keptClaimStoreWorkAreaDrift(rootDir, derivedClaimStore) {
   let kept;
   try {

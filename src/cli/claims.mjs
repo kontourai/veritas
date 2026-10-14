@@ -40,7 +40,7 @@ async function runClaimInit(args, rootDir) {
 function runClaimList(rootDir) {
   const store = loadVeritasClaimStore(rootDir);
   if (store.claims.length === 0) {
-    process.stdout.write('No claims defined. Run `veritas claim add` to create one.\n');
+    process.stdout.write('No claims defined. Run `npx --no @kontourai/veritas claim add` to create one.\n');
     return;
   }
   for (const claim of store.claims) {

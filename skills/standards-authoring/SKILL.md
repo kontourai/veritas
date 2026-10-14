@@ -1,6 +1,6 @@
 ---
 name: "standards-authoring"
-description: "Author or update Veritas Repo Standards through a plan-first, human-reviewed flow using `veritas init --explore` or `--guided`, followed by `--apply` only after approval evidence is attached."
+description: "Author or update Veritas Repo Standards through a plan-first, human-reviewed flow using `npx --no @kontourai/veritas init --explore` or `--guided`, followed by `--apply` only after approval evidence is attached."
 ---
 
 # Author Repo Standards

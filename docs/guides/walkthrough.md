@@ -57,7 +57,7 @@ FAIL  api-routes-require-api-tests: Changed files matched app/api/** but no comp
 FAIL  required-evidence-check:required-evidence-check: skipped
       -> Run npm test and record an acceptable result before merge readiness can be verified.
 
-2 failures · 0 warnings · run `veritas readiness --check evidence` for full evidence
+2 failures · 0 warnings · run `npx --no @kontourai/veritas readiness --check evidence` for full evidence
 ```
 
 ## 3. Add The Companion Test
@@ -87,7 +87,7 @@ PASS  api-routes-require-api-tests: Changed files matched app/api/** and include
 FAIL  required-evidence-check:required-evidence-check: skipped
       -> Run npm test and record an acceptable result before merge readiness can be verified.
 
-1 failure · 0 warnings · run `veritas readiness --check evidence` for full evidence
+1 failure · 0 warnings · run `npx --no @kontourai/veritas readiness --check evidence` for full evidence
 ```
 
 In a real repo, remove `--skip-evidence-check` and let the configured Evidence Check run the project test or verify command; only an observed passing required result can verify Merge Readiness.

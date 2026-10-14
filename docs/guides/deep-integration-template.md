@@ -1,6 +1,6 @@
 # Deep Integration
 
-The generic Veritas contract stays a shell command: run `veritas readiness`, read the feedback, fix the issue, and rerun. A deep integration adds runtime hooks and session log capture around that same contract.
+The generic Veritas contract stays a shell command: run `npx --no @kontourai/veritas readiness`, read the feedback, fix the issue, and rerun. A deep integration adds runtime hooks and session log capture around that same contract.
 
 Deep means:
 

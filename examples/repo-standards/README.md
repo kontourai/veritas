@@ -1,6 +1,6 @@
 # Starter Repo Standards Templates
 
-These templates are starting points for common repo shapes. They are examples, not universal policy. Use `veritas init --template <name>` to copy one into the repo's Veritas standards file, then tune it for your repo.
+These templates are starting points for common repo shapes. They are examples, not universal policy. Use `npx --no @kontourai/veritas init --template <name>` to copy one into the repo's Veritas standards file, then tune it for your repo.
 
 ## `nextjs-typescript`
 

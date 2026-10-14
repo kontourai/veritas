@@ -14,7 +14,7 @@
           "kind": "trust.bundle",
           "required": true,
           "description": "A maintainer reviewed the proposed Repo Standards plan and recorded a verified standards-authoring approval before application.",
-          "explore_hint": "Run `veritas init --explore` or `--guided`, review the plan, attach a standards-authoring-approval claim, and only then run `veritas init --apply --plan <path>`.",
+          "explore_hint": "Run `npx --no @kontourai/veritas init --explore` or `--guided`, review the plan, attach a standards-authoring-approval claim, and only then run `npx --no @kontourai/veritas init --apply --plan <path>`.",
           "bundle_claim": {
             "claimType": "standards-authoring-approval",
             "subjectType": "repo-governance-change",

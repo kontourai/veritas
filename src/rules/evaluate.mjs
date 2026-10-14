@@ -67,12 +67,12 @@ export function evaluateGovernanceBlockRule(rule, { rootDir }) {
       artifact: status.path,
       remediation:
         !status.exists
-          ? 'Create this required instruction file, then run `veritas apply governance-blocks`.'
+          ? 'Create this required instruction file, then run `npx --no @kontourai/veritas apply governance-blocks`.'
           : status.diagnostic === 'missing-governance-markers'
-            ? 'Run `veritas apply governance-blocks` to add the canonical markers and block.'
+            ? 'Run `npx --no @kontourai/veritas apply governance-blocks` to add the canonical markers and block.'
             : status.diagnostic === 'stale-governance-content'
-              ? 'Run `veritas apply governance-blocks` to replace the marker-bounded block with the exact canonical block.'
-              : 'Run `veritas apply governance-blocks` to normalize the markers and restore the exact canonical block.',
+              ? 'Run `npx --no @kontourai/veritas apply governance-blocks` to replace the marker-bounded block with the exact canonical block.'
+              : 'Run `npx --no @kontourai/veritas apply governance-blocks` to normalize the markers and restore the exact canonical block.',
     }));
 
   const missingFileCount = findings.filter(({ kind }) => kind === 'missing-governance-file').length;
@@ -102,7 +102,7 @@ export function evaluateGovernanceBlockRule(rule, { rootDir }) {
     summary:
       findings.length === 0
         ? 'All required AI instruction files contain the canonical Veritas governance block.'
-        : `AI instruction governance block mismatch: ${problems.join(', ')}. Run \`veritas apply governance-blocks\` to restore the exact canonical block.`,
+        : `AI instruction governance block mismatch: ${problems.join(', ')}. Run \`npx --no @kontourai/veritas apply governance-blocks\` to restore the exact canonical block.`,
     findings,
   });
 }
