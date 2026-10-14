@@ -1323,21 +1323,26 @@ test('a protected path under a top-level directory whose name starts with two do
   assert.match(attestationPolicyLine(swapped.stdout), /^FAIL\s+policy-changes-require-attestation/, swapped.stdout);
 });
 
-test('a non-regular entry drifts even against a hand-edited null attested hash', (t) => {
-  const { rootDir, attestation } = bootstrapAttestedRepo();
-  const recordPath = join(rootDir, '.veritas/attestations', `${attestation.id}.attestation.json`);
-  const record = readJsonFromAbsolute(recordPath);
-  record.authoritySettingsHash = null;
-  writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`);
-  if (!swapForSymlinkToCopy(t, rootDir, AUTHORITY_SETTINGS_PATH)) return;
+for (const [field, swapPath] of [
+  ['authoritySettingsHash', AUTHORITY_SETTINGS_PATH],
+  ['repoMapHash', '.veritas/repo-map.json'],
+]) {
+  test(`a non-regular entry drifts even against a hand-edited null attested ${field}`, (t) => {
+    const { rootDir, attestation } = bootstrapAttestedRepo();
+    const recordPath = join(rootDir, '.veritas/attestations', `${attestation.id}.attestation.json`);
+    const record = readJsonFromAbsolute(recordPath);
+    record[field] = null;
+    writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`);
+    if (!swapForSymlinkToCopy(t, rootDir, swapPath)) return;
 
-  const status = cliAttestStatus(rootDir);
-  assert.equal(status.state, 'drifted');
-  assert.deepEqual(status.drift, [{ field: 'authoritySettingsHash', attested: null, current: null }]);
-  const readiness = cliReadiness(rootDir, ['--working-tree']);
-  assert.notEqual(readiness.status, 0);
-  assert.match(attestationPolicyLine(readiness.stdout), /^FAIL\s+policy-changes-require-attestation/, readiness.stdout);
-});
+    const status = cliAttestStatus(rootDir);
+    assert.equal(status.state, 'drifted');
+    assert.deepEqual(status.drift, [{ field, attested: null, current: null }]);
+    const readiness = cliReadiness(rootDir, ['--working-tree']);
+    assert.notEqual(readiness.status, 0);
+    assert.match(attestationPolicyLine(readiness.stdout), /^FAIL\s+policy-changes-require-attestation/, readiness.stdout);
+  });
+}
 
 test('a legacy attestation drifts when its Repo Map is swapped for a symbolic link to an identical copy', (t) => {
   const rootDir = bootstrapVeritasRepo('veritas-attest-legacy-link-');
