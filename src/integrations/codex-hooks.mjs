@@ -1,13 +1,9 @@
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { assertWithinDir, relativeRepoPath } from '../paths.mjs';
 import { PREVIOUS_CODEX_HOOK_COMMANDS } from './codex-hook-history.mjs';
 import { nearestInstalledVeritasCommand, plainVeritasCommand } from '../hooks/nearest-veritas.mjs';
+import { assertReplaceableFile, writeGeneratedFile } from '../hooks/write-safety.mjs';
 
 export function buildCodexSessionLogCaptureCommand() {
   return 'VERITAS_SESSION_LOG_PATH="${VERITAS_SESSION_LOG_PATH:-${CODEX_TRANSCRIPT_PATH:-}}"; if [ -z "$VERITAS_SESSION_LOG_PATH" ] && [ -n "$CODEX_SESSION_ID" ]; then VERITAS_SESSION_LOG_PATH="$HOME/.codex/sessions/$CODEX_SESSION_ID.json"; fi; if [ -n "$VERITAS_SESSION_LOG_PATH" ]; then ' + nearestInstalledVeritasCommand('feedback observe --session-log "$VERITAS_SESSION_LOG_PATH"') + '; fi';
@@ -184,29 +180,35 @@ export function applyCodexHook({
     'apply codex-hook only supports writing inside .veritas/runtime/',
   );
   const relativeOutputPath = relativeRepoPath(rootDir, resolvedOutputPath);
-
-  if (existsSync(resolvedOutputPath) && !force) {
-    throw new Error(
-      `Refusing to overwrite existing file: ${relativeOutputPath} (use --force to replace it)`,
-    );
-  }
-
   const integrationConfig = buildSuggestedCodexHookConfig();
-  mkdirSync(dirname(resolvedOutputPath), { recursive: true });
-  writeFileSync(resolvedOutputPath, `${JSON.stringify(integrationConfig, null, 2)}\n`, 'utf8');
+  const outputContent = `${JSON.stringify(integrationConfig, null, 2)}\n`;
+  assertReplaceableFile({ resolvedPath: resolvedOutputPath, relativePath: relativeOutputPath, content: outputContent, force });
 
-  let mergedTargetPath = null;
+  // Read and merge the target hooks file before writing anything, so a malformed one leaves no
+  // half-installed artifact behind, and say which file it was.
   const resolvedTargetPath = resolveCodexHooksTarget(rootDir, {
     targetHooksFile,
     codexHome,
   });
+  let mergedTargetContent = null;
   if (resolvedTargetPath) {
-    const existingConfig = existsSync(resolvedTargetPath)
-      ? JSON.parse(readFileSync(resolvedTargetPath, 'utf8'))
-      : {};
-    const mergedConfig = mergeCodexHooksConfig(existingConfig, integrationConfig);
-    mkdirSync(dirname(resolvedTargetPath), { recursive: true });
-    writeFileSync(resolvedTargetPath, `${JSON.stringify(mergedConfig, null, 2)}\n`, 'utf8');
+    let existingConfig = {};
+    if (existsSync(resolvedTargetPath)) {
+      try {
+        existingConfig = JSON.parse(readFileSync(resolvedTargetPath, 'utf8'));
+      } catch (error) {
+        throw new Error(
+          `Failed to read the Codex hooks file at ${formatTargetPath(rootDir, resolvedTargetPath)}: ${error.message}`,
+        );
+      }
+    }
+    mergedTargetContent = `${JSON.stringify(mergeCodexHooksConfig(existingConfig, integrationConfig), null, 2)}\n`;
+  }
+
+  writeGeneratedFile({ resolvedPath: resolvedOutputPath, content: outputContent });
+  let mergedTargetPath = null;
+  if (resolvedTargetPath) {
+    writeGeneratedFile({ resolvedPath: resolvedTargetPath, content: mergedTargetContent });
     mergedTargetPath = formatTargetPath(rootDir, resolvedTargetPath);
   }
 

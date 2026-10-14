@@ -44,39 +44,84 @@ async function mapWithConcurrency(items, limit, run) {
   return results;
 }
 
-// Shipped prose that tells people what to run. CHANGELOG.md is history, not instructions.
+// Everything shipped that tells people, or agents, what to run: root Markdown, the generated
+// `.veritas/README.md`, `docs/`, `examples/`, `skills/`, the kit's `flows/` and `provisions/`, and
+// the command strings in `src/`. CHANGELOG.md is history, not instructions.
+const SCANNED_DIRS = [
+  ['docs', /\.(md|json)$/],
+  ['examples', /\.(md|json)$/],
+  ['skills', /\.(md|json)$/],
+  ['flows', /\.json$/],
+  ['provisions', /\.json$/],
+  ['src', /\.mjs$/],
+];
+
 function shippedDocFiles() {
-  const files = [join(repoRootDir, 'README.md')];
-  const walk = (dir) => {
+  const files = readdirSync(repoRootDir)
+    .filter((name) => name.endsWith('.md') && name !== 'CHANGELOG.md')
+    .map((name) => join(repoRootDir, name));
+  files.push(join(repoRootDir, '.veritas/README.md'));
+  const walk = (dir, pattern) => {
     for (const name of readdirSync(dir)) {
       const path = join(dir, name);
-      if (statSync(path).isDirectory()) walk(path);
-      else if (/\.(md|json)$/.test(name)) files.push(path);
+      if (statSync(path).isDirectory()) walk(path, pattern);
+      else if (pattern.test(name)) files.push(path);
     }
   };
-  for (const dir of ['docs', 'examples', 'skills']) walk(join(repoRootDir, dir));
+  for (const [dir, pattern] of SCANNED_DIRS) walk(join(repoRootDir, dir), pattern);
   return files;
 }
 
+// Every spelling that runs the Veritas bin: npx with or without -y/--yes/--no, `npm exec [flags]
+// -- veritas`, `pnpm exec`/`yarn exec`, `pnpm dlx`, and a `veritas` code span.
+const COMMAND_PREFIX = new RegExp(
+  [
+    String.raw`\bnpx(?:\s+(?:-y|--yes|--no))*\s+@kontourai/veritas`,
+    String.raw`\bnpm\s+exec(?:\s+-{1,2}[\w-]+(?:=\S+)?)*\s+--\s+veritas`,
+    String.raw`\b(?:pnpm|yarn)\s+exec\s+(?:--\s+)?veritas`,
+    String.raw`\bpnpm\s+dlx\s+@kontourai/veritas`,
+    '`veritas',
+  ].map((source) => `(?:${source})`).join('|').replace(/^/, '(?:') + String.raw`)[ \t]+`,
+  'g',
+);
+// Inside a fenced block a line that starts with `veritas ` (optionally after a `$ ` prompt) is a
+// command too.
+const FENCED_COMMAND = /^\s*(?:\$\s+)?veritas[ \t]+/;
+
 // A command is the run of bare words after the program name: `npx --no @kontourai/veritas apply
 // git-hook --force` gives ["apply", "git-hook"]. A flag, placeholder, or punctuation ends it.
-const COMMAND_PREFIXES = ['npx --no @kontourai/veritas ', '`veritas '];
 const MAX_COMMAND_WORDS = 3;
 
-function extractDocumentedCommands(text) {
+function commandWords(text) {
+  const words = [];
+  for (const token of text.slice(0, 200).split(/[ \t]+/)) {
+    const word = token.match(/^[a-z][a-z0-9-]*/)?.[0];
+    if (!word) break;
+    words.push(word);
+    if (word !== token || words.length === MAX_COMMAND_WORDS) break;
+  }
+  return words;
+}
+
+// In JavaScript source an unescaped backtick opens a template literal, so a `veritas` code span
+// counts there only when written escaped, as \`veritas … \` inside a template.
+function extractDocumentedCommands(text, { javascript = false } = {}) {
   const commands = [];
-  for (const prefix of COMMAND_PREFIXES) {
-    let index = text.indexOf(prefix);
-    while (index >= 0) {
-      const words = [];
-      for (const token of text.slice(index + prefix.length, index + prefix.length + 200).split(/[ \t]+/)) {
-        const word = token.match(/^[a-z][a-z0-9-]*/)?.[0];
-        if (!word) break;
-        words.push(word);
-        if (word !== token || words.length === MAX_COMMAND_WORDS) break;
-      }
+  for (const match of text.matchAll(COMMAND_PREFIX)) {
+    if (javascript && match[0].startsWith('`') && text[match.index - 1] !== '\\') continue;
+    const words = commandWords(text.slice(match.index + match[0].length));
+    if (words.length > 0) commands.push(words);
+  }
+  let inFence = false;
+  for (const line of text.split('\n')) {
+    if (/^\s*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    const fenced = inFence && line.match(FENCED_COMMAND);
+    if (fenced) {
+      const words = commandWords(line.slice(fenced[0].length));
       if (words.length > 0) commands.push(words);
-      index = text.indexOf(prefix, index + prefix.length);
     }
   }
   return commands;
@@ -85,7 +130,7 @@ function extractDocumentedCommands(text) {
 function documentedCommands() {
   const byCommand = new Map();
   for (const file of shippedDocFiles()) {
-    for (const words of extractDocumentedCommands(readFileSync(file, 'utf8'))) {
+    for (const words of extractDocumentedCommands(readFileSync(file, 'utf8'), { javascript: file.endsWith('.mjs') })) {
       const key = words.join(' ');
       if (!byCommand.has(key)) byCommand.set(key, { words, files: new Set() });
       byCommand.get(key).files.add(relative(repoRootDir, file));
@@ -119,14 +164,42 @@ test('the extractor reads command words and stops at flags, placeholders and pun
       'Run `npx --no @kontourai/veritas readiness` and fix FAIL lines.',
       'The hook invokes `veritas hooks codex pre-tool-use`.',
       'npx --no @kontourai/veritas -- --version',
+      'Also `npx @kontourai/veritas apply alpha`, `npx -y @kontourai/veritas apply beta`,',
+      '`npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas apply gamma`, `pnpm exec veritas apply delta`',
+      'and `pnpm dlx @kontourai/veritas apply epsilon`.',
+      '```sh',
+      'veritas apply zeta --force',
+      '$ veritas apply eta',
+      '```',
+      'veritas apply outside-a-fence',
     ].join('\n')),
     [
       ['apply', 'git-hook'],
       ['recommendation', 'show'],
       ['readiness'],
       ['hooks', 'codex', 'pre-tool-use'],
+      ['apply', 'alpha'],
+      ['apply', 'beta'],
+      ['apply', 'gamma'],
+      ['apply', 'delta'],
+      ['apply', 'epsilon'],
+      ['apply', 'zeta'],
+      ['apply', 'eta'],
     ],
   );
+  // In JavaScript an unescaped backtick opens a template literal; an escaped one is a code span.
+  assert.deepEqual(
+    extractDocumentedCommands('throw new Error(`veritas claim add requires --x`);\nconst hint = `Run \\`veritas apply theta\\`.`;', { javascript: true }),
+    [['apply', 'theta']],
+  );
+});
+
+test('the scan covers root Markdown, the generated .veritas/README.md and src command strings', () => {
+  const scanned = new Set(shippedDocFiles().map((file) => relative(repoRootDir, file)));
+  for (const pinned of ['README.md', 'CONTEXT.md', 'AGENTS.md', '.veritas/README.md', 'src/cli/setup-print.mjs', 'skills/setup-governance/SKILL.md']) {
+    assert.ok(scanned.has(pinned), `the guard scans ${pinned}`);
+  }
+  assert.equal(scanned.has('CHANGELOG.md'), false);
 });
 
 test('every command the shipped docs name is routed by the bin', async (t) => {
@@ -294,4 +367,49 @@ test('integrations codex install still refuses a repo hook that differs', (t) =>
   assert.match(install.stderr, /Refusing to overwrite existing file: \.githooks\/post-commit/);
   assert.equal(readFileSync(join(rootDir, '.githooks/post-commit'), 'utf8'), '#!/bin/sh\necho custom\n');
   assert.equal(existsSync(join(rootDir, '.veritas/hooks/agent-runtime.sh')), false);
+});
+
+// A target that also merges a tool config reads and merges it before writing anything, so a
+// malformed config leaves nothing half installed, and a retry needs no --force.
+const CONFIG_MERGING_TARGETS = [
+  { args: ['apply', 'stop-hook', '--tool', 'claude-code'], config: '.claude/settings.json', written: '.veritas/hooks/stop.sh' },
+  { args: ['apply', 'stop-hook', '--tool', 'cursor'], config: '.cursor/hooks.json', written: '.veritas/hooks/stop.sh' },
+  { args: ['apply', 'claude-code-pre-tool-use-hook'], config: '.claude/settings.json', written: '.veritas/hooks/pre-tool-use.sh' },
+  { args: ['apply', 'codex-hook', '--codex-home', 'codex-home'], config: 'codex-home/hooks.json', written: '.veritas/runtime/codex-hooks.json' },
+];
+
+for (const { args, config, written } of CONFIG_MERGING_TARGETS) {
+  test(`${args.join(' ')} writes nothing when ${config} is malformed, and a retry needs no --force`, (t) => {
+    const rootDir = tempDir(t, 'veritas-apply-malformed-config-');
+    mkdirp(join(rootDir, config, '..'));
+    writeFileSync(join(rootDir, config), '{not json\n');
+
+    const failed = veritas(rootDir, args);
+    assert.notEqual(failed.status, 0);
+    assert.ok(failed.stderr.includes(config), `the error names ${config}: ${failed.stderr}`);
+    assert.equal(existsSync(join(rootDir, written)), false, `${written} was not written`);
+    assert.equal(readFileSync(join(rootDir, config), 'utf8'), '{not json\n');
+
+    writeFileSync(join(rootDir, config), '{}\n');
+    const fixed = veritas(rootDir, args);
+    assert.equal(fixed.status, 0, fixed.stderr);
+    assert.ok(existsSync(join(rootDir, written)));
+
+    const again = veritas(rootDir, args);
+    assert.equal(again.status, 0, `an identical ${written} is accepted: ${again.stderr}`);
+
+    writeFileSync(join(rootDir, written), '#!/bin/sh\necho custom\n');
+    const custom = veritas(rootDir, args);
+    assert.notEqual(custom.status, 0);
+    assert.match(custom.stderr, /Refusing to overwrite existing file/);
+    assert.equal(readFileSync(join(rootDir, written), 'utf8'), '#!/bin/sh\necho custom\n');
+  });
+}
+
+test('apply refuses a --root that does not exist instead of creating it', (t) => {
+  const cwd = tempDir(t, 'veritas-apply-missing-root-');
+  const result = veritas(cwd, ['apply', 'runtime-hook', '--root', 'missing/deeper']);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /--root must name an existing directory; got missing\/deeper/);
+  assert.deepEqual(readdirSync(cwd), []);
 });
