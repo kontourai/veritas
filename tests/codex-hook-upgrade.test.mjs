@@ -59,6 +59,8 @@ test('reinstalling the Codex integration over an older engine leaves one Veritas
     for (const event of Object.keys(current)) {
       const veritasCommands = commandsOf(hooks[event]).filter((command) => ours.has(command));
       assert.deepEqual(veritasCommands, commandsOf(current[event]), `run ${run}: ${event} must hold one current Veritas handler`);
+      // The whole current handler is installed, including the Windows override.
+      assert.deepEqual(hooks[event].flatMap((group) => group.hooks).filter((hook) => ours.has(hook.command)), current[event].flatMap((group) => group.hooks));
       // Every handler Veritas did not write survives unchanged, including one that runs Veritas.
       assert.deepEqual(hooks[event].filter((group) => commandsOf([group]).every((command) => !ours.has(command))), userGroups[event] ?? [], `run ${run}: ${event} user handlers`);
     }
@@ -66,4 +68,25 @@ test('reinstalling the Codex integration over an older engine leaves one Veritas
 
   const status = veritas(rootDir, ['integrations', 'codex', 'status', '--target-hooks-file', '.codex/hooks.json']);
   assert.match(status.output, /"integrationInstalled": true/);
+});
+
+test('a Veritas Codex handler without the current Windows override reads as not installed until reinstalled', () => {
+  const rootDir = initCommittedRepo('veritas-codex-hook-windows-');
+  installLocalVeritasBin(rootDir);
+  mkdirSync(join(rootDir, '.codex'), { recursive: true });
+  const hooksPath = join(rootDir, '.codex/hooks.json');
+  const current = buildSuggestedCodexHookConfig();
+  const withoutWindows = structuredClone(current);
+  for (const group of withoutWindows.hooks.PreToolUse) for (const hook of group.hooks) delete hook.commandWindows;
+  assert.ok(current.hooks.PreToolUse[0].hooks[0].commandWindows);
+  writeFileSync(hooksPath, `${JSON.stringify(withoutWindows, null, 2)}\n`);
+
+  const before = veritas(rootDir, ['integrations', 'codex', 'status', '--target-hooks-file', '.codex/hooks.json']);
+  assert.match(before.output, /"integrationInstalled": false/);
+  const install = veritas(rootDir, ['integrations', 'codex', 'install', '--force', '--target-hooks-file', '.codex/hooks.json']);
+  assert.equal(install.status, 0, install.output);
+  const hooks = JSON.parse(readFileSync(hooksPath, 'utf8')).hooks;
+  assert.deepEqual(hooks.PreToolUse.flatMap((group) => group.hooks), current.hooks.PreToolUse[0].hooks);
+  const after = veritas(rootDir, ['integrations', 'codex', 'status', '--target-hooks-file', '.codex/hooks.json']);
+  assert.match(after.output, /"integrationInstalled": true/);
 });

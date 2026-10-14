@@ -205,8 +205,11 @@ now run `npx --no @kontourai/veritas`. The earlier spelling still works where Ve
 Where it is not, it fell back to a registry fetch without prompting when no terminal is attached,
 and the `npm exec` form fetched the unscoped `veritas` package, which belongs to another project.
 The Codex `PreToolUse` and `PostSession` commands and the Claude Code `PostSession` command run in the
-agent's working directory, which can be a nested package without its own Veritas install, so they
-first look upward for the nearest directory with Veritas installed and pass it to `npx --prefix`.
+agent's working directory, which can be a nested package without its own Veritas install. They look
+upward from there, no further than the git root, for the nearest directory with Veritas installed and
+pass it to `npx --prefix`. When there is none, or outside a git repository, they run plain
+`npx --no @kontourai/veritas`, which also finds a global install. Codex on Windows runs hooks through
+PowerShell, so the Codex `PreToolUse` hook also carries the plain command as `commandWindows`.
 Files Veritas already wrote keep the earlier spelling until you refresh them:
 
 - `.githooks/post-commit`: run `npx --no @kontourai/veritas setup repo-hooks --force`. Without
