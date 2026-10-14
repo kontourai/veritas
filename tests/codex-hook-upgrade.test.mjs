@@ -7,10 +7,14 @@ import { buildSuggestedCodexHookConfig } from '../src/integrations/codex-hooks.m
 import { PREVIOUS_CODEX_HOOK_COMMANDS } from '../src/integrations/codex-hook-history.mjs';
 import { cleanGitEnv, initCommittedRepo, installLocalVeritasBin } from './helpers.mjs';
 
-// The fixture is the exact file v1.11.0 wrote: its own applyCodexHook (src/integrations/
-// codex-hooks.mjs at tag v1.11.0) with targetHooksFile, merged into a hooks file that already held
-// the two user handlers below. Every release from v1.7.0 to v1.11.0 merges the same commands.
-const OLD_ENGINE_HOOKS = new URL('./fixtures/codex-hooks-upgrade/v1.11.0.hooks.json', import.meta.url);
+// Each fixture is the exact file that release wrote: its own applyCodexHook (src/integrations/
+// codex-hooks.mjs at that tag) with targetHooksFile, merged into a hooks file that already held the
+// two user handlers below. Every release from v1.7.0 to v1.11.0 merges the same commands as v1.11.0,
+// and v1.11.1 merges the same commands as v1.11.2.
+const OLD_ENGINE_HOOKS = ['v1.11.0', 'v1.11.2'].map((release) => [
+  release,
+  new URL(`./fixtures/codex-hooks-upgrade/${release}.hooks.json`, import.meta.url),
+]);
 const USER_PRE_TOOL_USE = './scripts/check-owned-paths.sh';
 const USER_POST_SESSION = './scripts/archive-session-log.sh';
 // A user's own handler that runs Veritas: not written by Veritas, so never removed, even though it
@@ -29,16 +33,17 @@ function veritas(rootDir, args) {
   return { status: result.status, output: `${result.stdout}\n${result.stderr}` };
 }
 
-test('reinstalling the Codex integration over an older engine leaves one Veritas handler per event', (t) => {
+for (const [release, fixture] of OLD_ENGINE_HOOKS) test(`reinstalling the Codex integration over ${release} leaves one Veritas handler per event`, (t) => {
   const rootDir = initCommittedRepo(t, 'veritas-codex-hook-upgrade-');
   installLocalVeritasBin(rootDir);
   mkdirSync(join(rootDir, '.codex'), { recursive: true });
   const hooksPath = join(rootDir, '.codex/hooks.json');
-  copyFileSync(OLD_ENGINE_HOOKS, hooksPath);
+  copyFileSync(fixture, hooksPath);
   const before = JSON.parse(readFileSync(hooksPath, 'utf8'));
-  // The fixture really holds the recorded earlier commands, so the upgrade has something to replace.
-  assert.ok(commandsOf(before.hooks.PreToolUse).includes(PREVIOUS_CODEX_HOOK_COMMANDS.PreToolUse[0]));
-  assert.ok(commandsOf(before.hooks.PostSession).includes(PREVIOUS_CODEX_HOOK_COMMANDS.PostSession[0]));
+  // The fixture really holds recorded earlier commands, so the upgrade has something to replace.
+  for (const event of ['PreToolUse', 'PostSession']) {
+    assert.ok(commandsOf(before.hooks[event]).some((command) => PREVIOUS_CODEX_HOOK_COMMANDS[event].includes(command)), `${release} ${event}`);
+  }
   before.hooks.PreToolUse.push({ matcher: 'Write', hooks: [{ type: 'command', command: USER_VERITAS_HANDLER }] });
   writeFileSync(hooksPath, `${JSON.stringify(before, null, 2)}\n`);
 
