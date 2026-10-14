@@ -11,6 +11,8 @@ import {
   summarizeGovernanceTrend,
 } from '../src/conformance/run.mjs';
 import { cleanGitEnv, execGitFixture, commitAll, initCommittedRepo, mkdirp, repoRootDir } from './helpers.mjs';
+import { listChangedFiles } from '../src/report/inputs.mjs';
+import { tempDir } from './temp-dir.mjs';
 
 function writeJsonFile(rootDir, relativePath, value) {
   const path = join(rootDir, relativePath);
@@ -333,4 +335,118 @@ test('standing policy evaluates tracked non-ASCII paths', (t) => {
     match: { files: ['café.json'], pattern: 'forbidden-content' },
   }] }, { rootDir, changedFiles: [] });
   assert.equal(results[0].passed, false);
+});
+
+// ─── Conformance CI revision pair (#275) ──────────────────────────────────
+
+const conformanceWorkflow = readFileSync(join(repoRootDir, '.github/workflows/veritas-conformance.yml'), 'utf8');
+const PAIR_STEP = 'Pair The Pull Request Diff With The Checked-Out Merge Commit';
+const REPORT_STEP = 'Generate Veritas Repo Conformance';
+
+function workflowStep(name) {
+  const start = conformanceWorkflow.indexOf(`      - name: ${name}\n`);
+  assert.notEqual(start, -1, `the conformance workflow must keep the step "${name}"`);
+  const rest = conformanceWorkflow.slice(start + 1);
+  const next = rest.search(/\n {6}- name: /);
+  return next === -1 ? rest : rest.slice(0, next + 1);
+}
+
+function workflowStepScript(name) {
+  const run = workflowStep(name).match(/\n {8}run: \|\n((?: {10}.*\n|\n)+)/)?.[1];
+  assert.ok(run, `the "${name}" step must keep a multi-line run script`);
+  return run.split('\n').map((line) => line.slice(10)).join('\n');
+}
+
+// Runs the workflow's own pairing script the way Actions does: bash, the step's
+// PR_HEAD_SHA, and a GITHUB_ENV file whose lines later steps receive as env.
+function runPairStep(t, rootDir, prHeadSha) {
+  const envFile = join(tempDir(t, 'veritas-conformance-github-env-'), 'github-env');
+  writeFileSync(envFile, '');
+  const result = spawnSync('bash', ['-c', workflowStepScript(PAIR_STEP)], {
+    cwd: rootDir,
+    encoding: 'utf8',
+    env: { ...cleanGitEnv(), GITHUB_ENV: envFile, PR_HEAD_SHA: prHeadSha },
+  });
+  if (result.error) throw result.error;
+  const env = Object.fromEntries(readFileSync(envFile, 'utf8').split('\n').filter(Boolean).map((line) => {
+    const index = line.indexOf('=');
+    return [line.slice(0, index), line.slice(index + 1)];
+  }));
+  return { status: result.status, stderr: result.stderr, stdout: result.stdout, env };
+}
+
+function revParse(rootDir, ref) {
+  return execGitFixture(['rev-parse', ref], { cwd: rootDir, encoding: 'utf8' }).trim();
+}
+
+// A pull request branched before the base branch changed the Repo Map, checked
+// out the way actions/checkout does for pull_request: the merge commit, with
+// the base tip as first parent and the PR head as second.
+function createStalePullRequestCheckout(t) {
+  const rootDir = createGovernanceRepo(t, 'veritas-conformance-stale-pr-');
+  execGitFixture(['checkout', '-b', 'feature'], { cwd: rootDir, encoding: 'utf8' });
+  writeFileSync(join(rootDir, 'feature.txt'), 'feature\n');
+  commitAll(rootDir, 'Feature change');
+  const headSha = revParse(rootDir, 'HEAD');
+  execGitFixture(['checkout', 'main'], { cwd: rootDir, encoding: 'utf8' });
+  writeJsonFile(rootDir, '.veritas/repo-map.json', { name: 'demo', graph: { version: 1 }, owner: 'platform' });
+  commitAll(rootDir, 'Base-branch Repo Map change the feature branch never saw');
+  const baseSha = revParse(rootDir, 'HEAD');
+  execGitFixture(['merge', '--no-ff', '--no-edit', 'feature'], { cwd: rootDir, encoding: 'utf8' });
+  const mergeSha = revParse(rootDir, 'HEAD');
+  execGitFixture(['checkout', '--detach', mergeSha], { cwd: rootDir, encoding: 'utf8' });
+  return { rootDir, baseSha, headSha, mergeSha };
+}
+
+test('conformance CI does not charge a stale pull request with base-branch progress (#275)', (t) => {
+  const { rootDir, baseSha, headSha, mergeSha } = createStalePullRequestCheckout(t);
+
+  // The fixture reproduces the bug: base.sha..head.sha reverses the base
+  // branch's Repo Map change and reports it as this PR's protected change.
+  assert.deepEqual(listChangedFiles(baseSha, headSha, rootDir), ['.veritas/repo-map.json', 'feature.txt']);
+  assert.equal(
+    classifyGovernanceSurface({ rootDir, changedFrom: baseSha, changedTo: headSha }).classification,
+    'protected-standards-modification',
+  );
+
+  const step = runPairStep(t, rootDir, headSha);
+  assert.equal(step.status, 0, step.stderr);
+  assert.deepEqual(step.env, { VERITAS_CHANGED_FROM: baseSha, VERITAS_CHANGED_TO: mergeSha });
+  // The pair ends at the commit the job evaluates, and its diff is only the PR's change.
+  assert.equal(step.env.VERITAS_CHANGED_TO, revParse(rootDir, 'HEAD'));
+  assert.deepEqual(listChangedFiles(step.env.VERITAS_CHANGED_FROM, step.env.VERITAS_CHANGED_TO, rootDir), ['feature.txt']);
+  const surface = classifyGovernanceSurface({
+    rootDir,
+    changedFrom: step.env.VERITAS_CHANGED_FROM,
+    changedTo: step.env.VERITAS_CHANGED_TO,
+  });
+  assert.equal(surface.classification, 'clean');
+  assert.deepEqual(surface.semantic_changed_paths, []);
+});
+
+test('the conformance pairing step refuses a checkout that is not the merge of the pull request head', (t) => {
+  const { rootDir, baseSha, headSha } = createStalePullRequestCheckout(t);
+
+  const wrongHead = runPairStep(t, rootDir, baseSha);
+  assert.notEqual(wrongHead.status, 0);
+  assert.match(wrongHead.stdout, /refusing to diff one revision pair and evaluate another/);
+  assert.deepEqual(wrongHead.env, {});
+
+  execGitFixture(['checkout', '--detach', headSha], { cwd: rootDir, encoding: 'utf8' });
+  const notAMerge = runPairStep(t, rootDir, headSha);
+  assert.notEqual(notAMerge.status, 0);
+  assert.match(notAMerge.stdout, /refusing to diff one revision pair and evaluate another/);
+  assert.deepEqual(notAMerge.env, {});
+});
+
+test('the conformance report step takes its revision pair only from the pairing step', () => {
+  // A step-level env on the report step would override what the pairing step
+  // wrote to GITHUB_ENV, so the pair must not be set anywhere else.
+  assert.doesNotMatch(workflowStep(REPORT_STEP), /VERITAS_CHANGED_(FROM|TO)/);
+  assert.doesNotMatch(conformanceWorkflow, /pull_request\.base\.sha/);
+  assert.match(workflowStep(PAIR_STEP), /\n {8}if: github\.event_name == 'pull_request'\n/);
+  assert.ok(
+    conformanceWorkflow.indexOf(`- name: ${PAIR_STEP}\n`) < conformanceWorkflow.indexOf(`- name: ${REPORT_STEP}\n`),
+    'the pairing step must run before the report step',
+  );
 });
