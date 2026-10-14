@@ -9,7 +9,7 @@ In Veritas, attestations protect the parts of the repo standards and repo map th
 After `veritas init`, review the generated standards and map, then record the first attestation:
 
 ```bash
-npx @kontourai/veritas attest bootstrap \
+npx --no @kontourai/veritas attest bootstrap \
   --actor <authority-id> \
   --approval-ref <human-approval-reference> \
   --non-interactive
@@ -93,7 +93,7 @@ Product language should describe them as the Repo Map and Repo Standards.
 When protected standards change, record a successor attestation:
 
 ```bash
-npx @kontourai/veritas attest policy-change \
+npx --no @kontourai/veritas attest policy-change \
   --actor <authority-id> \
   --approval-ref <human-approval-reference> \
   --message "Reviewed standards change for contract boundary requirements"
@@ -108,7 +108,7 @@ When a protected path given with a CLI flag such as `--repo-standards`, `--repo-
 ## Status
 
 ```bash
-npx @kontourai/veritas attest status
+npx --no @kontourai/veritas attest status
 ```
 
 Status reports the current attestation, age, expiry, and hash drift. It also reports `priorAttestationLink` for the active record: the `reference` it names as its predecessor, its `form` (`attestation-id`, `legacy-reference`, or `unresolved`), whether it `resolved` to a tracked record, and an `explanation`. A successor of an unmarked historical attestation names its predecessor by the opaque `legacy-attestation-v0:<hash>` reference rather than the id in `HEAD`, because the historical id embeds a digest of the raw Repo Map file. That is the expected migration link, not a broken chain; `resolved` is `true` only when the reference matches exactly one tracked record, and the readiness PASS line for `policy-changes-require-attestation` names the reference and whether it resolved.

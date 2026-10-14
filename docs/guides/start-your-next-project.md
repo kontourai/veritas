@@ -13,7 +13,7 @@ The goal is not to model everything before the first commit. The goal is to make
 
 ```bash
 npm install -D @kontourai/veritas
-npx @kontourai/veritas init
+npx --no @kontourai/veritas init
 ```
 
 That command writes starter files under `.veritas/`, including generated files for the Repo Map, Repo Standards, and protected standards metadata.
@@ -21,9 +21,9 @@ That command writes starter files under `.veritas/`, including generated files f
 For agent-guided setup, use the plan-first variant:
 
 ```bash
-npx @kontourai/veritas init --explore
-npx @kontourai/veritas init --guided --answers answers.json --output .veritas/init-plans/guided.json
-npx @kontourai/veritas init --apply --plan .veritas/init-plans/guided.json
+npx --no @kontourai/veritas init --explore
+npx --no @kontourai/veritas init --guided --answers answers.json --output .veritas/init-plans/guided.json
+npx --no @kontourai/veritas init --apply --plan .veritas/init-plans/guided.json
 ```
 
 The conversation can be flexible, but `--apply --plan` remains the reviewed write path.
@@ -67,18 +67,18 @@ Use the enforcement ladder:
 For protected standards, record an attestation after the generated files have been reviewed:
 
 ```bash
-npx @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
+npx --no @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
 ```
 
 ## What To Do Today
 
-1. Run `npx @kontourai/veritas init`, or use the guided plan-first flow.
+1. Run `npx --no @kontourai/veritas init`, or use the guided plan-first flow.
 2. Review the generated `.veritas/` files.
 3. Replace the default evidenceCheck with the command that proves repo health.
-4. Run `npx @kontourai/veritas readiness --working-tree`.
-5. Use `npx @kontourai/veritas explain --file <path>` to inspect change guidance.
+4. Run `npx --no @kontourai/veritas readiness --working-tree`.
+5. Use `npx --no @kontourai/veritas explain --file <path>` to inspect change guidance.
 6. Add CI or runtime hooks only after the basic readiness check is useful.
-7. Use `npx @kontourai/veritas feedback summary` later to review standards feedback.
+7. Use `npx --no @kontourai/veritas feedback summary` later to review standards feedback.
 
 Use `--changed-from <ref> --changed-to <ref>` when you want branch-diff evidence instead of current working-tree evidence.
 

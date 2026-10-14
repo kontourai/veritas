@@ -10,10 +10,10 @@ does not reproduce derivation or evaluation logic.
 
 ```bash
 # Propose without writing the governance files.
-npm exec --no -- veritas init --explore --output .veritas/init-plans/proposal.json
+npx --no @kontourai/veritas init --explore --output .veritas/init-plans/proposal.json
 
 # Or collect explicit owner answers.
-npm exec --no -- veritas init --guided --answers answers.json \
+npx --no @kontourai/veritas init --guided --answers answers.json \
   --output .veritas/init-plans/proposal.json
 ```
 
@@ -27,7 +27,7 @@ For visual review through `flow-agents kit review veritas-governance`, follow th
 Only after that gate passes:
 
 ```bash
-npm exec --no -- veritas init --apply --plan .veritas/init-plans/proposal.json
+npx --no @kontourai/veritas init --apply --plan .veritas/init-plans/proposal.json
 ```
 
 The apply command validates the plan's artifact hashes and refuses unsafe replacement by

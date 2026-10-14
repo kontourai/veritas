@@ -35,7 +35,7 @@ That is enough to make Veritas useful. You do not need to model the whole organi
 
 ```bash
 npm install -D @kontourai/veritas
-npx @kontourai/veritas init
+npx --no @kontourai/veritas init
 ```
 
 `init` writes starter files under `.veritas/`, injects a governance block into AI instruction files, and creates a reviewable starting point for standards and map configuration.
@@ -45,9 +45,9 @@ Current generated paths are documented in [CLI Reference](../reference/cli.md). 
 For a repo where setup should be reviewed before files are written, use the guided path:
 
 ```bash
-npx @kontourai/veritas init --explore
-npx @kontourai/veritas init --guided --answers answers.json --output .veritas/init-plans/guided.json
-npx @kontourai/veritas init --apply --plan .veritas/init-plans/guided.json
+npx --no @kontourai/veritas init --explore
+npx --no @kontourai/veritas init --guided --answers answers.json --output .veritas/init-plans/guided.json
+npx --no @kontourai/veritas init --apply --plan .veritas/init-plans/guided.json
 ```
 
 Exploration is deterministic: it does not call AI. The first command writes its review artifact to
@@ -58,7 +58,7 @@ Exploration is deterministic: it does not call AI. The first command writes its 
 After reviewing the generated standards and map, record the first attestation:
 
 ```bash
-npx @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
+npx --no @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
 ```
 
 This records authority-backed evidence for the current protected standards. If the standards or map change later, Veritas reports that fresh authority is needed before those changes can be trusted.
@@ -68,7 +68,7 @@ This records authority-backed evidence for the current protected standards. If t
 Run a readiness check:
 
 ```bash
-npx @kontourai/veritas readiness --working-tree
+npx --no @kontourai/veritas readiness --working-tree
 ```
 
 The output gives developer- and agent-facing feedback, writes generated evidence, and records enough context for standards feedback. For a repo that satisfies all its standards, the output looks like:
@@ -93,7 +93,7 @@ FAIL  api-routes-require-api-tests: Changed files matched app/api/** but no comp
 For a lower-level evidence artifact without the full orchestration path:
 
 ```bash
-npx @kontourai/veritas readiness --check evidence --working-tree
+npx --no @kontourai/veritas readiness --check evidence --working-tree
 ```
 
 `veritas readiness` is the front door for readiness reports. Existing hook and CI integrations may still use the lower-level `veritas readiness` compatibility path.
@@ -103,8 +103,8 @@ npx @kontourai/veritas readiness --check evidence --working-tree
 Use `explain` when an agent or developer needs context before editing:
 
 ```bash
-npx @kontourai/veritas explain --file src/api/users.ts
-npx @kontourai/veritas explain <requirement-id>
+npx --no @kontourai/veritas explain --file src/api/users.ts
+npx --no @kontourai/veritas explain <requirement-id>
 ```
 
 Good change guidance should say what to do next, what not to do, why it matters, and what evidence will satisfy the requirement.
@@ -114,9 +114,9 @@ Good change guidance should say what to do next, what not to do, why it matters,
 After Veritas has generated enough evidence, use the current feedback commands:
 
 ```bash
-npx @kontourai/veritas feedback summary
-npx @kontourai/veritas feedback recommend
-npx @kontourai/veritas recommendation list
+npx --no @kontourai/veritas feedback summary
+npx --no @kontourai/veritas feedback recommend
+npx --no @kontourai/veritas recommendation list
 ```
 
 In product language, these commands create **Standards Feedback** and **Standards Recommendations**. Recommendations should be reviewed before they change the repo standards.

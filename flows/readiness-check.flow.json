@@ -14,7 +14,7 @@
           "kind": "trust.bundle",
           "required": true,
           "description": "A canonical Veritas readiness run produced a verified software-readiness-verdict claim for this repository change.",
-          "explore_hint": "Run `npm exec --no -- veritas readiness --check evidence --working-tree --format trust-bundle > readiness.bundle.json`, then attach readiness.bundle.json to this gate as a bundle.",
+          "explore_hint": "Run `npx --no @kontourai/veritas readiness --check evidence --working-tree --format trust-bundle > readiness.bundle.json`, then attach readiness.bundle.json to this gate as a bundle.",
           "bundle_claim": {
             "claimType": "software-readiness-verdict",
             "subjectType": "repository-change",

@@ -2503,29 +2503,72 @@ test('every shell-variable version in the setup skill and guide fails closed on 
   }
 });
 
-// `npm exec <bin>` and `npx <bin>` fall back to the registry when there is no local bin, and install
-// without prompting when there is no terminal. The unscoped `veritas` and `survey-review-mcp` names
-// are not ours, so instruction text must pass --no to run only the installed copy. Generated hook and
-// script text under src/ and provisions/ still uses the bare form; see the PR description.
-const BARE_UNSCOPED_EXEC = /\b(?:npm exec(?: --yes)?|npx(?: --yes| -y)?) (?:-- )?(?:veritas|survey-review-mcp)\b/;
+// `npx` and `npm exec` fall back to the registry when there is no local bin, and install without
+// prompting when there is no terminal. Instruction text must pass --no so a missing install is an
+// error, never a silent fetch of whatever is latest. The one fetch is the bootstrap, which uses
+// `npm exec --yes --package="@kontourai/veritas@${v:?...}"`. The unscoped `veritas` and
+// `survey-review-mcp` names belong to other projects and are never used. `npx` answers a leading
+// --version/--help itself, so those go after `--`. Scope: Veritas and Survey invocations; the
+// Flow Agents kit installs fetch a package that is not installed yet, by design. Generated hook
+// and script text under src/ and provisions/ still uses the bare form; see the PR description.
+function unsafeExec(line) {
+  const problems = [];
+  for (const match of line.matchAll(/\bnpm exec (?=-)(.*)/g)) {
+    // Options are everything before the first ` -- ` that separates them from the bin.
+    const opts = match[1].split(' -- ')[0].replace(/ --$/, '');
+    const bootstrap = /^--yes --package="@kontourai\/veritas@\$\{v:\?[^}]+\}"$/.test(opts);
+    if (!/(?:^| )--no(?: |$)/.test(opts) && !bootstrap) problems.push('npm exec without --no');
+  }
+  for (const match of line.matchAll(/\bnpx((?: -[-\w]+)*) (?:-- )?(@kontourai\/(?:veritas|survey)|veritas|survey-review-mcp)\b/g)) {
+    if (!match[2].startsWith('@')) problems.push(`unscoped ${match[2]}`);
+    else if (!/(?:^| )--no\b/.test(match[1])) problems.push(`npx ${match[2]} without --no`);
+  }
+  for (const match of line.matchAll(/\bnpm exec (?=-)(.*)/g)) {
+    const [opts, bin = ''] = match[1].split(' -- ');
+    if (!/--package[= ]/.test(opts) && /^(?:veritas|survey-review-mcp)\b/.test(bin)) problems.push('unscoped bin');
+  }
+  if (/\bnpx --no @kontourai\/veritas --(?:version|help)\b/.test(line)) problems.push('leading --version/--help needs --');
+  return problems;
+}
 const ADOPTER_TEXT_PREFIXES = ['skills/', 'docs/', 'flows/'];
 const ADOPTER_TEXT_FILES = new Set(['README.md', 'kit.json']);
 
-test('adopter instruction text never runs an unscoped veritas or survey-review-mcp without --no', () => {
+test('adopter instruction text only runs an installed Veritas or Survey, never a registry fetch', () => {
   const files = pinScanFiles().filter((file) => ADOPTER_TEXT_FILES.has(file) || ADOPTER_TEXT_PREFIXES.some((prefix) => file.startsWith(prefix)));
   assert.ok(files.includes('skills/setup-governance/SKILL.md') && files.includes('README.md') && files.includes('docs/guides/governance-kit.md'));
   const offenders = [];
   for (const file of files) {
     readFileSync(join(repoRootDir, file), 'utf8').split('\n').forEach((line, index) => {
-      if (BARE_UNSCOPED_EXEC.test(line)) offenders.push(`${file}:${index + 1}: ${line.trim()}`);
+      if (file !== 'docs/MIGRATING.md' && unsafeExec(line).length > 0) offenders.push(`${file}:${index + 1}: ${line.trim()}`);
     });
   }
   assert.deepEqual(offenders, []);
-  for (const bare of ['npm exec -- veritas readiness', 'npx veritas init', 'npx --yes veritas', 'npm exec --yes -- veritas', 'npm exec -- survey-review-mcp --session x']) {
-    assert.match(bare, BARE_UNSCOPED_EXEC, bare);
+  for (const unsafe of [
+    'npm exec -- veritas readiness',
+    'npm exec --yes -- veritas',
+    'npx veritas init',
+    'npx --yes veritas',
+    'npx @kontourai/veritas readiness',
+    'npx --yes @kontourai/veritas readiness',
+    'npx @kontourai/survey survey-review-mcp',
+    'npm exec -- survey-review-mcp --session x',
+    'npm exec --no -- veritas readiness',
+    'npx --no @kontourai/veritas --version',
+    'npx --no @kontourai/veritas --help',
+    'npm exec --yes --package="@kontourai/veritas@${v:-1}" -- veritas',
+  ]) {
+    assert.notDeepEqual(unsafeExec(unsafe), [], unsafe);
   }
-  for (const safe of ['npm exec --no -- veritas readiness', 'npx --no veritas', 'npx @kontourai/veritas readiness', 'npm exec --no -- survey-review-mcp', 'npm exec --yes --package="@kontourai/veritas@${v:?x}" -- veritas']) {
-    assert.doesNotMatch(safe, BARE_UNSCOPED_EXEC, safe);
+  for (const safe of [
+    'npx --no @kontourai/veritas readiness --working-tree',
+    'npx --no @kontourai/veritas -- --version',
+    'npx --no @kontourai/veritas init --explore --help',
+    'npm exec --no --package=@kontourai/survey -- survey-review-mcp --session x',
+    'npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas readiness --working-tree',
+    'npm exec --no -- eslint .',
+    'npx @kontourai/flow-agents kit install',
+  ]) {
+    assert.deepEqual(unsafeExec(safe), [], safe);
   }
 });
 
