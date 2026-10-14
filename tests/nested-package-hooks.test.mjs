@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { writeBootstrapStarterKit } from '../src/index.mjs';
 import { buildSuggestedCodexHookConfig } from '../src/integrations/codex-hooks.mjs';
 import { buildClaudeCodeSessionLogCaptureCommand } from '../src/hooks/suggestions.mjs';
@@ -149,13 +149,16 @@ test('the walk stops at the git root, so a node_modules planted in a parent outs
 
 test('the git root is matched by identity when the working directory is typed in another case', (t) => {
   const { rootDir, packageDir } = pnpmWorkspace({ installVeritas: true });
-  if (!existsSync(join(rootDir, 'PACKAGES', 'A'))) {
+  // The repository root itself is typed in another case: git reports it in its canonical case,
+  // while the typed path keeps the case it was entered in. A string compare never matches, the walk
+  // never reaches the root, and the root install is lost.
+  const typedRoot = join(dirname(rootDir), basename(rootDir).toUpperCase());
+  assert.notEqual(typedRoot, rootDir);
+  if (!existsSync(typedRoot)) {
     t.skip('case-sensitive filesystem: a case-mismatched path cannot name the repository');
     return;
   }
-  // git reports the root in its canonical case; the typed path keeps the case it was entered in.
-  // A string compare never matches, the walk never reaches the root, and the root install is lost.
-  const typed = join(rootDir, 'PACKAGES', 'A');
+  const typed = join(typedRoot, 'packages', 'a');
   assert.equal(existsSync(join(packageDir, 'package.json')), true);
   const found = runHook(CODEX_PRE_TOOL_USE, { cwd: typed, input: editPayload(typed), env: { VERITAS_HOOK_SKIP: '1', PWD: typed } });
   assert.equal(found.status, 0, found.stderr);
