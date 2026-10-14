@@ -148,15 +148,25 @@ test('the walk stops at the git root, so a node_modules planted in a parent outs
 });
 
 test('the git root is matched by identity when the working directory is typed in another case', (t) => {
-  const { parent, repo, marker, cache } = plantedParent({ repoName: 'victim' });
-  if (!existsSync(join(parent, 'VICTIM'))) {
+  const { rootDir, packageDir } = pnpmWorkspace({ installVeritas: true });
+  if (!existsSync(join(rootDir, 'PACKAGES', 'A'))) {
     t.skip('case-sensitive filesystem: a case-mismatched path cannot name the repository');
     return;
   }
-  const typed = join(parent, 'VICTIM', 'SUB');
-  assert.equal(existsSync(join(repo, 'sub')), true);
-  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: typed, input: editPayload(typed), env: { npm_config_cache: cache, PWD: typed } });
-  assertRefusedWithoutPlanted(result, marker);
+  // git reports the root in its canonical case; the typed path keeps the case it was entered in.
+  // A string compare never matches, the walk never reaches the root, and the root install is lost.
+  const typed = join(rootDir, 'PACKAGES', 'A');
+  assert.equal(existsSync(join(packageDir, 'package.json')), true);
+  const found = runHook(CODEX_PRE_TOOL_USE, { cwd: typed, input: editPayload(typed), env: { VERITAS_HOOK_SKIP: '1', PWD: typed } });
+  assert.equal(found.status, 0, found.stderr);
+  assert.doesNotMatch(found.stderr, /npx canceled/);
+  assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
+
+  // And a case-mismatched path still never lets a planted parent run.
+  const { parent, marker, cache } = plantedParent({ repoName: 'victim' });
+  const victim = join(parent, 'VICTIM', 'SUB');
+  const refused = runHook(CODEX_PRE_TOOL_USE, { cwd: victim, input: editPayload(victim), env: { npm_config_cache: cache, PWD: victim } });
+  assertRefusedWithoutPlanted(refused, marker);
 });
 
 test('a GIT_DIR and GIT_WORK_TREE naming another repository do not let the walk escape', () => {
