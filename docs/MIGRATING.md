@@ -210,11 +210,14 @@ Files Veritas already wrote keep the earlier spelling until you refresh them:
   `--force` the command refuses, because the tracked hook no longer matches the current one.
 - Claude Code (`.veritas/hooks/pre-tool-use.sh`, `.veritas/hooks/stop.sh`, `.claude/settings.json`):
   run `npx --no @kontourai/veritas integrations claude-code install --force`.
-- Codex (`.veritas/hooks/agent-runtime.sh`, `.veritas/runtime/codex-hooks.json`): run
-  `npx --no @kontourai/veritas integrations codex install --force`. With `--codex-home` or
-  `--target-hooks-file`, the merge keeps the earlier `PreToolUse` and `PostSession` handlers next
-  to the new ones, so delete the earlier entries from that hooks file by hand. Provisioning
-  `.codex/hooks.json` again through Flow Agents also adds the new handler and keeps the old one.
+- Codex (`.veritas/hooks/agent-runtime.sh`, `.veritas/runtime/codex-hooks.json`, and the hooks
+  file named by `--codex-home` or `--target-hooks-file`): run
+  `npx --no @kontourai/veritas integrations codex install --force` with the same option you
+  installed with. In the hooks file it replaces the handlers earlier releases wrote, matched by
+  their exact command, and leaves every other handler alone.
+- A `.codex/hooks.json` provisioned through Flow Agents: provisioning again adds the new
+  `PreToolUse` handler and keeps the earlier one, so delete the earlier handler by hand. Its
+  command is the one that runs `hooks codex pre-tool-use` without `--no`.
 - `package.json` scripts, a CI snippet you copied into a workflow, and `.veritas/README.md` have no
   refresh command. Edit the prefix before each Veritas subcommand to `npx --no @kontourai/veritas`.
   Do not rerun `init --force` for the README: it also rewrites your standards.

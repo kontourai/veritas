@@ -6,6 +6,7 @@ import {
 } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { assertWithinDir, relativeRepoPath } from '../paths.mjs';
+import { PREVIOUS_CODEX_HOOK_COMMANDS } from './codex-hook-history.mjs';
 
 export function buildCodexSessionLogCaptureCommand() {
   return 'VERITAS_SESSION_LOG_PATH="${VERITAS_SESSION_LOG_PATH:-${CODEX_TRANSCRIPT_PATH:-}}"; if [ -z "$VERITAS_SESSION_LOG_PATH" ] && [ -n "$CODEX_SESSION_ID" ]; then VERITAS_SESSION_LOG_PATH="$HOME/.codex/sessions/$CODEX_SESSION_ID.json"; fi; if [ -n "$VERITAS_SESSION_LOG_PATH" ]; then npx --no @kontourai/veritas feedback observe --session-log "$VERITAS_SESSION_LOG_PATH"; fi';
@@ -57,14 +58,17 @@ export function buildSuggestedCodexHookConfig() {
   };
 }
 
-function mergeHookEntries(existingEntries, integrationEntries) {
-  const integrationCommands = new Set(
-    integrationEntries.flatMap((entry) =>
+// Removes handlers Veritas wrote for this event, the current commands and the exact commands earlier
+// releases wrote, then appends the current entries. Any other handler is kept as is.
+function mergeHookEntries(existingEntries, integrationEntries, previousCommands = []) {
+  const integrationCommands = new Set([
+    ...integrationEntries.flatMap((entry) =>
       Array.isArray(entry?.hooks)
         ? entry.hooks.map((hook) => hook?.command).filter(Boolean)
         : [entry?.command].filter(Boolean),
     ),
-  );
+    ...previousCommands,
+  ]);
   const filteredEntries = existingEntries
     .map((entry) => {
       if (integrationCommands.has(entry?.command)) return null;
@@ -88,7 +92,11 @@ function mergeCodexHooksConfig(existingConfig, integrationConfig) {
       ? integrationConfig.hooks[hookName]
       : [];
     const currentEntries = Array.isArray(merged.hooks[hookName]) ? merged.hooks[hookName] : [];
-    merged.hooks[hookName] = mergeHookEntries(currentEntries, integrationEntries);
+    merged.hooks[hookName] = mergeHookEntries(
+      currentEntries,
+      integrationEntries,
+      Object.hasOwn(PREVIOUS_CODEX_HOOK_COMMANDS, hookName) ? PREVIOUS_CODEX_HOOK_COMMANDS[hookName] : [],
+    );
   }
   return merged;
 }

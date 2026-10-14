@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { PREVIOUS_CODEX_HOOK_COMMANDS } from '../src/integrations/codex-hook-history.mjs';
+import { buildSuggestedCodexHookConfig } from '../src/integrations/codex-hooks.mjs';
 
 const repoRootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -132,6 +134,25 @@ function shippedFiles() {
     .filter((file) => file && entries.some((entry) => (entry.endsWith('/') ? file.startsWith(entry) : file === entry)));
 }
 
+// The one file allowed to hold earlier spellings: the record of exact commands earlier releases
+// merged into Codex hooks files, kept so a reinstall can replace them. Only those recorded strings
+// are exempt; anything else in the file is scanned like every other line.
+const PAST_OUTPUT_RECORD = 'src/integrations/codex-hook-history.mjs';
+const RECORDED_PAST_COMMANDS = Object.values(PREVIOUS_CODEX_HOOK_COMMANDS).flat();
+const withoutRecordedPastCommands = (file, line) => (file === PAST_OUTPUT_RECORD
+  ? RECORDED_PAST_COMMANDS.reduce((text, command) => text.replaceAll(command, ''), line)
+  : line);
+
+test('the record of past Codex hook commands holds only earlier unsafe spellings', () => {
+  assert.equal(RECORDED_PAST_COMMANDS.length, 2);
+  const current = new Set(Object.values(buildSuggestedCodexHookConfig().hooks)
+    .flatMap((groups) => groups.flatMap((group) => group.hooks.map((hook) => hook.command))));
+  for (const command of RECORDED_PAST_COMMANDS) {
+    assert.notDeepEqual(unsafeExec(command), [], command);
+    assert.equal(current.has(command), false, command);
+  }
+});
+
 test('shipped text and generated source only run an installed Veritas or Survey', () => {
   const files = shippedFiles();
   // Pinned independently of package.json: the generated-text sources and the adopter docs.
@@ -149,6 +170,7 @@ test('shipped text and generated source only run an installed Veritas or Survey'
     'src/hooks/suggestions.mjs',
     'src/hooks/git-hooks.mjs',
     'src/integrations/codex-hooks.mjs',
+    'src/integrations/codex-hook-history.mjs',
     'src/integrations/runtime-integrations.mjs',
     'src/conformance/run.mjs',
     'src/cli/setup-print.mjs',
@@ -162,7 +184,7 @@ test('shipped text and generated source only run an installed Veritas or Survey'
   const offenders = [];
   for (const file of files) {
     readFileSync(join(repoRootDir, file), 'utf8').split('\n').forEach((line, index) => {
-      const problems = unsafeExec(line);
+      const problems = unsafeExec(withoutRecordedPastCommands(file, line));
       if (problems.length > 0) offenders.push(`${file}:${index + 1}: ${problems.join('; ')}: ${line.trim()}`);
     });
   }
