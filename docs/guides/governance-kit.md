@@ -43,33 +43,44 @@ recording bootstrap authority. The shortest reviewed path is:
 
 ```bash
 npm install -D @kontourai/veritas
-npm exec -- veritas init --explore --output .veritas/init-plans/first-pass.json
+npx --no @kontourai/veritas init --explore --output .veritas/init-plans/first-pass.json
 # Review and approve the generated plan.
-npm exec -- veritas init --apply --plan .veritas/init-plans/first-pass.json
-npm exec -- veritas setup repo-hooks
-npm exec -- veritas attest bootstrap --actor <authority-id> \
+npx --no @kontourai/veritas init --apply --plan .veritas/init-plans/first-pass.json
+npx --no @kontourai/veritas setup repo-hooks
+npx --no @kontourai/veritas attest bootstrap --actor <authority-id> \
   --approval-ref <human-approval-reference> --non-interactive
-npm exec -- veritas readiness --working-tree
+npx --no @kontourai/veritas readiness --working-tree
 ```
 
 ### Non-npm repositories
 
 Do not add a consumer `package.json` merely to run Veritas. After explicit maintainer approval of
-the exact engine release, use the pinned ephemeral invocation for every setup command:
+a one-shot registry fetch, resolve the current release once, have the maintainer approve that
+version, and use it for every setup command in the same shell session:
 
 ```bash
-npm exec --yes --package=@kontourai/veritas@1.8.0 -- veritas --version
-npm exec --yes --package=@kontourai/veritas@1.8.0 -- veritas init --explore --output .veritas/init-plans/first-pass.json
+v="$(npm view @kontourai/veritas@latest version)"
+echo "$v"
+npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas --version
+npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas init --explore --output .veritas/init-plans/first-pass.json
 # Review and approve the generated plan.
-npm exec --yes --package=@kontourai/veritas@1.8.0 -- veritas init --apply --plan .veritas/init-plans/first-pass.json
-npm exec --yes --package=@kontourai/veritas@1.8.0 -- veritas readiness --working-tree
+npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas init --apply --plan .veritas/init-plans/first-pass.json
+npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas readiness --working-tree
 ```
 
 This invocation uses npm's execution cache without writing the consumer manifest or lockfile.
-The exact `1.8.0` version is the approved engine pin in this example; never substitute `latest`,
-a range, or a different version without renewed maintainer approval. For a repository without a
-package manifest, init configures a Node runtime smoke check so the first readiness run is
-runnable. Replace that smoke check with the repository's real evidenceCheck before promoting it.
+It follows the current release on purpose: a literal version in a copied command goes stale, and
+an old release cannot read newer attestations. Resolving `v` once keeps a new release from
+landing between two setup commands. This fetch ignores the repository's `minimumReleaseAge`
+quarantine, so consider how recent the release is before approving `v`; a lost or empty `v` is an
+error (`${v:?...}`), not a silent run of whatever is latest. Record the version with the setup evidence, and do not copy
+this command or any literal version into a README or instruction file. A repository that installs
+Veritas as a development dependency uses `npx --no @kontourai/veritas ...` instead, which runs the
+version its lockfile resolves; `--no` makes a missing install an error instead of a silent registry
+fetch. A leading `--version` or `--help` goes after `--` (`npx --no @kontourai/veritas -- --version`),
+or npx answers it with npm's own version. For a repository without a package manifest, init configures a Node
+runtime smoke check so the first readiness run is runnable. Replace that smoke check with the
+repository's real evidenceCheck before promoting it.
 
 ## Gate canonical readiness
 
@@ -77,7 +88,7 @@ Veritas emits the canonical Hachure trust bundle directly; the kit does not main
 readiness interpretation:
 
 ```bash
-npm exec -- veritas readiness --check evidence --working-tree \
+npx --no @kontourai/veritas readiness --check evidence --working-tree \
   --format trust-bundle > readiness.bundle.json
 
 flow init
@@ -106,7 +117,7 @@ and domain admission. After installing and activating the kit in a separate
 bootstrap directory, generate the plan in the target repository:
 
 ```sh
-npm exec -- veritas init --explore --output .veritas/init-plans/proposal.json
+npx --no @kontourai/veritas init --explore --output .veritas/init-plans/proposal.json
 mkdir -p /absolute/private/veritas-review-host
 chmod 700 /absolute/private/veritas-review-host
 ```
@@ -165,10 +176,12 @@ Decline and could not confirm grant no approval; request changes requires a new
 plan and new review. Replaying a consumed session refuses. If only the presentation
 application marker is lost, the host returns its original signed disposition.
 
-The same private session can be inspected and decided through Survey's CLI/MCP App:
+The same private session can be inspected and decided through Survey's CLI/MCP App. Run it
+from the project root so npm resolves the Survey version installed there, the one that wrote the
+session, rather than fetching a different release:
 
 ```sh
-npx --yes --package=@kontourai/survey@8.1.0 survey-review-mcp \
+npm exec --no --package=@kontourai/survey -- survey-review-mcp \
   --session /absolute/private/veritas-review-host/RETURNED_SESSION.json
 ```
 

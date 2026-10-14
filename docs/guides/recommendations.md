@@ -19,9 +19,9 @@ Standards feedback can come from:
 Use the current CLI:
 
 ```bash
-npx @kontourai/veritas feedback recommend
-npx @kontourai/veritas recommendation list
-npx @kontourai/veritas recommendation show <id>
+npx --no @kontourai/veritas feedback recommend
+npx --no @kontourai/veritas recommendation list
+npx --no @kontourai/veritas recommendation show <id>
 ```
 
 These commands inspect generated evidence and feedback history, then write reviewable recommendation artifacts under `.kontourai/veritas/recommendations/`.
@@ -33,8 +33,8 @@ Implementation note: Standards Recommendation code lives under `src/standards-fe
 Accept or reject a recommendation explicitly:
 
 ```bash
-npx @kontourai/veritas recommendation decide <id> --accept --actor <authority-id> --approval-ref <human-approval-reference> --message "Evidence supports requiring this check"
-npx @kontourai/veritas recommendation decide <id> --reject --actor <authority-id> --message "Keep this requirement advisory until feedback shows it reliably catches issues"
+npx --no @kontourai/veritas recommendation decide <id> --accept --actor <authority-id> --approval-ref <human-approval-reference> --message "Evidence supports requiring this check"
+npx --no @kontourai/veritas recommendation decide <id> --reject --actor <authority-id> --message "Keep this requirement advisory until feedback shows it reliably catches issues"
 ```
 
 Accepting a recommendation may change protected standards. When it does, Veritas records or requires an attestation so the standards cannot change silently.

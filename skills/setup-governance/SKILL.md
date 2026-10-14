@@ -23,8 +23,15 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
 
    ```bash
    npm ls @kontourai/veritas --depth=0
-   npm exec -- veritas --version
+   npx --no @kontourai/veritas -- --version
    ```
+
+   Always pass `--no`. Without it, `npx` and `npm exec` fall back to the registry when there is no
+   local bin, and install without prompting when there is no terminal, so a missing install would
+   silently run whatever is latest instead of reporting that Veritas is not installed. Put a
+   leading `--version` or `--help` after `--`, as above; otherwise npx answers it with npm's own
+   version. Flags after a subcommand (`readiness --working-tree`) need no `--`. Do not use the
+   unscoped `veritas` package name: it is a different, third-party project.
 
 2. If npm is not the repository's toolchain, or the maintainer explicitly approves an external
    engine instead of a consumer dependency, use the maintainer-approved external engine path.
@@ -43,20 +50,32 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    external path does not modify the consumer manifest or lockfile; do not add an npm dependency
    as a fallback.
 
-3. If the external CLI is absent but the maintainer approves the exact Veritas release, acquire
-   and invoke that release ephemerally. The approved version below is intentionally exact; do not
-   replace it with `latest`, a range, or an unreviewed version:
+3. If the external CLI is absent and no dependency is approved, but the maintainer approves a
+   one-shot fetch from the registry, resolve the current release once and use that version for
+   the whole session. Do not write a literal version into a command you copy elsewhere: a version
+   copied into a README or instruction file goes stale, and an old release cannot read the
+   attestations a newer one writes. Resolving once also keeps a new release from landing between
+   two setup commands.
 
    ```bash
-   npm exec --yes --package=@kontourai/veritas@1.8.0 -- veritas --version
-   npm exec --yes --package=@kontourai/veritas@1.8.0 -- veritas init --explore --output .veritas/init-plans/first-pass.json
+   v="$(npm view @kontourai/veritas@latest version)"
+   echo "$v"   # the maintainer approves this version before anything runs
+   npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas --version
+   npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas init --explore --output .veritas/init-plans/first-pass.json
    ```
 
-   Record the exact npm package selector and matching version output with the setup evidence. This
-   is a reproducible, pinned engine invocation: npm uses its ephemeral execution cache and
-   does not create or modify the consumer's `package.json` or lockfile. Use the same exact
-   invocation for apply, hooks, attestation, and readiness; do not mix it with an unpinned global
-   CLI.
+   This fetch ignores the repository's `minimumReleaseAge` quarantine, so the maintainer's approval
+   of `v` should take into account how recent that release is. The `${v:?...}` form makes a lost
+   or empty `v` an error instead of silently running whatever is latest.
+
+   Record the version with the setup evidence; `--version` must print the same value. npm uses its
+   ephemeral execution cache and does not create or modify the consumer's `package.json` or
+   lockfile. Use the same `npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas` prefix
+   for apply, hooks, attestation, and readiness in the same shell session; if `v` is lost or
+   `--version` prints something else, stop and resolve again from the plan step. Do not mix it
+   with an unrelated global CLI. Never write this prefix, or any literal version, into a README,
+   `AGENTS.md`, or other instruction file: the generated Veritas files state the unversioned
+   command, and CI is where a repository pins the engine it trusts.
 
 4. If it is absent and the maintainer approves the dependency change, install it:
 
@@ -67,12 +86,12 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    For repositories that do not use npm and have not approved an external engine, stop and ask
    which package/runtime installation convention to use. Do not invent one.
 
-5. Derive a plan without applying it. Use `"$veritas_engine_path"` or the approved pinned
-   `npm exec --yes --package=...` invocation in place of `npm exec -- veritas` when following an
-   external engine path:
+5. Derive a plan without applying it. Use `"$veritas_engine_path"` or the step 3
+   `npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas` prefix in place of
+   `npx --no @kontourai/veritas` when following an external engine path:
 
    ```bash
-   npm exec -- veritas init --explore --output .veritas/init-plans/first-pass.json
+   npx --no @kontourai/veritas init --explore --output .veritas/init-plans/first-pass.json
    ```
 
    Use `init --guided --answers <answers.json> --output <plan>` when owner answers are needed.
@@ -84,13 +103,13 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
 7. Apply only the reviewed plan:
 
    ```bash
-   npm exec -- veritas init --apply --plan .veritas/init-plans/first-pass.json
+   npx --no @kontourai/veritas init --apply --plan .veritas/init-plans/first-pass.json
    ```
 
 8. Configure or repair tracked repo hooks with explicit approval:
 
    ```bash
-   npm exec -- veritas setup repo-hooks
+   npx --no @kontourai/veritas setup repo-hooks
    ```
 
 9. For a Codex host, use Flow Agents's Kit provisioner to install the reviewed
@@ -99,7 +118,7 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    ```bash
    flow-agents kit provision veritas-governance --target . --dry-run
    flow-agents kit provision veritas-governance --target .
-   npm exec -- veritas integrations codex status --target-hooks-file .codex/hooks.json
+   npx --no @kontourai/veritas integrations codex status --target-hooks-file .codex/hooks.json
    ```
 
    Ordinary Kit provisions are create-only by default. This declared host hook
@@ -114,7 +133,7 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
 10. After a maintainer reviews the generated standards and map, record bootstrap authority:
 
    ```bash
-   npm exec -- veritas attest bootstrap \
+   npx --no @kontourai/veritas attest bootstrap \
      --actor <authority-id> \
      --approval-ref <human-approval-reference> \
      --non-interactive
@@ -123,7 +142,7 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
 11. Run the first readiness check:
 
    ```bash
-   npm exec -- veritas readiness --working-tree
+   npx --no @kontourai/veritas readiness --working-tree
    ```
 
 Report any unsupported package manager, refused overwrite, missing authority, or failed

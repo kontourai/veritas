@@ -6,11 +6,11 @@ The primary CLI surface is ten verbs: `init`, `readiness`, `explain`, `attest`, 
 
 ## Entry Points
 
-- `npx @kontourai/veritas ...`
-- `npx @kontourai/veritas --help`
-- `npx @kontourai/veritas readiness --help`
-- `npx @kontourai/veritas readiness --check evidence --help`
-- `npx @kontourai/veritas <subcommand> --help`
+- `npx --no @kontourai/veritas ...`
+- `npx --no @kontourai/veritas -- --help`
+- `npx --no @kontourai/veritas readiness --help`
+- `npx --no @kontourai/veritas readiness --check evidence --help`
+- `npx --no @kontourai/veritas <subcommand> --help`
 - `node bin/veritas-report.mjs ...`
 
 The convenience `veritas-report` binary defaults to repo-local starter paths:
@@ -24,9 +24,9 @@ The shortest current path is:
 
 ```bash
 npm install -D @kontourai/veritas
-npx @kontourai/veritas init
-npx @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
-npx @kontourai/veritas readiness --working-tree
+npx --no @kontourai/veritas init
+npx --no @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
+npx --no @kontourai/veritas readiness --working-tree
 ```
 
 Use `readiness` when you want evidence checks, generated evidence, standards feedback capture, and change guidance in one command.
@@ -42,8 +42,8 @@ Breaking evidence-check migration notes live in [../MIGRATING.md](../MIGRATING.m
 Runs the requested check. Without `--check`, this is the agent-facing feedback path.
 
 ```bash
-npx @kontourai/veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree]
-npx @kontourai/veritas readiness --check boundaries --actor cli-team [--diff main]
+npx --no @kontourai/veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree]
+npx --no @kontourai/veritas readiness --check boundaries --actor cli-team [--diff main]
 ```
 
 `readiness` is the recommended current front door for evidenceCheck execution, generated evidence, standards feedback drafting, and change guidance. `readiness --check boundaries` replaces `boundaries check`. `readiness --check coverage` is the current command for readiness coverage. `readiness --check evidence` is the current command for the lower-level generated evidence path. `readiness --check config` validates this repo's Repo Map and Repo Standards against the schemas Veritas publishes for them.
@@ -66,7 +66,7 @@ Prints the installed `@kontourai/veritas` package version and exits successfully
 the engine identity selected by an exact package pin; `--help` proves only that the CLI can run.
 
 ```bash
-npx @kontourai/veritas --version
+npx --no @kontourai/veritas -- --version
 ```
 
 ### `init`
@@ -74,10 +74,10 @@ npx @kontourai/veritas --version
 Bootstraps starter Repo Standards and a Repo Map for a target repo.
 
 ```bash
-npx @kontourai/veritas init [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--template <name>] [--force] [--non-interactive]
-npx @kontourai/veritas init --explore [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--output .veritas/init-plans/<name>.json]
-npx @kontourai/veritas init --guided --answers <answers.json> [--root <path>] [--project-name <name>] [--output .veritas/init-plans/<name>.json]
-npx @kontourai/veritas init --apply --plan <path> [--root <path>] [--force]
+npx --no @kontourai/veritas init [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--template <name>] [--force] [--non-interactive]
+npx --no @kontourai/veritas init --explore [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--output .veritas/init-plans/<name>.json]
+npx --no @kontourai/veritas init --guided --answers <answers.json> [--root <path>] [--project-name <name>] [--output .veritas/init-plans/<name>.json]
+npx --no @kontourai/veritas init --apply --plan <path> [--root <path>] [--force]
 ```
 
 Writes:
@@ -129,9 +129,9 @@ Guided initialization splits setup into a reviewed artifact flow:
 Records or inspects attestations for protected standards.
 
 ```bash
-npx @kontourai/veritas attest bootstrap --actor <id> --approval-ref <ref> [--root <path>] [--non-interactive] [--valid-until-days <days>]
-npx @kontourai/veritas attest policy-change --actor <id> --approval-ref <ref> --message <text> [--root <path>] [--valid-until-days <days>]
-npx @kontourai/veritas attest status [--root <path>]
+npx --no @kontourai/veritas attest bootstrap --actor <id> --approval-ref <ref> [--root <path>] [--non-interactive] [--valid-until-days <days>]
+npx --no @kontourai/veritas attest policy-change --actor <id> --approval-ref <ref> --message <text> [--root <path>] [--valid-until-days <days>]
+npx --no @kontourai/veritas attest status [--root <path>]
 ```
 
 `bootstrap` records the first reviewed hashes for the current protected standards files: `.veritas/repo-map.json`, `.veritas/repo-standards/default.repo-standards.json`, and `.veritas/authority/default.authority-settings.json`. New attestations declare `repoMapHashAlgorithm: "public-policy-v1"`; the Repo Map hash is its recursively redacted public policy projection, so MCP server arguments, environment, and tool input are runtime execution inputs rather than protected policy identity. Unmarked historical records remain valid when their legacy file digest still matches, receive a nonblocking migration recommendation, and never expose that legacy digest in `attest status`. A legacy file mismatch fails closed and requires a policy-change attestation. `policy-change` records a reviewed successor and requires an explanation in `--message`. Both write paths require `--approval-ref`, a durable reference to the explicit human approval that authorized the attestation. `status` reports the current attestation, age, expiry, and hash drift. It also reports `priorAttestationLink` for the active record: the `reference` it names as its predecessor, its `form` (`attestation-id`, `legacy-reference`, or `unresolved`), whether it `resolved` to a tracked record, and an `explanation`. A successor of an unmarked historical attestation names its predecessor by the opaque `legacy-attestation-v0:<hash>` reference rather than the id in `HEAD`, because the historical id embeds a digest of the raw Repo Map file. That is the expected migration link, not a broken chain; `resolved` is `true` only when the reference matches exactly one tracked record, and the readiness PASS line for `policy-changes-require-attestation` names the reference and whether it resolved.
@@ -181,9 +181,9 @@ When `kind=explicit-statement` and the statement shares no token overlap with th
 Prints, installs, or runs the Claude Code PreToolUse hook.
 
 ```bash
-npx @kontourai/veritas hooks claude-code print [--root <path>]
-npx @kontourai/veritas hooks claude-code apply [--root <path>] [--force]
-npx @kontourai/veritas hooks claude-code pre-tool-use [--root <path>] [--file <path>] [--actor <id>]
+npx --no @kontourai/veritas hooks claude-code print [--root <path>]
+npx --no @kontourai/veritas hooks claude-code apply [--root <path>] [--force]
+npx --no @kontourai/veritas hooks claude-code pre-tool-use [--root <path>] [--file <path>] [--actor <id>]
 ```
 
 `pre-tool-use` reads the Claude hook JSON payload from stdin, extracts `tool_input.file_path` or `tool_input.path`, resolves the actor from `--actor`, `VERITAS_ACTOR`, or the current attestation, and returns hook protocol JSON.
@@ -225,11 +225,11 @@ and trusted in `/hooks` before they execute.
 Installs or inspects runtime integrations through the tool-agnostic integration namespace.
 
 ```bash
-npx @kontourai/veritas integrations codex status
-npx @kontourai/veritas integrations codex uninstall [--root <path>]
-npx @kontourai/veritas integrations claude-code install [--root <path>] [--force]
-npx @kontourai/veritas integrations cursor install [--root <path>] [--force]
-npx @kontourai/veritas integrations copilot status [--root <path>]
+npx --no @kontourai/veritas integrations codex status
+npx --no @kontourai/veritas integrations codex uninstall [--root <path>]
+npx --no @kontourai/veritas integrations claude-code install [--root <path>] [--force]
+npx --no @kontourai/veritas integrations cursor install [--root <path>] [--force]
+npx --no @kontourai/veritas integrations copilot status [--root <path>]
 ```
 
 Codex and Claude Code have session log readers. Claude Code install wires PreToolUse, Stop, and PostSession hooks. Cursor and Copilot currently install generic stop-hook wiring and report `sessionLogReader: null`.
@@ -255,13 +255,13 @@ Answers are JSON and may include:
 Generates an evidence artifact for a set of files or a repo state slice.
 
 ```bash
-npx @kontourai/veritas readiness --check evidence [--root <path>] [--repo-map <path>] [--repo-standards <path>] [--run-id <id>] [file ...]
-npx @kontourai/veritas readiness --check evidence --format feedback --working-tree
-npx @kontourai/veritas readiness --check evidence --working-tree
-npx @kontourai/veritas readiness --check evidence --staged
-npx @kontourai/veritas readiness --check evidence --unstaged --untracked
-npx @kontourai/veritas readiness --check evidence --changed-from <ref> --changed-to <ref>
-npx @kontourai/veritas readiness --check evidence --trend
+npx --no @kontourai/veritas readiness --check evidence [--root <path>] [--repo-map <path>] [--repo-standards <path>] [--run-id <id>] [file ...]
+npx --no @kontourai/veritas readiness --check evidence --format feedback --working-tree
+npx --no @kontourai/veritas readiness --check evidence --working-tree
+npx --no @kontourai/veritas readiness --check evidence --staged
+npx --no @kontourai/veritas readiness --check evidence --unstaged --untracked
+npx --no @kontourai/veritas readiness --check evidence --changed-from <ref> --changed-to <ref>
+npx --no @kontourai/veritas readiness --check evidence --trend
 ```
 
 Important behaviors:
@@ -285,10 +285,10 @@ Every report also includes an `integrity` block. `integrity.sourceRef` mirrors t
 Prints only the standards explanation relevant to a requirement, work area, or file.
 
 ```bash
-npx @kontourai/veritas explain required-veritas-schema-artifacts
-npx @kontourai/veritas explain --file src/index.mjs
-npx @kontourai/veritas explain --file src/index.mjs --json
-npx @kontourai/veritas explain --work-area app.src
+npx --no @kontourai/veritas explain required-veritas-schema-artifacts
+npx --no @kontourai/veritas explain --file src/index.mjs
+npx --no @kontourai/veritas explain --file src/index.mjs --json
+npx --no @kontourai/veritas explain --work-area app.src
 ```
 
 Output is capped to fit an agent context window and includes the local governance excerpt plus matching rule `explain` blocks.
@@ -299,7 +299,7 @@ Output is capped to fit an agent context window and includes the local governanc
 Checks strict work area ownership for a working tree or diff. Prefer `readiness --check boundaries` instead; `boundaries check` remains available for backward compatibility.
 
 ```bash
-npx @kontourai/veritas readiness --check boundaries --actor cli-team [--working-tree | --diff main]
+npx --no @kontourai/veritas readiness --check boundaries --actor cli-team [--working-tree | --diff main]
 ```
 
 `--actor` is required unless `VERITAS_ACTOR` is set. Veritas intentionally does not fall back to the operating-system user, because CI runner names and shell usernames are not governance actors. If no actor is supplied, the command exits non-zero with a missing-actor failure.
@@ -309,13 +309,13 @@ Strict nodes fail when the actor is neither an owner nor listed in `boundaryAllo
 To attach readiness directly to a trust-bundle gate, emit the canonical bundle without an adapter:
 
 ```bash
-npx @kontourai/veritas readiness --working-tree --format trust-bundle > readiness.bundle.json
+npx --no @kontourai/veritas readiness --working-tree --format trust-bundle > readiness.bundle.json
 ```
 
 To turn a Veritas readiness artifact into a Surface trust report, use the `reportArtifactPath` returned by `veritas readiness --format json` as the stable path. Do not reconstruct `.kontourai/veritas/evidence/<run-id>.json` in downstream tools.
 
 ```bash
-artifact_path="$(npx @kontourai/veritas readiness --working-tree --format json | node -e 'let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", () => { const parsed = JSON.parse(data); if (!parsed.reportArtifactPath) throw new Error("missing reportArtifactPath"); console.log(parsed.reportArtifactPath); });')"
+artifact_path="$(npx --no @kontourai/veritas readiness --working-tree --format json | node -e 'let data=""; process.stdin.on("data", c => data += c); process.stdin.on("end", () => { const parsed = JSON.parse(data); if (!parsed.reportArtifactPath) throw new Error("missing reportArtifactPath"); console.log(parsed.reportArtifactPath); });')"
 node -e 'const fs = require("node:fs"); const artifact = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); process.stdout.write(JSON.stringify(artifact.trust.bundle, null, 2));' "$artifact_path" > .kontourai/veritas/external/surface-bundle.json
 surface report --repo-map surface --input .kontourai/veritas/external/surface-bundle.json --format summary
 ```
@@ -331,10 +331,10 @@ Current evidence artifacts also include `trust.report`, a compact summary genera
 Prints readiness coverage without requiring operators to read the full report artifact.
 
 ```bash
-npx @kontourai/veritas readiness --check coverage [--root <path>] [--repo-map <path>] [--repo-standards <path>] [--run-id <id>] [file ...]
-npx @kontourai/veritas readiness --check coverage --working-tree
-npx @kontourai/veritas readiness --check coverage --format feedback --working-tree
-npx @kontourai/veritas readiness --check coverage --format json --working-tree
+npx --no @kontourai/veritas readiness --check coverage [--root <path>] [--repo-map <path>] [--repo-standards <path>] [--run-id <id>] [file ...]
+npx --no @kontourai/veritas readiness --check coverage --working-tree
+npx --no @kontourai/veritas readiness --check coverage --format feedback --working-tree
+npx --no @kontourai/veritas readiness --check coverage --format json --working-tree
 ```
 
 Important behaviors:
@@ -350,7 +350,7 @@ Important behaviors:
 Runs evidence checks first, then creates a report, then creates a standards-feedback draft, and optionally finishes the feedback record if the missing judgment fields are supplied.
 
 ```bash
-npx @kontourai/veritas readiness [--root <path>] [--repo-map <path>] [--repo-standards <path>] [--authority-settings <path>]
+npx --no @kontourai/veritas readiness [--root <path>] [--repo-map <path>] [--repo-standards <path>] [--authority-settings <path>]
   [--format feedback|json]
   [--evidence-check-command <cmd>] [--skip-evidence-check]
   [--working-tree | --changed-from <ref> --changed-to <ref>]
@@ -385,7 +385,7 @@ Exit codes:
 Builds a repo-local draft artifact from a repo-local evidence artifact.
 
 ```bash
-npx @kontourai/veritas feedback draft --evidence <path> [--authority-settings <path>] [--output <path>] [--force]
+npx --no @kontourai/veritas feedback draft --evidence <path> [--authority-settings <path>] [--output <path>] [--force]
   [--reviewer-confidence <scale-entry|unknown>]
   [--time-to-green-minutes <number>]
   [--exception-count <number>]
@@ -399,7 +399,7 @@ npx @kontourai/veritas feedback draft --evidence <path> [--authority-settings <p
 Builds a standards-feedback draft from a Codex or Claude Code session log. With `--tool none`, it uses filesystem artifacts instead of a session log.
 
 ```bash
-npx @kontourai/veritas feedback observe [--session-log <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>] [--rewrite-threshold <ratio>] [--verbose]
+npx --no @kontourai/veritas feedback observe [--session-log <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>] [--rewrite-threshold <ratio>] [--verbose]
 ```
 
 When a heuristic cannot compute a value, the draft stores a reason object such as `{ "value": null, "reason": "no_passing_run_observed" }` instead of a bare null. The command validates the draft shape before writing unless `VERITAS_SKIP_STANDARDS_FEEDBACK_VALIDATION=1` is set.
@@ -416,14 +416,14 @@ Guardrail:
 Completes a standards-feedback record from either evidence directly or a previously created draft.
 
 ```bash
-npx @kontourai/veritas feedback record --evidence <path> [--authority-settings <path>] [--output <path>] [--force]
+npx --no @kontourai/veritas feedback record --evidence <path> [--authority-settings <path>] [--output <path>] [--force]
   --accepted-without-major-rewrite <true|false>
   --required-followup <true|false>
   --reviewer-confidence <scale-entry|unknown>
   --time-to-green-minutes <number>
   --exception-count <number>
 
-npx @kontourai/veritas feedback record --draft <path> [--authority-settings <path>] [--output <path>] [--force]
+npx --no @kontourai/veritas feedback record --draft <path> [--authority-settings <path>] [--output <path>] [--force]
   --accepted-without-major-rewrite <true|false>
   --required-followup <true|false>
   --reviewer-confidence <scale-entry|unknown>
@@ -444,7 +444,7 @@ Guardrails:
 Scores a deterministic marker-surfacing benchmark by comparing one `without Veritas` session log to one `with Veritas` session log against the same benchmark scenario.
 
 ```bash
-npx @kontourai/veritas feedback marker \
+npx --no @kontourai/veritas feedback marker \
   --scenario examples/benchmarks/migration/scenario.json \
   --without-veritas-session-log examples/benchmarks/migration/without-veritas.json \
   --with-veritas-session-log examples/benchmarks/migration/with-veritas.json
@@ -463,7 +463,7 @@ Important behaviors:
 Scores a suite of marker benchmarks and reports aggregate reliability metrics across multiple scenario groups and trials.
 
 ```bash
-npx @kontourai/veritas feedback marker-suite \
+npx --no @kontourai/veritas feedback marker-suite \
   --suite examples/benchmarks/suites/context-surfacing-suite.json
 ```
 
@@ -483,7 +483,7 @@ Important behaviors:
 Reads `.kontourai/veritas/standards-feedback/history.jsonl` and prints recent local outcome metrics.
 
 ```bash
-npx @kontourai/veritas feedback summary [--root <path>]
+npx --no @kontourai/veritas feedback summary [--root <path>]
 ```
 
 The summary includes acceptance count, required rewrites, average time to green, average exceptions, confidence distribution, and the most flagged false-positive rule.
@@ -493,7 +493,7 @@ The summary includes acceptance count, required rewrites, average time to green,
 Reads `.kontourai/veritas/standards-feedback/history.jsonl` and writes non-blocking recommendation artifacts under `.kontourai/veritas/recommendations/`.
 
 ```bash
-npx @kontourai/veritas feedback recommend [--root <path>] [--force] [--dry-run]
+npx --no @kontourai/veritas feedback recommend [--root <path>] [--force] [--dry-run]
 ```
 
 The generator looks for frequently excepted failures, warning requirements that did not cause follow-up, inactive requirements, and paths that repeatedly matched no work area.
@@ -503,9 +503,9 @@ The generator looks for frequently excepted failures, warning requirements that 
 Review recommendation artifacts.
 
 ```bash
-npx @kontourai/veritas recommendation list [--root <path>] [--status proposed|accepted|rejected|all]
-npx @kontourai/veritas recommendation show <id> [--root <path>]
-npx @kontourai/veritas recommendation decide <id> --accept|--reject --actor <id> [--approval-ref <ref>] [--message <text>] [--root <path>]
+npx --no @kontourai/veritas recommendation list [--root <path>] [--status proposed|accepted|rejected|all]
+npx --no @kontourai/veritas recommendation show <id> [--root <path>]
+npx --no @kontourai/veritas recommendation decide <id> --accept|--reject --actor <id> [--approval-ref <ref>] [--message <text>] [--root <path>]
 ```
 
 `veritas attest recommendation <id> --accept|--reject --actor <id>` is the authority-loop alias. Accepting a recommendation applies the recorded standards diff and creates a recommendation-acceptance attestation, so accepted recommendations also require `--approval-ref`. Rejecting records the decision without changing standards files.
@@ -515,14 +515,14 @@ npx @kontourai/veritas recommendation decide <id> --accept|--reject --actor <id>
 Print-only helpers return suggested content without changing the repo.
 
 ```bash
-npx @kontourai/veritas print package-scripts [--root <path>] [--evidence-check <cmd>]
-npx @kontourai/veritas print ci-snippet [--root <path>] [--evidence-check <cmd>]
-npx @kontourai/veritas print git-hook [--root <path>] [--hook post-commit|pre-push]
-npx @kontourai/veritas print runtime-hook [--root <path>]
-npx @kontourai/veritas print stop-hook [--root <path>] [--tool generic|claude-code|cursor]
-npx @kontourai/veritas print governance-block
-npx @kontourai/veritas print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
-npx @kontourai/veritas print claude-code-pre-tool-use-hook [--root <path>]
+npx --no @kontourai/veritas print package-scripts [--root <path>] [--evidence-check <cmd>]
+npx --no @kontourai/veritas print ci-snippet [--root <path>] [--evidence-check <cmd>]
+npx --no @kontourai/veritas print git-hook [--root <path>] [--hook post-commit|pre-push]
+npx --no @kontourai/veritas print runtime-hook [--root <path>]
+npx --no @kontourai/veritas print stop-hook [--root <path>] [--tool generic|claude-code|cursor]
+npx --no @kontourai/veritas print governance-block
+npx --no @kontourai/veritas print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
+npx --no @kontourai/veritas print claude-code-pre-tool-use-hook [--root <path>]
 ```
 
 Printed helper surfaces:
@@ -541,7 +541,7 @@ Printed helper surfaces:
 Validates this repo's governance config against the JSON Schemas Veritas publishes for it.
 
 ```bash
-npx @kontourai/veritas readiness --check config [--root <path>] [--repo-map <path>] [--repo-standards <path>] [--format json]
+npx --no @kontourai/veritas readiness --check config [--root <path>] [--repo-map <path>] [--repo-standards <path>] [--format json]
 ```
 
 Checks `.veritas/repo-map.json` against `schemas/veritas-repo-map.schema.json` and `.veritas/repo-standards/default.repo-standards.json` against `schemas/veritas-repo-standards.schema.json`, printing one `PASS` / `FAIL` / `SKIP` line per artifact and **exiting 1 if either is invalid**. This is the gateable form of the check — put it in CI or a pre-push lane to make config drift an authoring-time error.
@@ -555,7 +555,7 @@ Both schemas set `additionalProperties: false`, so a field the schema does not d
 Installs or repairs first-class repo setup.
 
 ```bash
-npx @kontourai/veritas setup repo-hooks [--root <path>] [--force]
+npx --no @kontourai/veritas setup repo-hooks [--root <path>] [--force]
 ```
 
 `setup repo-hooks` installs or repairs:
@@ -572,14 +572,14 @@ This is the recommended command for local Git hook repair. Developers do not nee
 Write the suggested assets into the repo.
 
 ```bash
-npx @kontourai/veritas apply package-scripts [--root <path>] [--evidence-check <cmd>] [--force]
-npx @kontourai/veritas apply ci-snippet [--root <path>] [--output <path>] [--evidence-check <cmd>] [--force]
-npx @kontourai/veritas apply git-hook [--root <path>] [--hook post-commit|pre-push] [--output <path>] [--configure-git] [--force]
-npx @kontourai/veritas apply runtime-hook [--root <path>] [--output <path>] [--force]
-npx @kontourai/veritas apply stop-hook [--root <path>] [--tool generic|claude-code|cursor] [--output <path>] [--force]
-npx @kontourai/veritas apply governance-blocks [--root <path>] [--force]
-npx @kontourai/veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]
-npx @kontourai/veritas apply claude-code-pre-tool-use-hook [--root <path>] [--output <path>] [--force]
+npx --no @kontourai/veritas apply package-scripts [--root <path>] [--evidence-check <cmd>] [--force]
+npx --no @kontourai/veritas apply ci-snippet [--root <path>] [--output <path>] [--evidence-check <cmd>] [--force]
+npx --no @kontourai/veritas apply git-hook [--root <path>] [--hook post-commit|pre-push] [--output <path>] [--configure-git] [--force]
+npx --no @kontourai/veritas apply runtime-hook [--root <path>] [--output <path>] [--force]
+npx --no @kontourai/veritas apply stop-hook [--root <path>] [--tool generic|claude-code|cursor] [--output <path>] [--force]
+npx --no @kontourai/veritas apply governance-blocks [--root <path>] [--force]
+npx --no @kontourai/veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]
+npx --no @kontourai/veritas apply claude-code-pre-tool-use-hook [--root <path>] [--output <path>] [--force]
 ```
 
 Write restrictions are intentional:
@@ -603,8 +603,8 @@ markers; unknown `apply` targets fail closed.
 Inspects the installed state of tracked runtime integrations.
 
 ```bash
-npx @kontourai/veritas integrations codex status [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
-npx @kontourai/veritas integrations codex uninstall [--root <path>]
+npx --no @kontourai/veritas integrations codex status [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]
+npx --no @kontourai/veritas integrations codex uninstall [--root <path>]
 ```
 
 It reports:
@@ -632,7 +632,7 @@ This command is non-destructive. Remove generated hooks or tool configuration ma
 Git hook setup or repair suggestions point to:
 
 ```bash
-npx @kontourai/veritas setup repo-hooks
+npx --no @kontourai/veritas setup repo-hooks
 ```
 
 ## Generated Hook Behavior

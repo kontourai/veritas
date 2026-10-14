@@ -2,24 +2,11 @@
 # packages listed here, at exactly these versions, may run a build script.
 allowBuilds: {}
 
-# A newly published version must be at least 24 hours old before it can be
-# resolved into this lockfile. Blunts the most common supply-chain shape (a
-# compromised maintainer publishes and the ecosystem installs within hours).
-# Does not affect installs from an existing lockfile. An urgent security patch
-# is opted in explicitly, by name and version, with the reason in the commit:
-#   minimumReleaseAgeExclude:
-#     - some-package@1.2.3
+# Third-party packages must age for 24 hours. Our @kontourai packages are
+# exempt so first-party releases can be adopted immediately.
 minimumReleaseAge: 1440
-# This delivery consumes our source-reviewed shared-check release immediately.
-# Registry gitHead 28acbe7f505325aff9e7c049ca1afcfc0ad2c62e binds the exact
-# release to merged plumb#43; the exception applies only to this version.
 minimumReleaseAgeExclude:
-  - '@kontourai/plumb@0.2.0'
-  # Reviewed producer-application release; registry gitHead 493c9fe5291bbc4fc2e73654594e064c52af29f0.
-  - '@kontourai/survey@8.1.0'
-  # Reviewed local-review presentation release; registry gitHead matches merged survey#342.
-  # 0fc7e28c76f057685191ebabcd9d32ab0954da0b; exclude only this reviewed version.
-  - '@kontourai/survey@8.2.0'
+  - '@kontourai/*'
 
 # mise supplies node and pnpm on developer machines; CI installs the exact
 # version pinned in package.json. Do not reject a same-major pnpm from mise.

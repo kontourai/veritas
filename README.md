@@ -28,8 +28,8 @@ Inside a git repository:
 
 ```bash
 npm install -D @kontourai/veritas
-npx veritas --version
-npx veritas init
+npx --no @kontourai/veritas -- --version
+npx --no @kontourai/veritas init
 ```
 
 `veritas --version` prints the installed package version, so setup records can bind the executable
@@ -41,13 +41,13 @@ do this before your first readiness check, or `readiness` reports advisory warni
 attestation exists yet:
 
 ```bash
-npx veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
+npx --no @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
 ```
 
 Now check the current working tree:
 
 ```bash
-npx veritas readiness --working-tree
+npx --no @kontourai/veritas readiness --working-tree
 ```
 
 You'll see output like:
@@ -109,7 +109,7 @@ For a repo requirement like (from the shipped [`nextjs-typescript` template](exa
 `enforcementLevel: "Guide"` means this requirement shows up as a `WARN`, not a blocking `FAIL` — it is advice the agent should follow, not a merge blocker. An agent that edits only the API gets immediate feedback:
 
 ```text
-$ npx veritas readiness --working-tree
+$ npx --no @kontourai/veritas readiness --working-tree
 veritas: 1 file changed -> app.app
 PASS  evidence-check: node -e "process.exit(0)"
 PASS  policy-changes-require-attestation: Active attestation bootstrap-2026-07-20T14-19-16-185Z-d827e763e4e0 matches current protected standards hashes.
@@ -127,7 +127,7 @@ WARN  surface-status: claim "veritas.policy.fix-sv-caught.nextjs-typescript.api-
 After adding the missing API test and rerunning:
 
 ```text
-$ npx veritas readiness --working-tree
+$ npx --no @kontourai/veritas readiness --working-tree
 veritas: 2 files changed -> app.app, verification.tests
 PASS  evidence-check: node -e "process.exit(0)"
 PASS  policy-changes-require-attestation: Active attestation bootstrap-2026-07-20T14-19-16-185Z-d827e763e4e0 matches current protected standards hashes.

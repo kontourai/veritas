@@ -180,7 +180,7 @@ This is intentional. The command no longer rewrites evidence-check output stream
 
 ## Claim `surface` Field Renamed to `facet` (Surface 2.0, schemaVersion 5)
 
-Veritas now depends on `@kontourai/surface@^2.0.0` and the `hachure` version pinned in `package.json`. Both packages renamed the Claim `surface` field to `facet` (still an optional string) and bumped the Surface `TrustBundle` `schemaVersion` from 3 to 5.
+Veritas now depends on Surface 2.x (the `^2.0.0` range of the `@kontourai/surface` package) and the `hachure` version pinned in `package.json`. Both packages renamed the Claim `surface` field to `facet` (still an optional string) and bumped the Surface `TrustBundle` `schemaVersion` from 3 to 5.
 
 Veritas now writes `facet` everywhere it previously wrote `surface`:
 
@@ -196,4 +196,4 @@ To migrate:
 3. Update any automation or scripts that pass `--surface` to `veritas claim add` / `veritas claim edit` to pass `--facet` instead.
 4. Update any downstream consumer that reads `claim.surface` from `trust.bundle.claims[]` or the Surface Console read model to read `claim.facet` instead.
 
-`@kontourai/surface@2.0.0`'s `validateTrustBundle` still tolerates a legacy `surface` value on read (mapping it onto `facet` with a one-time deprecation warning), but Veritas no longer emits `surface` anywhere.
+Surface 2.0.0's `validateTrustBundle` still tolerates a legacy `surface` value on read (mapping it onto `facet` with a one-time deprecation warning), but Veritas no longer emits `surface` anywhere.
