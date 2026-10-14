@@ -77,8 +77,10 @@ error (`${v:?...}`), not a silent run of whatever is latest. Record the version 
 this command or any literal version into a README or instruction file. A repository that installs
 Veritas as a development dependency uses `npx --no @kontourai/veritas ...` instead, which runs the
 version its lockfile resolves; `--no` makes a missing install an error instead of a silent registry
-fetch. A leading `--version` or `--help` goes after `--` (`npx --no @kontourai/veritas -- --version`),
-or npx answers it with npm's own version. For a repository without a package manifest, init configures a Node
+fetch. In a fresh clone it fails with `npx canceled due to missing packages` naming the registry's
+latest version, not the lockfile's; run `npm install` first. A leading `--version`, `--help`, `-v`
+or `-h` goes after `--` (`npx --no @kontourai/veritas -- --version`), or npx answers it with npm's
+own version. For a repository without a package manifest, init configures a Node
 runtime smoke check so the first readiness run is runnable. Replace that smoke check with the
 repository's real evidenceCheck before promoting it.
 

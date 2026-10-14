@@ -1,3 +1,5 @@
+import { nearestInstalledVeritasCommand } from './nearest-veritas.mjs';
+
 export function buildSuggestedGitHook({ hook = 'post-commit' } = {}) {
   if (!['post-commit', 'pre-push'].includes(hook)) {
     throw new Error(`Unsupported git hook kind: ${hook}`);
@@ -28,10 +30,10 @@ if [ "\${VERITAS_HOOK_SKIP:-\${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
 fi
 
 if git rev-parse --verify --quiet HEAD~1 >/dev/null; then
-  npm exec -- veritas readiness --changed-from HEAD~1 --changed-to HEAD
+  npx --no @kontourai/veritas readiness --changed-from HEAD~1 --changed-to HEAD
 else
   EMPTY_TREE="$(git hash-object -t tree /dev/null)"
-  npm exec -- veritas readiness --changed-from "$EMPTY_TREE" --changed-to HEAD
+  npx --no @kontourai/veritas readiness --changed-from "$EMPTY_TREE" --changed-to HEAD
 fi
 `;
 }
@@ -45,10 +47,10 @@ if [ "\${VERITAS_HOOK_SKIP:-0}" = "1" ]; then
 fi
 
 if [ "$#" -eq 0 ]; then
-  exec npm exec -- veritas readiness --format json --working-tree
+  exec npx --no @kontourai/veritas readiness --format json --working-tree
 fi
 
-exec npm exec -- veritas readiness --format json "$@"
+exec npx --no @kontourai/veritas readiness --format json "$@"
 `;
 }
 
@@ -65,7 +67,7 @@ if [ "\${VERITAS_HOOK_SKIP:-0}" = "1" ]; then
   exit 0
 fi
 
-RESULT=$(npm exec -- veritas readiness --format feedback --working-tree 2>&1)
+RESULT=$(npx --no @kontourai/veritas readiness --format feedback --working-tree 2>&1)
 EXIT=$?
 if [ "$EXIT" -ne 0 ]; then
   echo "$RESULT"
@@ -140,7 +142,7 @@ export function buildSuggestedClaudeCodePreToolUseHook() {
 # Exit codes follow the Claude Code PreToolUse protocol: 2 blocks the tool call,
 # 0 allows it.
 
-exec npm exec -- veritas hooks claude-code pre-tool-use "$@"
+exec npx --no @kontourai/veritas hooks claude-code pre-tool-use "$@"
 `;
 
   return {
@@ -168,7 +170,7 @@ exec npm exec -- veritas hooks claude-code pre-tool-use "$@"
 }
 
 export function buildClaudeCodeSessionLogCaptureCommand() {
-  return 'VERITAS_SESSION_LOG_PATH="${VERITAS_SESSION_LOG_PATH:-${CLAUDE_TRANSCRIPT_PATH:-}}"; if [ -n "$VERITAS_SESSION_LOG_PATH" ]; then npm exec -- veritas feedback observe --tool claude-code --session-log "$VERITAS_SESSION_LOG_PATH"; fi';
+  return 'VERITAS_SESSION_LOG_PATH="${VERITAS_SESSION_LOG_PATH:-${CLAUDE_TRANSCRIPT_PATH:-}}"; if [ -n "$VERITAS_SESSION_LOG_PATH" ]; then ' + nearestInstalledVeritasCommand('feedback observe --tool claude-code --session-log "$VERITAS_SESSION_LOG_PATH"') + '; fi';
 }
 
 export function buildSuggestedClaudeCodePostSessionHook() {

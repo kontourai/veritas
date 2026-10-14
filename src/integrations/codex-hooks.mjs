@@ -6,9 +6,11 @@ import {
 } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { assertWithinDir, relativeRepoPath } from '../paths.mjs';
+import { PREVIOUS_CODEX_HOOK_COMMANDS } from './codex-hook-history.mjs';
+import { nearestInstalledVeritasCommand, plainVeritasCommand } from '../hooks/nearest-veritas.mjs';
 
 export function buildCodexSessionLogCaptureCommand() {
-  return 'VERITAS_SESSION_LOG_PATH="${VERITAS_SESSION_LOG_PATH:-${CODEX_TRANSCRIPT_PATH:-}}"; if [ -z "$VERITAS_SESSION_LOG_PATH" ] && [ -n "$CODEX_SESSION_ID" ]; then VERITAS_SESSION_LOG_PATH="$HOME/.codex/sessions/$CODEX_SESSION_ID.json"; fi; if [ -n "$VERITAS_SESSION_LOG_PATH" ]; then npm exec -- veritas feedback observe --session-log "$VERITAS_SESSION_LOG_PATH"; fi';
+  return 'VERITAS_SESSION_LOG_PATH="${VERITAS_SESSION_LOG_PATH:-${CODEX_TRANSCRIPT_PATH:-}}"; if [ -z "$VERITAS_SESSION_LOG_PATH" ] && [ -n "$CODEX_SESSION_ID" ]; then VERITAS_SESSION_LOG_PATH="$HOME/.codex/sessions/$CODEX_SESSION_ID.json"; fi; if [ -n "$VERITAS_SESSION_LOG_PATH" ]; then ' + nearestInstalledVeritasCommand('feedback observe --session-log "$VERITAS_SESSION_LOG_PATH"') + '; fi';
 }
 
 export function buildSuggestedCodexHookConfig() {
@@ -20,7 +22,9 @@ export function buildSuggestedCodexHookConfig() {
           hooks: [
             {
               type: 'command',
-              command: 'npm exec -- veritas hooks codex pre-tool-use',
+              command: nearestInstalledVeritasCommand('hooks codex pre-tool-use'),
+              // Codex on Windows runs hooks through PowerShell, which cannot parse the POSIX walk.
+              commandWindows: plainVeritasCommand('hooks codex pre-tool-use'),
               statusMessage: 'Loading Veritas guidance for edited files',
               timeout: 30,
             },
@@ -57,14 +61,17 @@ export function buildSuggestedCodexHookConfig() {
   };
 }
 
-function mergeHookEntries(existingEntries, integrationEntries) {
-  const integrationCommands = new Set(
-    integrationEntries.flatMap((entry) =>
+// Removes handlers Veritas wrote for this event, the current commands and the exact commands earlier
+// releases wrote, then appends the current entries. Any other handler is kept as is.
+function mergeHookEntries(existingEntries, integrationEntries, previousCommands = []) {
+  const integrationCommands = new Set([
+    ...integrationEntries.flatMap((entry) =>
       Array.isArray(entry?.hooks)
         ? entry.hooks.map((hook) => hook?.command).filter(Boolean)
         : [entry?.command].filter(Boolean),
     ),
-  );
+    ...previousCommands,
+  ]);
   const filteredEntries = existingEntries
     .map((entry) => {
       if (integrationCommands.has(entry?.command)) return null;
@@ -88,7 +95,11 @@ function mergeCodexHooksConfig(existingConfig, integrationConfig) {
       ? integrationConfig.hooks[hookName]
       : [];
     const currentEntries = Array.isArray(merged.hooks[hookName]) ? merged.hooks[hookName] : [];
-    merged.hooks[hookName] = mergeHookEntries(currentEntries, integrationEntries);
+    merged.hooks[hookName] = mergeHookEntries(
+      currentEntries,
+      integrationEntries,
+      Object.hasOwn(PREVIOUS_CODEX_HOOK_COMMANDS, hookName) ? PREVIOUS_CODEX_HOOK_COMMANDS[hookName] : [],
+    );
   }
   return merged;
 }
@@ -105,14 +116,20 @@ function resolveCodexHooksTarget(rootDir, options = {}) {
   return null;
 }
 
-function codexHookIntegrationCommands() {
-  return Object.values(buildSuggestedCodexHookConfig().hooks).flatMap((entries) =>
-    entries.flatMap((entry) =>
-      Array.isArray(entry?.hooks)
-        ? entry.hooks.map((hook) => hook?.command).filter(Boolean)
-        : [entry?.command].filter(Boolean),
+function hookHandlers(config) {
+  return Object.values(config?.hooks ?? {}).flatMap((entries) =>
+    (Array.isArray(entries) ? entries : []).flatMap((entry) =>
+      Array.isArray(entry?.hooks) ? entry.hooks : [entry],
     ),
-  );
+  ).filter((hook) => typeof hook?.command === 'string' && hook.command.length > 0);
+}
+
+// Installed means every current handler is present with the same command and the same Windows
+// override, so a handler written before commandWindows existed reads as needing a reinstall.
+function codexHookIntegrationInstalled(installedConfig) {
+  const installed = hookHandlers(installedConfig);
+  return hookHandlers(buildSuggestedCodexHookConfig()).every((expected) => installed.some((hook) =>
+    hook.command === expected.command && hook.commandWindows === expected.commandWindows));
 }
 
 function formatTargetPath(rootDir, targetPath) {
@@ -137,17 +154,7 @@ export function inspectCodexHookTarget(rootDir, options = {}) {
   let integrationInstalled = false;
   if (targetExists) {
     try {
-      const parsed = JSON.parse(readFileSync(resolvedTargetPath, 'utf8'));
-      const installedCommands = new Set(
-        Object.values(parsed?.hooks ?? {}).flatMap((entries) =>
-          (Array.isArray(entries) ? entries : []).flatMap((entry) =>
-            Array.isArray(entry?.hooks)
-              ? entry.hooks.map((hook) => hook?.command).filter(Boolean)
-              : [entry?.command].filter(Boolean),
-          ),
-        ),
-      );
-      integrationInstalled = codexHookIntegrationCommands().every((command) => installedCommands.has(command));
+      integrationInstalled = codexHookIntegrationInstalled(JSON.parse(readFileSync(resolvedTargetPath, 'utf8')));
     } catch (error) {
       if (!(error instanceof SyntaxError)) throw error;
       integrationInstalled = false;

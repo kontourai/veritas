@@ -33,8 +33,10 @@ npx --no @kontourai/veritas init
 ```
 
 `veritas --version` prints the installed package version, so setup records can bind the executable
-to an approved engine release. `init` bootstraps repo standards, a repo map, and AI instruction
-guidance under `.veritas/`.
+to an approved engine release. `--no` makes a missing install an error instead of a registry fetch:
+in a fresh clone it fails with `npx canceled due to missing packages`, naming the registry's latest
+version rather than your lockfile's, so run `npm install` first. `init` bootstraps repo standards, a
+repo map, and AI instruction guidance under `.veritas/`.
 
 Once you've reviewed the generated standards, record an attestation with the attesting actor and
 a reference to the human approval. Do this before your first readiness check, or `readiness` reports

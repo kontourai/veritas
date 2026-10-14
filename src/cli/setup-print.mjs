@@ -103,9 +103,9 @@ export function runPrintCodexHookCli(argv = process.argv.slice(2), defaults = {}
     codexHome: options.codexHome,
   });
   const suggestedApplyCommand = options.codexHome
-    ? `npm exec -- veritas apply codex-hook --codex-home ${shellQuote(options.codexHome)}`
+    ? `npx --no @kontourai/veritas apply codex-hook --codex-home ${shellQuote(options.codexHome)}`
     : options.targetHooksFile
-      ? `npm exec -- veritas apply codex-hook --target-hooks-file ${shellQuote(options.targetHooksFile)}`
+      ? `npx --no @kontourai/veritas apply codex-hook --target-hooks-file ${shellQuote(options.targetHooksFile)}`
       : null;
 
   writeJson({

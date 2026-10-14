@@ -27,8 +27,8 @@ export {
   inspectCodexHookTarget,
 } from './codex-hooks.mjs';
 
-const REPO_HOOKS_SETUP_COMMAND = 'npm exec -- veritas setup repo-hooks';
-const REPO_HOOKS_REPAIR_COMMAND = 'npm exec -- veritas setup repo-hooks --force';
+const REPO_HOOKS_SETUP_COMMAND = 'npx --no @kontourai/veritas setup repo-hooks';
+const REPO_HOOKS_REPAIR_COMMAND = 'npx --no @kontourai/veritas setup repo-hooks --force';
 
 function manualUninstallResult() {
   return {
@@ -172,24 +172,24 @@ export function inspectRuntimeIntegrationStatus(rootDir, options = {}) {
     pushNextCommand(REPO_HOOKS_REPAIR_COMMAND);
   }
   if (!status.runtimeHook.exists) {
-    pushNextCommand('npm exec -- veritas integrations codex install');
+    pushNextCommand('npx --no @kontourai/veritas integrations codex install');
   } else if (!status.runtimeHook.executable) {
-    pushNextCommand('npm exec -- veritas integrations codex install --force');
+    pushNextCommand('npx --no @kontourai/veritas integrations codex install --force');
   }
   if (!status.codexArtifact.exists) {
-    pushNextCommand('npm exec -- veritas integrations codex install');
+    pushNextCommand('npx --no @kontourai/veritas integrations codex install');
   }
   if (!codexTarget.checked) {
     pushNextCommand(
-      'npm exec -- veritas integrations codex status --codex-home /path/to/.codex',
+      'npx --no @kontourai/veritas integrations codex status --codex-home /path/to/.codex',
     );
   } else if (options.codexHome && !codexTarget.integrationInstalled) {
     pushNextCommand(
-      `npm exec -- veritas integrations codex install --codex-home ${shellQuote(options.codexHome)}${status.codexArtifact.exists ? ' --force' : ''}`,
+      `npx --no @kontourai/veritas integrations codex install --codex-home ${shellQuote(options.codexHome)}${status.codexArtifact.exists ? ' --force' : ''}`,
     );
   } else if (options.targetHooksFile && !codexTarget.integrationInstalled) {
     pushNextCommand(
-      `npm exec -- veritas integrations codex install --target-hooks-file ${shellQuote(options.targetHooksFile)}${status.codexArtifact.exists ? ' --force' : ''}`,
+      `npx --no @kontourai/veritas integrations codex install --target-hooks-file ${shellQuote(options.targetHooksFile)}${status.codexArtifact.exists ? ' --force' : ''}`,
     );
   }
 

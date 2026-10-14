@@ -1,4 +1,4 @@
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -93,14 +93,14 @@ export function commitAll(rootDir, message) {
   execGitFixture(['commit', '-m', message], { cwd: rootDir, encoding: 'utf8' });
 }
 
+// Installs Veritas the way `npm link` or a pnpm workspace does: the package directory is a symlink
+// to this checkout and node_modules/.bin/veritas links to its bin. Generated hooks run
+// `npx --no @kontourai/veritas`, which needs the package in node_modules, not only a bin on PATH.
 export function installLocalVeritasBin(rootDir) {
+  const scopeDir = join(rootDir, 'node_modules/@kontourai');
   const binDir = join(rootDir, 'node_modules/.bin');
+  mkdirp(scopeDir);
   mkdirp(binDir);
-  const wrapperPath = join(binDir, 'veritas');
-  writeFileSync(
-    wrapperPath,
-    `#!/bin/sh\nexec node ${JSON.stringify(join(repoRootDir, 'bin/veritas.mjs'))} "$@"\n`,
-    'utf8',
-  );
-  chmodSync(wrapperPath, 0o755);
+  symlinkSync(repoRootDir, join(scopeDir, 'veritas'), 'dir');
+  symlinkSync('../@kontourai/veritas/bin/veritas.mjs', join(binDir, 'veritas'));
 }

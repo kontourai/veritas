@@ -16,12 +16,16 @@ Collect:
 - known shared-code boundaries
 - recurring repo-health checks
 
-For a read-only first pass, with Veritas installed as a development dependency
-(`npm install -D @kontourai/veritas`):
+For a first pass that writes only a plan for review, install Veritas as a development dependency
+(`npm install -D @kontourai/veritas`, which changes `package.json` and the lockfile) and explore:
 
 ```bash
 npx --no @kontourai/veritas init --explore --output .veritas/init-plans/brownfield.json
 ```
+
+A repository that is not ready to add the dependency can run the same step through the
+resolve-once bootstrap in [Non-npm repositories](governance-kit.md#non-npm-repositories), which
+leaves the manifest and lockfile untouched.
 
 When package scripts or existing guidance paths are detected, the recommendation may include implementation fields such as `existing_verification` and `recommended_evidence_inventory`. Treat those as review queues for evidence checks and readiness coverage, not as applied standards.
 

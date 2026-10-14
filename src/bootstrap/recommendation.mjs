@@ -22,6 +22,8 @@ import {
 import { GENERATED_OUTPUT_IGNORE_ENTRIES, mergeGeneratedOutputIgnores } from './generated-output-ignore.mjs';
 import { assertWithinDir, veritasArtifactPath, veritasArtifactRepoPath } from '../paths.mjs';
 import { publicRepoMapPolicyIdentity } from '../evidence/public-config.mjs';
+import { buildClaimStoreFromRepo } from '../claims/init.mjs';
+import { VERITAS_CLAIM_STORE_FILE, claimStoreExists, loadVeritasClaimStore, saveVeritasClaimStore } from '../claims/store.mjs';
 
 const INIT_RECOMMENDATION_SCHEMA_VERSION = 2;
 // Plans are committed and applied from other clones and CI, so the target root
@@ -372,7 +374,7 @@ export function buildInitRecommendation({
     generated_output_ignores: GENERATED_OUTPUT_IGNORE_ENTRIES,
     owner_questions: ownerQuestions(repoInsights, existingGovernance),
     owner_answers: ownerAnswers,
-    apply_command: 'npx @kontourai/veritas init --apply --plan <path-to-this-artifact>',
+    apply_command: 'npx --no @kontourai/veritas init --apply --plan <path-to-this-artifact>',
     reasoning_summary: [
       `Detected repo kind \`${repoInsights.repoKind}\`.`,
       `Selected evidenceCheck \`${resolvedEvidenceCheck}\`.`,
@@ -468,6 +470,33 @@ function validateInitRecommendation({
   return warnings;
 }
 
+function workAreaIds(store) {
+  return new Set((store.claims ?? [])
+    .filter((claim) => claim.claimType === 'veritas-affected-surface')
+    .map((claim) => claim.metadata?.nodeId ?? claim.fieldOrBehavior));
+}
+
+// Names the work areas a kept claim store lacks or has beyond the applied Repo Map, so an owner can
+// bring the authored store in line with `veritas claim add` or `veritas claim remove`.
+function keptClaimStoreWorkAreaDrift(rootDir, derivedClaimStore) {
+  let kept;
+  try {
+    kept = loadVeritasClaimStore(rootDir);
+  } catch (error) {
+    return `${VERITAS_CLAIM_STORE_FILE} was kept but could not be read: ${error.message}`;
+  }
+  const keptIds = workAreaIds(kept);
+  const derivedIds = workAreaIds(derivedClaimStore);
+  const missing = [...derivedIds].filter((id) => !keptIds.has(id)).sort();
+  const extra = [...keptIds].filter((id) => !derivedIds.has(id)).sort();
+  if (missing.length === 0 && extra.length === 0) return null;
+  return [
+    `${VERITAS_CLAIM_STORE_FILE} was kept and differs from the applied Repo Map.`,
+    missing.length > 0 ? `Work areas without a claim: ${missing.join(', ')}.` : '',
+    extra.length > 0 ? `Claims for work areas not in the Repo Map: ${extra.join(', ')}.` : '',
+  ].filter(Boolean).join(' ');
+}
+
 export function applyInitRecommendation({
   rootDir,
   recommendation,
@@ -512,6 +541,18 @@ export function applyInitRecommendation({
     mkdirSync(dirname(absolutePath), { recursive: true });
     writeFileSync(absolutePath, payload, 'utf8');
   }
+  // Readiness requires a claim store. Plain `init` writes the starter store, so applying a plan
+  // writes the same derived store from the Repo Map it just applied. The plan does not carry it:
+  // the store is Surface state derived from the reviewed files, not a separate owner decision.
+  // An existing store is authored and is never replaced, even with --force.
+  const createdClaimStore = !claimStoreExists(rootDir);
+  const derivedClaimStore = buildClaimStoreFromRepo({ rootDir, repoName: recommendation.project_name });
+  if (createdClaimStore) {
+    saveVeritasClaimStore(derivedClaimStore, rootDir);
+  } else {
+    const drift = keptClaimStoreWorkAreaDrift(rootDir, derivedClaimStore);
+    if (drift) warnings.push(drift);
+  }
   const ignoreResult = mergeGeneratedOutputIgnores(rootDir);
 
   return {
@@ -522,6 +563,7 @@ export function applyInitRecommendation({
     codeownersBlock: buildSuggestedCodeownersBlock(),
     generatedFiles: [
       ...Object.keys(recommendation.artifact_payloads),
+      ...(createdClaimStore ? [VERITAS_CLAIM_STORE_FILE] : []),
       `${veritasArtifactRepoPath('evidence')}/`,
       ...(ignoreResult.changed ? [ignoreResult.path] : []),
     ],

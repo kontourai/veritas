@@ -9,7 +9,13 @@ export async function initClaimStore({ rootDir = process.cwd(), repoName = basen
   if (!dryRun && claimStoreExists(rootDir) && !force) {
     throw new Error('veritas.claims.json already exists. Use `veritas claim add` to add claims.');
   }
+  const store = buildClaimStoreFromRepo({ rootDir, repoName });
+  if (!dryRun) saveVeritasClaimStore(store, rootDir);
+  return store;
+}
 
+// The starter claim store derived from the repo's committed Repo Map and governance files.
+export function buildClaimStoreFromRepo({ rootDir = process.cwd(), repoName = basename(resolve(rootDir)) } = {}) {
   const repoMapPath = resolve(rootDir, '.veritas/repo-map.json');
   const hasRepoMap = existsSync(repoMapPath);
   const config = hasRepoMap ? loadRepoMap(repoMapPath) : {};
@@ -26,7 +32,5 @@ export async function initClaimStore({ rootDir = process.cwd(), repoName = basen
       : readEvidenceChecks(config).map((evidenceCheck) => evidenceCheck.command).filter(Boolean),
     workAreas: workAreaNodes,
   });
-  const store = { schemaVersion: 1, producer: 'veritas', claims, policies };
-  if (!dryRun) saveVeritasClaimStore(store, rootDir);
-  return store;
+  return { schemaVersion: 1, producer: 'veritas', claims, policies };
 }
