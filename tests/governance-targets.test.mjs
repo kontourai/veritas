@@ -78,6 +78,26 @@ test('an explicit empty aiInstructionFiles means no instruction files: apply wri
   assert.equal(existsSync(join(rootDir, 'CLAUDE.md')), false);
 });
 
+test('an explicit empty aiInstructionFiles is none even without a governance-block requirement', (t) => {
+  const rootDir = initRepo(t, { mapTargets: [], ruleTargets: undefined });
+
+  const result = applyBlocks(rootDir);
+
+  assert.deepEqual(result.applied, []);
+  assert.match(result.message, /Nothing was written\./);
+  assert.equal(existsSync(join(rootDir, 'AGENTS.md')), false);
+});
+
+test('an empty governance-block requirement is none even without a Repo Map list', (t) => {
+  const rootDir = initRepo(t, { mapTargets: undefined, ruleTargets: [] });
+
+  const result = applyBlocks(rootDir);
+
+  assert.deepEqual(result.applied, []);
+  assert.match(result.message, /Nothing was written\./);
+  assert.equal(existsSync(join(rootDir, 'CLAUDE.md')), false);
+});
+
 test('an explicit empty list leaves an existing instruction file without a block untouched', (t) => {
   const rootDir = initRepo(t, { mapTargets: [], ruleTargets: [], files: { 'AGENTS.md': '# Local guidance\n' } });
 
