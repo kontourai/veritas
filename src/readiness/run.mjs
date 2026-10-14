@@ -77,8 +77,9 @@ export async function runMergeReadiness(
     ? Date.now() + runtime.workflowTimeoutMs
     : null;
   // One actor for the whole run: the work-area-boundary rule, the readiness authority trace, and
-  // run history all use it. An embedder's runtime.actor beats --actor, which beats VERITAS_ACTOR.
-  const resolvedActor = resolveActor(runtime.actor, options.actor);
+  // run history all use it. --actor beats an embedder's runtime.actor default, which beats
+  // VERITAS_ACTOR, so a caller's explicit actor is never overridden by an embedding host.
+  const resolvedActor = resolveActor(options.actor, runtime.actor);
   const actor = resolvedActor ?? 'unknown';
   const workingTree = options.workingTree || (!options.changedFrom && !options.changedTo);
   runtime.onReadinessPhase?.({ phase: 'scope-resolution' });

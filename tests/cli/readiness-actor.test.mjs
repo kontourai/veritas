@@ -132,7 +132,7 @@ test('readiness --actor with an empty value names no actor', (t) => {
   assert.match(passed.stdout, OWNER_PASS);
 });
 
-test('an embedder runtime.actor feeds the rule, the authority trace, and run history alike', async (t) => {
+async function runEmbedded(t, options, runtime) {
   const rootDir = strictOwnedFixture(t);
   const previousActor = process.env.VERITAS_ACTOR;
   process.env.VERITAS_ACTOR = 'rogue-env';
@@ -140,17 +140,27 @@ test('an embedder runtime.actor feeds the rule, the authority trace, and run his
     if (previousActor === undefined) delete process.env.VERITAS_ACTOR;
     else process.env.VERITAS_ACTOR = previousActor;
   });
-
   const result = await runMergeReadiness(
-    { rootDir, workingTree: true, actor: 'rogue-option', runId: 'embedder-actor' },
+    { rootDir, workingTree: true, runId: 'embedder-actor', ...options },
     { rootDir },
     [],
-    { actor: 'owner-team' },
+    runtime,
   );
+  return { rootDir, result };
+}
 
+function assertActorAcrossRun({ rootDir, result }, actor) {
   const rule = result.reportResult.record.policy_results.find((entry) => entry.rule_id === 'declared-work-area-boundary');
   assert.equal(rule.passed, true, JSON.stringify(rule));
-  assert.equal(readinessVerdictAuthorityTrace(result.reportResult.record.trust.bundle).actorRef, 'system:owner-team');
-  assert.equal(result.actor, 'owner-team');
-  assert.deepEqual(readRunHistory(rootDir).map((entry) => entry.actor), ['owner-team']);
+  assert.equal(readinessVerdictAuthorityTrace(result.reportResult.record.trust.bundle).actorRef, `system:${actor}`);
+  assert.equal(result.actor, actor);
+  assert.deepEqual(readRunHistory(rootDir).map((entry) => entry.actor), [actor]);
+}
+
+test('an embedder runtime.actor feeds the rule, the authority trace, and run history alike', async (t) => {
+  assertActorAcrossRun(await runEmbedded(t, {}, { actor: 'owner-team' }), 'owner-team');
+});
+
+test('--actor beats an embedder runtime.actor default', async (t) => {
+  assertActorAcrossRun(await runEmbedded(t, { actor: 'owner-team' }, { actor: 'rogue-runtime' }), 'owner-team');
 });
