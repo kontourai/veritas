@@ -135,13 +135,23 @@ flow-agents kit review veritas-governance --dest /absolute/kit-bootstrap \
 This requires a Flow Agents release exposing `kit review` and this kit's declared
 `review` producer. The existing `veritas review` command and
 `serveGovernanceSurveyReview` API remain standalone compatibility interfaces;
-new kit use should select the native host. The standalone evaluation engine has
-no Flow Agents dependency.
+new kit use should select the native host. Standalone review requires the optional
+`@kontourai/survey` peer at version 8.2.0 or later within major 8. The standalone
+evaluation engine has no Flow Agents dependency.
 
 Choose a future expiry for the actual review; the command never renews it. Open
-the returned loopback URL, inspect every artifact card, select the disposition,
-and send the review to the workflow. The host directory must be outside the
-repository and private. It retains the signed queue and disposition separately
+the returned loopback URL, inspect every artifact and select **Mark reviewed**.
+The **Standards plan review** heading shows the exact plan path, source revision,
+recorded reasoning and original expiry before the cards. Artifact headings use
+short filenames while the current/proposed bytes and canonical paths remain
+inspectable. Choose **Approve**, **Request changes** or **Decline** in the
+separate decision card. Its reviewer note is visible beside those actions;
+request changes needs the required correction. **Could not confirm** remains
+available with a reason. **Send review to workflow** is the sole submission
+action and stays disabled until every item has a saved decision. The completion
+summary remains visible after reload and describes the next governance step.
+Recording this review never applies standards or creates an attestation.
+The host directory must be outside the repository and private. It retains the signed queue and disposition separately
 from protected standards. The observation covers Git HEAD, tracked and nonignored
 untracked file bytes, the exact plan, its local producer integrity record, and
 current target bytes. A changed basis or expired review refuses new application.
@@ -185,8 +195,15 @@ const consoleServer = await openInstalledKitReview({
 
 The root kit manifest declares `prepareKitReview` under
 `kontour.kit.review_request@1.0`. The producer returns a private `sessionPath`,
-Survey queue `binding`, and domain `apply` callback. Flow Agents checks installed
-content integrity before loading it and again before application. Survey keeps
+Survey queue `binding`, optional serializable `presentation` and domain `apply`
+callback. The display hints are built only from the observed plan and retained
+inside Veritas's existing HMAC producer seal. Changes to retained context or
+action labels invalidate that seal; existing signed sessions without hints keep
+their original review behavior. Canonical item values, candidate IDs, events,
+queue binding and authority admission remain unchanged. Survey's
+`authorizing.renderedPrompt` records its deterministic semantic item/decision
+basis, not a verbatim capture of these producer display hints.
+Flow Agents checks installed content integrity before loading it and again before application. Survey keeps
 its event/session lock; Veritas rechecks the exact plan, checkout and expiry and
 records the disposition. No callback or authority assertion is accepted from the
 serialized request or browser.
@@ -208,7 +225,7 @@ an actual Flow gate is paused, a Flow Agents host can use its public
 with a current producer-owned queue, authenticated authority and expected run
 head. This plan-review console is not a replacement Flow continuation engine.
 
-AI-DLC's requirements checkpoint uses the same Survey transport but its own
+AI-DLC's local artifact review uses the same Survey transport but its own
 signed pending request, artifact basis and original execution budget. Both kits
 use Plumb's shared observations; Veritas retains standards evaluation and AI-DLC
 retains methodology-specific sensor checks.

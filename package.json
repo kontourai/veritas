@@ -103,7 +103,7 @@
     "picomatch": "^4.0.4"
   },
   "peerDependencies": {
-    "@kontourai/survey": ">=8.1.0 <9"
+    "@kontourai/survey": ">=8.2.0 <9"
   },
   "peerDependenciesMeta": {
     "@kontourai/survey": {
@@ -111,6 +111,6 @@
     }
   },
   "devDependencies": {
-    "@kontourai/survey": "8.1.0"
+    "@kontourai/survey": "8.2.0"
   }
 }

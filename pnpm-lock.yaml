@@ -34,8 +34,8 @@ importers:
         version: 4.0.5
     devDependencies:
       '@kontourai/survey':
-        specifier: 8.1.0
-        version: 8.1.0
+        specifier: 8.2.0
+        version: 8.2.0
 
 packages:
 
@@ -59,8 +59,8 @@ packages:
     engines: {node: '>=22'}
     hasBin: true
 
-  '@kontourai/survey@8.1.0':
-    resolution: {integrity: sha512-+MKmYvzlcXnrVIakNVKG0uGIrKXx0DX0APfr+PlELg0SbrJxdZsk5Yhm+IYzWaKqFMWJ3WWfw6FO9G2ckp+r+w==}
+  '@kontourai/survey@8.2.0':
+    resolution: {integrity: sha512-7bDjdLKxR38POHumHzQXRS7nu6Ftu0nbwpCsnkEvOYL/xd8i8np94x+V3ftsd8tt4ZvNjbhdlf1tjZzFu8QfVQ==}
     engines: {node: '>=22'}
     hasBin: true
     peerDependencies:
@@ -624,7 +624,7 @@ snapshots:
       - kerberos
       - supports-color
 
-  '@kontourai/survey@8.1.0':
+  '@kontourai/survey@8.2.0':
     dependencies:
       '@kontourai/surface': 2.14.0
       '@modelcontextprotocol/server': 2.0.0

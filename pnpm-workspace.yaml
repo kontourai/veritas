@@ -17,6 +17,9 @@ minimumReleaseAgeExclude:
   - '@kontourai/plumb@0.2.0'
   # Reviewed producer-application release; registry gitHead 493c9fe5291bbc4fc2e73654594e064c52af29f0.
   - '@kontourai/survey@8.1.0'
+  # Reviewed local-review presentation release; registry gitHead matches merged survey#342.
+  # 0fc7e28c76f057685191ebabcd9d32ab0954da0b; exclude only this reviewed version.
+  - '@kontourai/survey@8.2.0'
 
 # mise supplies node and pnpm on developer machines; CI installs the exact
 # version pinned in package.json. Do not reject a same-major pnpm from mise.
