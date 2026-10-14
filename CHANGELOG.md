@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.11.2](https://github.com/kontourai/veritas/compare/v1.11.1...v1.11.2) (2026-10-14)
+
+
+### Fixes
+
+* name the installed-only npx spelling in the governance block and run instructions ([#287](https://github.com/kontourai/veritas/issues/287)) ([3f628fd](https://github.com/kontourai/veritas/commit/3f628fda42d24c6ca38cc825c926aeb988646d7e))
+
 ## [1.11.1](https://github.com/kontourai/veritas/compare/v1.11.0...v1.11.1) (2026-10-14)
 
 
