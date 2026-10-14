@@ -53,7 +53,7 @@ const MAIN_USAGE = `Usage:
 `;
 
 const RUN_USAGE = `Usage:
-  veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree] [--format feedback|json|trust-bundle] [--projection-output <path>]
+  veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree] [--actor <id>] [--format feedback|json|trust-bundle] [--projection-output <path>]
   veritas readiness --check boundaries --actor <id> [--diff <ref>] [--root <path>] [--repo-map <path>]
 `;
 

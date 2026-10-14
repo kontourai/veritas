@@ -75,7 +75,8 @@ export async function runMergeReadiness(
   const workflowDeadline = runtime.workflowTimeoutMs > 0
     ? Date.now() + runtime.workflowTimeoutMs
     : null;
-  const actor = runtime.actor ?? process.env.VERITAS_ACTOR ?? 'unknown';
+  // The same actor the work-area-boundary rule sees: --actor beats VERITAS_ACTOR.
+  const actor = runtime.actor ?? options.actor ?? process.env.VERITAS_ACTOR ?? 'unknown';
   const workingTree = options.workingTree || (!options.changedFrom && !options.changedTo);
   runtime.onReadinessPhase?.({ phase: 'scope-resolution' });
   const { repoMapPath, repoStandardsPath } = resolveVeritasPaths(

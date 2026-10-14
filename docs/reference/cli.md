@@ -45,9 +45,11 @@ Breaking evidence-check migration notes live in [../MIGRATING.md](../MIGRATING.m
 Runs the requested check. Without `--check`, this is the agent-facing feedback path.
 
 ```bash
-npx --no @kontourai/veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree]
+npx --no @kontourai/veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree] [--actor <id>]
 npx --no @kontourai/veritas readiness --check boundaries --actor cli-team [--diff main]
 ```
+
+`--actor <id>` names the governance actor for any `work-area-boundary` requirement the Repo Standards declare. It takes precedence over `VERITAS_ACTOR`; with neither, that requirement fails closed.
 
 `readiness` is the recommended current front door for evidenceCheck execution, generated evidence, standards feedback drafting, and change guidance. `readiness --check boundaries` replaces `boundaries check`. `readiness --check coverage` is the current command for readiness coverage. `readiness --check evidence` is the current command for the lower-level generated evidence path. `readiness --check config` validates this repo's Repo Map and Repo Standards against the schemas Veritas publishes for them.
 
@@ -358,6 +360,7 @@ npx --no @kontourai/veritas readiness [--root <path>] [--repo-map <path>] [--rep
   [--format feedback|json]
   [--evidence-check-command <cmd>] [--skip-evidence-check]
   [--working-tree | --changed-from <ref> --changed-to <ref>]
+  [--actor <id>]
   [--run-id <id>]
   [--reviewer-confidence <scale-entry|unknown>]
   [--time-to-green-minutes <number>]
