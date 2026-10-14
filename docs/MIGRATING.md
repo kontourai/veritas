@@ -239,3 +239,28 @@ Files Veritas already wrote keep the earlier spelling until you refresh them:
 `integrations claude-code status` reports `postSessionConfigured: false`, and
 `integrations codex status` with a hooks file reports `integrationInstalled: false`, for a
 configuration written with the earlier spelling.
+
+## The Governance Block Runs `npx --no @kontourai/veritas readiness`
+
+The governance block in `AGENTS.md`, `CLAUDE.md` and the other configured instruction files now
+says `npx --no @kontourai/veritas readiness` instead of `veritas readiness`. A bare `veritas` is on
+`PATH` only inside an npm script or with a global install, and an agent that recovers from "command
+not found" by putting `npx` in front of it runs the unscoped `veritas` package, which belongs to
+another project.
+
+The `ai-instruction-files-synced` requirement compares each block with the current one, so after
+you upgrade, a block written by an earlier release is a `stale-governance-content` mismatch. At the
+starter Enforcement Level, Guide, that is a WARN and readiness still passes. If you raised the
+requirement to Require, it is a FAIL until you refresh the blocks:
+
+```bash
+npx --no @kontourai/veritas apply governance-blocks
+```
+
+This replaces only the text between the governance markers, including a block edited by hand, and
+needs no `--force`.
+
+`npx --no` runs only an installed Veritas: a repository dependency, or a global install. In a
+repository that has neither, it refuses with `npx canceled due to missing packages`. If your block
+was edited to fetch a pinned version from the registry, add `@kontourai/veritas` as a development
+dependency before you refresh the block, or keep the edited block and its WARN.
