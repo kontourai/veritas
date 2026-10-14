@@ -1,9 +1,12 @@
 // Exact commands earlier Veritas releases wrote under PostSession in .claude/settings.json. Claude
 // Code has no PostSession event and ignores the key with an "Unknown hook event" warning, so these
 // never ran. A reinstall removes a handler matching one of them; every other handler is kept. Measured
-// by running every tagged release's own buildSuggestedClaudeCodePostSessionHook. This is a record of
-// past output for matching only; nothing here is written, printed or run.
+// by running buildSuggestedClaudeCodePostSessionHook from every tag that has it: src/hooks.mjs in
+// v0.4.0, src/hooks/suggestions.mjs from v0.5.0. v0.1.0 through v0.3.0 wrote no PostSession hook.
+// This is a record of past output for matching only; nothing here is written, printed or run.
 export const PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS = Object.freeze([
+  // Released in v0.4.0.
+  'if [ -n "$CLAUDE_TRANSCRIPT_PATH" ]; then npm exec -- veritas eval observe --tool claude-code --transcript "$CLAUDE_TRANSCRIPT_PATH"; fi',
   // Released in v0.5.0 through v1.11.0.
   'VERITAS_SESSION_LOG_PATH="${VERITAS_SESSION_LOG_PATH:-${CLAUDE_TRANSCRIPT_PATH:-}}"; if [ -n "$VERITAS_SESSION_LOG_PATH" ]; then npm exec -- veritas feedback observe --tool claude-code --session-log "$VERITAS_SESSION_LOG_PATH"; fi',
   // Released in v1.11.1 and v1.11.2.

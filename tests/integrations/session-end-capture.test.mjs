@@ -1,13 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { writeBootstrapStarterKit } from '../../src/index.mjs';
-import { buildSuggestedClaudeCodePostSessionHook, buildSuggestedClaudeCodePreToolUseHook, buildSuggestedStopHook } from '../../src/hooks/suggestions.mjs';
+import { CLAUDE_CODE_SESSION_END_MARKER, buildSuggestedClaudeCodePostSessionHook, buildSuggestedClaudeCodePreToolUseHook, buildSuggestedStopHook } from '../../src/hooks/suggestions.mjs';
 import { buildSuggestedCodexHookConfig } from '../../src/integrations/codex-hooks.mjs';
 import { PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS } from '../../src/hooks/claude-code-hook-history.mjs';
 import { cleanGitEnv, commitAll, initCommittedRepo, installLocalVeritasBin, parseCliJson, repoRootDir } from '../helpers.mjs';
+import { tempDir } from '../temp-dir.mjs';
+
+const tempDirFor = (t) => tempDir(t, 'veritas-session-end-elsewhere-');
 
 const CLI = join(repoRootDir, 'bin/veritas.mjs');
 // The exact file v1.11.2 wrote: its own applyClaudeCodePostSessionHook over a settings file that
@@ -143,4 +146,84 @@ test('every hook event Veritas writes is one the runtime documents', () => {
   assert.ok(claude.includes('SessionEnd'));
   const codex = Object.keys(buildSuggestedCodexHookConfig().hooks);
   assert.deepEqual(codex.filter((event) => !CODEX_EVENTS.has(event)), []);
+});
+
+function runSessionEnd(rootDir, input, env = {}) {
+  const [command] = sessionEndCommands(buildSuggestedClaudeCodePostSessionHook().toolConfig);
+  const base = cleanGitEnv();
+  delete base.VERITAS_SESSION_LOG_PATH;
+  return spawnSync('sh', ['-c', command], { cwd: rootDir, encoding: 'utf8', env: { ...base, ...env }, input: JSON.stringify(input) });
+}
+
+const draftsDir = (rootDir) => join(rootDir, '.kontourai/veritas/standards-feedback-drafts');
+
+test('an unreadable or malformed transcript is reported on stderr and the hook still exits 0', (t) => {
+  const rootDir = bootstrapRepo(t, 'veritas-session-end-unreadable-');
+  const malformed = claudeTranscript(rootDir);
+  const lines = readFileSync(malformed, 'utf8').trimEnd().split('\n');
+  lines.splice(1, 0, '{"type":"user","message":');
+  writeFileSync(malformed, `${lines.join('\n')}\n`);
+  const directory = join(rootDir, 'transcript-dir.jsonl');
+  mkdirSync(directory);
+  const cases = [['a malformed line before the last', malformed], ['a directory', directory]];
+  if (process.getuid?.() !== 0) {
+    const locked = join(rootDir, 'locked.jsonl');
+    writeFileSync(locked, readFileSync(claudeTranscript(tempDirFor(t)), 'utf8'));
+    chmodSync(locked, 0o000);
+    cases.push(['a file it may not read', locked]);
+  }
+  for (const [name, transcriptPath] of cases) {
+    const result = runSessionEnd(rootDir, { transcript_path: transcriptPath, hook_event_name: 'SessionEnd', reason: 'other' });
+    assert.equal(result.status, 0, `${name}: ${result.stderr}`);
+    assert.match(result.stderr, /could not read session log .*no standards feedback draft captured/, name);
+    assert.equal(existsSync(draftsDir(rootDir)), false, `${name}: no draft`);
+  }
+});
+
+test('a truncated final transcript line is skipped and the draft keeps the lines before it', (t) => {
+  const rootDir = bootstrapRepo(t, 'veritas-session-end-truncated-');
+  const transcriptPath = claudeTranscript(rootDir);
+  // The runtime was still writing the last line: no closing brace and no newline.
+  writeFileSync(transcriptPath, `${readFileSync(transcriptPath, 'utf8')}{"type":"assistant","message":{"content":[{"type":"te`);
+  const result = runSessionEnd(rootDir, { transcript_path: transcriptPath, hook_event_name: 'SessionEnd', reason: 'other' });
+  assert.equal(result.status, 0, result.stderr);
+  const draft = JSON.parse(readFileSync(join(rootDir, JSON.parse(result.stdout).artifactPath), 'utf8'));
+  assert.equal(draft.prefilled_measurements.time_to_green_minutes, 1);
+});
+
+test('VERITAS_SESSION_LOG_PATH takes precedence over the transcript_path in the hook input', (t) => {
+  const rootDir = bootstrapRepo(t, 'veritas-session-end-override-');
+  const override = claudeTranscript(tempDirFor(t));
+  const result = runSessionEnd(rootDir, { transcript_path: join(rootDir, 'not-this.jsonl'), hook_event_name: 'SessionEnd', reason: 'other' }, { VERITAS_SESSION_LOG_PATH: override });
+  assert.equal(result.status, 0, result.stderr);
+  const draft = JSON.parse(readFileSync(join(rootDir, JSON.parse(result.stdout).artifactPath), 'utf8'));
+  assert.equal(realpathSync(resolve(rootDir, draft.session_log_path)), realpathSync(override));
+});
+
+test('a reinstall replaces a SessionEnd capture any Veritas wrote and keeps a user handler that mentions the marker', (t) => {
+  const rootDir = bootstrapRepo(t, 'veritas-session-end-marker-');
+  mkdirSync(join(rootDir, '.claude'), { recursive: true });
+  const settingsPath = join(rootDir, '.claude/settings.json');
+  // An earlier Veritas capture command: a different command, ending with the same marker.
+  const earlier = `npx --no @kontourai/veritas hooks claude-code session-end ${CLAUDE_CODE_SESSION_END_MARKER}`;
+  const userMention = `echo '${CLAUDE_CODE_SESSION_END_MARKER}' >> session-ends.log; true`;
+  writeFileSync(settingsPath, `${JSON.stringify({ hooks: { SessionEnd: [
+    { matcher: '.*', hooks: [{ type: 'command', command: earlier, timeout: 60 }] },
+    { matcher: '', hooks: [{ type: 'command', command: userMention }] },
+  ] } }, null, 2)}\n`);
+  const [current] = sessionEndCommands(buildSuggestedClaudeCodePostSessionHook().toolConfig);
+  assert.notEqual(current, earlier);
+  veritas(rootDir, ['integrations', 'claude-code', 'install', '--force']);
+  assert.deepEqual(sessionEndCommands(JSON.parse(readFileSync(settingsPath, 'utf8'))), [userMention, current]);
+});
+
+test('a reinstall removes every PostSession command an earlier release wrote', (t) => {
+  for (const [index, command] of PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS.entries()) {
+    const rootDir = bootstrapRepo(t, `veritas-session-end-history-${index}-`);
+    mkdirSync(join(rootDir, '.claude'), { recursive: true });
+    const settingsPath = join(rootDir, '.claude/settings.json');
+    writeFileSync(settingsPath, `${JSON.stringify({ hooks: { PostSession: [{ matcher: '.*', hooks: [{ type: 'command', command, timeout: 60 }] }] } }, null, 2)}\n`);
+    veritas(rootDir, ['integrations', 'claude-code', 'install', '--force']);
+    assert.equal(Object.hasOwn(JSON.parse(readFileSync(settingsPath, 'utf8')).hooks, 'PostSession'), false, command);
+  }
 });

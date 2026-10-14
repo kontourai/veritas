@@ -282,8 +282,9 @@ const withoutRecordedPastCommands = (file, line) => (PAST_OUTPUT_RECORDS.get(fil
   .reduce((text, command) => text.replaceAll(command, ''), line);
 
 test('the record of past Claude Code PostSession commands holds only earlier commands', () => {
-  assert.equal(PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS.length, 2);
-  assert.notDeepEqual(unsafeExec(PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS[0]), []);
+  assert.equal(PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS.length, 3);
+  // v0.4.0 and v0.5.0 through v1.11.0 ran npm exec without --no; v1.11.1 and v1.11.2 ran npx --no.
+  assert.deepEqual(PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS.map((command) => unsafeExec(command).length > 0), [true, true, false]);
   const current = Object.values(buildSuggestedClaudeCodePostSessionHook().toolConfig.hooks)
     .flatMap((groups) => groups.flatMap((group) => group.hooks.map((hook) => hook.command)));
   for (const command of PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS) assert.equal(current.includes(command), false, command);

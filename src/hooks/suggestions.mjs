@@ -169,11 +169,17 @@ exec npx --no @kontourai/veritas hooks claude-code pre-tool-use "$@"
   };
 }
 
+// Ends every SessionEnd capture command Veritas writes, as a shell comment. A reinstall replaces a
+// SessionEnd handler that carries it, so a later change to the command replaces the handler an
+// earlier Veritas wrote instead of adding a second one. No release wrote a SessionEnd handler before
+// this marker existed.
+export const CLAUDE_CODE_SESSION_END_MARKER = '# veritas:claude-code-session-end-capture';
+
 // Claude Code passes the session log path to SessionEnd hooks as `transcript_path` in the JSON on
 // stdin (https://code.claude.com/docs/en/hooks#sessionend-input). The command hands stdin to
 // `hooks claude-code session-end`, which reads it there.
 export function buildClaudeCodeSessionLogCaptureCommand() {
-  return nearestInstalledVeritasCommand('hooks claude-code session-end');
+  return `${nearestInstalledVeritasCommand('hooks claude-code session-end')} ${CLAUDE_CODE_SESSION_END_MARKER}`;
 }
 
 // The post-session capture slot of the runtime integration contract. Claude Code runs it on

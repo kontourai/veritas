@@ -296,6 +296,10 @@ runtime documents; both pass the session log path as `transcript_path` in the ho
   `integrations claude-code status` reports `postSessionConfigured: true` only for the `SessionEnd`
   handler, so it reports `false` until you reinstall. The handler keeps a 60-second `timeout`,
   which raises Claude Code's shared `SessionEnd` budget (1.5 seconds by default) to match.
+  The handler's matcher is `.*`, so once installed the capture really runs at every session end,
+  including `/clear` and an interactive `/resume`. Each run writes a draft under
+  `.kontourai/veritas/standards-feedback-drafts/` that records the path of the session transcript.
+  A transcript that cannot be read is reported on stderr and never fails the session end.
 - **Codex.** `integrations codex install` no longer writes a session-log capture. Codex does have
   `SessionEnd`, but its transcript is JSONL rollout records that the Codex session log reader does
   not read, and Codex allows a `SessionEnd` hook at most 3 seconds. Reinstalling with the same

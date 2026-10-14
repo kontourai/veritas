@@ -102,8 +102,8 @@ export function runClaudeCodePreToolUseCli(argv = process.argv.slice(2), default
 // Claude Code SessionEnd hook: the hook input on stdin names the session log as `transcript_path`
 // (https://code.claude.com/docs/en/hooks#sessionend-input). VERITAS_SESSION_LOG_PATH, when set,
 // takes precedence. The draft is written under the working directory, as `feedback observe` does.
-// Claude Code shows a SessionEnd hook's stderr to the user and cannot be blocked by it, so a missing
-// session log is reported there and is not an error.
+// Claude Code shows a SessionEnd hook's stderr to the user and cannot be blocked by it, so a session
+// log that is missing or cannot be read is reported there, and the command still exits 0.
 export function runClaudeCodeSessionEndCli(argv = process.argv.slice(2), defaults = {}) {
   const options = parseApplyArgs(argv);
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
@@ -124,7 +124,13 @@ export function runClaudeCodeSessionEndCli(argv = process.argv.slice(2), default
     process.stderr.write(`Veritas: session log not found at ${displayText(sessionLogPath)}; no standards feedback draft captured.\n`);
     return;
   }
-  const result = observeSessionLogStandardsFeedback({ sessionLogPath, rootDir, tool: 'claude-code' });
+  let result;
+  try {
+    result = observeSessionLogStandardsFeedback({ sessionLogPath, rootDir, tool: 'claude-code' });
+  } catch (error) {
+    process.stderr.write(`Veritas: could not read session log ${displayText(sessionLogPath)} (${displayText(error?.code ?? error?.message ?? String(error))}); no standards feedback draft captured.\n`);
+    return;
+  }
   process.stdout.write(`${JSON.stringify({ artifactPath: result.artifactPath, reader: result.reader, ...result.draft }, null, 2)}\n`);
 }
 
