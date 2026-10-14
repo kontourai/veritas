@@ -45,10 +45,37 @@ jobs:
       - name: Refresh Committed Repo Conformance Examples
         run: npm run veritas:conformance:examples
 
-      - name: Generate Veritas Repo Conformance
+      # A pull_request checkout is the merge commit refs/pull/<n>/merge, whose first parent is the
+      # base it merged into and whose second is the PR head. Diffing first parent..merge commit is
+      # what the PR introduces into the tree under evaluation. Diffing base.sha..head.sha instead
+      # attributes every base-branch commit a stale head lacks to the PR, reversed.
+      - name: Pair The Pull Request Diff With The Checked-Out Merge Commit
+        if: github.event_name == 'pull_request'
         env:
-          VERITAS_CHANGED_FROM: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
-          VERITAS_CHANGED_TO: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || '' }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PR_HEAD_SHA:-}" ]; then
+            echo "::error::PR_HEAD_SHA is empty, so HEAD cannot be checked against the pull request head; refusing to pair a diff with an unverified tree."
+            exit 1
+          fi
+          if ! expected_head="$(git rev-parse --verify --quiet "${PR_HEAD_SHA}^{commit}")"; then
+            echo "::error::Pull request head $PR_HEAD_SHA is not a commit in this checkout; refusing to pair a diff with an unverified tree."
+            exit 1
+          fi
+          read -r merge base head extra <<< "$(git rev-list --parents -n 1 HEAD)"
+          if [ -z "${head:-}" ] || [ -n "${extra:-}" ] || [ "$head" != "$expected_head" ]; then
+            echo "::error::HEAD $merge is not the merge of pull request head $PR_HEAD_SHA into its base; refusing to diff one revision pair and evaluate another."
+            exit 1
+          fi
+          {
+            echo "VERITAS_CHANGED_FROM=$base"
+            echo "VERITAS_CHANGED_TO=$merge"
+          } >> "$GITHUB_ENV"
+
+      # VERITAS_CHANGED_FROM/TO come from the step above on pull requests; a step-level env here
+      # would override them.
+      - name: Generate Veritas Repo Conformance
         run: node scripts/repo-conformance-status.mjs
 
       - name: Expose Repo Conformance Outputs
