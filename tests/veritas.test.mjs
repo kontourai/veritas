@@ -789,6 +789,11 @@ const LEGACY_BARE_GOVERNANCE_BLOCK = [
   'After changes, run `veritas readiness` and address any FAIL lines before finishing.',
   '<!-- veritas:governance-block:end -->',
 ].join('\n');
+// The canonical block v1.11.2 writes: the installed-only spelling, without the missing-package remedy.
+const LEGACY_INSTALLED_ONLY_GOVERNANCE_BLOCK = LEGACY_BARE_GOVERNANCE_BLOCK.replace(
+  '`veritas readiness`',
+  '`npx --no @kontourai/veritas readiness`',
+);
 const LEGACY_PINNED_GOVERNANCE_BLOCK = LEGACY_BARE_GOVERNANCE_BLOCK.replace(
   '`veritas readiness`',
   '`npm exec --yes --package=@kontourai/veritas@1.5.2 -- veritas readiness`',
@@ -799,6 +804,7 @@ test('the governance block names the installed-only Veritas spelling', () => {
     '<!-- veritas:governance-block:start -->',
     'This repo uses Veritas for AI governance. Read `.veritas/GOVERNANCE.md` before making changes.',
     'After changes, run `npx --no @kontourai/veritas readiness` and address any FAIL lines before finishing.',
+    "If npx says the package is missing, install this repo's dependencies, adding `@kontourai/veritas` as a development dependency if it is not one, and run it again.",
     '<!-- veritas:governance-block:end -->',
   ].join('\n'));
 });
@@ -839,6 +845,7 @@ test('governance block remediation normalizes partial, reversed, duplicate, and 
     ['legacy-bare', { content: `Before\n${LEGACY_BARE_GOVERNANCE_BLOCK}\nAfter\n`, preserved: 'After' }],
     // The same block hand-edited to a pinned registry fetch, as some adopters carry it.
     ['legacy-pinned', { content: `Before\n${LEGACY_PINNED_GOVERNANCE_BLOCK}\nAfter\n`, preserved: 'After' }],
+    ['legacy-installed-only', { content: `Before\n${LEGACY_INSTALLED_ONLY_GOVERNANCE_BLOCK}\nAfter\n`, preserved: 'After' }],
   ]);
 
   for (const [name, { content, preserved }] of malformedCases) {
@@ -870,7 +877,7 @@ test('governance block remediation normalizes partial, reversed, duplicate, and 
       before.findings[0].diagnostic,
       name === 'duplicate'
         ? 'duplicate-governance-markers'
-        : ['stale', 'legacy-bare', 'legacy-pinned'].includes(name)
+        : ['stale', 'legacy-bare', 'legacy-pinned', 'legacy-installed-only'].includes(name)
           ? 'stale-governance-content'
           : 'malformed-governance-markers',
     );

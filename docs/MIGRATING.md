@@ -240,6 +240,22 @@ Files Veritas already wrote keep the earlier spelling until you refresh them:
 `integrations codex status` with a hooks file reports `integrationInstalled: false`, for a
 configuration written with the earlier spelling.
 
+## The Governance Block Names the Missing-Package Remedy
+
+The governance block gains a third line:
+
+> If npx says the package is missing, install this repo's dependencies, adding
+> `@kontourai/veritas` as a development dependency if it is not one, and run it again.
+
+`npx --no @kontourai/veritas readiness` runs only an installed Veritas. In a fresh clone before
+`npm install`, or in a repository without the dependency, it stops with `npx canceled due to
+missing packages`, and the block said nothing about what to do next.
+
+As with the previous block change, `ai-instruction-files-synced` compares each block byte for byte,
+so after you upgrade, the two-line block is a `stale-governance-content` mismatch: a WARN at Guide,
+and a FAIL at Require until you run `npx --no @kontourai/veritas apply governance-blocks`. That
+command replaces the block in place.
+
 ## The Governance Block Runs `npx --no @kontourai/veritas readiness`
 
 The governance block in `AGENTS.md`, `CLAUDE.md` and the other configured instruction files now
