@@ -197,3 +197,29 @@ To migrate:
 4. Update any downstream consumer that reads `claim.surface` from `trust.bundle.claims[]` or the Surface Console read model to read `claim.facet` instead.
 
 Surface 2.0.0's `validateTrustBundle` still tolerates a legacy `surface` value on read (mapping it onto `facet` with a one-time deprecation warning), but Veritas no longer emits `surface` anywhere.
+
+## Generated Commands Run `npx --no @kontourai/veritas`
+
+Hooks, package scripts, the CI snippet, the `.veritas/README.md` template, and printed next steps
+now run `npx --no @kontourai/veritas`. The earlier spelling still works where Veritas is installed.
+Where it is not, it fell back to a registry fetch without prompting when no terminal is attached,
+and the `npm exec` form fetched the unscoped `veritas` package, which belongs to another project.
+Files Veritas already wrote keep the earlier spelling until you refresh them:
+
+- `.githooks/post-commit`: run `npx --no @kontourai/veritas setup repo-hooks --force`. Without
+  `--force` the command refuses, because the tracked hook no longer matches the current one.
+- Claude Code (`.veritas/hooks/pre-tool-use.sh`, `.veritas/hooks/stop.sh`, `.claude/settings.json`):
+  run `npx --no @kontourai/veritas integrations claude-code install --force`.
+- Codex (`.veritas/hooks/agent-runtime.sh`, `.veritas/runtime/codex-hooks.json`): run
+  `npx --no @kontourai/veritas integrations codex install --force`. With `--codex-home` or
+  `--target-hooks-file`, the merge keeps the earlier `PreToolUse` and `PostSession` handlers next
+  to the new ones, so delete the earlier entries from that hooks file by hand. Provisioning
+  `.codex/hooks.json` again through Flow Agents also adds the new handler and keeps the old one.
+- `package.json` scripts, a CI snippet you copied into a workflow, and `.veritas/README.md` have no
+  refresh command. Edit the prefix before each Veritas subcommand to `npx --no @kontourai/veritas`.
+  Do not rerun `init --force` for the README: it also rewrites your standards.
+
+`veritas readiness` and repo conformance do not check the spelling in these files.
+`integrations claude-code status` reports `postSessionConfigured: false`, and
+`integrations codex status` with a hooks file reports `integrationInstalled: false`, for a
+configuration written with the earlier spelling.
