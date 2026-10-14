@@ -135,8 +135,9 @@ flow-agents kit review veritas-governance --dest /absolute/kit-bootstrap \
 This requires a Flow Agents release exposing `kit review` and this kit's declared
 `review` producer. The existing `veritas review` command and
 `serveGovernanceSurveyReview` API remain standalone compatibility interfaces;
-new kit use should select the native host. The standalone evaluation engine has
-no Flow Agents dependency.
+new kit use should select the native host. Standalone review requires the optional
+`@kontourai/survey` peer at version 8.2.0 or later within major 8. The standalone
+evaluation engine has no Flow Agents dependency.
 
 Choose a future expiry for the actual review; the command never renews it. Open
 the returned loopback URL, inspect every artifact and select **Mark reviewed**.
