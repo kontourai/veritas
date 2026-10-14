@@ -53,13 +53,17 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    ```bash
    v="$(npm view @kontourai/veritas@latest version)"
    echo "$v"   # the maintainer approves this version before anything runs
-   npm exec --yes --package="@kontourai/veritas@${v}" -- veritas --version
-   npm exec --yes --package="@kontourai/veritas@${v}" -- veritas init --explore --output .veritas/init-plans/first-pass.json
+   npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas --version
+   npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas init --explore --output .veritas/init-plans/first-pass.json
    ```
+
+   This fetch ignores the repository's `minimumReleaseAge` quarantine, so the maintainer's approval
+   of `v` should take into account how recent that release is. The `${v:?...}` form makes a lost
+   or empty `v` an error instead of silently running whatever is latest.
 
    Record the version with the setup evidence; `--version` must print the same value. npm uses its
    ephemeral execution cache and does not create or modify the consumer's `package.json` or
-   lockfile. Use the same `npm exec --yes --package="@kontourai/veritas@${v}" -- veritas` prefix
+   lockfile. Use the same `npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas` prefix
    for apply, hooks, attestation, and readiness in the same shell session; if `v` is lost or
    `--version` prints something else, stop and resolve again from the plan step. Do not mix it
    with an unrelated global CLI. Never write this prefix, or any literal version, into a README,
@@ -76,7 +80,7 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    which package/runtime installation convention to use. Do not invent one.
 
 5. Derive a plan without applying it. Use `"$veritas_engine_path"` or the step 3
-   `npm exec --yes --package="@kontourai/veritas@${v}" -- veritas` prefix in place of
+   `npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas` prefix in place of
    `npm exec -- veritas` when following an external engine path:
 
    ```bash

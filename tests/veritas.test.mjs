@@ -5,7 +5,6 @@ import {
   cpSync,
   existsSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
   realpathSync,
   statSync,
@@ -2451,9 +2450,9 @@ test('setup-governance documents the manifest-preserving external engine path', 
   assert.match(skill, /immutable release/);
   assert.match(skill, /veritas_engine_path="\$\(command -v veritas\)"/);
   assert.match(skill, /v="\$\(npm view @kontourai\/veritas@latest version\)"/);
-  assert.match(skill, /npm exec --yes --package="@kontourai\/veritas@\$\{v\}" -- veritas --version/);
+  assert.match(skill, /npm exec --yes --package="@kontourai\/veritas@\$\{v:\?resolve v first\}" -- veritas --version/);
   assert.match(guide, /Non-npm repositories/);
-  assert.match(guide, /npm exec --yes --package="@kontourai\/veritas@\$\{v\}" -- veritas readiness --working-tree/);
+  assert.match(guide, /npm exec --yes --package="@kontourai\/veritas@\$\{v:\?resolve v first\}" -- veritas readiness --working-tree/);
   assert.match(guide, /without writing the consumer manifest or lockfile/);
 });
 
@@ -2461,11 +2460,15 @@ test('setup-governance documents the manifest-preserving external engine path', 
 // and AGENTS.md, and those copies went stale. Anything Veritas ships or prints can end up in an
 // adopter repo, so scan every git-tracked file rather than a list of known instruction files.
 // Excluded: tests (they use deliberately stale fixtures), lockfile and changelog (records),
-// pnpm-workspace.yaml (this repo's own dependency policy), and docs/MIGRATING.md (historical
-// notes about past releases).
-const PIN_SCAN_EXCLUDED = new Set(['pnpm-lock.yaml', 'pnpm-workspace.yaml', 'CHANGELOG.md', 'docs/MIGRATING.md']);
-// A version after the @ is a pin. `@latest` and a shell-variable version (`@${v}`, `@$v`) are not.
-const LITERAL_KONTOUR_PIN = /@kontourai\/[a-z0-9][a-z0-9._-]*@(?!latest\b)(?!["']?\$)\S/;
+// and pnpm-workspace.yaml (this repo's own dependency policy). docs/MIGRATING.md is scanned:
+// adopters follow its steps.
+const PIN_SCAN_EXCLUDED = new Set(['pnpm-lock.yaml', 'pnpm-workspace.yaml', 'CHANGELOG.md']);
+// Anything after the @ is a pin, including `@latest` (it moves under the adopter), except a
+// shell-variable version (`@${v:?...}`, `@$v`). The one allowed `@latest` is the resolve step
+// `npm view @kontourai/<pkg>@latest version`, which reads the registry and installs nothing.
+const RESOLVE_LATEST = /npm view @kontourai\/[a-z0-9][a-z0-9._-]*@latest version/g;
+const LITERAL_KONTOUR_PIN = /@kontourai\/[a-z0-9][a-z0-9._-]*@(?!["']?\$)\S/;
+const hasKontourPin = (line) => LITERAL_KONTOUR_PIN.test(line.replace(RESOLVE_LATEST, ''));
 
 function pinScanFiles() {
   return execFileSync('git', ['ls-files', '-z'], { cwd: repoRootDir, encoding: 'utf8' })
@@ -2482,13 +2485,13 @@ test('no tracked file outside tests pins a literal @kontourai package version', 
   const offenders = [];
   for (const file of scanned) {
     readFileSync(join(repoRootDir, file), 'utf8').split('\n').forEach((line, index) => {
-      if (LITERAL_KONTOUR_PIN.test(line)) offenders.push(`${file}:${index + 1}: ${line.trim()}`);
+      if (hasKontourPin(line)) offenders.push(`${file}:${index + 1}: ${line.trim()}`);
     });
   }
   assert.deepEqual(offenders, []);
 });
 
-test('literal @kontourai pin matcher catches versions and ranges but not @latest or a shell variable', () => {
+test('literal @kontourai pin matcher catches versions, ranges, and @latest but not the resolve step or a shell variable', () => {
   for (const pinned of [
     'npm exec --yes --package=@kontourai/veritas@1.8.0 -- veritas',
     'npx @kontourai/veritas@10.0.1 readiness',
@@ -2500,19 +2503,22 @@ test('literal @kontourai pin matcher catches versions and ranges but not @latest
     'npx --package=@kontourai/survey@8.1.0 survey-review-mcp',
     'npx @kontourai/flow-agents@1.2.3 kit install',
     'npx @kontourai/veritas@next readiness',
+    'npx --yes @kontourai/veritas@latest readiness',
+    'run: npm exec --yes --package=@kontourai/veritas@latest -- veritas readiness',
+    'v="$(npm view @kontourai/veritas@latest version)" && npx @kontourai/veritas@latest readiness',
   ]) {
-    assert.match(pinned, LITERAL_KONTOUR_PIN, pinned);
+    assert.equal(hasKontourPin(pinned), true, pinned);
   }
   for (const unpinned of [
-    'npm exec --yes --package=@kontourai/veritas@latest -- veritas',
-    'npm exec --yes --package="@kontourai/veritas@${v}" -- veritas',
+    'v="$(npm view @kontourai/veritas@latest version)"',
+    'npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas',
     'npm exec --yes --package=@kontourai/veritas@$v -- veritas',
     'npx @kontourai/veritas readiness',
     'npm exec -- veritas readiness',
     'npm install -D @kontourai/veritas',
     "import x from '@kontourai/flow-agents/kit-review';",
   ]) {
-    assert.doesNotMatch(unpinned, LITERAL_KONTOUR_PIN, unpinned);
+    assert.equal(hasKontourPin(unpinned), false, unpinned);
   }
 });
 

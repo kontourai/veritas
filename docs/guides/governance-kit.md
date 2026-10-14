@@ -61,17 +61,19 @@ version, and use it for every setup command in the same shell session:
 ```bash
 v="$(npm view @kontourai/veritas@latest version)"
 echo "$v"
-npm exec --yes --package="@kontourai/veritas@${v}" -- veritas --version
-npm exec --yes --package="@kontourai/veritas@${v}" -- veritas init --explore --output .veritas/init-plans/first-pass.json
+npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas --version
+npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas init --explore --output .veritas/init-plans/first-pass.json
 # Review and approve the generated plan.
-npm exec --yes --package="@kontourai/veritas@${v}" -- veritas init --apply --plan .veritas/init-plans/first-pass.json
-npm exec --yes --package="@kontourai/veritas@${v}" -- veritas readiness --working-tree
+npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas init --apply --plan .veritas/init-plans/first-pass.json
+npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas readiness --working-tree
 ```
 
 This invocation uses npm's execution cache without writing the consumer manifest or lockfile.
 It follows the current release on purpose: a literal version in a copied command goes stale, and
 an old release cannot read newer attestations. Resolving `v` once keeps a new release from
-landing between two setup commands. Record the version with the setup evidence, and do not copy
+landing between two setup commands. This fetch ignores the repository's `minimumReleaseAge`
+quarantine, so consider how recent the release is before approving `v`; a lost or empty `v` is an
+error (`${v:?...}`), not a silent run of whatever is latest. Record the version with the setup evidence, and do not copy
 this command or any literal version into a README or instruction file. A repository that installs
 Veritas as a development dependency uses `npm exec -- veritas ...` instead, which runs the
 version its lockfile resolves. For a repository without a package manifest, init configures a Node
@@ -172,10 +174,12 @@ Decline and could not confirm grant no approval; request changes requires a new
 plan and new review. Replaying a consumed session refuses. If only the presentation
 application marker is lost, the host returns its original signed disposition.
 
-The same private session can be inspected and decided through Survey's CLI/MCP App:
+The same private session can be inspected and decided through Survey's CLI/MCP App. Run it
+from the project root so npm resolves the Survey version installed there, the one that wrote the
+session, rather than fetching a different release:
 
 ```sh
-npx --yes --package=@kontourai/survey@latest survey-review-mcp \
+npm exec -- survey-review-mcp \
   --session /absolute/private/veritas-review-host/RETURNED_SESSION.json
 ```
 
