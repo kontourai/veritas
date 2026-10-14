@@ -315,17 +315,20 @@ test('the git root is matched by identity when git spells it differently', () =>
   assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
 });
 
-test('the nearest install wins over one farther up toward the git root', () => {
+// npx runs the bin it finds on a PATH built from the working directory, so with installs in both
+// packages/a and the root the nearest bin runs whichever --prefix the walk passes. The prefix gates
+// only npx's "is it installed" check. This pins the walk's own choice by recording npx's arguments.
+test('the walk passes the nearest install as the prefix', () => {
   const { rootDir, packageDir } = pnpmWorkspace({ installVeritas: true });
-  // packages/a has its own install, which announces itself instead of running Veritas.
-  const marker = join(rootDir, 'nearest-ran');
-  const nearest = plantedVeritas(mkdtempSync(join(tmpdir(), 'veritas-nearest-')), marker);
-  mkdirSync(join(packageDir, 'node_modules/@kontourai'), { recursive: true });
-  mkdirSync(join(packageDir, 'node_modules/.bin'), { recursive: true });
-  symlinkSync(nearest, join(packageDir, 'node_modules/@kontourai/veritas'), 'dir');
-  symlinkSync('../@kontourai/veritas/bin/veritas.js', join(packageDir, 'node_modules/.bin/veritas'));
+  installLocalVeritasBin(packageDir);
+  const fakeBin = mkdtempSync(join(tmpdir(), 'veritas-fake-npx-'));
+  const argsFile = join(fakeBin, 'args');
+  writeFileSync(join(fakeBin, 'npx'), `#!/bin/sh\nprintf '%s\\n' "$@" > ${JSON.stringify(argsFile)}\n`);
+  chmodSync(join(fakeBin, 'npx'), 0o755);
 
-  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: packageDir, input: editPayload(packageDir) });
+  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: packageDir, input: editPayload(packageDir), env: { PATH: `${fakeBin}:${process.env.PATH}` } });
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(existsSync(marker), true, 'the install in packages/a must run, not the root install');
+  const args = readFileSync(argsFile, 'utf8').trim().split('\n');
+  assert.deepEqual(args.slice(0, 4), ['--no', '--prefix', realpathSync(packageDir), '@kontourai/veritas']);
+  assert.notEqual(realpathSync(packageDir), realpathSync(rootDir));
 });
