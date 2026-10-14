@@ -180,3 +180,55 @@ test('with neither list configured, apply keeps the built-in default targets', (
 
   assert.deepEqual(result.applied.map((entry) => entry.path).sort(), ['AGENTS.md', 'CLAUDE.md']);
 });
+
+test('a target outside the repository is reported, not read: readiness, the PreToolUse hook and apply', (t) => {
+  const rootDir = initRepo(t, {
+    mapTargets: [AGENTS, { path: '../outside.md', required: false }],
+    ruleTargets: ['AGENTS.md'],
+  });
+  const outsidePath = join(rootDir, '../outside.md');
+
+  // Readiness completes and names the entry.
+  const result = readinessRuleResult(rootDir);
+  assert.equal(result.passed, false);
+  assert.deepEqual(
+    result.findings.map(({ kind, artifact }) => ({ kind, artifact })),
+    [
+      { kind: 'invalid-governance-target', artifact: '../outside.md' },
+      { kind: 'missing-governance-file', artifact: 'AGENTS.md' },
+    ],
+  );
+  assert.match(result.summary, /1 target outside the repository/);
+
+  // The schema rejects it, so `readiness --check config` gates it.
+  const config = runVeritas(rootDir, ['readiness', '--check', 'config']);
+  assert.equal(config.status, 1, config.stdout);
+  assert.match(config.stdout, /aiInstructionFiles\/1\/path/);
+
+  // The hook answers with a decision that names the entry instead of crashing.
+  const hook = spawnSync('node', [veritasBin, 'hooks', 'claude-code', 'pre-tool-use', '--root', rootDir], {
+    cwd: rootDir,
+    encoding: 'utf8',
+    input: JSON.stringify({ tool_input: { file_path: 'README.md' } }),
+  });
+  assert.doesNotMatch(hook.stderr, /escapes|must stay inside the repository/);
+  const decision = JSON.parse(hook.stdout);
+  assert.match(decision.reason, /ai-instruction-files-synced: .*\(\.\.\/outside\.md, AGENTS\.md\)/);
+
+  // apply refuses before writing any target.
+  const apply = runVeritas(rootDir, ['apply', 'governance-blocks']);
+  assert.notEqual(apply.status, 0);
+  assert.match(apply.stderr, /Refusing to apply governance blocks: "\.\.\/outside\.md"/);
+  assert.equal(existsSync(join(rootDir, 'AGENTS.md')), false);
+  assert.equal(existsSync(outsidePath), false);
+});
+
+test('./AGENTS.md and AGENTS.md name one target', (t) => {
+  const rootDir = initRepo(t, { mapTargets: [{ path: './AGENTS.md', tool: 'codex', required: true }], ruleTargets: ['AGENTS.md'] });
+
+  const before = readinessRuleResult(rootDir);
+  assert.deepEqual(before.findings.map(({ artifact }) => artifact), ['AGENTS.md']);
+  const result = applyBlocks(rootDir);
+  assert.deepEqual(result.applied.map(({ path, tool }) => ({ path, tool })), [{ path: 'AGENTS.md', tool: 'codex' }]);
+  assert.equal(readinessRuleResult(rootDir).passed, true);
+});

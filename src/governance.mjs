@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { loadJson } from './load.mjs';
 import { assertWithinDir, relativeRepoPath } from './paths.mjs';
 
@@ -26,15 +26,34 @@ function defaultInstructionTargets(rootDir) {
   return targets;
 }
 
+const INVALID_TARGET_REASON = 'a governance block target must be a repository-relative path to a file inside the repository';
+
 function normalizeGovernanceTarget(target) {
   if (typeof target === 'string') {
     return { path: target, tool: null, required: true };
   }
   return {
-    path: target.path,
-    tool: target.tool ?? null,
-    required: target.required !== false,
+    path: target?.path,
+    tool: target?.tool ?? null,
+    required: target?.required !== false,
   };
+}
+
+/**
+ * The repository-relative, `/`-separated form of a target path, so `./AGENTS.md` and `AGENTS.md`
+ * name one target. Null for a path that is not a file inside the repository: empty, absolute, the
+ * root itself, or escaping it (`..`, or a symlinked parent that leads outside).
+ */
+function repoRelativeTargetPath(rootDir, path) {
+  if (typeof path !== 'string' || path.length === 0 || isAbsolute(path)) return null;
+  const resolvedPath = resolve(rootDir, path);
+  try {
+    assertWithinDir(resolvedPath, rootDir);
+  } catch {
+    return null;
+  }
+  const relativePath = relative(resolve(rootDir), resolvedPath).split(sep).join('/');
+  return relativePath === '' ? null : relativePath;
 }
 
 /**
@@ -52,6 +71,9 @@ function normalizeGovernanceTarget(target) {
  *   lists. A path named by a rule is required, because readiness requires it; a
  *   Repo Map entry keeps its own `required` flag.
  * - Only when neither list is configured do the built-in defaults apply.
+ * - Paths are compared in repository-relative form. A path that does not name a file inside
+ *   the repository is returned in `invalidTargets`, never in `targets`, so no caller reads or
+ *   writes outside the repository.
  *
  * @param {object} options
  * @param {string} options.rootDir
@@ -66,18 +88,25 @@ export function resolveGovernanceBlockTargets({ rootDir, repoMap, governanceRule
   const rulesConfigured = rules.length > 0;
 
   if (!mapConfigured && !rulesConfigured) {
-    return { source: 'default', targets: defaultInstructionTargets(rootDir) };
+    return { source: 'default', targets: defaultInstructionTargets(rootDir), invalidTargets: [] };
   }
 
   const byPath = new Map();
-  const add = (target) => {
-    const existing = byPath.get(target.path);
-    if (!existing) {
-      byPath.set(target.path, target);
+  const invalidPaths = new Set();
+  const add = (candidate) => {
+    const path = repoRelativeTargetPath(rootDir, candidate.path);
+    if (path === null) {
+      invalidPaths.add(String(candidate.path ?? ''));
       return;
     }
-    byPath.set(target.path, {
-      path: target.path,
+    const target = { ...candidate, path };
+    const existing = byPath.get(path);
+    if (!existing) {
+      byPath.set(path, target);
+      return;
+    }
+    byPath.set(path, {
+      path,
       tool: existing.tool ?? target.tool,
       required: existing.required || target.required,
     });
@@ -93,7 +122,11 @@ export function resolveGovernanceBlockTargets({ rootDir, repoMap, governanceRule
     }
   }
 
-  return { source: 'configured', targets: [...byPath.values()] };
+  return {
+    source: 'configured',
+    targets: [...byPath.values()],
+    invalidTargets: [...invalidPaths].map((path) => ({ path, reason: INVALID_TARGET_REASON })),
+  };
 }
 
 function loadOptionalJson(filePath, label) {
@@ -227,7 +260,14 @@ export function applyGovernanceBlocks({
     repoMapPath,
     repoStandardsPath,
   });
-  const { targets } = resolveGovernanceBlockTargets({ rootDir, repoMap, governanceRules });
+  const { targets, invalidTargets } = resolveGovernanceBlockTargets({ rootDir, repoMap, governanceRules });
+  // Checked before any write, so a bad entry never leaves the targets half applied.
+  if (invalidTargets.length > 0) {
+    throw new Error(
+      `Refusing to apply governance blocks: ${invalidTargets.map(({ path }) => JSON.stringify(path)).join(', ')} `
+        + `in activation.aiInstructionFiles or a governance-block requirement is not valid; ${INVALID_TARGET_REASON}. Correct or remove it.`,
+    );
+  }
   const applied = [];
   const skipped = [];
 

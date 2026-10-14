@@ -610,7 +610,11 @@ reported. A list that is present counts even when it is empty: `init` writes `[]
 for a repository with no instruction files, and then `apply governance-blocks` writes nothing and
 says so in its `message`. Only a repository with neither list configured gets the built-in
 defaults, `AGENTS.md` and `CLAUDE.md`, plus `.cursorrules` when it exists. Both lists are read
-from `.veritas/repo-map.json` and `.veritas/repo-standards/default.repo-standards.json`.
+from `.veritas/repo-map.json` and `.veritas/repo-standards/default.repo-standards.json`. Paths are
+compared in repository-relative form, so `./AGENTS.md` and `AGENTS.md` are one target. A path
+that is absolute or leaves the repository is an `invalid-governance-target` finding in readiness,
+`readiness --check config` rejects it against the schema, and `apply governance-blocks` refuses to
+write anything until it is corrected.
 
 The block it writes tells agents to run `npx --no @kontourai/veritas readiness`, which runs only an
 installed Veritas. In a repository without `@kontourai/veritas` as a dependency, npx refuses with
