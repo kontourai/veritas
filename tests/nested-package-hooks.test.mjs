@@ -130,7 +130,9 @@ test('the walk stops at the git root, so a node_modules planted in a parent outs
   writeFileSync(join(repo, 'package.json'), `${JSON.stringify({ name: 'repo', version: '1.0.0' })}\n`);
   const cache = mkdtempSync(join(tmpdir(), 'veritas-empty-npm-cache-'));
 
-  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: repo, input: editPayload(repo), env: { npm_config_cache: cache } });
+  // PWD is the logical path a shell that cd'd there would pass on. On macOS the temporary directory
+  // sits behind a symlink, so the walk must compare physical paths to stop at git's root.
+  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: repo, input: editPayload(repo), env: { npm_config_cache: cache, PWD: repo } });
   assert.equal(result.status, 1, result.stderr);
   assert.match(result.stderr, /npx canceled due to missing packages/);
   assert.equal(existsSync(marker), false, 'the planted parent package must not run');
