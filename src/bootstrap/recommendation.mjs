@@ -477,7 +477,7 @@ function workAreaIds(store) {
 }
 
 // Names the work areas a kept claim store lacks or has beyond the applied Repo Map, so an owner can
-// bring the authored store in line with the `claim add` and `claim remove` commands.
+// bring the authored store in line with `veritas claim add` or `veritas claim remove`.
 function keptClaimStoreWorkAreaDrift(rootDir, derivedClaimStore) {
   let kept;
   try {

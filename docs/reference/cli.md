@@ -602,6 +602,11 @@ Write restrictions are intentional:
 AI instruction targets, replacing content only between Veritas governance
 markers; unknown `apply` targets fail closed.
 
+The block it writes tells agents to run `npx --no @kontourai/veritas readiness`, which runs only an
+installed Veritas. In a repository without `@kontourai/veritas` as a dependency, npx refuses with
+`npx canceled due to missing packages`; add it as a development dependency so the block's command
+runs.
+
 ### `runtime status`
 
 Inspects the installed state of tracked runtime integrations.

@@ -13,7 +13,7 @@ git add veritas.claims.json
 
 ## Managing Claims
 
-Use the `claim` subcommand to maintain the store:
+Use `npx --no @kontourai/veritas claim` to maintain the store:
 
 ```bash
 npx --no @kontourai/veritas claim list

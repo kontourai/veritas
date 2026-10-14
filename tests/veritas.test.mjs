@@ -743,6 +743,7 @@ test('governance block diagnostics distinguish absent files, markers, and exact 
   assert.equal(result.findings[0].diagnostic, 'missing-governance-file');
   assert.match(result.summary, /1 missing file, 1 missing canonical marker set, 1 stale canonical block/);
   assert.match(result.summary, /Run `npx --no @kontourai\/veritas apply governance-blocks` to restore/);
+  assert.match(result.summary, /add `@kontourai\/veritas` as a development dependency/);
   assert.equal(result.findings.some(({ artifact }) => artifact === 'CANONICAL.md'), false);
   assert.doesNotMatch(JSON.stringify(result), new RegExp(staleCommand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   assert.doesNotMatch(JSON.stringify(result), /Never expose this unrelated instruction/);
@@ -833,7 +834,7 @@ test('governance block remediation normalizes partial, reversed, duplicate, and 
         preserved: 'After',
       },
     ],
-    // The canonical block every release through 1.11.1 wrote, byte for byte.
+    // The canonical block v0.4.0 through v1.11.1 write, byte for byte. v0.2 and v0.3 named `veritas shadow run`.
     ['legacy-bare', { content: `Before\n${LEGACY_BARE_GOVERNANCE_BLOCK}\nAfter\n`, preserved: 'After' }],
     // The same block hand-edited to a pinned registry fetch, as some adopters carry it.
     ['legacy-pinned', { content: `Before\n${LEGACY_PINNED_GOVERNANCE_BLOCK}\nAfter\n`, preserved: 'After' }],

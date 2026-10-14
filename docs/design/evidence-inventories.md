@@ -53,7 +53,7 @@ Reports currently include `readiness_coverage`, a generated summary of selected 
 Use:
 
 ```bash
-veritas readiness --check coverage --working-tree
+npx --no @kontourai/veritas readiness --check coverage --working-tree
 ```
 
 as the current command for readiness coverage. Future product surfaces should call this readiness coverage directly.

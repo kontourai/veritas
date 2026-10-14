@@ -35,6 +35,8 @@ Do not modify these without fresh authority:
 
 You may propose additive Standards Growth for new feature areas. Do not modify, demote, or delete existing required standards or protected definitions.
 
+Inside this checkout `npx --no @kontourai/veritas` cannot resolve Veritas itself, so run `npm run veritas:readiness` where the block below says `npx --no @kontourai/veritas readiness`.
+
 <!-- veritas:governance-block:start -->
 This repo uses Veritas for AI governance. Read `.veritas/GOVERNANCE.md` before making changes.
 After changes, run `npx --no @kontourai/veritas readiness` and address any FAIL lines before finishing.

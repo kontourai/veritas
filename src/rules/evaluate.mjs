@@ -102,7 +102,7 @@ export function evaluateGovernanceBlockRule(rule, { rootDir }) {
     summary:
       findings.length === 0
         ? 'All required AI instruction files contain the canonical Veritas governance block.'
-        : `AI instruction governance block mismatch: ${problems.join(', ')}. Run \`npx --no @kontourai/veritas apply governance-blocks\` to restore the exact canonical block.`,
+        : `AI instruction governance block mismatch: ${problems.join(', ')}. Run \`npx --no @kontourai/veritas apply governance-blocks\` to restore the exact canonical block. If npx refuses with missing packages, add \`@kontourai/veritas\` as a development dependency first.`,
     findings,
   });
 }
