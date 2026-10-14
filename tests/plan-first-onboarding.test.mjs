@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cleanGitEnv, commitAll, initCommittedRepo, installLocalVeritasBin } from './helpers.mjs';
@@ -65,4 +65,15 @@ test('applying a plan keeps an existing authored claim store, even with --force'
   assert.equal(apply.status, 0, apply.stderr);
   assert.equal(readFileSync(join(rootDir, 'veritas.claims.json'), 'utf8'), authored);
   assert.equal(JSON.parse(apply.stdout).generatedFiles.includes('veritas.claims.json'), false);
+  // The kept store has no work-area claims, so the warning names every work area in the Repo Map.
+  const workAreas = JSON.parse(readFileSync(join(rootDir, '.veritas/repo-map.json'), 'utf8')).graph.nodes.map((node) => node.id).sort();
+  assert.ok(workAreas.length > 0);
+  assert.match(apply.stderr, new RegExp(`Warning: veritas\\.claims\\.json was kept and differs from the applied Repo Map\\. Work areas without a claim: ${workAreas.join(', ').replaceAll('.', '\\.')}\\.`));
+
+  // A kept store that matches the applied Repo Map draws no warning.
+  rmSync(join(rootDir, 'veritas.claims.json'));
+  assert.equal(cli(['init', '--apply', '--plan', plan, '--force']).status, 0);
+  const again = cli(['init', '--apply', '--plan', plan, '--force']);
+  assert.equal(again.status, 0, again.stderr);
+  assert.doesNotMatch(again.stderr, /was kept and differs/);
 });

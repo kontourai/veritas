@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx --no @kontourai/veritas hooks codex pre-tool-use",
+            "command": "VERITAS_PREFIX=\"$(pwd)\"; until [ -f \"$VERITAS_PREFIX/node_modules/@kontourai/veritas/package.json\" ] || [ \"$VERITAS_PREFIX\" = / ]; do VERITAS_PREFIX=\"$(dirname \"$VERITAS_PREFIX\")\"; done; npx --no --prefix \"$VERITAS_PREFIX\" @kontourai/veritas hooks codex pre-tool-use",
             "statusMessage": "Loading Veritas guidance for edited files",
             "timeout": 30
           }

@@ -3459,7 +3459,7 @@ test('standards feedback draft CLI writes a repo-local draft artifact and sugges
   const draftArtifact = readJsonFromAbsolute(join(rootDir, draftResult.artifactPath));
 
   assert.equal(draftResult.artifactPath, '.kontourai/veritas/standards-feedback-drafts/feedback-draft-cli-smoke.json');
-  assert.match(draftResult.suggestedRecordCommand, /veritas feedback record --draft/);
+  assert.match(draftResult.suggestedRecordCommand, /^npx --no @kontourai\/veritas feedback record --draft /);
   assert.deepEqual(draftArtifact.missing_confirmation_fields, [
     'accepted_without_major_rewrite',
     'required_followup',
@@ -3978,7 +3978,7 @@ test('readiness check CLI stops at report and draft when judgment fields are mis
   assert.equal(parsed.mode, 'report-and-draft');
   assert.equal(parsed.evidenceCheckRan, true);
   assert.deepEqual(parsed.evidenceCheckLabels, ['node -e "process.exit(0)"']);
-  assert.match(parsed.suggestedFeedbackCommand, /veritas feedback record --draft/);
+  assert.match(parsed.suggestedFeedbackCommand, /^npx --no @kontourai\/veritas feedback record --draft /);
 });
 
 test('readiness check CLI defaults to agent-readable feedback output', () => {

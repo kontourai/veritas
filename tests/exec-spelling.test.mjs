@@ -36,6 +36,12 @@ const RUNNERS = [
   { words: ['bun', 'x'], kind: 'bun x', downloads: true },
 ];
 const BOOTSTRAP_PACKAGE = '@kontourai/veritas@${v:?}';
+// npm options that take the next word as their value when written without `=`. Without this, the
+// value would be read as the package name and the invocation skipped.
+const VALUE_OPTIONS = new Set([
+  '--call', '-c', '--workspace', '-w', '--prefix', '--registry', '--cache', '--userconfig',
+  '--globalconfig', '--loglevel', '--node-options', '--script-shell', '--scope', '--tag', '--before',
+]);
 const LEADING_NPX_FLAG = new Set(['--version', '--help', '-v', '-h']);
 
 const packageName = (spec) => spec.match(/^(@[^/@]+\/[^@]+|[^@]+)/)?.[1] ?? spec;
@@ -83,7 +89,7 @@ function parseExecArgs(args) {
     if (packageOption) {
       packages.push(unquote(packageOption[1] ?? args[index + 1] ?? ''));
       if (packageOption[1] === undefined) index += 1;
-    } else if (/^(?:--call|-c|--workspace|-w)$/.test(word)) {
+    } else if (VALUE_OPTIONS.has(word)) {
       index += 1;
     }
     options.push(word);
@@ -92,6 +98,23 @@ function parseExecArgs(args) {
   const separated = args[index] === '--';
   if (separated) index += 1;
   return { options, packages, separated, command: args[index], rest: args.slice(index + 1) };
+}
+
+// Joins shell line continuations (a trailing backslash) so a command split across lines is read
+// whole; each logical line keeps the number of the line it starts on.
+function logicalLines(text) {
+  const lines = [];
+  let pending = null;
+  text.split('\n').forEach((line, index) => {
+    const current = pending ? { number: pending.number, text: `${pending.text} ${line.trim()}` } : { number: index + 1, text: line };
+    if (/\\\s*$/.test(line)) pending = { number: current.number, text: current.text.replace(/\\\s*$/, '') };
+    else {
+      lines.push(current);
+      pending = null;
+    }
+  });
+  if (pending) lines.push(pending);
+  return lines;
 }
 
 function unsafeExec(line) {
@@ -126,7 +149,10 @@ function unsafeExec(line) {
 }
 
 // Everything the package ships, from package.json `files`: what adopters copy from and the source
-// that generates text into their repos.
+// that generates text into their repos. npm also packs package.json itself, which is deliberately
+// not scanned: its scripts are this repository's own, and they run the checkout's bin through
+// `npm exec`, because npx cannot find a package from inside that package's own checkout.
+// Stated limits: JSON `args` arrays and Windows `npx.cmd` invocations are not parsed.
 function shippedFiles() {
   const entries = JSON.parse(readFileSync(join(repoRootDir, 'package.json'), 'utf8')).files;
   return execFileSync('git', ['ls-files', '-z'], { cwd: repoRootDir, encoding: 'utf8' })
@@ -183,10 +209,10 @@ test('shipped text and generated source only run an installed Veritas or Survey'
   assert.equal(files.some((file) => file.startsWith('tests/')), false);
   const offenders = [];
   for (const file of files) {
-    readFileSync(join(repoRootDir, file), 'utf8').split('\n').forEach((line, index) => {
-      const problems = unsafeExec(withoutRecordedPastCommands(file, line));
-      if (problems.length > 0) offenders.push(`${file}:${index + 1}: ${problems.join('; ')}: ${line.trim()}`);
-    });
+    for (const { number, text } of logicalLines(readFileSync(join(repoRootDir, file), 'utf8'))) {
+      const problems = unsafeExec(withoutRecordedPastCommands(file, text));
+      if (problems.length > 0) offenders.push(`${file}:${number}: ${problems.join('; ')}: ${text.trim()}`);
+    }
   }
   assert.deepEqual(offenders, []);
 });
@@ -238,6 +264,11 @@ test('the exec spelling matcher rejects every registry-fetching or npm-answered 
     'pnpm dlx --package=@kontourai/survey survey-review-mcp',
     'yarn dlx -p @kontourai/survey survey-review-console',
     'pnpx veritas readiness',
+    // A value-taking option before the package name.
+    'npx --registry https://registry.example.test @kontourai/veritas readiness',
+    'npx --prefix /srv/app @kontourai/veritas readiness',
+    'npx --cache /tmp/npm-cache --yes @kontourai/veritas readiness',
+    'npx --no --prefix "$VERITAS_PREFIX" veritas readiness',
     // Generated text as it appears in source and JSON.
     "    'veritas:check': 'npm exec -- veritas readiness --working-tree',",
     '            "command": "npm exec -- veritas hooks codex pre-tool-use",',
@@ -267,7 +298,16 @@ test('the exec spelling matcher accepts the standard spellings and other package
     '            "command": "npx --no @kontourai/veritas hooks codex pre-tool-use",',
     'The `npx` and `npm exec` runners fall back to the registry; `pnpm dlx` always does.',
     'veritas readiness --working-tree',
+    'npx --no --prefix "$VERITAS_PREFIX" @kontourai/veritas hooks codex pre-tool-use',
+    'npx --registry https://registry.example.test --no @kontourai/veritas readiness',
   ]) {
     assert.deepEqual(unsafeExec(safe), [], safe);
   }
+});
+
+test('line continuations are joined before matching', () => {
+  const lines = logicalLines('first\nnpx \\\n  @kontourai/veritas readiness\nnpx --no \\\n  @kontourai/veritas readiness');
+  assert.deepEqual(lines.map((line) => line.number), [1, 2, 4]);
+  assert.notDeepEqual(unsafeExec(lines[1].text), [], lines[1].text);
+  assert.deepEqual(unsafeExec(lines[2].text), [], lines[2].text);
 });

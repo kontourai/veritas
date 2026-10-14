@@ -1,3 +1,5 @@
+import { nearestInstalledVeritasCommand } from './nearest-veritas.mjs';
+
 export function buildSuggestedGitHook({ hook = 'post-commit' } = {}) {
   if (!['post-commit', 'pre-push'].includes(hook)) {
     throw new Error(`Unsupported git hook kind: ${hook}`);
@@ -168,7 +170,7 @@ exec npx --no @kontourai/veritas hooks claude-code pre-tool-use "$@"
 }
 
 export function buildClaudeCodeSessionLogCaptureCommand() {
-  return 'VERITAS_SESSION_LOG_PATH="${VERITAS_SESSION_LOG_PATH:-${CLAUDE_TRANSCRIPT_PATH:-}}"; if [ -n "$VERITAS_SESSION_LOG_PATH" ]; then npx --no @kontourai/veritas feedback observe --tool claude-code --session-log "$VERITAS_SESSION_LOG_PATH"; fi';
+  return 'VERITAS_SESSION_LOG_PATH="${VERITAS_SESSION_LOG_PATH:-${CLAUDE_TRANSCRIPT_PATH:-}}"; if [ -n "$VERITAS_SESSION_LOG_PATH" ]; then ' + nearestInstalledVeritasCommand('feedback observe --tool claude-code --session-log "$VERITAS_SESSION_LOG_PATH"') + '; fi';
 }
 
 export function buildSuggestedClaudeCodePostSessionHook() {

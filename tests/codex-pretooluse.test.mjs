@@ -176,9 +176,9 @@ test('installed Codex hook config routes a real CLI invocation with model-visibl
   const installed = JSON.parse(readFileSync(targetHooksFile, 'utf8'));
   const command = buildSuggestedCodexHookConfig().hooks.PreToolUse[0].hooks[0].command;
   assert.equal(installed.hooks.PreToolUse[0].hooks[0].command, command);
-  const [binary, ...args] = command.split(' ');
   const nestedCwd = join(rootDir, 'docs');
-  const result = spawnSync(binary, args, {
+  // Codex runs the configured command through a shell.
+  const result = spawnSync('sh', ['-c', command], {
     cwd: nestedCwd, encoding: 'utf8',
     input: JSON.stringify({ cwd: nestedCwd, tool_name: 'apply_patch', tool_input: { command: patch('docs/notes.md') } }),
   });

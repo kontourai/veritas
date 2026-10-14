@@ -23,7 +23,7 @@ import { GENERATED_OUTPUT_IGNORE_ENTRIES, mergeGeneratedOutputIgnores } from './
 import { assertWithinDir, veritasArtifactPath, veritasArtifactRepoPath } from '../paths.mjs';
 import { publicRepoMapPolicyIdentity } from '../evidence/public-config.mjs';
 import { buildClaimStoreFromRepo } from '../claims/init.mjs';
-import { VERITAS_CLAIM_STORE_FILE, claimStoreExists, saveVeritasClaimStore } from '../claims/store.mjs';
+import { VERITAS_CLAIM_STORE_FILE, claimStoreExists, loadVeritasClaimStore, saveVeritasClaimStore } from '../claims/store.mjs';
 
 const INIT_RECOMMENDATION_SCHEMA_VERSION = 2;
 // Plans are committed and applied from other clones and CI, so the target root
@@ -470,6 +470,33 @@ function validateInitRecommendation({
   return warnings;
 }
 
+function workAreaIds(store) {
+  return new Set((store.claims ?? [])
+    .filter((claim) => claim.claimType === 'veritas-affected-surface')
+    .map((claim) => claim.metadata?.nodeId ?? claim.fieldOrBehavior));
+}
+
+// Names the work areas a kept claim store lacks or has beyond the applied Repo Map, so an owner can
+// bring the authored store in line with `veritas claim add` or `veritas claim remove`.
+function keptClaimStoreWorkAreaDrift(rootDir, derivedClaimStore) {
+  let kept;
+  try {
+    kept = loadVeritasClaimStore(rootDir);
+  } catch (error) {
+    return `${VERITAS_CLAIM_STORE_FILE} was kept but could not be read: ${error.message}`;
+  }
+  const keptIds = workAreaIds(kept);
+  const derivedIds = workAreaIds(derivedClaimStore);
+  const missing = [...derivedIds].filter((id) => !keptIds.has(id)).sort();
+  const extra = [...keptIds].filter((id) => !derivedIds.has(id)).sort();
+  if (missing.length === 0 && extra.length === 0) return null;
+  return [
+    `${VERITAS_CLAIM_STORE_FILE} was kept and differs from the applied Repo Map.`,
+    missing.length > 0 ? `Work areas without a claim: ${missing.join(', ')}.` : '',
+    extra.length > 0 ? `Claims for work areas not in the Repo Map: ${extra.join(', ')}.` : '',
+  ].filter(Boolean).join(' ');
+}
+
 export function applyInitRecommendation({
   rootDir,
   recommendation,
@@ -519,8 +546,12 @@ export function applyInitRecommendation({
   // the store is Surface state derived from the reviewed files, not a separate owner decision.
   // An existing store is authored and is never replaced, even with --force.
   const createdClaimStore = !claimStoreExists(rootDir);
+  const derivedClaimStore = buildClaimStoreFromRepo({ rootDir, repoName: recommendation.project_name });
   if (createdClaimStore) {
-    saveVeritasClaimStore(buildClaimStoreFromRepo({ rootDir, repoName: recommendation.project_name }), rootDir);
+    saveVeritasClaimStore(derivedClaimStore, rootDir);
+  } else {
+    const drift = keptClaimStoreWorkAreaDrift(rootDir, derivedClaimStore);
+    if (drift) warnings.push(drift);
   }
   const ignoreResult = mergeGeneratedOutputIgnores(rootDir);
 
