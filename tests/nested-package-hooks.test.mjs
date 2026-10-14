@@ -6,7 +6,7 @@ import { basename, dirname, join } from 'node:path';
 import { writeBootstrapStarterKit } from '../src/index.mjs';
 import { buildSuggestedCodexHookConfig } from '../src/integrations/codex-hooks.mjs';
 import { buildClaudeCodeSessionLogCaptureCommand } from '../src/hooks/suggestions.mjs';
-import { cleanGitEnv, commitAll, initCommittedRepo, installLocalVeritasBin, repoRootDir } from './helpers.mjs';
+import { cleanGitEnv, commitAll, disableGitAutoMaintenance, initCommittedRepo, installLocalVeritasBin, repoRootDir } from './helpers.mjs';
 import { tempDir } from './temp-dir.mjs';
 
 // Agent runtimes run these hook commands in the agent's working directory. In a pnpm workspace
@@ -107,15 +107,35 @@ test('the nested-package hook commands still refuse when no directory has Verita
   assert.equal(readFileSync(join(packageDir, 'package.json'), 'utf8').includes('veritas'), false);
 });
 
-// A package that announces itself instead of running Veritas, so a test can tell whether it ran.
+// A package laid out like Veritas that announces itself instead of running Veritas, so a test can
+// tell whether it ran. It has the same entry point, so the walk would accept it if it reached it.
 function plantedVeritas(dir, marker) {
   const packageDir = join(dir, 'planted-veritas');
   mkdirSync(join(packageDir, 'bin'), { recursive: true });
-  writeFileSync(join(packageDir, 'package.json'), `${JSON.stringify({ name: '@kontourai/veritas', version: '0.0.0-planted', bin: { veritas: 'bin/veritas.js' } })}\n`);
-  writeFileSync(join(packageDir, 'bin/veritas.js'), `#!/usr/bin/env node\nrequire('node:fs').writeFileSync(${JSON.stringify(marker)}, 'ran');\n`);
-  chmodSync(join(packageDir, 'bin/veritas.js'), 0o755);
+  writeFileSync(join(packageDir, 'package.json'), `${JSON.stringify({ name: '@kontourai/veritas', version: '0.0.0-planted', type: 'module', bin: { veritas: 'bin/veritas.mjs' } })}\n`);
+  writeFileSync(join(packageDir, 'bin/veritas.mjs'), `#!/usr/bin/env node\nimport { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(marker)}, 'ran');\n`);
+  chmodSync(join(packageDir, 'bin/veritas.mjs'), 0o755);
   return packageDir;
 }
+
+// Veritas installed the way `npm install --no-bin-links` (or bin-links=false) leaves it: the package
+// is under node_modules, with no node_modules/.bin/veritas link.
+function installVeritasWithoutBinLink(dir, packageDir = repoRootDir) {
+  mkdirSync(join(dir, 'node_modules/@kontourai'), { recursive: true });
+  symlinkSync(packageDir, join(dir, 'node_modules/@kontourai/veritas'), 'dir');
+}
+
+// An executable named veritas that records that it ran, standing in for another veritas on PATH,
+// such as a global install of the unrelated unscoped package.
+function veritasOnPath(t) {
+  const binDir = tempDir(t, 'veritas-other-on-path-');
+  const marker = join(binDir, 'other-ran');
+  writeFileSync(join(binDir, 'veritas'), `#!/bin/sh\necho ran > ${JSON.stringify(marker)}\n`);
+  chmodSync(join(binDir, 'veritas'), 0o755);
+  return { binDir, marker };
+}
+
+const bashPayload = (cwd) => JSON.stringify({ cwd, tool_name: 'Bash', tool_input: { command: 'ls' } });
 
 // A parent directory, outside any repository, with a planted Veritas install, and a git repository
 // inside it with a package.json and no install of its own.
@@ -126,7 +146,7 @@ function plantedParent(t, { withPackageJson = true, repoName = 'repo' } = {}) {
   mkdirSync(join(parent, 'node_modules/@kontourai'), { recursive: true });
   mkdirSync(join(parent, 'node_modules/.bin'), { recursive: true });
   symlinkSync(planted, join(parent, 'node_modules/@kontourai/veritas'), 'dir');
-  symlinkSync('../@kontourai/veritas/bin/veritas.js', join(parent, 'node_modules/.bin/veritas'));
+  symlinkSync('../@kontourai/veritas/bin/veritas.mjs', join(parent, 'node_modules/.bin/veritas'));
   const repo = join(parent, repoName);
   mkdirSync(join(repo, 'sub'), { recursive: true });
   spawnSync('git', ['init', '-q'], { cwd: repo, env: cleanGitEnv() });
@@ -185,7 +205,7 @@ test('a GIT_DIR and GIT_WORK_TREE naming another repository do not let the walk 
   assertRefusedWithoutPlanted(result, marker);
 });
 
-test('outside a git repository the walk passes no prefix, so a planted parent never runs', (t) => {
+test('outside a git repository the walk runs no install it found, so a planted parent never runs', (t) => {
   const { parent, marker, cache } = plantedParent(t);
   const dir = join(parent, 'not-a-repo');
   mkdirSync(dir);
@@ -322,20 +342,60 @@ test('the git root is matched by identity when git spells it differently', (t) =
   assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
 });
 
-// npx runs the bin it finds on a PATH built from the working directory, so with installs in both
-// packages/a and the root the nearest bin runs whichever --prefix the walk passes. The prefix gates
-// only npx's "is it installed" check. This pins the walk's own choice by recording npx's arguments.
-test('the walk passes the nearest install as the prefix', (t) => {
-  const { rootDir, packageDir } = pnpmWorkspace(t, { installVeritas: true });
-  installLocalVeritasBin(packageDir);
-  const fakeBin = tempDir(t, 'veritas-fake-npx-');
-  const argsFile = join(fakeBin, 'args');
-  writeFileSync(join(fakeBin, 'npx'), `#!/bin/sh\nprintf '%s\\n' "$@" > ${JSON.stringify(argsFile)}\n`);
-  chmodSync(join(fakeBin, 'npx'), 0o755);
+// #286: npx --prefix decides only whether npx treats the package as installed, and the binary npx
+// runs is the first veritas on a PATH built from the working directory's ancestors. The walk runs
+// the install it found by path, so a missing .bin link cannot hand the hook to another veritas.
+test('an install without a .bin link runs itself, not a .bin/veritas in a parent outside the repository', (t) => {
+  const { repo, marker } = plantedParent(t);
+  installVeritasWithoutBinLink(repo);
+  for (const cwd of [repo, join(repo, 'sub')]) {
+    const result = runHook(CODEX_PRE_TOOL_USE, { cwd, input: bashPayload(cwd) });
+    assert.equal(existsSync(marker), false, `${cwd}: the parent's .bin/veritas ran instead of the repository's install:\n${result.stderr}`);
+    assert.equal(result.status, 0, `${cwd}: ${result.stderr}`);
+    JSON.parse(result.stdout);
+  }
+});
 
-  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: packageDir, input: editPayload(packageDir), env: { PATH: `${fakeBin}:${process.env.PATH}` } });
+test('an install without a .bin link runs itself, not another veritas on PATH', (t) => {
+  const repo = tempDir(t, 'veritas-no-bin-link-');
+  spawnSync('git', ['init', '-q'], { cwd: repo, env: cleanGitEnv() });
+  disableGitAutoMaintenance(repo);
+  writeFileSync(join(repo, 'package.json'), `${JSON.stringify({ name: 'repo', version: '1.0.0' })}\n`);
+  mkdirSync(join(repo, 'sub'));
+  installVeritasWithoutBinLink(repo);
+  const other = veritasOnPath(t);
+  for (const cwd of [repo, join(repo, 'sub')]) {
+    const result = runHook(CODEX_PRE_TOOL_USE, { cwd, input: bashPayload(cwd), env: { PATH: `${other.binDir}:${process.env.PATH}` } });
+    assert.equal(existsSync(other.marker), false, `${cwd}: another veritas on PATH ran instead of the repository's install:\n${result.stderr}`);
+    assert.equal(result.status, 0, `${cwd}: ${result.stderr}`);
+    JSON.parse(result.stdout);
+  }
+});
+
+// The file the walk checks is the file it runs: a Veritas package directory without the entry point
+// does not count as an install, and the walk goes on to the next one.
+test('a Veritas package without its entry point does not count as an install', (t) => {
+  const { rootDir, packageDir } = pnpmWorkspace(t, { installVeritas: true });
+  mkdirSync(join(packageDir, 'node_modules/@kontourai/veritas'), { recursive: true });
+  writeFileSync(join(packageDir, 'node_modules/@kontourai/veritas/package.json'), `${JSON.stringify({ name: '@kontourai/veritas', version: '0.0.0-no-entry' })}\n`);
+  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: packageDir, input: editPayload(packageDir), env: { VERITAS_HOOK_SKIP: '1' } });
   assert.equal(result.status, 0, result.stderr);
-  const args = readFileSync(argsFile, 'utf8').trim().split('\n');
-  assert.deepEqual(args.slice(0, 4), ['--no', '--prefix', realpathSync(packageDir), '@kontourai/veritas']);
-  assert.notEqual(realpathSync(packageDir), realpathSync(rootDir));
+  JSON.parse(result.stdout);
+  assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
+});
+
+// With installs in both packages/a and the root, the nearest one runs.
+test('the walk runs the nearest install', (t) => {
+  const { rootDir, packageDir } = pnpmWorkspace(t, { installVeritas: true });
+  const marker = join(tempDir(t, 'veritas-nearest-marker-'), 'nearest-ran');
+  installVeritasWithoutBinLink(packageDir, plantedVeritas(tempDir(t, 'veritas-nearest-install-'), marker));
+
+  const fromRoot = runHook(CODEX_PRE_TOOL_USE, { cwd: rootDir, input: bashPayload(rootDir) });
+  assert.equal(fromRoot.status, 0, fromRoot.stderr);
+  JSON.parse(fromRoot.stdout);
+  assert.equal(existsSync(marker), false, 'from the root, the root install runs');
+
+  const fromPackage = runHook(CODEX_PRE_TOOL_USE, { cwd: packageDir, input: bashPayload(packageDir) });
+  assert.equal(fromPackage.status, 0, fromPackage.stderr);
+  assert.equal(existsSync(marker), true, `from packages/a, its own install runs:\n${fromPackage.stderr}`);
 });
