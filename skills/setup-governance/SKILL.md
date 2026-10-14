@@ -43,20 +43,24 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    external path does not modify the consumer manifest or lockfile; do not add an npm dependency
    as a fallback.
 
-3. If the external CLI is absent but the maintainer approves the exact Veritas release, acquire
-   and invoke that release ephemerally. The approved version below is intentionally exact; do not
-   replace it with `latest`, a range, or an unreviewed version:
+3. If the external CLI is absent and no dependency is approved, but the maintainer approves a
+   one-shot fetch from the registry, run the current release ephemerally. Use the `@latest` tag,
+   not a literal version: a version copied into a README or instruction file goes stale, and an
+   old release cannot read the attestations a newer one writes.
 
    ```bash
-   npm exec --yes --package=@kontourai/veritas@1.8.0 -- veritas --version
-   npm exec --yes --package=@kontourai/veritas@1.8.0 -- veritas init --explore --output .veritas/init-plans/first-pass.json
+   npm exec --yes --package=@kontourai/veritas@latest -- veritas --version
+   npm exec --yes --package=@kontourai/veritas@latest -- veritas init --explore --output .veritas/init-plans/first-pass.json
    ```
 
-   Record the exact npm package selector and matching version output with the setup evidence. This
-   is a reproducible, pinned engine invocation: npm uses its ephemeral execution cache and
-   does not create or modify the consumer's `package.json` or lockfile. Use the same exact
-   invocation for apply, hooks, attestation, and readiness; do not mix it with an unpinned global
-   CLI.
+   Record the version that `--version` prints with the setup evidence. npm uses its ephemeral
+   execution cache and does not create or modify the consumer's `package.json` or lockfile. Use
+   the same `npm exec --yes --package=@kontourai/veritas@latest -- veritas` prefix for apply,
+   hooks, attestation, and readiness, and re-run `--version` first; if it prints a different
+   version than the one recorded, stop and restart from the plan step. Do not mix it with an
+   unrelated global CLI. Never write this prefix, or any literal version, into a README,
+   `AGENTS.md`, or other instruction file: the generated Veritas files state the unversioned
+   command, and CI is where a repository pins the engine it trusts.
 
 4. If it is absent and the maintainer approves the dependency change, install it:
 
@@ -67,9 +71,9 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    For repositories that do not use npm and have not approved an external engine, stop and ask
    which package/runtime installation convention to use. Do not invent one.
 
-5. Derive a plan without applying it. Use `"$veritas_engine_path"` or the approved pinned
-   `npm exec --yes --package=...` invocation in place of `npm exec -- veritas` when following an
-   external engine path:
+5. Derive a plan without applying it. Use `"$veritas_engine_path"` or the step 3
+   `npm exec --yes --package=@kontourai/veritas@latest -- veritas` prefix in place of
+   `npm exec -- veritas` when following an external engine path:
 
    ```bash
    npm exec -- veritas init --explore --output .veritas/init-plans/first-pass.json

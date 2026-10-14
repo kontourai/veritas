@@ -55,21 +55,24 @@ npm exec -- veritas readiness --working-tree
 ### Non-npm repositories
 
 Do not add a consumer `package.json` merely to run Veritas. After explicit maintainer approval of
-the exact engine release, use the pinned ephemeral invocation for every setup command:
+a one-shot registry fetch, use the ephemeral invocation for every setup command:
 
 ```bash
-npm exec --yes --package=@kontourai/veritas@1.8.0 -- veritas --version
-npm exec --yes --package=@kontourai/veritas@1.8.0 -- veritas init --explore --output .veritas/init-plans/first-pass.json
+npm exec --yes --package=@kontourai/veritas@latest -- veritas --version
+npm exec --yes --package=@kontourai/veritas@latest -- veritas init --explore --output .veritas/init-plans/first-pass.json
 # Review and approve the generated plan.
-npm exec --yes --package=@kontourai/veritas@1.8.0 -- veritas init --apply --plan .veritas/init-plans/first-pass.json
-npm exec --yes --package=@kontourai/veritas@1.8.0 -- veritas readiness --working-tree
+npm exec --yes --package=@kontourai/veritas@latest -- veritas init --apply --plan .veritas/init-plans/first-pass.json
+npm exec --yes --package=@kontourai/veritas@latest -- veritas readiness --working-tree
 ```
 
 This invocation uses npm's execution cache without writing the consumer manifest or lockfile.
-The exact `1.8.0` version is the approved engine pin in this example; never substitute `latest`,
-a range, or a different version without renewed maintainer approval. For a repository without a
-package manifest, init configures a Node runtime smoke check so the first readiness run is
-runnable. Replace that smoke check with the repository's real evidenceCheck before promoting it.
+It tracks the current release on purpose: a literal version in a copied command goes stale, and
+an old release cannot read newer attestations. Record the version that `--version` prints with
+the setup evidence, and do not copy the `@latest` command or any literal version into a README or
+instruction file. A repository that installs Veritas as a development dependency uses
+`npm exec -- veritas ...` instead, which runs the version its lockfile resolves. For a repository
+without a package manifest, init configures a Node runtime smoke check so the first readiness run
+is runnable. Replace that smoke check with the repository's real evidenceCheck before promoting it.
 
 ## Gate canonical readiness
 

@@ -5,6 +5,7 @@ import {
   cpSync,
   existsSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   statSync,
@@ -2447,12 +2448,87 @@ test('setup-governance documents the manifest-preserving external engine path', 
   const guide = readFileSync(join(repoRootDir, 'docs/guides/governance-kit.md'), 'utf8');
   assert.match(skill, /maintainer-approved external engine/);
   assert.match(skill, /consumer manifest or lockfile/);
-  assert.match(skill, /pinned engine invocation/);
+  assert.match(skill, /immutable release/);
   assert.match(skill, /veritas_engine_path="\$\(command -v veritas\)"/);
-  assert.match(skill, /npm exec --yes --package=@kontourai\/veritas@1\.8\.0 -- veritas/);
+  assert.match(skill, /npm exec --yes --package=@kontourai\/veritas@latest -- veritas --version/);
   assert.match(guide, /Non-npm repositories/);
-  assert.match(guide, /npm exec --yes --package=@kontourai\/veritas@1\.8\.0 -- veritas readiness --working-tree/);
+  assert.match(guide, /npm exec --yes --package=@kontourai\/veritas@latest -- veritas readiness --working-tree/);
   assert.match(guide, /without writing the consumer manifest or lockfile/);
+});
+
+// Instruction text an adopter copies into a repo. Adopters carried a literal
+// `@kontourai/veritas@<version>` from the setup skill into their README and AGENTS.md, and
+// those copies went stale. This list is explicit; the coverage test below makes a new
+// guide, skill, or flow fail until it is added here.
+const ADOPTER_INSTRUCTION_FILES = [
+  'README.md',
+  'kit.json',
+  'provisions/codex-hooks.json',
+  'flows/readiness-check.flow.json',
+  'flows/standards-authoring.flow.json',
+  'skills/setup-governance/SKILL.md',
+  'skills/consult-standards/SKILL.md',
+  'skills/standards-authoring/SKILL.md',
+  'docs/guides/agent-runtime-integrations.md',
+  'docs/guides/attestation.md',
+  'docs/guides/brownfield-adoption.md',
+  'docs/guides/deep-integration-template.md',
+  'docs/guides/fallow-integration.md',
+  'docs/guides/getting-started.md',
+  'docs/guides/governance-kit.md',
+  'docs/guides/publish-and-release.md',
+  'docs/guides/recommendations.md',
+  'docs/guides/repo-conformance.md',
+  'docs/guides/start-your-next-project.md',
+  'docs/guides/tune-for-your-team.md',
+  'docs/guides/walkthrough.md',
+  'docs/reference/cli.md',
+  'src/governance.mjs',
+  'src/bootstrap/readme.mjs',
+];
+const LITERAL_VERITAS_PIN = /@kontourai\/veritas@[\^~v=]?\d/;
+
+test('adopter-facing instruction files do not pin a literal Veritas version', () => {
+  const offenders = [];
+  for (const file of ADOPTER_INSTRUCTION_FILES) {
+    const lines = readFileSync(join(repoRootDir, file), 'utf8').split('\n');
+    lines.forEach((line, index) => {
+      if (LITERAL_VERITAS_PIN.test(line)) offenders.push(`${file}:${index + 1}: ${line.trim()}`);
+    });
+  }
+  assert.deepEqual(offenders, []);
+});
+
+test('literal Veritas pin matcher catches versions, ranges, and v-prefixed tags but not @latest', () => {
+  for (const pinned of [
+    'npm exec --yes --package=@kontourai/veritas@1.8.0 -- veritas',
+    'npx @kontourai/veritas@10.0.1 readiness',
+    'npx @kontourai/veritas@^1.5 readiness',
+    'npx @kontourai/veritas@v1.5.2 readiness',
+  ]) {
+    assert.match(pinned, LITERAL_VERITAS_PIN, pinned);
+  }
+  for (const unpinned of [
+    'npm exec --yes --package=@kontourai/veritas@latest -- veritas',
+    'npx @kontourai/veritas readiness',
+    'npm exec -- veritas readiness',
+    'npm install -D @kontourai/veritas',
+  ]) {
+    assert.doesNotMatch(unpinned, LITERAL_VERITAS_PIN, unpinned);
+  }
+});
+
+test('every guide, skill, and flow is in the scanned Veritas pin list', () => {
+  const present = [
+    ...readdirSync(join(repoRootDir, 'docs/guides')).map((name) => `docs/guides/${name}`),
+    ...readdirSync(join(repoRootDir, 'skills')).map((name) => `skills/${name}/SKILL.md`),
+    ...readdirSync(join(repoRootDir, 'flows')).map((name) => `flows/${name}`),
+  ];
+  const scanned = new Set(ADOPTER_INSTRUCTION_FILES);
+  assert.deepEqual(present.filter((file) => !scanned.has(file)), []);
+  for (const file of ADOPTER_INSTRUCTION_FILES) {
+    assert.equal(existsSync(join(repoRootDir, file)), true, `${file} is listed but missing`);
+  }
 });
 
 test('init guided rejects instruction targets outside the target root before reading', () => {
