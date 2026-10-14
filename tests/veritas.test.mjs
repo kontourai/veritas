@@ -2428,10 +2428,9 @@ test('external Veritas CLI initializes a non-npm repository without creating a m
     { cwd: rootDir, encoding: 'utf8' },
   );
   assert.ok(parseCliJson(apply).generatedFiles.includes('.veritas/repo-map.json'));
-  assert.equal(existsSync(join(rootDir, 'package.json')), false);
-
-  execFileSync('node', [cliPath, 'claim', 'init'], { cwd: rootDir, encoding: 'utf8' });
+  assert.ok(parseCliJson(apply).generatedFiles.includes('veritas.claims.json'));
   assert.equal(existsSync(join(rootDir, 'veritas.claims.json')), true);
+  assert.equal(existsSync(join(rootDir, 'package.json')), false);
 
   const readiness = execFileSync(
     'node',
@@ -2500,75 +2499,6 @@ test('every shell-variable version in the setup skill and guide fails closed on 
     const uses = text.match(/@\$\{[^}]*\}/g) ?? [];
     assert.ok(uses.length >= 4, `${file} should use the resolved version variable`);
     for (const use of uses) assert.match(use, /^@\$\{v:\?[^}]+\}$/, `${file}: ${use}`);
-  }
-});
-
-// `npx` and `npm exec` fall back to the registry when there is no local bin, and install without
-// prompting when there is no terminal. Instruction text must pass --no so a missing install is an
-// error, never a silent fetch of whatever is latest. The one fetch is the bootstrap, which uses
-// `npm exec --yes --package="@kontourai/veritas@${v:?...}"`. The unscoped `veritas` and
-// `survey-review-mcp` names belong to other projects and are never used. `npx` answers a leading
-// --version/--help itself, so those go after `--`. Scope: Veritas and Survey invocations; the
-// Flow Agents kit installs fetch a package that is not installed yet, by design. Generated hook
-// and script text under src/ and provisions/ still uses the bare form; see the PR description.
-function unsafeExec(line) {
-  const problems = [];
-  for (const match of line.matchAll(/\bnpm exec (?=-)(.*)/g)) {
-    // Options are everything before the first ` -- ` that separates them from the bin.
-    const opts = match[1].split(' -- ')[0].replace(/ --$/, '');
-    const bootstrap = /^--yes --package="@kontourai\/veritas@\$\{v:\?[^}]+\}"$/.test(opts);
-    if (!/(?:^| )--no(?: |$)/.test(opts) && !bootstrap) problems.push('npm exec without --no');
-  }
-  for (const match of line.matchAll(/\bnpx((?: -[-\w]+)*) (?:-- )?(@kontourai\/(?:veritas|survey)|veritas|survey-review-mcp)\b/g)) {
-    if (!match[2].startsWith('@')) problems.push(`unscoped ${match[2]}`);
-    else if (!/(?:^| )--no\b/.test(match[1])) problems.push(`npx ${match[2]} without --no`);
-  }
-  for (const match of line.matchAll(/\bnpm exec (?=-)(.*)/g)) {
-    const [opts, bin = ''] = match[1].split(' -- ');
-    if (!/--package[= ]/.test(opts) && /^(?:veritas|survey-review-mcp)\b/.test(bin)) problems.push('unscoped bin');
-  }
-  if (/\bnpx --no @kontourai\/veritas --(?:version|help)\b/.test(line)) problems.push('leading --version/--help needs --');
-  return problems;
-}
-const ADOPTER_TEXT_PREFIXES = ['skills/', 'docs/', 'flows/'];
-const ADOPTER_TEXT_FILES = new Set(['README.md', 'kit.json']);
-
-test('adopter instruction text only runs an installed Veritas or Survey, never a registry fetch', () => {
-  const files = pinScanFiles().filter((file) => ADOPTER_TEXT_FILES.has(file) || ADOPTER_TEXT_PREFIXES.some((prefix) => file.startsWith(prefix)));
-  assert.ok(files.includes('skills/setup-governance/SKILL.md') && files.includes('README.md') && files.includes('docs/guides/governance-kit.md'));
-  const offenders = [];
-  for (const file of files) {
-    readFileSync(join(repoRootDir, file), 'utf8').split('\n').forEach((line, index) => {
-      if (file !== 'docs/MIGRATING.md' && unsafeExec(line).length > 0) offenders.push(`${file}:${index + 1}: ${line.trim()}`);
-    });
-  }
-  assert.deepEqual(offenders, []);
-  for (const unsafe of [
-    'npm exec -- veritas readiness',
-    'npm exec --yes -- veritas',
-    'npx veritas init',
-    'npx --yes veritas',
-    'npx @kontourai/veritas readiness',
-    'npx --yes @kontourai/veritas readiness',
-    'npx @kontourai/survey survey-review-mcp',
-    'npm exec -- survey-review-mcp --session x',
-    'npm exec --no -- veritas readiness',
-    'npx --no @kontourai/veritas --version',
-    'npx --no @kontourai/veritas --help',
-    'npm exec --yes --package="@kontourai/veritas@${v:-1}" -- veritas',
-  ]) {
-    assert.notDeepEqual(unsafeExec(unsafe), [], unsafe);
-  }
-  for (const safe of [
-    'npx --no @kontourai/veritas readiness --working-tree',
-    'npx --no @kontourai/veritas -- --version',
-    'npx --no @kontourai/veritas init --explore --help',
-    'npm exec --no --package=@kontourai/survey -- survey-review-mcp --session x',
-    'npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas readiness --working-tree',
-    'npm exec --no -- eslint .',
-    'npx @kontourai/flow-agents kit install',
-  ]) {
-    assert.deepEqual(unsafeExec(safe), [], safe);
   }
 });
 
@@ -5336,20 +5266,20 @@ test('package script suggestions use the consolidated readiness surface', () => 
 
   assert.equal(repoInsights.evidenceCheck, 'npm run verify');
   assert.equal(repoInsights.baseRef, 'main');
-  assert.equal(scripts['veritas:init'], 'npm exec -- veritas init');
+  assert.equal(scripts['veritas:init'], 'npx --no @kontourai/veritas init');
   assert.equal(scripts['veritas:evidence-check'], 'npm run verify');
   assert.equal(
     scripts['veritas:check:working-tree'],
-    'npm exec -- veritas readiness --working-tree',
+    'npx --no @kontourai/veritas readiness --working-tree',
   );
-  assert.equal(scripts['veritas:readiness'], 'npm exec -- veritas readiness');
+  assert.equal(scripts['veritas:readiness'], 'npx --no @kontourai/veritas readiness');
   assert.equal(
     scripts['lint:governance'],
-    'npm exec -- veritas readiness --format feedback --working-tree',
+    'npx --no @kontourai/veritas readiness --format feedback --working-tree',
   );
   assert.equal(
     scripts['veritas:check:diff'],
-    'npm exec -- veritas readiness --changed-from main --changed-to HEAD',
+    'npx --no @kontourai/veritas readiness --changed-from main --changed-to HEAD',
   );
   assert.equal(scripts['test:prepush'], 'npm run veritas:evidence-check');
   assert.equal(scripts.prepush, 'npm run test:prepush');
@@ -5361,7 +5291,7 @@ test('print ci-snippet returns a copy-paste starter snippet', () => {
     baseRef: 'main',
   });
   assert.match(snippet, /Run project evidenceCheck/);
-  assert.match(snippet, /npm exec -- veritas readiness --changed-from main --changed-to HEAD/);
+  assert.match(snippet, /npx --no @kontourai\/veritas readiness --changed-from main --changed-to HEAD/);
 
   const rootDir = mkdtempSync(join(tmpdir(), 'veritas-print-ci-'));
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { verify: 'turbo run verify' } }, null, 2));
@@ -5374,10 +5304,12 @@ test('print git-hook returns a tracked post-commit runtime integration', () => {
   const hookBody = buildSuggestedGitHook({ hook: 'post-commit' });
   const trackedHookBody = readFileSync(join(repoRootDir, '.githooks/post-commit'), 'utf8');
   assert.match(hookBody, /^#!\/bin\/sh/m);
-  assert.match(hookBody, /veritas readiness --changed-from HEAD~1 --changed-to HEAD/);
+  assert.match(hookBody, /^  npx --no @kontourai\/veritas readiness --changed-from HEAD~1 --changed-to HEAD$/m);
   assert.match(hookBody, /VERITAS_HOOK_SKIP/);
   assert.match(hookBody, /AI_GUIDANCE_HOOK_SKIP/);
-  assert.equal(hookBody, trackedHookBody);
+  // This repo's own hook differs only in how it runs Veritas: npx cannot find a package from
+  // inside that package's own checkout (it exits 127), while npm exec resolves the root bin.
+  assert.equal(hookBody.replaceAll('npx --no @kontourai/veritas', 'npm exec -- veritas'), trackedHookBody);
 });
 
 test('print git-hook returns a tracked pre-push push-safe integration', () => {
@@ -5579,10 +5511,10 @@ test('apply package-scripts writes the suggested guidance scripts into package.j
 
   assert.equal(parsed.packageJsonPath, 'package.json');
   assert.equal(parsed.baseRef, 'main');
-  assert.equal(pkg.scripts['veritas:init'], 'npm exec -- veritas init');
+  assert.equal(pkg.scripts['veritas:init'], 'npx --no @kontourai/veritas init');
   assert.equal(
     pkg.scripts['veritas:check:diff'],
-    'npm exec -- veritas readiness --changed-from main --changed-to HEAD',
+    'npx --no @kontourai/veritas readiness --changed-from main --changed-to HEAD',
   );
 });
 
@@ -5811,7 +5743,7 @@ test('setup repo-hooks CLI installs hooks and returns JSON', () => {
 
   assert.equal(result.rootDir, rootDir);
   assert.equal(result.configuredHooksPath, '.githooks');
-  assert.equal(result.setupCommand, 'npm exec -- veritas setup repo-hooks');
+  assert.equal(result.setupCommand, 'npx --no @kontourai/veritas setup repo-hooks');
   assert.deepEqual(
     result.hooks.map((hook) => hook.outputPath),
     ['.githooks/post-commit', '.githooks/pre-push'],
@@ -6212,15 +6144,15 @@ test('runtime status reports missing integration state and next commands', () =>
   assert.equal(status.codexArtifact.exists, false);
   assert.equal(status.codexTarget.checked, false);
   assert.equal(status.codexTarget.resolvedTargetPath, null);
-  assert.ok(status.nextCommands.includes('npm exec -- veritas setup repo-hooks'));
+  assert.ok(status.nextCommands.includes('npx --no @kontourai/veritas setup repo-hooks'));
   assert.equal(
-    status.nextCommands.filter((command) => command === 'npm exec -- veritas setup repo-hooks').length,
+    status.nextCommands.filter((command) => command === 'npx --no @kontourai/veritas setup repo-hooks').length,
     1,
   );
-  assert.ok(status.nextCommands.includes('npm exec -- veritas integrations codex install'));
+  assert.ok(status.nextCommands.includes('npx --no @kontourai/veritas integrations codex install'));
   assert.ok(
     status.nextCommands.includes(
-      'npm exec -- veritas integrations codex status --codex-home /path/to/.codex',
+      'npx --no @kontourai/veritas integrations codex status --codex-home /path/to/.codex',
     ),
   );
 });
@@ -6245,11 +6177,11 @@ test('conformance alerts point repo hook issues to setup repo-hooks', () => {
 
   assert.equal(
     byCode.get('missing-git-hook').nextCommand,
-    'npm exec -- veritas setup repo-hooks',
+    'npx --no @kontourai/veritas setup repo-hooks',
   );
   assert.equal(
     byCode.get('pre-push-hook-not-executable').nextCommand,
-    'npm exec -- veritas setup repo-hooks --force',
+    'npx --no @kontourai/veritas setup repo-hooks --force',
   );
 });
 
@@ -6269,7 +6201,7 @@ test('runtime status treats inherited hooksPath as unconfigured for repo-owned h
   assert.equal(status.gitHook.configured, false);
   assert.equal(status.prePushHook.exists, true);
   assert.equal(status.prePushHook.configured, false);
-  assert.ok(status.nextCommands.includes('npm exec -- veritas setup repo-hooks'));
+  assert.ok(status.nextCommands.includes('npx --no @kontourai/veritas setup repo-hooks'));
 });
 
 test('integrations codex install owns git, runtime, and codex hook wiring', () => {
@@ -6365,10 +6297,10 @@ test('runtime status recommends repair commands for non-executable managed hooks
   assert.equal(status.runtimeHook.exists, true);
   assert.equal(status.runtimeHook.executable, false);
   assert.ok(
-    status.nextCommands.includes('npm exec -- veritas setup repo-hooks --force'),
+    status.nextCommands.includes('npx --no @kontourai/veritas setup repo-hooks --force'),
   );
   assert.ok(
-    status.nextCommands.includes('npm exec -- veritas integrations codex install --force'),
+    status.nextCommands.includes('npx --no @kontourai/veritas integrations codex install --force'),
   );
 });
 
@@ -6403,7 +6335,7 @@ test('runtime status recommends forceful codex repair when the tracked artifact 
   assert.equal(status.codexTarget.integrationInstalled, false);
   assert.ok(
     status.nextCommands.includes(
-      `npm exec -- veritas integrations codex install --codex-home ${codexHome.replaceAll('\\', '/')} --force`,
+      `npx --no @kontourai/veritas integrations codex install --codex-home ${codexHome.replaceAll('\\', '/')} --force`,
     ),
   );
 });

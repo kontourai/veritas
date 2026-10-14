@@ -28,10 +28,12 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
 
    Always pass `--no`. Without it, `npx` and `npm exec` fall back to the registry when there is no
    local bin, and install without prompting when there is no terminal, so a missing install would
-   silently run whatever is latest instead of reporting that Veritas is not installed. Put a
-   leading `--version` or `--help` after `--`, as above; otherwise npx answers it with npm's own
-   version. Flags after a subcommand (`readiness --working-tree`) need no `--`. Do not use the
-   unscoped `veritas` package name: it is a different, third-party project.
+   silently run whatever is latest instead of reporting that Veritas is not installed. In a fresh
+   clone it fails with `npx canceled due to missing packages` naming the registry's latest version,
+   not the lockfile's; run `npm install` first. Put a leading `--version`, `--help`, `-v` or `-h`
+   after `--`, as above; otherwise npx answers it with npm's own version. Flags after a subcommand
+   (`readiness --working-tree`) need no `--`. Do not use the unscoped `veritas` package name: it is
+   a different, third-party project.
 
 2. If npm is not the repository's toolchain, or the maintainer explicitly approves an external
    engine instead of a consumer dependency, use the maintainer-approved external engine path.

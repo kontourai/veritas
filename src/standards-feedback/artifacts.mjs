@@ -5,10 +5,6 @@ import { shellQuote } from '../shell.mjs';
 
 export function buildStandardsFeedbackRecordCommand(draftPath, draft) {
   const args = [
-    'npm',
-    'exec',
-    '--',
-    'veritas',
     'feedback',
     'record',
     '--draft',
@@ -37,7 +33,8 @@ export function buildStandardsFeedbackRecordCommand(draftPath, draft) {
     args.push('--note', note);
   }
 
-  return args.map(shellQuote).join(' ');
+  // The prefix stays outside shellQuote so it reads exactly as the documented spelling.
+  return `npx --no @kontourai/veritas ${args.map(shellQuote).join(' ')}`;
 }
 
 export function validateStandardsFeedbackDraftContext({ draftPath, draftRecord, rootDir, authoritySettings }) {

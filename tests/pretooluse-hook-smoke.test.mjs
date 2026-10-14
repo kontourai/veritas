@@ -170,7 +170,7 @@ test('generated PreToolUse hook body invokes a verb the bin actually routes', ()
   const rootDir = bootstrapGovernedRepo('veritas-pretool-smoke-route-');
   installClaudeCodeIntegration(rootDir);
   const hookBody = readFileSync(join(rootDir, '.veritas/hooks/pre-tool-use.sh'), 'utf8');
-  const invocation = hookBody.match(/^exec npm exec -- veritas (.+) "\$@"$/m);
+  const invocation = hookBody.match(/^exec npx --no @kontourai\/veritas (.+) "\$@"$/m);
   assert.ok(invocation, `hook body must exec a veritas verb:\n${hookBody}`);
 
   // Run the parsed verb through the real bin and assert it is not the

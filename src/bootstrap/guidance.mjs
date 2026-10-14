@@ -152,15 +152,15 @@ export function buildSuggestedPackageScripts({
   baseRef = '<base-ref>',
 }) {
   return {
-    'veritas:init': 'npm exec -- veritas init',
-    'veritas:status:codex': 'npm exec -- veritas integrations codex status',
-    'veritas:check': 'npm exec -- veritas readiness --run-id local-smoke package.json',
-    'veritas:check:working-tree': 'npm exec -- veritas readiness --working-tree',
-    'veritas:check:diff': `npm exec -- veritas readiness --changed-from ${baseRef} --changed-to HEAD`,
-    'veritas:coverage': 'npm exec -- veritas readiness --check coverage --working-tree',
+    'veritas:init': 'npx --no @kontourai/veritas init',
+    'veritas:status:codex': 'npx --no @kontourai/veritas integrations codex status',
+    'veritas:check': 'npx --no @kontourai/veritas readiness --run-id local-smoke package.json',
+    'veritas:check:working-tree': 'npx --no @kontourai/veritas readiness --working-tree',
+    'veritas:check:diff': `npx --no @kontourai/veritas readiness --changed-from ${baseRef} --changed-to HEAD`,
+    'veritas:coverage': 'npx --no @kontourai/veritas readiness --check coverage --working-tree',
     'veritas:evidence-check': evidenceCheck,
-    'lint:governance': 'npm exec -- veritas readiness --format feedback --working-tree',
-    'veritas:readiness': 'npm exec -- veritas readiness',
+    'lint:governance': 'npx --no @kontourai/veritas readiness --format feedback --working-tree',
+    'veritas:readiness': 'npx --no @kontourai/veritas readiness',
     'test:prepush': 'npm run veritas:evidence-check',
     'prepush': 'npm run test:prepush',
   };
@@ -175,6 +175,6 @@ export function buildSuggestedCiSnippet({
   run: ${evidenceCheck}
 
 - name: Generate Veritas readiness report
-  run: npm exec -- veritas readiness --changed-from ${baseRef} --changed-to HEAD
+  run: npx --no @kontourai/veritas readiness --changed-from ${baseRef} --changed-to HEAD
 `;
 }

@@ -7,8 +7,8 @@ import {
   summarizeGovernanceTrend,
 } from './governance-surface.mjs';
 
-const REPO_HOOKS_SETUP_COMMAND = 'npm exec -- veritas setup repo-hooks';
-const REPO_HOOKS_REPAIR_COMMAND = 'npm exec -- veritas setup repo-hooks --force';
+const REPO_HOOKS_SETUP_COMMAND = 'npx --no @kontourai/veritas setup repo-hooks';
+const REPO_HOOKS_REPAIR_COMMAND = 'npx --no @kontourai/veritas setup repo-hooks --force';
 
 export {
   classifyGovernanceSurface,

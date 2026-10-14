@@ -128,6 +128,6 @@ export function setupRepoHooks({ rootDir, force = false } = {}) {
     rootDir,
     hooks,
     configuredHooksPath: '.githooks',
-    setupCommand: 'npm exec -- veritas setup repo-hooks',
+    setupCommand: 'npx --no @kontourai/veritas setup repo-hooks',
   };
 }

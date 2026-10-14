@@ -22,6 +22,8 @@ import {
 import { GENERATED_OUTPUT_IGNORE_ENTRIES, mergeGeneratedOutputIgnores } from './generated-output-ignore.mjs';
 import { assertWithinDir, veritasArtifactPath, veritasArtifactRepoPath } from '../paths.mjs';
 import { publicRepoMapPolicyIdentity } from '../evidence/public-config.mjs';
+import { buildClaimStoreFromRepo } from '../claims/init.mjs';
+import { VERITAS_CLAIM_STORE_FILE, claimStoreExists, saveVeritasClaimStore } from '../claims/store.mjs';
 
 const INIT_RECOMMENDATION_SCHEMA_VERSION = 2;
 // Plans are committed and applied from other clones and CI, so the target root
@@ -372,7 +374,7 @@ export function buildInitRecommendation({
     generated_output_ignores: GENERATED_OUTPUT_IGNORE_ENTRIES,
     owner_questions: ownerQuestions(repoInsights, existingGovernance),
     owner_answers: ownerAnswers,
-    apply_command: 'npx @kontourai/veritas init --apply --plan <path-to-this-artifact>',
+    apply_command: 'npx --no @kontourai/veritas init --apply --plan <path-to-this-artifact>',
     reasoning_summary: [
       `Detected repo kind \`${repoInsights.repoKind}\`.`,
       `Selected evidenceCheck \`${resolvedEvidenceCheck}\`.`,
@@ -512,6 +514,14 @@ export function applyInitRecommendation({
     mkdirSync(dirname(absolutePath), { recursive: true });
     writeFileSync(absolutePath, payload, 'utf8');
   }
+  // Readiness requires a claim store. Plain `init` writes the starter store, so applying a plan
+  // writes the same derived store from the Repo Map it just applied. The plan does not carry it:
+  // the store is Surface state derived from the reviewed files, not a separate owner decision.
+  // An existing store is authored and is never replaced, even with --force.
+  const createdClaimStore = !claimStoreExists(rootDir);
+  if (createdClaimStore) {
+    saveVeritasClaimStore(buildClaimStoreFromRepo({ rootDir, repoName: recommendation.project_name }), rootDir);
+  }
   const ignoreResult = mergeGeneratedOutputIgnores(rootDir);
 
   return {
@@ -522,6 +532,7 @@ export function applyInitRecommendation({
     codeownersBlock: buildSuggestedCodeownersBlock(),
     generatedFiles: [
       ...Object.keys(recommendation.artifact_payloads),
+      ...(createdClaimStore ? [VERITAS_CLAIM_STORE_FILE] : []),
       `${veritasArtifactRepoPath('evidence')}/`,
       ...(ignoreResult.changed ? [ignoreResult.path] : []),
     ],

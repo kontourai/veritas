@@ -8,7 +8,7 @@ import { dirname, resolve } from 'node:path';
 import { assertWithinDir, relativeRepoPath } from '../paths.mjs';
 
 export function buildCodexSessionLogCaptureCommand() {
-  return 'VERITAS_SESSION_LOG_PATH="${VERITAS_SESSION_LOG_PATH:-${CODEX_TRANSCRIPT_PATH:-}}"; if [ -z "$VERITAS_SESSION_LOG_PATH" ] && [ -n "$CODEX_SESSION_ID" ]; then VERITAS_SESSION_LOG_PATH="$HOME/.codex/sessions/$CODEX_SESSION_ID.json"; fi; if [ -n "$VERITAS_SESSION_LOG_PATH" ]; then npm exec -- veritas feedback observe --session-log "$VERITAS_SESSION_LOG_PATH"; fi';
+  return 'VERITAS_SESSION_LOG_PATH="${VERITAS_SESSION_LOG_PATH:-${CODEX_TRANSCRIPT_PATH:-}}"; if [ -z "$VERITAS_SESSION_LOG_PATH" ] && [ -n "$CODEX_SESSION_ID" ]; then VERITAS_SESSION_LOG_PATH="$HOME/.codex/sessions/$CODEX_SESSION_ID.json"; fi; if [ -n "$VERITAS_SESSION_LOG_PATH" ]; then npx --no @kontourai/veritas feedback observe --session-log "$VERITAS_SESSION_LOG_PATH"; fi';
 }
 
 export function buildSuggestedCodexHookConfig() {
@@ -20,7 +20,7 @@ export function buildSuggestedCodexHookConfig() {
           hooks: [
             {
               type: 'command',
-              command: 'npm exec -- veritas hooks codex pre-tool-use',
+              command: 'npx --no @kontourai/veritas hooks codex pre-tool-use',
               statusMessage: 'Loading Veritas guidance for edited files',
               timeout: 30,
             },
