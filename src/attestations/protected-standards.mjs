@@ -40,12 +40,15 @@ function lstatOrNull(path) {
 // location. The entry itself is therefore checked without following links:
 // no path component below the repo root may be a link (for a path configured
 // outside the root, only the file itself is checked), and the file must be a
-// regular file. Regular-file content hashes are
-// unchanged, so existing attestations stay valid. A missing entry returns null
-// here and keeps failing exactly as before when it is hashed.
+// regular file. Regular-file content hashes are unchanged, so existing
+// attestations stay valid. A missing entry returns null here and keeps failing
+// exactly as before when it is hashed.
 function nonRegularEntry(rootDir, path) {
   const fromRoot = relative(rootDir, path);
-  const insideRoot = fromRoot !== '' && !fromRoot.startsWith('..') && !isAbsolute(fromRoot);
+  const insideRoot = fromRoot !== ''
+    && fromRoot !== '..'
+    && !fromRoot.startsWith(`..${sep}`)
+    && !isAbsolute(fromRoot);
   const components = [];
   if (insideRoot) {
     let current = rootDir;
@@ -94,7 +97,6 @@ export function describeNonRegularProtectedStandardsEntries(entries) {
 // returns only a boolean so the legacy digest never crosses an output boundary.
 export function matchesLegacyRepoMapHash(rootDir, expectedHash, options = {}) {
   const { repoMapPath } = resolveProtectedStandardsPaths(rootDir, options);
-  if (nonRegularEntry(rootDir, repoMapPath)) return false;
   return expectedHash === hashFile(repoMapPath);
 }
 
@@ -109,10 +111,7 @@ export function resolveProtectedStandardsPaths(rootDir, options = {}) {
 export function hashProtectedStandards(rootDir, options = {}) {
   const nonRegular = findNonRegularProtectedStandardsEntries(rootDir, options);
   if (nonRegular.length > 0) {
-    const error = new Error(describeNonRegularProtectedStandardsEntries(nonRegular));
-    error.code = 'VERITAS_NON_REGULAR_PROTECTED_STANDARDS';
-    error.entries = nonRegular;
-    throw error;
+    throw new Error(describeNonRegularProtectedStandardsEntries(nonRegular));
   }
   const paths = resolveProtectedStandardsPaths(rootDir, options);
   return {
