@@ -217,8 +217,13 @@ test('a reinstall replaces a SessionEnd capture any Veritas wrote and keeps a us
   assert.deepEqual(sessionEndCommands(JSON.parse(readFileSync(settingsPath, 'utf8'))), [userMention, current]);
 });
 
+// What v0.4.0's own buildSuggestedClaudeCodePostSessionHook (src/hooks.mjs at that tag) wrote, pinned
+// here independently of the record under test.
+const V0_4_0_POST_SESSION = 'if [ -n "$CLAUDE_TRANSCRIPT_PATH" ]; then npm exec -- veritas eval observe --tool claude-code --transcript "$CLAUDE_TRANSCRIPT_PATH"; fi';
+
 test('a reinstall removes every PostSession command an earlier release wrote', (t) => {
-  for (const [index, command] of PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS.entries()) {
+  const v1_11_2 = JSON.parse(readFileSync(V1_11_2_SETTINGS, 'utf8')).hooks.PostSession[0].hooks[0].command;
+  for (const [index, command] of [...new Set([V0_4_0_POST_SESSION, v1_11_2, ...PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS])].entries()) {
     const rootDir = bootstrapRepo(t, `veritas-session-end-history-${index}-`);
     mkdirSync(join(rootDir, '.claude'), { recursive: true });
     const settingsPath = join(rootDir, '.claude/settings.json');
