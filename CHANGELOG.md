@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.11.1](https://github.com/kontourai/veritas/compare/v1.11.0...v1.11.1) (2026-10-14)
+
+
+### Fixes
+
+* generate the safe npx --no spelling, close exec guard gaps, create the claim store on plan apply ([#283](https://github.com/kontourai/veritas/issues/283)) ([b4516d1](https://github.com/kontourai/veritas/commit/b4516d136dfa9299d55e364c505b4afe1fa55c64))
+* stop instructing adopters to pin a literal Veritas version ([#277](https://github.com/kontourai/veritas/issues/277)) ([2318aed](https://github.com/kontourai/veritas/commit/2318aed5a5c9b389c0dcabba2b03eca4e3629a6f))
+
+
+### Documentation
+
+* say what the README's bootstrap attestation checks ([#282](https://github.com/kontourai/veritas/issues/282)) ([2cf392d](https://github.com/kontourai/veritas/commit/2cf392d3327ad400b44eac0976754dad5e9b3503))
+* state what each attestation approval mode checks ([#280](https://github.com/kontourai/veritas/issues/280)) ([a06c4bd](https://github.com/kontourai/veritas/commit/a06c4bdf6f597a5adcbca80b6d6a281a7d773baa))
+
 ## [1.11.0](https://github.com/kontourai/veritas/compare/v1.10.1...v1.11.0) (2026-10-14)
 
 
