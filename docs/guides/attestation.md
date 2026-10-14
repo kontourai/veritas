@@ -115,6 +115,17 @@ npx --no @kontourai/veritas attest status
 
 Status reports the current attestation, age, expiry, and hash drift. It also reports `priorAttestationLink` for the active record: the `reference` it names as its predecessor, its `form` (`attestation-id`, `legacy-reference`, or `unresolved`), whether it `resolved` to a tracked record, and an `explanation`. A successor of an unmarked historical attestation names its predecessor by the opaque `legacy-attestation-v0:<hash>` reference rather than the id in `HEAD`, because the historical id embeds a digest of the raw Repo Map file. That is the expected migration link, not a broken chain; `resolved` is `true` only when the reference matches exactly one tracked record, and the readiness PASS line for `policy-changes-require-attestation` names the reference and whether it resolved.
 
+## Record Integrity
+
+Each attestation that `veritas attest` writes carries `recordIntegrity`: an `algorithm`, currently `veritas-attestation-record-v1`, and a `digest`, the SHA-256 of every other field of the record with keys sorted at every level. That covers the actor, `notes`, `metadata.approvalRef`, and the protected standards hashes. Status recomputes the digest and reports `recordIntegrity.status`:
+
+- `verified`: the record is as it was written.
+- `mismatch`: the record was edited after it was written. The status is `tampered`, drift names `recordIntegrity`, and readiness fails. Restore the file as it was committed. To correct a record, record a new attestation instead of editing the old one.
+- `unsupported-algorithm`: the record names an algorithm this Veritas version cannot verify. The status is `unverifiable`, and readiness fails until you run a version that supports it.
+- `unbound`: the record predates record integrity. It stays `current`, because every attestation recorded before this release has this form, and the readiness PASS line says that its fields are not bound. The next attestation you record is bound.
+
+The digest is not a signature. It lives in the record it covers, so it catches an edit that leaves the digest alone, but not one that recomputes it, and deleting `recordIntegrity` turns a bound record into an unbound one. The commit history of `.veritas/attestations/` remains the record of who changed a file.
+
 ## What Attestation Is Not
 
 An attestation is not:

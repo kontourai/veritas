@@ -252,8 +252,10 @@ function governanceArtifactStatus(governanceState, drift) {
   return 'verified';
 }
 
+const FAILED_ATTESTATION_STATES = new Set(['drifted', 'broken-head', 'tampered', 'unverifiable']);
+
 function governanceAttestationStatus(governanceState) {
-  if (governanceState.state === 'drifted' || governanceState.state === 'broken-head') return 'disputed';
+  if (FAILED_ATTESTATION_STATES.has(governanceState.state)) return 'disputed';
   if (governanceState.state === 'missing' || governanceState.state === 'pending') return 'disputed';
   if (governanceState.expired) return 'stale';
   return 'verified';
