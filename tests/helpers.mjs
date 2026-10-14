@@ -72,9 +72,19 @@ export function mkdirp(path) {
   mkdirSync(path, { recursive: true });
 }
 
+// `git commit` starts `git maintenance run --auto --detach`; from git 2.55 that repacks even a small
+// repository (geometric strategy). The detached process outlives the commit, keeps writing into
+// `.git` (objects/pack, info/refs), and races the removal of the fixture directory after the test.
+// A fixture has no use for it, so any repository a test commits in turns it off.
+export function disableGitAutoMaintenance(rootDir) {
+  execGitFixture(['config', 'maintenance.auto', 'false'], { cwd: rootDir, encoding: 'utf8' });
+  execGitFixture(['config', 'gc.auto', '0'], { cwd: rootDir, encoding: 'utf8' });
+}
+
 export function initCommittedRepo(t, prefix) {
   const rootDir = tempDir(t, prefix);
   execGitFixture(['init', '-b', 'main'], { cwd: rootDir, encoding: 'utf8' });
+  disableGitAutoMaintenance(rootDir);
   execGitFixture(['config', 'user.name', 'Veritas Tests'], {
     cwd: rootDir,
     encoding: 'utf8',

@@ -4225,6 +4225,7 @@ test('readiness check records run history and reuses fail-to-pass time to green'
   writeBootstrapStarterKit({ rootDir, projectName: 'Run History Demo', evidenceCheck: 'node -e process.exit(0)' });
   disableRequiredEvidenceChecks(rootDir);
   execFileSync('git', ['init'], { cwd: rootDir, stdio: 'ignore' });
+  execFileSync('git', ['config', 'maintenance.auto', 'false'], { cwd: rootDir }); // see disableGitAutoMaintenance in helpers.mjs
   execFileSync('git', ['config', 'user.email', 'veritas@example.com'], { cwd: rootDir });
   execFileSync('git', ['config', 'user.name', 'Veritas Test'], { cwd: rootDir });
   execFileSync('git', ['add', '.'], { cwd: rootDir });
@@ -6689,6 +6690,7 @@ test('adaptive bootstrap falls back cleanly when git HEAD is detached', (t) => {
     ),
   );
   execFileSync('git', ['init', '-b', 'feature'], { cwd: rootDir, encoding: 'utf8' });
+  execFileSync('git', ['config', 'maintenance.auto', 'false'], { cwd: rootDir }); // see disableGitAutoMaintenance in helpers.mjs
   execFileSync('git', ['config', 'user.name', 'Veritas Tests'], {
     cwd: rootDir,
     encoding: 'utf8',

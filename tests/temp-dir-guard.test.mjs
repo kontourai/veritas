@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
-import { repoRootDir } from './helpers.mjs';
+import { cleanGitEnv, commitAll, initCommittedRepo, repoRootDir } from './helpers.mjs';
 import { tempDir } from './temp-dir.mjs';
 
 // Every test directory must come from tempDir(), which removes it when the test ends. A direct
@@ -142,4 +143,42 @@ test('tempDir accepts a bare { after } owner for module scope and tolerates a di
 test('tempDir refuses an owner that cannot run cleanup, rather than creating a directory nothing removes', () => {
   assert.throws(() => tempDir(undefined, 'veritas-x-'), TypeError);
   assert.throws(() => tempDir('veritas-x-', 'veritas-y-'), /needs an after\(\) hook/);
+});
+
+// `git commit` hands off to `git maintenance run --auto --detach`, which can repack the repository
+// after the commit has returned. That process writes into `.git` while the owning test's cleanup
+// removes the tree, so the cleanup fails with ENOTEMPTY (seen on CI with git 2.55). The trace
+// below records every child process git starts.
+function maintenanceChildrenOfCommit(t, run) {
+  const tracePath = join(tempDir(t, 'veritas-git-trace-'), 'trace.json');
+  const before = process.env.GIT_TRACE2_EVENT;
+  process.env.GIT_TRACE2_EVENT = tracePath;
+  try {
+    run();
+  } finally {
+    if (before === undefined) delete process.env.GIT_TRACE2_EVENT;
+    else process.env.GIT_TRACE2_EVENT = before;
+  }
+  const trace = existsSync(tracePath) ? readFileSync(tracePath, 'utf8') : '';
+  return trace.split('\n').filter((line) => line.includes('"event":"child_start"') && /"argv":\["[^"]*","maintenance"/.test(line));
+}
+
+test('fixture repositories do not start detached git maintenance when a test commits', (t) => {
+  const plain = tempDir(t, 'veritas-maintenance-control-');
+  const git = (cwd, ...args) => execFileSync('git', args, { cwd, env: cleanGitEnv(), encoding: 'utf8' });
+  git(plain, 'init', '-q', '-b', 'main');
+  git(plain, 'config', 'user.name', 'Veritas Tests');
+  git(plain, 'config', 'user.email', 'tests@example.com');
+  writeFileSync(join(plain, 'f'), 'x');
+  git(plain, 'add', 'f');
+  const control = maintenanceChildrenOfCommit(t, () => git(plain, 'commit', '-qm', 'control'));
+  if (control.length === 0) {
+    t.skip('this git does not start background maintenance after a commit, so there is nothing to disable');
+    return;
+  }
+
+  const rootDir = initCommittedRepo(t, 'veritas-maintenance-fixture-');
+  writeFileSync(join(rootDir, 'g'), 'y');
+  const started = maintenanceChildrenOfCommit(t, () => commitAll(rootDir, 'second commit'));
+  assert.deepEqual(started, [], 'a fixture commit started git maintenance, which can outlive the test and race its cleanup');
 });

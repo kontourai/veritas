@@ -38,6 +38,7 @@ test('publish main-ancestry check accepts a tag behind main and refuses one off 
   const seed = join(directory, 'seed');
   git(directory, 'init', '-q', '--bare', origin);
   git(directory, 'init', '-q', seed);
+  git(seed, 'config', 'maintenance.auto', 'false'); // see disableGitAutoMaintenance in helpers.mjs
   for (const n of ['1', '2']) {
     writeFileSync(join(seed, 'f'), n);
     git(seed, 'add', 'f');

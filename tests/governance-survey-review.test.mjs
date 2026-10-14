@@ -14,7 +14,7 @@ async function fixture(t, action = 'approve', options = {}) {
   fs.mkdirSync(rootDir); fs.mkdirSync(hostRoot, {mode: 0o700});
   const env = {...process.env}; for (const key of Object.keys(env)) if (key.startsWith('GIT_')) delete env[key];
   const git = args => execFileSync('git', args, {cwd: rootDir, env, stdio: 'pipe'});
-  git(['init']); git(['config', 'user.email', 'fixture@example.invalid']); git(['config', 'user.name', 'Fixture']);
+  git(['init']); git(['config', 'maintenance.auto', 'false']); git(['config', 'user.email', 'fixture@example.invalid']); git(['config', 'user.name', 'Fixture']);
   fs.writeFileSync(path.join(rootDir, 'README.md'), 'Controlled repository\n'); git(['add', '.']); git(['commit', '-m', 'fixture']);
   execFileSync(process.execPath, [path.resolve('bin/veritas.mjs'), 'init', '--explore', '--root', rootDir, '--output', '.veritas/init-plans/review.json'], {env, stdio: 'pipe'});
   const planPath = path.join(rootDir, '.veritas/init-plans/review.json');

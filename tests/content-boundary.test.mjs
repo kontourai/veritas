@@ -42,6 +42,7 @@ function makeRepository(t) {
   const rootDir = tempDir(t, "veritas-content-boundary-");
   git(rootDir, ["init", "-q"]);
   git(rootDir, ["config", "user.name", "Veritas Test"]);
+  git(rootDir, ["config", "maintenance.auto", "false"]); // see disableGitAutoMaintenance in helpers.mjs
   git(rootDir, ["config", "user.email", "veritas@example.invalid"]);
   return rootDir;
 }

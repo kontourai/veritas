@@ -17,6 +17,9 @@ export function tempDir(owner, prefix) {
     throw new TypeError('tempDir(owner, prefix): owner needs an after() hook; pass the test context `t` or { after } from node:test');
   }
   const dir = mkdtempSync(join(tmpdir(), prefix));
-  owner.after(() => rmSync(dir, { recursive: true, force: true }));
+  // maxRetries/retryDelay only absorb a transient ENOTEMPTY/EBUSY (a git or antivirus scan finishing
+  // as the tree is removed). A process that keeps writing into the directory outlasts them, so the
+  // test must not start one (see disableGitAutoMaintenance in helpers.mjs).
+  owner.after(() => rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 }));
   return dir;
 }
