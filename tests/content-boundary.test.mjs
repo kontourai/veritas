@@ -23,6 +23,7 @@ import {
   runContentBoundary,
 } from "../src/conformance/content-boundary.mjs";
 import * as packageRoot from "../src/index.mjs";
+import { disableGitAutoMaintenance, gitMaintenanceChildren } from "./helpers.mjs";
 import { tempDir } from "./temp-dir.mjs";
 
 const engineUrl = pathToFileURL(
@@ -40,11 +41,15 @@ function git(rootDir, args, options = {}) {
 
 function makeRepository(t) {
   const rootDir = tempDir(t, "veritas-content-boundary-");
-  git(rootDir, ["init", "-q"]);
-  git(rootDir, ["config", "user.name", "Veritas Test"]);
-  git(rootDir, ["config", "maintenance.auto", "false"]); // see disableGitAutoMaintenance in helpers.mjs
-  git(rootDir, ["config", "user.email", "veritas@example.invalid"]);
+  initRepository(rootDir);
   return rootDir;
+}
+
+function initRepository(rootDir) {
+  git(rootDir, ["init", "-q"]);
+  disableGitAutoMaintenance(rootDir);
+  git(rootDir, ["config", "user.name", "Veritas Test"]);
+  git(rootDir, ["config", "user.email", "veritas@example.invalid"]);
 }
 
 function commitAll(rootDir) {
@@ -344,9 +349,7 @@ test("tracked and untracked symlink targets outside the canonical root are never
   const parentDir = tempDir(t, "veritas-content-boundary-links-");
   const rootDir = path.join(parentDir, "repo");
   mkdirSync(rootDir);
-  git(rootDir, ["init", "-q"]);
-  git(rootDir, ["config", "user.name", "Veritas Test"]);
-  git(rootDir, ["config", "user.email", "veritas@example.invalid"]);
+  initRepository(rootDir);
   writeFileSync(path.join(parentDir, "outside.txt"), "outside-token\n");
   try {
     symlinkSync("../outside.txt", path.join(rootDir, "tracked-link.txt"));
@@ -357,7 +360,11 @@ test("tracked and untracked symlink targets outside the canonical root are never
     }
     throw error;
   }
-  commitAll(rootDir);
+  assert.deepEqual(
+    gitMaintenanceChildren(t, () => commitAll(rootDir)),
+    [],
+    "the fixture commit started git maintenance, which can outlive the test and race its cleanup",
+  );
   symlinkSync("../outside.txt", path.join(rootDir, "untracked-link.txt"));
 
   const entries = enumerateContentBoundaryFiles({ rootDir });

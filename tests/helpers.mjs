@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -79,6 +79,24 @@ export function mkdirp(path) {
 export function disableGitAutoMaintenance(rootDir) {
   execGitFixture(['config', 'maintenance.auto', 'false'], { cwd: rootDir, encoding: 'utf8' });
   execGitFixture(['config', 'gc.auto', '0'], { cwd: rootDir, encoding: 'utf8' });
+}
+
+// Runs `run` (synchronously) with git's trace2 event log pointed at a fresh file, and returns the
+// `git maintenance` processes any git command inside it started, including children such as
+// receive-pack. A test that commits, pushes or fetches asserts this is empty, so a repository that
+// forgot disableGitAutoMaintenance fails there, rather than as a rare ENOTEMPTY in cleanup.
+export function gitMaintenanceChildren(t, run) {
+  const tracePath = join(tempDir(t, 'veritas-git-trace-'), 'trace.json');
+  const before = process.env.GIT_TRACE2_EVENT;
+  process.env.GIT_TRACE2_EVENT = tracePath;
+  try {
+    run();
+  } finally {
+    if (before === undefined) delete process.env.GIT_TRACE2_EVENT;
+    else process.env.GIT_TRACE2_EVENT = before;
+  }
+  const trace = existsSync(tracePath) ? readFileSync(tracePath, 'utf8') : '';
+  return trace.split('\n').filter((line) => line.includes('"event":"child_start"') && /"argv":\["[^"]*","maintenance"/.test(line));
 }
 
 export function initCommittedRepo(t, prefix) {
