@@ -21,8 +21,8 @@ function veritas(rootDir, args) {
   return { status: result.status, output: `${result.stdout}\n${result.stderr}` };
 }
 
-test('the documented plan-first path reaches a passing readiness check', () => {
-  const rootDir = initCommittedRepo('veritas-plan-first-onboarding-');
+test('the documented plan-first path reaches a passing readiness check', (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-plan-first-onboarding-');
   writeFileSync(join(rootDir, 'package.json'), `${JSON.stringify({
     name: 'plan-first-adopter',
     version: '1.0.0',
@@ -49,8 +49,8 @@ test('the documented plan-first path reaches a passing readiness check', () => {
   assert.equal(existsSync(join(rootDir, 'veritas.claims.json')), true, 'applying the plan must create the claim store');
 });
 
-test('applying a plan keeps an existing authored claim store, even with --force', () => {
-  const rootDir = initCommittedRepo('veritas-plan-apply-keeps-claims-');
+test('applying a plan keeps an existing authored claim store, even with --force', (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-plan-apply-keeps-claims-');
   writeFileSync(join(rootDir, 'package.json'), `${JSON.stringify({ scripts: { test: 'node -e "process.exit(0)"' } }, null, 2)}\n`);
   const authored = `${JSON.stringify({ schemaVersion: 1, producer: 'veritas', claims: [], policies: [] }, null, 2)}\n`;
   writeFileSync(join(rootDir, 'veritas.claims.json'), authored);

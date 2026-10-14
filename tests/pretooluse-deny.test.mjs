@@ -9,8 +9,8 @@ import {
 } from '../src/index.mjs';
 import { commitAll, initCommittedRepo } from './helpers.mjs';
 
-function bootstrapRepo() {
-  const rootDir = initCommittedRepo('veritas-pretool-');
+function bootstrapRepo(t) {
+  const rootDir = initCommittedRepo(t, 'veritas-pretool-');
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({
     scripts: { test: 'node -e "process.exit(0)"' },
   }, null, 2));
@@ -57,8 +57,8 @@ function bootstrapRepo() {
   return rootDir;
 }
 
-test('Claude Code PreToolUse blocks denied strict-surface edits', () => {
-  const rootDir = bootstrapRepo();
+test('Claude Code PreToolUse blocks denied strict-surface edits', (t) => {
+  const rootDir = bootstrapRepo(t);
   const result = evaluatePreToolUse({
     rootDir,
     stdinText: JSON.stringify({
@@ -72,8 +72,8 @@ test('Claude Code PreToolUse blocks denied strict-surface edits', () => {
   assert.match(result.reason, /work-area-boundary/);
 });
 
-test('Claude Code PreToolUse allows edits when checks pass', () => {
-  const rootDir = bootstrapRepo();
+test('Claude Code PreToolUse allows edits when checks pass', (t) => {
+  const rootDir = bootstrapRepo(t);
   const result = evaluatePreToolUse({
     rootDir,
     stdinText: JSON.stringify({
@@ -87,8 +87,8 @@ test('Claude Code PreToolUse allows edits when checks pass', () => {
   assert.deepEqual(result.guidance.rules[0].mustDo, ['Check the named owner.']);
 });
 
-test('Claude Code PreToolUse blocks a known edit tool with no path to brief', () => {
-  const rootDir = bootstrapRepo();
+test('Claude Code PreToolUse blocks a known edit tool with no path to brief', (t) => {
+  const rootDir = bootstrapRepo(t);
   const result = evaluatePreToolUse({
     rootDir,
     stdinText: JSON.stringify({ tool_name: 'Edit', tool_input: {} }),
@@ -98,8 +98,8 @@ test('Claude Code PreToolUse blocks a known edit tool with no path to brief', ()
   assert.match(result.reason, /no file path/);
 });
 
-test('Claude Code PreToolUse blocks malformed payloads', () => {
-  const rootDir = bootstrapRepo();
+test('Claude Code PreToolUse blocks malformed payloads', (t) => {
+  const rootDir = bootstrapRepo(t);
   const result = evaluatePreToolUse({
     rootDir,
     stdinText: '{not-json',
@@ -110,8 +110,8 @@ test('Claude Code PreToolUse blocks malformed payloads', () => {
   assert.match(result.reason, /Malformed PreToolUse payload/);
 });
 
-test('Claude Code PreToolUse exception allows and records a rule bypass', () => {
-  const rootDir = bootstrapRepo();
+test('Claude Code PreToolUse exception allows and records a rule bypass', (t) => {
+  const rootDir = bootstrapRepo(t);
   const previousRule = process.env.VERITAS_EXCEPTION_RULE;
   const previousReason = process.env.VERITAS_EXCEPTION_REASON;
   process.env.VERITAS_EXCEPTION_RULE = 'work-area-boundary';

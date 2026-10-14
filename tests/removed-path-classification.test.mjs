@@ -12,8 +12,8 @@ function writeMap(rootDir, map) {
   writeFileSync(join(rootDir, '.veritas/repo-map.json'), `${JSON.stringify(map, null, 2)}\n`);
 }
 
-function fixture({ nested = false, baseMap } = {}) {
-  const gitRoot = initCommittedRepo('veritas-removed-path-review-');
+function fixture(t, { nested = false, baseMap } = {}) {
+  const gitRoot = initCommittedRepo(t, 'veritas-removed-path-review-');
   const rootDir = nested ? join(gitRoot, 'pkg') : gitRoot;
   mkdirp(rootDir);
   writeBootstrapStarterKit({ rootDir, projectName: 'removed-path-review', force: true });
@@ -64,7 +64,7 @@ function output(result, status = 0) {
 }
 
 test('nested Veritas root classifies its removed manifest with its own committed map', async (t) => {
-  const { rootDir, gitRoot, map } = fixture({ nested: true });
+  const { rootDir, gitRoot, map } = fixture(t, { nested: true });
   unlinkSync(join(rootDir, 'old-manifest.json'));
   map.graph.nodes[1].patterns = [];
   writeMap(rootDir, map);
@@ -86,8 +86,8 @@ test('nested Veritas root classifies its removed manifest with its own committed
 
 for (const baseMap of ['absent', 'malformed', 'no-graph']) {
   for (const scope of ['working-tree', 'branch-diff']) {
-    test(`unavailable ${baseMap} base map uses current map and warns in ${scope}`, () => {
-      const { rootDir, gitRoot } = fixture({ baseMap });
+    test(`unavailable ${baseMap} base map uses current map and warns in ${scope}`, (t) => {
+      const { rootDir, gitRoot } = fixture(t, { baseMap });
       unlinkSync(join(rootDir, 'old-manifest.json'));
       approveMap(rootDir);
       if (scope === 'branch-diff') commitAll(gitRoot, 'Adopt current map and delete manifest');
@@ -108,8 +108,8 @@ for (const baseMap of ['absent', 'malformed', 'no-graph']) {
   }
 }
 
-test('protected deletion with pattern removed still fails without a policy-change attestation', () => {
-  const { rootDir, gitRoot, map } = fixture();
+test('protected deletion with pattern removed still fails without a policy-change attestation', (t) => {
+  const { rootDir, gitRoot, map } = fixture(t);
   unlinkSync(join(rootDir, 'old-manifest.json'));
   map.graph.nodes[1].patterns = [];
   writeMap(rootDir, map);
@@ -122,8 +122,8 @@ test('protected deletion with pattern removed still fails without a policy-chang
   assert.match(policy.summary, /do not match|drift/i);
 });
 
-test('Git identifies the removed endpoint of a case-only working-tree rename', () => {
-  const { rootDir, gitRoot, map } = fixture();
+test('Git identifies the removed endpoint of a case-only working-tree rename', (t) => {
+  const { rootDir, gitRoot, map } = fixture(t);
   renameSync(join(rootDir, 'old-manifest.json'), join(rootDir, 'Manifest.json'));
   commitAll(gitRoot, 'Use capitalized manifest');
   execGitFixture(['mv', 'Manifest.json', 'manifest.json'], { cwd: rootDir });
@@ -138,8 +138,8 @@ test('Git identifies the removed endpoint of a case-only working-tree rename', (
 });
 
 for (const changedFrom of ['missing-review-base', '.veritas/repo-map.json', '--output=review-injection']) {
-  test(`unresolvable changed-from revision fails clearly: ${changedFrom}`, () => {
-    const { rootDir } = fixture();
+  test(`unresolvable changed-from revision fails clearly: ${changedFrom}`, (t) => {
+    const { rootDir } = fixture(t);
     unlinkSync(join(rootDir, 'old-manifest.json'));
     const result = health(rootDir, { changedFrom, changedTo: 'HEAD' });
     assert.equal(result.status, 1);
@@ -151,7 +151,7 @@ for (const changedFrom of ['missing-review-base', '.veritas/repo-map.json', '--o
 }
 
 test('base-map Git read times out and reports the current-map fallback', async (t) => {
-  const { rootDir, gitRoot } = fixture();
+  const { rootDir, gitRoot } = fixture(t);
   unlinkSync(join(rootDir, 'old-manifest.json'));
   const binDir = join(rootDir, 'node_modules', 'transport-bin');
   mkdirp(binDir);

@@ -1,8 +1,8 @@
-import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { tempDir } from './temp-dir.mjs';
 
 export function readJson(relativePath) {
   return JSON.parse(readFileSync(new URL(relativePath, import.meta.url), 'utf8'));
@@ -72,9 +72,37 @@ export function mkdirp(path) {
   mkdirSync(path, { recursive: true });
 }
 
-export function initCommittedRepo(prefix) {
-  const rootDir = mkdtempSync(join(tmpdir(), prefix));
+// `git commit` starts `git maintenance run --auto --detach`; from git 2.55 that repacks even a small
+// repository (geometric strategy). The detached process outlives the commit, keeps writing into
+// `.git` (objects/pack, info/refs), and races the removal of the fixture directory after the test.
+// A fixture has no use for it, so any repository a test commits in turns it off.
+export function disableGitAutoMaintenance(rootDir) {
+  execGitFixture(['config', 'maintenance.auto', 'false'], { cwd: rootDir, encoding: 'utf8' });
+  execGitFixture(['config', 'gc.auto', '0'], { cwd: rootDir, encoding: 'utf8' });
+}
+
+// Runs `run` (synchronously) with git's trace2 event log pointed at a fresh file, and returns the
+// `git maintenance` processes any git command inside it started, including children such as
+// receive-pack. A test that commits, pushes or fetches asserts this is empty, so a repository that
+// forgot disableGitAutoMaintenance fails there, rather than as a rare ENOTEMPTY in cleanup.
+export function gitMaintenanceChildren(t, run) {
+  const tracePath = join(tempDir(t, 'veritas-git-trace-'), 'trace.json');
+  const before = process.env.GIT_TRACE2_EVENT;
+  process.env.GIT_TRACE2_EVENT = tracePath;
+  try {
+    run();
+  } finally {
+    if (before === undefined) delete process.env.GIT_TRACE2_EVENT;
+    else process.env.GIT_TRACE2_EVENT = before;
+  }
+  const trace = existsSync(tracePath) ? readFileSync(tracePath, 'utf8') : '';
+  return trace.split('\n').filter((line) => line.includes('"event":"child_start"') && /"argv":\["[^"]*","maintenance"/.test(line));
+}
+
+export function initCommittedRepo(t, prefix) {
+  const rootDir = tempDir(t, prefix);
   execGitFixture(['init', '-b', 'main'], { cwd: rootDir, encoding: 'utf8' });
+  disableGitAutoMaintenance(rootDir);
   execGitFixture(['config', 'user.name', 'Veritas Tests'], {
     cwd: rootDir,
     encoding: 'utf8',

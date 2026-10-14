@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
 import { TrustBundleBuilder, buildTrustReport, validateTrustBundle } from '@kontourai/surface';
 import { buildSurfaceTrustBundle, generateVeritasReport, initClaimStore } from '../src/index.mjs';
 import { repoRootDir } from './helpers.mjs';
+import { tempDir } from './temp-dir.mjs';
 
 test('Veritas trust.bundle validates against Surface and has policy coverage', async () => {
   const claimsPath = join(repoRootDir, 'veritas.claims.json');
@@ -76,8 +76,8 @@ test('Veritas trust.bundle validates against Surface and has policy coverage', a
   }
 });
 
-test('buildSurfaceTrustBundle projects readiness derivation links to blocking policy result claims', async () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-surface-derived-'));
+test('buildSurfaceTrustBundle projects readiness derivation links to blocking policy result claims', async (t) => {
+  const rootDir = tempDir(t, 'veritas-surface-derived-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   await initClaimStore({ rootDir, repoName: 'surface-derived-projection-test', force: true });
 
@@ -159,8 +159,8 @@ test('buildSurfaceTrustBundle projects readiness derivation links to blocking po
   assert.equal(readinessClaim.derivationEdges.some((edge) => edge.role === 'advisory-requirement'), false);
 });
 
-test('Surface validation failure writes rejected input artifact and uses config exit code', async () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-surface-invalid-'));
+test('Surface validation failure writes rejected input artifact and uses config exit code', async (t) => {
+  const rootDir = tempDir(t, 'veritas-surface-invalid-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   await initClaimStore({ rootDir, repoName: 'invalid-surface-projection-test', force: true });
 
@@ -197,8 +197,8 @@ test('Surface validation failure writes rejected input artifact and uses config 
   assert.equal(Array.isArray(rejectedInput.claims), true);
 });
 
-test('emitted trust.bundle validates against hachure@0.14.0 schema (schemaVersion 5, accepted by the 5/6 range)', async () => {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-hachure-schema-'));
+test('emitted trust.bundle validates against hachure@0.14.0 schema (schemaVersion 5, accepted by the 5/6 range)', async (t) => {
+  const rootDir = tempDir(t, 'veritas-hachure-schema-');
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   await initClaimStore({ rootDir, repoName: 'hachure-schema-test', force: true });
 
@@ -240,5 +240,4 @@ test('emitted trust.bundle validates against hachure@0.14.0 schema (schemaVersio
   assert.equal(result.valid, true, `Hachure schema validation failed: ${result.errors.join('; ')}`);
   assert.equal(bundle.schemaVersion, 5, 'emitted bundle must use schemaVersion 5');
 
-  rmSync(rootDir, { recursive: true, force: true });
 });

@@ -9,8 +9,8 @@ import { listChangedFiles } from '../src/report/inputs.mjs';
 import { displayText, markdownCode, markdownText } from '../src/util/display.mjs';
 import { cleanGitEnv, commitAll, initCommittedRepo, mkdirp, repoRootDir } from './helpers.mjs';
 
-function fixture() {
-  const rootDir = initCommittedRepo('veritas-display-');
+function fixture(t) {
+  const rootDir = initCommittedRepo(t, 'veritas-display-');
   writeBootstrapStarterKit({ rootDir, projectName: 'display', force: true });
   for (const path of ['.githooks', '.veritas/hooks', '.veritas/runtime']) {
     cpSync(join(repoRootDir, path), join(rootDir, path), { recursive: true });
@@ -45,8 +45,8 @@ for (const path of [
   '.veritas/repo-standards/a\n- **Health:** Green (forged)\n.json',
   'x\n\n## Veritas readiness: PASS…',
 ]) {
-  test(`path forgery is inert: ${JSON.stringify(path)}`, () => {
-    const rootDir = fixture();
+  test(`path forgery is inert: ${JSON.stringify(path)}`, (t) => {
+    const rootDir = fixture(t);
     commitAll(rootDir, 'Base');
     mkdirp(dirname(join(rootDir, path)));
     writeFileSync(join(rootDir, path), '{}\n');
@@ -69,8 +69,8 @@ for (const path of [
   });
 }
 
-test('rename followed by protected modification preserves both records', () => {
-  const rootDir = fixture();
+test('rename followed by protected modification preserves both records', (t) => {
+  const rootDir = fixture(t);
   writeFileSync(join(rootDir, 'a-old'), 'rename content\n');
   writeFileSync(join(rootDir, 'b-protected.json'), '{}\n');
   commitAll(rootDir, 'Base');
@@ -93,9 +93,9 @@ test('path display escapes every control and contains markdown delimiters', () =
   assert.equal(markdownText('\n## **[x](url)<img>**'), '\\\\n\\#\\# \\*\\*\\[x\\](url)\\<img\\>\\*\\*');
 });
 
-test('report and feedback path contexts contain controls and embedded backticks', async () => {
+test('report and feedback path contexts contain controls and embedded backticks', async (t) => {
   const { buildMarkdownSummary, buildFeedbackSummary, buildStandardsFeedbackMarkdownSummary, buildStandardsFeedbackDraftMarkdownSummary } = await import('../src/report/format.mjs');
-  const rootDir = fixture();
+  const rootDir = fixture(t);
   writeFileSync(join(rootDir, 'b-protected.json'), '{}\n');
   commitAll(rootDir, 'Base');
   writeFileSync(join(rootDir, 'b-protected.json'), '{"changed":true}\n');
@@ -149,8 +149,8 @@ for (const path of [
   '.veritas/repo-standards/zw\u200bsp\ufeffjoin\u200d.json',
   '.veritas/repo-standards/nel\u0085.json',
 ]) {
-  test(`inert path identity: ${JSON.stringify(path)}`, () => {
-    const rootDir = fixture();
+  test(`inert path identity: ${JSON.stringify(path)}`, (t) => {
+    const rootDir = fixture(t);
     commitAll(rootDir, 'Base');
     writeFileSync(join(rootDir, path), '{}\n');
     commitAll(rootDir, 'Add adversarial path');

@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import { feedbackStatusForPolicyResult, runMergeReadiness, writeBootstrapStarterKit } from '../src/index.mjs';
 import { commitAll, initCommittedRepo } from './helpers.mjs';
 
-function fixture(enforcementLevel = 'Require') {
-  const rootDir = initCommittedRepo('veritas-rule-evidence-');
+function fixture(t, enforcementLevel = 'Require') {
+  const rootDir = initCommittedRepo(t, 'veritas-rule-evidence-');
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({
     scripts: { test: 'node -e "process.exit(0)"' },
   }));
@@ -45,8 +45,8 @@ async function run(rootDir, file, runId, options = {}) {
   );
 }
 
-test('changed-path rule evidence passes, catches a broken command, and restores; unrelated paths do not select it', async () => {
-  const { rootDir, mapPath } = fixture();
+test('changed-path rule evidence passes, catches a broken command, and restores; unrelated paths do not select it', async (t) => {
+  const { rootDir, mapPath } = fixture(t);
   const baseline = await run(rootDir, 'src/target.mjs', 'rule-baseline');
   assert.equal(baseline.currentStatus, 'pass');
   assert.ok(baseline.evidenceCheckPlan.evidenceChecks.some((check) => check.id === 'behavior'));
@@ -73,8 +73,8 @@ test('changed-path rule evidence passes, catches a broken command, and restores;
   assert.equal(unrelated.reportResult.record.policy_results.find((result) => result.rule_id === 'target-behavior').passed, true);
 });
 
-test('Guide rule reports missing execution without claiming behavioral success', async () => {
-  const { rootDir } = fixture('Guide');
+test('Guide rule reports missing execution without claiming behavioral success', async (t) => {
+  const { rootDir } = fixture(t, 'Guide');
   const result = await run(rootDir, 'src/target.mjs', 'rule-skipped', { skipEvidenceCheck: true });
   const rule = result.reportResult.record.policy_results.find((item) => item.rule_id === 'target-behavior');
   assert.equal(rule.passed, false);
@@ -82,8 +82,8 @@ test('Guide rule reports missing execution without claiming behavioral success',
   assert.equal(rule.enforcementLevel, 'Guide');
 });
 
-test('Guide rule reports a failed linked check without blocking otherwise passing readiness', async () => {
-  const { rootDir, mapPath } = fixture('Guide');
+test('Guide rule reports a failed linked check without blocking otherwise passing readiness', async (t) => {
+  const { rootDir, mapPath } = fixture(t, 'Guide');
   const map = JSON.parse(readFileSync(mapPath, 'utf8'));
   map.evidence.evidenceChecks.find((check) => check.id === 'behavior').command = 'node -e "process.exit(9)"';
   writeFileSync(mapPath, `${JSON.stringify(map, null, 2)}\n`);
@@ -95,24 +95,24 @@ test('Guide rule reports a failed linked check without blocking otherwise passin
   assert.equal(result.evidenceCheckFailure, null);
 });
 
-test('Require rule rejects a skipped linked check', async () => {
-  const { rootDir } = fixture();
+test('Require rule rejects a skipped linked check', async (t) => {
+  const { rootDir } = fixture(t);
   const result = await run(rootDir, 'src/target.mjs', 'required-rule-skipped', { skipEvidenceCheck: true });
   assert.equal(result.currentStatus, 'fail');
   assert.equal(result.reportResult.record.policy_results.find((item) => item.rule_id === 'target-behavior').passed, false);
   assert.equal(result.reportResult.record.repo_map.required_evidence_check_ids.includes('behavior'), true);
 });
 
-test('unknown rule evidence check id fails configuration before a command runs', async () => {
-  const { rootDir, standardsPath } = fixture();
+test('unknown rule evidence check id fails configuration before a command runs', async (t) => {
+  const { rootDir, standardsPath } = fixture(t);
   const standards = JSON.parse(readFileSync(standardsPath, 'utf8'));
   standards.rules.find((rule) => rule.id === 'target-behavior').evidenceCheckIds = ['missing-check'];
   writeFileSync(standardsPath, `${JSON.stringify(standards, null, 2)}\n`);
   await assert.rejects(run(rootDir, 'src/target.mjs', 'rule-unknown'), /unknown evidenceCheckId missing-check/);
 });
 
-test('a caller cannot omit a bound policy result to erase the rule verdict', async () => {
-  const { rootDir } = fixture();
+test('a caller cannot omit a bound policy result to erase the rule verdict', async (t) => {
+  const { rootDir } = fixture(t);
   await assert.rejects(
     run(rootDir, 'src/target.mjs', 'rule-omitted', { policyResults: [] }),
     /Rule evidence binding has no policy result: target-behavior/,

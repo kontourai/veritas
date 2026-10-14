@@ -11,8 +11,8 @@ import {
 } from '../../src/index.mjs';
 import { commitAll, repoRootDir, initCommittedRepo, parseCliJson } from '../helpers.mjs';
 
-function bootstrapRepo(prefix = 'veritas-claude-') {
-  const rootDir = initCommittedRepo(prefix);
+function bootstrapRepo(t, prefix = 'veritas-claude-') {
+  const rootDir = initCommittedRepo(t, prefix);
   writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { test: 'node -e "process.exit(0)"' } }, null, 2));
   writeBootstrapStarterKit({ rootDir, projectName: 'integration-fixture', evidenceCheck: 'npm test', force: true });
   commitAll(rootDir, 'Bootstrap Veritas');
@@ -62,8 +62,8 @@ function writeClaudeSessionLog(rootDir) {
   return sessionLogPath;
 }
 
-test('ClaudeCodeSessionLogReader normalizes Claude Code JSONL events', () => {
-  const rootDir = bootstrapRepo();
+test('ClaudeCodeSessionLogReader normalizes Claude Code JSONL events', (t) => {
+  const rootDir = bootstrapRepo(t);
   const sessionLogPath = writeClaudeSessionLog(rootDir);
   const events = [...ClaudeCodeSessionLogReader.readEvents(sessionLogPath)];
 
@@ -73,8 +73,8 @@ test('ClaudeCodeSessionLogReader normalizes Claude Code JSONL events', () => {
   assert.ok(events.some((event) => event.kind === 'completion'));
 });
 
-test('feedback observe derives Claude Code parity fields from session log reader', () => {
-  const rootDir = bootstrapRepo();
+test('feedback observe derives Claude Code parity fields from session log reader', (t) => {
+  const rootDir = bootstrapRepo(t);
   const sessionLogPath = writeClaudeSessionLog(rootDir);
   const result = observeSessionLogStandardsFeedback({
     rootDir,
@@ -88,8 +88,8 @@ test('feedback observe derives Claude Code parity fields from session log reader
   assert.equal(result.draft.prefilled_outcome.accepted_without_major_rewrite, true);
 });
 
-test('feedback observe rejects session-log run ids that would escape output directories', () => {
-  const rootDir = bootstrapRepo('veritas-unsafe-session-log-');
+test('feedback observe rejects session-log run ids that would escape output directories', (t) => {
+  const rootDir = bootstrapRepo(t, 'veritas-unsafe-session-log-');
   const sessionLogPath = join(rootDir, 'codex.json');
   writeFileSync(sessionLogPath, JSON.stringify({
     session_id: '../../outside',
@@ -110,8 +110,8 @@ test('feedback observe rejects session-log run ids that would escape output dire
   assert.equal(existsSync(join(rootDir, 'outside.json')), false);
 });
 
-test('CodexSessionLogReader reads legacy JSON session log shape through the registry contract', () => {
-  const rootDir = bootstrapRepo('veritas-codex-reader-');
+test('CodexSessionLogReader reads legacy JSON session log shape through the registry contract', (t) => {
+  const rootDir = bootstrapRepo(t, 'veritas-codex-reader-');
   const sessionLogPath = join(rootDir, 'codex.json');
   writeFileSync(sessionLogPath, JSON.stringify({
     events: [
@@ -123,8 +123,8 @@ test('CodexSessionLogReader reads legacy JSON session log shape through the regi
   assert.equal(events.filter((event) => event.kind === 'readiness-check').length, 2);
 });
 
-test('integrations claude-code install wires PreToolUse, Stop, and PostSession hooks', () => {
-  const rootDir = bootstrapRepo('veritas-claude-install-');
+test('integrations claude-code install wires PreToolUse, Stop, and PostSession hooks', (t) => {
+  const rootDir = bootstrapRepo(t, 'veritas-claude-install-');
   const cli = join(repoRootDir, 'bin/veritas.mjs');
   const output = execFileSync('node', [
     cli,
@@ -163,8 +163,8 @@ test('integrations claude-code install wires PreToolUse, Stop, and PostSession h
   assert.equal(status.settings.postSessionConfigured, true);
 });
 
-test('integrations cursor install wires generic stop hook and reports config status', () => {
-  const rootDir = bootstrapRepo('veritas-cursor-install-');
+test('integrations cursor install wires generic stop hook and reports config status', (t) => {
+  const rootDir = bootstrapRepo(t, 'veritas-cursor-install-');
   const cli = join(repoRootDir, 'bin/veritas.mjs');
   const output = execFileSync('node', [
     cli,
@@ -195,8 +195,8 @@ test('integrations cursor install wires generic stop hook and reports config sta
   assert.equal(status.sessionLogReader, null);
 });
 
-test('integrations uninstall reports manual capability state for public tools', () => {
-  const rootDir = bootstrapRepo('veritas-integrations-uninstall-');
+test('integrations uninstall reports manual capability state for public tools', (t) => {
+  const rootDir = bootstrapRepo(t, 'veritas-integrations-uninstall-');
   const cli = join(repoRootDir, 'bin/veritas.mjs');
 
   for (const tool of ['codex', 'claude-code', 'cursor', 'copilot']) {

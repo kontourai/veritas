@@ -1,20 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { prepareGuidanceBriefing } from '../src/hooks/guidance-briefing.mjs';
+import { tempDir } from './temp-dir.mjs';
 
-function fixture() {
-  const rootDir = mkdtempSync(join(tmpdir(), 'veritas-guidance-briefing-'));
+function fixture(t) {
+  const rootDir = tempDir(t, 'veritas-guidance-briefing-');
   mkdirSync(join(rootDir, '.veritas/repo-standards'), { recursive: true });
   writeFileSync(join(rootDir, '.veritas/repo-map.json'), '{}');
   writeFileSync(join(rootDir, '.veritas/repo-standards/default.repo-standards.json'), '{}');
   return rootDir;
 }
 
-test('briefs once per session and guidance, and rebriefs on standards changes', () => {
-  const rootDir = fixture();
+test('briefs once per session and guidance, and rebriefs on standards changes', (t) => {
+  const rootDir = fixture(t);
   const args = { rootDir, stdinText: JSON.stringify({ session_id: 'session-one' }), guidanceContext: 'Rule one' };
   const first = prepareGuidanceBriefing(args);
   assert.equal(first.guidanceContext, 'Rule one');
@@ -26,8 +26,8 @@ test('briefs once per session and guidance, and rebriefs on standards changes', 
   assert.equal(prepareGuidanceBriefing(args).guidanceContext, 'Rule one');
 });
 
-test('concurrent invocations may repeat guidance but cannot suppress the first briefing', () => {
-  const args = { rootDir: fixture(), stdinText: JSON.stringify({ session_id: 'shared' }), guidanceContext: 'Rule one' };
+test('concurrent invocations may repeat guidance but cannot suppress the first briefing', (t) => {
+  const args = { rootDir: fixture(t), stdinText: JSON.stringify({ session_id: 'shared' }), guidanceContext: 'Rule one' };
   const first = prepareGuidanceBriefing(args);
   const concurrent = prepareGuidanceBriefing(args);
   assert.equal(first.guidanceContext, 'Rule one');
@@ -37,8 +37,8 @@ test('concurrent invocations may repeat guidance but cannot suppress the first b
   assert.equal(prepareGuidanceBriefing(args).guidanceContext, '');
 });
 
-test('missing session identity and cache errors retain the full briefing', () => {
-  const rootDir = fixture();
+test('missing session identity and cache errors retain the full briefing', (t) => {
+  const rootDir = fixture(t);
   assert.equal(prepareGuidanceBriefing({ rootDir, stdinText: '{}', guidanceContext: 'Rule one' }).guidanceContext, 'Rule one');
   mkdirSync(join(rootDir, '.kontourai/veritas'), { recursive: true });
   writeFileSync(join(rootDir, '.kontourai/veritas/hook-briefings'), 'unavailable');
