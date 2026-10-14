@@ -206,9 +206,10 @@ Where it is not, it fell back to a registry fetch without prompting when no term
 and the `npm exec` form fetched the unscoped `veritas` package, which belongs to another project.
 The Codex `PreToolUse` and `PostSession` commands and the Claude Code `PostSession` command run in the
 agent's working directory, which can be a nested package without its own Veritas install. They look
-upward from there for the nearest directory with Veritas installed, and pass it to `npx --prefix`
-only when the walk reaches the git root. When it does not, or nothing is installed on the way, they
-run plain `npx --no @kontourai/veritas`, which also finds a global install. Two limits:
+upward from there for the nearest directory with Veritas installed, and run that install's entry
+point with `node` only when the walk reaches the git root (see the next section). When it does not,
+or nothing is installed on the way, they run plain `npx --no @kontourai/veritas`, which also finds a
+global install. Two limits:
 
 - In a repository with no `package.json`, plain npx uses npm's own upward search for the nearest
   `package.json` or `node_modules`, which can pass the git root.
@@ -239,6 +240,44 @@ Files Veritas already wrote keep the earlier spelling until you refresh them:
 `integrations claude-code status` reports `postSessionConfigured: false`, and
 `integrations codex status` with a hooks file reports `integrationInstalled: false`, for a
 configuration written with the earlier spelling.
+
+## Agent Hook Commands Run the Install They Found
+
+In v1.11.1 and v1.11.2, the Codex `PreToolUse` and `PostSession` commands and the Claude Code
+`PostSession` command passed the install their walk found to `npx --prefix`. That option decides
+only whether npx treats Veritas as installed. The binary npx runs is the first `veritas` on a `PATH`
+it builds from the working directory's parent directories and your own `PATH`. In an install
+without a `node_modules/.bin/veritas` link, for example one made with `--no-bin-links` or
+`bin-links=false`, that could be a `.bin/veritas` in a directory above the repository, or a global
+install of the unrelated unscoped `veritas` package.
+
+These commands now run the entry point of the install they found by path:
+`node <install>/node_modules/@kontourai/veritas/bin/veritas.mjs`. An install counts only when that
+file exists. When the walk finds no install, the commands run plain `npx --no @kontourai/veritas` as
+before, which also finds a global install. On Windows the Codex `commandWindows` override still runs
+plain `npx --no @kontourai/veritas`.
+
+Hooks Veritas already wrote keep the earlier command until you refresh them:
+
+- Claude Code: run `npx --no @kontourai/veritas integrations claude-code install --force`.
+  **Back up `.claude/settings.json` first.** The install replaces the whole `PreToolUse` list in
+  that file with the Veritas handler, so any `PreToolUse` handler of your own is deleted; `Stop`,
+  `SessionEnd` and `PostSession` keep your handlers. After installing, compare with the backup and
+  add your own handlers back.
+- Codex: run `npx --no @kontourai/veritas integrations codex install --force` with the same option
+  you installed with. In the hooks file it replaces the handlers v1.11.1 and v1.11.2 wrote, matched
+  by their exact command.
+- A `.codex/hooks.json` provisioned through Flow Agents: provisioning again adds the new
+  `PreToolUse` handler and keeps the earlier one, so delete the earlier handler by hand. Its command
+  contains `npx --no --prefix "$VERITAS_PREFIX"`.
+
+`integrations claude-code status` reports `postSessionConfigured: false`, and
+`integrations codex status` with a hooks file reports `integrationInstalled: false`, until you
+refresh them.
+
+The hook scripts Veritas writes into `.veritas/hooks/` and `.githooks/` run from the repository root
+through plain `npx --no @kontourai/veritas` and do not use the walk; this change leaves them as they
+are.
 
 ## The Governance Block Runs `npx --no @kontourai/veritas readiness`
 

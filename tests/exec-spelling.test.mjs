@@ -290,12 +290,15 @@ test('the record of past Claude Code PostSession commands holds only earlier com
   for (const command of PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS) assert.equal(current.includes(command), false, command);
 });
 
-test('the record of past Codex hook commands holds only earlier unsafe spellings', () => {
-  assert.equal(RECORDED_PAST_COMMANDS.length, 2);
+test('the record of past Codex hook commands holds only earlier commands', () => {
+  // Three unsafe spellings from v0.4.0 through v1.11.0, and the two v1.11.1 walk commands, which ran
+  // npx --no --prefix and could run another veritas on PATH (#286).
+  assert.equal(RECORDED_PAST_COMMANDS.length, 5);
+  assert.equal(RECORDED_PAST_COMMANDS.filter((command) => unsafeExec(command).length > 0).length, 3);
+  assert.equal(RECORDED_PAST_COMMANDS.filter((command) => command.includes('npx --no --prefix "$VERITAS_PREFIX"')).length, 2);
   const current = new Set(Object.values(buildSuggestedCodexHookConfig().hooks)
     .flatMap((groups) => groups.flatMap((group) => group.hooks.map((hook) => hook.command))));
   for (const command of RECORDED_PAST_COMMANDS) {
-    assert.notDeepEqual(unsafeExec(command), [], command);
     assert.equal(current.has(command), false, command);
   }
 });

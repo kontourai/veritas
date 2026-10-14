@@ -41,7 +41,7 @@ Unknown fields are reported as missing instead of being guessed.
 
 Claude Code now has a full runtime integration and session log reader:
 
-- `veritas integrations claude-code install` installs PreToolUse, Stop, and SessionEnd hooks. The SessionEnd hook runs `npx --no @kontourai/veritas hooks claude-code session-end`, which reads the session log path from `transcript_path` in the hook input ([Claude Code hooks](https://code.claude.com/docs/en/hooks#sessionend)). It looks upward from the working directory to the git root for the nearest directory with Veritas installed, so a nested package without its own install reaches the root one.
+- `veritas integrations claude-code install` installs PreToolUse, Stop, and SessionEnd hooks. The SessionEnd hook runs `npx --no @kontourai/veritas hooks claude-code session-end`, which reads the session log path from `transcript_path` in the hook input ([Claude Code hooks](https://code.claude.com/docs/en/hooks#sessionend)). It looks upward from the working directory to the git root for the nearest directory with Veritas installed and runs that install's `bin/veritas.mjs` with `node`, so a nested package without its own install reaches the root one and no other `veritas` on `PATH` runs instead. With no install found, it runs `npx --no @kontourai/veritas`.
 - `veritas feedback observe --tool claude-code --session-log <path>` reads Claude Code JSONL session logs from the `~/.claude/projects/<project>/<session>.jsonl` format.
 - PreToolUse returns hook protocol JSON and blocks deny-enforced rules before edits.
 
