@@ -2447,12 +2447,165 @@ test('setup-governance documents the manifest-preserving external engine path', 
   const guide = readFileSync(join(repoRootDir, 'docs/guides/governance-kit.md'), 'utf8');
   assert.match(skill, /maintainer-approved external engine/);
   assert.match(skill, /consumer manifest or lockfile/);
-  assert.match(skill, /pinned engine invocation/);
+  assert.match(skill, /immutable release/);
   assert.match(skill, /veritas_engine_path="\$\(command -v veritas\)"/);
-  assert.match(skill, /npm exec --yes --package=@kontourai\/veritas@1\.8\.0 -- veritas/);
+  assert.match(skill, /v="\$\(npm view @kontourai\/veritas@latest version\)"/);
+  assert.match(skill, /npm exec --yes --package="@kontourai\/veritas@\$\{v:\?resolve v first\}" -- veritas --version/);
   assert.match(guide, /Non-npm repositories/);
-  assert.match(guide, /npm exec --yes --package=@kontourai\/veritas@1\.8\.0 -- veritas readiness --working-tree/);
+  assert.match(guide, /npm exec --yes --package="@kontourai\/veritas@\$\{v:\?resolve v first\}" -- veritas readiness --working-tree/);
   assert.match(guide, /without writing the consumer manifest or lockfile/);
+});
+
+// Adopters copied a literal `@kontourai/veritas@<version>` from the setup skill into their README
+// and AGENTS.md, and those copies went stale. Anything Veritas ships or prints can end up in an
+// adopter repo, so scan every git-tracked file rather than a list of known instruction files.
+// Excluded: tests (they use deliberately stale fixtures), lockfile and changelog (records),
+// and pnpm-workspace.yaml (this repo's own dependency policy). docs/MIGRATING.md is scanned:
+// adopters follow its steps.
+const PIN_SCAN_EXCLUDED = new Set(['pnpm-lock.yaml', 'pnpm-workspace.yaml', 'CHANGELOG.md']);
+// Anything after the @ is a pin, including `@latest` (it moves under the adopter), except a
+// plain shell variable (below). The one allowed `@latest` is the resolve step
+// `npm view @kontourai/<pkg>@latest version`, which reads the registry and installs nothing.
+const RESOLVE_LATEST = /npm view @kontourai\/[a-z0-9][a-z0-9._-]*@latest version/g;
+// A plain variable after the @ is the only other allowed form: `$v`, `${v}` or `${v:?message}`.
+// `${v:-1.5.2}` (a default literal) and `$(...)` (arbitrary command output) are pins.
+const PLAIN_VARIABLE_VERSION = String.raw`["']?(?:\$[A-Za-z_][A-Za-z0-9_]*(?![A-Za-z0-9_(])|\$\{[A-Za-z_][A-Za-z0-9_]*(?::\?[^}]*)?\})`;
+const LITERAL_KONTOUR_PIN = new RegExp(String.raw`@kontourai\/[a-z0-9][a-z0-9._-]*@(?!${PLAIN_VARIABLE_VERSION})\S`);
+const hasKontourPin = (line) => LITERAL_KONTOUR_PIN.test(line.replace(RESOLVE_LATEST, ''));
+
+function pinScanFiles() {
+  return execFileSync('git', ['ls-files', '-z'], { cwd: repoRootDir, encoding: 'utf8' })
+    .split('\0')
+    .filter((file) => file && !file.startsWith('tests/') && !PIN_SCAN_EXCLUDED.has(file));
+}
+
+test('no tracked file outside tests pins a literal @kontourai package version', () => {
+  const scanned = pinScanFiles();
+  assert.ok(scanned.includes('src/bootstrap/guidance.mjs'), 'scan must enumerate tracked source files');
+  assert.ok(scanned.includes('skills/setup-governance/SKILL.md'));
+  assert.ok(scanned.includes('provisions/codex-hooks.json'));
+  assert.equal(scanned.some((file) => file.startsWith('tests/')), false);
+  const offenders = [];
+  for (const file of scanned) {
+    readFileSync(join(repoRootDir, file), 'utf8').split('\n').forEach((line, index) => {
+      if (hasKontourPin(line)) offenders.push(`${file}:${index + 1}: ${line.trim()}`);
+    });
+  }
+  assert.deepEqual(offenders, []);
+});
+
+test('every shell-variable version in the setup skill and guide fails closed on an empty value', () => {
+  for (const file of ['skills/setup-governance/SKILL.md', 'docs/guides/governance-kit.md']) {
+    const text = readFileSync(join(repoRootDir, file), 'utf8');
+    const uses = text.match(/@\$\{[^}]*\}/g) ?? [];
+    assert.ok(uses.length >= 4, `${file} should use the resolved version variable`);
+    for (const use of uses) assert.match(use, /^@\$\{v:\?[^}]+\}$/, `${file}: ${use}`);
+  }
+});
+
+// `npx` and `npm exec` fall back to the registry when there is no local bin, and install without
+// prompting when there is no terminal. Instruction text must pass --no so a missing install is an
+// error, never a silent fetch of whatever is latest. The one fetch is the bootstrap, which uses
+// `npm exec --yes --package="@kontourai/veritas@${v:?...}"`. The unscoped `veritas` and
+// `survey-review-mcp` names belong to other projects and are never used. `npx` answers a leading
+// --version/--help itself, so those go after `--`. Scope: Veritas and Survey invocations; the
+// Flow Agents kit installs fetch a package that is not installed yet, by design. Generated hook
+// and script text under src/ and provisions/ still uses the bare form; see the PR description.
+function unsafeExec(line) {
+  const problems = [];
+  for (const match of line.matchAll(/\bnpm exec (?=-)(.*)/g)) {
+    // Options are everything before the first ` -- ` that separates them from the bin.
+    const opts = match[1].split(' -- ')[0].replace(/ --$/, '');
+    const bootstrap = /^--yes --package="@kontourai\/veritas@\$\{v:\?[^}]+\}"$/.test(opts);
+    if (!/(?:^| )--no(?: |$)/.test(opts) && !bootstrap) problems.push('npm exec without --no');
+  }
+  for (const match of line.matchAll(/\bnpx((?: -[-\w]+)*) (?:-- )?(@kontourai\/(?:veritas|survey)|veritas|survey-review-mcp)\b/g)) {
+    if (!match[2].startsWith('@')) problems.push(`unscoped ${match[2]}`);
+    else if (!/(?:^| )--no\b/.test(match[1])) problems.push(`npx ${match[2]} without --no`);
+  }
+  for (const match of line.matchAll(/\bnpm exec (?=-)(.*)/g)) {
+    const [opts, bin = ''] = match[1].split(' -- ');
+    if (!/--package[= ]/.test(opts) && /^(?:veritas|survey-review-mcp)\b/.test(bin)) problems.push('unscoped bin');
+  }
+  if (/\bnpx --no @kontourai\/veritas --(?:version|help)\b/.test(line)) problems.push('leading --version/--help needs --');
+  return problems;
+}
+const ADOPTER_TEXT_PREFIXES = ['skills/', 'docs/', 'flows/'];
+const ADOPTER_TEXT_FILES = new Set(['README.md', 'kit.json']);
+
+test('adopter instruction text only runs an installed Veritas or Survey, never a registry fetch', () => {
+  const files = pinScanFiles().filter((file) => ADOPTER_TEXT_FILES.has(file) || ADOPTER_TEXT_PREFIXES.some((prefix) => file.startsWith(prefix)));
+  assert.ok(files.includes('skills/setup-governance/SKILL.md') && files.includes('README.md') && files.includes('docs/guides/governance-kit.md'));
+  const offenders = [];
+  for (const file of files) {
+    readFileSync(join(repoRootDir, file), 'utf8').split('\n').forEach((line, index) => {
+      if (file !== 'docs/MIGRATING.md' && unsafeExec(line).length > 0) offenders.push(`${file}:${index + 1}: ${line.trim()}`);
+    });
+  }
+  assert.deepEqual(offenders, []);
+  for (const unsafe of [
+    'npm exec -- veritas readiness',
+    'npm exec --yes -- veritas',
+    'npx veritas init',
+    'npx --yes veritas',
+    'npx @kontourai/veritas readiness',
+    'npx --yes @kontourai/veritas readiness',
+    'npx @kontourai/survey survey-review-mcp',
+    'npm exec -- survey-review-mcp --session x',
+    'npm exec --no -- veritas readiness',
+    'npx --no @kontourai/veritas --version',
+    'npx --no @kontourai/veritas --help',
+    'npm exec --yes --package="@kontourai/veritas@${v:-1}" -- veritas',
+  ]) {
+    assert.notDeepEqual(unsafeExec(unsafe), [], unsafe);
+  }
+  for (const safe of [
+    'npx --no @kontourai/veritas readiness --working-tree',
+    'npx --no @kontourai/veritas -- --version',
+    'npx --no @kontourai/veritas init --explore --help',
+    'npm exec --no --package=@kontourai/survey -- survey-review-mcp --session x',
+    'npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas readiness --working-tree',
+    'npm exec --no -- eslint .',
+    'npx @kontourai/flow-agents kit install',
+  ]) {
+    assert.deepEqual(unsafeExec(safe), [], safe);
+  }
+});
+
+test('literal @kontourai pin matcher catches versions, ranges, and @latest but not the resolve step or a shell variable', () => {
+  for (const pinned of [
+    'npm exec --yes --package=@kontourai/veritas@1.8.0 -- veritas',
+    'npx @kontourai/veritas@10.0.1 readiness',
+    'npx @kontourai/veritas@^1.5 readiness',
+    'npx @kontourai/veritas@~1.5 readiness',
+    'npx @kontourai/veritas@>=1.5 readiness',
+    'npx "@kontourai/veritas@1.5.2" readiness',
+    'npx @kontourai/veritas@v1.5.2 readiness',
+    'npx --package=@kontourai/survey@8.1.0 survey-review-mcp',
+    'npx @kontourai/flow-agents@1.2.3 kit install',
+    'npx @kontourai/veritas@next readiness',
+    'npx --yes @kontourai/veritas@latest readiness',
+    'run: npm exec --yes --package=@kontourai/veritas@latest -- veritas readiness',
+    'v="$(npm view @kontourai/veritas@latest version)" && npx @kontourai/veritas@latest readiness',
+    'npm exec --yes --package="@kontourai/veritas@${v:-1.5.2}" -- veritas readiness',
+    'npm exec --yes --package="@kontourai/veritas@$(npm view @kontourai/veritas@latest version)" -- veritas',
+    'npm exec --yes --package=@kontourai/veritas@$(cat .version) -- veritas',
+    'npm exec --yes --package="@kontourai/veritas@${v:+1.5.2}" -- veritas',
+  ]) {
+    assert.equal(hasKontourPin(pinned), true, pinned);
+  }
+  for (const unpinned of [
+    'v="$(npm view @kontourai/veritas@latest version)"',
+    'npm exec --yes --package="@kontourai/veritas@${v:?resolve v first}" -- veritas',
+    'npm exec --yes --package=@kontourai/veritas@$v -- veritas',
+    'npm exec --yes --package="@kontourai/veritas@${v}" -- veritas',
+    'npx @kontourai/veritas readiness',
+    'npm exec -- veritas readiness',
+    'npm install -D @kontourai/veritas',
+    "import x from '@kontourai/flow-agents/kit-review';",
+  ]) {
+    assert.equal(hasKontourPin(unpinned), false, unpinned);
+  }
 });
 
 test('init guided rejects instruction targets outside the target root before reading', () => {

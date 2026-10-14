@@ -16,10 +16,11 @@ Collect:
 - known shared-code boundaries
 - recurring repo-health checks
 
-For a read-only first pass:
+For a read-only first pass, with Veritas installed as a development dependency
+(`npm install -D @kontourai/veritas`):
 
 ```bash
-npx @kontourai/veritas init --explore --output .veritas/init-plans/brownfield.json
+npx --no @kontourai/veritas init --explore --output .veritas/init-plans/brownfield.json
 ```
 
 When package scripts or existing guidance paths are detected, the recommendation may include implementation fields such as `existing_verification` and `recommended_evidence_inventory`. Treat those as review queues for evidence checks and readiness coverage, not as applied standards.
@@ -83,9 +84,9 @@ Before considering a brownfield migration complete:
 ```bash
 npm run verify
 npm test
-npm exec -- veritas readiness --check evidence --working-tree
-npm exec -- veritas readiness --check coverage --working-tree
-npm exec -- veritas readiness --working-tree --format feedback
+npx --no @kontourai/veritas readiness --check evidence --working-tree
+npx --no @kontourai/veritas readiness --check coverage --working-tree
+npx --no @kontourai/veritas readiness --working-tree --format feedback
 ```
 
 `readiness --check coverage` is the current command for readiness coverage. Review its output before moving more requirements to Require.
