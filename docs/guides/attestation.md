@@ -15,11 +15,11 @@ npx @kontourai/veritas attest bootstrap \
   --non-interactive
 ```
 
-`--approval-ref` is required for every authority-backed attestation. Use a durable reference to the explicit human approval, such as a pull request review, issue comment, change ticket, signed approval record, or other review artifact. Agents may prepare the command, but they should stop and ask for that reference instead of inventing one.
+`--approval-ref` is required for every attestation. Use a durable reference to the explicit human approval, such as a pull request review, issue comment, change ticket, signed approval record, or other review artifact. Agents may prepare the command, but they should stop and ask for that reference instead of inventing one.
 
-New repos start in `reference-only` mode. In that mode Veritas checks only that the reference is not empty; it does not confirm that the approval exists. The attestation records who claimed approval and where to find it.
+New repos start in `reference-only` mode with no allowed prefixes. Veritas then checks only that the reference is not empty; it does not confirm that the approval exists. The attestation records who attested and the reference they gave.
 
-Teams can tighten this in authority settings under `review_preferences.attestation_approval_ref_policy`. `allowed_prefixes` constrains the reference format; for example, a team can require all approval references to start with `servicenow:change/`. A prefix check still does not confirm the approval. To have Veritas check the referenced approval before writing the record, use a resolved mode with an approval record, described below.
+Teams can tighten this in authority settings under `review_preferences.attestation_approval_ref_policy`. `allowed_prefixes` constrains the reference format in any mode; for example, a team can require all approval references to start with `servicenow:change/`. A prefix check still does not confirm the approval. To have Veritas check the referenced approval before writing the record, use a resolved mode with an approval record, described below.
 
 ## Approval Resolver Contract
 
@@ -44,12 +44,12 @@ A resolver returns a normalized result with:
 
 Authority settings can use these policy modes:
 
-- `reference-only`: require a durable approval reference
-- `prefix`: require one of the configured approval reference prefixes
+- `reference-only`: require a non-empty approval reference
+- `prefix`: currently the same as `reference-only`; the prefix check comes from `allowed_prefixes`, which applies in every mode
 - `resolved`: require a resolver-backed approved result
-- `resolved-strict`: reserved for stricter scope/actor matching; it currently behaves the same as `resolved`
+- `resolved-strict`: currently the same as `resolved`; reserved for stricter scope and actor matching
 
-The built-in CLI supports `reference-only`, `prefix`, and `resolved` with the offline resolver below. It does not include a network provider resolver.
+The built-in CLI resolves approvals only through the offline approval records below. It has no network provider resolver and no option to plug one in.
 
 ## Offline Approval Records
 
