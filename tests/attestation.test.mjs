@@ -1,9 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, join, relative } from 'node:path';
 import { buildTrustReport } from '@kontourai/surface';
 import Ajv from 'ajv/dist/2020.js';
 import {
@@ -1014,6 +1023,210 @@ test('CLI bootstrap writes tracked attestation and readiness check fails on prot
     '--working-tree',
   ], { cwd: rootDir, encoding: 'utf8' });
   assert.match(readinessOutput, /PASS\s+policy-changes-require-attestation/);
+});
+
+// ─── Protected standards entry type ───────────────────────────────────────
+
+const veritasCli = join(repoRootDir, 'bin/veritas.mjs');
+
+function runVeritas(rootDir, args) {
+  const result = spawnSync('node', [veritasCli, ...args, '--root', rootDir], { cwd: rootDir, encoding: 'utf8' });
+  if (result.error) throw result.error;
+  return result;
+}
+
+function cliAttestStatus(rootDir) {
+  const result = runVeritas(rootDir, ['attest', 'status']);
+  assert.equal(result.status, 0, result.stderr);
+  return JSON.parse(result.stdout);
+}
+
+function cliReadiness(rootDir, scope) {
+  return runVeritas(rootDir, ['readiness', '--skip-evidence-check', ...scope]);
+}
+
+function attestationPolicyLine(output) {
+  return output.split('\n').find((line) => /policy-changes-require-attestation/.test(line)) ?? '';
+}
+
+function bootstrapAttestedRepo() {
+  const rootDir = bootstrapVeritasRepo('veritas-attest-entry-');
+  const bootstrap = runVeritas(rootDir, [
+    'attest', 'bootstrap', '--actor', 'brian', '--approval-ref', HUMAN_APPROVAL_REF, '--non-interactive',
+  ]);
+  assert.equal(bootstrap.status, 0, bootstrap.stderr);
+  commitAll(rootDir, 'Bootstrap attestation');
+  return { rootDir, attestation: parseCliJson(bootstrap.stdout).attestation };
+}
+
+// Moves `relativePath` (a protected file or one of its parent directories)
+// byte for byte to an unprotected location and leaves a symbolic link to the
+// copy in its place. Returns false where the platform cannot create links.
+function swapForSymlinkToCopy(t, rootDir, relativePath) {
+  const original = join(rootDir, relativePath);
+  const copy = join(rootDir, 'unprotected', relativePath.replaceAll('/', '__'));
+  mkdirSync(join(rootDir, 'unprotected'), { recursive: true });
+  cpSync(original, copy, { recursive: true });
+  rmSync(original, { recursive: true });
+  try {
+    symlinkSync(relative(dirname(original), copy), original);
+  } catch (error) {
+    if (['EPERM', 'EACCES', 'ENOSYS'].includes(error.code)) {
+      t.skip(`symlinks unsupported: ${error.code}`);
+      return false;
+    }
+    throw error;
+  }
+  return true;
+}
+
+const PROTECTED_ENTRY_CASES = [
+  {
+    label: 'the repo standards file',
+    swapPath: '.veritas/repo-standards/default.repo-standards.json',
+    field: 'repoStandardsHash',
+    entryType: 'symbolic-link',
+  },
+  {
+    label: 'the repo map file',
+    swapPath: '.veritas/repo-map.json',
+    field: 'repoMapHash',
+    entryType: 'symbolic-link',
+  },
+  {
+    label: 'the authority settings file',
+    swapPath: '.veritas/authority/default.authority-settings.json',
+    field: 'authoritySettingsHash',
+    entryType: 'symbolic-link',
+  },
+  {
+    label: 'the authority settings parent directory',
+    swapPath: '.veritas/authority',
+    field: 'authoritySettingsHash',
+    entryType: 'symbolic-link-parent',
+  },
+];
+
+for (const { label, swapPath, field, entryType } of PROTECTED_ENTRY_CASES) {
+  test(`${label} swapped for a symbolic link to an identical copy is drift in working-tree and branch-diff scopes`, (t) => {
+    const { rootDir, attestation } = bootstrapAttestedRepo();
+    assert.equal(cliAttestStatus(rootDir).state, 'current');
+    const baseRevision = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: rootDir, encoding: 'utf8' }).trim();
+    if (!swapForSymlinkToCopy(t, rootDir, swapPath)) return;
+    commitAll(rootDir, 'Move a protected file behind a symbolic link');
+
+    const status = cliAttestStatus(rootDir);
+    assert.equal(status.state, 'drifted');
+    assert.deepEqual(status.drift, [{ field, attested: attestation[field], current: null }]);
+    assert.match(status.protectedStandards.error, new RegExp(`\\(${entryType}`));
+
+    for (const scope of [['--working-tree'], ['--changed-from', baseRevision, '--changed-to', 'HEAD']]) {
+      const readiness = cliReadiness(rootDir, scope);
+      assert.notEqual(readiness.status, 0, `readiness ${scope.join(' ')} must fail`);
+      const line = attestationPolicyLine(readiness.stdout);
+      assert.match(line, /^FAIL\s+policy-changes-require-attestation/, readiness.stdout);
+      assert.match(line, /must be regular files at their protected paths/);
+    }
+
+    // A fresh attestation cannot bless the link: attesting refuses and
+    // leaves the attestation chain untouched.
+    const attest = runVeritas(rootDir, [
+      'attest', 'policy-change', '--actor', 'brian', '--message', 'Try to attest the link.',
+      '--approval-ref', HUMAN_APPROVAL_REF,
+    ]);
+    assert.notEqual(attest.status, 0);
+    assert.match(attest.stderr, /must be regular files at their protected paths/);
+    assert.equal(
+      readJsonFromAbsolute(join(rootDir, '.veritas/attestations/HEAD')).currentAttestationId,
+      attestation.id,
+    );
+  });
+}
+
+test('restoring an identical regular file is current again, and an ordinary content edit is still drift', (t) => {
+  const { rootDir, attestation } = bootstrapAttestedRepo();
+  const swapPath = '.veritas/repo-standards/default.repo-standards.json';
+  const attestedBytes = readFileSync(join(rootDir, swapPath));
+  if (!swapForSymlinkToCopy(t, rootDir, swapPath)) return;
+  assert.equal(cliAttestStatus(rootDir).state, 'drifted');
+
+  // The attestation bound these bytes. Back at the protected path as a
+  // regular file they are exactly the attested trust root, so this is
+  // current, not drift: no governing content lives outside protection.
+  unlinkSync(join(rootDir, swapPath));
+  writeFileSync(join(rootDir, swapPath), attestedBytes);
+  assert.equal(cliAttestStatus(rootDir).state, 'current');
+  const restored = cliReadiness(rootDir, ['--working-tree']);
+  assert.match(attestationPolicyLine(restored.stdout), /^PASS\s+policy-changes-require-attestation/, restored.stdout);
+
+  // Control: a content edit to the regular file drifts with a real hash and
+  // keeps the policy-change remediation, exactly as before.
+  const policy = JSON.parse(attestedBytes.toString('utf8'));
+  policy.description = `${policy.description} Edited after attestation.`;
+  writeFileSync(join(rootDir, swapPath), `${JSON.stringify(policy, null, 2)}\n`);
+  const status = cliAttestStatus(rootDir);
+  assert.equal(status.state, 'drifted');
+  assert.equal(status.drift.length, 1);
+  assert.equal(status.drift[0].field, 'repoStandardsHash');
+  assert.equal(status.drift[0].attested, attestation.repoStandardsHash);
+  assert.match(status.drift[0].current, /^sha256:[0-9a-f]{64}$/);
+  assert.notEqual(status.drift[0].current, attestation.repoStandardsHash);
+  assert.equal(status.protectedStandards.error, undefined);
+  const edited = cliReadiness(rootDir, ['--working-tree']);
+  assert.notEqual(edited.status, 0);
+  assert.equal(
+    attestationPolicyLine(edited.stdout).trim(),
+    'FAIL  policy-changes-require-attestation: Current protected standards hashes do not match the active attestation.',
+  );
+});
+
+test('an unchanged regular trust root keeps the hashes of a real committed attestation', () => {
+  // These fixture files are byte-for-byte the protected standards this repo
+  // attested in policy-change-2026-10-13T19-13-53-170Z-9ab453bfd7b4 (copied
+  // from the commit that recorded it), and the record is that committed file.
+  // The literals below are from that record; upgrading Veritas must not
+  // change them, or every existing attestation would read as drift.
+  const fixtureDir = join(repoRootDir, 'tests/fixtures/attested-trust-root');
+  const attestationId = 'policy-change-2026-10-13T19-13-53-170Z-9ab453bfd7b4';
+  const expected = {
+    repoStandardsHash: 'sha256:7f106f0231b7eef1c9c51a9df8c0596a2acdbdcc0ff4c48c3c02bd5dd845ebf3',
+    repoMapHash: 'sha256:9d125ef28636a4d7e157c5b85413bd50a9f0745a55c6c1b050a9ba6b15e2681c',
+    authoritySettingsHash: 'sha256:192e1eeec727a0c18a372b76c4ed194eaa4faef0f6c6080f25a808aeeb660946',
+  };
+  const expectedContentHash = 'e9b2c1f78c224b084ef83c846a93c317d584a9a303168834c27d0515434158c5';
+
+  const rootDir = initCommittedRepo('veritas-attest-compat-');
+  for (const [fixture, target] of [
+    ['repo-map.json', '.veritas/repo-map.json'],
+    ['default.repo-standards.json', '.veritas/repo-standards/default.repo-standards.json'],
+    ['default.authority-settings.json', '.veritas/authority/default.authority-settings.json'],
+    [`${attestationId}.attestation.json`, `.veritas/attestations/${attestationId}.attestation.json`],
+  ]) {
+    mkdirSync(dirname(join(rootDir, target)), { recursive: true });
+    cpSync(join(fixtureDir, fixture), join(rootDir, target));
+  }
+  writeFileSync(
+    join(rootDir, '.veritas/attestations/HEAD'),
+    `${JSON.stringify({ currentAttestationId: attestationId }, null, 2)}\n`,
+  );
+  commitAll(rootDir, 'Committed attested trust root');
+
+  const record = readJsonFromAbsolute(join(rootDir, `.veritas/attestations/${attestationId}.attestation.json`));
+  assert.deepEqual(
+    { repoStandardsHash: record.repoStandardsHash, repoMapHash: record.repoMapHash, authoritySettingsHash: record.authoritySettingsHash },
+    expected,
+  );
+  assert.equal(record.surface.claim.value.contentHash, expectedContentHash);
+
+  const status = cliAttestStatus(rootDir);
+  assert.equal(status.state, 'current');
+  assert.deepEqual(status.drift, []);
+  assert.deepEqual(status.protectedStandards.hashes, expected);
+  const { repoStandardsHash, repoMapHash, authoritySettingsHash } = status.protectedStandards.hashes;
+  assert.equal(
+    createHash('sha256').update(`${repoStandardsHash}:${repoMapHash}:${authoritySettingsHash}`).digest('hex'),
+    expectedContentHash,
+  );
 });
 
 // ─── Testimony Admissibility Tests ────────────────────────────────────────
