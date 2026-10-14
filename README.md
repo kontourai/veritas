@@ -38,9 +38,11 @@ in a fresh clone it fails with `npx canceled due to missing packages`, naming th
 version rather than your lockfile's, so run `npm install` first. `init` bootstraps repo standards, a
 repo map, and AI instruction guidance under `.veritas/`.
 
-Once you've reviewed the generated standards, protect them with an authority-backed attestation —
-do this before your first readiness check, or `readiness` reports advisory warnings that no
-attestation exists yet:
+Once you've reviewed the generated standards, record an attestation with the attesting actor and
+a reference to the human approval. Do this before your first readiness check, or `readiness` reports
+advisory warnings that no attestation exists yet. By default Veritas checks only that the approval
+reference is present, not that the approval exists; see [Attestation](docs/guides/attestation.md)
+to require a resolved approval record:
 
 ```bash
 npx --no @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive

@@ -61,7 +61,7 @@ After reviewing the generated standards and map, record the first attestation:
 npx --no @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
 ```
 
-This records authority-backed evidence for the current protected standards. If the standards or map change later, Veritas reports that fresh authority is needed before those changes can be trusted.
+This records the attesting actor, the current protected standards hashes, and the approval reference you supply. By default Veritas checks only that the reference is present, not that the approval exists; see [Attestation](attestation.md) to require a resolved approval record. If the standards or map change later, Veritas reports that a fresh attestation is needed before those changes can be trusted.
 
 ## Run A Readiness Check
 
