@@ -51,7 +51,7 @@ const MAIN_USAGE = `Usage:
   veritas attest status [--root <path>]
   veritas claim init|list|add|edit|remove|scaffold|validate [--root <path>]
   veritas setup repo-hooks [--root <path>] [--force]
-  veritas print|apply <target> [--root <path>] [--force]   (veritas apply --help lists targets, e.g. governance-blocks)
+  veritas apply governance-blocks|package-scripts|ci-snippet|git-hook|runtime-hook|stop-hook|codex-hook|claude-code-pre-tool-use-hook [--root <path>] [--force]
   veritas plugin list [--root <path>]
   veritas feedback draft --evidence <path> [--authority-settings <path>] [--output <path>] [--force]
   veritas feedback observe [--session-log <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>]

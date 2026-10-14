@@ -12,7 +12,8 @@ import { tempDir } from '../temp-dir.mjs';
 // with what the published bin actually routes, in both directions, so the two cannot drift apart
 // silently again.
 
-const veritasBin = join(repoRootDir, 'bin/veritas.mjs');
+// The published bin mapping, not a hard-coded path: what `npx @kontourai/veritas` runs.
+const veritasBin = join(repoRootDir, JSON.parse(readFileSync(join(repoRootDir, 'package.json'), 'utf8')).bin.veritas);
 
 function veritas(cwd, args) {
   return spawnSync(process.execPath, [veritasBin, ...args], { cwd, encoding: 'utf8' });
@@ -145,11 +146,14 @@ test('every command the shipped docs name is routed by the bin', async (t) => {
   assert.deepEqual(readdirSync(cwd), [], 'a --help probe wrote files');
 });
 
+// Routed verbs the top-level help leaves out to stay short; their own help lists their commands.
+const VERBS_ONLY_IN_SCOPED_HELP = ['print', 'hooks'];
+
 // Usage lines from the top-level help and from each verb's own help, where `print` and `apply`
 // list their targets.
 function routedUsageLines() {
   const mainUsage = veritas(repoRootDir, ['--help']).stdout;
-  const verbs = new Set();
+  const verbs = new Set(VERBS_ONLY_IN_SCOPED_HELP);
   for (const line of mainUsage.split('\n')) {
     const [program, verb] = line.trim().split(/\s+/);
     if (program !== 'veritas' || !/^[a-z]/.test(verb ?? '')) continue;
@@ -163,8 +167,12 @@ test('every command the bin routes is documented', () => {
   const documented = new Set(documentedCommands().map(({ words }) => words.join(' ')));
   const usageLines = routedUsageLines();
   // Pin the scoped targets independently, so a help change cannot silently shrink the check.
-  for (const pinned of ['veritas apply package-scripts', 'veritas print codex-hook']) {
+  for (const pinned of ['veritas apply package-scripts', 'veritas print codex-hook', 'veritas hooks codex pre-tool-use']) {
     assert.ok(usageLines.some((line) => line.trim().startsWith(pinned)), `help no longer lists ${pinned}`);
+  }
+  const mainUsage = veritas(repoRootDir, ['--help']).stdout;
+  for (const target of ['governance-blocks', 'package-scripts', 'codex-hook', 'claude-code-pre-tool-use-hook']) {
+    assert.ok(usageCovers(mainUsage, ['apply', target]), `top-level help lists apply ${target}`);
   }
   const undocumented = [];
   for (const line of usageLines) {
