@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
-import {buildReviewSessionEvents} from '@kontourai/survey/review-workbench';
+import {createHmac} from 'node:crypto';
+import {buildReviewSessionEvents, renderReviewWorkbenchHtml} from '@kontourai/survey/review-workbench';
 import {startReviewConsoleServer} from '@kontourai/survey/review-console';
 import {createGovernanceSurveyReview, serveGovernanceSurveyReview, prepareKitReview} from '../src/governance-review.mjs';
 
@@ -21,10 +22,15 @@ async function fixture(t, action = 'approve', options = {}) {
   const input = {rootDir, hostRoot, planPath, expiresAt: options.expiresAt ?? new Date(Date.now() + 60000).toISOString()};
   const producer = await prepareKitReview({input, host: options.resolveAuthority ? {resolveAuthority: options.resolveAuthority} : {}});
   const contentBeforeServing = JSON.parse(fs.readFileSync(producer.sessionPath));
+  if (options.legacy) {
+    delete contentBeforeServing.veritas.domain.presentation;
+    contentBeforeServing.veritas.signature = createHmac('sha256', fs.readFileSync(path.join(hostRoot, 'review-key'))).update(JSON.stringify(contentBeforeServing.veritas.domain)).digest('hex');
+    fs.writeFileSync(producer.sessionPath, JSON.stringify(contentBeforeServing));
+  }
   const review = {sessionFile: producer.sessionPath, basisDigest: contentBeforeServing.veritas.domain.basisDigest};
   const server = options.compatibility
     ? await serveGovernanceSurveyReview({hostRoot, sessionPath: review.sessionFile, ...options})
-    : await startReviewConsoleServer({sessionPath: producer.sessionPath, producerApply: {binding: producer.binding, apply: producer.apply}});
+    : await startReviewConsoleServer({sessionPath: producer.sessionPath, presentation: producer.presentation, producerApply: {binding: producer.binding, apply: producer.apply}});
   t.after(() => server.close());
   const content = JSON.parse(fs.readFileSync(review.sessionFile));
   const snapshot = {...content.snapshot, decisionsByItemName: Object.fromEntries(content.snapshot.items.map(item => [item.metadata.name, item.metadata.name === 'workflow-decision' ? action === 'could-not-confirm' ? action : 'select-proposed' : 'accept-proposed'])), selectedCandidateIdsByItemName: {'workflow-decision': action}, notesByItemName: {'workflow-decision': action === 'request-changes' || action === 'could-not-confirm' ? 'Resolve the owner question' : ''}};
@@ -32,7 +38,7 @@ async function fixture(t, action = 'approve', options = {}) {
   const get = async () => (await fetch(server.url + 'api/session')).json();
   const post = (route, body) => fetch(server.url + 'api/' + route, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
   const saved = await post('events', {baseRevision: (await get()).revision, events}); assert.equal(saved.status, 200, JSON.stringify(await saved.json()));
-  return {rootDir, hostRoot, planPath, ...review, content, apply: async () => post('apply', {baseRevision: (await get()).revision}), receipt: () => JSON.parse(fs.readFileSync(path.join(hostRoot, content.session.metadata.name + '.decision.json'))).receipt};
+  return {rootDir, hostRoot, planPath, ...review, content, producer, get, apply: async () => post('apply', {baseRevision: (await get()).revision}), receipt: () => JSON.parse(fs.readFileSync(path.join(hostRoot, content.session.metadata.name + '.decision.json'))).receipt};
 }
 
 for (const action of ['approve', 'decline', 'request-changes', 'could-not-confirm']) test(`Survey retains distinct ${action} without applying protected standards`, async t => {
@@ -101,4 +107,44 @@ test('standalone compatibility server uses the same admitted producer dispositio
 test('request JSON cannot inject host approval or arbitrary review fields', async () => {
   await assert.rejects(() => prepareKitReview({input: {rootDir: '/tmp', planPath: 'plan', hostRoot: '/tmp', expiresAt: 'date', resolveAuthority: {approvedBy: 'human'}}}), /authority comes only/);
   await assert.rejects(() => prepareKitReview({input: {rootDir: '/tmp', planPath: 'plan', hostRoot: '/tmp', expiresAt: 'date'}, host: {resolveAuthority: {status: 'approved'}}}), /must be a function/);
+});
+
+for (const compatibility of [false, true]) test(`sealed plan presentation reaches ${compatibility ? 'standalone' : 'native'} review without changing canonical candidates`, async t => {
+  const f = await fixture(t, 'request-changes', {compatibility});
+  const presentation = (await f.get()).presentation;
+  assert.equal(presentation.title, 'Standards plan review');
+  assert.deepEqual(presentation, f.content.veritas.domain.presentation);
+  assert.match(presentation.context, /Plan: \.veritas\/init-plans\/review.json/);
+  assert.match(presentation.context, new RegExp(f.content.veritas.domain.expiresAt));
+  assert.match(presentation.context, /does not apply standards or create an attestation/);
+  for (const line of JSON.parse(fs.readFileSync(f.planPath)).reasoning_summary) assert.ok(presentation.context.includes(line));
+  assert.deepEqual(presentation.items['workflow-decision'], {title: 'Decision', kind: 'choice', candidateLabels: {approve: 'Approve', 'request-changes': 'Request changes', decline: 'Decline'}});
+  for (const item of f.content.snapshot.items.filter(item => item.metadata.name !== 'workflow-decision')) {
+    assert.equal(presentation.items[item.metadata.name].kind, 'acknowledgment');
+    assert.equal(presentation.items[item.metadata.name].title, item.metadata.name === 'plan-context' ? 'Reasoning and owner questions' : path.basename(item.spec.target));
+  }
+  const html = renderReviewWorkbenchHtml(f.content.snapshot, undefined, {queuePresentation: presentation, hideApply: true});
+  assert.match(html, /Mark reviewed/); assert.match(html, /aria-label="Request changes"/); assert.doesNotMatch(html, /Conflict: 3 values/);
+  assert.equal((await f.apply()).status, 200);
+  assert.match(f.receipt().summary, /Correction request recorded/);
+  const selected = JSON.parse(fs.readFileSync(f.sessionFile)).events.find(event => event.spec.candidateId === 'request-changes');
+  assert.equal(selected.spec.data.workbenchDecision, 'select-proposed');
+  assert.equal(fs.existsSync(path.join(f.rootDir, '.veritas/repo-map.json')), false);
+});
+
+for (const field of ['context', 'action-label']) test(`changed retained ${field} cannot record a governance disposition`, async t => {
+  const f = await fixture(t);
+  const content = JSON.parse(fs.readFileSync(f.sessionFile));
+  if (field === 'context') content.veritas.domain.presentation.context = 'Fabricated findings cleared';
+  else content.veritas.domain.presentation.items['workflow-decision'].candidateLabels.approve = 'Skip authority';
+  fs.writeFileSync(f.sessionFile, JSON.stringify(content));
+  assert.equal((await f.apply()).status, 409);
+  assert.equal(fs.existsSync(path.join(f.hostRoot, f.content.session.metadata.name + '.decision.json')), false);
+});
+
+test('an already sealed legacy session without display hints still records its original disposition', async t => {
+  const f = await fixture(t, 'decline', {compatibility: true, legacy: true});
+  assert.equal((await f.get()).presentation, undefined);
+  assert.equal((await f.apply()).status, 200);
+  assert.equal(f.receipt().intent.action, 'decline');
 });
