@@ -17,7 +17,9 @@ npx @kontourai/veritas attest bootstrap \
 
 `--approval-ref` is required for every authority-backed attestation. Use a durable reference to the explicit human approval, such as a pull request review, issue comment, change ticket, signed approval record, or other review artifact. Agents may prepare the command, but they should stop and ask for that reference instead of inventing one.
 
-Teams can tighten this in authority settings with `review_preferences.attestation_approval_ref_policy.allowed_prefixes`. For example, a team can require all approval references to start with `servicenow:change/` before Veritas will record an attestation. That local policy is the foundation for resolver-backed checks where Veritas can later validate the referenced approval against an external system before writing the record.
+New repos start in `reference-only` mode. In that mode Veritas checks only that the reference is not empty; it does not confirm that the approval exists. The attestation records who claimed approval and where to find it.
+
+Teams can tighten this in authority settings under `review_preferences.attestation_approval_ref_policy`. `allowed_prefixes` constrains the reference format; for example, a team can require all approval references to start with `servicenow:change/`. A prefix check still does not confirm the approval. To have Veritas check the referenced approval before writing the record, use a resolved mode with an approval record, described below.
 
 ## Approval Resolver Contract
 
@@ -45,9 +47,9 @@ Authority settings can use these policy modes:
 - `reference-only`: require a durable approval reference
 - `prefix`: require one of the configured approval reference prefixes
 - `resolved`: require a resolver-backed approved result
-- `resolved-strict`: reserved for stricter scope/actor matching on top of resolver approval
+- `resolved-strict`: reserved for stricter scope/actor matching; it currently behaves the same as `resolved`
 
-Current built-in CLI behavior supports `reference-only` and `prefix`. Resolver-backed modes are part of the core contract and will be usable by provider or offline resolvers.
+The built-in CLI supports `reference-only`, `prefix`, and `resolved` with the offline resolver below. It does not include a network provider resolver.
 
 ## Offline Approval Records
 
