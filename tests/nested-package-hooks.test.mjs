@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { writeBootstrapStarterKit } from '../src/index.mjs';
@@ -35,14 +35,15 @@ function pnpmWorkspace({ installVeritas }) {
   return { rootDir, packageDir };
 }
 
-function runHook(command, { cwd, input = '', env = {} }) {
+function runHook(command, { cwd, input = '', env = {}, timeout }) {
   const result = spawnSync('sh', ['-c', command], {
     cwd,
     encoding: 'utf8',
     input,
     env: { ...cleanGitEnv(), ...env },
+    ...(timeout ? { timeout, killSignal: 'SIGKILL' } : {}),
   });
-  return { status: result.status, stdout: result.stdout, stderr: result.stderr };
+  return { status: result.status, signal: result.signal, stdout: result.stdout, stderr: result.stderr };
 }
 
 // A Claude Code session log is JSONL in the shape tests/integrations/claude-code-session-log.test.mjs uses.
@@ -248,4 +249,83 @@ test('the Codex PreToolUse hook carries the plain invocation for Windows, where 
   const result = runHook(handler.commandWindows, { cwd: rootDir, input: editPayload(rootDir), env: { VERITAS_HOOK_SKIP: '1' } });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
+});
+
+// The walk must end on its own. A hang here would stall every agent edit, so these fail fast.
+const WALK_TIMEOUT_MS = 20_000;
+
+test('the walk ends when the working directory has been deleted', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'veritas-deleted-cwd-'));
+  const result = runHook(`cd "${dir}" && rmdir "${dir}" && ${CODEX_PRE_TOOL_USE}`, {
+    cwd: tmpdir(),
+    input: editPayload(dir),
+    timeout: WALK_TIMEOUT_MS,
+  });
+  assert.equal(result.signal, null, `the hook command did not terminate within ${WALK_TIMEOUT_MS} ms`);
+  // With no working directory there is nothing to walk; plain npx reports the missing directory.
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /process\.cwd failed|uv_cwd|ENOENT/);
+});
+
+test('the walk ends from a working directory whose path is longer than 1024 bytes', () => {
+  const base = mkdtempSync(join(tmpdir(), 'veritas-deep-cwd-'));
+  const level = 'd'.repeat(100);
+  // Built with relative steps: an absolute path this long is past macOS's PATH_MAX for most calls.
+  const descend = Array.from({ length: 11 }, () => `mkdir ${level} && cd ${level}`).join(' && ');
+  try {
+    const result = runHook(`${descend} && [ "$(pwd -P | wc -c)" -gt 1024 ] && ${CODEX_PRE_TOOL_USE}`, {
+      cwd: base,
+      input: editPayload(base),
+      env: { npm_config_cache: mkdtempSync(join(tmpdir(), 'veritas-empty-npm-cache-')) },
+      timeout: WALK_TIMEOUT_MS,
+    });
+    assert.equal(result.signal, null, `the hook command did not terminate within ${WALK_TIMEOUT_MS} ms`);
+    // The walk ended and the command reached plain npx. Nothing is installed on the path, so npx
+    // refuses; on macOS, Node itself cannot read a working directory this long and stops first.
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /npx canceled due to missing packages|process\.cwd failed/);
+  } finally {
+    spawnSync('rm', ['-rf', base]);
+  }
+});
+
+// On Linux CI the case-mismatch test skips, so this exercises the identity match there: git names
+// the root with a `/./` segment, the same directory under a different string.
+test('the git root is matched by identity when git spells it differently', () => {
+  const { rootDir, packageDir } = pnpmWorkspace({ installVeritas: true });
+  const realGit = spawnSync('sh', ['-c', 'command -v git'], { encoding: 'utf8' }).stdout.trim();
+  assert.ok(realGit, 'git must be on PATH');
+  const fakeBin = mkdtempSync(join(tmpdir(), 'veritas-fake-git-'));
+  const spelledRoot = `${realpathSync(rootDir)}/.`;
+  writeFileSync(join(fakeBin, 'git'), [
+    '#!/bin/sh',
+    `if [ "$1" = rev-parse ] && [ "$2" = --show-toplevel ]; then echo ${JSON.stringify(spelledRoot)}; exit 0; fi`,
+    `exec ${JSON.stringify(realGit)} "$@"`,
+    '',
+  ].join('\n'));
+  chmodSync(join(fakeBin, 'git'), 0o755);
+
+  const result = runHook(CODEX_PRE_TOOL_USE, {
+    cwd: packageDir,
+    input: editPayload(packageDir),
+    env: { PATH: `${fakeBin}:${process.env.PATH}`, VERITAS_HOOK_SKIP: '1' },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.doesNotMatch(result.stderr, /npx canceled/);
+  assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
+});
+
+test('the nearest install wins over one farther up toward the git root', () => {
+  const { rootDir, packageDir } = pnpmWorkspace({ installVeritas: true });
+  // packages/a has its own install, which announces itself instead of running Veritas.
+  const marker = join(rootDir, 'nearest-ran');
+  const nearest = plantedVeritas(mkdtempSync(join(tmpdir(), 'veritas-nearest-')), marker);
+  mkdirSync(join(packageDir, 'node_modules/@kontourai'), { recursive: true });
+  mkdirSync(join(packageDir, 'node_modules/.bin'), { recursive: true });
+  symlinkSync(nearest, join(packageDir, 'node_modules/@kontourai/veritas'), 'dir');
+  symlinkSync('../@kontourai/veritas/bin/veritas.js', join(packageDir, 'node_modules/.bin/veritas'));
+
+  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: packageDir, input: editPayload(packageDir) });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(existsSync(marker), true, 'the install in packages/a must run, not the root install');
 });

@@ -15,15 +15,22 @@
 // package.json searches upward past the git root for the nearest package.json or node_modules. That
 // limit is npm's, and this walk does not widen it.
 //
+// The walk always ends. It stops unless the directory is absolute: a deleted working directory
+// makes `pwd -P` print nothing, and a relative string would not shorten below. Each step drops the
+// last path component with parameter expansion, so an absolute string gets strictly shorter until
+// it is "/" (an empty result means "/"). Unlike dirname, that forks nothing per level and cannot
+// fail on a path longer than the platform's limit.
+//
 // POSIX sh with `test -ef`, which dash, bash, zsh and busybox support. Codex on Windows runs hook
 // commands through PowerShell, so the Codex config also carries the plain command as commandWindows.
 export function nearestInstalledVeritasCommand(args) {
   return 'VERITAS_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"; VERITAS_PREFIX=; VERITAS_FOUND=; '
-    + 'VERITAS_DIR="$(pwd -P)"; while :; do '
+    + 'VERITAS_DIR="$(pwd -P 2>/dev/null)"; while :; do '
+    + 'case "$VERITAS_DIR" in /*) ;; *) break;; esac; '
     + 'if [ -z "$VERITAS_FOUND" ] && [ -f "$VERITAS_DIR/node_modules/@kontourai/veritas/package.json" ]; then VERITAS_FOUND="$VERITAS_DIR"; fi; '
     + 'if [ -n "$VERITAS_ROOT" ] && [ "$VERITAS_DIR" -ef "$VERITAS_ROOT" ]; then VERITAS_PREFIX="$VERITAS_FOUND"; break; fi; '
     + 'if [ "$VERITAS_DIR" = / ]; then break; fi; '
-    + 'VERITAS_DIR="$(dirname "$VERITAS_DIR")"; done; '
+    + 'VERITAS_DIR="${VERITAS_DIR%/*}"; [ -n "$VERITAS_DIR" ] || VERITAS_DIR=/; done; '
     + `if [ -n "$VERITAS_PREFIX" ]; then npx --no --prefix "$VERITAS_PREFIX" @kontourai/veritas ${args}; `
     + `else npx --no @kontourai/veritas ${args}; fi`;
 }
