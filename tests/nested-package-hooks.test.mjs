@@ -205,7 +205,7 @@ test('a GIT_DIR and GIT_WORK_TREE naming another repository do not let the walk 
   assertRefusedWithoutPlanted(result, marker);
 });
 
-test('outside a git repository the walk passes no prefix, so a planted parent never runs', (t) => {
+test('outside a git repository the walk runs no install it found, so a planted parent never runs', (t) => {
   const { parent, marker, cache } = plantedParent(t);
   const dir = join(parent, 'not-a-repo');
   mkdirSync(dir);
