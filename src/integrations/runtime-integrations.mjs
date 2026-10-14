@@ -13,10 +13,10 @@ import {
 import {
   applyClaudeCodePostSessionHook,
   applyClaudeCodePreToolUseHook,
-  applyGitHook,
   applyRuntimeHook,
   applyStopHook,
   buildClaudeCodeSessionLogCaptureCommand,
+  installRepoHook,
 } from '../hooks.mjs';
 import { shellQuote } from '../shell.mjs';
 
@@ -203,17 +203,16 @@ export function CodexRuntimeIntegration(rootDir, options = {}) {
       return { installed: true, reason: 'Codex PreToolUse is included in the installed codex hooks artifact.' };
     },
     installStopHook() {
-      const gitHook = applyGitHook({
+      // The same writer as `setup repo-hooks`, so hooks it already installed are accepted.
+      const gitHook = installRepoHook({
         rootDir,
         hook: 'post-commit',
         force: options.force ?? false,
-        configureGit: true,
       });
-      const prePushHook = applyGitHook({
+      const prePushHook = installRepoHook({
         rootDir,
         hook: 'pre-push',
         force: options.force ?? false,
-        configureGit: true,
       });
       const runtimeHook = applyRuntimeHook({
         rootDir,

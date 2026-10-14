@@ -46,4 +46,4 @@ Optional free-text reason recorded on the `hook-skip` record written by the Clau
 
 ### `VERITAS_ACTOR`
 
-Provides the governance actor for `veritas boundaries check` when `--actor` is not supplied.
+Provides the governance actor for `veritas readiness --check boundaries` when `--actor` is not supplied.

@@ -586,6 +586,8 @@ npx --no @kontourai/veritas apply codex-hook [--root <path>] [--output <path>] [
 npx --no @kontourai/veritas apply claude-code-pre-tool-use-hook [--root <path>] [--output <path>] [--force]
 ```
 
+`npx --no @kontourai/veritas apply --help` and `npx --no @kontourai/veritas print --help` list the targets. Each target refuses an unknown flag, a flag without its value, a value outside the listed choices, and an extra positional argument before it writes anything.
+
 Write restrictions are intentional:
 
 - CI snippets must stay under `.veritas/snippets/`

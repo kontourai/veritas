@@ -15,7 +15,7 @@ import { mergeStopHookConfig } from './config-merge.mjs';
 import { assertWritableHookPath } from './write-safety.mjs';
 
 export { applyCiSnippet, applyPackageScripts } from './project-setup.mjs';
-export { applyGitHook, setupRepoHooks } from './git-hooks.mjs';
+export { applyGitHook, installRepoHook, setupRepoHooks } from './git-hooks.mjs';
 export {
   applyClaudeCodePostSessionHook,
   applyClaudeCodePreToolUseHook,
