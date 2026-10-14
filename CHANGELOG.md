@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.11.0](https://github.com/kontourai/veritas/compare/v1.10.1...v1.11.0) (2026-10-14)
+
+
+### Features
+
+* clarify standards plan review actions and next steps ([#276](https://github.com/kontourai/veritas/issues/276)) ([d7d5cda](https://github.com/kontourai/veritas/commit/d7d5cda7fdbfaada1cedcd61d3d150ab94e93914))
+
+
+### Fixes
+
+* classify removed paths against the base repo map ([#272](https://github.com/kontourai/veritas/issues/272)) ([7525cab](https://github.com/kontourai/veritas/commit/7525cab8a546167d9af6576f7ed3b348d6a75df9))
+* count a symlinked protected standards file as drift ([#278](https://github.com/kontourai/veritas/issues/278)) ([41afc63](https://github.com/kontourai/veritas/commit/41afc6386006fa10f0119189c948ed0f1b621122))
+* make protected type changes visible to governance ([#274](https://github.com/kontourai/veritas/issues/274)) ([584a7b4](https://github.com/kontourai/veritas/commit/584a7b491b2fd6031f5ac03bc9b9a8c8f00bc07b))
+
+
+### Documentation
+
+* declare product purpose and verified building blocks ([#270](https://github.com/kontourai/veritas/issues/270)) ([706f983](https://github.com/kontourai/veritas/commit/706f9833c629b1b626f1b42451270576559a053b))
+
 ## [1.10.1](https://github.com/kontourai/veritas/compare/v1.10.0...v1.10.1) (2026-10-13)
 
 
