@@ -231,15 +231,15 @@ assert(
   'CLI reference must explain the stdout contract.',
 );
 assert(
-  cliReference.includes('npx @kontourai/veritas --help'),
+  cliReference.includes('npx --no @kontourai/veritas -- --help'),
   'CLI reference must include the top-level help path.',
 );
 assert(
-  cliReference.includes('npx @kontourai/veritas readiness --help'),
+  cliReference.includes('npx --no @kontourai/veritas readiness --help'),
   'CLI reference must include subcommand help.',
 );
 assert(
-  cliReference.includes('npx @kontourai/veritas'),
+  cliReference.includes('npx --no @kontourai/veritas'),
   'CLI reference should use the scoped package invocation in public examples.',
 );
 assert(
