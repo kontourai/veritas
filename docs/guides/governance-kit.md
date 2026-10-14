@@ -55,24 +55,28 @@ npm exec -- veritas readiness --working-tree
 ### Non-npm repositories
 
 Do not add a consumer `package.json` merely to run Veritas. After explicit maintainer approval of
-a one-shot registry fetch, use the ephemeral invocation for every setup command:
+a one-shot registry fetch, resolve the current release once, have the maintainer approve that
+version, and use it for every setup command in the same shell session:
 
 ```bash
-npm exec --yes --package=@kontourai/veritas@latest -- veritas --version
-npm exec --yes --package=@kontourai/veritas@latest -- veritas init --explore --output .veritas/init-plans/first-pass.json
+v="$(npm view @kontourai/veritas@latest version)"
+echo "$v"
+npm exec --yes --package="@kontourai/veritas@${v}" -- veritas --version
+npm exec --yes --package="@kontourai/veritas@${v}" -- veritas init --explore --output .veritas/init-plans/first-pass.json
 # Review and approve the generated plan.
-npm exec --yes --package=@kontourai/veritas@latest -- veritas init --apply --plan .veritas/init-plans/first-pass.json
-npm exec --yes --package=@kontourai/veritas@latest -- veritas readiness --working-tree
+npm exec --yes --package="@kontourai/veritas@${v}" -- veritas init --apply --plan .veritas/init-plans/first-pass.json
+npm exec --yes --package="@kontourai/veritas@${v}" -- veritas readiness --working-tree
 ```
 
 This invocation uses npm's execution cache without writing the consumer manifest or lockfile.
-It tracks the current release on purpose: a literal version in a copied command goes stale, and
-an old release cannot read newer attestations. Record the version that `--version` prints with
-the setup evidence, and do not copy the `@latest` command or any literal version into a README or
-instruction file. A repository that installs Veritas as a development dependency uses
-`npm exec -- veritas ...` instead, which runs the version its lockfile resolves. For a repository
-without a package manifest, init configures a Node runtime smoke check so the first readiness run
-is runnable. Replace that smoke check with the repository's real evidenceCheck before promoting it.
+It follows the current release on purpose: a literal version in a copied command goes stale, and
+an old release cannot read newer attestations. Resolving `v` once keeps a new release from
+landing between two setup commands. Record the version with the setup evidence, and do not copy
+this command or any literal version into a README or instruction file. A repository that installs
+Veritas as a development dependency uses `npm exec -- veritas ...` instead, which runs the
+version its lockfile resolves. For a repository without a package manifest, init configures a Node
+runtime smoke check so the first readiness run is runnable. Replace that smoke check with the
+repository's real evidenceCheck before promoting it.
 
 ## Gate canonical readiness
 
@@ -171,7 +175,7 @@ application marker is lost, the host returns its original signed disposition.
 The same private session can be inspected and decided through Survey's CLI/MCP App:
 
 ```sh
-npx --yes --package=@kontourai/survey@8.1.0 survey-review-mcp \
+npx --yes --package=@kontourai/survey@latest survey-review-mcp \
   --session /absolute/private/veritas-review-host/RETURNED_SESSION.json
 ```
 

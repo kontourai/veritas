@@ -44,21 +44,25 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    as a fallback.
 
 3. If the external CLI is absent and no dependency is approved, but the maintainer approves a
-   one-shot fetch from the registry, run the current release ephemerally. Use the `@latest` tag,
-   not a literal version: a version copied into a README or instruction file goes stale, and an
-   old release cannot read the attestations a newer one writes.
+   one-shot fetch from the registry, resolve the current release once and use that version for
+   the whole session. Do not write a literal version into a command you copy elsewhere: a version
+   copied into a README or instruction file goes stale, and an old release cannot read the
+   attestations a newer one writes. Resolving once also keeps a new release from landing between
+   two setup commands.
 
    ```bash
-   npm exec --yes --package=@kontourai/veritas@latest -- veritas --version
-   npm exec --yes --package=@kontourai/veritas@latest -- veritas init --explore --output .veritas/init-plans/first-pass.json
+   v="$(npm view @kontourai/veritas@latest version)"
+   echo "$v"   # the maintainer approves this version before anything runs
+   npm exec --yes --package="@kontourai/veritas@${v}" -- veritas --version
+   npm exec --yes --package="@kontourai/veritas@${v}" -- veritas init --explore --output .veritas/init-plans/first-pass.json
    ```
 
-   Record the version that `--version` prints with the setup evidence. npm uses its ephemeral
-   execution cache and does not create or modify the consumer's `package.json` or lockfile. Use
-   the same `npm exec --yes --package=@kontourai/veritas@latest -- veritas` prefix for apply,
-   hooks, attestation, and readiness, and re-run `--version` first; if it prints a different
-   version than the one recorded, stop and restart from the plan step. Do not mix it with an
-   unrelated global CLI. Never write this prefix, or any literal version, into a README,
+   Record the version with the setup evidence; `--version` must print the same value. npm uses its
+   ephemeral execution cache and does not create or modify the consumer's `package.json` or
+   lockfile. Use the same `npm exec --yes --package="@kontourai/veritas@${v}" -- veritas` prefix
+   for apply, hooks, attestation, and readiness in the same shell session; if `v` is lost or
+   `--version` prints something else, stop and resolve again from the plan step. Do not mix it
+   with an unrelated global CLI. Never write this prefix, or any literal version, into a README,
    `AGENTS.md`, or other instruction file: the generated Veritas files state the unversioned
    command, and CI is where a repository pins the engine it trusts.
 
@@ -72,7 +76,7 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    which package/runtime installation convention to use. Do not invent one.
 
 5. Derive a plan without applying it. Use `"$veritas_engine_path"` or the step 3
-   `npm exec --yes --package=@kontourai/veritas@latest -- veritas` prefix in place of
+   `npm exec --yes --package="@kontourai/veritas@${v}" -- veritas` prefix in place of
    `npm exec -- veritas` when following an external engine path:
 
    ```bash
