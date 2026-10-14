@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import { writeBootstrapStarterKit } from '../src/index.mjs';
@@ -255,16 +255,27 @@ test('the Codex PreToolUse hook carries the plain invocation for Windows, where 
 const WALK_TIMEOUT_MS = 20_000;
 
 test('the walk ends when the working directory has been deleted', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'veritas-deleted-cwd-'));
-  const result = runHook(`cd "${dir}" && rmdir "${dir}" && ${CODEX_PRE_TOOL_USE}`, {
-    cwd: tmpdir(),
-    input: editPayload(dir),
-    timeout: WALK_TIMEOUT_MS,
-  });
-  assert.equal(result.signal, null, `the hook command did not terminate within ${WALK_TIMEOUT_MS} ms`);
-  // With no working directory there is nothing to walk; plain npx reports the missing directory.
-  assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /process\.cwd failed|uv_cwd|ENOENT/);
+  // The deleted directory gets a parent of its own. On macOS, every process that asks for a deleted
+  // working directory (git, the shell's pwd, node behind npx) takes time that grows with the number
+  // of entries in its former parent: about 0.2 s per call at 100,000 entries, against 10 ms when the
+  // parent is empty. The shared temporary directory holds every test's leftovers, so deleting there
+  // made this test slow in proportion to the host's history, and it timed out under load.
+  const parent = mkdtempSync(join(tmpdir(), 'veritas-deleted-cwd-'));
+  const dir = join(parent, 'cwd');
+  mkdirSync(dir);
+  try {
+    const result = runHook(`cd "${dir}" && rmdir "${dir}" && ${CODEX_PRE_TOOL_USE}`, {
+      cwd: parent,
+      input: editPayload(dir),
+      timeout: WALK_TIMEOUT_MS,
+    });
+    assert.equal(result.signal, null, `the hook command did not terminate within ${WALK_TIMEOUT_MS} ms`);
+    // With no working directory there is nothing to walk; plain npx reports the missing directory.
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /process\.cwd failed|uv_cwd|ENOENT/);
+  } finally {
+    rmSync(parent, { recursive: true, force: true });
+  }
 });
 
 test('the walk ends from a working directory whose path is longer than 1024 bytes', () => {
