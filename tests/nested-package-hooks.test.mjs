@@ -371,6 +371,18 @@ test('an install without a .bin link runs itself, not another veritas on PATH', 
   }
 });
 
+// The file the walk checks is the file it runs: a Veritas package directory without the entry point
+// does not count as an install, and the walk goes on to the next one.
+test('a Veritas package without its entry point does not count as an install', (t) => {
+  const { rootDir, packageDir } = pnpmWorkspace(t, { installVeritas: true });
+  mkdirSync(join(packageDir, 'node_modules/@kontourai/veritas'), { recursive: true });
+  writeFileSync(join(packageDir, 'node_modules/@kontourai/veritas/package.json'), `${JSON.stringify({ name: '@kontourai/veritas', version: '0.0.0-no-entry' })}\n`);
+  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: packageDir, input: editPayload(packageDir), env: { VERITAS_HOOK_SKIP: '1' } });
+  assert.equal(result.status, 0, result.stderr);
+  JSON.parse(result.stdout);
+  assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
+});
+
 // With installs in both packages/a and the root, the nearest one runs.
 test('the walk runs the nearest install', (t) => {
   const { rootDir, packageDir } = pnpmWorkspace(t, { installVeritas: true });
