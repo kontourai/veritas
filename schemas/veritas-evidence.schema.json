@@ -1010,7 +1010,9 @@
             "drifted",
             "missing",
             "pending",
-            "broken-head"
+            "broken-head",
+            "tampered",
+            "unverifiable"
           ]
         },
         "currentAttestationId": {
@@ -1043,7 +1045,8 @@
                   "repoStandardsHash",
                   "repoMapHash",
                   "authoritySettingsHash",
-                  "currentAttestationId"
+                  "currentAttestationId",
+                  "recordIntegrity"
                 ]
               },
               "attested": {
@@ -1110,6 +1113,35 @@
               "type": "boolean"
             },
             "explanation": {
+              "type": "string"
+            }
+          }
+        },
+        "recordIntegrity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "algorithm",
+            "message"
+          ],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "verified",
+                "unbound",
+                "mismatch",
+                "unsupported-algorithm"
+              ]
+            },
+            "algorithm": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "message": {
               "type": "string"
             }
           }
