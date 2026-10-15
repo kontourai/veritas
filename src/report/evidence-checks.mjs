@@ -88,7 +88,16 @@ export function buildRequiredEvidenceChecks({
   const selectedEvidenceCheckIds = new Set(
     (evidenceCheckPlan.evidenceChecks ?? []).map((evidenceCheck) => evidenceCheck.id),
   );
-  return evidenceChecksByIds(config, evidenceCheckPlan.requiredEvidenceCheckIds ?? readRequiredEvidenceCheckIds(config)).map((evidenceCheck) => {
+  const requiredEvidenceCheckIds = uniqueStrings(evidenceCheckPlan.requiredEvidenceCheckIds ?? readRequiredEvidenceCheckIds(config));
+  // A run-required check need not be declared in the Repo Map: an explicit
+  // --evidence-check-command is synthesized into the plan, so resolve
+  // definitions from the plan first and the Repo Map second.
+  const plannedById = new Map((evidenceCheckPlan.evidenceChecks ?? []).map((evidenceCheck) => [evidenceCheck.id, evidenceCheck]));
+  const configuredById = new Map(evidenceChecksByIds(config, requiredEvidenceCheckIds).map((evidenceCheck) => [evidenceCheck.id, evidenceCheck]));
+  const requiredDefinitions = requiredEvidenceCheckIds
+    .map((id) => plannedById.get(id) ?? configuredById.get(id))
+    .filter(Boolean);
+  return requiredDefinitions.map((evidenceCheck) => {
     const plannedEvidenceCheck = (evidenceCheckPlan.evidenceChecks ?? []).find(
       (check) => check.id === evidenceCheck.id,
     );

@@ -380,3 +380,42 @@ To refresh, run `npx --no @kontourai/veritas integrations claude-code install --
 `npx --no @kontourai/veritas integrations codex install --force` with the option you installed with.
 You can still draft standards feedback from a Claude Code session log by hand with
 `npx --no @kontourai/veritas feedback observe --tool claude-code --session-log <path>`.
+
+## Explicit Evidence Check Commands Block Readiness Again
+
+Release 1.6.0 (#204) made `veritas readiness --evidence-check-command <cmd>` additive: the
+command started running alongside the Repo Map's `requiredEvidenceCheckIds` instead of replacing
+them. That change also stopped a failing explicit command from blocking readiness, and neither the
+1.6.0 release notes nor this guide said so. From 1.6.0 on, a command that exited nonzero was
+reported as `WARN  evidence-check: <cmd>` ("Optional diagnostic failed"), the process exited `0`,
+JSON output had `evidenceCheckFailure: null` and `readiness.verdict: "ready"`, and the run passed.
+Release 1.5.3 and earlier failed readiness for the same command.
+
+Readiness now blocks on it again. The explicit command is still additive, so configured required
+checks still run and still fail on their own. The explicit command is also a required check for the
+run that supplied it:
+
+- A nonzero exit reports `FAIL  required-evidence-check:<id>: failed` and the process exits `1`.
+- JSON output sets `evidenceCheckFailure`, `readiness.status: "fail"` and
+  `readiness.verdict: "not-ready"`, and lists the command in `readiness.requiredEvidenceChecks`.
+- The evidence record's `repo_map.required_evidence_check_ids` includes its id and
+  `baseline_ci_fast_passed` is `false`. The readiness claim in the trust bundle is `rejected`.
+
+`<id>` is the Repo Map check's id when the command equals a configured check's command, so passing
+the command of an optional configured check makes that check required for the run. Otherwise it is
+an `explicit-command-<slug>` id.
+
+If you relied on the warning-only behaviour, `--evidence-check-command` has no option that makes it
+non-blocking. Choose one of these instead:
+
+- Make the command pass, or stop passing it to readiness.
+- Declare it in the Repo Map as a check listed in `defaultEvidenceCheckIds` or in an
+  `evidenceCheckRoutes` entry, but not in `requiredEvidenceCheckIds`, and run readiness without
+  `--evidence-check-command`. A failing default or routed check that is not required is reported
+  as `WARN` and does not block. An explicit command replaces default and routed selection, so the
+  two do not combine in one run. Changing `.veritas/repo-map.json` is a policy change and needs the
+  attestation your repository requires for it.
+- Run the command outside Veritas.
+
+A consumer that derived a failure from `evidenceCheckResults` because `evidenceCheckFailure` was
+`null` no longer needs to: Veritas reports the failure itself.

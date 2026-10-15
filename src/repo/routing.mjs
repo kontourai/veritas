@@ -41,11 +41,14 @@ export function resolveEvidenceCheckPlan({
       .flatMap((binding) => binding.evidenceCheckIds),
   ]);
   const matchedRoutes = evidenceCheckRoutes.filter((route) => routeMatchesAnyComponent(route, affectedNodes));
+  const explicitEvidenceChecks = explicitEvidenceCheckCommand
+    ? evidenceCheckRecordsForCommands(config, [explicitEvidenceCheckCommand])
+    : [];
   let evidenceChecks = [];
   let resolutionSource = 'none';
 
   if (explicitEvidenceCheckCommand) {
-    evidenceChecks = evidenceCheckRecordsForCommands(config, [explicitEvidenceCheckCommand]);
+    evidenceChecks = explicitEvidenceChecks;
     resolutionSource = 'explicit';
   } else if (matchedRoutes.length > 0) {
     const routedComponentIds = new Set(
@@ -76,6 +79,13 @@ export function resolveEvidenceCheckPlan({
     ...requiredEvidenceChecks.filter((evidenceCheck) => !selectedEvidenceCheckIds.has(evidenceCheck.id)),
   ];
   const evidenceCheckCommands = evidenceChecks.flatMap((evidenceCheck) => (evidenceCheck.runner ?? 'bash') === 'mcp' ? [] : [evidenceCheck.command]);
+  // An operator-supplied command is additive to the configured required checks
+  // and is itself required for the run that supplied it: a nonzero exit fails
+  // readiness instead of being demoted to an optional diagnostic.
+  const runRequiredEvidenceCheckIds = uniqueStrings([
+    ...requiredEvidenceCheckIds,
+    ...explicitEvidenceChecks.map((evidenceCheck) => evidenceCheck.id),
+  ]);
 
   return {
     affectedNodes,
@@ -88,7 +98,7 @@ export function resolveEvidenceCheckPlan({
     uncoveredPathResult: unmatchedFiles.length > 0 ? uncoveredPathPolicy : 'clear',
     evidenceCheckCommands,
     evidenceChecks,
-    requiredEvidenceCheckIds,
+    requiredEvidenceCheckIds: runRequiredEvidenceCheckIds,
     ruleEvidenceBindings,
     resolutionSource,
   };
