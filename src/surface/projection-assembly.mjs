@@ -29,14 +29,14 @@ function collectClaimDefinitions({ effectiveClaimStore, record, claims }) {
   }
 }
 
-function collectRecordProjection({ record, effectiveClaimStore, evidence, events, authorityTrace, rootDir }) {
+function collectRecordProjection({ record, effectiveClaimStore, evidence, events, authorityTrace, rootDir, actor }) {
   collectAffectedSurfaceEvidence(record, effectiveClaimStore, evidence, events);
   collectEvidenceCheckEvidence(record, effectiveClaimStore, evidence, events);
   collectPolicyResultEvidence(record, effectiveClaimStore, evidence, events);
   collectEvidenceInventoryEvidence(record, effectiveClaimStore, evidence, events);
   collectExternalToolEvidence(record, effectiveClaimStore, evidence, events);
   collectReadinessCoverageEvidence(record, effectiveClaimStore, evidence, events);
-  collectReadinessVerdictEvidence(record, effectiveClaimStore, evidence, events, authorityTrace);
+  collectReadinessVerdictEvidence(record, effectiveClaimStore, evidence, events, authorityTrace, { actor });
   collectGovernanceEvidence(record, effectiveClaimStore, evidence, events);
   collectRecommendationEvidence(record, effectiveClaimStore, evidence, rootDir);
 }
@@ -61,6 +61,7 @@ function collectPluginProjection({ claimStore, record, rootDir, evidence }) {
 export async function createSurfaceProjectionAssembly(record, {
   rootDir = process.cwd(),
   repoMapConfig = null,
+  actor = null,
 } = {}) {
   registerVeritasExtension();
   if (repoMapConfig) await loadPluginsFromConfig(repoMapConfig, rootDir);
@@ -73,7 +74,7 @@ export async function createSurfaceProjectionAssembly(record, {
   const { claims, evidence, events, claimGroups, authorityTrace } = assembler;
 
   collectClaimDefinitions({ effectiveClaimStore, record, claims });
-  collectRecordProjection({ record, effectiveClaimStore, evidence, events, authorityTrace, rootDir });
+  collectRecordProjection({ record, effectiveClaimStore, evidence, events, authorityTrace, rootDir, actor });
   collectClaimGroups({ record, effectiveClaimStore, claimGroups });
   collectPluginProjection({ claimStore, record, rootDir, evidence });
 

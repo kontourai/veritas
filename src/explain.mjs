@@ -7,6 +7,7 @@ import { ruleMatchesFile } from './rules/applicability.mjs';
 import { evaluateWorkAreaBoundaryRule } from './rules/evaluate.mjs';
 import { resolveVeritasPaths, listChangedFiles, listWorkingTreeFiles } from './report/index.mjs';
 import { parseTokens } from './args.mjs';
+import { resolveActor } from './util/actor.mjs';
 
 function ruleMatchesWorkAreaNode(rule, node, config) {
   if (!node) return false;
@@ -219,7 +220,7 @@ export function runBoundariesCheckCli(argv = process.argv.slice(2), defaults = {
   const result = checkBoundaries({
     rootDir,
     repoMap,
-    actor: options.actor ?? process.env.VERITAS_ACTOR ?? null,
+    actor: resolveActor(options.actor),
     files,
   });
   const status = result.passed ? 'PASS' : 'FAIL';
