@@ -262,9 +262,11 @@ Hooks Veritas already wrote keep the earlier command until you refresh them:
 
 - Claude Code: run `npx --no @kontourai/veritas integrations claude-code install --force`.
   Versions before the user-handler preservation fix replaced the entire `PreToolUse` list;
-  restore any deleted handlers from your own backup. Current installs preserve user handlers
-  and replace only the declared Veritas command under the same matcher. A user binding of the
-  same command under another matcher remains separate.
+  restore any deleted handlers from your own backup. Current `PreToolUse` installs preserve
+  user handlers and replace only the declared Veritas pre-edit command under the same matcher.
+  A `PreToolUse` binding of that command under another matcher remains separate. Session-end
+  capture migration still replaces Veritas-marked `SessionEnd` handlers and removes exact
+  historical `PostSession` handlers.
 - Codex: run `npx --no @kontourai/veritas integrations codex install --force` with the same option
   you installed with. In the hooks file it replaces the handlers v1.11.1 and v1.11.2 wrote, matched
   by their exact command.
