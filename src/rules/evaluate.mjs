@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { inspectGovernanceBlockFile } from '../governance.mjs';
+import { inspectGovernanceBlockFile, resolveGovernanceBlockTargets } from '../governance.mjs';
 import { classifyNodes } from '../repo/classify.mjs';
 import { matchesPatterns } from '../util/patterns.mjs';
 import { uniqueStrings } from '../util/strings.mjs';
@@ -52,10 +52,30 @@ export function evaluateRequiredArtifactsRule(rule, { rootDir }) {
 }
 
 /** @param {RuleContext} context */
-export function evaluateGovernanceBlockRule(rule, { rootDir }) {
-  const targets = rule.match?.['governance-block'] ?? [];
-  const findings = targets
-    .map((artifact) => inspectGovernanceBlockFile({ rootDir, filePath: artifact }))
+export function evaluateGovernanceBlockRule(rule, { rootDir, config }) {
+  // The same resolver as `apply governance-blocks`: this rule's paths plus the
+  // Repo Map's activation.aiInstructionFiles, so the remediation writes exactly
+  // the files this rule checks.
+  const { targets, invalidTargets } = resolveGovernanceBlockTargets({
+    rootDir,
+    repoMap: config,
+    governanceRules: [rule],
+  });
+  // A target outside the repository is a configuration error to report, not a path to read.
+  const invalidFindings = invalidTargets.map(({ path, reason }) => ({
+    kind: 'invalid-governance-target',
+    diagnostic: 'invalid-governance-target',
+    artifact: path,
+    remediation: `Correct or remove this entry in activation.aiInstructionFiles or the requirement's match: ${reason}.`,
+  }));
+  const fileFindings = targets
+    .map((target) => ({
+      target,
+      status: inspectGovernanceBlockFile({ rootDir, filePath: target.path }),
+    }))
+    // apply skips a missing optional target, so readiness does not require it.
+    .filter(({ target, status }) => status.exists || target.required)
+    .map(({ status }) => status)
     .filter((status) => !status.canonical)
     .map((status) => ({
       kind: status.exists
@@ -74,6 +94,7 @@ export function evaluateGovernanceBlockRule(rule, { rootDir }) {
               ? 'Run `npx --no @kontourai/veritas apply governance-blocks` to replace the marker-bounded block with the exact canonical block.'
               : 'Run `npx --no @kontourai/veritas apply governance-blocks` to normalize the markers and restore the exact canonical block.',
     }));
+  const findings = [...invalidFindings, ...fileFindings];
 
   const missingFileCount = findings.filter(({ kind }) => kind === 'missing-governance-file').length;
   const missingMarkerCount = findings.filter(
@@ -85,6 +106,7 @@ export function evaluateGovernanceBlockRule(rule, { rootDir }) {
   const duplicateMarkerCount = findings.filter(
     ({ diagnostic }) => diagnostic === 'duplicate-governance-markers',
   ).length;
+  const invalidTargetCount = invalidFindings.length;
   const staleContentCount = findings.filter(
     ({ diagnostic }) => diagnostic === 'stale-governance-content',
   ).length;
@@ -94,6 +116,7 @@ export function evaluateGovernanceBlockRule(rule, { rootDir }) {
     malformedMarkerCount > 0 && `${malformedMarkerCount} malformed canonical ${malformedMarkerCount === 1 ? 'marker set' : 'marker sets'}`,
     duplicateMarkerCount > 0 && `${duplicateMarkerCount} duplicate canonical ${duplicateMarkerCount === 1 ? 'marker set' : 'marker sets'}`,
     staleContentCount > 0 && `${staleContentCount} stale canonical block ${staleContentCount === 1 ? 'content mismatch' : 'content mismatches'}`,
+    invalidTargetCount > 0 && `${invalidTargetCount} ${invalidTargetCount === 1 ? 'target' : 'targets'} outside the repository`,
   ].filter(Boolean);
 
   return buildRuleResult(rule, {
@@ -102,7 +125,7 @@ export function evaluateGovernanceBlockRule(rule, { rootDir }) {
     summary:
       findings.length === 0
         ? 'All required AI instruction files contain the canonical Veritas governance block.'
-        : `AI instruction governance block mismatch: ${problems.join(', ')}. Run \`npx --no @kontourai/veritas apply governance-blocks\` to restore the exact canonical block. If npx refuses with missing packages, add \`@kontourai/veritas\` as a development dependency first.`,
+        : `AI instruction governance block mismatch: ${problems.join(', ')}.${invalidTargetCount > 0 ? ' Correct or remove the targets outside the repository first; apply refuses while one is configured.' : ''} Run \`npx --no @kontourai/veritas apply governance-blocks\` to restore the exact canonical block. If npx refuses with missing packages, add \`@kontourai/veritas\` as a development dependency first.`,
     findings,
   });
 }

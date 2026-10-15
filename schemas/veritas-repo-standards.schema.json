@@ -197,7 +197,11 @@
       "properties": {
         "governance-block": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string",
+            "description": "Repository-relative path of an instruction file inside the repository.",
+            "pattern": "^(?![\\\\/])(?![A-Za-z]:)(?!(?:.*[\\\\/])?\\.\\.(?:[\\\\/]|$)).+$"
+          }
         }
       }
     },
