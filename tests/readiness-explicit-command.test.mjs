@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parseTokens } from '../src/args.mjs';
 import { runMergeReadiness } from '../src/readiness/run.mjs';
 import { readinessVerdict, requiredEvidenceChecksFor } from '../src/surface/readiness.mjs';
 import { commitAll, initCommittedRepo, parseCliJson, repoRootDir } from './helpers.mjs';
@@ -289,4 +290,40 @@ test('CLI: an explicit command equal to an optional configured check makes that 
     [[OPTIONAL_ID, 'missing', true]],
   );
   assert.equal(readinessVerdict(record), 'not-ready');
+});
+
+test('CLI: the =value form, an empty value and a missing value for --evidence-check-command are usage errors and run nothing', (t) => {
+  const rootDir = initFixture(t, 'veritas-explicit-malformed-', markerCommand('configured-ran', 0));
+  const cases = [
+    {
+      label: '=value form',
+      args: [`--evidence-check-command=${markerCommand('inline-ran', 0)}`],
+      message: /--evidence-check-command takes its value as the next argument; the --evidence-check-command=<value> form is not supported/,
+    },
+    {
+      label: 'separate value then =value form',
+      args: ['--evidence-check-command', markerCommand('separate-ran', 0), `--evidence-check-command=${markerCommand('inline-ran', 2)}`],
+      message: /--evidence-check-command takes its value as the next argument/,
+    },
+    { label: 'empty value', args: ['--evidence-check-command', ''], message: /--evidence-check-command requires a non-empty value/ },
+    { label: 'blank value', args: ['--evidence-check-command', '   '], message: /--evidence-check-command requires a non-empty value/ },
+    { label: 'missing value', args: ['--evidence-check-command'], message: /--evidence-check-command requires a value$/m },
+  ];
+  for (const { label, args, message } of cases) {
+    const result = runReadinessCli(rootDir, ['--format', 'json', ...args]);
+    assert.equal(result.status, 2, `${label}: ${result.stdout}${result.stderr}`);
+    assertRefusedBeforeRunning(rootDir, result, message, ['configured-ran', 'inline-ran', 'separate-ran']);
+  }
+});
+
+test('parseTokens: a once rule without its own message uses flag-neutral text', () => {
+  const spec = { '--probe': { type: 'string', key: 'probe', once: true } };
+  assert.throws(() => parseTokens(['--probe', 'a', '--probe', 'b'], spec), (error) => {
+    assert.equal(error.message, '--probe may be given only once');
+    return true;
+  });
+  // Rules without strictValue keep their existing behaviour for =value, empty and missing values.
+  assert.deepEqual(parseTokens(['--probe=a'], spec), { options: {}, rest: ['--probe=a'] });
+  assert.deepEqual(parseTokens(['--probe', ''], spec).options, { probe: '' });
+  assert.deepEqual(parseTokens(['--probe'], spec).options, { probe: undefined });
 });

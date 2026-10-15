@@ -74,7 +74,8 @@ const RUN_USAGE = `Usage:
   veritas readiness --check boundaries --actor <id> [--diff <ref>] [--root <path>] [--repo-map <path>]
 
   --evidence-check-command <cmd>  Runs in addition to the Repo Map's required checks and is itself
-                                  required: a nonzero exit fails readiness. Takes exactly one command;
+                                  required: a nonzero exit fails readiness. Takes exactly one non-empty
+                                  command as the next argument (no --evidence-check-command=<cmd>);
                                   repeating it or combining it with --skip-evidence-check is an error.
 `;
 

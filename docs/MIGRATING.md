@@ -413,6 +413,9 @@ message and runs no check:
   never ran the others. The flag takes exactly one command.
 - Combining `--evidence-check-command` with `--skip-evidence-check`. The explicit command is a
   required check for the run, so skipping checks contradicts it. Use one or the other.
+- Writing `--evidence-check-command=<cmd>`, or giving the flag an empty value or no value. Earlier
+  releases ignored these and ran readiness as if the flag were absent. Pass the command as the next
+  argument: `--evidence-check-command "<cmd>"`.
 
 If you relied on the warning-only behaviour, `--evidence-check-command` has no option that makes it
 non-blocking. Choose one of these instead:

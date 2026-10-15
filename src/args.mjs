@@ -55,6 +55,12 @@ export function parseTokens(argv, spec, { defaults = {} } = {}) {
     const rule = spec[token];
 
     if (!rule) {
+      // `strictValue` rules refuse the `--flag=value` form rather than letting
+      // it fall into `rest`, where a caller that ignores `rest` drops it.
+      const inlineFlag = typeof token === 'string' && token.includes('=') ? token.slice(0, token.indexOf('=')) : null;
+      if (inlineFlag && spec[inlineFlag]?.strictValue) {
+        throw new Error(`${inlineFlag} takes its value as the next argument; the ${inlineFlag}=<value> form is not supported`);
+      }
       rest.push(token);
       continue;
     }
@@ -63,9 +69,18 @@ export function parseTokens(argv, spec, { defaults = {} } = {}) {
     // flags where silently dropping an earlier value would drop a requirement.
     if (rule.once) {
       if (seenOnceTokens.has(token)) {
-        throw new Error(`${token} may be given only once; it takes exactly one command`);
+        throw new Error(rule.onceMessage ?? `${token} may be given only once`);
       }
       seenOnceTokens.add(token);
+    }
+
+    if (rule.strictValue && rule.type !== 'flag') {
+      if (index + 1 >= argv.length) {
+        throw new Error(`${token} requires a value`);
+      }
+      if (String(argv[index + 1]).trim() === '') {
+        throw new Error(`${token} requires a non-empty value`);
+      }
     }
 
     if (rule.type === 'flag') {
@@ -290,7 +305,13 @@ export function parseReadinessArgs(argv) {
       '--working-tree': { type: 'flag', key: 'workingTree' },
       '--changed-from': { type: 'string', key: 'changedFrom' },
       '--changed-to': { type: 'string', key: 'changedTo' },
-      '--evidence-check-command': { type: 'string', key: 'evidenceCheckCommand', once: true },
+      '--evidence-check-command': {
+        type: 'string',
+        key: 'evidenceCheckCommand',
+        once: true,
+        onceMessage: '--evidence-check-command may be given only once; it takes exactly one command',
+        strictValue: true,
+      },
       '--skip-evidence-check': { type: 'flag', key: 'skipEvidenceCheck' },
       '--baseline-ci-fast-status': { type: 'string', key: 'baselineCiFastStatus' },
       '--projection-output': { type: 'string', key: 'projectionOutputPath' },
