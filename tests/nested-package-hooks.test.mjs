@@ -5,7 +5,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, realpathSync, symlinkSy
 import { basename, dirname, join } from 'node:path';
 import { writeBootstrapStarterKit } from '../src/index.mjs';
 import { buildSuggestedCodexHookConfig } from '../src/integrations/codex-hooks.mjs';
-import { buildClaudeCodeSessionLogCaptureCommand } from '../src/hooks/suggestions.mjs';
+import { buildClaudeCodeSessionLogCaptureCommand, buildSuggestedClaudeCodePreToolUseHook, buildSuggestedGitHook, buildSuggestedRuntimeHook, buildSuggestedStopHook } from '../src/hooks/suggestions.mjs';
 import { cleanGitEnv, commitAll, disableGitAutoMaintenance, initCommittedRepo, installLocalVeritasBin, repoRootDir } from './helpers.mjs';
 import { tempDir } from './temp-dir.mjs';
 
@@ -359,6 +359,62 @@ test('an install without a .bin link runs itself, not another veritas on PATH', 
     assert.equal(result.status, 0, `${cwd}: ${result.stderr}`);
     JSON.parse(result.stdout);
   }
+});
+
+const rootScriptCases = [
+  { name: 'post-commit initial history', body: () => buildSuggestedGitHook(), args: [], expectedArgs: (repo) => ['readiness', '--changed-from', spawnSync('git', ['hash-object', '-t', 'tree', '/dev/null'], { cwd: repo, encoding: 'utf8', env: cleanGitEnv() }).stdout.trim(), '--changed-to', 'HEAD'], exit: 7 },
+  { name: 'post-commit with parent commit', body: () => buildSuggestedGitHook(), commits: 2, args: [], expectedArgs: () => ['readiness', '--changed-from', 'HEAD~1', '--changed-to', 'HEAD'], exit: 7 },
+  { name: 'runtime default', body: () => buildSuggestedRuntimeHook(), args: [], expectedArgs: () => ['readiness', '--format', 'json', '--working-tree'], exit: 0 },
+  { name: 'runtime forwarded arguments', body: () => buildSuggestedRuntimeHook(), args: ['--check', 'repo standards'], expectedArgs: () => ['readiness', '--format', 'json', '--check', 'repo standards'], exit: 7 },
+  { name: 'Stop feedback', body: () => buildSuggestedStopHook().hookBody, args: [], expectedArgs: () => ['readiness', '--format', 'feedback', '--working-tree'], exit: 7, expectedExit: 0 },
+  { name: 'Claude PreToolUse', body: () => buildSuggestedClaudeCodePreToolUseHook().hookBody, args: ['--root', 'root with spaces'], expectedArgs: () => ['hooks', 'claude-code', 'pre-tool-use', '--root', 'root with spaces'], exit: 2 },
+];
+
+for (const foreign of ['parent .bin', 'PATH']) {
+  for (const script of rootScriptCases) {
+    test(`root-script ${script.name} runs its local entry without bin links instead of ${foreign}`, (t) => {
+      const planted = foreign === 'parent .bin' ? plantedParent(t) : null;
+      const repo = planted?.repo ?? initCommittedRepo(t, 'veritas-root-script-');
+      if (!planted) writeFileSync(join(repo, 'package.json'), '{"name":"root-script-fixture","version":"1.0.0"}\n');
+      for (const [key, value] of [['user.name', 'Veritas Tests'], ['user.email', 'tests@example.com']]) {
+        const configured = spawnSync('git', ['config', key, value], { cwd: repo, encoding: 'utf8', env: cleanGitEnv() });
+        assert.equal(configured.status, 0, configured.stderr);
+      }
+      if (planted) commitAll(repo, 'Initial root-script fixture');
+      for (let index = 0; index < (script.commits ?? 0); index += 1) {
+        writeFileSync(join(repo, 'commit.txt'), String(index));
+        commitAll(repo, `Fixture commit ${index}`);
+      }
+      const calls = join(repo, 'selected-entry.jsonl');
+      const local = join(repo, 'node_modules/@kontourai/veritas');
+      mkdirSync(join(local, 'bin'), { recursive: true });
+      writeFileSync(join(local, 'package.json'), '{"name":"@kontourai/veritas","version":"0.0.0-fixture","type":"module","bin":{"veritas":"bin/veritas.mjs"}}\n');
+      writeFileSync(join(local, 'bin/veritas.mjs'), `import { appendFileSync, readFileSync } from 'node:fs';\nappendFileSync(${JSON.stringify(calls)}, JSON.stringify({ args: process.argv.slice(2), input: readFileSync(0, 'utf8') }) + '\\n');\nconsole.log('fixture readiness failure');\nprocess.exit(${script.exit});\n`);
+      const other = foreign === 'PATH' ? veritasOnPath(t) : null;
+      const hook = join(repo, 'generated-root-hook.sh');
+      writeFileSync(hook, script.body());
+      chmodSync(hook, 0o755);
+      const input = '{"tool_input":{"text":"literal $(echo source)"}}\n';
+      const result = spawnSync(hook, script.args, { cwd: repo, input, encoding: 'utf8', env: { ...cleanGitEnv(), ...(other ? { PATH: `${other.binDir}:${process.env.PATH}` } : {}) } });
+      assert.equal(existsSync(planted?.marker ?? other.marker), false, `${script.name}: foreign ${foreign} executable ran:\n${result.stderr}`);
+      assert.equal(result.status, script.expectedExit ?? script.exit, result.stderr);
+      const invocations = readFileSync(calls, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+      assert.deepEqual(invocations, [{ args: script.expectedArgs(repo), input }], 'the selected entry receives stdin and argv exactly once');
+      if (script.name === 'Stop feedback') assert.match(result.stdout, /fixture readiness failure[\s\S]*address the FAIL lines/);
+    });
+  }
+}
+
+test('root-script runtime outside Git retains the npm-selected local fallback', (t) => {
+  const dir = tempDir(t, 'veritas-runtime-no-git-');
+  writeFileSync(join(dir, 'package.json'), '{"name":"runtime-no-git","version":"1.0.0"}\n');
+  installLocalVeritasBin(dir);
+  const script = join(dir, 'runtime.sh');
+  writeFileSync(script, buildSuggestedRuntimeHook());
+  chmodSync(script, 0o755);
+  const result = spawnSync(script, ['--help'], { cwd: dir, encoding: 'utf8', env: cleanGitEnv() });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Usage:[\s\S]*veritas/);
 });
 
 // The file the walk checks is the file it runs: a Veritas package directory without the entry point
