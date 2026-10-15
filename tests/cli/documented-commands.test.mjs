@@ -56,6 +56,13 @@ const SCANNED_DIRS = [
   ['src', /\.mjs$/],
 ];
 
+// These are exact past command bytes used only to recognize handlers during
+// reinstall. They are not commands the current product tells a caller to run.
+const HISTORICAL_COMMAND_FILES = new Set([
+  'src/hooks/claude-code-hook-history.mjs',
+  'src/integrations/codex-hook-history.mjs',
+]);
+
 function shippedDocFiles() {
   const files = readdirSync(repoRootDir)
     .filter((name) => name.endsWith('.md') && name !== 'CHANGELOG.md')
@@ -65,7 +72,7 @@ function shippedDocFiles() {
     for (const name of readdirSync(dir)) {
       const path = join(dir, name);
       if (statSync(path).isDirectory()) walk(path, pattern);
-      else if (pattern.test(name)) files.push(path);
+      else if (pattern.test(name) && !HISTORICAL_COMMAND_FILES.has(relative(repoRootDir, path))) files.push(path);
     }
   };
   for (const [dir, pattern] of SCANNED_DIRS) walk(join(repoRootDir, dir), pattern);
@@ -200,6 +207,7 @@ test('the scan covers root Markdown, the generated .veritas/README.md and src co
     assert.ok(scanned.has(pinned), `the guard scans ${pinned}`);
   }
   assert.equal(scanned.has('CHANGELOG.md'), false);
+  for (const file of HISTORICAL_COMMAND_FILES) assert.equal(scanned.has(file), false, `${file} records past commands`);
 });
 
 test('every command the shipped docs name is routed by the bin', async (t) => {
