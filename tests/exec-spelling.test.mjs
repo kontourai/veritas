@@ -377,7 +377,7 @@ test('kit migration history is inert only in its exact supersedes field and prov
       supersedes: [...PREVIOUS_CODEX_HOOK_COMMANDS.PreToolUse],
     }],
   });
-  const scan = (kit, file = 'kit.json') => shippedExecOffenders(file, JSON.stringify(kit));
+  const scan = (kit, file = 'kit.json') => shippedExecOffenders(file, JSON.stringify(kit, null, 2));
   assert.deepEqual(scan(fixture()), []);
   for (const change of [
     (kit) => { kit.description = legacy; },
