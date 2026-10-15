@@ -70,11 +70,12 @@ const MAIN_USAGE = `Usage:
 
 const RUN_USAGE = `Usage:
   veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree] [--actor <id>] [--format feedback|json|trust-bundle] [--projection-output <path>]
-  veritas readiness --check evidence [--evidence-check-command <cmd>] [--skip-evidence-check]
+  veritas readiness --check evidence [--evidence-check-command <cmd> | --skip-evidence-check]
   veritas readiness --check boundaries --actor <id> [--diff <ref>] [--root <path>] [--repo-map <path>]
 
   --evidence-check-command <cmd>  Runs in addition to the Repo Map's required checks and is itself
-                                  required: a nonzero exit fails readiness.
+                                  required: a nonzero exit fails readiness. Takes exactly one command;
+                                  repeating it or combining it with --skip-evidence-check is an error.
 `;
 
 const FEEDBACK_USAGE = `Usage:

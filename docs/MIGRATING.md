@@ -389,7 +389,7 @@ them. That change also stopped a failing explicit command from blocking readines
 1.6.0 release notes nor this guide said so. From 1.6.0 on, a command that exited nonzero was
 reported as `WARN  evidence-check: <cmd>` ("Optional diagnostic failed"), the process exited `0`,
 JSON output had `evidenceCheckFailure: null` and `readiness.verdict: "ready"`, and the run passed.
-Release 1.5.3 and earlier failed readiness for the same command.
+Release 1.5.6 and earlier failed readiness for the same command.
 
 Readiness now blocks on it again. The explicit command is still additive, so configured required
 checks still run and still fail on their own. The explicit command is also a required check for the
@@ -402,8 +402,17 @@ run that supplied it:
   `baseline_ci_fast_passed` is `false`. The readiness claim in the trust bundle is `rejected`.
 
 `<id>` is the Repo Map check's id when the command equals a configured check's command, so passing
-the command of an optional configured check makes that check required for the run. Otherwise it is
-an `explicit-command-<slug>` id.
+the command of an optional configured check makes that check required for the run, including its
+external tool: with `externalTool.blocking: true`, a `fail` or `missing` artifact verdict also
+blocks readiness. Otherwise it is an `explicit-command-<slug>` id.
+
+Two invocations that earlier releases accepted are now usage errors. Readiness exits `2` with a
+message and runs no check:
+
+- Giving `--evidence-check-command` more than once. Earlier releases kept only the last command and
+  never ran the others. The flag takes exactly one command.
+- Combining `--evidence-check-command` with `--skip-evidence-check`. The explicit command is a
+  required check for the run, so skipping checks contradicts it. Use one or the other.
 
 If you relied on the warning-only behaviour, `--evidence-check-command` has no option that makes it
 non-blocking. Choose one of these instead:

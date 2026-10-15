@@ -48,6 +48,7 @@ function parseFeedbackJudgmentTokens(argv, spec) {
 export function parseTokens(argv, spec, { defaults = {} } = {}) {
   const options = cloneDefaults(defaults);
   const rest = [];
+  const seenOnceTokens = new Set();
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
@@ -56,6 +57,15 @@ export function parseTokens(argv, spec, { defaults = {} } = {}) {
     if (!rule) {
       rest.push(token);
       continue;
+    }
+
+    // `once` rules refuse a repeat instead of letting the last value win, for
+    // flags where silently dropping an earlier value would drop a requirement.
+    if (rule.once) {
+      if (seenOnceTokens.has(token)) {
+        throw new Error(`${token} may be given only once; it takes exactly one command`);
+      }
+      seenOnceTokens.add(token);
     }
 
     if (rule.type === 'flag') {
@@ -280,7 +290,7 @@ export function parseReadinessArgs(argv) {
       '--working-tree': { type: 'flag', key: 'workingTree' },
       '--changed-from': { type: 'string', key: 'changedFrom' },
       '--changed-to': { type: 'string', key: 'changedTo' },
-      '--evidence-check-command': { type: 'string', key: 'evidenceCheckCommand' },
+      '--evidence-check-command': { type: 'string', key: 'evidenceCheckCommand', once: true },
       '--skip-evidence-check': { type: 'flag', key: 'skipEvidenceCheck' },
       '--baseline-ci-fast-status': { type: 'string', key: 'baselineCiFastStatus' },
       '--projection-output': { type: 'string', key: 'projectionOutputPath' },

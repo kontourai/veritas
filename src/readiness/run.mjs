@@ -71,6 +71,14 @@ export async function runMergeReadiness(
   runtime = {},
 ) {
   const options = { ...rawOptions };
+  if (options.skipEvidenceCheck === true && options.evidenceCheckCommand) {
+    // An explicit command is a required check for this run, so asking to skip
+    // evidence checks while supplying one is contradictory. Refuse before any
+    // scope resolution or execution.
+    throw new Error(
+      'veritas readiness: --evidence-check-command cannot be combined with --skip-evidence-check; the explicit command is a required check for the run',
+    );
+  }
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   const startedAt = runtime.startedAt ?? new Date().toISOString();
   const workflowDeadline = runtime.workflowTimeoutMs > 0

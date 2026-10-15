@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { runMergeReadiness } from '../src/readiness/run.mjs';
 import { readinessVerdict, requiredEvidenceChecksFor } from '../src/surface/readiness.mjs';
@@ -17,7 +17,7 @@ const FAILING_EXPLICIT_ID = 'explicit-command-node-e-process-exit-2';
 const PASSING_EXPLICIT_ID = 'explicit-command-node-e-process-exit-0';
 const CONFIGURED_ID = 'required-evidence-check';
 
-function initFixture(t, prefix, configuredCommand) {
+function initFixture(t, prefix, configuredCommand, editRepoMap = null) {
   const rootDir = initCommittedRepo(t, prefix);
   writeFileSync(join(rootDir, 'package.json'), '{}\n');
   execFileSync(
@@ -27,6 +27,10 @@ function initFixture(t, prefix, configuredCommand) {
   );
   const repoMap = JSON.parse(readFileSync(join(rootDir, '.veritas/repo-map.json'), 'utf8'));
   assert.deepEqual(repoMap.evidence.requiredEvidenceCheckIds, [CONFIGURED_ID], 'fixture must declare one configured required check');
+  if (editRepoMap) {
+    editRepoMap(repoMap);
+    writeFileSync(join(rootDir, '.veritas/repo-map.json'), `${JSON.stringify(repoMap, null, 2)}\n`);
+  }
   commitAll(rootDir, 'Bootstrap Veritas');
   writeFileSync(join(rootDir, 'change.txt'), 'changed\n');
   return rootDir;
@@ -164,4 +168,125 @@ test('engine API: runMergeReadiness treats a failing explicit evidenceCheckComma
   assert.equal(passing.currentStatus, 'pass');
   assert.equal(readinessVerdict(passing.reportResult.record), 'ready');
   assert.equal(passing.evidenceCheckPlan.requiredEvidenceCheckIds.length, 2);
+});
+
+// Each command writes a marker file, so "nothing ran" is observable.
+const markerCommand = (name, exitCode) => `node -e "require('node:fs').writeFileSync('${name}', 'ran'); process.exit(${exitCode})"`;
+
+// `veritas init` creates the evidence directory empty; a run writes a report into it.
+const evidenceReports = (rootDir) => {
+  const dir = join(rootDir, '.kontourai/veritas/evidence');
+  return existsSync(dir) ? readdirSync(dir) : [];
+};
+
+function assertRefusedBeforeRunning(rootDir, result, messagePattern, markers) {
+  assert.equal(result.status, 2, result.stdout + result.stderr);
+  assert.match(result.stderr, messagePattern);
+  assert.doesNotMatch(result.stderr, /RUN   /);
+  for (const marker of markers) {
+    assert.equal(existsSync(join(rootDir, marker)), false, `${marker} must not run`);
+  }
+  assert.deepEqual(evidenceReports(rootDir), [], 'no evidence report may be written');
+}
+
+test('CLI: a repeated --evidence-check-command is a usage error and runs nothing', (t) => {
+  const rootDir = initFixture(t, 'veritas-explicit-repeated-', markerCommand('configured-ran', 0));
+
+  const result = runReadinessCli(rootDir, [
+    '--evidence-check-command', markerCommand('first-ran', 2),
+    '--evidence-check-command', markerCommand('second-ran', 0),
+    '--format', 'json',
+  ]);
+  assertRefusedBeforeRunning(
+    rootDir,
+    result,
+    /--evidence-check-command may be given only once; it takes exactly one command/,
+    ['configured-ran', 'first-ran', 'second-ran'],
+  );
+
+  // Control: the same fixture with one flag does run the checks, so the markers are reachable.
+  const single = runReadinessCli(rootDir, ['--evidence-check-command', markerCommand('first-ran', 2), '--format', 'json']);
+  assert.equal(single.status, 1, single.stdout + single.stderr);
+  assert.equal(existsSync(join(rootDir, 'first-ran')), true);
+  assert.equal(existsSync(join(rootDir, 'configured-ran')), true);
+  assert.equal(evidenceReports(rootDir).length, 1);
+});
+
+test('CLI and engine: --skip-evidence-check with --evidence-check-command is refused before anything runs', async (t) => {
+  const rootDir = initFixture(t, 'veritas-explicit-skip-', markerCommand('configured-ran', 0));
+  const message = /--evidence-check-command cannot be combined with --skip-evidence-check/;
+
+  const result = runReadinessCli(rootDir, [
+    '--skip-evidence-check',
+    '--evidence-check-command', markerCommand('explicit-ran', 0),
+    '--format', 'json',
+  ]);
+  assertRefusedBeforeRunning(rootDir, result, message, ['configured-ran', 'explicit-ran']);
+
+  await assert.rejects(
+    runMergeReadiness(
+      { rootDir, workingTree: true, force: true, skipEvidenceCheck: true, evidenceCheckCommand: markerCommand('explicit-ran', 0) },
+      { rootDir },
+      [],
+      { appendHistory: false },
+    ),
+    message,
+  );
+  assert.equal(existsSync(join(rootDir, 'explicit-ran')), false);
+  assert.deepEqual(evidenceReports(rootDir), []);
+
+  // --skip-evidence-check alone keeps its diagnostic-only behaviour.
+  const skipOnly = runReadinessCli(rootDir, ['--skip-evidence-check', '--format', 'json']);
+  assert.equal(skipOnly.status, 1, skipOnly.stdout + skipOnly.stderr);
+  assert.equal(parseCliJson(skipOnly.stdout).readiness.verdict, 'not-ready');
+});
+
+test('CLI: an explicit command equal to an optional configured check makes that check required for the run', (t) => {
+  const OPTIONAL_ID = 'optional-diagnostic';
+  const OPTIONAL_COMMAND = 'node -e "process.exit(4)"';
+  const rootDir = initFixture(t, 'veritas-explicit-optional-', PASSING_EXPLICIT, (repoMap) => {
+    repoMap.evidence.evidenceChecks.push({
+      id: OPTIONAL_ID,
+      command: OPTIONAL_COMMAND,
+      method: 'validation',
+      externalTool: {
+        tool: 'probe',
+        format: 'fallow-audit-json',
+        blocking: true,
+        artifactPath: '.kontourai/veritas/external/probe-missing.json',
+      },
+    });
+    repoMap.evidence.defaultEvidenceCheckIds = [OPTIONAL_ID];
+  });
+
+  // Control: selected as a default, the optional check fails without blocking,
+  // and its blocking external tool is not blocking because the check is not required.
+  const optional = runReadinessCli(rootDir, ['--run-id', 'optional-default', '--format', 'json']);
+  assert.equal(optional.status, 0, optional.stdout + optional.stderr);
+  const optionalOutput = parseCliJson(optional.stdout);
+  assert.equal(optionalOutput.evidenceCheckFailure, null);
+  assert.deepEqual(optionalOutput.readiness.requiredEvidenceChecks.map((check) => check.id), [CONFIGURED_ID]);
+  const optionalRecord = persistedRecord(rootDir, optionalOutput);
+  assert.deepEqual(
+    optionalRecord.external_tool_results.map((item) => [item.evidence_check_id, item.verdict, item.blocking]),
+    [[OPTIONAL_ID, 'missing', false]],
+  );
+
+  const explicit = runReadinessCli(rootDir, ['--evidence-check-command', OPTIONAL_COMMAND, '--run-id', 'optional-explicit', '--format', 'json']);
+  assert.equal(explicit.status, 1, explicit.stdout + explicit.stderr);
+  const output = parseCliJson(explicit.stdout);
+  assert.equal(output.evidenceCheckFailure?.id, OPTIONAL_ID);
+  assert.equal(output.evidenceCheckFailure.exitCode, 4);
+  assert.equal(output.readiness.verdict, 'not-ready');
+  assert.deepEqual(
+    output.readiness.requiredEvidenceChecks.map((check) => [check.id, check.state]),
+    [[CONFIGURED_ID, 'passed'], [OPTIONAL_ID, 'failed']],
+  );
+  const record = persistedRecord(rootDir, output);
+  assert.deepEqual(record.repo_map.required_evidence_check_ids, [CONFIGURED_ID, OPTIONAL_ID]);
+  assert.deepEqual(
+    record.external_tool_results.map((item) => [item.evidence_check_id, item.verdict, item.blocking]),
+    [[OPTIONAL_ID, 'missing', true]],
+  );
+  assert.equal(readinessVerdict(record), 'not-ready');
 });
