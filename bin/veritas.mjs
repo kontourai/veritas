@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import { statSync } from 'node:fs';
+import { resolve } from 'node:path';
 import packageManifest from '../package.json' with { type: 'json' };
 import {
   runStandardsFeedbackDraftCli,
@@ -20,7 +22,20 @@ import {
   runClaudeCodePreToolUseCli,
   runClaudeCodeSessionEndCli,
   runCodexPreToolUseCli,
+  runPrintPackageScriptsCli,
+  runPrintCiSnippetCli,
+  runPrintGitHookCli,
+  runPrintRuntimeHookCli,
+  runPrintStopHookCli,
+  runPrintGovernanceBlockCli,
+  runPrintCodexHookCli,
   runPrintClaudeCodePreToolUseHookCli,
+  runApplyPackageScriptsCli,
+  runApplyCiSnippetCli,
+  runApplyGitHookCli,
+  runApplyRuntimeHookCli,
+  runApplyStopHookCli,
+  runApplyCodexHookCli,
   runApplyClaudeCodePreToolUseHookCli,
   runApplyGovernanceBlocksCli,
   runClaimCli,
@@ -39,7 +54,7 @@ const MAIN_USAGE = `Usage:
   veritas attest status [--root <path>]
   veritas claim init|list|add|edit|remove|scaffold|validate [--root <path>]
   veritas setup repo-hooks [--root <path>] [--force]
-  veritas apply governance-blocks [--root <path>] [--force]
+  veritas apply governance-blocks|package-scripts|ci-snippet|git-hook|runtime-hook|stop-hook|codex-hook|claude-code-pre-tool-use-hook [--root <path>] [--force]
   veritas plugin list [--root <path>]
   veritas feedback draft --evidence <path> [--authority-settings <path>] [--output <path>] [--force]
   veritas feedback observe [--session-log <path>] [--tool auto|codex|claude-code|none] [--evidence <path>] [--output <path>]
@@ -112,27 +127,168 @@ const SETUP_USAGE = `Usage:
   veritas setup repo-hooks [--root <path>] [--force]
 `;
 
-const APPLY_USAGE = `Usage:
-  veritas apply governance-blocks [--root <path>] [--force]
-`;
+// Every `print` and `apply` target the CLI reference documents. Each entry names the handler, the
+// flags the target accepts (a value type or an enum of allowed values), and its usage line. The
+// router rejects an unknown flag, a missing or disallowed value, and a positional argument before
+// the handler runs, so a malformed `apply` never writes.
+const VALUE = 'value';
+const FLAG = 'flag';
+// A value that must name an existing directory: a mistyped --root must not create a new tree.
+const ROOT = 'root';
+const PRINT_TARGETS = {
+  'package-scripts': {
+    run: runPrintPackageScriptsCli,
+    flags: { '--root': ROOT, '--evidence-check': VALUE },
+    usage: 'veritas print package-scripts [--root <path>] [--evidence-check <cmd>]',
+  },
+  'ci-snippet': {
+    run: runPrintCiSnippetCli,
+    flags: { '--root': ROOT, '--evidence-check': VALUE },
+    usage: 'veritas print ci-snippet [--root <path>] [--evidence-check <cmd>]',
+  },
+  'git-hook': {
+    run: runPrintGitHookCli,
+    flags: { '--root': ROOT, '--hook': ['post-commit', 'pre-push'] },
+    usage: 'veritas print git-hook [--root <path>] [--hook post-commit|pre-push]',
+  },
+  'runtime-hook': {
+    run: runPrintRuntimeHookCli,
+    flags: { '--root': ROOT },
+    usage: 'veritas print runtime-hook [--root <path>]',
+  },
+  'stop-hook': {
+    run: runPrintStopHookCli,
+    flags: { '--root': ROOT, '--tool': ['generic', 'claude-code', 'cursor'] },
+    usage: 'veritas print stop-hook [--root <path>] [--tool generic|claude-code|cursor]',
+  },
+  'governance-block': {
+    run: runPrintGovernanceBlockCli,
+    flags: {},
+    usage: 'veritas print governance-block',
+  },
+  'codex-hook': {
+    run: runPrintCodexHookCli,
+    flags: { '--root': ROOT, '--target-hooks-file': VALUE, '--codex-home': VALUE },
+    usage: 'veritas print codex-hook [--root <path>] [--target-hooks-file <path>] [--codex-home <path>]',
+  },
+  'claude-code-pre-tool-use-hook': {
+    run: runPrintClaudeCodePreToolUseHookCli,
+    flags: { '--root': ROOT },
+    usage: 'veritas print claude-code-pre-tool-use-hook [--root <path>]',
+  },
+};
+const APPLY_TARGETS = {
+  'package-scripts': {
+    run: runApplyPackageScriptsCli,
+    flags: { '--root': ROOT, '--evidence-check': VALUE, '--force': FLAG },
+    usage: 'veritas apply package-scripts [--root <path>] [--evidence-check <cmd>] [--force]',
+  },
+  'ci-snippet': {
+    run: runApplyCiSnippetCli,
+    flags: { '--root': ROOT, '--output': VALUE, '--evidence-check': VALUE, '--force': FLAG },
+    usage: 'veritas apply ci-snippet [--root <path>] [--output <path>] [--evidence-check <cmd>] [--force]',
+  },
+  'git-hook': {
+    run: runApplyGitHookCli,
+    flags: {
+      '--root': ROOT,
+      '--hook': ['post-commit', 'pre-push'],
+      '--output': VALUE,
+      '--configure-git': FLAG,
+      '--force': FLAG,
+    },
+    usage: 'veritas apply git-hook [--root <path>] [--hook post-commit|pre-push] [--output <path>] [--configure-git] [--force]',
+  },
+  'runtime-hook': {
+    run: runApplyRuntimeHookCli,
+    flags: { '--root': ROOT, '--output': VALUE, '--force': FLAG },
+    usage: 'veritas apply runtime-hook [--root <path>] [--output <path>] [--force]',
+  },
+  'stop-hook': {
+    run: runApplyStopHookCli,
+    flags: { '--root': ROOT, '--tool': ['generic', 'claude-code', 'cursor'], '--output': VALUE, '--force': FLAG },
+    usage: 'veritas apply stop-hook [--root <path>] [--tool generic|claude-code|cursor] [--output <path>] [--force]',
+  },
+  'governance-blocks': {
+    run: runApplyGovernanceBlocksCli,
+    flags: { '--root': ROOT, '--force': FLAG },
+    usage: 'veritas apply governance-blocks [--root <path>] [--force]',
+  },
+  'codex-hook': {
+    run: runApplyCodexHookCli,
+    flags: { '--root': ROOT, '--output': VALUE, '--target-hooks-file': VALUE, '--codex-home': VALUE, '--force': FLAG },
+    usage: 'veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]',
+  },
+  'claude-code-pre-tool-use-hook': {
+    run: runApplyClaudeCodePreToolUseHookCli,
+    flags: { '--root': ROOT, '--output': VALUE, '--force': FLAG },
+    usage: 'veritas apply claude-code-pre-tool-use-hook [--root <path>] [--output <path>] [--force]',
+  },
+};
+
+function targetUsage(targets) {
+  return `Usage:\n${Object.values(targets).map(({ usage }) => `  ${usage}\n`).join('')}`;
+}
+
+const PRINT_USAGE = targetUsage(PRINT_TARGETS);
+const APPLY_USAGE = targetUsage(APPLY_TARGETS);
 
 function isHelpToken(token) {
   return token === '--help' || token === '-h' || token === 'help';
 }
 
-function validateGovernanceBlocksArgs(argv) {
+function isExistingDirectory(path) {
+  try {
+    return statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function validateTargetArgs(namespace, target, flags, argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
-    if (token === '--force') continue;
-    if (token === '--root') {
-      const rootDir = argv[index + 1];
-      if (!rootDir || rootDir.startsWith('--')) return '--root requires a path';
-      index += 1;
-      continue;
+    const spec = flags[token];
+    if (spec === undefined) return `Unknown ${namespace} ${target} argument: ${token}`;
+    if (spec === FLAG) continue;
+    const value = argv[index + 1];
+    if (value === undefined || value.startsWith('--')) return `${token} requires a value`;
+    if (Array.isArray(spec) && !spec.includes(value)) {
+      return `${token} must be one of ${spec.join(', ')}; got ${value}`;
     }
-    return `Unknown apply governance-blocks argument: ${token}`;
+    if (spec === ROOT && !isExistingDirectory(resolve(cwd, value))) {
+      return `${token} must name an existing directory; got ${value}`;
+    }
+    index += 1;
   }
   return null;
+}
+
+function runTarget(namespace, targets, usage, [target, ...targetArgs]) {
+  const entry = Object.hasOwn(targets, target ?? '') ? targets[target] : null;
+  if (!target || isHelpToken(target)) {
+    writeStdout(usage);
+    return;
+  }
+  if (!entry) {
+    writeStderr(usage);
+    process.exitCode = 1;
+    return;
+  }
+  const validationError = validateTargetArgs(
+    namespace,
+    target,
+    entry.flags,
+    targetArgs.filter((token) => !isHelpToken(token)),
+  );
+  if (validationError) {
+    writeStderr(`${validationError}\nUsage:\n  ${entry.usage}\n`);
+    process.exitCode = 1;
+  } else if (targetArgs.some(isHelpToken)) {
+    writeStdout(`Usage:\n  ${entry.usage}\n`);
+  } else {
+    entry.run(targetArgs, { rootDir: cwd });
+  }
 }
 
 function writeStdout(text) {
@@ -200,25 +356,10 @@ if (subcommand === '--version' || subcommand === '-V') {
     writeStderr(SETUP_USAGE);
     process.exitCode = 1;
   }
+} else if (subcommand === 'print') {
+  runTarget('print', PRINT_TARGETS, PRINT_USAGE, args);
 } else if (subcommand === 'apply') {
-  const [target, ...applyArgs] = args;
-  if (!target || isHelpToken(target)) {
-    writeStdout(APPLY_USAGE);
-  } else if (target === 'governance-blocks') {
-    const nonHelpArgs = applyArgs.filter((token) => !isHelpToken(token));
-    const validationError = validateGovernanceBlocksArgs(nonHelpArgs);
-    if (validationError) {
-      writeStderr(`${validationError}\n${APPLY_USAGE}`);
-      process.exitCode = 1;
-    } else if (applyArgs.some(isHelpToken)) {
-      writeStdout(APPLY_USAGE);
-    } else {
-      runApplyGovernanceBlocksCli(applyArgs, { rootDir: cwd });
-    }
-  } else {
-    writeStderr(APPLY_USAGE);
-    process.exitCode = 1;
-  }
+  runTarget('apply', APPLY_TARGETS, APPLY_USAGE, args);
 } else if (subcommand === 'plugin') {
   if (args.some(isHelpToken)) {
     writeStdout('Usage:\n  veritas plugin list [--root <path>]\n');
@@ -314,7 +455,10 @@ if (subcommand === '--version' || subcommand === '-V') {
   // `print`/`apply` render and install that hook.
   const [runtime, action, ...hookArgs] = args;
   const HOOK_USAGE = 'Usage:\n  veritas hooks claude-code print [--root <path>]\n  veritas hooks claude-code apply [--root <path>] [--output <path>] [--force]\n  veritas hooks claude-code pre-tool-use [--file <path>] [--actor <id>] [--root <path>]\n  veritas hooks claude-code session-end [--root <path>]\n  veritas hooks codex pre-tool-use [--actor <id>] [--root <path>]\n';
-  if (runtime === 'codex' && action === 'pre-tool-use') {
+  if (!runtime || isHelpToken(runtime) || hookArgs.some(isHelpToken) || isHelpToken(action)) {
+    // `--help` must never fall through to `apply`, which writes the hook.
+    writeStdout(HOOK_USAGE);
+  } else if (runtime === 'codex' && action === 'pre-tool-use') {
     runCodexPreToolUseCli(hookArgs, { rootDir: cwd });
   } else if (runtime !== 'claude-code') {
     writeStderr(HOOK_USAGE);
