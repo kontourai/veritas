@@ -6,11 +6,13 @@ up and operate the engine in a target repository.
 
 ## Install from Git
 
-Pin a release tag, branch, or commit through the Git URL fragment or `--ref`:
+Pin a reviewed release tag, branch, or commit through the Git URL fragment or
+`--ref`. Legacy migration needs a kit revision containing the declarations below
+as well as a separately qualified Flow Agents engine:
 
 ```bash
 npx @kontourai/flow-agents kit install \
-  https://github.com/kontourai/veritas.git#v1.10.0 \
+  "https://github.com/kontourai/veritas.git#<reviewed-kit-tag-or-commit>" \
   --dest .
 
 npx @kontourai/flow-agents kit activate \
