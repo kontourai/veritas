@@ -5,10 +5,10 @@ import { PREVIOUS_CODEX_HOOK_COMMANDS } from './codex-hook-history.mjs';
 import { nearestInstalledVeritasCommand, plainVeritasCommand } from '../hooks/nearest-veritas.mjs';
 import { assertReplaceableFile, writeGeneratedFile } from '../hooks/write-safety.mjs';
 
-export function buildCodexSessionLogCaptureCommand() {
-  return 'VERITAS_SESSION_LOG_PATH="${VERITAS_SESSION_LOG_PATH:-${CODEX_TRANSCRIPT_PATH:-}}"; if [ -z "$VERITAS_SESSION_LOG_PATH" ] && [ -n "$CODEX_SESSION_ID" ]; then VERITAS_SESSION_LOG_PATH="$HOME/.codex/sessions/$CODEX_SESSION_ID.json"; fi; if [ -n "$VERITAS_SESSION_LOG_PATH" ]; then ' + nearestInstalledVeritasCommand('feedback observe --session-log "$VERITAS_SESSION_LOG_PATH"') + '; fi';
-}
-
+// No session-log capture handler. Earlier releases wrote one under PostSession, an event Codex does
+// not have, so it never ran. Codex ends a session with SessionEnd, but its transcript is JSONL rollout
+// records that the Codex session log reader does not read, and a SessionEnd hook may run for at most
+// 3 seconds (https://learn.chatgpt.com/docs/hooks). A reinstall removes the earlier handler.
 export function buildSuggestedCodexHookConfig() {
   return {
     hooks: {
@@ -35,19 +35,6 @@ export function buildSuggestedCodexHookConfig() {
               type: 'command',
               command: '.veritas/hooks/agent-runtime.sh',
               statusMessage: 'Running Veritas readiness automation',
-              timeout: 60,
-            },
-          ],
-        },
-      ],
-      PostSession: [
-        {
-          matcher: '.*',
-          hooks: [
-            {
-              type: 'command',
-              command: buildCodexSessionLogCaptureCommand(),
-              statusMessage: 'Capturing Veritas standards feedback draft from Codex session log',
               timeout: 60,
             },
           ],
@@ -86,6 +73,16 @@ function mergeCodexHooksConfig(existingConfig, integrationConfig) {
     ...existingConfig,
     hooks: { ...(existingConfig?.hooks ?? {}) },
   };
+  // Events Veritas wrote to before and no longer writes to: remove only the recorded handlers, and
+  // the event itself when nothing else is left in it.
+  for (const [hookName, previousCommands] of Object.entries(PREVIOUS_CODEX_HOOK_COMMANDS)) {
+    if (Object.hasOwn(integrationConfig?.hooks ?? {}, hookName)) continue;
+    const currentEntries = Array.isArray(merged.hooks[hookName]) ? merged.hooks[hookName] : null;
+    if (!currentEntries) continue;
+    const remaining = mergeHookEntries(currentEntries, [], previousCommands);
+    if (remaining.length === 0 && currentEntries.length > 0) delete merged.hooks[hookName];
+    else merged.hooks[hookName] = remaining;
+  }
   for (const hookName of Object.keys(integrationConfig?.hooks ?? {})) {
     const integrationEntries = Array.isArray(integrationConfig.hooks[hookName])
       ? integrationConfig.hooks[hookName]
@@ -121,11 +118,14 @@ function hookHandlers(config) {
 }
 
 // Installed means every current handler is present with the same command and the same Windows
-// override, so a handler written before commandWindows existed reads as needing a reinstall.
+// override, so a handler written before commandWindows existed reads as needing a reinstall, and no
+// handler an earlier release wrote is left, such as the PostSession handler Codex never runs.
 function codexHookIntegrationInstalled(installedConfig) {
   const installed = hookHandlers(installedConfig);
+  const previous = new Set(Object.values(PREVIOUS_CODEX_HOOK_COMMANDS).flat());
   return hookHandlers(buildSuggestedCodexHookConfig()).every((expected) => installed.some((hook) =>
-    hook.command === expected.command && hook.commandWindows === expected.commandWindows));
+    hook.command === expected.command && hook.commandWindows === expected.commandWindows))
+    && !installed.some((hook) => previous.has(hook.command));
 }
 
 function formatTargetPath(rootDir, targetPath) {
