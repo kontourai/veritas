@@ -16,7 +16,8 @@ export function mergeStopHookConfig(existingConfig = {}, suggestedConfig = {}) {
     const currentEntries = Array.isArray(mergedHooks[hookName])
       ? mergedHooks[hookName]
       : [];
-    if (hookName === 'Stop') {
+    // Stop and SessionEnd keep the user's own handlers and replace only the Veritas one.
+    if (hookName === 'Stop' || hookName === 'SessionEnd') {
       const suggestedCommand = suggestedEntries[0]?.hooks?.[0]?.command;
       mergedHooks[hookName] = [
         ...currentEntries

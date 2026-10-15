@@ -261,6 +261,7 @@ export {
   runRecommendationCli,
   runAttestCli,
   runClaudeCodePreToolUseCli,
+  runClaudeCodeSessionEndCli,
   runCodexPreToolUseCli,
   runIntegrationsCli,
   runReadinessCheckCli,

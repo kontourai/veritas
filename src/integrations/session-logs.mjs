@@ -16,12 +16,22 @@ function heuristicMissing(reason) {
   return { value: null, reason };
 }
 
+// The final line is skipped when it does not parse and an earlier line did: a runtime can still be
+// writing the transcript (Claude Code writes it asynchronously), so the last line may be cut short.
+// Any other line that does not parse, including a transcript's only line, is an error.
 function parseJsonl(path) {
-  return readFileSync(path, 'utf8')
+  const lines = readFileSync(path, 'utf8')
     .split('\n')
     .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => JSON.parse(line));
+    .filter(Boolean);
+  return lines.flatMap((line, index) => {
+    try {
+      return [JSON.parse(line)];
+    } catch (error) {
+      if (index > 0 && index === lines.length - 1) return [];
+      throw error;
+    }
+  });
 }
 
 function textFromContent(content) {
