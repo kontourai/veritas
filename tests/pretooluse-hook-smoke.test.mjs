@@ -117,6 +117,26 @@ test('installed PreToolUse hook exits 2 and blocks a denied strict-surface edit'
   assert.match(payload.reason, /work-area-boundary/);
 });
 
+test('Claude Code reinstall keeps user pre-edit handlers and installs its own once', (t) => {
+  const rootDir = bootstrapGovernedRepo(t, 'veritas-user-pretool-hooks-');
+  mkdirSync(join(rootDir, '.claude'), { recursive: true });
+  const settingsPath = join(rootDir, '.claude/settings.json');
+  const userGroup = { matcher: 'Read', hooks: [{ type: 'command', command: './scripts/user-read.sh' }, { type: 'command', command: '.veritas/hooks/pre-tool-use.sh', timeout: 1 }] };
+  const userEdit = { type: 'command', command: './scripts/user-edit.sh' };
+  const before = { permissions: { allow: ['Read'] }, hooks: { PreToolUse: [userGroup, { matcher: 'Edit', hooks: [userEdit] }], Notification: [{ hooks: [{ type: 'command', command: './scripts/notify.sh' }] }] } };
+  writeFileSync(settingsPath, `${JSON.stringify(before, null, 2)}\n`);
+  for (const round of [1, 2]) {
+    execFileSync(process.execPath, [join(process.cwd(), 'bin/veritas.mjs'), 'integrations', 'claude-code', 'install', '--force', '--root', rootDir], { cwd: rootDir, encoding: 'utf8', env: cleanGitEnv() });
+    const after = JSON.parse(readFileSync(settingsPath, 'utf8'));
+    assert.deepEqual(after.permissions, before.permissions);
+    assert.deepEqual(after.hooks.Notification, before.hooks.Notification);
+    assert.ok(after.hooks.PreToolUse.some((group) => JSON.stringify(group) === JSON.stringify(userGroup)), `round ${round}: user's Read group`);
+    const handlers = after.hooks.PreToolUse.flatMap((group) => group.hooks);
+    assert.ok(handlers.some((handler) => handler.command === userEdit.command), `round ${round}: user's Edit handler`);
+    assert.equal(handlers.filter((handler) => handler.command === '.veritas/hooks/pre-tool-use.sh').length, 2, 'the user binding and one installed binding');
+  }
+});
+
 test('installed PreToolUse hook exits 0 and approves an allowed edit', (t) => {
   const rootDir = bootstrapGovernedRepo(t, 'veritas-pretool-smoke-allow-');
   installClaudeCodeIntegration(rootDir);
