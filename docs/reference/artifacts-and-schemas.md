@@ -87,7 +87,7 @@ The current schema owns:
 - explicit evidence-check objects and routing by check id
 - uncovered-path policy
 - report transport
-- activation targets for AI instruction files
+- activation targets for AI instruction files: repository-relative paths inside the repository; absolute and `..` paths are refused
 
 Reference files:
 

@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { loadJson } from './load.mjs';
 import { assertWithinDir, relativeRepoPath } from './paths.mjs';
 
@@ -26,31 +26,126 @@ function defaultInstructionTargets(rootDir) {
   return targets;
 }
 
-function normalizeGovernanceTargets(config = {}, rootDir = process.cwd()) {
-  const configuredTargets = config.activation?.aiInstructionFiles;
-  const rawTargets =
-    Array.isArray(configuredTargets) && configuredTargets.length > 0
-      ? configuredTargets
-      : defaultInstructionTargets(rootDir);
+const INVALID_TARGET_REASON = 'a governance block target must be a repository-relative path to a file inside the repository';
 
-  return rawTargets.map((target) => {
-    if (typeof target === 'string') {
-      return { path: target, tool: null, required: true };
-    }
-    return {
-      path: target.path,
-      tool: target.tool ?? null,
-      required: target.required !== false,
-    };
-  });
+function normalizeGovernanceTarget(target) {
+  if (typeof target === 'string') {
+    return { path: target, tool: null, required: true };
+  }
+  return {
+    path: target?.path,
+    tool: target?.tool ?? null,
+    required: target?.required !== false,
+  };
 }
 
-function loadGovernanceTargetConfig({ rootDir, repoMapPath } = {}) {
-  const resolvedRepoMapPath = repoMapPath ?? resolve(rootDir, '.veritas/repo-map.json');
-  if (!existsSync(resolvedRepoMapPath)) {
-    return {};
+/**
+ * The repository-relative, `/`-separated form of a target path, so `./AGENTS.md` and `AGENTS.md`
+ * name one target. Null for a path that is not a file inside the repository: empty, absolute, the
+ * root itself, or escaping it (`..`, or a symlinked parent that leads outside).
+ */
+function repoRelativeTargetPath(rootDir, path) {
+  if (typeof path !== 'string' || path.length === 0 || isAbsolute(path)) return null;
+  const resolvedPath = resolve(rootDir, path);
+  try {
+    assertWithinDir(resolvedPath, rootDir);
+  } catch {
+    return null;
   }
-  return loadJson(resolvedRepoMapPath, 'Repo Map');
+  const relativePath = relative(resolve(rootDir), resolvedPath).split(sep).join('/');
+  return relativePath === '' ? null : relativePath;
+}
+
+/**
+ * The single answer to "which AI instruction files carry the governance block",
+ * shared by `apply governance-blocks` and the `governance-block` readiness rule.
+ *
+ * Two settings name these files: the Repo Map's `activation.aiInstructionFiles`
+ * and each `governance-block` rule's `match['governance-block']`. `init` writes
+ * both from the same selection, and writes `[]` to both when the repository has
+ * no instruction files, so an explicit `[]` is a recorded choice of "none", not
+ * an unset value. The schemas set no `minItems` on either list.
+ *
+ * - A list that is present counts as configured, even when it is empty.
+ * - When either list is configured, the targets are the union of the configured
+ *   lists. A path named by a rule is required, because readiness requires it; a
+ *   Repo Map entry keeps its own `required` flag.
+ * - Only when neither list is configured do the built-in defaults apply.
+ * - Paths are compared in repository-relative form. A path that does not name a file inside
+ *   the repository is returned in `invalidTargets`, never in `targets`, so no caller reads or
+ *   writes outside the repository.
+ *
+ * @param {object} options
+ * @param {string} options.rootDir
+ * @param {object} [options.repoMap] Repo Map config.
+ * @param {object[]|null} [options.governanceRules] `governance-block` rules, or
+ *   null when no Repo Standards were loaded.
+ */
+export function resolveGovernanceBlockTargets({ rootDir, repoMap, governanceRules = null } = {}) {
+  const mapTargets = repoMap?.activation?.aiInstructionFiles;
+  const mapConfigured = Array.isArray(mapTargets);
+  const rules = Array.isArray(governanceRules) ? governanceRules : [];
+  const rulesConfigured = rules.length > 0;
+
+  if (!mapConfigured && !rulesConfigured) {
+    return { source: 'default', targets: defaultInstructionTargets(rootDir), invalidTargets: [] };
+  }
+
+  const byPath = new Map();
+  const invalidPaths = new Set();
+  const add = (candidate) => {
+    const path = repoRelativeTargetPath(rootDir, candidate.path);
+    if (path === null) {
+      invalidPaths.add(String(candidate.path ?? ''));
+      return;
+    }
+    const target = { ...candidate, path };
+    const existing = byPath.get(path);
+    if (!existing) {
+      byPath.set(path, target);
+      return;
+    }
+    byPath.set(path, {
+      path,
+      tool: existing.tool ?? target.tool,
+      required: existing.required || target.required,
+    });
+  };
+
+  if (mapConfigured) {
+    for (const target of mapTargets) add(normalizeGovernanceTarget(target));
+  }
+  for (const rule of rules) {
+    const rulePaths = rule.match?.['governance-block'];
+    for (const path of Array.isArray(rulePaths) ? rulePaths : []) {
+      add({ path, tool: null, required: true });
+    }
+  }
+
+  return {
+    source: 'configured',
+    targets: [...byPath.values()],
+    invalidTargets: [...invalidPaths].map((path) => ({ path, reason: INVALID_TARGET_REASON })),
+  };
+}
+
+function loadOptionalJson(filePath, label) {
+  return existsSync(filePath) ? loadJson(filePath, label) : null;
+}
+
+function loadGovernanceTargetSources({ rootDir, repoMapPath, repoStandardsPath } = {}) {
+  const repoMap = loadOptionalJson(
+    repoMapPath ?? resolve(rootDir, '.veritas/repo-map.json'),
+    'Repo Map',
+  );
+  const repoStandards = loadOptionalJson(
+    repoStandardsPath ?? resolve(rootDir, '.veritas/repo-standards/default.repo-standards.json'),
+    'Repo Standards',
+  );
+  const governanceRules = Array.isArray(repoStandards?.rules)
+    ? repoStandards.rules.filter((rule) => rule?.kind === 'governance-block')
+    : null;
+  return { repoMap: repoMap ?? {}, governanceRules };
 }
 
 function resolveTargetPath(rootDir, targetPath) {
@@ -156,11 +251,23 @@ export function inspectGovernanceBlockFile({ rootDir, filePath, block = buildGov
 export function applyGovernanceBlocks({
   rootDir,
   repoMapPath,
+  repoStandardsPath,
   force = false,
   block = buildGovernanceBlock(),
 } = {}) {
-  const config = loadGovernanceTargetConfig({ rootDir, repoMapPath });
-  const targets = normalizeGovernanceTargets(config, rootDir);
+  const { repoMap, governanceRules } = loadGovernanceTargetSources({
+    rootDir,
+    repoMapPath,
+    repoStandardsPath,
+  });
+  const { targets, invalidTargets } = resolveGovernanceBlockTargets({ rootDir, repoMap, governanceRules });
+  // Checked before any write, so a bad entry never leaves the targets half applied.
+  if (invalidTargets.length > 0) {
+    throw new Error(
+      `Refusing to apply governance blocks: ${invalidTargets.map(({ path }) => JSON.stringify(path)).join(', ')} `
+        + `in activation.aiInstructionFiles or a governance-block requirement is not valid; ${INVALID_TARGET_REASON}. Correct or remove it.`,
+    );
+  }
   const applied = [];
   const skipped = [];
 
@@ -194,5 +301,11 @@ export function applyGovernanceBlocks({
     block,
     applied,
     skipped,
+    ...(targets.length === 0
+      ? {
+          message:
+            'No AI instruction files are configured: activation.aiInstructionFiles in the Repo Map and the governance-block requirement both list none. Nothing was written.',
+        }
+      : {}),
   };
 }

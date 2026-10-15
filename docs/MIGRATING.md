@@ -320,6 +320,20 @@ keep the bare spelling until you edit them by hand:
   `npx --no @kontourai/veritas attest ...`.
 - `.veritas/README.md` and `package.json` scripts: see the previous section.
 
+## Governance Block Targets: One List for `apply` and Readiness
+
+`apply governance-blocks` and the `ai-instruction-files-synced` requirement now read the same
+instruction files: the Repo Map's `activation.aiInstructionFiles` plus the paths in the
+requirement's `match['governance-block']`. Two things change:
+
+- An explicit empty `aiInstructionFiles: []` now means "no instruction files". Earlier releases
+  treated it as unset, so `apply governance-blocks` created `AGENTS.md` and `CLAUDE.md` in a
+  repository `init` had recorded as having none. It now writes nothing and reports that in its
+  `message`.
+- Readiness now also checks a file listed only in `activation.aiInstructionFiles`. A required
+  entry that is missing, or any listed file whose block is stale, is reported by
+  `ai-instruction-files-synced`. `npx --no @kontourai/veritas apply governance-blocks` fixes both,
+  because it writes exactly those files. To stop checking a file, remove it from both lists.
 ## Session-Log Capture Moves to Claude Code `SessionEnd`; Codex Capture Is Removed
 
 Earlier releases installed the standards-feedback session-log capture as a `PostSession` hook for
