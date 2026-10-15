@@ -718,21 +718,24 @@ export function buildAttestationPolicyResult(status) {
     };
   }
   if (status.expired) {
+    // An expired Validity Window is stale authority, so it blocks like drift.
+    // Pending and missing stay advisory above: no authority has approved the
+    // standards yet, whereas here an approval existed and has run out.
     return {
       rule_id: 'policy-changes-require-attestation',
       classification: 'hard-invariant',
-      enforcementLevel: 'Guide',
-      message: 'The active protected-standards attestation has expired.',
+      enforcementLevel: 'Require',
+      message: 'Protected standards require an authority-backed attestation whose validity window has not expired.',
       owner: 'repo-core',
       rollback_switch: null,
       implemented: true,
       passed: false,
-      status: 'warn',
-      summary: `Active attestation ${status.currentAttestationId} expired at ${status.validUntil}.`,
+      status: 'fail',
+      summary: `Active attestation ${status.currentAttestationId} expired at ${status.validUntil}; readiness fails until an authority records a fresh attestation.`,
       findings: [{
         kind: 'expired-attestation',
         artifact: status.currentAttestationId,
-        remediation: 'Run `npx --no @kontourai/veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference>` to refresh attestation.',
+        remediation: 'Run `npx --no @kontourai/veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference>` after authority review to record a fresh attestation.',
       }],
     };
   }

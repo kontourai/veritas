@@ -115,6 +115,30 @@ npx --no @kontourai/veritas attest status
 
 Status reports the current attestation, age, expiry, and hash drift. It also reports `priorAttestationLink` for the active record: the `reference` it names as its predecessor, its `form` (`attestation-id`, `legacy-reference`, or `unresolved`), whether it `resolved` to a tracked record, and an `explanation`. A successor of an unmarked historical attestation names its predecessor by the opaque `legacy-attestation-v0:<hash>` reference rather than the id in `HEAD`, because the historical id embeds a digest of the raw Repo Map file. That is the expected migration link, not a broken chain; `resolved` is `true` only when the reference matches exactly one tracked record, and the readiness PASS line for `policy-changes-require-attestation` names the reference and whether it resolved.
 
+## Validity Window
+
+Each attestation counts for readiness for a fixed number of days after it was recorded: 90 by default, or the value given with `--valid-until-days`. `attest status` reports the end of that window as `validUntil`, and `expired: true` once it has passed. Expiry is judged when readiness runs, and the window includes `validUntil` itself.
+
+An expired attestation is stale authority: the approval it records has run out under the repository's own policy, even though the protected standards still match. Readiness fails closed on it, as it does on drift:
+
+- The feedback output reports `FAIL  policy-changes-require-attestation: Active attestation <id> expired at <validUntil>; readiness fails until an authority records a fresh attestation.`, names the command below, and the process exits `1`.
+- JSON output has `readiness.status: "fail"` and `readiness.verdict: "not-ready"`. In the trust bundle the readiness claim is `rejected` and the attestation currency claim is `stale`.
+
+`attest status` still reports `state: "current"` for an expired record whose hashes match, because the files did not drift. Read `expired` for the validity window.
+
+To clear it, have an authority review the protected standards, then record a fresh attestation. A `policy-change` attestation is accepted when nothing changed:
+
+```bash
+npx --no @kontourai/veritas attest policy-change \
+  --actor <authority-id> \
+  --approval-ref <human-approval-reference> \
+  --message "Renewed the attestation after reviewing the unchanged standards"
+```
+
+A repository with no attestation yet, or with only the `.veritas/attestations/PENDING` marker that a non-interactive `init` writes, is a different case. No authority has approved its standards yet, so readiness reports a `WARN` and does not block until the bootstrap attestation is recorded.
+
+Releases before this change reported an expired attestation as a `WARN` and passed readiness; see [MIGRATING](../MIGRATING.md#expired-attestations-fail-readiness).
+
 ## Record Integrity
 
 Each attestation that `veritas attest` writes carries `recordIntegrity`: an `algorithm`, currently `veritas-attestation-record-v1`, and a `digest`, the SHA-256 of every other field of the record with keys sorted at every level. That covers the actor, `notes`, `metadata.approvalRef`, and the protected standards hashes. Status recomputes the digest and reports `recordIntegrity.status`:

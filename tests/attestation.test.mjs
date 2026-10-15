@@ -639,7 +639,7 @@ test('policy-change attestation chains to prior attestation and refreshes drift'
   assert.equal(inspectAttestationStatus(rootDir).state, 'current');
 });
 
-test('expired attestation is warned but not drifted', (t) => {
+test('expired attestation is not drifted', (t) => {
   const rootDir = bootstrapVeritasRepo(t);
   createAttestation({
     rootDir,
@@ -717,7 +717,7 @@ test('surface input projects missing, drifted, and expired governance attestatio
   assert.equal(governanceClaim(expiredClaims).status, 'stale');
 });
 
-test('readiness check prints a warning for expired attestation', (t) => {
+test('readiness check fails for expired attestation', (t) => {
   const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-expired-readiness-');
   createAttestation({
     rootDir,
@@ -729,7 +729,7 @@ test('readiness check prints a warning for expired attestation', (t) => {
     attestedAt: '2020-01-01T00:00:00.000Z',
   });
   const cli = join(repoRootDir, 'bin/veritas.mjs');
-  const output = execFileSync('node', [
+  const result = spawnSync(process.execPath, [
     cli,
     'readiness',
     '--root',
@@ -737,8 +737,8 @@ test('readiness check prints a warning for expired attestation', (t) => {
     '--skip-evidence-check',
     '--working-tree',
   ], { cwd: rootDir, encoding: 'utf8' });
-  assert.match(output, /WARN\s+policy-changes-require-attestation/);
-  assert.match(output, /expired/i);
+  assert.equal(result.status, 1, result.stdout + result.stderr);
+  assert.match(result.stdout, /FAIL\s+policy-changes-require-attestation: .*expired at 2020-01-02T00:00:00\.000Z/);
 });
 
 test('attestation rule is visible to explain context', (t) => {
@@ -750,7 +750,7 @@ test('attestation rule is visible to explain context', (t) => {
     ruleId: 'policy-changes-require-attestation',
   });
   assert.match(text, /Rule: policy-changes-require-attestation/);
-  assert.match(text, /Readiness checks fail on drift until a valid authority records a fresh attestation/);
+  assert.match(text, /Readiness checks fail on drift, or once the attestation validity window expires, until a valid authority records a fresh attestation/);
 });
 
 test('attestation refuses CI or bot actors', (t) => {
@@ -1443,7 +1443,10 @@ test('an unchanged regular trust root keeps the hashes of a real committed attes
   // current and pass, reporting only that its fields are not bound.
   assert.equal(Object.hasOwn(record, 'recordIntegrity'), false);
   assert.equal(status.recordIntegrity.status, 'unbound');
-  const policy = buildAttestationPolicyResult(status);
+  // Judge the policy at the instant the record was attested, inside its 90-day
+  // validity window. The CLI status above uses the wall clock, so after that
+  // window closes it reports expired and the policy fails (#202).
+  const policy = buildAttestationPolicyResult(inspectAttestationStatus(rootDir, { now: record.attestedAt }));
   assert.equal(policy.status, 'pass');
   assert.match(policy.summary, /not integrity-bound because it predates record integrity/);
   const { repoStandardsHash, repoMapHash, authoritySettingsHash } = status.protectedStandards.hashes;

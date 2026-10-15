@@ -431,3 +431,38 @@ non-blocking. Choose one of these instead:
 
 A consumer that derived a failure from `evidenceCheckResults` because `evidenceCheckFailure` was
 `null` no longer needs to: Veritas reports the failure itself.
+
+## Expired Attestations Fail Readiness
+
+Each attestation has a validity window: 90 days after it was recorded by default, or the value
+given with `--valid-until-days`. Earlier releases reported an attestation past that window as
+`WARN  policy-changes-require-attestation: Active attestation <id> expired at <validUntil>.`, the
+process exited `0`, JSON output had `readiness.verdict: "ready"`, and the readiness claim in the
+trust bundle was `verified`. The documentation already treated an expired validity window as stale
+evidence, and drift of the protected standards already failed readiness.
+
+Readiness now fails closed on an expired attestation, as it does on drift:
+
+- The feedback line is `FAIL  policy-changes-require-attestation: Active attestation <id> expired
+  at <validUntil>; readiness fails until an authority records a fresh attestation.`, followed by
+  the command below, and the process exits `1`.
+- JSON output sets `readiness.status: "fail"` and `readiness.verdict: "not-ready"`, and the
+  readiness claim in the trust bundle is `rejected`.
+
+To check whether a repository is affected before upgrading, run
+`npx --no @kontourai/veritas attest status` and read `expired` and `validUntil`. An attestation
+that is not expired today still expires at `validUntil`, and readiness starts failing then.
+
+To clear it, have an authority review the protected standards and record a fresh attestation. A
+`policy-change` attestation is accepted when the standards did not change:
+
+```bash
+npx --no @kontourai/veritas attest policy-change --actor <authority-id> --approval-ref <human-approval-reference> --message "Renewed the attestation after reviewing the unchanged standards"
+```
+
+No option makes an expired attestation advisory again. To renew less often, record the attestation
+with a longer `--valid-until-days`.
+
+A repository with no attestation, or with only the `.veritas/attestations/PENDING` marker, is
+unchanged: readiness reports a `WARN` and does not block until the bootstrap attestation is
+recorded.
