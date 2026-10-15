@@ -351,13 +351,13 @@ export function collectReadinessCoverageEvidence(record, claimStore, evidence, e
   }));
 }
 
-export function collectReadinessVerdictEvidence(record, claimStore, evidence, events, authorityTraceRecords) {
+export function collectReadinessVerdictEvidence(record, claimStore, evidence, events, authorityTraceRecords, { actor = null } = {}) {
   const claim = claimsByType(claimStore, 'software-readiness-verdict')
     .find((item) => item.id === surfaceClaimId(record.run_id, 'readiness-verdict', record.source_ref ?? 'source'));
   if (!claim) return;
   const status = readinessSurfaceStatus(record);
   const evidenceId = `${record.run_id}.readiness-verdict.evidence`;
-  const firstClassAuthorityTrace = buildReadinessAuthorityTraceRecord(record, claim, evidenceId);
+  const firstClassAuthorityTrace = buildReadinessAuthorityTraceRecord(record, claim, evidenceId, { actor });
   authorityTraceRecords.push(firstClassAuthorityTrace);
   evidence.push(surfaceEvidence({
     id: evidenceId,

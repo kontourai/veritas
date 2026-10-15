@@ -8,8 +8,9 @@ import {
 export async function produceSurfaceStateForVeritasRecord(record, {
   rootDir = process.cwd(),
   repoMapConfig = null,
+  actor = null,
 } = {}) {
-  const bundle = await buildSurfaceTrustBundle(record, { rootDir, repoMapConfig });
+  const bundle = await buildSurfaceTrustBundle(record, { rootDir, repoMapConfig, actor });
   const validatedBundle = validateSurfaceTrustBundleAtBoundary({ input: bundle, record, rootDir });
   let report;
   try {
