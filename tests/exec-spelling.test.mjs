@@ -281,6 +281,34 @@ const PAST_OUTPUT_RECORDS = new Map([
 const withoutRecordedPastCommands = (file, line) => (PAST_OUTPUT_RECORDS.get(file) ?? [])
   .reduce((text, command) => text.replaceAll(command, ''), line);
 
+// Supersedes is migration data, not an executable suggestion. Match the parsed
+// provision identity and exact measured history; the same text anywhere active
+// still belongs to the normal scan. Locations below refer to normalized JSON.
+function spellingDocument(file, text) {
+  if (file !== 'kit.json') return { label: file, text };
+  const kit = JSON.parse(text);
+  if (kit?.id === 'veritas-governance' && Array.isArray(kit.provisions)) {
+    const past = new Set(PREVIOUS_CODEX_HOOK_COMMANDS.PreToolUse);
+    for (const provision of kit.provisions) {
+      if (provision?.id !== 'veritas-governance.codex-pre-edit-hook'
+        || provision.path !== 'provisions/codex-hooks.json'
+        || provision.target !== '.codex/hooks.json'
+        || provision.host !== 'codex' || provision.kind !== 'hook'
+        || provision.merge !== 'hooks-json' || !Array.isArray(provision.supersedes)) continue;
+      provision.supersedes = provision.supersedes.map((command) => past.has(command) ? '[recorded historical hook command]' : command);
+    }
+  }
+  return { label: `${file} (normalized JSON)`, text: JSON.stringify(kit, null, 2) };
+}
+
+function shippedExecOffenders(file, text) {
+  const document = spellingDocument(file, text);
+  return logicalLines(document.text).flatMap(({ number, text: line }) => {
+    const problems = unsafeExec(withoutRecordedPastCommands(file, line));
+    return problems.length ? [`${document.label}:${number}: ${problems.join('; ')}: ${line.trim()}`] : [];
+  });
+}
+
 test('the record of past Claude Code PostSession commands holds only earlier commands', () => {
   assert.equal(PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS.length, 3);
   // v0.4.0 and v0.5.0 through v1.11.0 ran npm exec without --no; v1.11.1 and v1.11.2 ran npx --no.
@@ -334,13 +362,44 @@ test('shipped text and generated source only run an installed Veritas or Survey'
   assert.equal(files.some((file) => file.startsWith('tests/')), false);
   const offenders = [];
   for (const file of files) {
-    for (const { number, text } of logicalLines(readFileSync(join(repoRootDir, file), 'utf8'))) {
-      const line = withoutRecordedPastCommands(file, text);
-      const problems = unsafeExec(line);
-      if (problems.length > 0) offenders.push(`${file}:${number}: ${problems.join('; ')}: ${text.trim()}`);
-    }
+    offenders.push(...shippedExecOffenders(file, readFileSync(join(repoRootDir, file), 'utf8')));
   }
   assert.deepEqual(offenders, []);
+});
+
+test('kit migration history is inert only in its exact supersedes field and provision context', () => {
+  const legacy = PREVIOUS_CODEX_HOOK_COMMANDS.PreToolUse[0];
+  const fixture = () => ({
+    id: 'veritas-governance',
+    provisions: [{
+      id: 'veritas-governance.codex-pre-edit-hook', path: 'provisions/codex-hooks.json',
+      target: '.codex/hooks.json', host: 'codex', kind: 'hook', merge: 'hooks-json',
+      supersedes: [...PREVIOUS_CODEX_HOOK_COMMANDS.PreToolUse],
+    }],
+  });
+  const scan = (kit, file = 'kit.json') => shippedExecOffenders(file, JSON.stringify(kit));
+  assert.deepEqual(scan(fixture()), []);
+  for (const change of [
+    (kit) => { kit.description = legacy; },
+    (kit) => { kit.instructions = legacy; },
+    (kit) => { kit.provisions[0].command = legacy; },
+    (kit) => { kit.provisions[0].description = legacy; },
+    (kit) => { kit.provisions[0].supersedes.push('npm exec -- veritas readiness'); },
+    (kit) => { kit.provisions[0].supersedes.push(`${legacy}; echo extended`); },
+    (kit) => { kit.id = 'another-kit'; },
+    (kit) => { kit.provisions[0].id = 'another-provision'; },
+    (kit) => { kit.provisions[0].path = 'provisions/another-hook.json'; },
+    (kit) => { kit.provisions[0].target = '.codex/other-hooks.json'; },
+    (kit) => { kit.provisions[0].host = 'claude-code'; },
+    (kit) => { kit.provisions[0].kind = 'agent'; },
+    (kit) => { kit.provisions[0].merge = 'replace'; },
+  ]) {
+    const kit = fixture();
+    change(kit);
+    assert.ok(scan(kit).length > 0, JSON.stringify(kit));
+  }
+  assert.ok(scan(fixture(), 'other-kit.json').length > 0);
+  assert.throws(() => shippedExecOffenders('kit.json', '{broken'), SyntaxError);
 });
 
 test('shipped text never tells a reader to run bare veritas', () => {
