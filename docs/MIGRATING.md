@@ -251,7 +251,8 @@ without a `node_modules/.bin/veritas` link, for example one made with `--no-bin-
 `bin-links=false`, that could be a `.bin/veritas` in a directory above the repository, or a global
 install of the unrelated unscoped `veritas` package.
 
-The Codex `PreToolUse` command and the Claude Code `SessionEnd` command now run the entry point of
+The POSIX Codex `PreToolUse` and Claude Code `SessionEnd` commands, and generated post-commit,
+runtime, Stop and Claude Code pre-edit shell scripts, now run the entry point of
 the install they found by path:
 `node <install>/node_modules/@kontourai/veritas/bin/veritas.mjs`. An install counts only when that
 file exists. When the walk finds no install, the commands run plain `npx --no @kontourai/veritas` as
@@ -276,9 +277,13 @@ Hooks Veritas already wrote keep the earlier command until you refresh them:
 `integrations codex status` with a hooks file reports `integrationInstalled: false`, until you
 refresh them.
 
-The hook scripts Veritas writes into `.veritas/hooks/` and `.githooks/` run from the repository root
-through plain `npx --no @kontourai/veritas` and do not use the walk; this change leaves them as they
-are.
+Refresh existing root scripts through `setup repo-hooks --force` or the corresponding
+`integrations claude-code install --force` / `integrations codex install --force` command.
+The generated POSIX scripts use the same bounded walk, preserve stdin and arguments, and run
+the selected local entry even when its `.bin/veritas` link is absent. Runtime invocation preserves
+the CLI exit status; Stop feedback remains nonblocking. The no-local-install npx fallback and
+native Windows override remain unchanged. Consumer-owned package scripts and copied CI snippets
+are separate explicit package-manager invocations.
 
 ## The Governance Block Runs `npx --no @kontourai/veritas readiness`
 

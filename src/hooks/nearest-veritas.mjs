@@ -32,9 +32,10 @@
 // commands through PowerShell, so the Codex config also carries the plain command as commandWindows.
 export const INSTALLED_VERITAS_ENTRY = 'node_modules/@kontourai/veritas/bin/veritas.mjs';
 
-export function nearestInstalledVeritasCommand(args) {
-  return 'VERITAS_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"; VERITAS_BIN=; VERITAS_FOUND=; '
-    + 'VERITAS_DIR="$(pwd -P 2>/dev/null)"; while :; do '
+export function nearestInstalledVeritasCommand(args, { allowDiscoveryFailure = false } = {}) {
+  const tolerate = allowDiscoveryFailure ? ' || :' : '';
+  return `VERITAS_ROOT="$(git rev-parse --show-toplevel 2>/dev/null${tolerate})"; VERITAS_BIN=; VERITAS_FOUND=; `
+    + `VERITAS_DIR="$(pwd -P 2>/dev/null${tolerate})"; while :; do `
     + 'case "$VERITAS_DIR" in /*) ;; *) break;; esac; '
     + `if [ -z "$VERITAS_FOUND" ] && [ -f "$VERITAS_DIR/${INSTALLED_VERITAS_ENTRY}" ]; then VERITAS_FOUND="$VERITAS_DIR/${INSTALLED_VERITAS_ENTRY}"; fi; `
     + 'if [ -n "$VERITAS_ROOT" ] && [ "$VERITAS_DIR" -ef "$VERITAS_ROOT" ]; then VERITAS_BIN="$VERITAS_FOUND"; break; fi; '

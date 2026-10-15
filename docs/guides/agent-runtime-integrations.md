@@ -40,6 +40,14 @@ Veritas is intentionally agent-agnostic. These integration notes show where the 
 
 ## Common Rule
 
+Generated POSIX post-commit, runtime, Stop and Claude Code pre-edit scripts run
+the nearest eligible repository install's `bin/veritas.mjs` with Node. They check
+the entry they run, so missing `.bin` links do not redirect a local hook to a
+parent or PATH `veritas`. With no eligible local entry they retain the explicit
+`npx --no @kontourai/veritas` fallback. Codex's native Windows override remains a
+separate plain invocation. See [migration instructions](../MIGRATING.md#agent-hook-commands-run-the-install-they-found)
+to refresh scripts already installed in a consumer repository.
+
 No matter which runtime you use, keep these pieces repo-local and reviewable:
 
 - Repo Map

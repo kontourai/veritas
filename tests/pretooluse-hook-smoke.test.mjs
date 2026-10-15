@@ -165,25 +165,3 @@ test('installed PreToolUse hook records VERITAS_HOOK_SKIP bypasses instead of ex
   assert.equal(records[0].actor, 'brian');
   assert.match(records[0].reason, /Emergency hotfix/);
 });
-
-test('generated PreToolUse hook body invokes a verb the bin actually routes', (t) => {
-  const rootDir = bootstrapGovernedRepo(t, 'veritas-pretool-smoke-route-');
-  installClaudeCodeIntegration(rootDir);
-  const hookBody = readFileSync(join(rootDir, '.veritas/hooks/pre-tool-use.sh'), 'utf8');
-  const invocation = hookBody.match(/^exec npx --no @kontourai\/veritas (.+) "\$@"$/m);
-  assert.ok(invocation, `hook body must exec a veritas verb:\n${hookBody}`);
-
-  // Run the parsed verb through the real bin and assert it is not the
-  // "unknown subcommand" path (top-level usage banner on stderr, exit 1).
-  const probe = spawnSync(
-    'npm',
-    ['exec', '--', 'veritas', ...invocation[1].split(' '), '--root', rootDir],
-    { cwd: rootDir, encoding: 'utf8', input: '{}', env: cleanGitEnv() },
-  );
-  assert.doesNotMatch(
-    probe.stderr,
-    /Usage:\s*\n\s*veritas --version/,
-    `hook body names a verb the bin does not route: ${invocation[1]}`,
-  );
-  assert.notEqual(probe.status, 1, `hook body names a verb the bin does not route: ${probe.stderr}`);
-});

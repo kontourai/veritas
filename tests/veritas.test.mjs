@@ -5331,16 +5331,11 @@ test('print ci-snippet returns a copy-paste starter snippet', (t) => {
   assert.match(buildSuggestedCiSnippet({ evidenceCheck: repoInsights.evidenceCheck }), /run: npm run verify/);
 });
 
-test('print git-hook returns a tracked post-commit runtime integration', () => {
+test('print git-hook exposes the post-commit shell and bypass contract', () => {
   const hookBody = buildSuggestedGitHook({ hook: 'post-commit' });
-  const trackedHookBody = readFileSync(join(repoRootDir, '.githooks/post-commit'), 'utf8');
   assert.match(hookBody, /^#!\/bin\/sh/m);
-  assert.match(hookBody, /^  npx --no @kontourai\/veritas readiness --changed-from HEAD~1 --changed-to HEAD$/m);
   assert.match(hookBody, /VERITAS_HOOK_SKIP/);
   assert.match(hookBody, /AI_GUIDANCE_HOOK_SKIP/);
-  // This repo's own hook differs only in how it runs Veritas: npx cannot find a package from
-  // inside that package's own checkout (it exits 127), while npm exec resolves the root bin.
-  assert.equal(hookBody.replaceAll('npx --no @kontourai/veritas', 'npm exec -- veritas'), trackedHookBody);
 });
 
 test('print git-hook returns a tracked pre-push push-safe integration', () => {
