@@ -5950,11 +5950,11 @@ test('apply codex-hook writes a tracked codex hooks artifact and can merge it', 
   assert.equal(result.outputPath, '.veritas/runtime/codex-hooks.json');
   assert.equal(result.mergedTargetPath, 'tmp-hooks.json');
   assert.equal(contents.hooks.Stop[0].hooks[0].command, '.veritas/hooks/agent-runtime.sh');
-  assert.match(contents.hooks.PostSession[0].hooks[0].command, /VERITAS_SESSION_LOG_PATH/);
+  assert.equal(Object.hasOwn(contents.hooks, 'PostSession'), false);
   assert.equal(merged.hooks.SessionStart[0].hooks[0].command, 'echo existing');
   assert.equal(merged.hooks.Stop[0].hooks[0].command, 'echo keep-me');
   assert.equal(merged.hooks.Stop[1].hooks[0].command, '.veritas/hooks/agent-runtime.sh');
-  assert.match(merged.hooks.PostSession[0].hooks[0].command, /VERITAS_SESSION_LOG_PATH/);
+  assert.equal(Object.hasOwn(merged.hooks, 'PostSession'), false);
 });
 
 test('apply codex-hook can resolve a Codex home into hooks.json', (t) => {
@@ -5989,7 +5989,7 @@ test('apply codex-hook can resolve a Codex home into hooks.json', (t) => {
   assert.equal(result.mergedTargetPath, 'tmp-codex-home/hooks.json');
   assert.equal(merged.hooks.SessionStart[0].hooks[0].command, 'echo existing');
   assert.equal(merged.hooks.Stop[0].hooks[0].command, '.veritas/hooks/agent-runtime.sh');
-  assert.match(merged.hooks.PostSession[0].hooks[0].command, /VERITAS_SESSION_LOG_PATH/);
+  assert.equal(Object.hasOwn(merged.hooks, 'PostSession'), false);
 });
 
 test('apply codex-hook reports an absolute external Codex home target clearly', (t) => {
@@ -6261,7 +6261,8 @@ test('integrations codex install owns git, runtime, and codex hook wiring', (t) 
   assert.equal(result.stop.codexHooks.outputPath, '.veritas/runtime/codex-hooks.json');
   assert.equal(configuredHooksPath, '.githooks');
   assert.equal(codexHooks.hooks.Stop[0].hooks[0].command, '.veritas/hooks/agent-runtime.sh');
-  assert.equal(result.postSession.installed, true);
+  assert.equal(result.postSession.installed, false);
+  assert.match(result.postSession.reason, /no reader for Codex rollout transcripts/);
 });
 
 test('runtime status reports installed integration state including codex target', (t) => {

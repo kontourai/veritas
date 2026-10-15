@@ -22,6 +22,7 @@ export {
 } from './setup-apply.mjs';
 export {
   runClaudeCodePreToolUseCli,
+  runClaudeCodeSessionEndCli,
   runCodexPreToolUseCli,
   runIntegrationsCli,
 } from './setup-runtime.mjs';
