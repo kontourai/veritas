@@ -45,9 +45,11 @@ Breaking evidence-check migration notes live in [../MIGRATING.md](../MIGRATING.m
 Runs the requested check. Without `--check`, this is the agent-facing feedback path.
 
 ```bash
-npx --no @kontourai/veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree]
+npx --no @kontourai/veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree] [--actor <id>]
 npx --no @kontourai/veritas readiness --check boundaries --actor cli-team [--diff main]
 ```
+
+`--actor <id>` names the governance actor for the run: any `work-area-boundary` requirement the Repo Standards declare, the readiness-verdict authority trace when no current attestation names one, and run history. It takes precedence over `VERITAS_ACTOR`, and an empty value counts as unset; with neither, a `work-area-boundary` requirement fails closed.
 
 `readiness` is the recommended current front door for evidenceCheck execution, generated evidence, standards feedback drafting, and change guidance. `readiness --check boundaries` replaces `boundaries check`. `readiness --check coverage` is the current command for readiness coverage. `readiness --check evidence` is the current command for the lower-level generated evidence path. `readiness --check config` validates this repo's Repo Map and Repo Standards against the schemas Veritas publishes for them.
 
@@ -361,6 +363,7 @@ npx --no @kontourai/veritas readiness [--root <path>] [--repo-map <path>] [--rep
   [--format feedback|json]
   [--evidence-check-command <cmd>] [--skip-evidence-check]
   [--working-tree | --changed-from <ref> --changed-to <ref>]
+  [--actor <id>]
   [--run-id <id>]
   [--reviewer-confidence <scale-entry|unknown>]
   [--time-to-green-minutes <number>]
@@ -588,6 +591,8 @@ npx --no @kontourai/veritas apply governance-blocks [--root <path>] [--force]
 npx --no @kontourai/veritas apply codex-hook [--root <path>] [--output <path>] [--target-hooks-file <path> | --codex-home <path>] [--force]
 npx --no @kontourai/veritas apply claude-code-pre-tool-use-hook [--root <path>] [--output <path>] [--force]
 ```
+
+`npx --no @kontourai/veritas apply --help` and `npx --no @kontourai/veritas print --help` list the targets. Each target refuses an unknown flag, a flag without its value, a value outside the listed choices, an extra positional argument, and a `--root` that is not an existing directory before it writes anything. A target that also merges a tool config (`stop-hook` with `--tool claude-code|cursor`, `claude-code-pre-tool-use-hook`, `codex-hook` with a target hooks file) reads and merges that config first, so a malformed config leaves nothing written. An existing generated file that already holds exactly what the target would write is accepted without `--force`; one that differs is refused.
 
 Write restrictions are intentional:
 

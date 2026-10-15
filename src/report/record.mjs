@@ -1,5 +1,6 @@
 import { normalizeRepoPath } from '../paths.mjs';
 import { evaluateRepoStandards } from '../rules/evaluate.mjs';
+import { resolveActor } from '../util/actor.mjs';
 import { produceSurfaceStateForVeritasRecord } from '../surface/producer.mjs';
 import { setReadinessRuntime } from '../surface/readiness-runtime.mjs';
 import { buildAttestationPolicyResult } from '../attestations.mjs';
@@ -47,6 +48,7 @@ function resolvePolicyResultSet({
   normalizedFiles,
   config,
   options,
+  actor,
   evidenceCheckPlan,
 }) {
   const initialPolicyResults =
@@ -55,7 +57,7 @@ function resolvePolicyResultSet({
       rootDir,
       changedFiles: normalizedFiles,
       config,
-      actor: options.actor,
+      actor,
       classificationScope: options.classificationScope,
     });
   const policyResults = bindRuleEvidenceResults({
@@ -209,12 +211,16 @@ export async function buildEvidenceRecord({
   );
   const policyDefaults = resolvePolicyDefaults(config);
   const resolvedRepoStandards = requireRepoStandards(repoStandards);
+  // Not a record field (the v1 evidence schema is closed); it reaches the authority trace as a
+  // projection input instead.
+  const actor = resolveActor(options.actor);
   const { governanceState, policyResults } = resolvePolicyResultSet({
     repoStandards: resolvedRepoStandards,
     rootDir,
     normalizedFiles,
     config,
     options,
+    actor,
     evidenceCheckPlan,
   });
   const selectedEvidenceCheckSources = resolveSelectedEvidenceCheckSources(config, evidenceCheckPlan);
@@ -280,6 +286,7 @@ export async function buildEvidenceRecord({
   const surface = await produceSurfaceStateForVeritasRecord(record, {
     rootDir,
     repoMapConfig: config,
+    actor,
   });
   const result = {
     ...record,

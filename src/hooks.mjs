@@ -17,5 +17,6 @@ export {
   applyPackageScripts,
   applyRuntimeHook,
   applyStopHook,
+  installRepoHook,
   setupRepoHooks,
 } from './hooks/apply.mjs';

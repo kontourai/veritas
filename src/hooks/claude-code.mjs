@@ -1,5 +1,4 @@
 import {
-  chmodSync,
   existsSync,
   mkdirSync,
   writeFileSync,
@@ -13,8 +12,8 @@ import {
   buildSuggestedClaudeCodePreToolUseHook,
 } from './suggestions.mjs';
 import { mergeStopHookConfig } from './config-merge.mjs';
+import { assertReplaceableFile, assertWritableHookPath, writeGeneratedFile } from './write-safety.mjs';
 import { PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS } from './claude-code-hook-history.mjs';
-import { assertWritableHookPath } from './write-safety.mjs';
 
 export function applyClaudeCodePreToolUseHook({
   rootDir,
@@ -34,16 +33,10 @@ export function applyClaudeCodePreToolUseHook({
     messagePrefix: 'apply claude-code-pre-tool-use-hook',
   });
 
-  if (existsSync(resolvedOutputPath) && !force) {
-    throw new Error(
-      `Refusing to overwrite existing file: ${relativeOutputPath} (use --force to replace it)`,
-    );
-  }
+  assertReplaceableFile({ resolvedPath: resolvedOutputPath, relativePath: relativeOutputPath, content: suggestion.hookBody, force });
 
-  mkdirSync(dirname(resolvedOutputPath), { recursive: true });
-  writeFileSync(resolvedOutputPath, suggestion.hookBody, 'utf8');
-  chmodSync(resolvedOutputPath, 0o755);
-
+  // Read and merge the tool config before writing anything, so a malformed config leaves no
+  // half-installed hook behind.
   const resolvedToolConfigPath = resolve(rootDir, suggestion.toolConfigPath);
   assertWithinDir(
     resolvedToolConfigPath,
@@ -54,8 +47,9 @@ export function applyClaudeCodePreToolUseHook({
     ? loadJson(resolvedToolConfigPath, 'claude-code pre-tool-use hook config')
     : {};
   const mergedConfig = mergeStopHookConfig(existingConfig, suggestion.toolConfig);
-  mkdirSync(dirname(resolvedToolConfigPath), { recursive: true });
-  writeFileSync(resolvedToolConfigPath, `${JSON.stringify(mergedConfig, null, 2)}\n`, 'utf8');
+
+  writeGeneratedFile({ resolvedPath: resolvedOutputPath, content: suggestion.hookBody, executable: true });
+  writeGeneratedFile({ resolvedPath: resolvedToolConfigPath, content: `${JSON.stringify(mergedConfig, null, 2)}\n` });
 
   return {
     rootDir,

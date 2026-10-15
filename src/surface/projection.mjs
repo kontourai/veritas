@@ -48,8 +48,8 @@ export {
   surfaceSafeId,
 };
 
-export async function buildSurfaceTrustBundle(record, { rootDir = process.cwd(), repoMapConfig = null } = {}) {
-  const assembly = await createSurfaceProjectionAssembly(record, { rootDir, repoMapConfig });
+export async function buildSurfaceTrustBundle(record, { rootDir = process.cwd(), repoMapConfig = null, actor = null } = {}) {
+  const assembly = await createSurfaceProjectionAssembly(record, { rootDir, repoMapConfig, actor });
 
   try {
     return assembly.assembler.build(assembly.policies);
