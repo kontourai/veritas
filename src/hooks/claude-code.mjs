@@ -88,7 +88,7 @@ const PREVIOUS_POST_SESSION = new Set(PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS
 const isPreviousPostSessionHandler = (command) => PREVIOUS_POST_SESSION.has(command);
 // A SessionEnd capture any Veritas wrote: its command ends with the marker.
 const isVeritasSessionEndHandler = (command) => typeof command === 'string'
-  && command.endsWith(` ${CLAUDE_CODE_SESSION_END_MARKER}`);
+  && command.trimEnd().endsWith(` ${CLAUDE_CODE_SESSION_END_MARKER}`);
 
 export function applyClaudeCodePostSessionHook({ rootDir } = {}) {
   const suggestion = buildSuggestedClaudeCodePostSessionHook();

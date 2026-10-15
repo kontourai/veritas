@@ -204,7 +204,7 @@ Hooks, package scripts, the CI snippet, the `.veritas/README.md` template, and p
 now run `npx --no @kontourai/veritas`. The earlier spelling still works where Veritas is installed.
 Where it is not, it fell back to a registry fetch without prompting when no terminal is attached,
 and the `npm exec` form fetched the unscoped `veritas` package, which belongs to another project.
-The Codex `PreToolUse` and `PostSession` commands and the Claude Code `PostSession` command run in the
+The Codex `PreToolUse` command and the Claude Code `SessionEnd` command run in the
 agent's working directory, which can be a nested package without its own Veritas install. They look
 upward from there for the nearest directory with Veritas installed, and run that install's entry
 point with `node` only when the walk reaches the git root (see the next section). When it does not,
@@ -251,7 +251,8 @@ without a `node_modules/.bin/veritas` link, for example one made with `--no-bin-
 `bin-links=false`, that could be a `.bin/veritas` in a directory above the repository, or a global
 install of the unrelated unscoped `veritas` package.
 
-These commands now run the entry point of the install they found by path:
+The Codex `PreToolUse` command and the Claude Code `SessionEnd` command now run the entry point of
+the install they found by path:
 `node <install>/node_modules/@kontourai/veritas/bin/veritas.mjs`. An install counts only when that
 file exists. When the walk finds no install, the commands run plain `npx --no @kontourai/veritas` as
 before, which also finds a global install. On Windows the Codex `commandWindows` override still runs

@@ -175,7 +175,7 @@ test('an unreadable or malformed transcript is reported on stderr and the hook s
   for (const [name, transcriptPath] of cases) {
     const result = runSessionEnd(rootDir, { transcript_path: transcriptPath, hook_event_name: 'SessionEnd', reason: 'other' });
     assert.equal(result.status, 0, `${name}: ${result.stderr}`);
-    assert.match(result.stderr, /could not read session log .*no standards feedback draft captured/, name);
+    assert.match(result.stderr, /could not capture a standards feedback draft from session log .*no draft written/, name);
     assert.equal(existsSync(draftsDir(rootDir)), false, `${name}: no draft`);
   }
 });
@@ -231,4 +231,43 @@ test('a reinstall removes every PostSession command an earlier release wrote', (
     veritas(rootDir, ['integrations', 'claude-code', 'install', '--force']);
     assert.equal(Object.hasOwn(JSON.parse(readFileSync(settingsPath, 'utf8')).hooks, 'PostSession'), false, command);
   }
+});
+
+test('a transcript whose only line does not parse is reported, not turned into an empty draft', (t) => {
+  const rootDir = bootstrapRepo(t, 'veritas-session-end-garbage-');
+  const transcriptPath = join(rootDir, 'garbage.jsonl');
+  writeFileSync(transcriptPath, '{"type":"assistant","message":');
+  const result = runSessionEnd(rootDir, { transcript_path: transcriptPath, hook_event_name: 'SessionEnd', reason: 'other' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /could not capture a standards feedback draft/);
+  assert.equal(existsSync(draftsDir(rootDir)), false);
+});
+
+test('a draft that cannot be written is reported as a capture failure and the hook still exits 0', (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip('root can write a read-only directory');
+    return;
+  }
+  const rootDir = bootstrapRepo(t, 'veritas-session-end-readonly-');
+  mkdirSync(draftsDir(rootDir), { recursive: true });
+  chmodSync(draftsDir(rootDir), 0o500);
+  try {
+    const result = runSessionEnd(rootDir, { transcript_path: claudeTranscript(tempDirFor(t)), hook_event_name: 'SessionEnd', reason: 'other' });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stderr, /could not capture a standards feedback draft .*EACCES/);
+    assert.doesNotMatch(result.stderr, /could not read/);
+  } finally {
+    chmodSync(draftsDir(rootDir), 0o700);
+  }
+});
+
+test('a marked SessionEnd capture with trailing whitespace is still replaced', (t) => {
+  const rootDir = bootstrapRepo(t, 'veritas-session-end-marker-space-');
+  mkdirSync(join(rootDir, '.claude'), { recursive: true });
+  const settingsPath = join(rootDir, '.claude/settings.json');
+  const earlier = `npx --no @kontourai/veritas hooks claude-code session-end ${CLAUDE_CODE_SESSION_END_MARKER} \n`;
+  writeFileSync(settingsPath, `${JSON.stringify({ hooks: { SessionEnd: [{ matcher: '.*', hooks: [{ type: 'command', command: earlier }] }] } }, null, 2)}\n`);
+  const [current] = sessionEndCommands(buildSuggestedClaudeCodePostSessionHook().toolConfig);
+  veritas(rootDir, ['integrations', 'claude-code', 'install', '--force']);
+  assert.deepEqual(sessionEndCommands(JSON.parse(readFileSync(settingsPath, 'utf8'))), [current]);
 });

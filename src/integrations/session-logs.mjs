@@ -16,9 +16,9 @@ function heuristicMissing(reason) {
   return { value: null, reason };
 }
 
-// The final line is skipped when it does not parse: a runtime can still be writing the transcript
-// (Claude Code writes it asynchronously), so the last line may be cut short. Any other line that does
-// not parse is an error.
+// The final line is skipped when it does not parse and an earlier line did: a runtime can still be
+// writing the transcript (Claude Code writes it asynchronously), so the last line may be cut short.
+// Any other line that does not parse, including a transcript's only line, is an error.
 function parseJsonl(path) {
   const lines = readFileSync(path, 'utf8')
     .split('\n')
@@ -28,7 +28,7 @@ function parseJsonl(path) {
     try {
       return [JSON.parse(line)];
     } catch (error) {
-      if (index === lines.length - 1) return [];
+      if (index > 0 && index === lines.length - 1) return [];
       throw error;
     }
   });
