@@ -70,7 +70,9 @@ export function applyGitHook({
   };
 }
 
-function installRepoHook({ rootDir, hook, force }) {
+// Writes a repo hook unless an identical one is already there: an existing hook that holds exactly
+// the generated body is accepted, and only a hook that differs is refused without --force.
+export function installRepoHook({ rootDir, hook, force }) {
   const outputPath = `.githooks/${hook}`;
   const resolvedOutputPath = resolve(rootDir, outputPath);
   const hooksDir = resolve(rootDir, '.githooks');
