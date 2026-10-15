@@ -229,9 +229,12 @@ Files Veritas already wrote keep the earlier spelling until you refresh them:
   `npx --no @kontourai/veritas integrations codex install --force` with the same option you
   installed with. In the hooks file it replaces the handlers earlier releases wrote, matched by
   their exact command, and leaves every other handler alone.
-- A `.codex/hooks.json` provisioned through Flow Agents: provisioning again adds the new
-  `PreToolUse` handler and keeps the earlier one, so delete the earlier handler by hand. Its
-  command is the one that runs `hooks codex pre-tool-use` without `--no`.
+- A `.codex/hooks.json` provisioned through Flow Agents: the kit now declares the two exact
+  historical PreToolUse commands as legacy `supersedes`, including the command without `--no`.
+  This needs the merged-but-not-yet-published engine capability described in
+  [Legacy Kit hook migration](guides/governance-kit.md#install-from-git). Do not assume an older
+  installed engine applies the declaration. Once a qualified release is available, review the
+  dry run and re-provision rather than force-replacing the hooks file.
 - `package.json` scripts, a CI snippet you copied into a workflow, and `.veritas/README.md` have no
   refresh command. Edit the prefix before each Veritas subcommand to `npx --no @kontourai/veritas`.
   Do not rerun `init --force` for the README: it also rewrites your standards.
@@ -270,9 +273,13 @@ Hooks Veritas already wrote keep the earlier command until you refresh them:
 - Codex: run `npx --no @kontourai/veritas integrations codex install --force` with the same option
   you installed with. In the hooks file it replaces the handlers v1.11.1 and v1.11.2 wrote, matched
   by their exact command.
-- A `.codex/hooks.json` provisioned through Flow Agents: provisioning again adds the new
-  `PreToolUse` handler and keeps the earlier one, so delete the earlier handler by hand. Its command
-  contains `npx --no --prefix "$VERITAS_PREFIX"`.
+- A `.codex/hooks.json` provisioned through Flow Agents: the kit's legacy `supersedes` includes
+  the exact old command containing `npx --no --prefix "$VERITAS_PREFIX"` and the earlier npm-exec
+  command. This requires the [engine capability and reviewed migration authority](guides/governance-kit.md#install-from-git),
+  not merely a Git kit refresh. The capability is merged but not qualified here as a published
+  engine version. With a qualified engine, re-provision after a reviewed dry run; matching is
+  target/event-bounded but reaches a user's exact old-command copy under another matcher.
+  Other kits' valid recorded ownership remains protected.
 
 `integrations claude-code status` reports `postSessionConfigured: false`, and
 `integrations codex status` with a hooks file reports `integrationInstalled: false`, until you

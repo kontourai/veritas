@@ -48,6 +48,10 @@
       "host": "codex",
       "kind": "hook",
       "merge": "hooks-json",
+      "supersedes": [
+        "npm exec -- veritas hooks codex pre-tool-use",
+        "VERITAS_ROOT=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; VERITAS_PREFIX=; VERITAS_FOUND=; VERITAS_DIR=\"$(pwd -P 2>/dev/null)\"; while :; do case \"$VERITAS_DIR\" in /*) ;; *) break;; esac; if [ -z \"$VERITAS_FOUND\" ] && [ -f \"$VERITAS_DIR/node_modules/@kontourai/veritas/package.json\" ]; then VERITAS_FOUND=\"$VERITAS_DIR\"; fi; if [ -n \"$VERITAS_ROOT\" ] && [ \"$VERITAS_DIR\" -ef \"$VERITAS_ROOT\" ]; then VERITAS_PREFIX=\"$VERITAS_FOUND\"; break; fi; if [ \"$VERITAS_DIR\" = / ]; then break; fi; VERITAS_DIR=\"${VERITAS_DIR%/*}\"; [ -n \"$VERITAS_DIR\" ] || VERITAS_DIR=/; done; if [ -n \"$VERITAS_PREFIX\" ]; then npx --no --prefix \"$VERITAS_PREFIX\" @kontourai/veritas hooks codex pre-tool-use; else npx --no @kontourai/veritas hooks codex pre-tool-use; fi"
+      ],
       "description": "Codex PreToolUse hook that asks Veritas for path-specific guidance before file edits."
     }
   ],

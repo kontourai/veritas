@@ -114,8 +114,13 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    npx --no @kontourai/veritas setup repo-hooks
    ```
 
-9. For a Codex host, use Flow Agents's Kit provisioner to install the reviewed
-   Veritas hook declaration. Inspect the dry run and the exact target first:
+9. For a Codex host, first verify the installed Flow Agents engine supports the
+   exact-command `supersedes` and journaled ownership capability from
+   [Flow Agents #1494](https://github.com/kontourai/flow-agents/pull/1494).
+   It is merged in source but not yet qualified here as a published release;
+   no released-version minimum is declared. Stop this migration on an older
+   engine and wait for a qualified release. A Git kit install does not update
+   the engine. Then review the dry run and exact target:
 
    ```bash
    flow-agents kit provision veritas-governance --target . --dry-run
@@ -126,7 +131,13 @@ workflow and agent guidance; `@kontourai/veritas` remains the deterministic engi
    Ordinary Kit provisions are create-only by default. This declared host hook
    uses Flow Agents's `hooks-json` merge through Conduit: existing unrelated
    handlers remain, an identical handler is not duplicated, and a conflicting
-   command definition refuses before writing. Never force-replace an existing
+   command definition refuses before writing. This provision's two exact legacy
+   Veritas commands are an explicit migration exception: they are removed from
+   PreToolUse in `.codex/hooks.json` even under another matcher, unless another
+   kit has valid recorded ownership there. Review that authority and inspect the
+   completed `superseded_handlers` audit. See the
+   [capability and migration limits](../../docs/guides/governance-kit.md#install-from-git).
+   Never force-replace an existing
    `.codex/hooks.json` to bypass that refusal. Codex requires its own trust review of
    the new or changed project hook in `/hooks`; a copied file alone is not proof
    the runtime executes it. For Claude Code, install and inspect the supported
