@@ -1489,6 +1489,7 @@ test('work-area, default, and explicit evidence routing always compose required 
   });
   assert.deepEqual(surfacePlan.evidenceCheckCommands, ['npm run viewer:build', 'npm run required-evidence-check']);
   assert.equal(surfacePlan.resolutionSource, 'surface');
+  assert.deepEqual(surfacePlan.requiredEvidenceCheckIds, ['required-evidence-check']);
 
   const defaultPlan = resolveEvidenceCheckCommands({
     repoMapPath: writeTempRepoMap(rootDir, repoMap),
@@ -1514,6 +1515,8 @@ test('work-area, default, and explicit evidence routing always compose required 
   });
   assert.deepEqual(explicitPlan.evidenceCheckCommands, ['npm run diagnostic', 'npm run required-evidence-check']);
   assert.equal(explicitPlan.resolutionSource, 'explicit');
+  // An explicit command is additive and required for the run that supplied it (#225).
+  assert.deepEqual(explicitPlan.requiredEvidenceCheckIds, ['required-evidence-check', 'explicit-command-npm-run-diagnostic']);
 
   repoMap.evidence.evidenceChecks.push({
     id: 'npm-run-diagnostic',
@@ -1542,6 +1545,10 @@ test('work-area, default, and explicit evidence routing always compose required 
     explicitEvidenceCheckCommand: 'npm run diagnostic',
   });
   assert.equal(occupiedNamespacePlan.evidenceChecks[0].id, 'explicit-command-npm-run-diagnostic-3');
+  assert.deepEqual(
+    occupiedNamespacePlan.requiredEvidenceCheckIds,
+    ['explicit-command-npm-run-diagnostic-2', 'explicit-command-npm-run-diagnostic-3'],
+  );
   assert.deepEqual(
     occupiedNamespacePlan.evidenceChecks.map((check) => [check.id, check.command]),
     [

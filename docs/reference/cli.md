@@ -361,7 +361,7 @@ Runs evidence checks first, then creates a report, then creates a standards-feed
 ```bash
 npx --no @kontourai/veritas readiness [--root <path>] [--repo-map <path>] [--repo-standards <path>] [--authority-settings <path>]
   [--format feedback|json]
-  [--evidence-check-command <cmd>] [--skip-evidence-check]
+  [--evidence-check-command <cmd> | --skip-evidence-check]
   [--working-tree | --changed-from <ref> --changed-to <ref>]
   [--actor <id>]
   [--run-id <id>]
@@ -380,7 +380,9 @@ If `accepted_without_major_rewrite`, `required_followup`, and `time_to_green_min
 
 Evidence Check commands are executed as tokenized argv, not through an implicit shell. Keep each command to one executable plus arguments, or move compound shell logic into a real script.
 
-`--skip-evidence-check` is a deliberate diagnostic-only mode. It may generate guidance and a report, but when the Repo Map declares `requiredEvidenceCheckIds`, those checks are recorded as `skipped` and canonical Merge Readiness remains `not-ready` / `rejected`. An explicit `--evidence-check-command` is additive diagnostic evidence: it does not replace configured required checks.
+`--skip-evidence-check` is a deliberate diagnostic-only mode. It may generate guidance and a report, but when the Repo Map declares `requiredEvidenceCheckIds`, those checks are recorded as `skipped` and canonical Merge Readiness remains `not-ready` / `rejected`.
+
+An explicit `--evidence-check-command` is additive and required. It runs alongside the Repo Map's required checks and does not replace them, and it is itself a required check for that run. If it exits nonzero, readiness fails: the command reports `FAIL  required-evidence-check:<id>: failed`, JSON output sets `evidenceCheckFailure` and `readiness.verdict: "not-ready"`, and the process exits `1`. The `<id>` is the matching Repo Map check's id when the command equals a configured command, and otherwise an `explicit-command-<slug>` id. When the command equals an optional configured check's command, that check becomes required for the run, including its external tool: with `externalTool.blocking: true`, a `fail` or `missing` artifact verdict also blocks readiness. The flag takes exactly one non-empty command as the next argument. Giving it more than once, together with `--skip-evidence-check`, in the `--evidence-check-command=<cmd>` form, or with an empty or missing value is a usage error: readiness exits `2` with a message and runs nothing. A failing configured required check still fails readiness when the explicit command passes. To run a diagnostic that does not block, declare it in the Repo Map as a default or routed check that is not listed in `requiredEvidenceCheckIds`, and run readiness without `--evidence-check-command`; see [MIGRATING.md](../MIGRATING.md#explicit-evidence-check-commands-block-readiness-again).
 
 External tool evidenceChecks follow the same rule. For tools such as Fallow, put shell-sensitive behavior like `2>/dev/null || true` inside a script, have that script write a JSON artifact under `.veritas/`, and point the check's `externalTool.artifactPath` at that file. Advisory external tool findings appear as warnings in feedback; blocking external tool findings fail the run.
 
