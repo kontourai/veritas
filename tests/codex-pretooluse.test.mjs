@@ -9,6 +9,7 @@ import {
   createAttestation,
   writeBootstrapStarterKit,
 } from '../src/index.mjs';
+import { PREVIOUS_CODEX_HOOK_COMMANDS } from '../src/integrations/codex-hook-history.mjs';
 import { codexEditPaths, evaluateCodexPreToolUse } from '../src/hooks/codex-pre-tool-use.mjs';
 import { commitAll, initCommittedRepo, installLocalVeritasBin } from './helpers.mjs';
 
@@ -167,6 +168,9 @@ test('the Flow Agents provisioned Codex hook stays identical to the Veritas inst
   assert.deepEqual(kit.provisions.map((item) => item.target), ['.codex/hooks.json']);
   assert.deepEqual(kit.provisions.map((item) => [item.host, item.kind]), [['codex', 'hook']]);
   assert.deepEqual(kit.provisions.map((item) => item.merge), ['hooks-json']);
+  // Kit provisioning and direct installation must recognize the same shipped PreToolUse history.
+  assert.deepEqual(kit.provisions[0].supersedes, PREVIOUS_CODEX_HOOK_COMMANDS.PreToolUse);
+  assert.ok(!kit.provisions[0].supersedes.includes(provision.hooks.PreToolUse[0].hooks[0].command));
 });
 
 test('installed Codex hook config routes a real CLI invocation with model-visible context', (t) => {

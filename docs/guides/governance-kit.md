@@ -22,7 +22,18 @@ Flow Agents shallow-clones the repository, validates the root `kit.json`, record
 content-hash provenance, and activates the declared flows, skills, and docs. Git installation
 does not execute repository scripts, install the Veritas npm package, or provision
 host hooks. The activated `setup-governance` skill uses Flow Agents's separate,
-reviewed provision step for the declared Codex hook:
+reviewed provision step for the declared Codex hook.
+
+**Legacy migration capability:** this kit revision requires the Flow Agents
+`hooks-json` provisioner with exact-command `supersedes` and journaled handler
+ownership from [Flow Agents #1494](https://github.com/kontourai/flow-agents/pull/1494).
+That capability is merged in source at
+`e62fedfea6ab9d53865902fe7bb66f7465c798b0`; it is not yet qualified here as a
+published npm release. No released-version minimum is claimed. Do not use a
+currently installed older provisioner for this migration, or assume that
+installing the Git kit updates the Flow Agents engine. Wait for an explicitly
+qualified engine release, then review the dry run before applying:
+
 
 ```bash
 flow-agents kit provision veritas-governance --target . --dry-run
@@ -31,9 +42,26 @@ flow-agents kit provision veritas-governance --target .
 
 The provision declares `host: codex` and `kind: hook`, so Flow Agents routes its
 explicit target through Conduit's Codex adapter and records a content-safe
-installation receipt. Its explicit `hooks-json` merge preserves existing host
-hooks and refuses a conflicting command definition. Codex itself must trust
-the new or changed hook definition before use.
+installation receipt. Its `hooks-json` merge uses recorded handler identity for
+ordinary replacements. This provision also declares exactly two historical
+Veritas Kit POSIX commands in `supersedes`: the payloads at `f764443` and
+`b4516d1`, which match the direct installer's measured PreToolUse history. The
+current command is excluded.
+
+Reviewing and applying this migration authorizes removal of either exact old
+command from **PreToolUse in `.codex/hooks.json`**, including a user's copy under
+another matcher. This is explicit legacy migration authority, not proof that
+such a copy belonged to this kit. It does not remove other command spellings,
+other events or other targets; another kit's valid recorded ownership protects
+its command for that target/event. Unrelated settings and handlers remain, and
+conflicting current command definitions refuse. The provision manifest retains
+a `superseded_handlers` audit of completed legacy removals. Generic crash
+recovery and ownership rules belong to Flow Agents, not a second Veritas merge
+implementation.
+
+After the supported-engine re-provision, inspect `.codex/hooks.json` and the
+provision audit. Do not force-replace that file. Codex itself must trust the new
+or changed hook definition before use; a provision receipt is not runtime proof.
 
 ## Set up the engine
 
