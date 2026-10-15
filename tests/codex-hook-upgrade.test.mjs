@@ -7,10 +7,14 @@ import { buildSuggestedCodexHookConfig } from '../src/integrations/codex-hooks.m
 import { PREVIOUS_CODEX_HOOK_COMMANDS } from '../src/integrations/codex-hook-history.mjs';
 import { cleanGitEnv, initCommittedRepo, installLocalVeritasBin } from './helpers.mjs';
 
-// The fixture is the exact file v1.11.0 wrote: its own applyCodexHook (src/integrations/
-// codex-hooks.mjs at tag v1.11.0) with targetHooksFile, merged into a hooks file that already held
-// the two user handlers below. Every release from v1.7.0 to v1.11.0 merges the same commands.
-const OLD_ENGINE_HOOKS = new URL('./fixtures/codex-hooks-upgrade/v1.11.0.hooks.json', import.meta.url);
+// Each fixture is the exact file that release wrote: its own applyCodexHook (src/integrations/
+// codex-hooks.mjs at that tag) with targetHooksFile, merged into a hooks file that already held the
+// two user handlers below. Every release from v1.7.0 to v1.11.0 merges the same commands as v1.11.0,
+// and v1.11.1 merges the same commands as v1.11.2.
+const OLD_ENGINE_HOOKS = ['v1.11.0', 'v1.11.2'].map((release) => [
+  release,
+  new URL(`./fixtures/codex-hooks-upgrade/${release}.hooks.json`, import.meta.url),
+]);
 const USER_PRE_TOOL_USE = './scripts/check-owned-paths.sh';
 const USER_POST_SESSION = './scripts/archive-session-log.sh';
 // A user's own handler that runs Veritas: not written by Veritas, so never removed, even though it
@@ -29,16 +33,17 @@ function veritas(rootDir, args) {
   return { status: result.status, output: `${result.stdout}\n${result.stderr}` };
 }
 
-test('reinstalling the Codex integration over an older engine leaves one Veritas handler per event', (t) => {
+for (const [release, fixture] of OLD_ENGINE_HOOKS) test(`reinstalling the Codex integration over ${release} leaves one Veritas handler per event`, (t) => {
   const rootDir = initCommittedRepo(t, 'veritas-codex-hook-upgrade-');
   installLocalVeritasBin(rootDir);
   mkdirSync(join(rootDir, '.codex'), { recursive: true });
   const hooksPath = join(rootDir, '.codex/hooks.json');
-  copyFileSync(OLD_ENGINE_HOOKS, hooksPath);
+  copyFileSync(fixture, hooksPath);
   const before = JSON.parse(readFileSync(hooksPath, 'utf8'));
-  // The fixture really holds the recorded earlier commands, so the upgrade has something to replace.
-  assert.ok(commandsOf(before.hooks.PreToolUse).includes(PREVIOUS_CODEX_HOOK_COMMANDS.PreToolUse[0]));
-  assert.ok(commandsOf(before.hooks.PostSession).includes(PREVIOUS_CODEX_HOOK_COMMANDS.PostSession[0]));
+  // The fixture really holds recorded earlier commands, so the upgrade has something to replace.
+  for (const event of ['PreToolUse', 'PostSession']) {
+    assert.ok(commandsOf(before.hooks[event]).some((command) => PREVIOUS_CODEX_HOOK_COMMANDS[event].includes(command)), `${release} ${event}`);
+  }
   before.hooks.PreToolUse.push({ matcher: 'Write', hooks: [{ type: 'command', command: USER_VERITAS_HANDLER }] });
   writeFileSync(hooksPath, `${JSON.stringify(before, null, 2)}\n`);
 
@@ -52,22 +57,40 @@ test('reinstalling the Codex integration over an older engine leaves one Veritas
   assert.deepEqual(commandsOf(userGroups.PreToolUse), [USER_PRE_TOOL_USE, USER_VERITAS_HANDLER]);
   assert.deepEqual(commandsOf(userGroups.PostSession), [USER_POST_SESSION]);
 
+  // PostSession, which Codex does not have, is no longer written: its recorded handler is removed.
+  assert.equal(Object.hasOwn(current, 'PostSession'), false);
+  const statusBefore = veritas(rootDir, ['integrations', 'codex', 'status', '--target-hooks-file', '.codex/hooks.json']);
+  assert.match(statusBefore.output, /"integrationInstalled": false/);
+
   for (const run of [1, 2]) {
     const install = veritas(rootDir, ['integrations', 'codex', 'install', '--force', '--target-hooks-file', '.codex/hooks.json']);
     assert.equal(install.status, 0, `install run ${run} failed:\n${install.output}`);
     const hooks = JSON.parse(readFileSync(hooksPath, 'utf8')).hooks;
-    for (const event of Object.keys(current)) {
+    for (const event of new Set([...Object.keys(current), ...Object.keys(PREVIOUS_CODEX_HOOK_COMMANDS)])) {
       const veritasCommands = commandsOf(hooks[event]).filter((command) => ours.has(command));
-      assert.deepEqual(veritasCommands, commandsOf(current[event]), `run ${run}: ${event} must hold one current Veritas handler`);
+      assert.deepEqual(veritasCommands, commandsOf(current[event]), `run ${run}: ${event} must hold only the current Veritas handlers`);
       // The whole current handler is installed, including the Windows override.
-      assert.deepEqual(hooks[event].flatMap((group) => group.hooks).filter((hook) => ours.has(hook.command)), current[event].flatMap((group) => group.hooks));
+      assert.deepEqual(hooks[event].flatMap((group) => group.hooks).filter((hook) => ours.has(hook.command)), (current[event] ?? []).flatMap((group) => group.hooks));
       // Every handler Veritas did not write survives unchanged, including one that runs Veritas.
       assert.deepEqual(hooks[event].filter((group) => commandsOf([group]).every((command) => !ours.has(command))), userGroups[event] ?? [], `run ${run}: ${event} user handlers`);
     }
+    // Pinned independently of the record: the fixture's only non-Veritas PostSession handler is the
+    // user's, so everything else that release wrote there must be gone.
+    assert.deepEqual(commandsOf(hooks.PostSession), [USER_POST_SESSION], `run ${run}: ${release} PostSession`);
   }
 
   const status = veritas(rootDir, ['integrations', 'codex', 'status', '--target-hooks-file', '.codex/hooks.json']);
   assert.match(status.output, /"integrationInstalled": true/);
+
+  // Every current handler present is not enough: the PostSession capture this release wrote, which
+  // Codex never runs, still reads as needing a reinstall. Taken from the fixture, not the record.
+  const releasePostSession = commandsOf(JSON.parse(readFileSync(fixture, 'utf8')).hooks.PostSession).filter((command) => command !== USER_POST_SESSION);
+  assert.equal(releasePostSession.length, 1);
+  const installed = JSON.parse(readFileSync(hooksPath, 'utf8'));
+  installed.hooks.PostSession.push({ matcher: '.*', hooks: [{ type: 'command', command: releasePostSession[0] }] });
+  writeFileSync(hooksPath, `${JSON.stringify(installed, null, 2)}\n`);
+  const stale = veritas(rootDir, ['integrations', 'codex', 'status', '--target-hooks-file', '.codex/hooks.json']);
+  assert.match(stale.output, /"integrationInstalled": false/);
 });
 
 test('a Veritas Codex handler without the current Windows override reads as not installed until reinstalled', (t) => {

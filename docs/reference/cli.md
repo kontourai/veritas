@@ -184,13 +184,16 @@ When `kind=explicit-statement` and the statement shares no token overlap with th
 
 ### `hooks claude-code`
 
-Prints, installs, or runs the Claude Code PreToolUse hook.
+Prints, installs, or runs the Claude Code PreToolUse hook, and runs the SessionEnd capture.
 
 ```bash
 npx --no @kontourai/veritas hooks claude-code print [--root <path>]
 npx --no @kontourai/veritas hooks claude-code apply [--root <path>] [--force]
 npx --no @kontourai/veritas hooks claude-code pre-tool-use [--root <path>] [--file <path>] [--actor <id>]
+npx --no @kontourai/veritas hooks claude-code session-end [--root <path>]
 ```
+
+`session-end` reads the Claude Code SessionEnd hook input from stdin and writes a standards-feedback draft from the session log it names as `transcript_path`, as `feedback observe --tool claude-code` does. `VERITAS_SESSION_LOG_PATH`, when set, takes precedence. With no session log path, or a path that does not exist, it writes a note to stderr and exits 0, so ending the session is never held up.
 
 `pre-tool-use` reads the Claude hook JSON payload from stdin, extracts `tool_input.file_path` or `tool_input.path`, resolves the actor from `--actor`, `VERITAS_ACTOR`, or the current attestation, and returns hook protocol JSON.
 For an allowed edit with matching rules, it includes the path-selected `explain` guidance in `hookSpecificOutput.additionalContext`. An `Edit`, `MultiEdit`, or `Write` call without a file path blocks because no path-specific guidance or boundary check can run. The generated hook covers those three edit tools; shell commands and runtimes without a pre-edit hook still need an explicit path briefing.
@@ -238,7 +241,7 @@ npx --no @kontourai/veritas integrations cursor install [--root <path>] [--force
 npx --no @kontourai/veritas integrations copilot status [--root <path>]
 ```
 
-Codex and Claude Code have session log readers. Claude Code install wires PreToolUse, Stop, and PostSession hooks. Cursor and Copilot currently install generic stop-hook wiring and report `sessionLogReader: null`.
+Codex and Claude Code have session log readers. Claude Code install wires PreToolUse, Stop, and SessionEnd hooks; SessionEnd captures a standards-feedback draft from the session log. Codex install wires PreToolUse and Stop hooks and does not capture session logs, because the Codex reader does not read Codex rollout transcripts. Cursor and Copilot currently install generic stop-hook wiring and report `sessionLogReader: null`.
 
 `uninstall` is available for Codex, Claude Code, Cursor, and Copilot, but it is manual guidance only. The JSON response reports `removed: false` and `capabilityState: "manual"`; Veritas does not remove files, hooks, or tool configuration automatically yet.
 

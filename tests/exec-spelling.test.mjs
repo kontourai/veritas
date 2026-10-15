@@ -5,6 +5,8 @@ import { execFileSync } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PREVIOUS_CODEX_HOOK_COMMANDS } from '../src/integrations/codex-hook-history.mjs';
+import { PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS } from '../src/hooks/claude-code-hook-history.mjs';
+import { buildSuggestedClaudeCodePostSessionHook } from '../src/hooks/suggestions.mjs';
 import { buildSuggestedCodexHookConfig } from '../src/integrations/codex-hooks.mjs';
 import { buildGovernanceBlock } from '../src/governance.mjs';
 import { buildGovernanceInstructions } from '../src/bootstrap/guidance.mjs';
@@ -268,21 +270,35 @@ function shippedFiles() {
     .filter((file) => file && entries.some((entry) => (entry.endsWith('/') ? file.startsWith(entry) : file === entry)));
 }
 
-// The one file allowed to hold earlier spellings: the record of exact commands earlier releases
-// merged into Codex hooks files, kept so a reinstall can replace them. Only those recorded strings
-// are exempt; anything else in the file is scanned like every other line.
-const PAST_OUTPUT_RECORD = 'src/integrations/codex-hook-history.mjs';
+// The files allowed to hold earlier spellings: the records of exact commands earlier releases wrote
+// into Codex hooks files and Claude Code settings, kept so a reinstall can remove them. Only those
+// recorded strings are exempt; anything else in the files is scanned like every other line.
 const RECORDED_PAST_COMMANDS = Object.values(PREVIOUS_CODEX_HOOK_COMMANDS).flat();
-const withoutRecordedPastCommands = (file, line) => (file === PAST_OUTPUT_RECORD
-  ? RECORDED_PAST_COMMANDS.reduce((text, command) => text.replaceAll(command, ''), line)
-  : line);
+const PAST_OUTPUT_RECORDS = new Map([
+  ['src/integrations/codex-hook-history.mjs', RECORDED_PAST_COMMANDS],
+  ['src/hooks/claude-code-hook-history.mjs', PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS],
+]);
+const withoutRecordedPastCommands = (file, line) => (PAST_OUTPUT_RECORDS.get(file) ?? [])
+  .reduce((text, command) => text.replaceAll(command, ''), line);
 
-test('the record of past Codex hook commands holds only earlier unsafe spellings', () => {
-  assert.equal(RECORDED_PAST_COMMANDS.length, 2);
+test('the record of past Claude Code PostSession commands holds only earlier commands', () => {
+  assert.equal(PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS.length, 3);
+  // v0.4.0 and v0.5.0 through v1.11.0 ran npm exec without --no; v1.11.1 and v1.11.2 ran npx --no.
+  assert.deepEqual(PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS.map((command) => unsafeExec(command).length > 0), [true, true, false]);
+  const current = Object.values(buildSuggestedClaudeCodePostSessionHook().toolConfig.hooks)
+    .flatMap((groups) => groups.flatMap((group) => group.hooks.map((hook) => hook.command)));
+  for (const command of PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS) assert.equal(current.includes(command), false, command);
+});
+
+test('the record of past Codex hook commands holds only earlier commands', () => {
+  // Three unsafe spellings from v0.4.0 through v1.11.0, and the two v1.11.1 walk commands, which ran
+  // npx --no --prefix and could run another veritas on PATH (#286).
+  assert.equal(RECORDED_PAST_COMMANDS.length, 5);
+  assert.equal(RECORDED_PAST_COMMANDS.filter((command) => unsafeExec(command).length > 0).length, 3);
+  assert.equal(RECORDED_PAST_COMMANDS.filter((command) => command.includes('npx --no --prefix "$VERITAS_PREFIX"')).length, 2);
   const current = new Set(Object.values(buildSuggestedCodexHookConfig().hooks)
     .flatMap((groups) => groups.flatMap((group) => group.hooks.map((hook) => hook.command))));
   for (const command of RECORDED_PAST_COMMANDS) {
-    assert.notDeepEqual(unsafeExec(command), [], command);
     assert.equal(current.has(command), false, command);
   }
 });
@@ -305,6 +321,7 @@ test('shipped text and generated source only run an installed Veritas or Survey'
     'src/hooks/git-hooks.mjs',
     'src/integrations/codex-hooks.mjs',
     'src/integrations/codex-hook-history.mjs',
+    'src/hooks/claude-code-hook-history.mjs',
     'src/integrations/runtime-integrations.mjs',
     'src/conformance/run.mjs',
     'src/cli/setup-print.mjs',

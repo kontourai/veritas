@@ -30,9 +30,9 @@ Set this once your config validates cleanly, to keep it that way. `veritas readi
 
 ### `VERITAS_SESSION_LOG_PATH`
 
-Provides the Veritas-owned session log path used by generated runtime hooks before they run `npx --no @kontourai/veritas feedback observe --session-log`. The hooks look upward from the working directory to the git root for the nearest directory with Veritas installed and pass it to `npx --prefix`, so a nested package without its own install reaches the root one.
+Overrides the session log the Claude Code SessionEnd capture reads. Veritas's `hooks claude-code session-end` subcommand otherwise reads the path Claude Code passes as `transcript_path` in the hook input on stdin. The hook looks upward from the working directory to the git root for the nearest directory with Veritas installed and runs that install's `bin/veritas.mjs` with `node`, so a nested package without its own install reaches the root one and no other `veritas` on `PATH` runs instead. With no install found, it runs `npx --no @kontourai/veritas`.
 
-Runtime-specific variables such as `CODEX_TRANSCRIPT_PATH` and `CLAUDE_TRANSCRIPT_PATH` may be read by generated hooks because those names are owned by the host runtime. Hooks normalize them into `VERITAS_SESSION_LOG_PATH` before invoking Veritas.
+Earlier releases read `CLAUDE_TRANSCRIPT_PATH`, `CODEX_TRANSCRIPT_PATH` and `CODEX_SESSION_ID`. Neither runtime documents those variables; both pass the session log path on stdin, so the generated hooks no longer read them.
 
 ### `VERITAS_HOOK_SKIP=1`
 

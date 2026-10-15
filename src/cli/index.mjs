@@ -23,6 +23,7 @@ export {
   runApplyStopHookCli,
   runApplyClaudeCodePreToolUseHookCli,
   runClaudeCodePreToolUseCli,
+  runClaudeCodeSessionEndCli,
   runCodexPreToolUseCli,
   runApplyGovernanceBlocksCli,
   runApplyCodexHookCli,
