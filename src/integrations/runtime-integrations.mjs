@@ -22,7 +22,6 @@ import { shellQuote } from '../shell.mjs';
 
 export {
   applyCodexHook,
-  buildCodexSessionLogCaptureCommand,
   buildSuggestedCodexHookConfig,
   inspectCodexHookTarget,
 } from './codex-hooks.mjs';
@@ -92,9 +91,10 @@ function inspectClaudeCodeRuntimeIntegrationStatus(rootDir) {
       exists: settings !== null,
       preToolUseConfigured: hookConfigHasCommand(settings, 'PreToolUse', '.veritas/hooks/pre-tool-use.sh'),
       stopConfigured: hookConfigHasCommand(settings, 'Stop', '.veritas/hooks/stop.sh'),
+      // The post-session capture runs on Claude Code's SessionEnd event.
       postSessionConfigured: hookConfigHasCommand(
         settings,
-        'PostSession',
+        'SessionEnd',
         buildClaudeCodeSessionLogCaptureCommand(),
       ),
     },
@@ -229,8 +229,8 @@ export function CodexRuntimeIntegration(rootDir, options = {}) {
     },
     installPostSessionHook() {
       return {
-        installed: true,
-        reason: 'Codex PostSession is included in the tracked codex hooks artifact.',
+        installed: false,
+        reason: 'Codex session-log capture is not installed: Veritas has no reader for Codex rollout transcripts, and Codex allows SessionEnd hooks at most 3 seconds. Reinstalling removes the PostSession handler earlier releases wrote, which Codex never ran.',
       };
     },
     uninstall() {
