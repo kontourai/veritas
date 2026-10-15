@@ -592,6 +592,8 @@ npx --no @kontourai/veritas apply codex-hook [--root <path>] [--output <path>] [
 npx --no @kontourai/veritas apply claude-code-pre-tool-use-hook [--root <path>] [--output <path>] [--force]
 ```
 
+`npx --no @kontourai/veritas apply --help` and `npx --no @kontourai/veritas print --help` list the targets. Each target refuses an unknown flag, a flag without its value, a value outside the listed choices, an extra positional argument, and a `--root` that is not an existing directory before it writes anything. A target that also merges a tool config (`stop-hook` with `--tool claude-code|cursor`, `claude-code-pre-tool-use-hook`, `codex-hook` with a target hooks file) reads and merges that config first, so a malformed config leaves nothing written. An existing generated file that already holds exactly what the target would write is accepted without `--force`; one that differs is refused.
+
 Write restrictions are intentional:
 
 - CI snippets must stay under `.veritas/snippets/`
