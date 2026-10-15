@@ -30,6 +30,11 @@ import {
   readCurrentAttestation as readCurrentAttestationFromEngine,
 } from '../src/engine.mjs';
 import { hashProtectedStandards } from '../src/attestations/protected-standards.mjs';
+import {
+  bindAttestationRecordIntegrity,
+  computeAttestationRecordDigest,
+  RECORD_INTEGRITY_ALGORITHM,
+} from '../src/attestations/record-integrity.mjs';
 import { validateTrustBundleSchema } from '../src/surface/trust-bundle-validator.mjs';
 import {
   commitAll,
@@ -120,6 +125,8 @@ function rewriteCurrentAttestationAsLegacy(rootDir) {
     .digest('hex')}`;
   attestation.repoMapHash = rawRepoMapHash;
   delete attestation.repoMapHashAlgorithm;
+  // Historical records predate record integrity, so they carry no binding.
+  delete attestation.recordIntegrity;
   attestation.surface.contentHash = createHash('sha256').update(rawRepoMapHash).digest('hex');
   // Historical Veritas IDs were derived from this raw file digest as well as
   // the other protected-standard hashes. Model that persisted filename and
@@ -1336,7 +1343,9 @@ for (const [field, swapPath] of [
     const recordPath = join(rootDir, '.veritas/attestations', `${attestation.id}.attestation.json`);
     const record = readJsonFromAbsolute(recordPath);
     record[field] = null;
-    writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`);
+    // Re-binding models an editor who also recomputes the unkeyed record
+    // digest, so this case reaches the protected-standards comparison.
+    writeFileSync(recordPath, `${JSON.stringify(bindAttestationRecordIntegrity(record), null, 2)}\n`);
     if (!swapForSymlinkToCopy(t, rootDir, swapPath)) return;
 
     const status = cliAttestStatus(rootDir);
@@ -1430,11 +1439,151 @@ test('an unchanged regular trust root keeps the hashes of a real committed attes
   assert.equal(status.state, 'current');
   assert.deepEqual(status.drift, []);
   assert.deepEqual(status.protectedStandards.hashes, expected);
+  // Every adopter record predates record integrity (#271). It must stay
+  // current and pass, reporting only that its fields are not bound.
+  assert.equal(Object.hasOwn(record, 'recordIntegrity'), false);
+  assert.equal(status.recordIntegrity.status, 'unbound');
+  const policy = buildAttestationPolicyResult(status);
+  assert.equal(policy.status, 'pass');
+  assert.match(policy.summary, /not integrity-bound because it predates record integrity/);
   const { repoStandardsHash, repoMapHash, authoritySettingsHash } = status.protectedStandards.hashes;
   assert.equal(
     createHash('sha256').update(`${repoStandardsHash}:${repoMapHash}:${authoritySettingsHash}`).digest('hex'),
     expectedContentHash,
   );
+});
+
+// ─── Attestation record integrity (#271) ──────────────────────────────────
+
+function currentRecordPath(rootDir) {
+  const head = readJsonFromAbsolute(join(rootDir, '.veritas/attestations/HEAD'));
+  return join(rootDir, '.veritas/attestations', `${head.currentAttestationId}.attestation.json`);
+}
+
+test('the record digest is sha256 over the record without recordIntegrity, keys sorted at every level', () => {
+  const record = {
+    schemaVersion: 1,
+    id: 'bootstrap-x',
+    notes: 'Approved.',
+    actor: { id: 'brian', displayName: 'Brian' },
+    metadata: { approvalRef: 'test://ref', supersedes: null },
+  };
+  const canonical = '{"actor":{"displayName":"Brian","id":"brian"},"id":"bootstrap-x","metadata":{"approvalRef":"test://ref","supersedes":null},"notes":"Approved.","schemaVersion":1}';
+  // Pinned so a change to the algorithm cannot pass silently: it would turn
+  // every bound record tampered. A new algorithm needs a new name.
+  const pinned = '022e433a35b43662735af8cefe102c81387b506e48d93aaa9871d972ee9d5315';
+  assert.equal(createHash('sha256').update(canonical).digest('hex'), pinned);
+  assert.equal(RECORD_INTEGRITY_ALGORITHM, 'veritas-attestation-record-v1');
+  assert.equal(computeAttestationRecordDigest(record), pinned);
+  const reordered = {
+    metadata: { supersedes: null, approvalRef: 'test://ref' },
+    recordIntegrity: { algorithm: RECORD_INTEGRITY_ALGORITHM, digest: 'ignored' },
+    actor: { displayName: 'Brian', id: 'brian' },
+    notes: 'Approved.',
+    id: 'bootstrap-x',
+    schemaVersion: 1,
+  };
+  assert.equal(computeAttestationRecordDigest(reordered), pinned);
+});
+
+test('a fresh attestation binds its record with a versioned digest that status verifies', (t) => {
+  const { rootDir } = bootstrapAttestedRepo(t);
+  const written = readJsonFromAbsolute(currentRecordPath(rootDir));
+  assert.equal(written.recordIntegrity.algorithm, 'veritas-attestation-record-v1');
+  assert.match(written.recordIntegrity.digest, /^[0-9a-f]{64}$/);
+  const schema = JSON.parse(readFileSync(join(repoRootDir, 'schemas/veritas-attestation.schema.json'), 'utf8'));
+  const validateBinding = new Ajv({ allErrors: true, strict: false }).compile(schema.properties.recordIntegrity);
+  assert.equal(validateBinding(written.recordIntegrity), true, JSON.stringify(validateBinding.errors));
+
+  const status = cliAttestStatus(rootDir);
+  assert.equal(status.state, 'current');
+  assert.equal(status.recordIntegrity.status, 'verified');
+  assert.equal(status.recordIntegrity.algorithm, 'veritas-attestation-record-v1');
+  const readiness = cliReadiness(rootDir, ['--working-tree']);
+  assert.match(attestationPolicyLine(readiness.stdout), /^PASS\s+policy-changes-require-attestation/, readiness.stdout);
+  assert.doesNotMatch(attestationPolicyLine(readiness.stdout), /not integrity-bound/);
+});
+
+for (const [label, edit] of [
+  ['notes', (record) => { record.notes = 'Rewritten after approval.'; }],
+  ['metadata.approvalRef', (record) => { record.metadata.approvalRef = 'test://a-different-approval'; }],
+  ['actor.id', (record) => { record.actor.id = 'someone-else'; }],
+  ['actor.displayName', (record) => { record.actor.displayName = 'Someone Else'; }],
+]) {
+  test(`an edit to ${label} in a committed attestation reads as tampered and fails readiness (#271)`, (t) => {
+    const { rootDir } = bootstrapAttestedRepo(t);
+    const recordPath = currentRecordPath(rootDir);
+    const original = readFileSync(recordPath, 'utf8');
+    const record = JSON.parse(original);
+    edit(record);
+    writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`);
+
+    const status = cliAttestStatus(rootDir);
+    assert.equal(status.state, 'tampered');
+    assert.equal(status.recordIntegrity.status, 'mismatch');
+    assert.equal(status.drift.length, 1);
+    assert.equal(status.drift[0].field, 'recordIntegrity');
+    assert.equal(status.drift[0].attested, record.recordIntegrity.digest);
+    assert.match(status.drift[0].current, /^[0-9a-f]{64}$/);
+    assert.notEqual(status.drift[0].current, status.drift[0].attested);
+    const readiness = cliReadiness(rootDir, ['--working-tree']);
+    assert.notEqual(readiness.status, 0);
+    assert.match(attestationPolicyLine(readiness.stdout), /^FAIL\s+policy-changes-require-attestation/, readiness.stdout);
+    assert.match(readiness.stdout, /edited after it was recorded/);
+
+    writeFileSync(recordPath, original);
+    assert.equal(cliAttestStatus(rootDir).state, 'current');
+  });
+}
+
+test('a binding with its digest removed reads as tampered, and an unknown algorithm as unverifiable', (t) => {
+  const { rootDir } = bootstrapAttestedRepo(t);
+  const recordPath = currentRecordPath(rootDir);
+  const original = readFileSync(recordPath, 'utf8');
+
+  const stripped = JSON.parse(original);
+  delete stripped.recordIntegrity.digest;
+  writeFileSync(recordPath, `${JSON.stringify(stripped, null, 2)}\n`);
+  assert.equal(cliAttestStatus(rootDir).state, 'tampered');
+
+  const future = JSON.parse(original);
+  future.recordIntegrity.algorithm = 'veritas-attestation-record-v9';
+  writeFileSync(recordPath, `${JSON.stringify(future, null, 2)}\n`);
+  const status = cliAttestStatus(rootDir);
+  assert.equal(status.state, 'unverifiable');
+  assert.equal(status.recordIntegrity.status, 'unsupported-algorithm');
+  assert.deepEqual(status.drift, [{ field: 'recordIntegrity', attested: future.recordIntegrity.digest, current: null }]);
+  const readiness = cliReadiness(rootDir, ['--working-tree']);
+  assert.notEqual(readiness.status, 0);
+  assert.match(attestationPolicyLine(readiness.stdout), /^FAIL\s+policy-changes-require-attestation/, readiness.stdout);
+});
+
+test('a tampered attestation yields schema-valid evidence and a disputed Surface attestation claim', async (t) => {
+  const rootDir = bootstrapVeritasRepo(t, 'veritas-attest-tampered-evidence-');
+  createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'brian',
+    notes: 'Initial human approval.',
+    approvalRef: HUMAN_APPROVAL_REF,
+    attestedAt: '2026-05-10T00:00:00.000Z',
+  });
+  const recordPath = currentRecordPath(rootDir);
+  const record = readJsonFromAbsolute(recordPath);
+  record.notes = 'Rewritten after approval.';
+  writeFileSync(recordPath, `${JSON.stringify(record, null, 2)}\n`);
+
+  const report = await generateVeritasReport({
+    rootDir,
+    includeAttestationGate: true,
+    skipEvidenceCheck: true,
+    runId: 'tampered-attestation',
+    timestamp: '2026-05-11T00:00:00.000Z',
+  }, { rootDir }, ['package.json']);
+  assert.equal(report.record.governance_state.state, 'tampered');
+  assertGeneratedReportSchemas(rootDir, report);
+  const claims = await attestationSurfaceClaims(rootDir, { runId: 'tampered-governance-claims' });
+  assert.equal(governanceClaim(claims).status, 'disputed');
 });
 
 // ─── Testimony Admissibility Tests ────────────────────────────────────────

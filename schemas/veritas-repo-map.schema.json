@@ -69,7 +69,11 @@
             "additionalProperties": false,
             "required": ["path"],
             "properties": {
-              "path": { "type": "string" },
+              "path": {
+                "type": "string",
+                "description": "Repository-relative path of an instruction file inside the repository.",
+                "pattern": "^(?![\\\\/])(?![A-Za-z]:)(?!(?:.*[\\\\/])?\\.\\.(?:[\\\\/]|$)).+$"
+              },
               "tool": { "type": "string" },
               "required": { "type": "boolean" }
             }

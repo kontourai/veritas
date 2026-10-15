@@ -27,6 +27,10 @@ import {
   sha256Hex,
 } from './attestations/protected-standards.mjs';
 import { computeAdmissibilityWarning } from './attestations/collection.mjs';
+import {
+  bindAttestationRecordIntegrity,
+  verifyAttestationRecordIntegrity,
+} from './attestations/record-integrity.mjs';
 
 const DEFAULT_VALID_UNTIL_DAYS = 90;
 const ATTESTATIONS_DIR = '.veritas/attestations';
@@ -428,7 +432,7 @@ export function createAttestation({
     changedFields: ['repoStandardsHash', 'repoMapHash', 'authoritySettingsHash'],
     notes,
   });
-  const attestation = {
+  const attestation = bindAttestationRecordIntegrity({
     schemaVersion: 1,
     id: surfaceClaimId.replace(/^veritas\.attestation\./, ''),
     kind,
@@ -459,7 +463,7 @@ export function createAttestation({
       contentHash: sha256Hex(`${hashes.repoStandardsHash}:${hashes.repoMapHash}:${hashes.authoritySettingsHash}`),
       notes,
     }),
-  };
+  });
 
   const dir = attestationsDir(rootDir);
   mkdirSync(dir, { recursive: true });
@@ -534,6 +538,16 @@ function compareProtectedStandardsHashes(rootDir, current, hashes, legacyRepoMap
   return drift;
 }
 
+function describeRecordIntegrity({ status, algorithm }) {
+  const messages = {
+    verified: 'The attestation record matches its recordIntegrity digest, so its actor, notes, approval reference and other fields are as recorded.',
+    unbound: 'This attestation predates record integrity, so an edit to its actor, notes or approval reference cannot be detected. The next attestation binds them.',
+    mismatch: 'The attestation record does not match its recordIntegrity digest: it was edited after it was recorded.',
+    'unsupported-algorithm': `The attestation record is bound with ${algorithm}, which this Veritas version cannot verify.`,
+  };
+  return { status, algorithm, message: messages[status] };
+}
+
 export function inspectAttestationStatus(rootDir, options = {}) {
   const current = readCurrentAttestationRecord(rootDir);
   const pending = existsSync(pendingPath(rootDir));
@@ -587,13 +601,29 @@ export function inspectAttestationStatus(rootDir, options = {}) {
     legacyRepoMapHash,
     options,
   );
+  const recordIntegrity = verifyAttestationRecordIntegrity(current);
+  const integrityFailed = recordIntegrity.status === 'mismatch' || recordIntegrity.status === 'unsupported-algorithm';
+  if (integrityFailed) {
+    // A legacy record still holds raw Repo Map hash material, so a digest over
+    // it is withheld for the same reason its id is.
+    drift.push({
+      field: 'recordIntegrity',
+      attested: legacyRepoMapHash ? null : recordIntegrity.recordedDigest,
+      current: legacyRepoMapHash ? null : recordIntegrity.currentDigest,
+    });
+  }
   const now = options.now ? new Date(options.now) : new Date();
   const attestedAt = new Date(current.attestedAt);
   const ageDays = Math.floor((now.getTime() - attestedAt.getTime()) / 86_400_000);
   const validUntil = new Date(attestedAt.getTime() + current.validUntilDays * 86_400_000);
   const priorAttestationLink = describePriorAttestationLink(rootDir, current);
+  const state = recordIntegrity.status === 'mismatch'
+    ? 'tampered'
+    : recordIntegrity.status === 'unsupported-algorithm'
+      ? 'unverifiable'
+      : drift.length > 0 ? 'drifted' : 'current';
   return {
-    state: drift.length > 0 ? 'drifted' : 'current',
+    state,
     currentAttestationId: publicAttestationId(current),
     attestation: publicAttestationReference(rootDir, current),
     pending,
@@ -602,6 +632,7 @@ export function inspectAttestationStatus(rootDir, options = {}) {
     ageDays,
     validUntil: validUntil.toISOString(),
     protectedStandards,
+    recordIntegrity: describeRecordIntegrity(recordIntegrity),
     ...(priorAttestationLink ? { priorAttestationLink } : {}),
     ...(legacyRepoMapHash ? {
       migrationRecommendation: {
@@ -619,12 +650,25 @@ function legacyPriorLinkNote(link) {
   return ` It supersedes a pre-${REPO_MAP_HASH_ALGORITHM} attestation linked by the opaque reference ${link.reference} (${link.resolved ? 'matches one tracked record' : 'matches no single tracked record'}); see \`npx --no @kontourai/veritas attest status\` priorAttestationLink.`;
 }
 
+function recordIntegrityRemediation(status) {
+  return status.state === 'unverifiable'
+    ? 'Run a Veritas version that supports the recordIntegrity algorithm this attestation names, then recheck readiness.'
+    : 'Restore the attestation file exactly as it was committed, because attestation records are immutable. To correct one, record a new attestation with `npx --no @kontourai/veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference>` instead of editing it.';
+}
+
+function unboundRecordNote(recordIntegrity) {
+  return recordIntegrity?.status === 'unbound'
+    ? ' Its actor, notes and approval reference are not integrity-bound because it predates record integrity; the next attestation binds them.'
+    : '';
+}
+
 export function buildAttestationPolicyResult(status) {
-  if (status.state === 'drifted' || status.state === 'broken-head') {
+  const integrityFailed = status.state === 'tampered' || status.state === 'unverifiable';
+  if (status.state === 'drifted' || status.state === 'broken-head' || integrityFailed) {
     // Status records an error beside drift, and a null current hash, only for
     // protected files that are not regular files. A fresh attestation cannot
     // fix those, so say so.
-    const entryError = status.state === 'drifted' ? status.protectedStandards?.error : null;
+    const entryError = status.state !== 'broken-head' ? status.protectedStandards?.error : null;
     const nonRegularField = (field) => status.protectedStandards?.hashes?.[field] === null;
     return {
       rule_id: 'policy-changes-require-attestation',
@@ -636,17 +680,21 @@ export function buildAttestationPolicyResult(status) {
       implemented: true,
       passed: false,
       status: 'fail',
-      summary: entryError
-        ? `Current protected standards do not match the active attestation. ${entryError}`
-        : 'Current protected standards hashes do not match the active attestation.',
+      summary: integrityFailed
+        ? `Active attestation ${status.currentAttestationId}: ${status.recordIntegrity.message}`
+        : entryError
+          ? `Current protected standards do not match the active attestation. ${entryError}`
+          : 'Current protected standards hashes do not match the active attestation.',
       findings: status.drift.map((item) => ({
-        kind: 'attestation-drift',
+        kind: item.field === 'recordIntegrity' ? 'attestation-record-integrity' : 'attestation-drift',
         artifact: item.field,
         attested: item.attested,
         current: item.current,
-        remediation: entryError && nonRegularField(item.field)
-          ? 'Restore each listed protected standards file as a regular file at its protected path, then recheck readiness.'
-          : 'Run `npx --no @kontourai/veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference>` after authority review.',
+        remediation: item.field === 'recordIntegrity'
+          ? recordIntegrityRemediation(status)
+          : entryError && nonRegularField(item.field)
+            ? 'Restore each listed protected standards file as a regular file at its protected path, then recheck readiness.'
+            : 'Run `npx --no @kontourai/veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference>` after authority review.',
       })),
     };
   }
@@ -702,7 +750,7 @@ export function buildAttestationPolicyResult(status) {
     implemented: true,
     passed: true,
     status: 'pass',
-    summary: `Active attestation ${status.currentAttestationId} matches current protected standards hashes${passAnnotation}.${legacyPriorLinkNote(status.priorAttestationLink)}`,
+    summary: `Active attestation ${status.currentAttestationId} matches current protected standards hashes${passAnnotation}.${legacyPriorLinkNote(status.priorAttestationLink)}${unboundRecordNote(status.recordIntegrity)}`,
     findings: admissibilityWarningCount > 0 ? [{
       kind: 'admissibility-warning',
       artifact: status.currentAttestationId,

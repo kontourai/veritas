@@ -87,7 +87,7 @@ The current schema owns:
 - explicit evidence-check objects and routing by check id
 - uncovered-path policy
 - report transport
-- activation targets for AI instruction files
+- activation targets for AI instruction files: repository-relative paths inside the repository; absolute and `..` paths are refused
 
 Reference files:
 
@@ -125,6 +125,8 @@ requires a policy-change attestation because Veritas cannot safely infer whether
 secret-only or policy-relevant.
 
 The active pointer lives at `.veritas/attestations/HEAD` as JSON with `currentAttestationId`. New `policy-change` attestations supersede older records by setting `priorAttestationId` (mirrored in `metadata.supersedes`) to the HEAD attestation id; old records stay tracked for auditability. When the HEAD record is an unmarked historical attestation (no `repoMapHashAlgorithm`), the successor records its opaque `legacy-attestation-v0:<hash>` reference instead, derived only from the predecessor's `actor.id`, `attestedAt`, and `kind`, so the raw-file digest in the historical id is never republished. `veritas attest status` and the evidence `governance_state` also reports `priorAttestationLink` for the active record: the `reference` it names as its predecessor, its `form` (`attestation-id`, `legacy-reference`, or `unresolved`), whether it `resolved` to a tracked record, and an `explanation`. A successor of an unmarked historical attestation names its predecessor by the opaque `legacy-attestation-v0:<hash>` reference rather than the id in `HEAD`, because the historical id embeds a digest of the raw Repo Map file. That is the expected migration link, not a broken chain; `resolved` is `true` only when the reference matches exactly one tracked record, and the readiness PASS line for `policy-changes-require-attestation` names the reference and whether it resolved.
+
+New attestations carry `recordIntegrity` (`algorithm: "veritas-attestation-record-v1"` and a `digest` over every other field), so an edit to the actor, `notes`, `metadata.approvalRef`, or any other field after the record is written reads as `tampered` in `veritas attest status` and the evidence `governance_state`, and fails readiness. Records written before it existed report `recordIntegrity.status: "unbound"` and stay `current`. See [Record Integrity](../guides/attestation.md#record-integrity).
 
 New attestation write paths require `metadata.approvalRef`, supplied through `--approval-ref`, to point at the explicit human approval that authorized the record. Existing historical attestations without this field remain readable, but agents must not create new authority-backed attestations without a durable approval reference.
 
