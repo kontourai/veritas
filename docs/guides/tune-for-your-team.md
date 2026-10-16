@@ -22,7 +22,7 @@ Start with the enforcement ladder:
 
 - **Observe**: collect evidence and standards feedback.
 - **Guide**: give developers and agents correction while they work.
-- **Require**: require fresh evidence or authority-backed exception before readiness is complete.
+- **Require**: require fresh evidence or an exception before readiness is complete.
 
 Do not start by requiring everything. First learn which requirements are useful and which ones create noise.
 

@@ -105,7 +105,7 @@ Defined by [schemas/veritas-attestation.schema.json](../../schemas/veritas-attes
 
 `actor.identityEvidence.gitEmail` is a required key that may be `null`. New attestations record it only when the configured Git `user.email` is already a GitHub noreply address, and record `null` otherwise, so a personal address is never committed. `actor.identityEvidence.signingKeyFingerprint` is likewise required and nullable: it holds the configured `user.signingkey` only when that is a hex key id or a `SHA256:` fingerprint, never a key file path or a literal key. Nothing verifies against either value.
 
-Attestations are immutable authority-backed records for protected standards hashes:
+Attestations are immutable records of protected standards hashes:
 
 - `.veritas/repo-map.json`
 - `.veritas/repo-standards/default.repo-standards.json`
@@ -128,11 +128,13 @@ The active pointer lives at `.veritas/attestations/HEAD` as JSON with `currentAt
 
 New attestations carry `recordIntegrity` (`algorithm: "veritas-attestation-record-v1"` and a `digest` over every other field), so an edit to the actor, `notes`, `metadata.approvalRef`, or any other field after the record is written reads as `tampered` in `veritas attest status` and the evidence `governance_state`, and fails readiness. Records written before it existed report `recordIntegrity.status: "unbound"` and stay `current`. See [Record Integrity](../guides/attestation.md#record-integrity).
 
-New attestation write paths require `metadata.approvalRef`, supplied through `--approval-ref`, to point at the explicit human approval that authorized the record. Existing historical attestations without this field remain readable, but agents must not create new authority-backed attestations without a durable approval reference.
+New attestation write paths require `metadata.approvalRef`, supplied through `--approval-ref`, to point at the explicit human approval that authorized the record. Existing historical attestations without this field remain readable, but agents must not create new attestations without a durable approval reference.
 
 Authority settings may also constrain approval references with `review_preferences.attestation_approval_ref_policy`. Supported modes are `reference-only`, `prefix`, `resolved`, and `resolved-strict`; `prefix` currently behaves the same as `reference-only`, and `resolved-strict` the same as `resolved`. `allowed_prefixes` lets a repo require references such as `servicenow:change/CHG12345` or `github:pull-request/123` in any mode. Resolved policies require a resolver-backed approved result before Veritas writes the attestation.
 
 Resolver-backed approval metadata lives under `metadata.approvalResolution`. Veritas records the normalized resolver result so later readers can inspect provider, authority reference, status, approver, approval time, expiry, scope, evidence hash, resolution time, and failure reason. The external approval system remains the source of authority; Veritas records the resolver observation and binds it to the attestation.
+
+The record's `surface` claim reflects that check. When a `resolved` mode resolved the reference, `surface.claim.status` and `surface.event.status` are `verified` and `confidenceBasis` is `sourceQuality: strong`, `reviewerAuthority: human`, `evidenceStrength: strong`. In `reference-only` and `prefix` modes they are `proposed`, with `sourceQuality: weak`, `reviewerAuthority: none`, `evidenceStrength: weak`, and the event has no `verifiedAt`. See [Built With Surface](../guides/attestation.md#built-with-surface).
 
 Offline approval records live under `.veritas/authority/approval-records/` and are defined by [schemas/veritas-approval-record.schema.json](../../schemas/veritas-approval-record.schema.json). The built-in offline resolver supports `veritas-approval:<id>` refs, which resolve to `<id>.approval.json`, and `file:.veritas/authority/approval-records/<file>` refs for explicit repo-local paths. Resolved policy modes reject missing, rejected, expired, or out-of-scope records before Veritas writes attestation files.
 

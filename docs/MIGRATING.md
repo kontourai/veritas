@@ -431,3 +431,45 @@ non-blocking. Choose one of these instead:
 
 A consumer that derived a failure from `evidenceCheckResults` because `evidenceCheckFailure` was
 `null` no longer needs to: Veritas reports the failure itself.
+
+## Attestation Claims Reflect Whether the Approval Was Resolved
+
+New attestation records no longer present an unchecked approval reference as verified human
+approval. In the default `reference-only` mode, and in `prefix` mode, Veritas records the
+`--approval-ref` value without checking it, and the record's `surface` projection now says so:
+
+| Field | `reference-only` or `prefix` mode | `resolved` or `resolved-strict` mode |
+| --- | --- | --- |
+| `surface.claim.status` | `proposed` (was `verified`) | `verified` (unchanged) |
+| `surface.claim.confidenceBasis.sourceQuality` | `weak` (was `strong`) | `strong` |
+| `surface.claim.confidenceBasis.reviewerAuthority` | `none` (was `human`) | `human` |
+| `surface.claim.confidenceBasis.evidenceStrength` | `weak` (was `strong`) | `strong` |
+| `surface.event.status` and `id` suffix | `proposed`, no `verifiedAt` | `verified`, with `verifiedAt` |
+| `surface.evidence.excerptOrSummary` without `--message` | says the reference was not resolved | `Authority-backed <kind> attestation ...` |
+
+A `resolved` mode is required for the strong values: an approved resolver result passed to
+`createAttestation` under `reference-only` mode is recorded in `metadata.approvalResolution` but
+never checked, so it does not count.
+
+Existing attestation records are immutable and keep the values they were written with. Projections
+built at readiness time read the active record's `metadata.approvalRefPolicy` and
+`metadata.approvalResolution`, so they change for an existing unresolved attestation too:
+
+- In the readiness trust bundle, the governance attestation evidence summary and event notes say
+  `Attestation currency is <status> ...; the attestation's approval reference was not resolved
+  against an approval record.` instead of `Authority-backed attestation currency is <status> ...`.
+- `buildGovernanceArtifactClaims` gives the attestation-currency claim `sourceQuality: weak`,
+  `reviewerAuthority: none`, `evidenceStrength: weak`, and gives each protected-artifact claim
+  `reviewerAuthority: none` instead of `authority`.
+
+Claim statuses in the readiness trust bundle and readiness verdicts do not change.
+`policy-changes-require-attestation` checks the attestation's hashes and validity window, not its
+approval reference.
+
+The requirement's `message` text also drops "authority-backed": `Protected standards changes
+require a fresh attestation.` and `No attestation has activated the protected standards yet.`
+
+If a consumer relied on `verified` attestation claims, configure
+`review_preferences.attestation_approval_ref_policy.mode: "resolved"` with offline approval records,
+as described in [Attestation](guides/attestation.md#offline-approval-records), or read
+`metadata.approvalRefPolicy` to tell the modes apart.

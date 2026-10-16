@@ -16,8 +16,18 @@ export function requireHumanApprovalReference({ kind, approvalRef }) {
   if (typeof approvalRef === 'string' && approvalRef.trim()) return;
   throw new Error(
     `veritas attest ${kind} requires --approval-ref <reference> from an explicit human approval. ` +
-    'Agents may prepare changes, but must not record authority-backed attestations without a human approval reference.',
+    'Agents may prepare changes, but must not record attestations without a human approval reference.',
   );
+}
+
+// An approval is authority-backed only when a resolved policy mode ran:
+// validateApprovalReferencePolicy refuses to return under those modes unless
+// the reference resolved to an accepted approval record. `reference-only` and
+// `prefix` modes never resolve the reference, and a resolver result supplied
+// under them is recorded but never checked, so their attestations are recorded
+// attestations with an unverified approval reference.
+export function isAuthorityBackedApproval({ approvalRefPolicy } = {}) {
+  return approvalRefPolicy?.requiresResolution === true;
 }
 
 export function validateApprovalReferencePolicy({

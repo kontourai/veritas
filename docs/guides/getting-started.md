@@ -127,7 +127,7 @@ Use the enforcement ladder:
 
 - **Observe**: collect evidence and learn what matters.
 - **Guide**: give developers and agents just-in-time correction.
-- **Require**: require fresh evidence or an authority-backed exception before merge readiness is complete.
+- **Require**: require fresh evidence or an exception before merge readiness is complete.
 
 Start in Observe or Guide. Promote requirements only when the evidence says they are useful.
 

@@ -116,12 +116,12 @@ export function validateOwnerAnswers(answers) {
 export function buildGovernanceInstructions() {
   return `# Veritas Governance
 
-Protected Standards require authority-backed review. Do not modify without a fresh Veritas attestation:
+Protected Standards require human review. Do not modify without a fresh Veritas attestation:
 - \`.veritas/repo-map.json\`
 - \`.veritas/repo-standards/\`
 - \`.veritas/authority/\`
 
-Authority-backed attestations require an explicit human approval reference. Agents may prepare
+Attestations require an explicit human approval reference. Agents may prepare
 \`npx --no @kontourai/veritas attest ... --approval-ref <ref>\` commands, but must not invent the reference or record
 the attestation without a durable approval artifact from the human authority.
 
@@ -141,7 +141,7 @@ Generated Evidence is output, not the source of standards:
 }
 
 export function buildSuggestedCodeownersBlock() {
-  return `# Veritas protected standards - changes require authority-backed review
+  return `# Veritas protected standards - changes require code owner review
 .veritas/repo-map.json  @your-team/governance
 .veritas/repo-standards/      @your-team/governance
 .veritas/authority/              @your-team/governance`;

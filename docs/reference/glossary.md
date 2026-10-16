@@ -20,7 +20,7 @@ Veritas is the product for repo and AI-agent governance. Surface is the transpar
 | **Enforcement Level** | How strongly Veritas applies a requirement: Observe, Guide, or Require. |
 | **Observe** | Records evidence and outcomes without guiding or blocking work. |
 | **Guide** | Gives just-in-time correction or review feedback without by itself preventing merge readiness. |
-| **Require** | Requires fresh evidence or authority-backed exception before merge readiness or repo conformance is complete. |
+| **Require** | Requires fresh evidence or an exception before merge readiness or repo conformance is complete. |
 | **Evidence** | A traceable result, observation, artifact, attestation, or record that supports, challenges, or qualifies a requirement. |
 | **Evidence Check** | A runnable or inspectable check that produces evidence for one or more requirements. |
 | **Evidence Freshness** | Whether evidence still applies to the current change, including commit, diff, files, standards version, authority state, dependencies, and time policy. |
@@ -28,7 +28,8 @@ Veritas is the product for repo and AI-agent governance. Surface is the transpar
 | **Verification Authority** | A person, system, tool, environment, or policy source trusted to verify a specific requirement. |
 | **Authority Evidence** | Evidence explaining why a verification authority was allowed to count for a requirement. |
 | **Attestation** | Evidence from a verification authority asserting that something was verified, accepted, approved, or reviewed. Every attestation may carry an `authorizing` block (collection provenance) recording how the act was authorized: `explicit-statement` (standalone named act), `exchange` (prompt/response pair from a delegated approval conversation), or `authorized-action` (UI-driven control action with prompt ref, rendered prompt, action type, and authority ref). Old records without an `authorizing` block remain valid. |
-| **Exception** | An authority-backed decision to accept an unmet or failing requirement for a specific change. |
+| **Authority-backed** | An approval whose reference was resolved against an approval record, which happens only in the `resolved` and `resolved-strict` approval modes. In the default `reference-only` mode, and in `prefix` mode, an attestation is a recorded attestation with an unverified approval reference. |
+| **Exception** | A recorded decision to accept an unmet or failing requirement for a specific change. Veritas records its actor and reason but does not resolve any authority behind it. |
 | **Change Guidance** | Just-in-time instructions for a developer or agent when a requirement, work area, boundary, or evidence result matters. |
 | **Merge Readiness** | The per-change trust state that says whether a change has enough current evidence to merge under the repo standards. |
 | **Readiness Report** | The human- and agent-facing report that explains a change's merge readiness. |
@@ -57,7 +58,7 @@ Veritas emits Surface-format trust state as a producer. The mapping is intention
 | Verification Authority | Authority trace, policy context, or verifier metadata |
 | Attestation | Evidence with authority and integrity context |
 | Evidence Freshness | Freshness, Changed Since Verified, or Expired Verification |
-| Exception | Authority-backed evidence plus metadata explaining the accepted unmet requirement |
+| Exception | Recorded evidence plus metadata explaining the accepted unmet requirement |
 | Merge Readiness | Domain validity claim or trust snapshot summary emitted by Veritas |
 | Readiness Coverage | Claims, evidence, gaps, conflicts, and freshness outcomes |
 | Repo Conformance | Standing claims and evidence about repo-wide requirements |

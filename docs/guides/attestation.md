@@ -1,6 +1,6 @@
 # Attestation
 
-An attestation is authority-backed evidence that something was verified, accepted, approved, or reviewed.
+An attestation is a recorded assertion, citing a human approval reference, that something was verified, accepted, approved, or reviewed. It is authority-backed only when Veritas resolved that reference against an approval record, which happens in the `resolved` modes described below. In the default `reference-only` mode it is a recorded attestation with an unverified approval reference.
 
 In Veritas, attestations protect the parts of the repo standards and repo map that define what good looks like, where boundaries are, and who or what can verify requirements. The goal is not to make humans approve every routine change. The goal is to keep the definition of good from changing without trusted authority.
 
@@ -136,8 +136,19 @@ An attestation is not:
 - required for every routine merge
 - the same thing as an exception
 
-An **Exception** is an authority-backed decision to accept an unmet or failing requirement for a specific change. An attestation is the evidence form that can support that decision.
+An **Exception** is a recorded decision to accept an unmet or failing requirement for a specific change. Veritas records its actor and reason but does not resolve any authority behind it. An attestation is the evidence form that can support that decision.
 
 ## Built With Surface
 
 Veritas projects attestation evidence into Surface-format trust state so freshness, integrity, and authority gaps can be inspected. Veritas users should still think in Veritas terms: protected standards, verification authorities, attestations, and readiness reports.
+
+Each attestation record carries a `surface` claim, its evidence, and a verification event. The claim is only as strong as the approval check that ran:
+
+| Approval check when the record was written | Claim and event status | `confidenceBasis` |
+| --- | --- | --- |
+| `resolved` or `resolved-strict` mode resolved the reference to an approved record | `verified` | `sourceQuality: strong`, `reviewerAuthority: human`, `evidenceStrength: strong` |
+| `reference-only` or `prefix` mode recorded the reference without checking it | `proposed` | `sourceQuality: weak`, `reviewerAuthority: none`, `evidenceStrength: weak` |
+
+`proposed` is the status Surface derives for evidence that no verification backs, so nothing downstream reads an unchecked reference as verified human approval. Readiness projections follow the same rule: the trust bundle's attestation evidence says whether the active attestation's reference was resolved, and `buildGovernanceArtifactClaims` gives the same weaker confidence basis to the claims it builds for an unresolved one.
+
+This does not change readiness. The `policy-changes-require-attestation` requirement checks the active attestation's protected standards hashes and validity window, not how its approval reference was checked, so it gives the same result in every approval mode. To require a resolved approval, use a `resolved` mode.

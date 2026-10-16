@@ -9,6 +9,7 @@ import {
   summarizeApprovalResolverResult,
 } from './approval-resolvers.mjs';
 import {
+  isAuthorityBackedApproval,
   rejectNonHumanActor,
   requireHumanApprovalReference,
   validateApprovalReferencePolicy,
@@ -318,6 +319,7 @@ function buildAttestationSurfaceProjection({
   validUntil,
   contentHash,
   notes,
+  authorityBacked,
 }) {
   if (typeof Surface.buildHumanAttestationEvidence !== 'function') {
     throw new Error('Surface buildHumanAttestationEvidence public API is required by Veritas attestations.');
@@ -335,8 +337,14 @@ function buildAttestationSurfaceProjection({
     attestedAt,
     validUntil,
     contentHash,
-    summary: notes || `Authority-backed ${kind} attestation for Veritas Protected Standards.`,
+    summary: notes || (authorityBacked
+      ? `Authority-backed ${kind} attestation for Veritas Protected Standards.`
+      : `Recorded ${kind} attestation for Veritas Protected Standards; its approval reference was not resolved against an approval record.`),
   });
+  // The claim is only as strong as the approval check that ran. Without a
+  // resolved approval nothing verified the human approval, so the claim stays
+  // proposed: the status Surface derives for evidence no verification backs.
+  const status = authorityBacked ? 'verified' : 'proposed';
   return {
     claim: {
       id: claimId,
@@ -348,25 +356,25 @@ function buildAttestationSurfaceProjection({
       value: { contentHash, validUntil },
       createdAt: attestedAt,
       updatedAt: attestedAt,
-      status: 'verified',
+      status,
       impactLevel: 'high',
       confidenceBasis: {
-        sourceQuality: 'strong',
-        reviewerAuthority: 'human',
-        evidenceStrength: 'strong',
+        sourceQuality: authorityBacked ? 'strong' : 'weak',
+        reviewerAuthority: authorityBacked ? 'human' : 'none',
+        evidenceStrength: authorityBacked ? 'strong' : 'weak',
         impactLevel: 'high',
       },
     },
     evidence,
     event: {
-      id: `${claimId}.verified`,
+      id: `${claimId}.${status}`,
       claimId,
-      status: 'verified',
+      status,
       actor: actor.id,
       method: 'human attestation',
       evidenceIds: [evidence.id],
       createdAt: attestedAt,
-      verifiedAt: attestedAt,
+      ...(authorityBacked ? { verifiedAt: attestedAt } : {}),
     },
   };
 }
@@ -462,6 +470,7 @@ export function createAttestation({
       validUntil,
       contentHash: sha256Hex(`${hashes.repoStandardsHash}:${hashes.repoMapHash}:${hashes.authoritySettingsHash}`),
       notes,
+      authorityBacked: isAuthorityBackedApproval({ approvalRefPolicy }),
     }),
   });
 
@@ -674,7 +683,7 @@ export function buildAttestationPolicyResult(status) {
       rule_id: 'policy-changes-require-attestation',
       classification: 'hard-invariant',
       enforcementLevel: 'Require',
-      message: 'Protected standards changes require a fresh authority-backed attestation.',
+      message: 'Protected standards changes require a fresh attestation.',
       owner: 'repo-core',
       rollback_switch: null,
       implemented: true,
@@ -703,7 +712,7 @@ export function buildAttestationPolicyResult(status) {
       rule_id: 'policy-changes-require-attestation',
       classification: 'hard-invariant',
       enforcementLevel: 'Guide',
-      message: 'No authority-backed attestation has activated the protected standards yet.',
+      message: 'No attestation has activated the protected standards yet.',
       owner: 'repo-core',
       rollback_switch: null,
       implemented: true,
@@ -744,7 +753,7 @@ export function buildAttestationPolicyResult(status) {
     rule_id: 'policy-changes-require-attestation',
     classification: 'hard-invariant',
     enforcementLevel: 'Require',
-    message: 'Protected standards changes require a fresh authority-backed attestation.',
+    message: 'Protected standards changes require a fresh attestation.',
     owner: 'repo-core',
     rollback_switch: null,
     implemented: true,

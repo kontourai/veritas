@@ -73,7 +73,7 @@ An enforcement level where Veritas gives just-in-time correction or review feedb
 _Avoid_: Warn as the user-facing term
 
 **Require**:
-An enforcement level where a requirement must be satisfied by fresh evidence or accepted by an authority-backed exception before merge readiness or repo conformance is complete.
+An enforcement level where a requirement must be satisfied by fresh evidence or accepted by an Exception before merge readiness or repo conformance is complete.
 _Avoid_: Block as the user-facing term, hard gate without evidence
 
 **Work Area**:
@@ -161,7 +161,10 @@ Earlier Veritas artifacts used "check-in" for operational summaries. Do not trea
 Earlier Veritas artifacts used "eval" for generated observations about whether Veritas guidance helped. Do not use eval as primary product language; use **Standards Feedback** for observed improvement evidence and **Standards Recommendation** for suggested changes to repo standards.
 
 **Attestation**:
-Use attestation only for an authority-backed assertion that something was verified, accepted, approved, or reviewed. Do not use it for every evidence result, generic approval, or readiness report.
+Use attestation only for a recorded assertion, made by a named actor citing an approval reference, that something was verified, accepted, approved, or reviewed. Do not use it for every evidence result, generic approval, or readiness report.
+
+**Authority-backed**:
+Use authority-backed only for an approval whose reference was resolved against an approval record, which happens only in the `resolved` and `resolved-strict` approval modes. In the default `reference-only` mode, and in `prefix` mode, an attestation is a recorded attestation with an unverified approval reference: Veritas records the reference but does not check it. An Exception is not authority-backed either, because Veritas records its actor and reason without resolving any authority.
 
 **Governance Areas**:
 Do not use numbered governance areas as canonical product language; use **Protected Standards**, **Standards Growth**, and **Generated Evidence**.
@@ -173,7 +176,7 @@ Do not use framework as primary Veritas product language. Use **product** for Ve
 Use rule only for implementation-specific executable checks when necessary. Product language should use **Requirement** so Veritas remains centered on repo standards and merge readiness rather than lint mechanics.
 
 **Override**:
-Do not use override as Veritas product language. Use **Exception** for an authority-backed decision to accept an unmet or failing requirement. Use runtime-specific names only when documenting an external API that cannot be renamed.
+Do not use override as Veritas product language. Use **Exception** for a recorded decision to accept an unmet or failing requirement. Use runtime-specific names only when documenting an external API that cannot be renamed.
 
 **Actor**:
 Use actor only in schemas, audit metadata, or implementation code. Product language should say **Developer**, **Agent**, **Verification Authority**, or **Owner** depending on the role being described.

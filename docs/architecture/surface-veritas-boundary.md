@@ -53,7 +53,7 @@ Normal Veritas users should think in Veritas terms: repo standards, repo maps, r
 | Verification Authority | Authority trace, verifier metadata, policy context | Surface-mapped |
 | Authority Evidence | Evidence trace, integrity reference, authority trace | Surface-mapped |
 | Attestation | Evidence with authority and integrity context | Surface-mapped |
-| Exception | Authority-backed evidence plus accepted-risk metadata | Surface-mapped |
+| Exception | Recorded evidence plus accepted-risk metadata | Surface-mapped |
 | Evidence Freshness | Freshness, Changed Since Verified, Expired Verification | Surface-mapped |
 | Merge Readiness | Derived readiness verdict claim | Veritas-owned outcome, Surface-mapped state |
 | Readiness Coverage | Claim status, evidence, gaps, conflicts, freshness | Surface-mapped state |

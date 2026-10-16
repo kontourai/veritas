@@ -153,8 +153,8 @@ That is the point: the agent gets the missing requirement before it declares don
 - **Requirement** is the unit of what must be satisfied, evidenced, or accepted by exception.
 - **Evidence Check** is a runnable or inspectable check that produces evidence.
 - **Verification Authority** is who or what is trusted to verify a requirement.
-- **Attestation** is authority-backed evidence that something was verified, accepted, approved, or reviewed.
-- **Exception** is an authority-backed decision to accept an unmet or failing requirement for a specific change.
+- **Attestation** is a recorded assertion, citing a human approval reference, that something was verified, accepted, approved, or reviewed. It is authority-backed only when that reference was resolved against an approval record; the default mode records the reference without checking it.
+- **Exception** is a recorded decision to accept an unmet or failing requirement for a specific change.
 - **Readiness Report** explains merge readiness, readiness coverage, boundary crossings, evidence freshness, recheck options, exceptions, and change guidance.
 
 ## Documentation
