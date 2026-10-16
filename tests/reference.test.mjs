@@ -93,7 +93,8 @@ test('first-contact docs preserve the Surface foundation boundary', () => {
   const cliReference = readDoc('../docs/reference/cli.md');
   const boundary = readDoc('../docs/architecture/surface-veritas-boundary.md');
 
-  assert.match(readme, /earn merge autonomy/);
+  assert.match(readme, /makes configured repo standards executable/);
+  assert.match(readme, /Your team sets the review policy and decides whether to merge/);
   assert.match(readme, /built with \[Surface\]/);
   assert.match(concepts, /## Built With Surface/);
   assert.match(concepts, /The detailed mapping between Veritas concepts and Surface primitives is in \[Surface-Veritas Boundary\]/);

@@ -7,9 +7,9 @@
 
 [Documentation](https://kontourai.github.io/veritas/) · [kontourai.io/veritas](https://kontourai.io/veritas/)
 
-Veritas helps teams earn merge autonomy for AI-authored code by making repo standards executable, evidence-backed, and inspectable.
+Veritas makes configured repo standards executable and reports the evidence behind a change’s merge readiness.
 
-Define what good looks like for your repo. Veritas checks each change against those standards, gives the agent just-in-time guidance while it works, and produces a readiness report that says whether the change has enough fresh evidence to merge with reduced human review.
+Define what good looks like for your repo. Veritas runs configured checks, gives the agent just-in-time guidance, and reports which applicable requirements are satisfied and which evidence is missing, stale, or failing. Your team sets the review policy and decides whether to merge; a readiness report does not establish code correctness or how much human review is safe to remove.
 
 > **Engine and Governance Kit.** `@kontourai/veritas` is a standalone **evaluation engine** — an
 > importable library (engine API at `@kontourai/veritas/engine`) plus the thin CLIs used below.
@@ -144,7 +144,7 @@ PASS  centralize-env-access: No matched files contain forbidden pattern process\
 0 failures · 0 warnings · run `npx --no @kontourai/veritas readiness --check evidence` for full generated evidence
 ```
 
-That is the point: the agent gets the missing requirement before it declares done, and reviewers can inspect the evidence instead of rediscovering the repo standards from the diff.
+The agent gets the missing companion-path requirement, and reviewers can inspect the result. This example checks that companion paths changed and runs an illustrative no-op evidence command. It does not establish test quality, semantic correctness, or reduced review effort.
 
 ## Core Language
 

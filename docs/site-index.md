@@ -1,8 +1,8 @@
-# Earn merge autonomy for AI-authored code.
+# Inspect the evidence behind merge readiness.
 
 <div class="hero">
 
-<p class="hero-subtitle">Veritas turns repo standards into evidence-backed readiness reports, change guidance, and protected governance so teams can move faster without making human review the bottleneck for every routine change.</p>
+<p class="hero-subtitle">Veritas evaluates changes against configured repo standards and reports which requirements are satisfied and which evidence is missing, stale, or failing. Your team sets the review policy and decides whether to merge; a readiness report does not establish code correctness or how much human review is safe to remove.</p>
 
 <pre class="install-cmd"><code>npm install -D @kontourai/veritas</code></pre>
 
@@ -11,8 +11,8 @@
 
 ## The Problem
 
-**AI can produce code faster than teams can review it.**
-Veritas shifts routine review from re-reading every diff to inspecting whether a change satisfied the repo standards with fresh, trusted evidence.
+**A change needs evidence tied to its configured requirements.**
+Veritas runs configured checks and presents their results for review against those requirements.
 
 **Repo standards live as tribal knowledge.**
 Tests, ownership expectations, protected files, release rules, security checks, and architecture boundaries are often known by humans but invisible to agents. Veritas makes those standards executable.
@@ -43,7 +43,7 @@ Useful requirements should become stronger. Noisy requirements should be relaxed
 <div class="pillar">
 <h3>Readiness Report</h3>
 <p class="pillar-what">A human- and agent-facing report with merge readiness, readiness coverage, evidence freshness, boundary crossings, recheck options, and change guidance.</p>
-<p class="pillar-why">Reviewers inspect a focused trust state instead of reconstructing repo expectations from a raw diff.</p>
+<p class="pillar-why">Reviewers can inspect applicable requirements and their supporting evidence alongside the diff.</p>
 </div>
 
 <div class="pillar">
@@ -61,7 +61,7 @@ Useful requirements should become stronger. Noisy requirements should be relaxed
 <div class="pillar">
 <h3>Standards Feedback</h3>
 <p class="pillar-what">Observed evidence about which requirements helped, which were noisy, where coverage was missing, and where rechecks or exceptions happened.</p>
-<p class="pillar-why">Teams spend more time improving the standards and less time catching the same routine issues by hand.</p>
+<p class="pillar-why">Teams can review observed outcomes when deciding whether to update standards.</p>
 </div>
 
 </div>
@@ -74,7 +74,7 @@ Useful requirements should become stronger. Noisy requirements should be relaxed
 <h3>Without Veritas</h3>
 <ul>
 <li>AI agent edits dozens of files with no executable repo standards</li>
-<li>Reviewer scans the full diff looking for violations they must already know</li>
+<li>Reviewers identify applicable repo expectations separately from the diff</li>
 <li>Shared contracts and protected areas are discovered too late</li>
 <li>Passing checks may not apply to the current commit or standards version</li>
 <li>Standards stay static because nobody can tell which guidance helped</li>
@@ -121,7 +121,7 @@ Veritas supports a gradual enforcement ladder:
 
 **Require** — require fresh evidence before merge readiness or repo conformance is complete.
 
-You do not have to gate every change on day one. The goal is earned autonomy, not instant bureaucracy.
+You do not have to gate every change on day one. Choose enforcement levels to match your team's review and merge policy.
 
 ## Built With Surface
 
