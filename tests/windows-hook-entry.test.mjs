@@ -111,7 +111,7 @@ test('native Windows installed hook forwards real Veritas guidance and denies an
   const denied = run(nested, {}, JSON.stringify({ cwd: nested, tool_name: 'apply_patch', tool_input: { command: '*** Begin Patch\n*** End Patch' } }));
   assert.equal(denied.status, 2, `${denied.stdout}\n${denied.stderr}`);
   assert.equal(JSON.parse(denied.stdout).hookSpecificOutput.permissionDecision, 'deny');
-  const protectedEdit = run(nested, {}, JSON.stringify({ cwd: root, tool_name: 'Edit', tool_input: { file_path: '.veritas/repo-map.json' } }));
+  const protectedEdit = run(nested, { VERITAS_ACTOR: 'not-the-policy-owner' }, JSON.stringify({ cwd: root, tool_name: 'Edit', tool_input: { file_path: '.veritas/repo-map.json' } }));
   assert.equal(protectedEdit.status, 2, `${protectedEdit.stdout}\n${protectedEdit.stderr}`);
   assert.match(JSON.parse(protectedEdit.stdout).hookSpecificOutput.permissionDecisionReason, /work-area-boundary/);
 });
