@@ -26,7 +26,7 @@ try {
       if (!found && file(entryIn(dir))) found = entryIn(dir);
       if (same(dir, root)) { entry = found; break; }
       const parent = path.dirname(dir);
-      if (parent === dir) break;
+      if (parent === dir) throw new Error("Git root is not an ancestor of the physical working directory; refusing all package entries.");
       dir = parent;
     }
   }

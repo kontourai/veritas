@@ -48,7 +48,7 @@ parent or PATH `veritas`. With no eligible local entry they retain the explicit
 `npx --no @kontourai/veritas` fallback. Codex's native Windows override uses Node's physical directory identities to select
 and run the same eligible package entry, without invoking a PATH binary. With no
 repository install, it checks the exact scoped package entry under `npm root --global`;
-a usable Git repository is required. If neither entry exists it refuses
+the physical directory walk must reach the Git root before either local or global lookup is accepted. An unrelated `GIT_DIR` / `GIT_WORK_TREE` root refuses before any package runs. If neither entry exists it refuses
 without downloading. The Windows launcher requires Node and Git, and preserves
 hook stdin, arguments and exit status. See [migration instructions](../MIGRATING.md#agent-hook-commands-run-the-install-they-found)
 to refresh scripts already installed in a consumer repository.
