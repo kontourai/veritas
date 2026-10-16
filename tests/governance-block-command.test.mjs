@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
+import crossSpawn from 'cross-spawn';
 
 import { cleanGitEnv, initCommittedRepo, installLocalVeritasBin, repoRootDir } from './helpers.mjs';
+import { tempDir } from './temp-dir.mjs';
 
 // The governance block is what an agent in an adopter repository reads (#193). Its command,
 // `npx --no @kontourai/veritas readiness`, runs only an installed Veritas, so in a fresh clone it
@@ -52,4 +54,41 @@ test('the block written by init names the remedy for a fresh clone, and its comm
   installLocalVeritasBin(rootDir);
   const installed = runBlockCommand(rootDir, block);
   assert.match(installed.stdout, /ai-instruction-files-synced/, installed.stderr);
+});
+
+test('the product checkout runs its own CLI from maintenance scripts despite a foreign Veritas on PATH', (t) => {
+  const fakeBin = tempDir(t, 'veritas-self-script-path-');
+  const marker = join(fakeBin, 'foreign-ran');
+  const fakeEntry = join(fakeBin, 'foreign.mjs');
+  writeFileSync(fakeEntry, `import { writeFileSync } from 'node:fs'; writeFileSync(${JSON.stringify(marker)}, 'foreign'); process.exit(86);\n`);
+  if (process.platform === 'win32') {
+    writeFileSync(join(fakeBin, 'veritas.cmd'), `@"${process.execPath}" "${fakeEntry}" %*\r\n`);
+  } else {
+    writeFileSync(join(fakeBin, 'veritas'), `#!/bin/sh\nexec '${process.execPath.replaceAll("'", "'\\''")}' '${fakeEntry.replaceAll("'", "'\\''")}' "$@"\n`, { mode: 0o755 });
+  }
+  const env = {
+    ...cleanGitEnv(),
+    PATH: `${fakeBin}${process.platform === 'win32' ? ';' : ':'}${process.env.PATH}`,
+    npm_config_offline: 'true',
+    npm_config_cache: join(fakeBin, 'npm-cache'),
+  };
+  mkdirSync(env.npm_config_cache);
+  for (const script of [
+    'veritas:init', 'veritas:status:codex', 'veritas:check',
+    'veritas:check:working-tree', 'veritas:check:diff', 'veritas:coverage',
+    'lint:governance', 'veritas:readiness',
+  ]) {
+    const result = crossSpawn.sync('npm', ['run', script, '--', '--help'], {
+      cwd: repoRootDir, env, encoding: 'utf8', windowsHide: true, timeout: 15_000,
+    });
+    assert.equal(result.status, 0, `${script}: ${result.stdout}\n${result.stderr}`);
+    assert.match(result.stdout, /[Vv]eritas/);
+  }
+  const readiness = crossSpawn.sync('npm', ['run', 'veritas:readiness', '--', '--check', 'config', '--format', 'json'], {
+    cwd: repoRootDir, env, encoding: 'utf8', windowsHide: true, timeout: 15_000,
+  });
+  assert.equal(readiness.status, 0, `${readiness.stdout}\n${readiness.stderr}`);
+  assert.match(readiness.stdout, /"rootDir"/);
+  assert.match(readiness.stdout, /"status": "valid"/);
+  assert.throws(() => readFileSync(marker), { code: 'ENOENT' });
 });

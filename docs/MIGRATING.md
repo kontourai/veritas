@@ -586,3 +586,13 @@ As with the previous block change, `ai-instruction-files-synced` compares each b
 so after you upgrade, the two-line block is a `stale-governance-content` mismatch: a WARN at Guide,
 and a FAIL at Require until you run `npx --no @kontourai/veritas apply governance-blocks`. That
 command replaces the block in place.
+
+### Running Veritas inside its own product checkout
+
+This repository's eight maintenance scripts run `node bin/veritas.mjs` directly.
+They exercise the checked-out CLI instead of npm's package-name lookup, so a
+missing self-package bin link cannot select a parent or PATH `veritas`.
+Use `npm run veritas:readiness -- <options>` here. The generic governance block
+continues to name `npx --no @kontourai/veritas readiness` for adopter repositories
+that install Veritas as a dependency. This does not change consumer package
+manager ownership or install Veritas into a live consumer.
