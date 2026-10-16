@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { createServer } from 'node:http';
 import test from 'node:test';
 import crossSpawn from 'cross-spawn';
 
@@ -20,18 +21,44 @@ function blockIn(rootDir) {
   return block[0];
 }
 
-function runBlockCommand(rootDir, block) {
+function runBlockCommand(rootDir, block, env) {
   const [program, ...args] = block.match(/run `([^`]+)` and address any FAIL lines/)[1].split(' ');
-  return spawnSync(program, args, {
-    cwd: rootDir,
-    encoding: 'utf8',
-    input: '',
-    env: { ...cleanGitEnv(), npm_config_offline: 'true' },
+  return new Promise((resolve, reject) => {
+    const child = crossSpawn(program, args, { cwd: rootDir, env, windowsHide: true, timeout: 30_000 });
+    let stdout = '', stderr = '';
+    child.stdout.on('data', (part) => { stdout += part; });
+    child.stderr.on('data', (part) => { stderr += part; });
+    child.on('error', reject);
+    child.on('close', (status, signal) => resolve({ status, signal, stdout, stderr }));
+    child.stdin.end();
   });
 }
 
-test('the block written by init names the remedy for a fresh clone, and its command runs after it', (t) => {
+test('the block written by init names the remedy for a fresh clone, and its command runs after it', async (t) => {
   const rootDir = initCommittedRepo(t, 'veritas-block-command-');
+  const npmState = tempDir(t, 'veritas-block-npm-');
+  const emptyConfig = join(npmState, 'npmrc');
+  const globalConfig = join(npmState, 'global-npmrc');
+  writeFileSync(emptyConfig, '');
+  writeFileSync(globalConfig, '');
+  const version = JSON.parse(readFileSync(join(repoRootDir, 'package.json'), 'utf8')).version;
+  let downloads = 0;
+  const registry = createServer((request, response) => {
+    if (!request.url.toLowerCase().startsWith('/@kontourai%2fveritas')) {
+      downloads += 1;
+      response.writeHead(404).end();
+      return;
+    }
+    response.setHeader('content-type', 'application/json');
+    response.end(JSON.stringify({ name: '@kontourai/veritas', 'dist-tags': { latest: version }, versions: {
+      [version]: { name: '@kontourai/veritas', version, bin: { veritas: 'bin/veritas.mjs' }, dist: { tarball: `http://127.0.0.1:${registry.address().port}/package.tgz` } },
+    } }));
+  });
+  await new Promise((resolve) => registry.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => registry.close(resolve)));
+  const env = { ...cleanGitEnv(), npm_config_cache: join(npmState, 'cache'), npm_config_prefix: join(npmState, 'prefix'),
+    npm_config_userconfig: emptyConfig, npm_config_globalconfig: globalConfig,
+    npm_config_registry: `http://127.0.0.1:${registry.address().port}`, npm_config_update_notifier: 'false', npm_config_offline: 'false' };
   writeFileSync(join(rootDir, 'package.json'), `${JSON.stringify({ name: 'consumer', version: '1.0.0' }, null, 2)}\n`);
   writeFileSync(join(rootDir, 'AGENTS.md'), '# Agents\n');
   const init = spawnSync(process.execPath, [join(repoRootDir, 'bin/veritas.mjs'), 'init', '--non-interactive'], {
@@ -42,8 +69,11 @@ test('the block written by init names the remedy for a fresh clone, and its comm
   const block = blockIn(rootDir);
 
   // A fresh clone: Veritas is not installed, so the block's command cannot run.
-  const fresh = runBlockCommand(rootDir, block);
+  const fresh = await runBlockCommand(rootDir, block, env);
+  assert.equal(fresh.signal, null);
   assert.notEqual(fresh.status, 0, 'npx --no refuses without an installed Veritas');
+  assert.match(fresh.stderr, /npx canceled due to missing packages/);
+  assert.equal(downloads, 0, '--no never requested a package tarball');
   assert.doesNotMatch(fresh.stdout, /ai-instruction-files-synced/);
 
   // The block tells the agent what to do about it.
@@ -52,7 +82,7 @@ test('the block written by init names the remedy for a fresh clone, and its comm
 
   // Following the remedy, the same command runs readiness.
   installLocalVeritasBin(rootDir);
-  const installed = runBlockCommand(rootDir, block);
+  const installed = await runBlockCommand(rootDir, block, env);
   assert.match(installed.stdout, /ai-instruction-files-synced/, installed.stderr);
 });
 
