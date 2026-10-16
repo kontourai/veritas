@@ -627,9 +627,10 @@ that is absolute or leaves the repository is an `invalid-governance-target` find
 write anything until it is corrected.
 
 The block it writes tells agents to run `npx --no @kontourai/veritas readiness`, which runs only an
-installed Veritas. In a repository without `@kontourai/veritas` as a dependency, npx refuses with
-`npx canceled due to missing packages`; add it as a development dependency so the block's command
-runs.
+installed Veritas. In a fresh clone whose dependencies are not installed yet, and in a repository
+without `@kontourai/veritas` as a dependency, npx refuses with `npx canceled due to missing
+packages`. The block names both remedies: install the repository's dependencies, adding
+`@kontourai/veritas` as a development dependency if it is not one.
 
 ### `runtime status`
 
