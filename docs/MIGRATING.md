@@ -598,3 +598,29 @@ Windows PowerShell, including nearest/root selection, missing bin links, foreign
 PATH refusal, stdin and exit status, junctions, and explicit scoped-global lookup and Git-discovery refusal.
 Those cases skip on other platforms. Their source presence is not Windows runtime
 evidence; delivery receipts name the Windows host and revision actually executed.
+
+## The Governance Block Names the Missing-Package Remedy
+
+The governance block gains a third line:
+
+> If npx says the package is missing, install this repo's dependencies, adding
+> `@kontourai/veritas` as a development dependency if it is not one, and run it again.
+
+`npx --no @kontourai/veritas readiness` runs only an installed Veritas. In a fresh clone before
+`npm install`, or in a repository without the dependency, it stops with `npx canceled due to
+missing packages`, and the block said nothing about what to do next.
+
+As with the previous block change, `ai-instruction-files-synced` compares each block byte for byte,
+so after you upgrade, the two-line block is a `stale-governance-content` mismatch: a WARN at Guide,
+and a FAIL at Require until you run `npx --no @kontourai/veritas apply governance-blocks`. That
+command replaces the block in place.
+
+### Running Veritas inside its own product checkout
+
+This repository's eight maintenance scripts run `node bin/veritas.mjs` directly.
+They exercise the checked-out CLI instead of npm's package-name lookup, so a
+missing self-package bin link cannot select a parent or PATH `veritas`.
+Use `npm run veritas:readiness -- <options>` here. The generic governance block
+continues to name `npx --no @kontourai/veritas readiness` for adopter repositories
+that install Veritas as a dependency. This does not change consumer package
+manager ownership or install Veritas into a live consumer.
