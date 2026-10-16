@@ -232,6 +232,9 @@ const REFUSED_WINDOWS = [
   ['1.5', /refuses --valid-until-days "1\.5": it must be a whole number of days, 1 or more\./],
   ['abc', /refuses --valid-until-days "abc": it must be a whole number of days, 1 or more\./],
   ['1e12', /refuses --valid-until-days "1e12": it must be a whole number of days, 1 or more\./],
+  // Number() reads these as whole numbers; only the digits-only check refuses them.
+  ['1e3', /refuses --valid-until-days "1e3": it must be a whole number of days, 1 or more\./],
+  ['0x10', /refuses --valid-until-days "0x10": it must be a whole number of days, 1 or more\./],
   ['1000000000000', /refuses --valid-until-days 1000000000000: validUntilDays 1000000000000 ends the validity window past the latest date Veritas can represent\./],
   ['', /--valid-until-days requires a non-empty value/],
   [null, /--valid-until-days requires a value/],
