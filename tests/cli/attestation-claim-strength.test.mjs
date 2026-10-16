@@ -5,6 +5,7 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildTrustReport } from '@kontourai/surface';
 import { buildGovernanceArtifactClaims, createAttestation } from '../../src/index.mjs';
+import { bindAttestationRecordIntegrity } from '../../src/attestations/record-integrity.mjs';
 import { cleanGitEnv, commitAll, initCommittedRepo, repoRootDir } from '../helpers.mjs';
 
 // The Surface claim an attestation carries must be only as strong as the
@@ -233,6 +234,26 @@ test('an approved resolver result supplied under reference-only mode is not trea
   assert.deepEqual(attestation.surface.claim.confidenceBasis, UNRESOLVED_CONFIDENCE);
 });
 
+test('a bound record whose recorded resolver result is not approved is not authority-backed', (t) => {
+  // Resolved modes refuse to write an unapproved result, so this record is
+  // rebound by hand. The rule must still read the recorded result, not only
+  // the mode, because that is what the definition says it checks.
+  const rootDir = initVeritasRepo(t, 'veritas-claim-strength-unapproved-');
+  const attestation = attestBootstrap(rootDir, 'made-up-123');
+  forgeResolvedApprovalMetadata(rootDir, attestation, {
+    stripIntegrity: false,
+    rebind: true,
+    resolution: { status: 'rejected', approved: false, failureReason: 'rejected' },
+  });
+
+  const readiness = runReadiness(rootDir);
+  assert.equal(readiness.record.governance_state.state, 'current');
+  assert.equal(readiness.record.governance_state.recordIntegrity.status, 'verified');
+  assert.equal(readiness.record.governance_state.attestation.metadata.approvalRefPolicy.requiresResolution, true);
+  assert.match(governanceAttestationEvidence(readiness.record).excerptOrSummary, NOT_RESOLVED_TEXT);
+  assert.equal(projectedGovernanceClaims(readiness.record).currency.confidenceBasis.reviewerAuthority, 'none');
+});
+
 test('a resolver result for a different reference does not back the cited reference', (t) => {
   // resolved mode checks that a supplied result is approved and unexpired, not
   // that it is for the reference the attestation cites.
@@ -263,7 +284,7 @@ test('a resolver result for a different reference does not back the cited refere
 // Rewrites a reference-only record's approval metadata so that, read on its
 // own, it looks resolved: mode, requiresResolution, and an approved result for
 // the cited reference. Only record integrity can tell it apart.
-function forgeResolvedApprovalMetadata(rootDir, attestation, { stripIntegrity }) {
+function forgeResolvedApprovalMetadata(rootDir, attestation, { stripIntegrity, rebind = false, resolution = {} }) {
   const path = join(rootDir, `.veritas/attestations/${attestation.id}.attestation.json`);
   const record = JSON.parse(readFileSync(path, 'utf8'));
   record.metadata.approvalRefPolicy = { mode: 'resolved', matchedPrefix: null, requiresResolution: true };
@@ -281,9 +302,11 @@ function forgeResolvedApprovalMetadata(rootDir, attestation, { stripIntegrity })
     evidenceHash: null,
     resolvedAt: record.attestedAt,
     failureReason: null,
+    ...resolution,
   };
-  if (stripIntegrity) delete record.recordIntegrity;
-  writeFileSync(path, `${JSON.stringify(record, null, 2)}\n`);
+  delete record.recordIntegrity;
+  const written = stripIntegrity ? record : rebind ? bindAttestationRecordIntegrity(record) : { ...record, recordIntegrity: attestation.recordIntegrity };
+  writeFileSync(path, `${JSON.stringify(written, null, 2)}\n`);
 }
 
 const INTEGRITY_GAP_TEXT = /not authority-backed because its record integrity is not verified/;
