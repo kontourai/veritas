@@ -71,11 +71,16 @@ test('native Windows refuses a local entry when Git discovery cannot establish i
 });
 
 test('native Windows refuses a repository install when GIT_WORK_TREE names an unrelated directory', native, (t) => {
-  const { root, nested, run, marker } = fixture(t);
+  const { root, nested, run, marker, foreignBin } = fixture(t);
   install(root, 'must-not-run');
   const other = initCommittedRepo(t, 'veritas-unrelated-root-');
   const result = run(nested, { GIT_DIR: join(other, '.git'), GIT_WORK_TREE: other });
   assert.equal(result.status, 2, `${result.stdout}\n${result.stderr}`);
+  install(join(foreignBin, 'global'), 'global-must-not-run');
+  const withGlobal = run(nested, { GIT_DIR: join(other, '.git'), GIT_WORK_TREE: other });
+  assert.equal(withGlobal.status, 2, `${withGlobal.stdout}\n${withGlobal.stderr}`);
+  assert.match(withGlobal.stderr, /Git root is not an ancestor/);
+  assert.equal(withGlobal.stdout.trim(), '');
   assert.equal(existsSync(marker), false);
 });
 
