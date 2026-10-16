@@ -21,7 +21,7 @@ The selected set of Evidence Checks that apply to the change before those checks
 _Avoid_: Script list, CI plan
 
 **Readiness Gap**:
-An unmet, stale, failing, or unresolved requirement that prevents or weakens Merge Readiness. A gap is closed by fresh evidence, a recheck, changed scope, or an Exception.
+An unmet, stale, failing, or unresolved requirement that prevents or weakens Merge Readiness. A gap is closed by fresh evidence, a recheck, or changed scope.
 _Avoid_: Failure as the only term, generic issue
 
 **Recheck**:
@@ -33,4 +33,4 @@ Developer: "The tests passed. Can this change merge?"
 Domain Expert: "Only if the Readiness Run shows coverage for the applicable Requirements. Passing tests may be one Evidence Check, not the whole Readiness Report."
 
 Agent: "The report says a docs Work Area was crossed."
-Domain Expert: "That Boundary Crossing can add a Readiness Gap until the required evidence or an Exception is present."
+Domain Expert: "That Boundary Crossing can add a Readiness Gap until the required evidence is present."

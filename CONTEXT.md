@@ -57,7 +57,7 @@ An action that verifies evidence, authority, freshness, or integrity again for t
 _Avoid_: Surface reverification as the user-facing term, guaranteed refresh
 
 **Exception**:
-A decision to accept an unmet or failing requirement for a specific change. An exception affects merge readiness only when it is backed by an attestation from a valid verification authority.
+A recorded decision to accept an unmet or failing requirement for a specific change. Only the pre-tool-use hook records exceptions: when `VERITAS_EXCEPTION_RULE` and `VERITAS_EXCEPTION_REASON` name the rule that blocked an edit, the hook lets the edit through and appends the rule, reason, and actor to `.kontourai/veritas/standards-feedback/exceptions.jsonl`. Veritas does not resolve any authority behind an exception, and readiness does not read exceptions.
 _Avoid_: Silent bypass, waiver without authority evidence
 
 **Enforcement Level**:
@@ -73,7 +73,7 @@ An enforcement level where Veritas gives just-in-time correction or review feedb
 _Avoid_: Warn as the user-facing term
 
 **Require**:
-An enforcement level where a requirement must be satisfied by fresh evidence or accepted by an Exception before merge readiness or repo conformance is complete.
+An enforcement level where a requirement must be satisfied by fresh evidence before merge readiness or repo conformance is complete.
 _Avoid_: Block as the user-facing term, hard gate without evidence
 
 **Work Area**:
@@ -164,7 +164,7 @@ Earlier Veritas artifacts used "eval" for generated observations about whether V
 Use attestation only for a recorded assertion, made by a named actor citing an approval reference, that something was verified, accepted, approved, or reviewed. Do not use it for every evidence result, generic approval, or readiness report.
 
 **Authority-backed**:
-Use authority-backed only for an approval whose reference was resolved against an approval record, which happens only in the `resolved` and `resolved-strict` approval modes. In the default `reference-only` mode, and in `prefix` mode, an attestation is a recorded attestation with an unverified approval reference: Veritas records the reference but does not check it. An Exception is not authority-backed either, because Veritas records its actor and reason without resolving any authority.
+Use authority-backed only for an attestation whose approval reference was resolved against an approval record. Veritas checks three things: (1) it was written under the `resolved` or `resolved-strict` approval mode, which refuses to write unless the resolver result is approved and unexpired; (2) its recorded resolver result (`metadata.approvalResolution`) is approved and is for the same reference the attestation cites (`metadata.approvalResolution.approvalRef` equals `metadata.approvalRef`); and (3) when a stored record is read later, its record integrity is `verified`, so the approval metadata is bound to it. In the default `reference-only` mode, and in `prefix` mode, an attestation is a recorded attestation with an unverified approval reference: Veritas records the reference but does not check it. An Exception is not authority-backed either, because Veritas records its actor and reason without resolving any authority.
 
 **Governance Areas**:
 Do not use numbered governance areas as canonical product language; use **Protected Standards**, **Standards Growth**, and **Generated Evidence**.

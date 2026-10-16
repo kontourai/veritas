@@ -508,20 +508,31 @@ approval. In the default `reference-only` mode, and in `prefix` mode, Veritas re
 | `surface.event.status` and `id` suffix | `proposed`, no `verifiedAt` | `verified`, with `verifiedAt` |
 | `surface.evidence.excerptOrSummary` without `--message` | says the reference was not resolved | `Authority-backed <kind> attestation ...` |
 
-A `resolved` mode is required for the strong values: an approved resolver result passed to
-`createAttestation` under `reference-only` mode is recorded in `metadata.approvalResolution` but
-never checked, so it does not count.
+The strong values need a `resolved` mode and a recorded resolver result that is approved and is
+for the cited reference: `metadata.approvalResolution.approvalRef` must equal `metadata.approvalRef`.
+An approved result passed to `createAttestation` under `reference-only` mode is recorded but never
+checked, and a result for a different reference does not back the cited one. The offline resolver
+reports the approval record's own `approvalRef`, so if you cite records with `file:` references,
+set each record's `approvalRef` to that `file:` reference or cite it as `veritas-approval:<id>`.
 
-Existing attestation records are immutable and keep the values they were written with. Projections
-built at readiness time read the active record's `metadata.approvalRefPolicy` and
-`metadata.approvalResolution`, so they change for an existing unresolved attestation too:
+Existing attestation records are immutable and keep the `surface` values they were written with,
+so a reference-only record written before this release still stores a `verified` claim.
 
-- In the readiness trust bundle, the governance attestation evidence summary and event notes say
-  `Attestation currency is <status> ...; the attestation's approval reference was not resolved
-  against an approval record.` instead of `Authority-backed attestation currency is <status> ...`.
-- `buildGovernanceArtifactClaims` gives the attestation-currency claim `sourceQuality: weak`,
-  `reviewerAuthority: none`, `evidenceStrength: weak`, and gives each protected-artifact claim
-  `reviewerAuthority: none` instead of `authority`.
+Readiness reads the active record's `metadata.approvalRef`, `metadata.approvalRefPolicy` and
+`metadata.approvalResolution`, and counts them only when its record integrity is `verified`. An
+unbound record is never authority-backed: nothing binds its metadata, and deleting
+`recordIntegrity` from a bound record also makes it unbound, so accepting unbound records would let
+an edit upgrade any attestation. This includes resolved-mode attestations recorded before record
+integrity existed. Record a fresh `policy-change` attestation under a `resolved` mode to make the
+active attestation authority-backed again. In the readiness trust bundle, the governance
+attestation evidence summary and event notes say `Attestation currency is <status> ...; the
+attestation is not authority-backed because <reason>.` instead of `Authority-backed attestation
+currency is <status> ...` whenever the active attestation is not authority-backed.
+
+The exported `buildGovernanceArtifactClaims` API, which readiness does not call, applies the same
+rule. For an attestation that is not authority-backed it gives the attestation-currency claim
+`sourceQuality: weak`, `reviewerAuthority: none`, `evidenceStrength: weak`, and gives each
+protected-artifact claim `reviewerAuthority: none` instead of `authority`.
 
 Claim statuses in the readiness trust bundle and readiness verdicts do not change.
 `policy-changes-require-attestation` checks the attestation's hashes and validity window, not its

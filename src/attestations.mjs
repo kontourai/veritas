@@ -497,7 +497,11 @@ export function createAttestation({
       validUntil,
       contentHash: sha256Hex(`${hashes.repoStandardsHash}:${hashes.repoMapHash}:${hashes.authoritySettingsHash}`),
       notes,
-      authorityBacked: isAuthorityBackedApproval({ approvalRefPolicy }),
+      authorityBacked: isAuthorityBackedApproval({
+        approvalRef: approvalRef?.trim() ?? null,
+        approvalRefPolicy,
+        approvalResolution,
+      }),
     }),
   });
 

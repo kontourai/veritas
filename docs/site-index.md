@@ -119,7 +119,7 @@ Veritas supports a gradual enforcement ladder:
 
 **Guide** — provide just-in-time correction or review feedback.
 
-**Require** — require fresh evidence or an exception before merge readiness or repo conformance is complete.
+**Require** — require fresh evidence before merge readiness or repo conformance is complete.
 
 You do not have to gate every change on day one. The goal is earned autonomy, not instant bureaucracy.
 

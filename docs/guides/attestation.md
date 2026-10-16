@@ -163,7 +163,7 @@ An attestation is not:
 - required for every routine merge
 - the same thing as an exception
 
-An **Exception** is a recorded decision to accept an unmet or failing requirement for a specific change. Veritas records its actor and reason but does not resolve any authority behind it. An attestation is the evidence form that can support that decision.
+An **Exception** is a recorded decision to accept an unmet or failing requirement for a specific change. Only the pre-tool-use hook records exceptions, and readiness does not read them. Veritas records an exception's actor and reason but does not resolve any authority behind it. An attestation is the evidence form that can support that decision.
 
 ## Built With Surface
 
@@ -173,9 +173,13 @@ Each attestation record carries a `surface` claim, its evidence, and a verificat
 
 | Approval check when the record was written | Claim and event status | `confidenceBasis` |
 | --- | --- | --- |
-| `resolved` or `resolved-strict` mode resolved the reference to an approved record | `verified` | `sourceQuality: strong`, `reviewerAuthority: human`, `evidenceStrength: strong` |
+| `resolved` or `resolved-strict` mode resolved the reference to an approved record for that same reference | `verified` | `sourceQuality: strong`, `reviewerAuthority: human`, `evidenceStrength: strong` |
 | `reference-only` or `prefix` mode recorded the reference without checking it | `proposed` | `sourceQuality: weak`, `reviewerAuthority: none`, `evidenceStrength: weak` |
 
-`proposed` is the status Surface derives for evidence that no verification backs, so nothing downstream reads an unchecked reference as verified human approval. Readiness projections follow the same rule: the trust bundle's attestation evidence says whether the active attestation's reference was resolved, and `buildGovernanceArtifactClaims` gives the same weaker confidence basis to the claims it builds for an unresolved one.
+`proposed` is the status Surface derives for evidence that no verification backs. Records written before this rule existed are immutable and keep the `verified` claim they were written with, even in `reference-only` mode, so a consumer reading their stored `surface` still sees verified human approval; check `metadata.approvalRefPolicy` for those.
+
+The resolver result must be for the reference the attestation cites. The offline resolver reports the approval record's own `approvalRef`, so a `file:` reference counts only when the record's `approvalRef` is that same `file:` reference; a `veritas-approval:<id>` reference to a record whose `approvalRef` is `veritas-approval:<id>` always matches.
+
+When readiness reads the active attestation, it also requires record integrity to be `verified`. The trust bundle's attestation evidence says whether the active attestation is authority-backed and, if not, why: its reference was not resolved, or its record is unbound or tampered, so its approval metadata could have been edited. The exported `buildGovernanceArtifactClaims` API applies the same rule and gives the claims it builds the weaker confidence basis when the attestation is not authority-backed.
 
 This does not change readiness. The `policy-changes-require-attestation` requirement checks the active attestation's protected standards hashes and validity window, not how its approval reference was checked, so it gives the same result in every approval mode. To require a resolved approval, use a `resolved` mode.

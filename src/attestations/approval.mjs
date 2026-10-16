@@ -20,14 +20,34 @@ export function requireHumanApprovalReference({ kind, approvalRef }) {
   );
 }
 
-// An approval is authority-backed only when a resolved policy mode ran:
-// validateApprovalReferencePolicy refuses to return under those modes unless
-// the reference resolved to an accepted approval record. `reference-only` and
-// `prefix` modes never resolve the reference, and a resolver result supplied
-// under them is recorded but never checked, so their attestations are recorded
-// attestations with an unverified approval reference.
-export function isAuthorityBackedApproval({ approvalRefPolicy } = {}) {
-  return approvalRefPolicy?.requiresResolution === true;
+// Checks the approval metadata an attestation records: the policy mode
+// required resolution (`resolved` or `resolved-strict`), the recorded resolver
+// result is approved, and that result is for the same reference the
+// attestation cites. `reference-only` and `prefix` modes never resolve the
+// reference, and a resolver result supplied under them is recorded but never
+// checked. A result for a different reference does not back this one. For a
+// stored record, use attestationAuthorityGap, which also requires the metadata
+// to be integrity-bound.
+export function isAuthorityBackedApproval({ approvalRef, approvalRefPolicy, approvalResolution } = {}) {
+  return approvalRefPolicy?.requiresResolution === true
+    && approvalResolution?.approved === true
+    && typeof approvalRef === 'string'
+    && approvalResolution.approvalRef === approvalRef;
+}
+
+// Why a stored attestation is not authority-backed, or null when it is. Its
+// approval metadata counts only when record integrity verified it: an unbound
+// record (written before record integrity, or with recordIntegrity deleted)
+// can have that metadata edited without detection, so it is never
+// authority-backed.
+export function attestationAuthorityGap({ attestation, recordIntegrityStatus } = {}) {
+  if (recordIntegrityStatus !== 'verified') {
+    return 'its record integrity is not verified, so its approval metadata is not bound to it';
+  }
+  if (!isAuthorityBackedApproval(attestation?.metadata)) {
+    return 'its approval reference was not resolved against an approval record';
+  }
+  return null;
 }
 
 export function validateApprovalReferencePolicy({

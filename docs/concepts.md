@@ -73,9 +73,9 @@ A **Verification Authority** is a person, system, tool, environment, or policy s
 
 **Authority Evidence** explains why a verification authority was allowed to count. Examples include protected CI context, scanner version and configuration, owner identity, team membership, standards-file hash, or signed approval metadata.
 
-An **Attestation** is evidence from a verification authority asserting that something was verified, accepted, approved, or reviewed. Attestations should identify the authority, subject, integrity scope, and any validity window that affects merge readiness. An attestation is authority-backed only when its approval reference was resolved against an approval record; in the default `reference-only` mode it is a recorded attestation with an unverified approval reference.
+An **Attestation** is a recorded assertion, made by a named actor citing an approval reference, that something was verified, accepted, approved, or reviewed. Attestations should identify the authority, subject, integrity scope, and any validity window that affects merge readiness. An attestation is authority-backed only when its approval reference was resolved against an approval record; in the default `reference-only` mode it is a recorded attestation with an unverified approval reference.
 
-An **Exception** is a decision to accept an unmet or failing requirement for a specific change. Exceptions affect merge readiness only when backed by an attestation from a valid verification authority.
+An **Exception** is a recorded decision to accept an unmet or failing requirement for a specific change. Only the pre-tool-use hook records exceptions: when `VERITAS_EXCEPTION_RULE` and `VERITAS_EXCEPTION_REASON` name the rule that blocked an edit, the hook lets the edit through and appends the rule, reason, and actor to `.kontourai/veritas/standards-feedback/exceptions.jsonl`. Veritas does not resolve any authority behind an exception, and readiness does not read exceptions.
 
 ## Boundaries
 
@@ -126,7 +126,7 @@ Requirements have an **Enforcement Level**:
 
 - **Observe** records evidence and outcomes without guiding or blocking work.
 - **Guide** gives just-in-time correction or review feedback, but does not by itself prevent merge readiness.
-- **Require** means the requirement must be satisfied by fresh evidence or accepted by an exception before merge readiness or repo conformance is complete.
+- **Require** means the requirement must be satisfied by fresh evidence before merge readiness or repo conformance is complete.
 
 Current schema references may use lower-level enforcement fields. Treat those as implementation details unless a page is documenting exact schema fields.
 

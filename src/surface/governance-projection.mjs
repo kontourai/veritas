@@ -8,7 +8,7 @@ import {
   surfaceSafeId,
 } from './primitives.mjs';
 import { veritasArtifactPath, veritasArtifactRepoPath } from '../paths.mjs';
-import { isAuthorityBackedApproval } from '../attestations/approval.mjs';
+import { attestationAuthorityGap } from '../attestations/approval.mjs';
 
 function claimsByType(claimStore, claimType) {
   return (claimStore.claims ?? []).filter((claim) => claim.claimType === claimType);
@@ -249,16 +249,24 @@ export function buildGovernanceArtifactClaims({
   }));
 }
 
+function governanceAttestationAuthorityGap(governanceState) {
+  return attestationAuthorityGap({
+    attestation: governanceState.attestation,
+    recordIntegrityStatus: governanceState.recordIntegrity?.status,
+  });
+}
+
 function attestationIsAuthorityBacked(governanceState) {
-  return isAuthorityBackedApproval(governanceState.attestation?.metadata);
+  return Boolean(governanceState.attestation) && governanceAttestationAuthorityGap(governanceState) === null;
 }
 
 function attestationCurrencyText(governanceState, status, { withState = false } = {}) {
   const scope = withState ? ` for Protected Standards state ${governanceState.state}` : '';
   if (!governanceState.attestation) return `Attestation currency is ${status}${scope}.`;
-  return attestationIsAuthorityBacked(governanceState)
+  const gap = governanceAttestationAuthorityGap(governanceState);
+  return gap === null
     ? `Authority-backed attestation currency is ${status}${scope}.`
-    : `Attestation currency is ${status}${scope}; the attestation's approval reference was not resolved against an approval record.`;
+    : `Attestation currency is ${status}${scope}; the attestation is not authority-backed because ${gap}.`;
 }
 
 function governanceArtifactStatus(governanceState, drift) {

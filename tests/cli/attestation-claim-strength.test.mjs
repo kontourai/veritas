@@ -232,3 +232,84 @@ test('an approved resolver result supplied under reference-only mode is not trea
   assert.equal(attestation.surface.claim.status, 'proposed');
   assert.deepEqual(attestation.surface.claim.confidenceBasis, UNRESOLVED_CONFIDENCE);
 });
+
+test('a resolver result for a different reference does not back the cited reference', (t) => {
+  // resolved mode checks that a supplied result is approved and unexpired, not
+  // that it is for the reference the attestation cites.
+  const rootDir = initVeritasRepo(t, 'veritas-claim-strength-mismatched-result-');
+  setApprovalRefPolicy(rootDir, { mode: 'resolved', allowed_prefixes: [] });
+  commitAll(rootDir, 'Resolve approval references');
+  const { attestation } = createAttestation({
+    rootDir,
+    kind: 'bootstrap',
+    actor: 'alice',
+    approvalRef: 'made-up-123',
+    approvalResolverResult: { status: 'approved', approvalRef: 'something-else' },
+  });
+  assert.equal(attestation.metadata.approvalRefPolicy.requiresResolution, true);
+  assert.equal(attestation.metadata.approvalResolution.approved, true);
+  assert.equal(attestation.metadata.approvalResolution.approvalRef, 'something-else');
+  assert.equal(attestation.surface.claim.status, 'proposed');
+  assert.deepEqual(attestation.surface.claim.confidenceBasis, UNRESOLVED_CONFIDENCE);
+
+  const readiness = runReadiness(rootDir);
+  assert.deepEqual(readinessSummary(readiness), READY, readiness.result.stdout + readiness.result.stderr);
+  assert.match(governanceAttestationEvidence(readiness.record).excerptOrSummary, NOT_RESOLVED_TEXT);
+  const { currency, artifacts } = projectedGovernanceClaims(readiness.record);
+  assert.equal(currency.confidenceBasis.reviewerAuthority, 'none');
+  for (const artifact of artifacts) assert.equal(artifact.confidenceBasis.reviewerAuthority, 'none', artifact.id);
+});
+
+// Rewrites a reference-only record's approval metadata so that, read on its
+// own, it looks resolved: mode, requiresResolution, and an approved result for
+// the cited reference. Only record integrity can tell it apart.
+function forgeResolvedApprovalMetadata(rootDir, attestation, { stripIntegrity }) {
+  const path = join(rootDir, `.veritas/attestations/${attestation.id}.attestation.json`);
+  const record = JSON.parse(readFileSync(path, 'utf8'));
+  record.metadata.approvalRefPolicy = { mode: 'resolved', matchedPrefix: null, requiresResolution: true };
+  record.metadata.approvalResolution = {
+    schemaVersion: 1,
+    status: 'approved',
+    approved: true,
+    approvalRef: record.metadata.approvalRef,
+    provider: 'veritas-offline',
+    authorityRef: 'forged',
+    approvedBy: 'change-manager',
+    approvedAt: record.attestedAt,
+    expiresAt: null,
+    scope: null,
+    evidenceHash: null,
+    resolvedAt: record.attestedAt,
+    failureReason: null,
+  };
+  if (stripIntegrity) delete record.recordIntegrity;
+  writeFileSync(path, `${JSON.stringify(record, null, 2)}\n`);
+}
+
+const INTEGRITY_GAP_TEXT = /not authority-backed because its record integrity is not verified/;
+
+for (const { name, stripIntegrity, state, integrity, exitStatus } of [
+  { name: 'an edited record', stripIntegrity: false, state: 'tampered', integrity: 'mismatch', exitStatus: 1 },
+  { name: 'a record with recordIntegrity deleted', stripIntegrity: true, state: 'current', integrity: 'unbound', exitStatus: 0 },
+]) {
+  test(`forged resolved approval metadata in ${name} is not projected as authority-backed`, (t) => {
+    const rootDir = initVeritasRepo(t, 'veritas-claim-strength-forged-');
+    const attestation = attestBootstrap(rootDir, 'made-up-123');
+    forgeResolvedApprovalMetadata(rootDir, attestation, { stripIntegrity });
+
+    const readiness = runReadiness(rootDir);
+    assert.equal(readiness.result.status, exitStatus, readiness.result.stdout + readiness.result.stderr);
+    assert.equal(readiness.record.governance_state.state, state);
+    assert.equal(readiness.record.governance_state.recordIntegrity.status, integrity);
+    assert.equal(readiness.record.governance_state.attestation.metadata.approvalRefPolicy.requiresResolution, true);
+    const currencyEvidence = governanceAttestationEvidence(readiness.record);
+    assert.match(currencyEvidence.excerptOrSummary, INTEGRITY_GAP_TEXT);
+    assert.doesNotMatch(currencyEvidence.excerptOrSummary, /Authority-backed/);
+
+    const { currency, artifacts } = projectedGovernanceClaims(readiness.record);
+    assert.equal(currency.confidenceBasis.sourceQuality, 'weak');
+    assert.equal(currency.confidenceBasis.reviewerAuthority, 'none');
+    assert.equal(currency.confidenceBasis.evidenceStrength, 'weak');
+    for (const artifact of artifacts) assert.equal(artifact.confidenceBasis.reviewerAuthority, 'none', artifact.id);
+  });
+}

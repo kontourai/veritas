@@ -32,7 +32,7 @@ Product language should use:
 
 - **Observe**: collect evidence only
 - **Guide**: provide correction or review feedback
-- **Require**: require fresh evidence or an exception
+- **Require**: require fresh evidence
 
 The schema uses `enforcementLevel`; `stage` is not a current field. An optional
 `evidenceCheckIds` list names Repo Map checks to execute when a changed file
