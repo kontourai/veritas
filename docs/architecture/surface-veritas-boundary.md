@@ -103,6 +103,17 @@ Interoperability fields such as `derivedFrom`, `derivationEdges`, `TrustBundle`,
 
 Downstream systems, including Flow, should locate readiness by querying `trust.bundle.claims[]` or generated `trust.report.claims[]` for that claim type, subject, producer metadata, integrity scope, and authority trace. They must not import Veritas source modules or parse Veritas-only readiness fields as their integration contract.
 
+The readiness verdict's authority trace names the attestation actor's `id` in
+`metadata.actor` and `actor:<id>` in `actorRef` when an attestation is present.
+That identity takes precedence over the readiness run's actor. Without an
+attestation, the trace uses the resolved run actor (then the record owner or
+`veritas`) with a `system:` reference. Reference IDs use Surface's safe-ID
+encoding. An attestation without a non-empty string actor ID containing a safe
+identifier character (a letter, digit, dot, or underscore) cannot produce a
+readiness authority trace; Veritas refuses the projection rather than substituting
+the run actor or inventing an attester. These fields identify the recorded actor;
+approval resolution and record integrity remain separate evidence.
+
 Surface `^0.6.0` supports first-class top-level `authorityTrace`. Veritas emits readiness authority as top-level `TrustBundle` state. Readiness events link to the authority-traced evidence by `evidenceIds`.
 
 ## Product Language Rule
