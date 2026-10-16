@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.11.4](https://github.com/kontourai/veritas/compare/v1.11.3...v1.11.4) (2026-10-16)
+
+
+### Fixes
+
+* **governance:** explain dependency setup and dogfood the checked-out CLI ([#299](https://github.com/kontourai/veritas/issues/299)) ([7672e37](https://github.com/kontourai/veritas/commit/7672e3741e4aab31d1c117e53b476b0139552a55))
+* **hooks:** execute validated repository entries on native Windows ([#317](https://github.com/kontourai/veritas/issues/317)) ([a6e0277](https://github.com/kontourai/veritas/commit/a6e0277a2136cb76ee28850b090ce5a53b0a6765))
+* **readiness:** identify attestation authority by actor id ([#319](https://github.com/kontourai/veritas/issues/319)) ([f9ba9f3](https://github.com/kontourai/veritas/commit/f9ba9f3d428882cc315beca5c5b6a096424465dd))
+
+
+### Documentation
+
+* bound first-contact readiness claims to configured standards ([#320](https://github.com/kontourai/veritas/issues/320)) ([de93c30](https://github.com/kontourai/veritas/commit/de93c301620840b24fe6460606ee186523e8c8a6))
+
 ## [1.11.3](https://github.com/kontourai/veritas/compare/v1.11.2...v1.11.3) (2026-10-16)
 
 
