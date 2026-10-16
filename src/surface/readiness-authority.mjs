@@ -5,7 +5,11 @@ import { surfaceSafeId } from './primitives.mjs';
 // record field. A current attestation's actor still names the authority when there is one.
 function buildReadinessAuthorityTrace(record, { actor: runActor = null } = {}) {
   const governanceState = record.governance_state;
-  const actor = governanceState?.attestation?.actor ?? resolveActor(runActor) ?? record.owner ?? 'veritas';
+  const attestationActorId = governanceState?.attestation?.actor?.id;
+  if (governanceState?.attestation && (typeof attestationActorId !== 'string' || !/[a-zA-Z0-9._]/.test(attestationActorId))) {
+    throw new Error('Readiness authority trace requires an attestation actor with a non-empty string id containing a Surface-safe identifier character.');
+  }
+  const actor = attestationActorId ?? resolveActor(runActor) ?? record.owner ?? 'veritas';
   const protectedStandards = governanceState?.protectedStandards ?? null;
   return {
     kind: governanceState?.attestation ? 'governance-attestation' : 'producer-fallback',
@@ -27,10 +31,9 @@ function buildReadinessAuthorityTrace(record, { actor: runActor = null } = {}) {
 export function buildReadinessAuthorityTraceRecord(record, claim, evidenceId, { actor = null } = {}) {
   const governanceState = record.governance_state;
   const metadataTrace = buildReadinessAuthorityTrace(record, { actor });
-  const attestationActor = governanceState?.attestation?.actor;
-  const actorRef = attestationActor
-    ? `actor:${surfaceSafeId(attestationActor)}`
-    : `system:${surfaceSafeId(resolveActor(actor) ?? record.owner ?? 'veritas')}`;
+  const actorRef = governanceState?.attestation
+    ? `actor:${surfaceSafeId(metadataTrace.actor)}`
+    : `system:${surfaceSafeId(metadataTrace.actor)}`;
   const authorityRef = governanceState?.currentAttestationId
     ? `attestation:${surfaceSafeId(governanceState.currentAttestationId)}`
     : 'producer:veritas';
