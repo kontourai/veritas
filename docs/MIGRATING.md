@@ -513,17 +513,20 @@ for the cited reference: `metadata.approvalResolution.approvalRef` must equal `m
 An approved result passed to `createAttestation` under `reference-only` mode is recorded but never
 checked, and a result for a different reference does not back the cited one. A result passed to
 `createAttestation` under a `resolved` mode is trusted as given: Veritas checks its status, expiry
-and reference, not where it came from.
+and reference, not where it came from. A `resolved` mode now refuses a passed-in result whose
+`approvalRef` differs from the attested reference, or that has none, where earlier releases wrote
+the attestation.
 
-The offline resolver now checks that an approval record answers the reference that cites it. It
-accepts a record only when the record's own `approvalRef` leads to the same record file as the
-cited reference, so `veritas-approval:<id>`, `file:` and `file:./` spellings of one record all
-match, and it reports the cited reference in `metadata.approvalResolution.approvalRef` (earlier
-releases reported the record's `approvalRef`). A record whose `approvalRef` names a different record,
-or is not a `veritas-approval:` or `file:` reference, now resolves as `out-of-scope`, so a `resolved`
-mode refuses the attestation, where earlier releases accepted it. Set each such record's
-`approvalRef` to `veritas-approval:<id>` for its own file name. The refusal message now ends with
-the resolver's reason in parentheses.
+The offline resolver now checks that an approval record answers the reference that cites it, and
+reports the cited reference in `metadata.approvalResolution.approvalRef` (earlier releases reported
+the record's own `approvalRef`). When the record's `approvalRef` is a `veritas-approval:` or `file:`
+reference, it must lead to the same record file as the cited reference, so `veritas-approval:<id>`,
+`file:` and `file:./` spellings of one record all match. A record whose offline `approvalRef` leads
+to a different record, or is not a valid reference, now resolves as `out-of-scope`, so a `resolved`
+mode refuses the attestation, where earlier releases accepted it. A record whose `approvalRef` is an
+external identifier, such as `servicenow:CHG1`, is still accepted, and the stored resolution keeps
+that identifier as `recordApprovalRef`. The refusal message now ends with the resolver's reason in
+parentheses.
 
 Existing attestation records are immutable and keep the `surface` values they were written with,
 so a reference-only record written before this release still stores a `verified` claim.

@@ -92,7 +92,8 @@
             "scope": { "type": ["object", "null"] },
             "evidenceHash": { "type": ["string", "null"] },
             "resolvedAt": { "type": "string" },
-            "failureReason": { "type": ["string", "null"] }
+            "failureReason": { "type": ["string", "null"] },
+            "recordApprovalRef": { "type": "string" }
           },
           "additionalProperties": true
         }

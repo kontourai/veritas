@@ -3,6 +3,7 @@ import {
   approvalResolverRejectionReason,
   isApprovalResolverResultAccepted,
   normalizeApprovalRefPolicy,
+  normalizeApprovalResolverResult,
   resolveOfflineApprovalReference,
 } from '../approval-resolvers.mjs';
 
@@ -80,6 +81,13 @@ export function validateApprovalReferencePolicy({
     if (!isApprovalResolverResultAccepted(resolvedApproval, { now: resolverRequest?.requestedAt })) {
       throw new Error(
         `veritas attest approval reference was not accepted by resolver: ${approvalResolverRejectionReason(resolvedApproval, { now: resolverRequest?.requestedAt })}${resolvedApproval.failureReason ? ` (${resolvedApproval.failureReason})` : ''}`,
+      );
+    }
+    // A result for another reference cannot approve this one, whoever resolved it.
+    const resolvedRef = normalizeApprovalResolverResult(resolvedApproval).approvalRef;
+    if (resolvedRef !== approvalRef.trim()) {
+      throw new Error(
+        `veritas attest approval reference was not accepted by resolver: the approved result is for ${JSON.stringify(resolvedRef)}, not ${JSON.stringify(approvalRef.trim())}`,
       );
     }
   }

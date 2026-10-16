@@ -81,20 +81,25 @@ function evaluateOfflineApprovalRecordScope(record, request) {
   return null;
 }
 
-// A record's own approvalRef names the approval it records. It counts for the
-// cited reference only when both lead to the same record file, so equivalent
-// spellings (`file:` and `veritas-approval:`, `./` prefixes, spaces after the
-// prefix) match, and a record copied to another path does not.
+// A record's own approvalRef names the approval it records. When it is an
+// offline reference (`veritas-approval:` or `file:`), it must lead to the same
+// record file as the cited reference, so equivalent spellings (`./` prefixes,
+// spaces after the prefix) match and a record copied to another path does not.
+// Any other approvalRef is an external identifier, such as the ticket the
+// record mirrors, and a record without one names nothing: either way the cited
+// reference located this record, so the citation is the match.
 function recordReferenceMismatch(rootDir, path, record) {
   const recordRef = typeof record.approvalRef === 'string' ? record.approvalRef.trim() : '';
-  let recordPath = null;
+  if (!recordRef) return null;
+  const describe = `approval record ${relativeRepoPath(rootDir, path)} records approvalRef ${JSON.stringify(recordRef)}`;
+  let recordPath;
   try {
-    recordPath = recordRef ? resolveOfflineApprovalRecordPath(rootDir, recordRef) : null;
-  } catch {
-    recordPath = null;
+    recordPath = resolveOfflineApprovalRecordPath(rootDir, recordRef);
+  } catch (error) {
+    return `${describe}, which is not a valid approval record reference: ${error.message}`;
   }
-  if (recordPath === path) return null;
-  return `approval record ${relativeRepoPath(rootDir, path)} records approvalRef ${recordRef ? JSON.stringify(recordRef) : '(missing)'}, which does not lead to that record`;
+  if (recordPath === null || recordPath === path) return null;
+  return `${describe}, which leads to a different record`;
 }
 
 export function normalizeApprovalRefPolicy(policy = {}) {
@@ -158,6 +163,7 @@ export function normalizeApprovalResolverResult(result = {}, options = {}) {
     evidenceHash: result.evidenceHash ?? null,
     resolvedAt,
     failureReason: status === 'approved' ? null : result.failureReason ?? 'approval reference was not approved',
+    ...(typeof result.recordApprovalRef === 'string' ? { recordApprovalRef: result.recordApprovalRef } : {}),
     metadata: result.metadata ?? {},
   };
 }
@@ -198,6 +204,9 @@ export function resolveOfflineApprovalReference({ rootDir, approvalRef, request,
     status: scopeFailure ? 'out-of-scope' : status,
     // The cited reference, which the record was just shown to answer.
     approvalRef: trimmedRef,
+    ...(typeof record.approvalRef === 'string' && record.approvalRef.trim() !== trimmedRef
+      ? { recordApprovalRef: record.approvalRef.trim() }
+      : {}),
     provider: record.provider ?? 'veritas-offline',
     authorityRef: record.authorityRef ?? record.id ?? basename(path),
     approvedBy: record.approvedBy ?? null,
@@ -245,5 +254,6 @@ export function summarizeApprovalResolverResult(result = {}, options = {}) {
     evidenceHash: normalized.evidenceHash,
     resolvedAt: normalized.resolvedAt,
     failureReason: normalized.failureReason,
+    ...(normalized.recordApprovalRef ? { recordApprovalRef: normalized.recordApprovalRef } : {}),
   };
 }

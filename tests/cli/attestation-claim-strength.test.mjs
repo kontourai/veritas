@@ -255,28 +255,36 @@ test('a bound record whose recorded resolver result is not approved is not autho
   assert.equal(projectedGovernanceClaims(readiness.record).currency.confidenceBasis.reviewerAuthority, 'none');
 });
 
-test('a resolver result for a different reference does not back the cited reference', (t) => {
-  // resolved mode checks that a supplied result is approved and unexpired, not
-  // that it is for the reference the attestation cites.
+test('a resolved mode refuses a resolver result for a different reference', (t) => {
   const rootDir = initVeritasRepo(t, 'veritas-claim-strength-mismatched-result-');
   setApprovalRefPolicy(rootDir, { mode: 'resolved', allowed_prefixes: [] });
   commitAll(rootDir, 'Resolve approval references');
-  const { attestation } = createAttestation({
-    rootDir,
-    kind: 'bootstrap',
-    actor: 'alice',
-    approvalRef: 'made-up-123',
-    approvalResolverResult: { status: 'approved', approvalRef: 'something-else' },
+  assert.throws(
+    () => createAttestation({
+      rootDir,
+      kind: 'bootstrap',
+      actor: 'alice',
+      approvalRef: 'made-up-123',
+      approvalResolverResult: { status: 'approved', approvalRef: 'something-else' },
+    }),
+    /not accepted by resolver: the approved result is for "something-else", not "made-up-123"/,
+  );
+  assert.equal(existsSync(join(rootDir, '.veritas/attestations/HEAD')), false);
+});
+
+test('a bound record whose approved result is for a different reference says so', (t) => {
+  // No write path stores such a record any more, so it is rebound by hand.
+  const rootDir = initVeritasRepo(t, 'veritas-claim-strength-other-reference-');
+  const attestation = attestBootstrap(rootDir, 'made-up-123');
+  forgeResolvedApprovalMetadata(rootDir, attestation, {
+    stripIntegrity: false,
+    rebind: true,
+    resolution: { approvalRef: 'something-else' },
   });
-  assert.equal(attestation.metadata.approvalRefPolicy.requiresResolution, true);
-  assert.equal(attestation.metadata.approvalResolution.approved, true);
-  assert.equal(attestation.metadata.approvalResolution.approvalRef, 'something-else');
-  assert.equal(attestation.surface.claim.status, 'proposed');
-  assert.deepEqual(attestation.surface.claim.confidenceBasis, UNRESOLVED_CONFIDENCE);
 
   const readiness = runReadiness(rootDir);
   assert.deepEqual(readinessSummary(readiness), READY, readiness.result.stdout + readiness.result.stderr);
-  assert.match(attestation.surface.evidence.excerptOrSummary, DIFFERENT_REFERENCE_TEXT);
+  assert.equal(readiness.record.governance_state.recordIntegrity.status, 'verified');
   assert.match(governanceAttestationEvidence(readiness.record).excerptOrSummary, DIFFERENT_REFERENCE_TEXT);
   const { currency, artifacts } = projectedGovernanceClaims(readiness.record);
   assert.equal(currency.confidenceBasis.reviewerAuthority, 'none');
@@ -366,18 +374,39 @@ for (const citedRef of [
   });
 }
 
-test('a resolved mode refuses a record whose own approvalRef leads to a different record', (t) => {
-  const rootDir = initVeritasRepo(t, 'veritas-claim-strength-other-record-');
-  setApprovalRefPolicy(rootDir, { mode: 'resolved', allowed_prefixes: [] });
-  writeApprovalRecord(rootDir, 'chg-a', { approvalRef: 'veritas-approval:chg-b' });
-  writeApprovalRecord(rootDir, 'chg-b');
-  commitAll(rootDir, 'Resolve approval references');
+for (const { recordRef, reason } of [
+  { recordRef: 'veritas-approval:chg-b', reason: /records approvalRef "veritas-approval:chg-b", which leads to a different record\)/ },
+  { recordRef: 'file:../outside.json', reason: /records approvalRef "file:\.\.\/outside\.json", which is not a valid approval record reference: approval record path must stay inside/ },
+]) {
+  test(`a resolved mode refuses a record whose own approvalRef ${JSON.stringify(recordRef)} does not lead back to it`, (t) => {
+    const rootDir = initVeritasRepo(t, 'veritas-claim-strength-other-record-');
+    setApprovalRefPolicy(rootDir, { mode: 'resolved', allowed_prefixes: [] });
+    writeApprovalRecord(rootDir, 'chg-a', { approvalRef: recordRef });
+    writeApprovalRecord(rootDir, 'chg-b');
+    commitAll(rootDir, 'Resolve approval references');
 
-  const result = veritas(rootDir, ['attest', 'bootstrap', '--actor', 'alice', '--approval-ref', 'veritas-approval:chg-a', '--non-interactive']);
-  assert.notEqual(result.status, 0, result.stdout + result.stderr);
-  assert.match(
-    result.stderr,
-    /not accepted by resolver: out-of-scope \(approval record \.veritas\/authority\/approval-records\/chg-a\.approval\.json records approvalRef "veritas-approval:chg-b", which does not lead to that record\)/,
-  );
-  assert.equal(existsSync(join(rootDir, '.veritas/attestations/HEAD')), false);
-});
+    const result = veritas(rootDir, ['attest', 'bootstrap', '--actor', 'alice', '--approval-ref', 'veritas-approval:chg-a', '--non-interactive']);
+    assert.notEqual(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stderr, /not accepted by resolver: out-of-scope \(approval record \.veritas\/authority\/approval-records\/chg-a\.approval\.json /);
+    assert.match(result.stderr, reason);
+    assert.equal(existsSync(join(rootDir, '.veritas/attestations/HEAD')), false);
+  });
+}
+
+// An offline record may name the external ticket it mirrors. The citation
+// located the record, so it is the match, and the ticket stays visible.
+for (const citedRef of ['veritas-approval:chg-ext', 'file:.veritas/authority/approval-records/chg-ext.approval.json']) {
+  test(`a record naming an external approvalRef, cited as ${JSON.stringify(citedRef)}, keeps the strong verified claim`, (t) => {
+    const rootDir = initVeritasRepo(t, 'veritas-claim-strength-external-');
+    setApprovalRefPolicy(rootDir, { mode: 'resolved', allowed_prefixes: [] });
+    writeApprovalRecord(rootDir, 'chg-ext', { approvalRef: 'servicenow:CHG1' });
+    commitAll(rootDir, 'Resolve approval references');
+    const attestation = attestBootstrap(rootDir, citedRef);
+
+    assert.equal(attestation.metadata.approvalResolution.status, 'approved');
+    assert.equal(attestation.metadata.approvalResolution.approvalRef, citedRef);
+    assert.equal(attestation.metadata.approvalResolution.recordApprovalRef, 'servicenow:CHG1');
+    assert.equal(attestation.surface.claim.status, 'verified');
+    assert.deepEqual(attestation.surface.claim.confidenceBasis, RESOLVED_CONFIDENCE);
+  });
+}
