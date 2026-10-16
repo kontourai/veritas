@@ -216,8 +216,8 @@ global install. Two limits:
 - Inside a git submodule with its own `package.json`, or a worktree nested inside the main checkout
   with no install of its own, the hook now refuses where the earlier spelling ran the outer install.
 
-Codex on Windows runs hooks through PowerShell, so the Codex `PreToolUse` hook also carries the plain
-command as `commandWindows`.
+Codex on Windows runs hooks through PowerShell and carries a native `commandWindows` override;
+see [the Windows entry selection change](#windows-hooks-run-the-entry-they-validate).
 Files Veritas already wrote keep the earlier spelling until you refresh them:
 
 - `.githooks/post-commit`: run `npx --no @kontourai/veritas setup repo-hooks --force`. Without
@@ -259,8 +259,7 @@ runtime, Stop and Claude Code pre-edit shell scripts, now run the entry point of
 the install they found by path:
 `node <install>/node_modules/@kontourai/veritas/bin/veritas.mjs`. An install counts only when that
 file exists. When the walk finds no install, the commands run plain `npx --no @kontourai/veritas` as
-before, which also finds a global install. On Windows the Codex `commandWindows` override still runs
-plain `npx --no @kontourai/veritas`.
+before, which also finds a global install. The Windows override now uses the entry-selection policy described below.
 
 Hooks Veritas already wrote keep the earlier command until you refresh them:
 
@@ -290,8 +289,7 @@ Refresh existing root scripts through `setup repo-hooks --force` or the correspo
 `integrations claude-code install --force` / `integrations codex install --force` command.
 The generated POSIX scripts use the same bounded walk, preserve stdin and arguments, and run
 the selected local entry even when its `.bin/veritas` link is absent. Runtime invocation preserves
-the CLI exit status; Stop feedback remains nonblocking. The no-local-install npx fallback and
-native Windows override remain unchanged. Consumer-owned package scripts and copied CI snippets
+the CLI exit status; Stop feedback remains nonblocking. The POSIX no-local-install npx fallback remains unchanged. Consumer-owned package scripts and copied CI snippets
 are separate explicit package-manager invocations.
 
 ## The Governance Block Runs `npx --no @kontourai/veritas readiness`
@@ -570,3 +568,32 @@ If a consumer relied on `verified` attestation claims, configure
 `review_preferences.attestation_approval_ref_policy.mode: "resolved"` with offline approval records,
 as described in [Attestation](guides/attestation.md#offline-approval-records), or read
 `metadata.approvalRefPolicy` to tell the modes apart.
+
+## Windows Hooks Run the Entry They Validate
+
+The generated Codex `commandWindows` and the Governance Kit provision now run a
+Node launcher through PowerShell. It resolves the physical working directory and
+Git root, walks to that root using directory file identity, and runs the nearest
+existing `node_modules/@kontourai/veritas/bin/veritas.mjs` with that same Node.
+Missing bin links and foreign `veritas.cmd` or PATH binaries cannot substitute
+another executable. A broken nested package without its entry does not hide a
+valid root install. Directory spaces and junction aliases retain physical identity.
+
+With no repository entry, the launcher checks the scoped package's exact entry
+under `npm root --global`. Outside a Git repository it checks only the current
+directory before that global location. If neither exists it exits 2 with an
+installation remedy; it never downloads a package or invokes a generic PATH
+`veritas`. This narrows the previous plain-npx fallback: npm's search beyond the
+Git boundary and unrelated PATH executables no longer qualify Windows hooks.
+
+Run `npx --no @kontourai/veritas integrations codex install --force` with your
+original hooks-file option to refresh an installed override. Integration status
+compares the override as well as its POSIX command, so it asks for reinstall until
+then. A Git-installed Governance Kit needs reprovisioning with the updated source;
+source availability does not mean the npm package or a live consumer was upgraded.
+
+`tests/windows-hook-entry.test.mjs` executes the actual generated command under
+Windows PowerShell, including nearest/root selection, missing bin links, foreign
+PATH refusal, stdin and exit status, junctions, and explicit scoped-global lookup.
+Those cases skip on other platforms. Their source presence is not Windows runtime
+evidence; delivery receipts name the Windows host and revision actually executed.
