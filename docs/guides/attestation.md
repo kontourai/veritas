@@ -37,7 +37,7 @@ A resolver receives:
 A resolver returns a normalized result with:
 
 - `status`: `approved`, `rejected`, `unresolved`, `expired`, `out-of-scope`, or `error`
-- `approvalRef`: the reference the result is for; required, and under a `resolved` mode it must equal the cited reference
+- `approvalRef`: the reference the result is for; under a `resolved` mode it is required and must equal the cited reference
 - provider and authority reference
 - approver identity and approval timestamp when available
 - expiry, scope, and evidence hash when available

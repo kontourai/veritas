@@ -529,10 +529,12 @@ that identifier as `recordApprovalRef`. The refusal message now ends with the re
 parentheses.
 
 Earlier releases stored the record's own `approvalRef` in `metadata.approvalResolution.approvalRef`.
-So a resolved-mode attestation that cited its approval record by a `file:` path, where the record's
-`approvalRef` was something else (`veritas-approval:<id>` or an external identifier such as
-`servicenow:CHG1`), now reads as `resolved, but for a different reference` and is no longer
-authority-backed. Readiness still passes. Record a fresh `policy-change` attestation under a
+So any resolved-mode attestation whose cited reference, once trimmed, was not exactly the record's
+own `approvalRef` now reads as `resolved, but for a different reference` and is no longer
+authority-backed. That includes a `file:` citation of a record, a `veritas-approval:<id>` citation
+of a record that names an external ticket such as `servicenow:CHG1`, and a differently spelled id
+such as `veritas-approval: chg-123`. The stored resolution does not record which file was read, so
+Veritas cannot confirm it was the same record. Readiness still passes. Record a fresh `policy-change` attestation under a
 `resolved` mode to make the active attestation authority-backed again.
 
 Existing attestation records are immutable and keep the `surface` values they were written with,

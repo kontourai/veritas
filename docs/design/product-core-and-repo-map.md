@@ -24,7 +24,6 @@ AI systems lose focus when they cannot tell:
 - what boundaries are real
 - which evidenceChecks matter
 - whether a requirement is guidance or mandatory
-- who or what can verify an exception
 
 Veritas makes those concepts explicit.
 
