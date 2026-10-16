@@ -32,7 +32,7 @@ try {
   if (!entry) {
     const npm = path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js");
     if (file(npm)) {
-      const global = spawnSync(process.execPath, [npm, "root", "--global"], { encoding: "utf8", windowsHide: true, timeout: 5000 });
+      const global = spawnSync(process.execPath, [npm, "root", "--global", "--offline", "--no-update-notifier"], { encoding: "utf8", windowsHide: true, timeout: 5000 });
       if (global.status === 0 && global.stdout.trim()) {
         const candidate = path.join(global.stdout.trim(), "@kontourai", "veritas", "bin", "veritas.mjs");
         if (file(candidate)) entry = candidate;
@@ -55,5 +55,5 @@ try {
 
 export function windowsInstalledVeritasCommand(args) {
   const encoded = Buffer.from(WINDOWS_LAUNCHER).toString('base64');
-  return `node -e "eval(Buffer.from('${encoded}','base64').toString())" ${args}; exit $LASTEXITCODE`;
+  return `& { $ErrorActionPreference = 'Stop'; try { node -e "eval(Buffer.from('${encoded}','base64').toString())" ${args}; exit $LASTEXITCODE } catch { [Console]::Error.WriteLine($_.Exception.Message); exit 2 } }`;
 }

@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { buildSuggestedCodexHookConfig } from '../src/integrations/codex-hooks.mjs';
-import { cleanGitEnv, execGitFixture, initCommittedRepo } from './helpers.mjs';
+import { applyCodexHook, writeBootstrapStarterKit } from '../src/index.mjs';
+import { cleanGitEnv, execGitFixture, initCommittedRepo, repoRootDir } from './helpers.mjs';
 import { tempDir } from './temp-dir.mjs';
 
 const native = { skip: process.platform !== 'win32' };
@@ -18,7 +19,7 @@ function install(root, name, exitCode = 0) {
 
 function fixture(t) {
   const parent = initCommittedRepo(t, 'veritas windows entry ');
-  const root = join(parent, 'repo with spaces');
+  const root = join(parent, "repo with spaces and 'quote");
   mkdirSync(root);
   execGitFixture(['init', '-b', 'main'], { cwd: root });
   writeFileSync(join(root, 'package.json'), '{"name":"consumer","version":"1.0.0"}\n');
@@ -30,17 +31,18 @@ function fixture(t) {
   const script = join(root, 'run-hook.ps1');
   writeFileSync(script, buildSuggestedCodexHookConfig().hooks.PreToolUse[0].hooks[0].commandWindows);
   const env = { ...cleanGitEnv(), PATH: `${foreignBin};${process.env.PATH}`, npm_config_prefix: join(foreignBin, 'global'), npm_config_offline: 'true' };
-  const run = (cwd, overrides = {}) => spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script], {
-    cwd, env: { ...env, ...overrides }, input: '{"tool_name":"Edit","tool_input":{"file_path":"file with spaces.md"}}',
+  const powershell = process.env.VERITAS_TEST_POWERSHELL || join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  const run = (cwd, overrides = {}, input = '{"tool_name":"Edit","tool_input":{"file_path":"file with spaces.md"}}') => spawnSync(powershell, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', script], {
+    cwd, env: { ...env, ...overrides }, input,
     encoding: 'utf8', windowsHide: true, timeout: 20_000,
   });
-  return { root, nested, run, marker, foreignBin };
+  return { root, nested, run, marker, foreignBin, script };
 }
 
 test('native Windows generated hook runs the nearest validated entry with stdin and exact exit status', native, (t) => {
   const { root, nested, run, marker } = fixture(t);
   install(root, 'root', 7);
-  for (const cwd of [root, nested]) {
+  for (const cwd of [root, nested, root.toUpperCase()]) {
     const result = run(cwd);
     assert.equal(result.status, 7, result.stderr);
     const output = JSON.parse(result.stdout.trim());
@@ -51,6 +53,40 @@ test('native Windows generated hook runs the nearest validated entry with stdin 
   install(nested, 'nested');
   assert.equal(JSON.parse(run(nested).stdout.trim()).install, 'nested');
   assert.equal(existsSync(marker), false);
+});
+
+test('native Windows refuses before editing when Node is unavailable', native, (t) => {
+  const { root, run } = fixture(t);
+  const result = run(root, { PATH: join(process.env.SystemRoot, 'System32') });
+  assert.equal(result.status, 2, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stderr, /node/);
+});
+
+test('native Windows refuses a repository install when GIT_WORK_TREE names an unrelated directory', native, (t) => {
+  const { root, nested, run, marker } = fixture(t);
+  install(root, 'must-not-run');
+  const other = initCommittedRepo(t, 'veritas-unrelated-root-');
+  const result = run(nested, { GIT_DIR: join(other, '.git'), GIT_WORK_TREE: other });
+  assert.equal(result.status, 2, `${result.stdout}\n${result.stderr}`);
+  assert.equal(existsSync(marker), false);
+});
+
+test('native Windows installed hook forwards real Veritas guidance and denies an invalid edit', native, (t) => {
+  const { root, nested, run, script } = fixture(t);
+  writeBootstrapStarterKit({ rootDir: root, projectName: 'Windows hook', evidenceCheck: 'node --version', force: true });
+  const scope = join(root, 'node_modules', '@kontourai');
+  mkdirSync(scope, { recursive: true });
+  symlinkSync(repoRootDir, join(scope, 'veritas'), 'junction');
+  const hooks = join(root, '.codex', 'hooks.json');
+  applyCodexHook({ rootDir: root, targetHooksFile: hooks });
+  const installed = JSON.parse(readFileSync(hooks, 'utf8')).hooks.PreToolUse[0].hooks[0];
+  writeFileSync(script, installed.commandWindows);
+  const allowed = run(nested, {}, JSON.stringify({ cwd: nested, tool_name: 'Edit', tool_input: { file_path: 'README.md' } }));
+  assert.equal(allowed.status, 0, `${allowed.stdout}\n${allowed.stderr}`);
+  assert.equal(JSON.parse(allowed.stdout).hookSpecificOutput.hookEventName, 'PreToolUse');
+  const denied = run(nested, {}, JSON.stringify({ cwd: nested, tool_name: 'apply_patch', tool_input: { command: '*** Begin Patch\n*** End Patch' } }));
+  assert.equal(denied.status, 2, `${denied.stdout}\n${denied.stderr}`);
+  assert.equal(JSON.parse(denied.stdout).hookSpecificOutput.permissionDecision, 'deny');
 });
 
 test('native Windows skips an incomplete nested package and resolves a junction by physical repository identity', native, (t) => {

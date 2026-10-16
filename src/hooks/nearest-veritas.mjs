@@ -44,4 +44,3 @@ export function nearestInstalledVeritasCommand(args, { allowDiscoveryFailure = f
     + `if [ -n "$VERITAS_BIN" ]; then node "$VERITAS_BIN" ${args}; `
     + `else npx --no @kontourai/veritas ${args}; fi`;
 }
-
