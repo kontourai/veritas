@@ -93,7 +93,9 @@
       "section": "Guides",
       "covers": [
         "src/hooks/suggestions.mjs",
-        "src/hooks/nearest-veritas.mjs"
+        "src/hooks/nearest-veritas.mjs",
+        "src/hooks/windows-veritas.mjs",
+        "src/integrations/codex-hooks.mjs"
       ]
     },
     {

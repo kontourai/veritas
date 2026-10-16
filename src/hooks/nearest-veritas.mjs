@@ -28,8 +28,8 @@
 // it is "/" (an empty result means "/"). Unlike dirname, that forks nothing per level and cannot
 // fail on a path longer than the platform's limit.
 //
-// POSIX sh with `test -ef`, which dash, bash, zsh and busybox support. Codex on Windows runs hook
-// commands through PowerShell, so the Codex config also carries the plain command as commandWindows.
+// POSIX sh with `test -ef`, which dash, bash, zsh and busybox support. The Windows
+// command uses the separate physical-path launcher in windows-veritas.mjs.
 export const INSTALLED_VERITAS_ENTRY = 'node_modules/@kontourai/veritas/bin/veritas.mjs';
 
 export function nearestInstalledVeritasCommand(args, { allowDiscoveryFailure = false } = {}) {
@@ -43,9 +43,4 @@ export function nearestInstalledVeritasCommand(args, { allowDiscoveryFailure = f
     + 'VERITAS_DIR="${VERITAS_DIR%/*}"; [ -n "$VERITAS_DIR" ] || VERITAS_DIR=/; done; '
     + `if [ -n "$VERITAS_BIN" ]; then node "$VERITAS_BIN" ${args}; `
     + `else npx --no @kontourai/veritas ${args}; fi`;
-}
-
-// The same invocation without the walk, for runtimes that do not run hooks through a POSIX shell.
-export function plainVeritasCommand(args) {
-  return `npx --no @kontourai/veritas ${args}`;
 }
