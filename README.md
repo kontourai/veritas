@@ -87,7 +87,7 @@ gate sequence.
 
 - **Executable repo standards** — requirements for tests, docs, protected files, shared contracts, release checks, security scans, and team-specific expectations.
 - **Merge readiness** — a per-change outcome that says whether the current change has enough fresh evidence to merge under the repo standards.
-- **Readiness coverage** — the evidence state behind that outcome: satisfied, missing, stale, failing, advisory, recheckable, or accepted by exception.
+- **Readiness coverage** — the evidence state behind that outcome: satisfied, missing, stale, failing, advisory, or recheckable.
 - **Change boundaries** — work areas, protected areas, and boundary crossings that add coordination, evidence, or authority requirements when shared code is touched.
 - **Change guidance** — just-in-time instructions for developers and agents so repo knowledge does not disappear during long AI sessions.
 - **Protected standards** — stronger authority requirements for changes that alter the repo standards, repo map, or verification authorities.
@@ -150,12 +150,12 @@ That is the point: the agent gets the missing requirement before it declares don
 
 - **Repo Standards** define what good looks like for the repository.
 - **Repo Map** defines work areas, change boundaries, protected areas, ownership context, and dependency relationships.
-- **Requirement** is the unit of what must be satisfied, evidenced, or accepted by exception.
+- **Requirement** is the unit of what must be satisfied or evidenced.
 - **Evidence Check** is a runnable or inspectable check that produces evidence.
 - **Verification Authority** is who or what is trusted to verify a requirement.
-- **Attestation** is authority-backed evidence that something was verified, accepted, approved, or reviewed.
-- **Exception** is an authority-backed decision to accept an unmet or failing requirement for a specific change.
-- **Readiness Report** explains merge readiness, readiness coverage, boundary crossings, evidence freshness, recheck options, exceptions, and change guidance.
+- **Attestation** is a recorded assertion, citing a human approval reference, that something was verified, accepted, approved, or reviewed. It is authority-backed only when that reference was resolved to an approved result under a `resolved` approval mode; the default mode records the reference without checking it.
+- **Exception** is a recorded decision to accept an unmet or failing requirement for a specific change.
+- **Readiness Report** explains merge readiness, readiness coverage, boundary crossings, evidence freshness, recheck options, and change guidance.
 
 ## Documentation
 

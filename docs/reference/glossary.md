@@ -15,20 +15,21 @@ Veritas is the product for repo and AI-agent governance. Surface is the transpar
 | **Change Boundary** | A coordination or risk threshold around a work area. Crossing it can add evidence, guidance, authority, or coordination requirements. |
 | **Boundary Crossing** | A change that touches a work area outside the expected scope, authority, or dependency path for the current work. |
 | **Protected Area** | A high-risk work area where changes require stronger authority or evidence. |
-| **Requirement** | A condition in the repo standards that must be satisfied, evidenced, or accepted by exception. |
+| **Requirement** | A condition in the repo standards that must be satisfied or evidenced. |
 | **Requirement Applicability** | The condition that determines when a requirement matters for a change, repo state, release, recurring interval, work area, or boundary crossing. |
 | **Enforcement Level** | How strongly Veritas applies a requirement: Observe, Guide, or Require. |
 | **Observe** | Records evidence and outcomes without guiding or blocking work. |
 | **Guide** | Gives just-in-time correction or review feedback without by itself preventing merge readiness. |
-| **Require** | Requires fresh evidence or authority-backed exception before merge readiness or repo conformance is complete. |
+| **Require** | Requires fresh evidence before merge readiness or repo conformance is complete. |
 | **Evidence** | A traceable result, observation, artifact, attestation, or record that supports, challenges, or qualifies a requirement. |
 | **Evidence Check** | A runnable or inspectable check that produces evidence for one or more requirements. |
 | **Evidence Freshness** | Whether evidence still applies to the current change, including commit, diff, files, standards version, authority state, dependencies, and time policy. |
 | **Recheck** | An action that verifies evidence, authority, freshness, or integrity again for the current change. |
 | **Verification Authority** | A person, system, tool, environment, or policy source trusted to verify a specific requirement. |
 | **Authority Evidence** | Evidence explaining why a verification authority was allowed to count for a requirement. |
-| **Attestation** | Evidence from a verification authority asserting that something was verified, accepted, approved, or reviewed. Every attestation may carry an `authorizing` block (collection provenance) recording how the act was authorized: `explicit-statement` (standalone named act), `exchange` (prompt/response pair from a delegated approval conversation), or `authorized-action` (UI-driven control action with prompt ref, rendered prompt, action type, and authority ref). Old records without an `authorizing` block remain valid. |
-| **Exception** | An authority-backed decision to accept an unmet or failing requirement for a specific change. |
+| **Attestation** | A recorded assertion, made by a named actor citing an approval reference, that something was verified, accepted, approved, or reviewed. Every attestation may carry an `authorizing` block (collection provenance) recording how the act was authorized: `explicit-statement` (standalone named act), `exchange` (prompt/response pair from a delegated approval conversation), or `authorized-action` (UI-driven control action with prompt ref, rendered prompt, action type, and authority ref). Old records without an `authorizing` block remain valid. |
+| **Authority-backed** | An attestation whose approval reference was resolved to an approved result for that reference. Veritas checks three things: (1) it was written under the `resolved` or `resolved-strict` approval mode, which refuses to write unless the resolver result is approved and unexpired (the CLI resolves only through offline approval records; a resolver result passed programmatically to `createAttestation` is trusted as given); (2) its recorded resolver result (`metadata.approvalResolution`) is approved and is for the same reference the attestation cites (`metadata.approvalResolution.approvalRef` equals `metadata.approvalRef`); and (3) when a stored record is read later, its record integrity is `verified`, so the approval metadata is bound to it. An unbound record, written before record integrity or with `recordIntegrity` deleted, is never authority-backed. In the default `reference-only` mode, and in `prefix` mode, an attestation is a recorded attestation with an unverified approval reference. |
+| **Exception** | A recorded decision to accept an unmet or failing requirement for a specific change. Only the pre-tool-use hook records exceptions, in `.kontourai/veritas/standards-feedback/exceptions.jsonl`: a `rule-exception` record when `VERITAS_EXCEPTION_RULE` and `VERITAS_EXCEPTION_REASON` name the rule that blocked an edit and the hook lets the edit through, and a `hook-skip` record when `VERITAS_HOOK_SKIP=1` skips the hook's evaluation. Veritas does not resolve any authority behind an exception, and readiness does not read exceptions. |
 | **Change Guidance** | Just-in-time instructions for a developer or agent when a requirement, work area, boundary, or evidence result matters. |
 | **Merge Readiness** | The per-change trust state that says whether a change has enough current evidence to merge under the repo standards. |
 | **Readiness Report** | The human- and agent-facing report that explains a change's merge readiness. |
@@ -57,7 +58,7 @@ Veritas emits Surface-format trust state as a producer. The mapping is intention
 | Verification Authority | Authority trace, policy context, or verifier metadata |
 | Attestation | Evidence with authority and integrity context |
 | Evidence Freshness | Freshness, Changed Since Verified, or Expired Verification |
-| Exception | Authority-backed evidence plus metadata explaining the accepted unmet requirement |
+| Exception | Not projected; recorded only in `exceptions.jsonl` for standards feedback |
 | Merge Readiness | Domain validity claim or trust snapshot summary emitted by Veritas |
 | Readiness Coverage | Claims, evidence, gaps, conflicts, and freshness outcomes |
 | Repo Conformance | Standing claims and evidence about repo-wide requirements |

@@ -127,7 +127,7 @@ Use the enforcement ladder:
 
 - **Observe**: collect evidence and learn what matters.
 - **Guide**: give developers and agents just-in-time correction.
-- **Require**: require fresh evidence or an authority-backed exception before merge readiness is complete.
+- **Require**: require fresh evidence before merge readiness is complete.
 
 Start in Observe or Guide. Promote requirements only when the evidence says they are useful.
 
@@ -137,7 +137,7 @@ Veritas creates a better contract between AI and humans.
 
 - **For agents:** less ambiguity and more precise correction.
 - **For developers:** repo standards appear at the point of work.
-- **For reviewers:** a readiness report narrows review to evidence, exceptions, and risky boundaries.
+- **For reviewers:** a readiness report narrows review to evidence and risky boundaries.
 - **For the organization:** humans review the standards and exceptions instead of manually rediscovering the same expectations in every diff.
 
 The point is not only to make agents faster. The point is to make more changes trustworthy enough for reduced human review.

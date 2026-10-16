@@ -21,7 +21,7 @@ The product has four jobs:
 
 ## Requirements
 
-A **Requirement** is a condition in the repo standards that must be satisfied, evidenced, or explicitly accepted by exception for a change to earn merge readiness.
+A **Requirement** is a condition in the repo standards that must be satisfied or evidenced for a change to earn merge readiness.
 
 Requirements can be triggered by:
 
@@ -38,7 +38,7 @@ The implementation uses the following requirement kinds (from `veritas-repo-stan
 | Kind | What it checks | Example |
 | --- | --- | --- |
 | `required-artifacts` | Named files or directories must exist in the repo | `AGENTS.md`, `.veritas/repo-standards/` |
-| `governance-block` | Commits that change protected areas must carry governance metadata | PR modifies `.veritas/` without an authority-backed attestation |
+| `governance-block` | Commits that change protected areas must carry governance metadata | PR modifies `.veritas/` without a fresh attestation |
 | `diff-required` | Changing one path must be accompanied by a change to another | Edit `app/api/**` → require `tests/api/**` |
 | `forbidden-pattern` | Files must not contain a given text pattern | No hardcoded API keys in source |
 | `required-pattern` | Files must contain a given text pattern | Every service entrypoint must declare a version header |
@@ -73,9 +73,9 @@ A **Verification Authority** is a person, system, tool, environment, or policy s
 
 **Authority Evidence** explains why a verification authority was allowed to count. Examples include protected CI context, scanner version and configuration, owner identity, team membership, standards-file hash, or signed approval metadata.
 
-An **Attestation** is evidence from a verification authority asserting that something was verified, accepted, approved, or reviewed. Attestations should identify the authority, subject, integrity scope, and any validity window that affects merge readiness.
+An **Attestation** is a recorded assertion, made by a named actor citing an approval reference, that something was verified, accepted, approved, or reviewed. Attestations should identify the authority, subject, integrity scope, and any validity window that affects merge readiness. An attestation is authority-backed only when its approval reference was resolved to an approved result under a `resolved` approval mode; in the default `reference-only` mode it is a recorded attestation with an unverified approval reference.
 
-An **Exception** is a decision to accept an unmet or failing requirement for a specific change. Exceptions affect merge readiness only when backed by an attestation from a valid verification authority.
+An **Exception** is a recorded decision to accept an unmet or failing requirement for a specific change. Only the pre-tool-use hook records exceptions, in `.kontourai/veritas/standards-feedback/exceptions.jsonl`: a `rule-exception` record when `VERITAS_EXCEPTION_RULE` and `VERITAS_EXCEPTION_REASON` name the rule that blocked an edit and the hook lets the edit through, and a `hook-skip` record when `VERITAS_HOOK_SKIP=1` skips the hook's evaluation. Veritas does not resolve any authority behind an exception, and readiness does not read exceptions.
 
 ## Boundaries
 
@@ -98,11 +98,10 @@ It should show:
 - boundary crossings
 - evidence freshness
 - missing or failing evidence
-- exceptions
 - recheck options
 - change guidance
 
-**Readiness Coverage** is the current evidence state for the requirements that apply to a specific change. It explains which requirements are satisfied, missing, stale, failing, advisory, recheckable, or accepted by exception.
+**Readiness Coverage** is the current evidence state for the requirements that apply to a specific change. It explains which requirements are satisfied, missing, stale, failing, advisory, or recheckable.
 
 The current CLI uses `veritas readiness --working-tree` as the primary user-facing command for readiness reports.
 
@@ -116,7 +115,6 @@ Good change guidance explains:
 - what not to do
 - why it matters
 - what evidence will satisfy the requirement
-- which authority can accept an exception
 
 This is how repo standards survive long AI sessions, compaction, and context drift without becoming a static documentation dump.
 
@@ -126,7 +124,7 @@ Requirements have an **Enforcement Level**:
 
 - **Observe** records evidence and outcomes without guiding or blocking work.
 - **Guide** gives just-in-time correction or review feedback, but does not by itself prevent merge readiness.
-- **Require** means the requirement must be satisfied by fresh evidence or accepted by authority-backed exception before merge readiness or repo conformance is complete.
+- **Require** means the requirement must be satisfied by fresh evidence before merge readiness or repo conformance is complete.
 
 Current schema references may use lower-level enforcement fields. Treat those as implementation details unless a page is documenting exact schema fields.
 

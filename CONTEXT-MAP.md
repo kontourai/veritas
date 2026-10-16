@@ -8,7 +8,7 @@ Veritas has one product context and a few focused subcontexts. The root context 
 - [Merge Readiness](./src/readiness/CONTEXT.md) - change-level readiness runs and the evidence-backed state they coordinate.
 - [Surface Projection](./src/surface/CONTEXT.md) - the Built with Surface projection that makes Veritas readiness state portable.
 - [Standards Feedback](./src/standards-feedback/CONTEXT.md) - observed evidence about whether repo standards are helping and how recommendations are formed.
-- [Protected Standards Authority](./src/attestations/CONTEXT.md) - authority-backed attestations for protected standards and governance drift.
+- [Protected Standards Authority](./src/attestations/CONTEXT.md) - attestations, their approval references, and governance drift for protected standards.
 
 ## Relationships
 

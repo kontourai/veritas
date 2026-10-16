@@ -492,3 +492,81 @@ with a longer `--valid-until-days`.
 A repository with no attestation, or with only the `.veritas/attestations/PENDING` marker, is
 unchanged: readiness reports a `WARN` and does not block until the bootstrap attestation is
 recorded.
+
+## Attestation Claims Reflect Whether the Approval Was Resolved
+
+New attestation records no longer present an unchecked approval reference as verified human
+approval. In the default `reference-only` mode, and in `prefix` mode, Veritas records the
+`--approval-ref` value without checking it, and the record's `surface` projection now says so:
+
+| Field | `reference-only` or `prefix` mode | `resolved` or `resolved-strict` mode |
+| --- | --- | --- |
+| `surface.claim.status` | `proposed` (was `verified`) | `verified` (unchanged) |
+| `surface.claim.confidenceBasis.sourceQuality` | `weak` (was `strong`) | `strong` |
+| `surface.claim.confidenceBasis.reviewerAuthority` | `none` (was `human`) | `human` |
+| `surface.claim.confidenceBasis.evidenceStrength` | `weak` (was `strong`) | `strong` |
+| `surface.event.status` and `id` suffix | `proposed`, no `verifiedAt` | `verified`, with `verifiedAt` |
+| `surface.evidence.excerptOrSummary` without `--message` | says the reference was not resolved | `Authority-backed <kind> attestation ...` |
+
+The strong values need a `resolved` mode and a recorded resolver result that is approved and is
+for the cited reference: `metadata.approvalResolution.approvalRef` must equal `metadata.approvalRef`.
+An approved result passed to `createAttestation` under `reference-only` mode is recorded but never
+checked, and a result for a different reference does not back the cited one. A result passed to
+`createAttestation` under a `resolved` mode is trusted as given: Veritas checks its status, expiry
+and reference, not where it came from. A `resolved` mode now refuses a passed-in result whose
+`approvalRef` differs from the attested reference, or that has none, where earlier releases wrote
+the attestation.
+
+The offline resolver now checks that an approval record answers the reference that cites it, and
+reports the cited reference in `metadata.approvalResolution.approvalRef` (earlier releases reported
+the record's own `approvalRef`). When the record's `approvalRef` is a `veritas-approval:` or `file:`
+reference, it must lead to the same record file as the cited reference, so `veritas-approval:<id>`,
+`file:` and `file:./` spellings of one record all match. A record whose offline `approvalRef` leads
+to a different record, or is not a valid reference, now resolves as `out-of-scope`, so a `resolved`
+mode refuses the attestation, where earlier releases accepted it. A record whose `approvalRef` is an
+external identifier, such as `servicenow:CHG1`, is still accepted, and the stored resolution keeps
+that identifier as `recordApprovalRef`. The refusal message now ends with the resolver's reason in
+parentheses.
+
+Attestations written by any released version carry no record integrity, so they are not
+authority-backed for that reason first (see below). Earlier builds also stored the record's own
+`approvalRef` in `metadata.approvalResolution.approvalRef`, not the cited reference. So an
+integrity-bound resolved-mode attestation written before this change, whose cited reference was not
+exactly the record's own `approvalRef`, reads as `resolved, but for a different reference`. Examples
+are a `file:` citation, a citation of a record that names an external ticket such as
+`servicenow:CHG1`, and a differently spelled id such as `veritas-approval: chg-123`. The stored
+resolution does not record which file was read, so Veritas cannot confirm it was the same record.
+In every case readiness still passes, and recording a fresh `policy-change` attestation under a
+`resolved` mode makes the active attestation authority-backed again.
+
+Existing attestation records are immutable and keep the `surface` values they were written with,
+so a reference-only record written before this release still stores a `verified` claim.
+
+Readiness reads the active record's `metadata.approvalRef`, `metadata.approvalRefPolicy` and
+`metadata.approvalResolution`, and counts them only when its record integrity is `verified`. An
+unbound record is never authority-backed: nothing binds its metadata, and deleting
+`recordIntegrity` from a bound record also makes it unbound, so accepting unbound records would let
+an edit upgrade any attestation. This includes resolved-mode attestations recorded before record
+integrity existed. Record a fresh `policy-change` attestation under a `resolved` mode to make the
+active attestation authority-backed again. In the readiness trust bundle, the governance
+attestation evidence summary and event notes say `Attestation currency is <status> ...; the
+attestation is not authority-backed because <reason>.` instead of `Authority-backed attestation
+currency is <status> ...` whenever the active attestation is not authority-backed.
+
+The exported `buildGovernanceArtifactClaims` API, which readiness does not call, applies the same
+rule. For an attestation that is not authority-backed it gives the attestation-currency claim
+`sourceQuality: weak`, `reviewerAuthority: none`, `evidenceStrength: weak`, and gives each
+protected-artifact claim `reviewerAuthority: none` instead of `authority`.
+
+Claim statuses in the readiness trust bundle and readiness verdicts do not change.
+`policy-changes-require-attestation` checks the attestation's hashes and validity window, not its
+approval reference.
+
+The requirement's `message` text also drops "authority-backed": `Protected standards changes
+require a fresh attestation.`, `No attestation has activated the protected standards yet.`, and
+`Protected standards require an attestation whose validity window has not expired.`
+
+If a consumer relied on `verified` attestation claims, configure
+`review_preferences.attestation_approval_ref_policy.mode: "resolved"` with offline approval records,
+as described in [Attestation](guides/attestation.md#offline-approval-records), or read
+`metadata.approvalRefPolicy` to tell the modes apart.

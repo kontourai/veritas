@@ -20,7 +20,7 @@ Use Veritas when you want to:
 
 Veritas may emit Surface-format trust state underneath, but that is an implementation and interoperability detail for normal repo governance workflows.
 
-In readiness reports, merge readiness can be explained as a verdict that comes from the evaluated requirements, evidenceChecks, attestations, exceptions, and evidence freshness for the change. If a blocking Requirement is rejected, stale, or disputed, the readiness verdict should reflect that weaker underlying result rather than stand as an unrelated status.
+In readiness reports, merge readiness can be explained as a verdict that comes from the evaluated requirements, evidenceChecks, attestations, and evidence freshness for the change. If a blocking Requirement is rejected, stale, or disputed, the readiness verdict should reflect that weaker underlying result rather than stand as an unrelated status.
 
 ## Use Surface For Product Transparency
 
@@ -53,7 +53,7 @@ Surface owns portable transparency primitives:
 - transparency gaps
 - trust snapshots and reports
 
-At the boundary, Veritas acts as a Surface producer. It turns requirement evaluations, evidenceChecks, attestations, exceptions, and readiness outcomes into Surface-format claims and evidence. Surface can then derive status, freshness, conflicts, and gaps without importing Veritas readiness runtime code.
+At the boundary, Veritas acts as a Surface producer. It turns requirement evaluations, evidenceChecks, attestations, and readiness outcomes into Surface-format claims and evidence. Surface can then derive status, freshness, conflicts, and gaps without importing Veritas readiness runtime code.
 
 The detailed concept mapping lives in [Surface-Veritas Boundary](architecture/surface-veritas-boundary.md).
 

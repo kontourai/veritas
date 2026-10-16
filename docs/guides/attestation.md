@@ -1,6 +1,6 @@
 # Attestation
 
-An attestation is authority-backed evidence that something was verified, accepted, approved, or reviewed.
+An attestation is a recorded assertion, citing a human approval reference, that something was verified, accepted, approved, or reviewed. It is authority-backed only when that reference was resolved to an approved result for it, which happens only in the `resolved` modes described below. In the default `reference-only` mode it is a recorded attestation with an unverified approval reference.
 
 In Veritas, attestations protect the parts of the repo standards and repo map that define what good looks like, where boundaries are, and who or what can verify requirements. The goal is not to make humans approve every routine change. The goal is to keep the definition of good from changing without trusted authority.
 
@@ -37,6 +37,7 @@ A resolver receives:
 A resolver returns a normalized result with:
 
 - `status`: `approved`, `rejected`, `unresolved`, `expired`, `out-of-scope`, or `error`
+- `approvalRef`: the reference the result is for; under a `resolved` mode it is required and must equal the cited reference
 - provider and authority reference
 - approver identity and approval timestamp when available
 - expiry, scope, and evidence hash when available
@@ -80,7 +81,7 @@ Example record:
 }
 ```
 
-When authority settings use `mode: "resolved"` or `mode: "resolved-strict"`, Veritas blocks attestation writes unless the approval ref resolves to an approved, unexpired, in-scope record. Failed resolution happens before attestation files are written. Recommendation acceptance uses the same approval path before applying standards changes.
+When authority settings use `mode: "resolved"` or `mode: "resolved-strict"`, Veritas blocks attestation writes unless the approval ref resolves to an approved, unexpired, in-scope record whose own `approvalRef`, when it is a `veritas-approval:` or `file:` reference, leads back to that record. Failed resolution happens before attestation files are written. Recommendation acceptance uses the same approval path before applying standards changes.
 
 The current implementation records hashes for the files that hold protected standards state:
 
@@ -163,8 +164,23 @@ An attestation is not:
 - required for every routine merge
 - the same thing as an exception
 
-An **Exception** is an authority-backed decision to accept an unmet or failing requirement for a specific change. An attestation is the evidence form that can support that decision.
+An **Exception** is a recorded decision to accept an unmet or failing requirement for a specific change. Only the pre-tool-use hook records exceptions, and readiness does not read them. Veritas records an exception's actor and reason but does not resolve any authority behind it, and does not link exceptions to attestations.
 
 ## Built With Surface
 
 Veritas projects attestation evidence into Surface-format trust state so freshness, integrity, and authority gaps can be inspected. Veritas users should still think in Veritas terms: protected standards, verification authorities, attestations, and readiness reports.
+
+Each attestation record carries a `surface` claim, its evidence, and a verification event. The claim is only as strong as the approval check that ran:
+
+| Approval check when the record was written | Claim and event status | `confidenceBasis` |
+| --- | --- | --- |
+| `resolved` or `resolved-strict` mode resolved the reference to an approved record for that same reference | `verified` | `sourceQuality: strong`, `reviewerAuthority: human`, `evidenceStrength: strong` |
+| `reference-only` or `prefix` mode recorded the reference without checking it | `proposed` | `sourceQuality: weak`, `reviewerAuthority: none`, `evidenceStrength: weak` |
+
+`proposed` is the status Surface derives for evidence that no verification backs. Records written before this rule existed are immutable and keep the `verified` claim they were written with, even in `reference-only` mode, so a consumer reading their stored `surface` still sees verified human approval; check `metadata.approvalRefPolicy` for those.
+
+The resolver result must be for the reference the attestation cites. The offline resolver accepts a record only when the record's own `approvalRef` leads to the same record file as the cited reference, so `veritas-approval:chg-123`, `file:.veritas/authority/approval-records/chg-123.approval.json`, and `file:./.veritas/authority/approval-records/chg-123.approval.json` all match the example record above. It refuses, as `out-of-scope`, a record whose `approvalRef` is a `veritas-approval:` or `file:` reference that leads to a different record or is not valid. A record whose `approvalRef` is an external identifier, such as the `servicenow:CHG1` ticket it mirrors, is accepted, because the cited reference located it; the stored resolution keeps that identifier as `recordApprovalRef`. A resolver result passed programmatically as `approvalResolverResult` to `createAttestation` is trusted as given: Veritas checks its status, expiry, and reference, not where it came from. Under a `resolved` mode, Veritas refuses a result for a different reference, or one with none.
+
+When readiness reads the active attestation, it also requires record integrity to be `verified`. The trust bundle's attestation evidence says whether the active attestation is authority-backed and, if not, why: its reference was not resolved, or its record is unbound or tampered, so its approval metadata could have been edited. The exported `buildGovernanceArtifactClaims` API applies the same rule and gives the claims it builds the weaker confidence basis when the attestation is not authority-backed.
+
+This does not change readiness. The `policy-changes-require-attestation` requirement checks the active attestation's protected standards hashes and validity window, not how its approval reference was checked, so it gives the same result in every approval mode. To require a resolved approval, use a `resolved` mode.

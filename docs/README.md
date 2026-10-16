@@ -15,7 +15,7 @@ Find what you need by what you're trying to do.
 - [Getting Started](guides/getting-started.md) for installation and first run
 - [Start Your Next Project](guides/start-your-next-project.md) for greenfield repos
 - [Brownfield Adoption](guides/brownfield-adoption.md) for existing repos with custom standards or verification
-- [Human Attestation](guides/attestation.md) for authority-backed protection of standards changes
+- [Human Attestation](guides/attestation.md) for attesting changes to protected standards
 - [CLI Reference](reference/cli.md) for exact commands and flags
 
 ### Wire Veritas into my AI agent
