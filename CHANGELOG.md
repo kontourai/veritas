@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.11.3](https://github.com/kontourai/veritas/compare/v1.11.2...v1.11.3) (2026-10-16)
+
+
+### Fixes
+
+* **attestation:** an expired attestation fails readiness ([#313](https://github.com/kontourai/veritas/issues/313)) ([2e97a1f](https://github.com/kontourai/veritas/commit/2e97a1f68f32b5041303ae07717f5278fe71e021))
+* **attestations:** claim strength reflects whether the approval was resolved ([#315](https://github.com/kontourai/veritas/issues/315)) ([48cef5f](https://github.com/kontourai/veritas/commit/48cef5fcb2e4f0f11b05240d53de5aa7e627a902))
+* bind attestation notes, approvalRef and actor with a versioned record digest ([#271](https://github.com/kontourai/veritas/issues/271)) ([#301](https://github.com/kontourai/veritas/issues/301)) ([a282a75](https://github.com/kontourai/veritas/commit/a282a753950f66a8c00c3e38f5834821b9ecd32c))
+* capture Claude Code session logs on SessionEnd and drop the Codex PostSession hook ([#296](https://github.com/kontourai/veritas/issues/296)) ([90080de](https://github.com/kontourai/veritas/commit/90080de85b3c937ba6cdee5fda586840862c7246))
+* diff a pull request's merge commit against its first parent in conformance CI ([#275](https://github.com/kontourai/veritas/issues/275)) ([#300](https://github.com/kontourai/veritas/issues/300)) ([f83204b](https://github.com/kontourai/veritas/commit/f83204b4cf2dddfc3373c8bfb8bbe6c432be95ea))
+* give apply governance-blocks and readiness one instruction-file list, and treat an explicit [] as none ([#297](https://github.com/kontourai/veritas/issues/297)) ([a6a2781](https://github.com/kontourai/veritas/commit/a6a278194dec221aee2decf491b29d629c1d81e1))
+* honour --actor in veritas readiness ([#305](https://github.com/kontourai/veritas/issues/305)) ([8c30f03](https://github.com/kontourai/veritas/commit/8c30f03c6561fa1ac280ec974eaa53f58641173f))
+* **hooks:** bind POSIX root scripts to the validated Veritas entry ([#307](https://github.com/kontourai/veritas/issues/307)) ([eba1661](https://github.com/kontourai/veritas/commit/eba1661c0ee341ac705801c6c76e475389de9284))
+* **hooks:** preserve user bindings on Claude Code reinstall ([#306](https://github.com/kontourai/veritas/issues/306)) ([c9a0377](https://github.com/kontourai/veritas/commit/c9a037733e18084979412b17ee97d9369597edf2))
+* **kit:** declare exact legacy Codex hook supersedes ([#308](https://github.com/kontourai/veritas/issues/308)) ([f675b5f](https://github.com/kontourai/veritas/commit/f675b5ff9769f4592f5449ee7cb39ace8fa1f8e3))
+* **readiness:** a failing explicit --evidence-check-command blocks readiness again ([#310](https://github.com/kontourai/veritas/issues/310)) ([cb98a97](https://github.com/kontourai/veritas/commit/cb98a9746f414bf9a2e4d0bc4953c94d08d207c9))
+* route the documented print and apply targets, and check the docs against the router ([#298](https://github.com/kontourai/veritas/issues/298)) ([9b0ebe5](https://github.com/kontourai/veritas/commit/9b0ebe5cdc264953d9647a2ab03e7e9399831990))
+* run the Veritas install the hook walk found by path ([#295](https://github.com/kontourai/veritas/issues/295)) ([fb09688](https://github.com/kontourai/veritas/commit/fb09688f587f213da31196ac63300a597e15acab))
+
 ## [1.11.2](https://github.com/kontourai/veritas/compare/v1.11.1...v1.11.2) (2026-10-14)
 
 
