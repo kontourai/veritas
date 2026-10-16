@@ -580,8 +580,9 @@ another executable. A broken nested package without its entry does not hide a
 valid root install. Directory spaces and junction aliases retain physical identity.
 
 With no repository entry, the launcher checks the scoped package's exact entry
-under `npm root --global`. Outside a Git repository it checks only the current
-directory before that global location. If neither exists it exits 2 with an
+under `npm root --global`. A missing Git executable, failed repository discovery, or execution outside
+a Git repository exits 2 instead of selecting a potentially unguided install.
+If neither eligible package entry exists it exits 2 with an
 installation remedy; it never downloads a package or invokes a generic PATH
 `veritas`. This narrows the previous plain-npx fallback: npm's search beyond the
 Git boundary and unrelated PATH executables no longer qualify Windows hooks.
@@ -594,6 +595,6 @@ source availability does not mean the npm package or a live consumer was upgrade
 
 `tests/windows-hook-entry.test.mjs` executes the actual generated command under
 Windows PowerShell, including nearest/root selection, missing bin links, foreign
-PATH refusal, stdin and exit status, junctions, and explicit scoped-global lookup.
+PATH refusal, stdin and exit status, junctions, and explicit scoped-global lookup and Git-discovery refusal.
 Those cases skip on other platforms. Their source presence is not Windows runtime
 evidence; delivery receipts name the Windows host and revision actually executed.

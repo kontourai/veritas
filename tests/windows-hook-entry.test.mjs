@@ -62,6 +62,14 @@ test('native Windows refuses before editing when Node is unavailable', native, (
   assert.match(result.stderr, /node/);
 });
 
+test('native Windows refuses a local entry when Git discovery cannot establish its governance root', native, (t) => {
+  const { root, run } = fixture(t);
+  install(root, 'must-not-run');
+  const result = run(root, { PATH: `${dirname(process.execPath)};${join(process.env.SystemRoot, 'System32')}` });
+  assert.equal(result.status, 2, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stderr, /Cannot establish the Git repository root/);
+});
+
 test('native Windows refuses a repository install when GIT_WORK_TREE names an unrelated directory', native, (t) => {
   const { root, nested, run, marker } = fixture(t);
   install(root, 'must-not-run');

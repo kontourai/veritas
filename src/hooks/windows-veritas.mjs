@@ -15,6 +15,9 @@ const same = (a, b) => {
 try {
   const cwd = physical(process.cwd());
   const git = spawnSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8", windowsHide: true, timeout: 5000 });
+  if (git.error || git.status !== 0 || !git.stdout.trim()) {
+    throw new Error("Cannot establish the Git repository root; run this hook inside a repository with Git available.");
+  }
   let entry;
   if (git.status === 0 && git.stdout.trim()) {
     const root = physical(git.stdout.trim());
@@ -26,8 +29,6 @@ try {
       if (parent === dir) break;
       dir = parent;
     }
-  } else if (file(entryIn(cwd))) {
-    entry = entryIn(cwd);
   }
   if (!entry) {
     const npm = path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js");
