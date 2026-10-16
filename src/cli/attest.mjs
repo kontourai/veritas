@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { parseAttestArgs } from '../args.mjs';
 import {
+  attestationValidityWindow,
   createAttestation,
   inspectAttestationStatus,
 } from '../attestations.mjs';
@@ -12,6 +13,15 @@ export function runAttestCli(kind, argv = process.argv.slice(2), defaults = {}) 
   // accept forms such as `1e3`, `0x10` and ` 5 `.
   if (options.validUntilDays !== undefined && !/^[0-9]+$/.test(options.validUntilDays)) {
     throw new Error(`veritas attest refuses --valid-until-days ${JSON.stringify(options.validUntilDays)}: it must be a whole number of days, 1 or more.`);
+  }
+  const validUntilDays = options.validUntilDays === undefined ? undefined : Number(options.validUntilDays);
+  // createAttestation checks the window again; checking here first lets the
+  // refusal echo the digits as given rather than Number()'s 1e+23.
+  const validityWindowError = validUntilDays === undefined
+    ? null
+    : attestationValidityWindow(new Date().toISOString(), validUntilDays).error;
+  if (validityWindowError) {
+    throw new Error(`veritas attest refuses --valid-until-days ${options.validUntilDays}: ${validityWindowError}.`);
   }
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   if (kind === 'status') {
@@ -70,7 +80,7 @@ export function runAttestCli(kind, argv = process.argv.slice(2), defaults = {}) 
     displayName: options.displayName,
     notes: options.message ?? '',
     approvalRef: options.approvalRef,
-    validUntilDays: options.validUntilDays === undefined ? undefined : Number(options.validUntilDays),
+    validUntilDays,
     authorizing,
   });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

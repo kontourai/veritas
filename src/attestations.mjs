@@ -212,7 +212,7 @@ function describeValue(value) {
 // The attestation schema requires validUntilDays to be an integer of at least
 // 1 and sets no maximum. A window whose end is past the latest date JavaScript
 // can represent cannot be compared with any clock, so it has no valid end.
-function attestationValidityWindow(attestedAt, validUntilDays) {
+export function attestationValidityWindow(attestedAt, validUntilDays) {
   if (!Number.isInteger(validUntilDays) || validUntilDays < 1) {
     return { error: `validUntilDays is ${describeValue(validUntilDays)}; it must be a whole number of days, 1 or more` };
   }
@@ -222,7 +222,7 @@ function attestationValidityWindow(attestedAt, validUntilDays) {
   }
   const end = new Date(start + validUntilDays * 86_400_000);
   if (!Number.isFinite(end.getTime())) {
-    return { error: `validUntilDays ${validUntilDays} ends the validity window past the latest date Veritas can represent` };
+    return { error: 'the validity window would end past the latest date Veritas can represent' };
   }
   return { start: new Date(start), end };
 }

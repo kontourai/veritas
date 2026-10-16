@@ -466,16 +466,25 @@ Two related cases changed at the same time:
 
 - `attest bootstrap` and `attest policy-change` now refuse a `--valid-until-days` that is not a
   whole number of days, 1 or more, written in digits, or that ends the window past the latest date
-  Veritas can represent. They exit `2` with a message and write no record. Earlier releases wrote
-  `0`, negative and fractional windows, and wrote an empty value as `0`, so such an attestation
-  made readiness fail at once. `abc`, `1e12` or a flag with no value stopped with
-  `Invalid time value`.
-- An attestation record whose `validUntilDays` is missing, `null` or not a whole number of days of
-  1 or more, or whose `attestedAt` is not a valid date, made `attest status` and readiness stop with
-  `Invalid time value`, or, for `null`, expire at `attestedAt`. `attest status` now reports
+  Veritas can represent. They exit `2` with a message and write no record. Earlier releases ran
+  `Number()` on the value and wrote what it returned: `1.5` or `30.5` as a fractional window,
+  `0` and negative values as they were, and an empty value as `0`. `abc`, `1e12`, `99999999` or a
+  flag with no value stopped with `Invalid time value`.
+- An attestation record whose `validUntilDays` is not a whole number of days of 1 or more, or whose
+  `attestedAt` is not a valid date, now has no valid validity window. `attest status` reports
   `expired: true`, `validUntil: null` and a `validityWindowError`, and readiness fails with
   `Active attestation <id> has no valid validity window (<reason>)`. Such a window is never treated
-  as open-ended. Record a fresh attestation to clear it.
+  as open-ended. Earlier releases handled these records differently:
+  - A fractional window such as `1.5` or `89.5`, or a numeric string such as `"90"`, passed
+    readiness with an ordinary `validUntil`. It now fails. If you once recorded an attestation with
+    a fractional `--valid-until-days`, for example `30.5`, record a fresh one with a whole number
+    of days.
+  - `0`, a negative window and `null` showed as expired, at or before `attestedAt`.
+  - A missing `validUntilDays`, a non-numeric string such as `"abc"`, or a window too large to
+    represent, such as `1e12` or `99999999`, made `attest status` and readiness stop with
+    `Invalid time value`.
+
+  To clear any of these, a human authority records a fresh attestation with a whole number of days.
 
 No option makes an expired attestation advisory again. To renew less often, record the attestation
 with a longer `--valid-until-days`.

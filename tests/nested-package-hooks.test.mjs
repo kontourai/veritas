@@ -400,7 +400,7 @@ for (const foreign of ['parent .bin', 'PATH']) {
       assert.equal(result.status, script.expectedExit ?? script.exit, result.stderr);
       const invocations = readFileSync(calls, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
       assert.deepEqual(invocations, [{ args: script.expectedArgs(repo), input }], 'the selected entry receives stdin and argv exactly once');
-      if (script.name === 'Stop feedback') assert.match(result.stdout, /fixture readiness failure[\s\S]*address the FAIL lines/);
+      if (script.name === 'Stop feedback') assert.match(result.stdout, /fixture readiness failure[\s\S]*address the FAIL lines above before finishing\. Where a line says a human authority must act, stop and report it to the user instead of acting on it\./);
     });
   }
 }

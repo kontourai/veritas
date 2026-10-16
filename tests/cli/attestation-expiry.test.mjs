@@ -235,7 +235,9 @@ const REFUSED_WINDOWS = [
   // Number() reads these as whole numbers; only the digits-only check refuses them.
   ['1e3', /refuses --valid-until-days "1e3": it must be a whole number of days, 1 or more\./],
   ['0x10', /refuses --valid-until-days "0x10": it must be a whole number of days, 1 or more\./],
-  ['1000000000000', /refuses --valid-until-days 1000000000000: validUntilDays 1000000000000 ends the validity window past the latest date Veritas can represent\./],
+  ['1000000000000', /refuses --valid-until-days 1000000000000: the validity window would end past the latest date Veritas can represent\./],
+  // Echoed as typed, not as Number()'s 1e+23.
+  ['100000000000000000000000', /refuses --valid-until-days 100000000000000000000000: the validity window would end past the latest date Veritas can represent\./],
   ['', /--valid-until-days requires a non-empty value/],
   [null, /--valid-until-days requires a value/],
 ];
@@ -273,14 +275,14 @@ function currentRecordPath(rootDir) {
   return join(rootDir, '.veritas/attestations', `${head.currentAttestationId}.attestation.json`);
 }
 
-// Rewrite the active record's validUntilDays the way a buggy writer or a hand
+// Rewrite one field of the active record the way a buggy writer or a hand
 // edit would leave it. `bind` re-seals record integrity, `unbound` drops it as
 // a pre-integrity record would, and `tampered` leaves the old digest.
-function rewriteValidity(rootDir, { value, seal }) {
+function rewriteValidity(rootDir, { field = 'validUntilDays', value, seal }) {
   const path = currentRecordPath(rootDir);
   const record = JSON.parse(readFileSync(path, 'utf8'));
-  if (value === undefined) delete record.validUntilDays;
-  else record.validUntilDays = value;
+  if (value === undefined) delete record[field];
+  else record[field] = value;
   let written = record;
   if (seal === 'bind') {
     delete record.recordIntegrity;
@@ -291,17 +293,19 @@ function rewriteValidity(rootDir, { value, seal }) {
   writeFileSync(path, `${JSON.stringify(written, null, 2)}\n`);
 }
 
-for (const [label, value, seal, reason] of [
+for (const [label, value, seal, reason, field] of [
   ['missing', undefined, 'bind', 'validUntilDays is missing; it must be a whole number of days, 1 or more'],
   ['null', null, 'bind', 'validUntilDays is null; it must be a whole number of days, 1 or more'],
   ['zero', 0, 'bind', 'validUntilDays is 0; it must be a whole number of days, 1 or more'],
   ['a string', '90', 'bind', 'validUntilDays is "90"; it must be a whole number of days, 1 or more'],
+  ['a fraction', 89.5, 'bind', 'validUntilDays is 89.5; it must be a whole number of days, 1 or more'],
   ['missing on an unbound record', undefined, 'unbound', 'validUntilDays is missing; it must be a whole number of days, 1 or more'],
+  ['valid but attestedAt is not a date', 'garbage', 'bind', 'attestedAt is "garbage", which is not a valid date', 'attestedAt'],
 ]) {
   test(`CLI: a record whose validUntilDays is ${label} fails readiness instead of crashing`, (t) => {
     const rootDir = initFixture(t, 'veritas-expiry-window-');
     attestBootstrapCli(rootDir);
-    rewriteValidity(rootDir, { value, seal });
+    rewriteValidity(rootDir, { field, value, seal });
     editTrackedFile(rootDir);
 
     const status = veritas(rootDir, ['attest', 'status']);

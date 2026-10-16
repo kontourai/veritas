@@ -117,7 +117,7 @@ Status reports the current attestation, age, expiry, and hash drift. It also rep
 
 ## Validity Window
 
-Each attestation counts for readiness for a fixed number of days after it was recorded: 90 by default, or the value given with `--valid-until-days`. That value must be a whole number of days, 1 or more, written in digits; `attest bootstrap` and `attest policy-change` refuse anything else, and a window that would end past the latest date Veritas can represent, with exit code `2` and without writing a record. `attest status` reports the end of that window as `validUntil`, and `expired: true` once it has passed. Expiry is judged when readiness runs, and the window includes `validUntil` itself.
+Each attestation counts for readiness for a fixed number of days after it was recorded: 90 by default, or the value given with `--valid-until-days`. The value must be a whole number of days, 1 or more, written in digits. `attest bootstrap` and `attest policy-change` refuse any other value with exit code `2` and write no record. They also refuse a window that would end after the latest date Veritas can represent. `attest status` reports the end of that window as `validUntil`, and `expired: true` once it has passed. Expiry is judged when readiness runs, and the window includes `validUntil` itself.
 
 An expired attestation is stale authority: the approval it records has run out under the repository's own policy, even though the protected standards still match. Readiness fails closed on it, as it does on drift:
 
@@ -136,7 +136,7 @@ npx --no @kontourai/veritas attest policy-change \
   --valid-until-days <days>
 ```
 
-A record whose window cannot be evaluated is never treated as open-ended. If `validUntilDays` is missing, `null`, not a whole number of days of 1 or more, or `attestedAt` is not a valid date, `attest status` reports `expired: true`, `validUntil: null` and a `validityWindowError` that names the field. Readiness fails with `Active attestation <id> has no valid validity window (<reason>); readiness fails until an authority records a fresh attestation.`, and the remedy is the same fresh attestation. If the record also fails its record integrity check, readiness reports that instead.
+A record whose window cannot be evaluated is never treated as open-ended. If `validUntilDays` is missing, `null`, not a whole number of days of 1 or more (a fraction such as `1.5` or a string such as `"90"` included), or `attestedAt` is not a valid date, `attest status` reports `expired: true`, `validUntil: null` and a `validityWindowError` that names the field. Readiness fails with `Active attestation <id> has no valid validity window (<reason>); readiness fails until an authority records a fresh attestation.`, and the remedy is the same fresh attestation. If the record also fails its record integrity check, readiness reports that instead.
 
 A repository with no attestation yet, or with only the `.veritas/attestations/PENDING` marker that a non-interactive `init` writes, is a different case. No authority has approved its standards yet, so readiness reports a `WARN` and does not block until the bootstrap attestation is recorded.
 
