@@ -2,7 +2,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { assertWithinDir, relativeRepoPath } from '../paths.mjs';
 import { PREVIOUS_CODEX_HOOK_COMMANDS } from './codex-hook-history.mjs';
-import { nearestInstalledVeritasCommand, plainVeritasCommand } from '../hooks/nearest-veritas.mjs';
+import { nearestInstalledVeritasCommand } from '../hooks/nearest-veritas.mjs';
+import { windowsInstalledVeritasCommand } from '../hooks/windows-veritas.mjs';
 import { assertReplaceableFile, writeGeneratedFile } from '../hooks/write-safety.mjs';
 
 // No session-log capture handler. Earlier releases wrote one under PostSession, an event Codex does
@@ -19,8 +20,7 @@ export function buildSuggestedCodexHookConfig() {
             {
               type: 'command',
               command: nearestInstalledVeritasCommand('hooks codex pre-tool-use'),
-              // Codex on Windows runs hooks through PowerShell, which cannot parse the POSIX walk.
-              commandWindows: plainVeritasCommand('hooks codex pre-tool-use'),
+              commandWindows: windowsInstalledVeritasCommand('hooks codex pre-tool-use'),
               statusMessage: 'Loading Veritas guidance for edited files',
               timeout: 30,
             },

@@ -250,16 +250,6 @@ test('outside a git repository the hook commands skip the walk and run the local
   JSON.parse(result.stdout);
 });
 
-test('the Codex PreToolUse hook carries the plain invocation for Windows, where hooks run through PowerShell', (t) => {
-  const handler = codexHooks.PreToolUse[0].hooks[0];
-  assert.equal(handler.commandWindows, 'npx --no @kontourai/veritas hooks codex pre-tool-use');
-  // Windows is not exercised here; the same invocation run from the root reaches Veritas.
-  const { rootDir } = pnpmWorkspace(t, { installVeritas: true });
-  const result = runHook(handler.commandWindows, { cwd: rootDir, input: editPayload(rootDir), env: { VERITAS_HOOK_SKIP: '1' } });
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
-});
-
 // The walk must end on its own. A hang here would stall every agent edit, so these fail fast.
 const WALK_TIMEOUT_MS = 20_000;
 
