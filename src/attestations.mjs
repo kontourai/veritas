@@ -206,6 +206,28 @@ function nowIso(options = {}) {
   return options.attestedAt ?? new Date().toISOString();
 }
 
+function describeValue(value) {
+  return value === undefined ? 'missing' : JSON.stringify(value) ?? String(value);
+}
+
+// The attestation schema requires validUntilDays to be an integer of at least
+// 1 and sets no maximum. A window whose end is past the latest date JavaScript
+// can represent cannot be compared with any clock, so it has no valid end.
+export function attestationValidityWindow(attestedAt, validUntilDays) {
+  if (!Number.isInteger(validUntilDays) || validUntilDays < 1) {
+    return { error: `validUntilDays is ${describeValue(validUntilDays)}; it must be a whole number of days, 1 or more` };
+  }
+  const start = typeof attestedAt === 'string' ? new Date(attestedAt).getTime() : Number.NaN;
+  if (!Number.isFinite(start)) {
+    return { error: `attestedAt is ${describeValue(attestedAt)}, which is not a valid date` };
+  }
+  const end = new Date(start + validUntilDays * 86_400_000);
+  if (!Number.isFinite(end.getTime())) {
+    return { error: 'the validity window would end past the latest date Veritas can represent' };
+  }
+  return { start: new Date(start), end };
+}
+
 function resolveApprovalReferencePolicy({
   rootDir,
   kind,
@@ -403,6 +425,11 @@ export function createAttestation({
   rejectNonHumanActor(actor);
   requireHumanApprovalReference({ kind, approvalRef });
   const timestamp = nowIso({ attestedAt });
+  // Refuse a window readiness could not evaluate before anything is written.
+  const validityWindow = attestationValidityWindow(timestamp, validUntilDays);
+  if (validityWindow.error) {
+    throw new Error(`veritas attest refuses --valid-until-days ${describeValue(validUntilDays)}: ${validityWindow.error}.`);
+  }
   const priorAttestationId = readAttestationHeadRecord(rootDir);
   const priorAttestation = readCurrentAttestationRecord(rootDir);
   const publicPriorAttestationId = priorAttestation && !priorAttestation.missing
@@ -433,7 +460,7 @@ export function createAttestation({
     ? summarizeApprovalResolverResult(resolvedApproval)
     : null;
   const actorRecord = buildActor(rootDir, actor, displayName);
-  const validUntil = new Date(new Date(timestamp).getTime() + validUntilDays * 86_400_000).toISOString();
+  const validUntil = validityWindow.end.toISOString();
   const surfaceClaimId = `veritas.attestation.${nextAttestationId(kind, timestamp, hashes)}`;
   const { admissibilityWarning, admissibilityWarningReason } = computeAdmissibilityWarning({
     authorizing,
@@ -622,9 +649,12 @@ export function inspectAttestationStatus(rootDir, options = {}) {
     });
   }
   const now = options.now ? new Date(options.now) : new Date();
-  const attestedAt = new Date(current.attestedAt);
-  const ageDays = Math.floor((now.getTime() - attestedAt.getTime()) / 86_400_000);
-  const validUntil = new Date(attestedAt.getTime() + current.validUntilDays * 86_400_000);
+  // A record whose window cannot be evaluated counts as expired, never as
+  // open-ended, and says why.
+  const validityWindow = attestationValidityWindow(current.attestedAt, current.validUntilDays);
+  const ageDays = validityWindow.start
+    ? Math.floor((now.getTime() - validityWindow.start.getTime()) / 86_400_000)
+    : null;
   const priorAttestationLink = describePriorAttestationLink(rootDir, current);
   const state = recordIntegrity.status === 'mismatch'
     ? 'tampered'
@@ -637,9 +667,10 @@ export function inspectAttestationStatus(rootDir, options = {}) {
     attestation: publicAttestationReference(rootDir, current),
     pending,
     drift,
-    expired: now.getTime() > validUntil.getTime(),
+    expired: validityWindow.error ? true : now.getTime() > validityWindow.end.getTime(),
     ageDays,
-    validUntil: validUntil.toISOString(),
+    validUntil: validityWindow.error ? null : validityWindow.end.toISOString(),
+    ...(validityWindow.error ? { validityWindowError: validityWindow.error } : {}),
     protectedStandards,
     recordIntegrity: describeRecordIntegrity(recordIntegrity),
     ...(priorAttestationLink ? { priorAttestationLink } : {}),
@@ -669,6 +700,17 @@ function unboundRecordNote(recordIntegrity) {
   return recordIntegrity?.status === 'unbound'
     ? ' Its actor, notes and approval reference are not integrity-bound because it predates record integrity; the next attestation binds them.'
     : '';
+}
+
+// The stop hook shows this to the agent at every turn end once an attestation
+// lapses, so it says plainly that renewal is a human authority's act.
+function renewalRemediation(validUntilDays) {
+  const days = Number.isInteger(validUntilDays) && validUntilDays >= 1 ? validUntilDays : null;
+  const command = `npx --no @kontourai/veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference> --valid-until-days ${days ?? '<days>'}`;
+  const window = days
+    ? `\`--valid-until-days ${days}\` keeps this attestation's ${days}-day validity window.`
+    : 'Give <days> as a whole number of days, 1 or more; 90 is the default.';
+  return `A human authority must review the protected standards and run \`${command}\`. An agent must not run it: stop and ask a human authority. ${window}`;
 }
 
 export function buildAttestationPolicyResult(status) {
@@ -726,22 +768,44 @@ export function buildAttestationPolicyResult(status) {
       }],
     };
   }
-  if (status.expired) {
+  if (status.validityWindowError) {
     return {
       rule_id: 'policy-changes-require-attestation',
       classification: 'hard-invariant',
-      enforcementLevel: 'Guide',
-      message: 'The active protected-standards attestation has expired.',
+      enforcementLevel: 'Require',
+      message: 'Protected standards require an attestation whose validity window has not expired.',
       owner: 'repo-core',
       rollback_switch: null,
       implemented: true,
       passed: false,
-      status: 'warn',
-      summary: `Active attestation ${status.currentAttestationId} expired at ${status.validUntil}.`,
+      status: 'fail',
+      summary: `Active attestation ${status.currentAttestationId} has no valid validity window (${status.validityWindowError}); readiness fails until an authority records a fresh attestation.`,
+      findings: [{
+        kind: 'invalid-attestation-validity-window',
+        artifact: status.currentAttestationId,
+        remediation: renewalRemediation(null),
+      }],
+    };
+  }
+  if (status.expired) {
+    // An expired Validity Window is stale authority, so it blocks like drift.
+    // Pending and missing stay advisory above: no authority has approved the
+    // standards yet, whereas here an approval existed and has run out.
+    return {
+      rule_id: 'policy-changes-require-attestation',
+      classification: 'hard-invariant',
+      enforcementLevel: 'Require',
+      message: 'Protected standards require an attestation whose validity window has not expired.',
+      owner: 'repo-core',
+      rollback_switch: null,
+      implemented: true,
+      passed: false,
+      status: 'fail',
+      summary: `Active attestation ${status.currentAttestationId} expired at ${status.validUntil}; readiness fails until an authority records a fresh attestation.`,
       findings: [{
         kind: 'expired-attestation',
         artifact: status.currentAttestationId,
-        remediation: 'Run `npx --no @kontourai/veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference>` to refresh attestation.',
+        remediation: renewalRemediation(status.attestation?.validUntilDays),
       }],
     };
   }

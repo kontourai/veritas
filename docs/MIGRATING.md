@@ -432,6 +432,67 @@ non-blocking. Choose one of these instead:
 A consumer that derived a failure from `evidenceCheckResults` because `evidenceCheckFailure` was
 `null` no longer needs to: Veritas reports the failure itself.
 
+## Expired Attestations Fail Readiness
+
+Each attestation has a validity window: 90 days after it was recorded by default, or the value
+given with `--valid-until-days`. Earlier releases reported an attestation past that window as
+`WARN  policy-changes-require-attestation: Active attestation <id> expired at <validUntil>.`, the
+process exited `0`, JSON output had `readiness.verdict: "ready"`, and the readiness claim in the
+trust bundle was `verified`. The documentation already treated an expired validity window as stale
+evidence, and drift of the protected standards already failed readiness.
+
+Readiness now fails closed on an expired attestation, as it does on drift:
+
+- The feedback line is `FAIL  policy-changes-require-attestation: Active attestation <id> expired
+  at <validUntil>; readiness fails until an authority records a fresh attestation.`, followed by
+  the command below, which a human authority must run and an agent must not, and the process
+  exits `1`.
+- JSON output sets `readiness.status: "fail"` and `readiness.verdict: "not-ready"`, and the
+  readiness claim in the trust bundle is `rejected`.
+
+To check whether a repository is affected before upgrading, run
+`npx --no @kontourai/veritas attest status` and read `expired` and `validUntil`. An attestation
+that is not expired today still expires at `validUntil`, and readiness starts failing then.
+
+To clear it, a human authority reviews the protected standards and records a fresh attestation. A
+`policy-change` attestation is accepted when the standards did not change. Pass the expired
+attestation's `validUntilDays` again to keep a custom window:
+
+```bash
+npx --no @kontourai/veritas attest policy-change --actor <authority-id> --approval-ref <human-approval-reference> --message "Renewed the attestation after reviewing the unchanged standards" --valid-until-days <days>
+```
+
+Two related cases changed at the same time:
+
+- `attest bootstrap` and `attest policy-change` now refuse a `--valid-until-days` that is not a
+  whole number of days, 1 or more, written in digits, or that ends the window past the latest date
+  Veritas can represent. They exit `2` with a message and write no record. Earlier releases ran
+  `Number()` on the value and wrote what it returned: `1.5` or `30.5` as a fractional window,
+  `0` and negative values as they were, and an empty value as `0`. `abc`, `1e12`, `99999999` or a
+  flag with no value stopped with `Invalid time value`.
+- An attestation record whose `validUntilDays` is not a whole number of days of 1 or more, or whose
+  `attestedAt` is not a valid date, now has no valid validity window. `attest status` reports
+  `expired: true`, `validUntil: null` and a `validityWindowError`, and readiness fails with
+  `Active attestation <id> has no valid validity window (<reason>)`. Such a window is never treated
+  as open-ended. Earlier releases handled these records differently:
+  - A fractional window such as `1.5` or `89.5`, or a numeric string such as `"90"`, passed
+    readiness with an ordinary `validUntil`. It now fails. If you once recorded an attestation with
+    a fractional `--valid-until-days`, for example `30.5`, record a fresh one with a whole number
+    of days.
+  - `0`, a negative window and `null` showed as expired, at or before `attestedAt`.
+  - A missing `validUntilDays`, a non-numeric string such as `"abc"`, or a window too large to
+    represent, such as `1e12` or `99999999`, made `attest status` and readiness stop with
+    `Invalid time value`.
+
+  To clear any of these, a human authority records a fresh attestation with a whole number of days.
+
+No option makes an expired attestation advisory again. To renew less often, record the attestation
+with a longer `--valid-until-days`.
+
+A repository with no attestation, or with only the `.veritas/attestations/PENDING` marker, is
+unchanged: readiness reports a `WARN` and does not block until the bootstrap attestation is
+recorded.
+
 ## Attestation Claims Reflect Whether the Approval Was Resolved
 
 New attestation records no longer present an unchecked approval reference as verified human
@@ -467,7 +528,8 @@ Claim statuses in the readiness trust bundle and readiness verdicts do not chang
 approval reference.
 
 The requirement's `message` text also drops "authority-backed": `Protected standards changes
-require a fresh attestation.` and `No attestation has activated the protected standards yet.`
+require a fresh attestation.`, `No attestation has activated the protected standards yet.`, and
+`Protected standards require an attestation whose validity window has not expired.`
 
 If a consumer relied on `verified` attestation claims, configure
 `review_preferences.attestation_approval_ref_policy.mode: "resolved"` with offline approval records,

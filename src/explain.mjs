@@ -50,7 +50,7 @@ function syntheticPolicyRules() {
     enforcement: 'deny',
     message: 'Protected standards changes require a current attestation.',
     explain: {
-      summary: 'Veritas hashes the redacted public Repo Map policy, Repo Standards, and authority settings as Protected Standards. MCP execution inputs are not policy identity. Readiness checks fail on drift until a valid authority records a fresh attestation.',
+      summary: 'Veritas hashes the redacted public Repo Map policy, Repo Standards, and authority settings as Protected Standards. MCP execution inputs are not policy identity. Readiness checks fail on drift, or once the attestation validity window expires, until a valid authority records a fresh attestation.',
       mustDo: [
         'Run `npx --no @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference>` after first installing Veritas governance.',
         'Run `npx --no @kontourai/veritas attest policy-change --actor <authority-id> --approval-ref <human-approval-reference> --message <reason>` after changing Protected Standards files.',

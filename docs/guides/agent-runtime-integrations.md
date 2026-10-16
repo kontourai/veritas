@@ -49,6 +49,11 @@ parent or PATH `veritas`. With no eligible local entry they retain the explicit
 separate plain invocation. See [migration instructions](../MIGRATING.md#agent-hook-commands-run-the-install-they-found)
 to refresh scripts already installed in a consumer repository.
 
+The generated Stop hook ends its feedback by asking the agent to address the
+FAIL lines before finishing. When a FAIL line says a human authority must act,
+such as renewing an expired attestation, the agent is told to stop and report
+it to the user instead of acting on it.
+
 No matter which runtime you use, keep these pieces repo-local and reviewable:
 
 - Repo Map
