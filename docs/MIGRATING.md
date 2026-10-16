@@ -528,6 +528,13 @@ external identifier, such as `servicenow:CHG1`, is still accepted, and the store
 that identifier as `recordApprovalRef`. The refusal message now ends with the resolver's reason in
 parentheses.
 
+Earlier releases stored the record's own `approvalRef` in `metadata.approvalResolution.approvalRef`.
+So a resolved-mode attestation that cited its approval record by a `file:` path, where the record's
+`approvalRef` was something else (`veritas-approval:<id>` or an external identifier such as
+`servicenow:CHG1`), now reads as `resolved, but for a different reference` and is no longer
+authority-backed. Readiness still passes. Record a fresh `policy-change` attestation under a
+`resolved` mode to make the active attestation authority-backed again.
+
 Existing attestation records are immutable and keep the `surface` values they were written with,
 so a reference-only record written before this release still stores a `verified` claim.
 

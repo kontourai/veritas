@@ -53,7 +53,7 @@ Normal Veritas users should think in Veritas terms: repo standards, repo maps, r
 | Verification Authority | Authority trace, verifier metadata, policy context | Surface-mapped |
 | Authority Evidence | Evidence trace, integrity reference, authority trace | Surface-mapped |
 | Attestation | Evidence with authority and integrity context | Surface-mapped |
-| Exception | Recorded evidence plus accepted-risk metadata | Surface-mapped |
+| Exception | Not projected; recorded only in `exceptions.jsonl` for standards feedback | Veritas-owned, not Surface-mapped |
 | Evidence Freshness | Freshness, Changed Since Verified, Expired Verification | Surface-mapped |
 | Merge Readiness | Derived readiness verdict claim | Veritas-owned outcome, Surface-mapped state |
 | Readiness Coverage | Claim status, evidence, gaps, conflicts, freshness | Surface-mapped state |
@@ -97,7 +97,7 @@ Readiness runs also project merge readiness as a portable Surface claim:
 - `subjectId`: a stable producer/source id derived from the adapter or Repo Standards name plus the run source ref
 - `currentIntegrityRef`: the run source integrity ref
 
-The Veritas meaning is still merge readiness: the verdict summarizes whether the change satisfies the applicable Requirements with the available evidence, authority, exceptions, and freshness. At the Surface boundary, that verdict can be represented as a claim derived from requirement or policy-result claims. Blocking Requirements should be linked as blocking inputs, so a rejected, stale, or disputed blocking result can limit the generated readiness verdict instead of being hidden behind a producer summary.
+The Veritas meaning is still merge readiness: the verdict summarizes whether the change satisfies the applicable Requirements with the available evidence, authority, and freshness. At the Surface boundary, that verdict can be represented as a claim derived from requirement or policy-result claims. Blocking Requirements should be linked as blocking inputs, so a rejected, stale, or disputed blocking result can limit the generated readiness verdict instead of being hidden behind a producer summary.
 
 Interoperability fields such as `derivedFrom`, `derivationEdges`, `TrustBundle`, and `buildTrustReport` belong in this boundary contract, not in first-contact Veritas guidance. Readiness derivation links only include blocking policy-result claims; advisory results remain represented as claims and requirement metadata without capping the readiness verdict. Tests currently exercise this behavior with in-code passing, advisory-failed, and blocked fixtures: the passing fixture keeps merge readiness verified, the advisory-failed fixture keeps readiness verified while preserving the rejected advisory claim, and the blocked fixture includes a rejected blocking Requirement and Surface report generation downgrades the readiness verdict. No durable JSON fixture path exists for those fixtures.
 

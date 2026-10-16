@@ -272,8 +272,26 @@ test('a resolved mode refuses a resolver result for a different reference', (t) 
   assert.equal(existsSync(join(rootDir, '.veritas/attestations/HEAD')), false);
 });
 
+test('a resolved mode refuses a resolver result that names no approvalRef', (t) => {
+  const rootDir = initVeritasRepo(t, 'veritas-claim-strength-unnamed-result-');
+  setApprovalRefPolicy(rootDir, { mode: 'resolved', allowed_prefixes: [] });
+  commitAll(rootDir, 'Resolve approval references');
+  assert.throws(
+    () => createAttestation({
+      rootDir,
+      kind: 'bootstrap',
+      actor: 'alice',
+      approvalRef: 'made-up-123',
+      approvalResolverResult: { status: 'approved' },
+    }),
+    /not accepted by resolver: the approved result names no approvalRef, not "made-up-123"/,
+  );
+  assert.equal(existsSync(join(rootDir, '.veritas/attestations/HEAD')), false);
+});
+
 test('a bound record whose approved result is for a different reference says so', (t) => {
-  // No write path stores such a record any more, so it is rebound by hand.
+  // New writes refuse such a result, so it is rebound by hand. Records written
+  // by earlier releases can carry one; MIGRATING covers them.
   const rootDir = initVeritasRepo(t, 'veritas-claim-strength-other-reference-');
   const attestation = attestBootstrap(rootDir, 'made-up-123');
   forgeResolvedApprovalMetadata(rootDir, attestation, {
@@ -376,6 +394,7 @@ for (const citedRef of [
 
 for (const { recordRef, reason } of [
   { recordRef: 'veritas-approval:chg-b', reason: /records approvalRef "veritas-approval:chg-b", which leads to a different record\)/ },
+  { recordRef: 'veritas-approval:CHG-A', reason: /records approvalRef "veritas-approval:CHG-A", whose record path differs from the cited one only in letter case; paths are compared exactly\)/ },
   { recordRef: 'file:../outside.json', reason: /records approvalRef "file:\.\.\/outside\.json", which is not a valid approval record reference: approval record path must stay inside/ },
 ]) {
   test(`a resolved mode refuses a record whose own approvalRef ${JSON.stringify(recordRef)} does not lead back to it`, (t) => {

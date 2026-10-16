@@ -99,6 +99,9 @@ function recordReferenceMismatch(rootDir, path, record) {
     return `${describe}, which is not a valid approval record reference: ${error.message}`;
   }
   if (recordPath === null || recordPath === path) return null;
+  if (recordPath.toLowerCase() === path.toLowerCase()) {
+    return `${describe}, whose record path differs from the cited one only in letter case; paths are compared exactly`;
+  }
   return `${describe}, which leads to a different record`;
 }
 

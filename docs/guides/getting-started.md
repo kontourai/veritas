@@ -137,7 +137,7 @@ Veritas creates a better contract between AI and humans.
 
 - **For agents:** less ambiguity and more precise correction.
 - **For developers:** repo standards appear at the point of work.
-- **For reviewers:** a readiness report narrows review to evidence, exceptions, and risky boundaries.
+- **For reviewers:** a readiness report narrows review to evidence and risky boundaries.
 - **For the organization:** humans review the standards and exceptions instead of manually rediscovering the same expectations in every diff.
 
 The point is not only to make agents faster. The point is to make more changes trustworthy enough for reduced human review.

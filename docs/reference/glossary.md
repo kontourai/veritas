@@ -58,7 +58,7 @@ Veritas emits Surface-format trust state as a producer. The mapping is intention
 | Verification Authority | Authority trace, policy context, or verifier metadata |
 | Attestation | Evidence with authority and integrity context |
 | Evidence Freshness | Freshness, Changed Since Verified, or Expired Verification |
-| Exception | Recorded evidence plus metadata explaining the accepted unmet requirement |
+| Exception | Not projected; recorded only in `exceptions.jsonl` for standards feedback |
 | Merge Readiness | Domain validity claim or trust snapshot summary emitted by Veritas |
 | Readiness Coverage | Claims, evidence, gaps, conflicts, and freshness outcomes |
 | Repo Conformance | Standing claims and evidence about repo-wide requirements |

@@ -115,7 +115,6 @@ Good change guidance explains:
 - what not to do
 - why it matters
 - what evidence will satisfy the requirement
-- which authority can accept an exception
 
 This is how repo standards survive long AI sessions, compaction, and context drift without becoming a static documentation dump.
 

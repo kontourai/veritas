@@ -87,7 +87,7 @@ export function validateApprovalReferencePolicy({
     const resolvedRef = normalizeApprovalResolverResult(resolvedApproval).approvalRef;
     if (resolvedRef !== approvalRef.trim()) {
       throw new Error(
-        `veritas attest approval reference was not accepted by resolver: the approved result is for ${JSON.stringify(resolvedRef)}, not ${JSON.stringify(approvalRef.trim())}`,
+        `veritas attest approval reference was not accepted by resolver: ${resolvedRef === null ? 'the approved result names no approvalRef' : `the approved result is for ${JSON.stringify(resolvedRef)}`}, not ${JSON.stringify(approvalRef.trim())}`,
       );
     }
   }
