@@ -179,7 +179,7 @@ export function parseAttestArgs(argv) {
       '--display-name': { type: 'string', key: 'displayName' },
       '--message': { type: 'string', key: 'message' },
       '--approval-ref': { type: 'string', key: 'approvalRef' },
-      '--valid-until-days': { type: 'number', key: 'validUntilDays' },
+      '--valid-until-days': { type: 'string', key: 'validUntilDays', strictValue: true },
       '--non-interactive': { type: 'flag', key: 'nonInteractive' },
       // Authorizing block fields
       '--executed-by': { type: 'string', key: 'executedBy' },

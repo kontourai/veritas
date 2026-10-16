@@ -21,7 +21,7 @@ The state where Protected Standards no longer match the hashes anchored by the c
 _Avoid_: File changed as the whole concept, harmless mismatch
 
 **Validity Window**:
-The time period during which an attestation may count for readiness. Expiration can make authority evidence stale even if the protected files did not drift.
+The time period during which an attestation may count for readiness. Expiration makes authority evidence stale even if the protected files did not drift, and readiness fails until a fresh attestation is recorded.
 _Avoid_: Timestamp only, permanent approval
 
 **Approval Reference**:

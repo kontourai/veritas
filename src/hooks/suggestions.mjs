@@ -79,7 +79,7 @@ EXIT=$?
 if [ "$EXIT" -ne 0 ]; then
   echo "$RESULT"
   echo ""
-  echo "Veritas: address the FAIL lines above before finishing."
+  echo "Veritas: address the FAIL lines above before finishing. Where a line says a human authority must act, stop and report it to the user instead of acting on it."
 fi
 
 exit 0
