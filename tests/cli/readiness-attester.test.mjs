@@ -84,7 +84,7 @@ test('CLI readiness emits and persists the current attester ID ahead of the run 
   malformed.actor.id = {};
   writeFileSync(attestationPath, `${JSON.stringify(malformed, null, 2)}\n`);
   const refused = cli(rootDir, ['readiness', '--working-tree', '--actor', 'SYNTHETIC-runner', '--run-id', 'malformed', '--format', 'trust-bundle']);
-  assertExit(refused, 1);
+  assertExit(refused, 2);
   assert.match(refused.stderr, /attestation actor.*non-empty string id/i);
   assert.equal(refused.stdout.trim(), '', 'no bundle may be emitted with a substitute identity');
   assert.equal(existsSync(join(rootDir, '.kontourai/veritas/evidence/malformed.json')), false);
