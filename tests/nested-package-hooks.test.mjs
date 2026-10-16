@@ -5,8 +5,8 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, realpathSync, symlinkSy
 import { basename, dirname, join } from 'node:path';
 import { writeBootstrapStarterKit } from '../src/index.mjs';
 import { buildSuggestedCodexHookConfig } from '../src/integrations/codex-hooks.mjs';
-import { buildClaudeCodeSessionLogCaptureCommand } from '../src/hooks/suggestions.mjs';
-import { cleanGitEnv, commitAll, initCommittedRepo, installLocalVeritasBin, repoRootDir } from './helpers.mjs';
+import { buildClaudeCodeSessionLogCaptureCommand, buildSuggestedClaudeCodePreToolUseHook, buildSuggestedGitHook, buildSuggestedRuntimeHook, buildSuggestedStopHook } from '../src/hooks/suggestions.mjs';
+import { cleanGitEnv, commitAll, disableGitAutoMaintenance, initCommittedRepo, installLocalVeritasBin, repoRootDir } from './helpers.mjs';
 import { tempDir } from './temp-dir.mjs';
 
 // Agent runtimes run these hook commands in the agent's working directory. In a pnpm workspace
@@ -14,8 +14,7 @@ import { tempDir } from './temp-dir.mjs';
 // only under the nearest package root, so a bare `npx --no @kontourai/veritas` refuses there.
 const codexHooks = buildSuggestedCodexHookConfig().hooks;
 const CODEX_PRE_TOOL_USE = codexHooks.PreToolUse[0].hooks[0].command;
-const CODEX_POST_SESSION = codexHooks.PostSession[0].hooks[0].command;
-const CLAUDE_POST_SESSION = buildClaudeCodeSessionLogCaptureCommand();
+const CLAUDE_SESSION_END = buildClaudeCodeSessionLogCaptureCommand();
 
 function pnpmWorkspace(t, { installVeritas }) {
   const rootDir = initCommittedRepo(t, 'veritas-nested-package-');
@@ -58,18 +57,6 @@ function claudeSessionLog(dir) {
   return path;
 }
 
-function sessionLog(dir) {
-  const path = join(dir, 'session.json');
-  writeFileSync(path, `${JSON.stringify({
-    session_id: 'nested-package',
-    events: [
-      { timestamp: '2026-05-09T10:00:00.000Z', command: 'veritas readiness', exit_code: 1, files: ['packages/a/index.js'], reported_lines: 10 },
-      { timestamp: '2026-05-09T10:02:00.000Z', command: 'veritas readiness', exit_code: 0, files: ['packages/a/index.js'], reported_lines: 10 },
-    ],
-  }, null, 2)}\n`);
-  return path;
-}
-
 const editPayload = (cwd) => JSON.stringify({
   cwd,
   tool_name: 'apply_patch',
@@ -87,14 +74,16 @@ test('Codex and Claude Code hook commands find a root-installed Veritas from a n
   JSON.parse(preToolUse.stdout);
   assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
 
-  // PostSession capture runs in the working directory, as before, and writes its draft there.
-  for (const [name, command, log] of [['Codex', CODEX_POST_SESSION, sessionLog], ['Claude Code', CLAUDE_POST_SESSION, claudeSessionLog]]) {
-    const postSession = runHook(command, { cwd: packageDir, env: { VERITAS_SESSION_LOG_PATH: log(packageDir) } });
-    assert.equal(postSession.status, 0, `${name} PostSession: ${postSession.stderr}`);
-    assert.doesNotMatch(postSession.stderr, /npx canceled/);
-    const result = JSON.parse(postSession.stdout);
-    assert.equal(existsSync(join(packageDir, result.artifactPath)), true, `${name} PostSession draft`);
-  }
+  // Claude Code SessionEnd capture runs in the working directory, as before, and writes its draft
+  // there. Claude Code names the session log in the hook input on stdin.
+  const sessionEnd = runHook(CLAUDE_SESSION_END, {
+    cwd: packageDir,
+    input: JSON.stringify({ session_id: 'nested-package', transcript_path: claudeSessionLog(packageDir), cwd: packageDir, hook_event_name: 'SessionEnd', reason: 'other' }),
+  });
+  assert.equal(sessionEnd.status, 0, `Claude Code SessionEnd: ${sessionEnd.stderr}`);
+  assert.doesNotMatch(sessionEnd.stderr, /npx canceled/);
+  const result = JSON.parse(sessionEnd.stdout);
+  assert.equal(existsSync(join(packageDir, result.artifactPath)), true, 'Claude Code SessionEnd draft');
 });
 
 test('the nested-package hook commands still refuse when no directory has Veritas installed', (t) => {
@@ -107,15 +96,35 @@ test('the nested-package hook commands still refuse when no directory has Verita
   assert.equal(readFileSync(join(packageDir, 'package.json'), 'utf8').includes('veritas'), false);
 });
 
-// A package that announces itself instead of running Veritas, so a test can tell whether it ran.
+// A package laid out like Veritas that announces itself instead of running Veritas, so a test can
+// tell whether it ran. It has the same entry point, so the walk would accept it if it reached it.
 function plantedVeritas(dir, marker) {
   const packageDir = join(dir, 'planted-veritas');
   mkdirSync(join(packageDir, 'bin'), { recursive: true });
-  writeFileSync(join(packageDir, 'package.json'), `${JSON.stringify({ name: '@kontourai/veritas', version: '0.0.0-planted', bin: { veritas: 'bin/veritas.js' } })}\n`);
-  writeFileSync(join(packageDir, 'bin/veritas.js'), `#!/usr/bin/env node\nrequire('node:fs').writeFileSync(${JSON.stringify(marker)}, 'ran');\n`);
-  chmodSync(join(packageDir, 'bin/veritas.js'), 0o755);
+  writeFileSync(join(packageDir, 'package.json'), `${JSON.stringify({ name: '@kontourai/veritas', version: '0.0.0-planted', type: 'module', bin: { veritas: 'bin/veritas.mjs' } })}\n`);
+  writeFileSync(join(packageDir, 'bin/veritas.mjs'), `#!/usr/bin/env node\nimport { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(marker)}, 'ran');\n`);
+  chmodSync(join(packageDir, 'bin/veritas.mjs'), 0o755);
   return packageDir;
 }
+
+// Veritas installed the way `npm install --no-bin-links` (or bin-links=false) leaves it: the package
+// is under node_modules, with no node_modules/.bin/veritas link.
+function installVeritasWithoutBinLink(dir, packageDir = repoRootDir) {
+  mkdirSync(join(dir, 'node_modules/@kontourai'), { recursive: true });
+  symlinkSync(packageDir, join(dir, 'node_modules/@kontourai/veritas'), 'dir');
+}
+
+// An executable named veritas that records that it ran, standing in for another veritas on PATH,
+// such as a global install of the unrelated unscoped package.
+function veritasOnPath(t) {
+  const binDir = tempDir(t, 'veritas-other-on-path-');
+  const marker = join(binDir, 'other-ran');
+  writeFileSync(join(binDir, 'veritas'), `#!/bin/sh\necho ran > ${JSON.stringify(marker)}\n`);
+  chmodSync(join(binDir, 'veritas'), 0o755);
+  return { binDir, marker };
+}
+
+const bashPayload = (cwd) => JSON.stringify({ cwd, tool_name: 'Bash', tool_input: { command: 'ls' } });
 
 // A parent directory, outside any repository, with a planted Veritas install, and a git repository
 // inside it with a package.json and no install of its own.
@@ -126,7 +135,7 @@ function plantedParent(t, { withPackageJson = true, repoName = 'repo' } = {}) {
   mkdirSync(join(parent, 'node_modules/@kontourai'), { recursive: true });
   mkdirSync(join(parent, 'node_modules/.bin'), { recursive: true });
   symlinkSync(planted, join(parent, 'node_modules/@kontourai/veritas'), 'dir');
-  symlinkSync('../@kontourai/veritas/bin/veritas.js', join(parent, 'node_modules/.bin/veritas'));
+  symlinkSync('../@kontourai/veritas/bin/veritas.mjs', join(parent, 'node_modules/.bin/veritas'));
   const repo = join(parent, repoName);
   mkdirSync(join(repo, 'sub'), { recursive: true });
   spawnSync('git', ['init', '-q'], { cwd: repo, env: cleanGitEnv() });
@@ -185,7 +194,7 @@ test('a GIT_DIR and GIT_WORK_TREE naming another repository do not let the walk 
   assertRefusedWithoutPlanted(result, marker);
 });
 
-test('outside a git repository the walk passes no prefix, so a planted parent never runs', (t) => {
+test('outside a git repository the walk runs no install it found, so a planted parent never runs', (t) => {
   const { parent, marker, cache } = plantedParent(t);
   const dir = join(parent, 'not-a-repo');
   mkdirSync(dir);
@@ -322,20 +331,116 @@ test('the git root is matched by identity when git spells it differently', (t) =
   assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
 });
 
-// npx runs the bin it finds on a PATH built from the working directory, so with installs in both
-// packages/a and the root the nearest bin runs whichever --prefix the walk passes. The prefix gates
-// only npx's "is it installed" check. This pins the walk's own choice by recording npx's arguments.
-test('the walk passes the nearest install as the prefix', (t) => {
-  const { rootDir, packageDir } = pnpmWorkspace(t, { installVeritas: true });
-  installLocalVeritasBin(packageDir);
-  const fakeBin = tempDir(t, 'veritas-fake-npx-');
-  const argsFile = join(fakeBin, 'args');
-  writeFileSync(join(fakeBin, 'npx'), `#!/bin/sh\nprintf '%s\\n' "$@" > ${JSON.stringify(argsFile)}\n`);
-  chmodSync(join(fakeBin, 'npx'), 0o755);
+// #286: npx --prefix decides only whether npx treats the package as installed, and the binary npx
+// runs is the first veritas on a PATH built from the working directory's ancestors. The walk runs
+// the install it found by path, so a missing .bin link cannot hand the hook to another veritas.
+test('an install without a .bin link runs itself, not a .bin/veritas in a parent outside the repository', (t) => {
+  const { repo, marker } = plantedParent(t);
+  installVeritasWithoutBinLink(repo);
+  for (const cwd of [repo, join(repo, 'sub')]) {
+    const result = runHook(CODEX_PRE_TOOL_USE, { cwd, input: bashPayload(cwd) });
+    assert.equal(existsSync(marker), false, `${cwd}: the parent's .bin/veritas ran instead of the repository's install:\n${result.stderr}`);
+    assert.equal(result.status, 0, `${cwd}: ${result.stderr}`);
+    JSON.parse(result.stdout);
+  }
+});
 
-  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: packageDir, input: editPayload(packageDir), env: { PATH: `${fakeBin}:${process.env.PATH}` } });
+test('an install without a .bin link runs itself, not another veritas on PATH', (t) => {
+  const repo = tempDir(t, 'veritas-no-bin-link-');
+  spawnSync('git', ['init', '-q'], { cwd: repo, env: cleanGitEnv() });
+  disableGitAutoMaintenance(repo);
+  writeFileSync(join(repo, 'package.json'), `${JSON.stringify({ name: 'repo', version: '1.0.0' })}\n`);
+  mkdirSync(join(repo, 'sub'));
+  installVeritasWithoutBinLink(repo);
+  const other = veritasOnPath(t);
+  for (const cwd of [repo, join(repo, 'sub')]) {
+    const result = runHook(CODEX_PRE_TOOL_USE, { cwd, input: bashPayload(cwd), env: { PATH: `${other.binDir}:${process.env.PATH}` } });
+    assert.equal(existsSync(other.marker), false, `${cwd}: another veritas on PATH ran instead of the repository's install:\n${result.stderr}`);
+    assert.equal(result.status, 0, `${cwd}: ${result.stderr}`);
+    JSON.parse(result.stdout);
+  }
+});
+
+const rootScriptCases = [
+  { name: 'post-commit initial history', body: () => buildSuggestedGitHook(), args: [], expectedArgs: (repo) => ['readiness', '--changed-from', spawnSync('git', ['hash-object', '-t', 'tree', '/dev/null'], { cwd: repo, encoding: 'utf8', env: cleanGitEnv() }).stdout.trim(), '--changed-to', 'HEAD'], exit: 7 },
+  { name: 'post-commit with parent commit', body: () => buildSuggestedGitHook(), commits: 2, args: [], expectedArgs: () => ['readiness', '--changed-from', 'HEAD~1', '--changed-to', 'HEAD'], exit: 7 },
+  { name: 'runtime default', body: () => buildSuggestedRuntimeHook(), args: [], expectedArgs: () => ['readiness', '--format', 'json', '--working-tree'], exit: 0 },
+  { name: 'runtime forwarded arguments', body: () => buildSuggestedRuntimeHook(), args: ['--check', 'repo standards'], expectedArgs: () => ['readiness', '--format', 'json', '--check', 'repo standards'], exit: 7 },
+  { name: 'Stop feedback', body: () => buildSuggestedStopHook().hookBody, args: [], expectedArgs: () => ['readiness', '--format', 'feedback', '--working-tree'], exit: 7, expectedExit: 0 },
+  { name: 'Claude PreToolUse', body: () => buildSuggestedClaudeCodePreToolUseHook().hookBody, args: ['--root', 'root with spaces'], expectedArgs: () => ['hooks', 'claude-code', 'pre-tool-use', '--root', 'root with spaces'], exit: 2 },
+];
+
+for (const foreign of ['parent .bin', 'PATH']) {
+  for (const script of rootScriptCases) {
+    test(`root-script ${script.name} runs its local entry without bin links instead of ${foreign}`, (t) => {
+      const planted = foreign === 'parent .bin' ? plantedParent(t) : null;
+      const repo = planted?.repo ?? initCommittedRepo(t, 'veritas-root-script-');
+      if (!planted) writeFileSync(join(repo, 'package.json'), '{"name":"root-script-fixture","version":"1.0.0"}\n');
+      for (const [key, value] of [['user.name', 'Veritas Tests'], ['user.email', 'tests@example.com']]) {
+        const configured = spawnSync('git', ['config', key, value], { cwd: repo, encoding: 'utf8', env: cleanGitEnv() });
+        assert.equal(configured.status, 0, configured.stderr);
+      }
+      if (planted) commitAll(repo, 'Initial root-script fixture');
+      for (let index = 0; index < (script.commits ?? 0); index += 1) {
+        writeFileSync(join(repo, 'commit.txt'), String(index));
+        commitAll(repo, `Fixture commit ${index}`);
+      }
+      const calls = join(repo, 'selected-entry.jsonl');
+      const local = join(repo, 'node_modules/@kontourai/veritas');
+      mkdirSync(join(local, 'bin'), { recursive: true });
+      writeFileSync(join(local, 'package.json'), '{"name":"@kontourai/veritas","version":"0.0.0-fixture","type":"module","bin":{"veritas":"bin/veritas.mjs"}}\n');
+      writeFileSync(join(local, 'bin/veritas.mjs'), `import { appendFileSync, readFileSync } from 'node:fs';\nappendFileSync(${JSON.stringify(calls)}, JSON.stringify({ args: process.argv.slice(2), input: readFileSync(0, 'utf8') }) + '\\n');\nconsole.log('fixture readiness failure');\nprocess.exit(${script.exit});\n`);
+      const other = foreign === 'PATH' ? veritasOnPath(t) : null;
+      const hook = join(repo, 'generated-root-hook.sh');
+      writeFileSync(hook, script.body());
+      chmodSync(hook, 0o755);
+      const input = '{"tool_input":{"text":"literal $(echo source)"}}\n';
+      const result = spawnSync(hook, script.args, { cwd: repo, input, encoding: 'utf8', env: { ...cleanGitEnv(), ...(other ? { PATH: `${other.binDir}:${process.env.PATH}` } : {}) } });
+      assert.equal(existsSync(planted?.marker ?? other.marker), false, `${script.name}: foreign ${foreign} executable ran:\n${result.stderr}`);
+      assert.equal(result.status, script.expectedExit ?? script.exit, result.stderr);
+      const invocations = readFileSync(calls, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+      assert.deepEqual(invocations, [{ args: script.expectedArgs(repo), input }], 'the selected entry receives stdin and argv exactly once');
+      if (script.name === 'Stop feedback') assert.match(result.stdout, /fixture readiness failure[\s\S]*address the FAIL lines above before finishing\. Where a line says a human authority must act, stop and report it to the user instead of acting on it\./);
+    });
+  }
+}
+
+test('root-script runtime outside Git retains the npm-selected local fallback', (t) => {
+  const dir = tempDir(t, 'veritas-runtime-no-git-');
+  writeFileSync(join(dir, 'package.json'), '{"name":"runtime-no-git","version":"1.0.0"}\n');
+  installLocalVeritasBin(dir);
+  const script = join(dir, 'runtime.sh');
+  writeFileSync(script, buildSuggestedRuntimeHook());
+  chmodSync(script, 0o755);
+  const result = spawnSync(script, ['--help'], { cwd: dir, encoding: 'utf8', env: cleanGitEnv() });
   assert.equal(result.status, 0, result.stderr);
-  const args = readFileSync(argsFile, 'utf8').trim().split('\n');
-  assert.deepEqual(args.slice(0, 4), ['--no', '--prefix', realpathSync(packageDir), '@kontourai/veritas']);
-  assert.notEqual(realpathSync(packageDir), realpathSync(rootDir));
+  assert.match(result.stdout, /Usage:[\s\S]*veritas/);
+});
+
+// The file the walk checks is the file it runs: a Veritas package directory without the entry point
+// does not count as an install, and the walk goes on to the next one.
+test('a Veritas package without its entry point does not count as an install', (t) => {
+  const { rootDir, packageDir } = pnpmWorkspace(t, { installVeritas: true });
+  mkdirSync(join(packageDir, 'node_modules/@kontourai/veritas'), { recursive: true });
+  writeFileSync(join(packageDir, 'node_modules/@kontourai/veritas/package.json'), `${JSON.stringify({ name: '@kontourai/veritas', version: '0.0.0-no-entry' })}\n`);
+  const result = runHook(CODEX_PRE_TOOL_USE, { cwd: packageDir, input: editPayload(packageDir), env: { VERITAS_HOOK_SKIP: '1' } });
+  assert.equal(result.status, 0, result.stderr);
+  JSON.parse(result.stdout);
+  assert.equal(existsSync(join(rootDir, '.kontourai/veritas/standards-feedback/exceptions.jsonl')), true);
+});
+
+// With installs in both packages/a and the root, the nearest one runs.
+test('the walk runs the nearest install', (t) => {
+  const { rootDir, packageDir } = pnpmWorkspace(t, { installVeritas: true });
+  const marker = join(tempDir(t, 'veritas-nearest-marker-'), 'nearest-ran');
+  installVeritasWithoutBinLink(packageDir, plantedVeritas(tempDir(t, 'veritas-nearest-install-'), marker));
+
+  const fromRoot = runHook(CODEX_PRE_TOOL_USE, { cwd: rootDir, input: bashPayload(rootDir) });
+  assert.equal(fromRoot.status, 0, fromRoot.stderr);
+  JSON.parse(fromRoot.stdout);
+  assert.equal(existsSync(marker), false, 'from the root, the root install runs');
+
+  const fromPackage = runHook(CODEX_PRE_TOOL_USE, { cwd: packageDir, input: bashPayload(packageDir) });
+  assert.equal(fromPackage.status, 0, fromPackage.stderr);
+  assert.equal(existsSync(marker), true, `from packages/a, its own install runs:\n${fromPackage.stderr}`);
 });

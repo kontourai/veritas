@@ -8,6 +8,7 @@ import {
   surfaceSafeId,
 } from './primitives.mjs';
 import { veritasArtifactPath, veritasArtifactRepoPath } from '../paths.mjs';
+import { attestationAuthorityGap } from '../attestations/approval.mjs';
 
 function claimsByType(claimStore, claimType) {
   return (claimStore.claims ?? []).filter((claim) => claim.claimType === claimType);
@@ -27,7 +28,7 @@ export function collectGovernanceEvidence(record, claimStore, evidence, events) 
       method: 'attestation',
       record,
       locator: '.veritas/attestations',
-      summary: `Authority-backed attestation currency is ${status} for Protected Standards state ${record.governance_state.state}.`,
+      summary: attestationCurrencyText(record.governance_state, status, { withState: true }),
       passing: status === 'verified',
       blocking: status !== 'verified',
     }));
@@ -49,7 +50,7 @@ export function collectGovernanceEvidence(record, claimStore, evidence, events) 
       method: 'authority attestation status',
       evidenceIds: [attestationEvidenceId, auditEvidenceId],
       record,
-      notes: `Authority-backed attestation currency is ${status}.`,
+      notes: attestationCurrencyText(record.governance_state, status),
       verifiedAt: status === 'verified' ? record.timestamp : undefined,
     }));
   }
@@ -86,6 +87,7 @@ export function buildGovernanceArtifactClaims({
 }) {
   const governanceState = record.governance_state;
   if (!governanceState) return;
+  const authorityBacked = attestationIsAuthorityBacked(governanceState);
 
   const artifacts = [
     {
@@ -147,7 +149,7 @@ export function buildGovernanceArtifactClaims({
       verificationPolicyId: SURFACE_TRUST_POLICIES.governanceArtifact.id,
       confidenceBasis: {
         sourceQuality: status === 'verified' ? 'strong' : 'moderate',
-        reviewerAuthority: governanceState.attestation?.actor ? 'authority' : 'none',
+        reviewerAuthority: governanceState.attestation?.actor && authorityBacked ? 'authority' : 'none',
         evidenceStrength: status === 'verified' ? 'strong' : 'weak',
         conflictCount: status === 'verified' ? 0 : 1,
         impactLevel: 'high',
@@ -212,10 +214,12 @@ export function buildGovernanceArtifactClaims({
     currentIntegrityRef: governanceState.currentAttestationId ?? record.source_ref,
     derivedFrom: attestationPolicyClaimId ? [attestationPolicyClaimId] : undefined,
     verificationPolicyId: SURFACE_TRUST_POLICIES.governanceArtifact.id,
+    // Hash inspection verifies currency either way; the attestation behind it
+    // is strong human approval only when its approval reference was resolved.
     confidenceBasis: {
-      sourceQuality: governanceState.attestation ? 'strong' : 'weak',
-      reviewerAuthority: governanceState.attestation?.actor ? 'human' : 'none',
-      evidenceStrength: status === 'verified' ? 'strong' : 'weak',
+      sourceQuality: governanceState.attestation && authorityBacked ? 'strong' : 'weak',
+      reviewerAuthority: governanceState.attestation?.actor && authorityBacked ? 'human' : 'none',
+      evidenceStrength: status === 'verified' && authorityBacked ? 'strong' : 'weak',
       conflictCount: status === 'verified' ? 0 : 1,
       impactLevel: 'high',
     },
@@ -231,7 +235,7 @@ export function buildGovernanceArtifactClaims({
     method: 'attestation',
     record,
     locator: '.veritas/attestations',
-    summary: `Authority-backed attestation currency is ${status} for Protected Standards state ${governanceState.state}.`,
+    summary: attestationCurrencyText(governanceState, status, { withState: true }),
   }));
   events.push(surfaceEvent({
     id: `${id}.${status}`,
@@ -240,9 +244,29 @@ export function buildGovernanceArtifactClaims({
     method: 'authority attestation status',
     evidenceIds: [evidenceId],
     record,
-    notes: `Authority-backed attestation currency is ${status}.`,
+    notes: attestationCurrencyText(governanceState, status),
     verifiedAt: status === 'verified' ? record.timestamp : undefined,
   }));
+}
+
+function governanceAttestationAuthorityGap(governanceState) {
+  return attestationAuthorityGap({
+    attestation: governanceState.attestation,
+    recordIntegrityStatus: governanceState.recordIntegrity?.status,
+  });
+}
+
+function attestationIsAuthorityBacked(governanceState) {
+  return Boolean(governanceState.attestation) && governanceAttestationAuthorityGap(governanceState) === null;
+}
+
+function attestationCurrencyText(governanceState, status, { withState = false } = {}) {
+  const scope = withState ? ` for Protected Standards state ${governanceState.state}` : '';
+  if (!governanceState.attestation) return `Attestation currency is ${status}${scope}.`;
+  const gap = governanceAttestationAuthorityGap(governanceState);
+  return gap === null
+    ? `Authority-backed attestation currency is ${status}${scope}.`
+    : `Attestation currency is ${status}${scope}; the attestation is not authority-backed because ${gap}.`;
 }
 
 function governanceArtifactStatus(governanceState, drift) {
@@ -252,8 +276,10 @@ function governanceArtifactStatus(governanceState, drift) {
   return 'verified';
 }
 
+const FAILED_ATTESTATION_STATES = new Set(['drifted', 'broken-head', 'tampered', 'unverifiable']);
+
 function governanceAttestationStatus(governanceState) {
-  if (governanceState.state === 'drifted' || governanceState.state === 'broken-head') return 'disputed';
+  if (FAILED_ATTESTATION_STATES.has(governanceState.state)) return 'disputed';
   if (governanceState.state === 'missing' || governanceState.state === 'pending') return 'disputed';
   if (governanceState.expired) return 'stale';
   return 'verified';

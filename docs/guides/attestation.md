@@ -1,6 +1,6 @@
 # Attestation
 
-An attestation is authority-backed evidence that something was verified, accepted, approved, or reviewed.
+An attestation is a recorded assertion, citing a human approval reference, that something was verified, accepted, approved, or reviewed. It is authority-backed only when that reference was resolved to an approved result for it, which happens only in the `resolved` modes described below. In the default `reference-only` mode it is a recorded attestation with an unverified approval reference.
 
 In Veritas, attestations protect the parts of the repo standards and repo map that define what good looks like, where boundaries are, and who or what can verify requirements. The goal is not to make humans approve every routine change. The goal is to keep the definition of good from changing without trusted authority.
 
@@ -37,6 +37,7 @@ A resolver receives:
 A resolver returns a normalized result with:
 
 - `status`: `approved`, `rejected`, `unresolved`, `expired`, `out-of-scope`, or `error`
+- `approvalRef`: the reference the result is for; under a `resolved` mode it is required and must equal the cited reference
 - provider and authority reference
 - approver identity and approval timestamp when available
 - expiry, scope, and evidence hash when available
@@ -80,7 +81,7 @@ Example record:
 }
 ```
 
-When authority settings use `mode: "resolved"` or `mode: "resolved-strict"`, Veritas blocks attestation writes unless the approval ref resolves to an approved, unexpired, in-scope record. Failed resolution happens before attestation files are written. Recommendation acceptance uses the same approval path before applying standards changes.
+When authority settings use `mode: "resolved"` or `mode: "resolved-strict"`, Veritas blocks attestation writes unless the approval ref resolves to an approved, unexpired, in-scope record whose own `approvalRef`, when it is a `veritas-approval:` or `file:` reference, leads back to that record. Failed resolution happens before attestation files are written. Recommendation acceptance uses the same approval path before applying standards changes.
 
 The current implementation records hashes for the files that hold protected standards state:
 
@@ -115,6 +116,44 @@ npx --no @kontourai/veritas attest status
 
 Status reports the current attestation, age, expiry, and hash drift. It also reports `priorAttestationLink` for the active record: the `reference` it names as its predecessor, its `form` (`attestation-id`, `legacy-reference`, or `unresolved`), whether it `resolved` to a tracked record, and an `explanation`. A successor of an unmarked historical attestation names its predecessor by the opaque `legacy-attestation-v0:<hash>` reference rather than the id in `HEAD`, because the historical id embeds a digest of the raw Repo Map file. That is the expected migration link, not a broken chain; `resolved` is `true` only when the reference matches exactly one tracked record, and the readiness PASS line for `policy-changes-require-attestation` names the reference and whether it resolved.
 
+## Validity Window
+
+Each attestation counts for readiness for a fixed number of days after it was recorded: 90 by default, or the value given with `--valid-until-days`. The value must be a whole number of days, 1 or more, written in digits. `attest bootstrap` and `attest policy-change` refuse any other value with exit code `2` and write no record. They also refuse a window that would end after the latest date Veritas can represent. `attest status` reports the end of that window as `validUntil`, and `expired: true` once it has passed. Expiry is judged when readiness runs, and the window includes `validUntil` itself.
+
+An expired attestation is stale authority: the approval it records has run out under the repository's own policy, even though the protected standards still match. Readiness fails closed on it, as it does on drift:
+
+- The feedback output reports `FAIL  policy-changes-require-attestation: Active attestation <id> expired at <validUntil>; readiness fails until an authority records a fresh attestation.`, then says that a human authority must run the command below and that an agent must not run it, and the process exits `1`. The stop hook shows this text to the agent at the end of every turn until the attestation is renewed.
+- JSON output has `readiness.status: "fail"` and `readiness.verdict: "not-ready"`. In the trust bundle the readiness claim is `rejected` and the attestation currency claim is `stale`.
+
+`attest status` still reports `state: "current"` for an expired record whose hashes match, because the files did not drift. Read `expired` for the validity window.
+
+To clear it, a human authority reviews the protected standards, then records a fresh attestation. A `policy-change` attestation is accepted when nothing changed. Pass the expired attestation's `validUntilDays` again to keep a custom window; the readiness message names it:
+
+```bash
+npx --no @kontourai/veritas attest policy-change \
+  --actor <authority-id> \
+  --approval-ref <human-approval-reference> \
+  --message "Renewed the attestation after reviewing the unchanged standards" \
+  --valid-until-days <days>
+```
+
+A record whose window cannot be evaluated is never treated as open-ended. If `validUntilDays` is missing, `null`, not a whole number of days of 1 or more (a fraction such as `1.5` or a string such as `"90"` included), or `attestedAt` is not a valid date, `attest status` reports `expired: true`, `validUntil: null` and a `validityWindowError` that names the field. Readiness fails with `Active attestation <id> has no valid validity window (<reason>); readiness fails until an authority records a fresh attestation.`, and the remedy is the same fresh attestation. If the record also fails its record integrity check, readiness reports that instead.
+
+A repository with no attestation yet, or with only the `.veritas/attestations/PENDING` marker that a non-interactive `init` writes, is a different case. No authority has approved its standards yet, so readiness reports a `WARN` and does not block until the bootstrap attestation is recorded.
+
+Releases before this change reported an expired attestation as a `WARN` and passed readiness; see [MIGRATING](../MIGRATING.md#expired-attestations-fail-readiness).
+
+## Record Integrity
+
+Each attestation that `veritas attest` writes carries `recordIntegrity`: an `algorithm`, currently `veritas-attestation-record-v1`, and a `digest`, the SHA-256 of every other field of the record with keys sorted at every level. That covers the actor, `notes`, `metadata.approvalRef`, and the protected standards hashes. Status recomputes the digest and reports `recordIntegrity.status`:
+
+- `verified`: the record is as it was written.
+- `mismatch`: the record was edited after it was written. The status is `tampered`, drift names `recordIntegrity`, and readiness fails. Restore the file as it was committed. To correct a record, record a new attestation instead of editing the old one.
+- `unsupported-algorithm`: the record names an algorithm this Veritas version cannot verify. The status is `unverifiable`, and readiness fails until you run a version that supports it.
+- `unbound`: the record predates record integrity. It stays `current`, because every attestation recorded before this release has this form, and the readiness PASS line says that its fields are not bound. The next attestation you record is bound.
+
+The digest is not a signature. It lives in the record it covers, so it catches an edit that leaves the digest alone, but not one that recomputes it, and deleting `recordIntegrity` turns a bound record into an unbound one. The commit history of `.veritas/attestations/` remains the record of who changed a file.
+
 ## What Attestation Is Not
 
 An attestation is not:
@@ -125,8 +164,23 @@ An attestation is not:
 - required for every routine merge
 - the same thing as an exception
 
-An **Exception** is an authority-backed decision to accept an unmet or failing requirement for a specific change. An attestation is the evidence form that can support that decision.
+An **Exception** is a recorded decision to accept an unmet or failing requirement for a specific change. Only the pre-tool-use hook records exceptions, and readiness does not read them. Veritas records an exception's actor and reason but does not resolve any authority behind it, and does not link exceptions to attestations.
 
 ## Built With Surface
 
 Veritas projects attestation evidence into Surface-format trust state so freshness, integrity, and authority gaps can be inspected. Veritas users should still think in Veritas terms: protected standards, verification authorities, attestations, and readiness reports.
+
+Each attestation record carries a `surface` claim, its evidence, and a verification event. The claim is only as strong as the approval check that ran:
+
+| Approval check when the record was written | Claim and event status | `confidenceBasis` |
+| --- | --- | --- |
+| `resolved` or `resolved-strict` mode resolved the reference to an approved record for that same reference | `verified` | `sourceQuality: strong`, `reviewerAuthority: human`, `evidenceStrength: strong` |
+| `reference-only` or `prefix` mode recorded the reference without checking it | `proposed` | `sourceQuality: weak`, `reviewerAuthority: none`, `evidenceStrength: weak` |
+
+`proposed` is the status Surface derives for evidence that no verification backs. Records written before this rule existed are immutable and keep the `verified` claim they were written with, even in `reference-only` mode, so a consumer reading their stored `surface` still sees verified human approval; check `metadata.approvalRefPolicy` for those.
+
+The resolver result must be for the reference the attestation cites. The offline resolver accepts a record only when the record's own `approvalRef` leads to the same record file as the cited reference, so `veritas-approval:chg-123`, `file:.veritas/authority/approval-records/chg-123.approval.json`, and `file:./.veritas/authority/approval-records/chg-123.approval.json` all match the example record above. It refuses, as `out-of-scope`, a record whose `approvalRef` is a `veritas-approval:` or `file:` reference that leads to a different record or is not valid. A record whose `approvalRef` is an external identifier, such as the `servicenow:CHG1` ticket it mirrors, is accepted, because the cited reference located it; the stored resolution keeps that identifier as `recordApprovalRef`. A resolver result passed programmatically as `approvalResolverResult` to `createAttestation` is trusted as given: Veritas checks its status, expiry, and reference, not where it came from. Under a `resolved` mode, Veritas refuses a result for a different reference, or one with none.
+
+When readiness reads the active attestation, it also requires record integrity to be `verified`. The trust bundle's attestation evidence says whether the active attestation is authority-backed and, if not, why: its reference was not resolved, or its record is unbound or tampered, so its approval metadata could have been edited. The exported `buildGovernanceArtifactClaims` API applies the same rule and gives the claims it builds the weaker confidence basis when the attestation is not authority-backed.
+
+This does not change readiness. The `policy-changes-require-attestation` requirement checks the active attestation's protected standards hashes and validity window, not how its approval reference was checked, so it gives the same result in every approval mode. To require a resolved approval, use a `resolved` mode.

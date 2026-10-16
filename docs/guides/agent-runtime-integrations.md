@@ -6,7 +6,8 @@ Veritas is intentionally agent-agnostic. These integration notes show where the 
 
 - keep the tracked repo-local config under `.veritas/`
 - use `npx --no @kontourai/veritas readiness --working-tree` as the explicit orchestration command; it prints agent-readable feedback by default
-- use `npx --no @kontourai/veritas apply stop-hook --tool claude-code` when you want Stop-hook feedback at turn end
+- use `npx --no @kontourai/veritas integrations claude-code install` to write the Stop hook, the PreToolUse hook and the `.claude/settings.json` wiring in one step
+- use `npx --no @kontourai/veritas apply stop-hook --tool claude-code` when you want only the Stop-hook feedback at turn end
 - use the generated git/runtime hooks when you want post-change automation instead of manual invocation
 
 ## Codex
@@ -23,7 +24,7 @@ Veritas is intentionally agent-agnostic. These integration notes show where the 
 
 - keep Repo Map and Repo Standards files in the repo, not in editor-only settings
 - point Cursor rules or project instructions at the repo-local Veritas governance block
-- use `npx --no @kontourai/veritas apply stop-hook --tool cursor` to generate a thin wrapper around `.veritas/hooks/stop.sh`
+- use `npx --no @kontourai/veritas integrations cursor install` to write `.veritas/hooks/stop.sh` and its Cursor hook config, or `npx --no @kontourai/veritas apply stop-hook --tool cursor` to generate only that thin wrapper
 - prefer `npx --no @kontourai/veritas readiness --check evidence` for review-only generated evidence and `npx --no @kontourai/veritas readiness` for evidence-check plus standards-feedback paths
 
 ## GitHub Copilot Workspace
@@ -39,6 +40,19 @@ Veritas is intentionally agent-agnostic. These integration notes show where the 
 - store Repo Map and Repo Standards changes in normal reviewable commits
 
 ## Common Rule
+
+Generated POSIX post-commit, runtime, Stop and Claude Code pre-edit scripts run
+the nearest eligible repository install's `bin/veritas.mjs` with Node. They check
+the entry they run, so missing `.bin` links do not redirect a local hook to a
+parent or PATH `veritas`. With no eligible local entry they retain the explicit
+`npx --no @kontourai/veritas` fallback. Codex's native Windows override remains a
+separate plain invocation. See [migration instructions](../MIGRATING.md#agent-hook-commands-run-the-install-they-found)
+to refresh scripts already installed in a consumer repository.
+
+The generated Stop hook ends its feedback by asking the agent to address the
+FAIL lines before finishing. When a FAIL line says a human authority must act,
+such as renewing an expired attestation, the agent is told to stop and report
+it to the user instead of acting on it.
 
 No matter which runtime you use, keep these pieces repo-local and reviewable:
 

@@ -42,7 +42,7 @@
             ]
           },
           "enforcementLevel": {
-            "description": "How strongly Veritas applies the requirement (the canonical Enforcement Level, CONTEXT.md). Observe: record evidence only. Guide: give just-in-time agent-facing correction without blocking merge readiness. Require: must be satisfied or accepted by exception.",
+            "description": "How strongly Veritas applies the requirement (the canonical Enforcement Level, CONTEXT.md). Observe: record evidence only. Guide: give just-in-time agent-facing correction without blocking merge readiness. Require: must be satisfied before merge readiness is complete.",
             "type": "string",
             "enum": ["Observe", "Guide", "Require"]
           },
@@ -197,7 +197,11 @@
       "properties": {
         "governance-block": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string",
+            "description": "Repository-relative path of an instruction file inside the repository.",
+            "pattern": "^(?![\\\\/])(?![A-Za-z]:)(?!(?:.*[\\\\/])?\\.\\.(?:[\\\\/]|$)).+$"
+          }
         }
       }
     },

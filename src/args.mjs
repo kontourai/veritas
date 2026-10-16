@@ -48,14 +48,39 @@ function parseFeedbackJudgmentTokens(argv, spec) {
 export function parseTokens(argv, spec, { defaults = {} } = {}) {
   const options = cloneDefaults(defaults);
   const rest = [];
+  const seenOnceTokens = new Set();
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     const rule = spec[token];
 
     if (!rule) {
+      // `strictValue` rules refuse the `--flag=value` form rather than letting
+      // it fall into `rest`, where a caller that ignores `rest` drops it.
+      const inlineFlag = typeof token === 'string' && token.includes('=') ? token.slice(0, token.indexOf('=')) : null;
+      if (inlineFlag && spec[inlineFlag]?.strictValue) {
+        throw new Error(`${inlineFlag} takes its value as the next argument; the ${inlineFlag}=<value> form is not supported`);
+      }
       rest.push(token);
       continue;
+    }
+
+    // `once` rules refuse a repeat instead of letting the last value win, for
+    // flags where silently dropping an earlier value would drop a requirement.
+    if (rule.once) {
+      if (seenOnceTokens.has(token)) {
+        throw new Error(rule.onceMessage ?? `${token} may be given only once`);
+      }
+      seenOnceTokens.add(token);
+    }
+
+    if (rule.strictValue && rule.type !== 'flag') {
+      if (index + 1 >= argv.length) {
+        throw new Error(`${token} requires a value`);
+      }
+      if (String(argv[index + 1]).trim() === '') {
+        throw new Error(`${token} requires a non-empty value`);
+      }
     }
 
     if (rule.type === 'flag') {
@@ -100,6 +125,7 @@ export function parseArgs(argv) {
     '--phase': { type: 'string', key: 'phase' },
     '--source-ref': { type: 'string', key: 'sourceRef' },
     '--owner': { type: 'string', key: 'owner' },
+    '--actor': { type: 'string', key: 'actor' },
     '--baseline-ci-fast-status': { type: 'string', key: 'baselineCiFastStatus' },
     '--run-id': { type: 'string', key: 'runId' },
     '--changed-from': { type: 'string', key: 'changedFrom' },
@@ -153,7 +179,7 @@ export function parseAttestArgs(argv) {
       '--display-name': { type: 'string', key: 'displayName' },
       '--message': { type: 'string', key: 'message' },
       '--approval-ref': { type: 'string', key: 'approvalRef' },
-      '--valid-until-days': { type: 'number', key: 'validUntilDays' },
+      '--valid-until-days': { type: 'string', key: 'validUntilDays', strictValue: true },
       '--non-interactive': { type: 'flag', key: 'nonInteractive' },
       // Authorizing block fields
       '--executed-by': { type: 'string', key: 'executedBy' },
@@ -274,11 +300,18 @@ export function parseReadinessArgs(argv) {
       '--repo-map': { type: 'string', key: 'repoMapPath' },
       '--repo-standards': { type: 'string', key: 'repoStandardsPath' },
       '--authority-settings': { type: 'string', key: 'authoritySettingsPath' },
+      '--actor': { type: 'string', key: 'actor' },
       '--run-id': { type: 'string', key: 'runId' },
       '--working-tree': { type: 'flag', key: 'workingTree' },
       '--changed-from': { type: 'string', key: 'changedFrom' },
       '--changed-to': { type: 'string', key: 'changedTo' },
-      '--evidence-check-command': { type: 'string', key: 'evidenceCheckCommand' },
+      '--evidence-check-command': {
+        type: 'string',
+        key: 'evidenceCheckCommand',
+        once: true,
+        onceMessage: '--evidence-check-command may be given only once; it takes exactly one command',
+        strictValue: true,
+      },
       '--skip-evidence-check': { type: 'flag', key: 'skipEvidenceCheck' },
       '--baseline-ci-fast-status': { type: 'string', key: 'baselineCiFastStatus' },
       '--projection-output': { type: 'string', key: 'projectionOutputPath' },

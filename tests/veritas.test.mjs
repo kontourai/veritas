@@ -1496,6 +1496,7 @@ test('work-area, default, and explicit evidence routing always compose required 
   });
   assert.deepEqual(surfacePlan.evidenceCheckCommands, ['npm run viewer:build', 'npm run required-evidence-check']);
   assert.equal(surfacePlan.resolutionSource, 'surface');
+  assert.deepEqual(surfacePlan.requiredEvidenceCheckIds, ['required-evidence-check']);
 
   const defaultPlan = resolveEvidenceCheckCommands({
     repoMapPath: writeTempRepoMap(rootDir, repoMap),
@@ -1521,6 +1522,8 @@ test('work-area, default, and explicit evidence routing always compose required 
   });
   assert.deepEqual(explicitPlan.evidenceCheckCommands, ['npm run diagnostic', 'npm run required-evidence-check']);
   assert.equal(explicitPlan.resolutionSource, 'explicit');
+  // An explicit command is additive and required for the run that supplied it (#225).
+  assert.deepEqual(explicitPlan.requiredEvidenceCheckIds, ['required-evidence-check', 'explicit-command-npm-run-diagnostic']);
 
   repoMap.evidence.evidenceChecks.push({
     id: 'npm-run-diagnostic',
@@ -1549,6 +1552,10 @@ test('work-area, default, and explicit evidence routing always compose required 
     explicitEvidenceCheckCommand: 'npm run diagnostic',
   });
   assert.equal(occupiedNamespacePlan.evidenceChecks[0].id, 'explicit-command-npm-run-diagnostic-3');
+  assert.deepEqual(
+    occupiedNamespacePlan.requiredEvidenceCheckIds,
+    ['explicit-command-npm-run-diagnostic-2', 'explicit-command-npm-run-diagnostic-3'],
+  );
   assert.deepEqual(
     occupiedNamespacePlan.evidenceChecks.map((check) => [check.id, check.command]),
     [
@@ -5338,16 +5345,11 @@ test('print ci-snippet returns a copy-paste starter snippet', (t) => {
   assert.match(buildSuggestedCiSnippet({ evidenceCheck: repoInsights.evidenceCheck }), /run: npm run verify/);
 });
 
-test('print git-hook returns a tracked post-commit runtime integration', () => {
+test('print git-hook exposes the post-commit shell and bypass contract', () => {
   const hookBody = buildSuggestedGitHook({ hook: 'post-commit' });
-  const trackedHookBody = readFileSync(join(repoRootDir, '.githooks/post-commit'), 'utf8');
   assert.match(hookBody, /^#!\/bin\/sh/m);
-  assert.match(hookBody, /^  npx --no @kontourai\/veritas readiness --changed-from HEAD~1 --changed-to HEAD$/m);
   assert.match(hookBody, /VERITAS_HOOK_SKIP/);
   assert.match(hookBody, /AI_GUIDANCE_HOOK_SKIP/);
-  // This repo's own hook differs only in how it runs Veritas: npx cannot find a package from
-  // inside that package's own checkout (it exits 127), while npm exec resolves the root bin.
-  assert.equal(hookBody.replaceAll('npx --no @kontourai/veritas', 'npm exec -- veritas'), trackedHookBody);
 });
 
 test('print git-hook returns a tracked pre-push push-safe integration', () => {
@@ -5957,11 +5959,11 @@ test('apply codex-hook writes a tracked codex hooks artifact and can merge it', 
   assert.equal(result.outputPath, '.veritas/runtime/codex-hooks.json');
   assert.equal(result.mergedTargetPath, 'tmp-hooks.json');
   assert.equal(contents.hooks.Stop[0].hooks[0].command, '.veritas/hooks/agent-runtime.sh');
-  assert.match(contents.hooks.PostSession[0].hooks[0].command, /VERITAS_SESSION_LOG_PATH/);
+  assert.equal(Object.hasOwn(contents.hooks, 'PostSession'), false);
   assert.equal(merged.hooks.SessionStart[0].hooks[0].command, 'echo existing');
   assert.equal(merged.hooks.Stop[0].hooks[0].command, 'echo keep-me');
   assert.equal(merged.hooks.Stop[1].hooks[0].command, '.veritas/hooks/agent-runtime.sh');
-  assert.match(merged.hooks.PostSession[0].hooks[0].command, /VERITAS_SESSION_LOG_PATH/);
+  assert.equal(Object.hasOwn(merged.hooks, 'PostSession'), false);
 });
 
 test('apply codex-hook can resolve a Codex home into hooks.json', (t) => {
@@ -5996,7 +5998,7 @@ test('apply codex-hook can resolve a Codex home into hooks.json', (t) => {
   assert.equal(result.mergedTargetPath, 'tmp-codex-home/hooks.json');
   assert.equal(merged.hooks.SessionStart[0].hooks[0].command, 'echo existing');
   assert.equal(merged.hooks.Stop[0].hooks[0].command, '.veritas/hooks/agent-runtime.sh');
-  assert.match(merged.hooks.PostSession[0].hooks[0].command, /VERITAS_SESSION_LOG_PATH/);
+  assert.equal(Object.hasOwn(merged.hooks, 'PostSession'), false);
 });
 
 test('apply codex-hook reports an absolute external Codex home target clearly', (t) => {
@@ -6268,7 +6270,8 @@ test('integrations codex install owns git, runtime, and codex hook wiring', (t) 
   assert.equal(result.stop.codexHooks.outputPath, '.veritas/runtime/codex-hooks.json');
   assert.equal(configuredHooksPath, '.githooks');
   assert.equal(codexHooks.hooks.Stop[0].hooks[0].command, '.veritas/hooks/agent-runtime.sh');
-  assert.equal(result.postSession.installed, true);
+  assert.equal(result.postSession.installed, false);
+  assert.match(result.postSession.reason, /no reader for Codex rollout transcripts/);
 });
 
 test('runtime status reports installed integration state including codex target', (t) => {

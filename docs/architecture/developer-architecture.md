@@ -97,7 +97,7 @@ sequenceDiagram
   Change->>Map: classify changed files into Work Areas
   Map-->>Veritas: Work Areas, Change Boundaries, routing hints
   Standards-->>Veritas: applicable Requirements and Evidence Checks
-  Veritas->>Veritas: evaluate requirements, boundaries, authorities, exceptions, freshness
+  Veritas->>Veritas: evaluate requirements, boundaries, authorities, freshness
   Veritas->>Evidence: record Evidence Findings and Readiness Coverage
   Evidence-->>Veritas: Readiness Report and artifact path
   Veritas->>Surface: project claims, evidence, policies, events
@@ -111,7 +111,7 @@ sequenceDiagram
 
 ## Governance Evidence Role
 
-Veritas' governance evidence role is to make a readiness decision explainable: what requirement applied, what evidence was present or missing, whether the evidence was fresh, and whether an authority accepted an exception.
+Veritas' governance evidence role is to make a readiness decision explainable: what requirement applied, what evidence was present or missing, and whether the evidence was fresh.
 
 ```mermaid
 flowchart TD
@@ -130,7 +130,7 @@ flowchart TD
   SurfaceOut --> GateInput["Consumer gate input\nFlow Agents, Builder Kit, Flow"]
 ```
 
-**Current implementation:** Veritas decides readiness from applicable Requirements, evidence, authority, exceptions, and freshness. Surface projection makes that state portable, but the Veritas meaning remains merge readiness.
+**Current implementation:** Veritas decides readiness from applicable Requirements, evidence, authority, and freshness. Surface projection makes that state portable, but the Veritas meaning remains merge readiness.
 
 **Future Resource Contract alignment:** a future Readiness Report resource can expose conditions such as `Ready`, `EvidenceFresh`, `BoundaryCrossing`, `ExceptionAccepted`, and `SurfaceProjected`. That is a migration plan, not current behavior in this issue.
 
@@ -146,10 +146,10 @@ Change Boundary:
 : A coordination or risk threshold around a Work Area. Crossing a boundary can add evidence, guidance, authority, or coordination requirements.
 
 Requirement:
-: A condition from Repo Standards that must be satisfied, evidenced, or accepted by exception.
+: A condition from Repo Standards that must be satisfied or evidenced.
 
 Evidence and Evidence Finding:
-: Evidence is a traceable result, observation, artifact, attestation, or record. Evidence Findings explain the observed state for a Requirement, such as satisfied, missing, stale, failing, advisory, recheckable, or accepted by exception.
+: Evidence is a traceable result, observation, artifact, attestation, or record. Evidence Findings explain the observed state for a Requirement, such as satisfied, missing, stale, failing, advisory, or recheckable.
 
 Readiness Report:
 : The generated report that explains Merge Readiness and Readiness Coverage for a change. The current artifact shapes are documented in [Artifacts and Schemas](../reference/artifacts-and-schemas.md).

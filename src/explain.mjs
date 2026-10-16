@@ -7,6 +7,7 @@ import { ruleMatchesFile } from './rules/applicability.mjs';
 import { evaluateWorkAreaBoundaryRule } from './rules/evaluate.mjs';
 import { resolveVeritasPaths, listChangedFiles, listWorkingTreeFiles } from './report/index.mjs';
 import { parseTokens } from './args.mjs';
+import { resolveActor } from './util/actor.mjs';
 
 function ruleMatchesWorkAreaNode(rule, node, config) {
   if (!node) return false;
@@ -47,15 +48,15 @@ function syntheticPolicyRules() {
     classification: 'hard-invariant',
     enforcementLevel: 'Require',
     enforcement: 'deny',
-    message: 'Protected standards changes require a current authority-backed attestation.',
+    message: 'Protected standards changes require a current attestation.',
     explain: {
-      summary: 'Veritas hashes the redacted public Repo Map policy, Repo Standards, and authority settings as Protected Standards. MCP execution inputs are not policy identity. Readiness checks fail on drift until a valid authority records a fresh attestation.',
+      summary: 'Veritas hashes the redacted public Repo Map policy, Repo Standards, and authority settings as Protected Standards. MCP execution inputs are not policy identity. Readiness checks fail on drift, or once the attestation validity window expires, until a valid authority records a fresh attestation.',
       mustDo: [
         'Run `npx --no @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference>` after first installing Veritas governance.',
         'Run `npx --no @kontourai/veritas attest policy-change --actor <authority-id> --approval-ref <human-approval-reference> --message <reason>` after changing Protected Standards files.',
       ],
       mustNotDo: [
-        'Do not treat generated evidence or agent edits as a substitute for authority-backed standards review.',
+        'Do not treat generated evidence or agent edits as a substitute for human review of the standards.',
         'Do not invent an approval reference; stop and request explicit human approval when no durable approval artifact exists.',
       ],
       contextLinks: [
@@ -219,7 +220,7 @@ export function runBoundariesCheckCli(argv = process.argv.slice(2), defaults = {
   const result = checkBoundaries({
     rootDir,
     repoMap,
-    actor: options.actor ?? process.env.VERITAS_ACTOR ?? null,
+    actor: resolveActor(options.actor),
     files,
   });
   const status = result.passed ? 'PASS' : 'FAIL';

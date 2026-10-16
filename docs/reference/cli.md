@@ -45,9 +45,11 @@ Breaking evidence-check migration notes live in [../MIGRATING.md](../MIGRATING.m
 Runs the requested check. Without `--check`, this is the agent-facing feedback path.
 
 ```bash
-npx --no @kontourai/veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree]
+npx --no @kontourai/veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree] [--actor <id>]
 npx --no @kontourai/veritas readiness --check boundaries --actor cli-team [--diff main]
 ```
+
+`--actor <id>` names the governance actor for the run: any `work-area-boundary` requirement the Repo Standards declare, the readiness-verdict authority trace when no current attestation names one, and run history. It takes precedence over `VERITAS_ACTOR`, and an empty value counts as unset; with neither, a `work-area-boundary` requirement fails closed.
 
 `readiness` is the recommended current front door for evidenceCheck execution, generated evidence, standards feedback drafting, and change guidance. `readiness --check boundaries` replaces `boundaries check`. `readiness --check coverage` is the current command for readiness coverage. `readiness --check evidence` is the current command for the lower-level generated evidence path. `readiness --check config` validates this repo's Repo Map and Repo Standards against the schemas Veritas publishes for them.
 
@@ -138,11 +140,11 @@ npx --no @kontourai/veritas attest policy-change --actor <id> --approval-ref <re
 npx --no @kontourai/veritas attest status [--root <path>]
 ```
 
-`bootstrap` records the first reviewed hashes for the current protected standards files: `.veritas/repo-map.json`, `.veritas/repo-standards/default.repo-standards.json`, and `.veritas/authority/default.authority-settings.json`. New attestations declare `repoMapHashAlgorithm: "public-policy-v1"`; the Repo Map hash is its recursively redacted public policy projection, so MCP server arguments, environment, and tool input are runtime execution inputs rather than protected policy identity. Unmarked historical records remain valid when their legacy file digest still matches, receive a nonblocking migration recommendation, and never expose that legacy digest in `attest status`. A legacy file mismatch fails closed and requires a policy-change attestation. `policy-change` records a reviewed successor and requires an explanation in `--message`. Both write paths require `--approval-ref`, a durable reference to the explicit human approval that authorized the attestation. `status` reports the current attestation, age, expiry, and hash drift. It also reports `priorAttestationLink` for the active record: the `reference` it names as its predecessor, its `form` (`attestation-id`, `legacy-reference`, or `unresolved`), whether it `resolved` to a tracked record, and an `explanation`. A successor of an unmarked historical attestation names its predecessor by the opaque `legacy-attestation-v0:<hash>` reference rather than the id in `HEAD`, because the historical id embeds a digest of the raw Repo Map file. That is the expected migration link, not a broken chain; `resolved` is `true` only when the reference matches exactly one tracked record, and the readiness PASS line for `policy-changes-require-attestation` names the reference and whether it resolved.
+`bootstrap` records the first reviewed hashes for the current protected standards files: `.veritas/repo-map.json`, `.veritas/repo-standards/default.repo-standards.json`, and `.veritas/authority/default.authority-settings.json`. New attestations declare `repoMapHashAlgorithm: "public-policy-v1"`; the Repo Map hash is its recursively redacted public policy projection, so MCP server arguments, environment, and tool input are runtime execution inputs rather than protected policy identity. Unmarked historical records remain valid when their legacy file digest still matches, receive a nonblocking migration recommendation, and never expose that legacy digest in `attest status`. A legacy file mismatch fails closed and requires a policy-change attestation. `policy-change` records a reviewed successor and requires an explanation in `--message`. Both write paths require `--approval-ref`, a durable reference to the explicit human approval that authorized the attestation. `status` reports the current attestation, age, expiry, and hash drift. It also reports `recordIntegrity`: whether the record still matches the digest written with it (`verified`), was edited since (`mismatch`, status `tampered`, readiness fails), names an algorithm this version cannot check (`unsupported-algorithm`, status `unverifiable`, readiness fails), or predates record integrity (`unbound`, still `current`); see [Record Integrity](../guides/attestation.md#record-integrity). It also reports `priorAttestationLink` for the active record: the `reference` it names as its predecessor, its `form` (`attestation-id`, `legacy-reference`, or `unresolved`), whether it `resolved` to a tracked record, and an `explanation`. A successor of an unmarked historical attestation names its predecessor by the opaque `legacy-attestation-v0:<hash>` reference rather than the id in `HEAD`, because the historical id embeds a digest of the raw Repo Map file. That is the expected migration link, not a broken chain; `resolved` is `true` only when the reference matches exactly one tracked record, and the readiness PASS line for `policy-changes-require-attestation` names the reference and whether it resolved.
 
-The built-in requirement `policy-changes-require-attestation` fails when the active attestation no longer matches protected standards.
+The built-in requirement `policy-changes-require-attestation` fails when the active attestation no longer matches protected standards, or when its validity window has expired; see [Validity Window](../guides/attestation.md#validity-window). `--valid-until-days` takes a whole number of days, 1 or more, written in digits; any other value exits `2` without writing a record. With no attestation yet, or only a pending one, it reports an advisory warning instead.
 
-Attestations are committed files, so `veritas attest` does not write the raw Git `user.email` into them. `actor.identityEvidence.gitEmail` is recorded only when the configured address is already a GitHub noreply address (`…@users.noreply.github.com`); otherwise it is `null`. There is no flag or config key that records any other address. `actor.identityEvidence.signingKeyFingerprint` follows the same rule for Git `user.signingkey`: a hex key id or a `SHA256:` fingerprint is recorded, and a key file path, an SSH literal key (`key::…`, whose comment can be an address), or anything else is recorded as `null`. Neither value is part of the attestation id, the content hash, or any readiness verdict, so maintainers may replace a personal address in older records with a noreply address or `null` without changing `veritas readiness` verdicts; `veritas attest status` echoes the active record, so its output changes only by that line. Scrubbing a file does not remove the old value from Git history. `actor.id` and the fields derived from it (`collectedBy`, the Surface event `actor`) are identity-bearing and must not be edited.
+Attestations are committed files, so `veritas attest` does not write the raw Git `user.email` into them. `actor.identityEvidence.gitEmail` is recorded only when the configured address is already a GitHub noreply address (`…@users.noreply.github.com`); otherwise it is `null`. There is no flag or config key that records any other address. `actor.identityEvidence.signingKeyFingerprint` follows the same rule for Git `user.signingkey`: a hex key id or a `SHA256:` fingerprint is recorded, and a key file path, an SSH literal key (`key::…`, whose comment can be an address), or anything else is recorded as `null`. Neither value is part of the attestation id or the content hash. Records written before record integrity carry no `recordIntegrity` digest, so maintainers may replace a personal address in those older records with a noreply address or `null` without changing `veritas readiness` verdicts. A record that carries `recordIntegrity` never holds a personal address, and editing any of its fields reads as `tampered`; `veritas attest status` echoes the active record, so its output changes only by that line. Scrubbing a file does not remove the old value from Git history. `actor.id` and the fields derived from it (`collectedBy`, the Surface event `actor`) are identity-bearing and must not be edited.
 
 #### Collection Provenance
 
@@ -182,13 +184,16 @@ When `kind=explicit-statement` and the statement shares no token overlap with th
 
 ### `hooks claude-code`
 
-Prints, installs, or runs the Claude Code PreToolUse hook.
+Prints, installs, or runs the Claude Code PreToolUse hook, and runs the SessionEnd capture.
 
 ```bash
 npx --no @kontourai/veritas hooks claude-code print [--root <path>]
 npx --no @kontourai/veritas hooks claude-code apply [--root <path>] [--force]
 npx --no @kontourai/veritas hooks claude-code pre-tool-use [--root <path>] [--file <path>] [--actor <id>]
+npx --no @kontourai/veritas hooks claude-code session-end [--root <path>]
 ```
+
+`session-end` reads the Claude Code SessionEnd hook input from stdin and writes a standards-feedback draft from the session log it names as `transcript_path`, as `feedback observe --tool claude-code` does. `VERITAS_SESSION_LOG_PATH`, when set, takes precedence. With no session log path, or a path that does not exist, it writes a note to stderr and exits 0, so ending the session is never held up.
 
 `pre-tool-use` reads the Claude hook JSON payload from stdin, extracts `tool_input.file_path` or `tool_input.path`, resolves the actor from `--actor`, `VERITAS_ACTOR`, or the current attestation, and returns hook protocol JSON.
 For an allowed edit with matching rules, it includes the path-selected `explain` guidance in `hookSpecificOutput.additionalContext`. An `Edit`, `MultiEdit`, or `Write` call without a file path blocks because no path-specific guidance or boundary check can run. The generated hook covers those three edit tools; shell commands and runtimes without a pre-edit hook still need an explicit path briefing.
@@ -236,7 +241,7 @@ npx --no @kontourai/veritas integrations cursor install [--root <path>] [--force
 npx --no @kontourai/veritas integrations copilot status [--root <path>]
 ```
 
-Codex and Claude Code have session log readers. Claude Code install wires PreToolUse, Stop, and PostSession hooks. Cursor and Copilot currently install generic stop-hook wiring and report `sessionLogReader: null`.
+Codex and Claude Code have session log readers. Claude Code install wires PreToolUse, Stop, and SessionEnd hooks; SessionEnd captures a standards-feedback draft from the session log. Codex install wires PreToolUse and Stop hooks and does not capture session logs, because the Codex reader does not read Codex rollout transcripts. Cursor and Copilot currently install generic stop-hook wiring and report `sessionLogReader: null`.
 
 `uninstall` is available for Codex, Claude Code, Cursor, and Copilot, but it is manual guidance only. The JSON response reports `removed: false` and `capabilityState: "manual"`; Veritas does not remove files, hooks, or tool configuration automatically yet.
 
@@ -356,8 +361,9 @@ Runs evidence checks first, then creates a report, then creates a standards-feed
 ```bash
 npx --no @kontourai/veritas readiness [--root <path>] [--repo-map <path>] [--repo-standards <path>] [--authority-settings <path>]
   [--format feedback|json]
-  [--evidence-check-command <cmd>] [--skip-evidence-check]
+  [--evidence-check-command <cmd> | --skip-evidence-check]
   [--working-tree | --changed-from <ref> --changed-to <ref>]
+  [--actor <id>]
   [--run-id <id>]
   [--reviewer-confidence <scale-entry|unknown>]
   [--time-to-green-minutes <number>]
@@ -374,7 +380,9 @@ If `accepted_without_major_rewrite`, `required_followup`, and `time_to_green_min
 
 Evidence Check commands are executed as tokenized argv, not through an implicit shell. Keep each command to one executable plus arguments, or move compound shell logic into a real script.
 
-`--skip-evidence-check` is a deliberate diagnostic-only mode. It may generate guidance and a report, but when the Repo Map declares `requiredEvidenceCheckIds`, those checks are recorded as `skipped` and canonical Merge Readiness remains `not-ready` / `rejected`. An explicit `--evidence-check-command` is additive diagnostic evidence: it does not replace configured required checks.
+`--skip-evidence-check` is a deliberate diagnostic-only mode. It may generate guidance and a report, but when the Repo Map declares `requiredEvidenceCheckIds`, those checks are recorded as `skipped` and canonical Merge Readiness remains `not-ready` / `rejected`.
+
+An explicit `--evidence-check-command` is additive and required. It runs alongside the Repo Map's required checks and does not replace them, and it is itself a required check for that run. If it exits nonzero, readiness fails: the command reports `FAIL  required-evidence-check:<id>: failed`, JSON output sets `evidenceCheckFailure` and `readiness.verdict: "not-ready"`, and the process exits `1`. The `<id>` is the matching Repo Map check's id when the command equals a configured command, and otherwise an `explicit-command-<slug>` id. When the command equals an optional configured check's command, that check becomes required for the run, including its external tool: with `externalTool.blocking: true`, a `fail` or `missing` artifact verdict also blocks readiness. The flag takes exactly one non-empty command as the next argument. Giving it more than once, together with `--skip-evidence-check`, in the `--evidence-check-command=<cmd>` form, or with an empty or missing value is a usage error: readiness exits `2` with a message and runs nothing. A failing configured required check still fails readiness when the explicit command passes. To run a diagnostic that does not block, declare it in the Repo Map as a default or routed check that is not listed in `requiredEvidenceCheckIds`, and run readiness without `--evidence-check-command`; see [MIGRATING.md](../MIGRATING.md#explicit-evidence-check-commands-block-readiness-again).
 
 External tool evidenceChecks follow the same rule. For tools such as Fallow, put shell-sensitive behavior like `2>/dev/null || true` inside a script, have that script write a JSON artifact under `.veritas/`, and point the check's `externalTool.artifactPath` at that file. Advisory external tool findings appear as warnings in feedback; blocking external tool findings fail the run.
 
@@ -586,6 +594,8 @@ npx --no @kontourai/veritas apply codex-hook [--root <path>] [--output <path>] [
 npx --no @kontourai/veritas apply claude-code-pre-tool-use-hook [--root <path>] [--output <path>] [--force]
 ```
 
+`npx --no @kontourai/veritas apply --help` and `npx --no @kontourai/veritas print --help` list the targets. Each target refuses an unknown flag, a flag without its value, a value outside the listed choices, an extra positional argument, and a `--root` that is not an existing directory before it writes anything. A target that also merges a tool config (`stop-hook` with `--tool claude-code|cursor`, `claude-code-pre-tool-use-hook`, `codex-hook` with a target hooks file) reads and merges that config first, so a malformed config leaves nothing written. An existing generated file that already holds exactly what the target would write is accepted without `--force`; one that differs is refused.
+
 Write restrictions are intentional:
 
 - CI snippets must stay under `.veritas/snippets/`
@@ -601,6 +611,20 @@ Write restrictions are intentional:
 `ai-instruction-files-synced` readiness result. It updates only the configured
 AI instruction targets, replacing content only between Veritas governance
 markers; unknown `apply` targets fail closed.
+
+`apply governance-blocks` and the `governance-block` requirement read the same target list:
+the Repo Map's `activation.aiInstructionFiles` together with the paths in each
+`governance-block` requirement's `match`. A path a requirement names is required; a Repo Map
+entry keeps its own `required` flag, and a missing optional target is neither created nor
+reported. A list that is present counts even when it is empty: `init` writes `[]` to both lists
+for a repository with no instruction files, and then `apply governance-blocks` writes nothing and
+says so in its `message`. Only a repository with neither list configured gets the built-in
+defaults, `AGENTS.md` and `CLAUDE.md`, plus `.cursorrules` when it exists. Both lists are read
+from `.veritas/repo-map.json` and `.veritas/repo-standards/default.repo-standards.json`. Paths are
+compared in repository-relative form, so `./AGENTS.md` and `AGENTS.md` are one target. A path
+that is absolute or leaves the repository is an `invalid-governance-target` finding in readiness,
+`readiness --check config` rejects it against the schema, and `apply governance-blocks` refuses to
+write anything until it is corrected.
 
 The block it writes tells agents to run `npx --no @kontourai/veritas readiness`, which runs only an
 installed Veritas. In a fresh clone whose dependencies are not installed yet, and in a repository

@@ -1,10 +1,5 @@
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  writeFileSync,
-} from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { loadJson } from '../load.mjs';
 import { assertWithinDir, relativeRepoPath } from '../paths.mjs';
 import {
@@ -12,10 +7,10 @@ import {
   buildSuggestedStopHook,
 } from './suggestions.mjs';
 import { mergeStopHookConfig } from './config-merge.mjs';
-import { assertWritableHookPath } from './write-safety.mjs';
+import { assertReplaceableFile, assertWritableHookPath, writeGeneratedFile } from './write-safety.mjs';
 
 export { applyCiSnippet, applyPackageScripts } from './project-setup.mjs';
-export { applyGitHook, setupRepoHooks } from './git-hooks.mjs';
+export { applyGitHook, installRepoHook, setupRepoHooks } from './git-hooks.mjs';
 export {
   applyClaudeCodePostSessionHook,
   applyClaudeCodePreToolUseHook,
@@ -38,15 +33,9 @@ export function applyRuntimeHook({
     messagePrefix: 'apply runtime-hook',
   });
 
-  if (existsSync(resolvedOutputPath) && !force) {
-    throw new Error(
-      `Refusing to overwrite existing file: ${relativeOutputPath} (use --force to replace it)`,
-    );
-  }
-
-  mkdirSync(dirname(resolvedOutputPath), { recursive: true });
-  writeFileSync(resolvedOutputPath, buildSuggestedRuntimeHook(), 'utf8');
-  chmodSync(resolvedOutputPath, 0o755);
+  const hookBody = buildSuggestedRuntimeHook();
+  assertReplaceableFile({ resolvedPath: resolvedOutputPath, relativePath: relativeOutputPath, content: hookBody, force });
+  writeGeneratedFile({ resolvedPath: resolvedOutputPath, content: hookBody, executable: true });
 
   return {
     rootDir,
@@ -73,17 +62,11 @@ export function applyStopHook({
     messagePrefix: 'apply stop-hook',
   });
 
-  if (existsSync(resolvedOutputPath) && !force) {
-    throw new Error(
-      `Refusing to overwrite existing file: ${relativeOutputPath} (use --force to replace it)`,
-    );
-  }
+  assertReplaceableFile({ resolvedPath: resolvedOutputPath, relativePath: relativeOutputPath, content: suggestion.hookBody, force });
 
-  mkdirSync(dirname(resolvedOutputPath), { recursive: true });
-  writeFileSync(resolvedOutputPath, suggestion.hookBody, 'utf8');
-  chmodSync(resolvedOutputPath, 0o755);
-
-  let configuredToolConfigPath = null;
+  // Read and merge the tool config before writing anything, so a malformed config leaves no
+  // half-installed hook behind.
+  let toolConfigWrite = null;
   if (suggestion.toolConfigPath) {
     const resolvedToolConfigPath = resolve(rootDir, suggestion.toolConfigPath);
     assertWithinDir(
@@ -94,10 +77,17 @@ export function applyStopHook({
     const existingConfig = existsSync(resolvedToolConfigPath)
       ? loadJson(resolvedToolConfigPath, `${tool} stop-hook config`)
       : {};
-    const mergedConfig = mergeStopHookConfig(existingConfig, suggestion.toolConfig);
-    mkdirSync(dirname(resolvedToolConfigPath), { recursive: true });
-    writeFileSync(resolvedToolConfigPath, `${JSON.stringify(mergedConfig, null, 2)}\n`, 'utf8');
-    configuredToolConfigPath = relativeRepoPath(rootDir, resolvedToolConfigPath);
+    toolConfigWrite = {
+      resolvedPath: resolvedToolConfigPath,
+      content: `${JSON.stringify(mergeStopHookConfig(existingConfig, suggestion.toolConfig), null, 2)}\n`,
+    };
+  }
+
+  writeGeneratedFile({ resolvedPath: resolvedOutputPath, content: suggestion.hookBody, executable: true });
+  let configuredToolConfigPath = null;
+  if (toolConfigWrite) {
+    writeGeneratedFile(toolConfigWrite);
+    configuredToolConfigPath = relativeRepoPath(rootDir, toolConfigWrite.resolvedPath);
   }
 
   return {

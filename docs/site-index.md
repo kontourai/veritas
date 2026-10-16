@@ -42,7 +42,7 @@ Useful requirements should become stronger. Noisy requirements should be relaxed
 
 <div class="pillar">
 <h3>Readiness Report</h3>
-<p class="pillar-what">A human- and agent-facing report with merge readiness, readiness coverage, evidence freshness, boundary crossings, exceptions, recheck options, and change guidance.</p>
+<p class="pillar-what">A human- and agent-facing report with merge readiness, readiness coverage, evidence freshness, boundary crossings, recheck options, and change guidance.</p>
 <p class="pillar-why">Reviewers inspect a focused trust state instead of reconstructing repo expectations from a raw diff.</p>
 </div>
 
@@ -87,7 +87,7 @@ Useful requirements should become stronger. Noisy requirements should be relaxed
 <li>Repo standards define requirements, evidenceChecks, authorities, and thresholds</li>
 <li>Readiness report shows what passed, failed, went stale, or needs recheck</li>
 <li>Boundary crossings add evidence or authority requirements before merge</li>
-<li>Protected standards cannot be weakened without authority-backed attestation</li>
+<li>Protected standards cannot be weakened without a fresh attestation</li>
 <li>Standards feedback turns observed outcomes into recommendations</li>
 </ul>
 </div>
@@ -119,7 +119,7 @@ Veritas supports a gradual enforcement ladder:
 
 **Guide** — provide just-in-time correction or review feedback.
 
-**Require** — require fresh evidence or an authority-backed exception before merge readiness or repo conformance is complete.
+**Require** — require fresh evidence before merge readiness or repo conformance is complete.
 
 You do not have to gate every change on day one. The goal is earned autonomy, not instant bureaucracy.
 

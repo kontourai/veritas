@@ -1,5 +1,8 @@
 import { nearestInstalledVeritasCommand } from './nearest-veritas.mjs';
 
+// Root scripts use set -e, but absent Git discovery must still reach the fallback.
+const rootHookCommand = (args) => nearestInstalledVeritasCommand(args, { allowDiscoveryFailure: true });
+
 export function buildSuggestedGitHook({ hook = 'post-commit' } = {}) {
   if (!['post-commit', 'pre-push'].includes(hook)) {
     throw new Error(`Unsupported git hook kind: ${hook}`);
@@ -30,10 +33,10 @@ if [ "\${VERITAS_HOOK_SKIP:-\${AI_GUIDANCE_HOOK_SKIP:-0}}" = "1" ]; then
 fi
 
 if git rev-parse --verify --quiet HEAD~1 >/dev/null; then
-  npx --no @kontourai/veritas readiness --changed-from HEAD~1 --changed-to HEAD
+  ${rootHookCommand('readiness --changed-from HEAD~1 --changed-to HEAD')}
 else
   EMPTY_TREE="$(git hash-object -t tree /dev/null)"
-  npx --no @kontourai/veritas readiness --changed-from "$EMPTY_TREE" --changed-to HEAD
+  ${rootHookCommand('readiness --changed-from "$EMPTY_TREE" --changed-to HEAD')}
 fi
 `;
 }
@@ -47,10 +50,11 @@ if [ "\${VERITAS_HOOK_SKIP:-0}" = "1" ]; then
 fi
 
 if [ "$#" -eq 0 ]; then
-  exec npx --no @kontourai/veritas readiness --format json --working-tree
+  ${rootHookCommand('readiness --format json --working-tree')}
+  exit $?
 fi
 
-exec npx --no @kontourai/veritas readiness --format json "$@"
+${rootHookCommand('readiness --format json "$@"')}
 `;
 }
 
@@ -67,12 +71,15 @@ if [ "\${VERITAS_HOOK_SKIP:-0}" = "1" ]; then
   exit 0
 fi
 
-RESULT=$(npx --no @kontourai/veritas readiness --format feedback --working-tree 2>&1)
+run_veritas_feedback() {
+  ${rootHookCommand('readiness --format feedback --working-tree')}
+}
+RESULT=$(run_veritas_feedback 2>&1)
 EXIT=$?
 if [ "$EXIT" -ne 0 ]; then
   echo "$RESULT"
   echo ""
-  echo "Veritas: address the FAIL lines above before finishing."
+  echo "Veritas: address the FAIL lines above before finishing. Where a line says a human authority must act, stop and report it to the user instead of acting on it."
 fi
 
 exit 0
@@ -142,7 +149,7 @@ export function buildSuggestedClaudeCodePreToolUseHook() {
 # Exit codes follow the Claude Code PreToolUse protocol: 2 blocks the tool call,
 # 0 allows it.
 
-exec npx --no @kontourai/veritas hooks claude-code pre-tool-use "$@"
+${rootHookCommand('hooks claude-code pre-tool-use "$@"')}
 `;
 
   return {
@@ -169,17 +176,30 @@ exec npx --no @kontourai/veritas hooks claude-code pre-tool-use "$@"
   };
 }
 
+// Ends every SessionEnd capture command Veritas writes, as a shell comment. A reinstall replaces a
+// SessionEnd handler that carries it, so a later change to the command replaces the handler an
+// earlier Veritas wrote instead of adding a second one. No release wrote a SessionEnd handler before
+// this marker existed.
+export const CLAUDE_CODE_SESSION_END_MARKER = '# veritas:claude-code-session-end-capture';
+
+// Claude Code passes the session log path to SessionEnd hooks as `transcript_path` in the JSON on
+// stdin (https://code.claude.com/docs/en/hooks#sessionend-input). The command hands stdin to
+// `hooks claude-code session-end`, which reads it there.
 export function buildClaudeCodeSessionLogCaptureCommand() {
-  return 'VERITAS_SESSION_LOG_PATH="${VERITAS_SESSION_LOG_PATH:-${CLAUDE_TRANSCRIPT_PATH:-}}"; if [ -n "$VERITAS_SESSION_LOG_PATH" ]; then ' + nearestInstalledVeritasCommand('feedback observe --tool claude-code --session-log "$VERITAS_SESSION_LOG_PATH"') + '; fi';
+  return `${nearestInstalledVeritasCommand('hooks claude-code session-end')} ${CLAUDE_CODE_SESSION_END_MARKER}`;
 }
 
+// The post-session capture slot of the runtime integration contract. Claude Code runs it on
+// SessionEnd: it has no PostSession event, and ignores a PostSession key in settings with an
+// "Unknown hook event" warning. A per-hook timeout raises Claude Code's shared SessionEnd budget
+// (1.5 seconds by default) to match, up to 60 seconds.
 export function buildSuggestedClaudeCodePostSessionHook() {
   return {
     tool: 'claude-code',
     toolConfigPath: '.claude/settings.json',
     toolConfig: {
       hooks: {
-        PostSession: [
+        SessionEnd: [
           {
             matcher: '.*',
             hooks: [

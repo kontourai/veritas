@@ -1,5 +1,4 @@
 import {
-  chmodSync,
   existsSync,
   mkdirSync,
   writeFileSync,
@@ -8,11 +7,13 @@ import { dirname, resolve } from 'node:path';
 import { loadJson } from '../load.mjs';
 import { assertWithinDir, relativeRepoPath } from '../paths.mjs';
 import {
+  CLAUDE_CODE_SESSION_END_MARKER,
   buildSuggestedClaudeCodePostSessionHook,
   buildSuggestedClaudeCodePreToolUseHook,
 } from './suggestions.mjs';
 import { mergeStopHookConfig } from './config-merge.mjs';
-import { assertWritableHookPath } from './write-safety.mjs';
+import { assertReplaceableFile, assertWritableHookPath, writeGeneratedFile } from './write-safety.mjs';
+import { PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS } from './claude-code-hook-history.mjs';
 
 export function applyClaudeCodePreToolUseHook({
   rootDir,
@@ -32,16 +33,10 @@ export function applyClaudeCodePreToolUseHook({
     messagePrefix: 'apply claude-code-pre-tool-use-hook',
   });
 
-  if (existsSync(resolvedOutputPath) && !force) {
-    throw new Error(
-      `Refusing to overwrite existing file: ${relativeOutputPath} (use --force to replace it)`,
-    );
-  }
+  assertReplaceableFile({ resolvedPath: resolvedOutputPath, relativePath: relativeOutputPath, content: suggestion.hookBody, force });
 
-  mkdirSync(dirname(resolvedOutputPath), { recursive: true });
-  writeFileSync(resolvedOutputPath, suggestion.hookBody, 'utf8');
-  chmodSync(resolvedOutputPath, 0o755);
-
+  // Read and merge the tool config before writing anything, so a malformed config leaves no
+  // half-installed hook behind.
   const resolvedToolConfigPath = resolve(rootDir, suggestion.toolConfigPath);
   assertWithinDir(
     resolvedToolConfigPath,
@@ -52,8 +47,9 @@ export function applyClaudeCodePreToolUseHook({
     ? loadJson(resolvedToolConfigPath, 'claude-code pre-tool-use hook config')
     : {};
   const mergedConfig = mergeStopHookConfig(existingConfig, suggestion.toolConfig);
-  mkdirSync(dirname(resolvedToolConfigPath), { recursive: true });
-  writeFileSync(resolvedToolConfigPath, `${JSON.stringify(mergedConfig, null, 2)}\n`, 'utf8');
+
+  writeGeneratedFile({ resolvedPath: resolvedOutputPath, content: suggestion.hookBody, executable: true });
+  writeGeneratedFile({ resolvedPath: resolvedToolConfigPath, content: `${JSON.stringify(mergedConfig, null, 2)}\n` });
 
   return {
     rootDir,
@@ -61,6 +57,32 @@ export function applyClaudeCodePreToolUseHook({
     configuredToolConfigPath: relativeRepoPath(rootDir, resolvedToolConfigPath),
   };
 }
+
+// Removes the handlers under one event that `isVeritas` identifies, and the event itself when nothing
+// else is left in it. Every other handler is kept as it is.
+function withoutVeritasHandlers(config, event, isVeritas) {
+  const entries = config?.hooks?.[event];
+  if (!Array.isArray(entries)) return config;
+  const remaining = entries
+    .map((entry) => {
+      const hooks = Array.isArray(entry?.hooks) ? entry.hooks : [];
+      const kept = hooks.filter((hook) => !isVeritas(hook?.command));
+      if (hooks.length > 0 && kept.length === 0) return null;
+      return kept.length === hooks.length ? entry : { ...entry, hooks: kept };
+    })
+    .filter(Boolean);
+  const hooks = { ...config.hooks };
+  if (remaining.length === 0 && entries.length > 0) delete hooks[event];
+  else hooks[event] = remaining;
+  return { ...config, hooks };
+}
+
+const PREVIOUS_POST_SESSION = new Set(PREVIOUS_CLAUDE_CODE_POST_SESSION_COMMANDS);
+// The PostSession handlers earlier releases wrote, matched by exact command.
+const isPreviousPostSessionHandler = (command) => PREVIOUS_POST_SESSION.has(command);
+// A SessionEnd capture any Veritas wrote: its command ends with the marker.
+const isVeritasSessionEndHandler = (command) => typeof command === 'string'
+  && command.trimEnd().endsWith(` ${CLAUDE_CODE_SESSION_END_MARKER}`);
 
 export function applyClaudeCodePostSessionHook({ rootDir } = {}) {
   const suggestion = buildSuggestedClaudeCodePostSessionHook();
@@ -73,7 +95,14 @@ export function applyClaudeCodePostSessionHook({ rootDir } = {}) {
   const existingConfig = existsSync(resolvedToolConfigPath)
     ? loadJson(resolvedToolConfigPath, 'claude-code post-session hook config')
     : {};
-  const mergedConfig = mergeStopHookConfig(existingConfig, suggestion.toolConfig);
+  const mergedConfig = mergeStopHookConfig(
+    withoutVeritasHandlers(
+      withoutVeritasHandlers(existingConfig, 'PostSession', isPreviousPostSessionHandler),
+      'SessionEnd',
+      isVeritasSessionEndHandler,
+    ),
+    suggestion.toolConfig,
+  );
   mkdirSync(dirname(resolvedToolConfigPath), { recursive: true });
   writeFileSync(resolvedToolConfigPath, `${JSON.stringify(mergedConfig, null, 2)}\n`, 'utf8');
   return {

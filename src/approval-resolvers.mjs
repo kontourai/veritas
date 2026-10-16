@@ -81,6 +81,30 @@ function evaluateOfflineApprovalRecordScope(record, request) {
   return null;
 }
 
+// A record's own approvalRef names the approval it records. When it is an
+// offline reference (`veritas-approval:` or `file:`), it must lead to the same
+// record file as the cited reference, so equivalent spellings (`./` prefixes,
+// spaces after the prefix) match and a record copied to another path does not.
+// Any other approvalRef is an external identifier, such as the ticket the
+// record mirrors, and a record without one names nothing: either way the cited
+// reference located this record, so the citation is the match.
+function recordReferenceMismatch(rootDir, path, record) {
+  const recordRef = typeof record.approvalRef === 'string' ? record.approvalRef.trim() : '';
+  if (!recordRef) return null;
+  const describe = `approval record ${relativeRepoPath(rootDir, path)} records approvalRef ${JSON.stringify(recordRef)}`;
+  let recordPath;
+  try {
+    recordPath = resolveOfflineApprovalRecordPath(rootDir, recordRef);
+  } catch (error) {
+    return `${describe}, which is not a valid approval record reference: ${error.message}`;
+  }
+  if (recordPath === null || recordPath === path) return null;
+  if (recordPath.toLowerCase() === path.toLowerCase()) {
+    return `${describe}, whose record path differs from the cited one only in letter case; paths are compared exactly`;
+  }
+  return `${describe}, which leads to a different record`;
+}
+
 export function normalizeApprovalRefPolicy(policy = {}) {
   const mode = policy.mode ?? 'reference-only';
   if (!APPROVAL_REF_POLICY_MODES.includes(mode)) {
@@ -142,6 +166,7 @@ export function normalizeApprovalResolverResult(result = {}, options = {}) {
     evidenceHash: result.evidenceHash ?? null,
     resolvedAt,
     failureReason: status === 'approved' ? null : result.failureReason ?? 'approval reference was not approved',
+    ...(typeof result.recordApprovalRef === 'string' ? { recordApprovalRef: result.recordApprovalRef } : {}),
     metadata: result.metadata ?? {},
   };
 }
@@ -174,12 +199,17 @@ export function resolveOfflineApprovalReference({ rootDir, approvalRef, request,
   const raw = readFileSync(path, 'utf8');
   const record = JSON.parse(raw);
   const status = record.status ?? 'unresolved';
-  const scopeFailure = status === 'approved' && request
+  const referenceFailure = status === 'approved' ? recordReferenceMismatch(rootDir, path, record) : null;
+  const scopeFailure = referenceFailure ?? (status === 'approved' && request
     ? evaluateOfflineApprovalRecordScope(record, request)
-    : null;
+    : null);
   return normalizeApprovalResolverResult({
     status: scopeFailure ? 'out-of-scope' : status,
-    approvalRef: record.approvalRef ?? trimmedRef,
+    // The cited reference, which the record was just shown to answer.
+    approvalRef: trimmedRef,
+    ...(typeof record.approvalRef === 'string' && record.approvalRef.trim() !== trimmedRef
+      ? { recordApprovalRef: record.approvalRef.trim() }
+      : {}),
     provider: record.provider ?? 'veritas-offline',
     authorityRef: record.authorityRef ?? record.id ?? basename(path),
     approvedBy: record.approvedBy ?? null,
@@ -227,5 +257,6 @@ export function summarizeApprovalResolverResult(result = {}, options = {}) {
     evidenceHash: normalized.evidenceHash,
     resolvedAt: normalized.resolvedAt,
     failureReason: normalized.failureReason,
+    ...(normalized.recordApprovalRef ? { recordApprovalRef: normalized.recordApprovalRef } : {}),
   };
 }

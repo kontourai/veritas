@@ -1,0 +1,62 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/check-owned-paths.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "VERITAS_ROOT=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; VERITAS_PREFIX=; VERITAS_FOUND=; VERITAS_DIR=\"$(pwd -P 2>/dev/null)\"; while :; do case \"$VERITAS_DIR\" in /*) ;; *) break;; esac; if [ -z \"$VERITAS_FOUND\" ] && [ -f \"$VERITAS_DIR/node_modules/@kontourai/veritas/package.json\" ]; then VERITAS_FOUND=\"$VERITAS_DIR\"; fi; if [ -n \"$VERITAS_ROOT\" ] && [ \"$VERITAS_DIR\" -ef \"$VERITAS_ROOT\" ]; then VERITAS_PREFIX=\"$VERITAS_FOUND\"; break; fi; if [ \"$VERITAS_DIR\" = / ]; then break; fi; VERITAS_DIR=\"${VERITAS_DIR%/*}\"; [ -n \"$VERITAS_DIR\" ] || VERITAS_DIR=/; done; if [ -n \"$VERITAS_PREFIX\" ]; then npx --no --prefix \"$VERITAS_PREFIX\" @kontourai/veritas hooks codex pre-tool-use; else npx --no @kontourai/veritas hooks codex pre-tool-use; fi",
+            "commandWindows": "npx --no @kontourai/veritas hooks codex pre-tool-use",
+            "statusMessage": "Loading Veritas guidance for edited files",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostSession": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./scripts/archive-session-log.sh"
+          }
+        ]
+      },
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "VERITAS_SESSION_LOG_PATH=\"${VERITAS_SESSION_LOG_PATH:-${CODEX_TRANSCRIPT_PATH:-}}\"; if [ -z \"$VERITAS_SESSION_LOG_PATH\" ] && [ -n \"$CODEX_SESSION_ID\" ]; then VERITAS_SESSION_LOG_PATH=\"$HOME/.codex/sessions/$CODEX_SESSION_ID.json\"; fi; if [ -n \"$VERITAS_SESSION_LOG_PATH\" ]; then VERITAS_ROOT=\"$(git rev-parse --show-toplevel 2>/dev/null)\"; VERITAS_PREFIX=; VERITAS_FOUND=; VERITAS_DIR=\"$(pwd -P 2>/dev/null)\"; while :; do case \"$VERITAS_DIR\" in /*) ;; *) break;; esac; if [ -z \"$VERITAS_FOUND\" ] && [ -f \"$VERITAS_DIR/node_modules/@kontourai/veritas/package.json\" ]; then VERITAS_FOUND=\"$VERITAS_DIR\"; fi; if [ -n \"$VERITAS_ROOT\" ] && [ \"$VERITAS_DIR\" -ef \"$VERITAS_ROOT\" ]; then VERITAS_PREFIX=\"$VERITAS_FOUND\"; break; fi; if [ \"$VERITAS_DIR\" = / ]; then break; fi; VERITAS_DIR=\"${VERITAS_DIR%/*}\"; [ -n \"$VERITAS_DIR\" ] || VERITAS_DIR=/; done; if [ -n \"$VERITAS_PREFIX\" ]; then npx --no --prefix \"$VERITAS_PREFIX\" @kontourai/veritas feedback observe --session-log \"$VERITAS_SESSION_LOG_PATH\"; else npx --no @kontourai/veritas feedback observe --session-log \"$VERITAS_SESSION_LOG_PATH\"; fi; fi",
+            "statusMessage": "Capturing Veritas standards feedback draft from Codex session log",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".veritas/hooks/agent-runtime.sh",
+            "statusMessage": "Running Veritas readiness automation",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

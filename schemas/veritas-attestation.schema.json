@@ -51,6 +51,16 @@
     "priorAttestationId": { "type": ["string", "null"] },
     "validUntilDays": { "type": "integer", "minimum": 1 },
     "notes": { "type": "string" },
+    "recordIntegrity": {
+      "type": "object",
+      "description": "Digest of every other field of this record, written when the record is created. Records written before it existed have no recordIntegrity and report as unbound.",
+      "required": ["algorithm", "digest"],
+      "properties": {
+        "algorithm": { "type": "string", "const": "veritas-attestation-record-v1" },
+        "digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      },
+      "additionalProperties": false
+    },
     "metadata": {
       "type": "object",
       "properties": {
@@ -82,7 +92,8 @@
             "scope": { "type": ["object", "null"] },
             "evidenceHash": { "type": ["string", "null"] },
             "resolvedAt": { "type": "string" },
-            "failureReason": { "type": ["string", "null"] }
+            "failureReason": { "type": ["string", "null"] },
+            "recordApprovalRef": { "type": "string" }
           },
           "additionalProperties": true
         }

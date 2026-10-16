@@ -20,13 +20,14 @@ Each deep integration has two pieces:
 
 ## Worked Example: Codex
 
-Codex is the reference deep integration because it can run a stop hook and an end-of-session hook without product-specific code in Surface.
+Codex is the reference deep integration because it can run a pre-edit hook and a stop hook without product-specific code in Surface.
 
-The generated Codex hook config now wires:
+The generated Codex hook config wires:
 
+- `PreToolUse`: runs `npx --no @kontourai/veritas hooks codex pre-tool-use` for `apply_patch`, `Edit`, and `Write`.
 - `Stop`: runs `.veritas/hooks/agent-runtime.sh`, which keeps the existing readiness-check feedback loop.
-- `PostSession`: normalizes runtime-specific session-log inputs into `VERITAS_SESSION_LOG_PATH`, then runs `npx --no @kontourai/veritas feedback observe --session-log "$VERITAS_SESSION_LOG_PATH"` when a session log path is available. It looks upward from the working directory to the git root for the nearest directory with Veritas installed and passes it to `npx --prefix`, so a nested package without its own install reaches the root one.
-- Fallback: when only `CODEX_SESSION_ID` is present, the hook reads `$HOME/.codex/sessions/$CODEX_SESSION_ID.json`.
+
+It does not capture session logs. Codex ends a session with `SessionEnd` and passes its transcript as `transcript_path` in the hook input, but that transcript is JSONL rollout records, which the Codex session log reader does not read, and Codex allows a `SessionEnd` hook at most 3 seconds ([Codex hooks](https://learn.chatgpt.com/docs/hooks)). Releases before this one wrote the capture under `PostSession`, an event Codex does not have, so it never ran; reinstalling removes it.
 
 `veritas feedback observe` defensively reads session log events and fills a standards-feedback draft under `.kontourai/veritas/standards-feedback-drafts/`:
 
@@ -40,7 +41,7 @@ Unknown fields are reported as missing instead of being guessed.
 
 Claude Code now has a full runtime integration and session log reader:
 
-- `veritas integrations claude-code install` installs PreToolUse, Stop, and PostSession hooks.
+- `veritas integrations claude-code install` installs PreToolUse, Stop, and SessionEnd hooks. The SessionEnd hook runs `npx --no @kontourai/veritas hooks claude-code session-end`, which reads the session log path from `transcript_path` in the hook input ([Claude Code hooks](https://code.claude.com/docs/en/hooks#sessionend)). It looks upward from the working directory to the git root for the nearest directory with Veritas installed and runs that install's `bin/veritas.mjs` with `node`, so a nested package without its own install reaches the root one and no other `veritas` on `PATH` runs instead. With no install found, it runs `npx --no @kontourai/veritas`.
 - `veritas feedback observe --tool claude-code --session-log <path>` reads Claude Code JSONL session logs from the `~/.claude/projects/<project>/<session>.jsonl` format.
 - PreToolUse returns hook protocol JSON and blocks deny-enforced rules before edits.
 

@@ -90,7 +90,11 @@
     },
     {
       "source": "docs/guides/agent-runtime-integrations.md",
-      "section": "Guides"
+      "section": "Guides",
+      "covers": [
+        "src/hooks/suggestions.mjs",
+        "src/hooks/nearest-veritas.mjs"
+      ]
     },
     {
       "source": "docs/guides/deep-integration-template.md",

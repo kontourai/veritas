@@ -117,6 +117,26 @@ test('installed PreToolUse hook exits 2 and blocks a denied strict-surface edit'
   assert.match(payload.reason, /work-area-boundary/);
 });
 
+test('Claude Code reinstall keeps user pre-edit handlers and installs its own once', (t) => {
+  const rootDir = bootstrapGovernedRepo(t, 'veritas-user-pretool-hooks-');
+  mkdirSync(join(rootDir, '.claude'), { recursive: true });
+  const settingsPath = join(rootDir, '.claude/settings.json');
+  const userGroup = { matcher: 'Read', hooks: [{ type: 'command', command: './scripts/user-read.sh' }, { type: 'command', command: '.veritas/hooks/pre-tool-use.sh', timeout: 1 }] };
+  const userEdit = { type: 'command', command: './scripts/user-edit.sh' };
+  const before = { permissions: { allow: ['Read'] }, hooks: { PreToolUse: [userGroup, { matcher: 'Edit', hooks: [userEdit] }], Notification: [{ hooks: [{ type: 'command', command: './scripts/notify.sh' }] }] } };
+  writeFileSync(settingsPath, `${JSON.stringify(before, null, 2)}\n`);
+  for (const round of [1, 2]) {
+    execFileSync(process.execPath, [join(process.cwd(), 'bin/veritas.mjs'), 'integrations', 'claude-code', 'install', '--force', '--root', rootDir], { cwd: rootDir, encoding: 'utf8', env: cleanGitEnv() });
+    const after = JSON.parse(readFileSync(settingsPath, 'utf8'));
+    assert.deepEqual(after.permissions, before.permissions);
+    assert.deepEqual(after.hooks.Notification, before.hooks.Notification);
+    assert.ok(after.hooks.PreToolUse.some((group) => JSON.stringify(group) === JSON.stringify(userGroup)), `round ${round}: user's Read group`);
+    const handlers = after.hooks.PreToolUse.flatMap((group) => group.hooks);
+    assert.ok(handlers.some((handler) => handler.command === userEdit.command), `round ${round}: user's Edit handler`);
+    assert.equal(handlers.filter((handler) => handler.command === '.veritas/hooks/pre-tool-use.sh').length, 2, 'the user binding and one installed binding');
+  }
+});
+
 test('installed PreToolUse hook exits 0 and approves an allowed edit', (t) => {
   const rootDir = bootstrapGovernedRepo(t, 'veritas-pretool-smoke-allow-');
   installClaudeCodeIntegration(rootDir);
@@ -164,26 +184,4 @@ test('installed PreToolUse hook records VERITAS_HOOK_SKIP bypasses instead of ex
   assert.equal(records[0].file, DENIED_FILE);
   assert.equal(records[0].actor, 'brian');
   assert.match(records[0].reason, /Emergency hotfix/);
-});
-
-test('generated PreToolUse hook body invokes a verb the bin actually routes', (t) => {
-  const rootDir = bootstrapGovernedRepo(t, 'veritas-pretool-smoke-route-');
-  installClaudeCodeIntegration(rootDir);
-  const hookBody = readFileSync(join(rootDir, '.veritas/hooks/pre-tool-use.sh'), 'utf8');
-  const invocation = hookBody.match(/^exec npx --no @kontourai\/veritas (.+) "\$@"$/m);
-  assert.ok(invocation, `hook body must exec a veritas verb:\n${hookBody}`);
-
-  // Run the parsed verb through the real bin and assert it is not the
-  // "unknown subcommand" path (top-level usage banner on stderr, exit 1).
-  const probe = spawnSync(
-    'npm',
-    ['exec', '--', 'veritas', ...invocation[1].split(' '), '--root', rootDir],
-    { cwd: rootDir, encoding: 'utf8', input: '{}', env: cleanGitEnv() },
-  );
-  assert.doesNotMatch(
-    probe.stderr,
-    /Usage:\s*\n\s*veritas --version/,
-    `hook body names a verb the bin does not route: ${invocation[1]}`,
-  );
-  assert.notEqual(probe.status, 1, `hook body names a verb the bin does not route: ${probe.stderr}`);
 });

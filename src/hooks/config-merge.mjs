@@ -16,14 +16,18 @@ export function mergeStopHookConfig(existingConfig = {}, suggestedConfig = {}) {
     const currentEntries = Array.isArray(mergedHooks[hookName])
       ? mergedHooks[hookName]
       : [];
-    if (hookName === 'Stop') {
-      const suggestedCommand = suggestedEntries[0]?.hooks?.[0]?.command;
+    if (suggestedEntries.length === 0) continue;
+    // Grouped hook events keep user handlers. Replace only a declared command
+    // under the same matcher; a different matcher is a separate user binding.
+    if (suggestedEntries.every((entry) => Array.isArray(entry?.hooks))) {
       mergedHooks[hookName] = [
         ...currentEntries
           .map((entry) => {
             const hooks = Array.isArray(entry?.hooks) ? entry.hooks : [];
             const remainingHooks = hooks.filter(
-              (hook) => hook?.command !== suggestedCommand,
+              (hook) => !suggestedEntries.some((suggested) =>
+                suggested.matcher === entry?.matcher
+                && suggested.hooks.some((declared) => declared?.command === hook?.command)),
             );
             return remainingHooks.length === 0
               ? null
