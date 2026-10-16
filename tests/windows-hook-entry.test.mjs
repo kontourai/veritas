@@ -74,6 +74,21 @@ test('native Windows refuses a repository install when GIT_WORK_TREE names an un
 test('native Windows installed hook forwards real Veritas guidance and denies an invalid edit', native, (t) => {
   const { root, nested, run, script } = fixture(t);
   writeBootstrapStarterKit({ rootDir: root, projectName: 'Windows hook', evidenceCheck: 'node --version', force: true });
+  mkdirSync(join(root, 'docs'), { recursive: true });
+  writeFileSync(join(root, 'docs', 'notes.md'), '# Notes\n');
+  const standardsFile = join(root, '.veritas', 'repo-standards', 'default.repo-standards.json');
+  const standards = JSON.parse(readFileSync(standardsFile, 'utf8'));
+  standards.rules.push({ id: 'native-notes-review', kind: 'required-artifacts', classification: 'promotable-policy',
+    enforcementLevel: 'Guide', message: 'Review notes.', explain: { summary: 'Review the note owner.', mustDo: ['Check the named owner.'] },
+    match: { artifacts: ['docs/notes.md'] } });
+  writeFileSync(standardsFile, JSON.stringify(standards));
+  const mapFile = join(root, '.veritas', 'repo-map.json');
+  const map = JSON.parse(readFileSync(mapFile, 'utf8'));
+  const governance = map.graph.nodes.find((node) => node.id === 'governance.guidance');
+  governance.owners = ['native-policy-owner'];
+  governance.boundary = 'strict';
+  governance.boundaryAllow = ['native-policy-owner'];
+  writeFileSync(mapFile, JSON.stringify(map));
   const scope = join(root, 'node_modules', '@kontourai');
   mkdirSync(scope, { recursive: true });
   symlinkSync(repoRootDir, join(scope, 'veritas'), 'junction');
@@ -81,12 +96,16 @@ test('native Windows installed hook forwards real Veritas guidance and denies an
   applyCodexHook({ rootDir: root, targetHooksFile: hooks });
   const installed = JSON.parse(readFileSync(hooks, 'utf8')).hooks.PreToolUse[0].hooks[0];
   writeFileSync(script, installed.commandWindows);
-  const allowed = run(nested, {}, JSON.stringify({ cwd: nested, tool_name: 'Edit', tool_input: { file_path: 'README.md' } }));
+  const allowed = run(nested, {}, JSON.stringify({ cwd: root, tool_name: 'Edit', tool_input: { file_path: 'docs/notes.md' } }));
   assert.equal(allowed.status, 0, `${allowed.stdout}\n${allowed.stderr}`);
-  assert.equal(JSON.parse(allowed.stdout).hookSpecificOutput.hookEventName, 'PreToolUse');
+  assert.equal(JSON.parse(allowed.stdout).hookSpecificOutput?.hookEventName, 'PreToolUse', allowed.stdout);
+  assert.match(JSON.parse(allowed.stdout).hookSpecificOutput.additionalContext, /native-notes-review/);
   const denied = run(nested, {}, JSON.stringify({ cwd: nested, tool_name: 'apply_patch', tool_input: { command: '*** Begin Patch\n*** End Patch' } }));
   assert.equal(denied.status, 2, `${denied.stdout}\n${denied.stderr}`);
   assert.equal(JSON.parse(denied.stdout).hookSpecificOutput.permissionDecision, 'deny');
+  const protectedEdit = run(nested, {}, JSON.stringify({ cwd: root, tool_name: 'Edit', tool_input: { file_path: '.veritas/repo-map.json' } }));
+  assert.equal(protectedEdit.status, 2, `${protectedEdit.stdout}\n${protectedEdit.stderr}`);
+  assert.match(JSON.parse(protectedEdit.stdout).hookSpecificOutput.permissionDecisionReason, /work-area-boundary/);
 });
 
 test('native Windows skips an incomplete nested package and resolves a junction by physical repository identity', native, (t) => {
