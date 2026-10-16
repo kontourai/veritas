@@ -90,8 +90,10 @@ test('canonical receipt recovers presentation-store loss without a second author
 
 
 test('the original review deadline expires without renewal or a decision', async t => {
-  const f = await fixture(t, 'approve', {expiresAt: new Date(Date.now() + 3000).toISOString()});
-  await new Promise(resolve => setTimeout(resolve, 3100));
+  const now = Date.now();
+  t.mock.timers.enable({apis: ['Date'], now});
+  const f = await fixture(t, 'approve', {expiresAt: new Date(now + 3000).toISOString()});
+  t.mock.timers.setTime(now + 3100);
   assert.equal((await f.apply()).status, 409);
   assert.equal(fs.existsSync(path.join(f.hostRoot, f.content.session.metadata.name + '.decision.json')), false);
 });
