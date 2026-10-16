@@ -1,19 +1,22 @@
 // An expired attestation fails readiness closed, the same way drift does, while
-// a pending or missing attestation stays advisory (#202).
+// a pending or missing attestation stays advisory (#202). A validity window
+// that cannot be evaluated fails closed too, and attest refuses to write one.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createAttestation } from '../../src/attestations.mjs';
+import { bindAttestationRecordIntegrity } from '../../src/attestations/record-integrity.mjs';
 import { inspectAttestationStatus, runMergeReadiness } from '../../src/engine.mjs';
 import { commitAll, initCommittedRepo, parseCliJson, repoRootDir } from '../helpers.mjs';
 
 const veritasBin = join(repoRootDir, 'bin/veritas.mjs');
 const RULE_ID = 'policy-changes-require-attestation';
 const APPROVAL_REF = 'test://human-approved-attestation';
-// Re-attesting is the remedy the FAIL line names; pinned as a literal here.
-const REMEDY = 'npx --no @kontourai/veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference>';
+// Re-attesting is the remedy the FAIL line names; pinned as literals here.
+const EXPIRED_REMEDY = 'A human authority must review the protected standards and run `npx --no @kontourai/veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference> --valid-until-days 1`. An agent must not run it: stop and ask a human authority. `--valid-until-days 1` keeps this attestation\'s 1-day validity window.';
+const INVALID_WINDOW_REMEDY = 'A human authority must review the protected standards and run `npx --no @kontourai/veritas attest policy-change --message <text> --actor <authority-id> --approval-ref <human-approval-reference> --valid-until-days <days>`. An agent must not run it: stop and ask a human authority. Give <days> as a whole number of days, 1 or more; 90 is the default.';
 // Attested 2020-01-01 for one day: expired at this literal for any wall clock
 // after it, so the CLI cases need no sleep and no clock flag.
 const EXPIRED_ATTESTED_AT = '2020-01-01T00:00:00.000Z';
@@ -123,7 +126,7 @@ test('CLI: an expired attestation fails readiness and names the re-attest comman
     ruleLine(feedback.stdout),
     new RegExp(`^FAIL\\s+${RULE_ID}: Active attestation \\S+ expired at ${EXPIRED_VALID_UNTIL.replaceAll('.', '\\.')}; readiness fails until an authority records a fresh attestation\\.$`),
   );
-  assert.ok(feedback.stdout.includes(REMEDY), feedback.stdout);
+  assert.ok(feedback.stdout.includes(`         ${EXPIRED_REMEDY}\n`), feedback.stdout);
   assert.match(feedback.stdout, /^1 failure /m);
   assertJsonVerdict(rootDir, 'expiry-expired', { exit: 1, status: 'fail', verdict: 'not-ready', claimStatus: 'rejected' });
 
@@ -131,9 +134,10 @@ test('CLI: an expired attestation fails readiness and names the re-attest comman
   // same, unchanged standards.
   const reattest = veritas(rootDir, [
     'attest', 'policy-change', '--message', 'Renew the lapsed attestation after review.',
-    '--actor', 'owner', '--approval-ref', APPROVAL_REF,
+    '--actor', 'owner', '--approval-ref', APPROVAL_REF, '--valid-until-days', '1',
   ]);
   assert.equal(reattest.status, 0, reattest.stdout + reattest.stderr);
+  assert.equal(parseCliJson(reattest.stdout).attestation.validUntilDays, 1);
   const renewed = readiness(rootDir);
   assert.equal(renewed.status, 0, renewed.stdout + renewed.stderr);
   assert.match(ruleLine(renewed.stdout), /^PASS\s+policy-changes-require-attestation: /);
@@ -202,7 +206,133 @@ test('engine: expiry is judged at the run timestamp, so the same record passes t
   assert.equal(failed.passed, false);
   assert.equal(failed.status, 'fail');
   assert.equal(failed.findings[0].kind, 'expired-attestation');
-  assert.ok(failed.findings[0].remediation.includes(REMEDY), failed.findings[0].remediation);
+  assert.equal(failed.findings[0].remediation, EXPIRED_REMEDY);
   assert.equal(readinessClaim(afterValidUntil.reportResult.record.trust.bundle).status, 'rejected');
   assert.equal(afterValidUntil.reportResult.record.governance_state.expired, true);
+});
+
+// ─── Validity window values ───────────────────────────────────────────────
+
+function attestationFiles(rootDir) {
+  const dir = join(rootDir, '.veritas/attestations');
+  return existsSync(dir) ? readdirSync(dir).sort() : [];
+}
+
+// --root first, so a flag given without a value is the last argument.
+function attestRaw(rootDir, args) {
+  return spawnSync(process.execPath, [veritasBin, 'attest', ...args.slice(0, 1), '--root', rootDir, ...args.slice(1)], {
+    cwd: rootDir,
+    encoding: 'utf8',
+  });
+}
+
+const REFUSED_WINDOWS = [
+  ['0', /refuses --valid-until-days 0: validUntilDays is 0; it must be a whole number of days, 1 or more\./],
+  ['-1', /refuses --valid-until-days "-1": it must be a whole number of days, 1 or more\./],
+  ['1.5', /refuses --valid-until-days "1\.5": it must be a whole number of days, 1 or more\./],
+  ['abc', /refuses --valid-until-days "abc": it must be a whole number of days, 1 or more\./],
+  ['1e12', /refuses --valid-until-days "1e12": it must be a whole number of days, 1 or more\./],
+  ['1000000000000', /refuses --valid-until-days 1000000000000: validUntilDays 1000000000000 ends the validity window past the latest date Veritas can represent\./],
+  ['', /--valid-until-days requires a non-empty value/],
+  [null, /--valid-until-days requires a value/],
+];
+
+for (const [kind, extra] of [
+  ['bootstrap', ['--non-interactive']],
+  ['policy-change', ['--message', 'Renew after review.']],
+]) {
+  test(`CLI: attest ${kind} refuses a --valid-until-days that is not a whole number of days, 1 or more`, (t) => {
+    const rootDir = initFixture(t, `veritas-expiry-days-${kind}-`);
+    if (kind === 'policy-change') attestBootstrapCli(rootDir);
+    const before = attestationFiles(rootDir);
+    const head = existsSync(join(rootDir, '.veritas/attestations/HEAD'))
+      ? readFileSync(join(rootDir, '.veritas/attestations/HEAD'), 'utf8')
+      : null;
+    for (const [value, message] of REFUSED_WINDOWS) {
+      const args = [kind, '--actor', 'owner', '--approval-ref', APPROVAL_REF, ...extra, '--valid-until-days', ...(value === null ? [] : [value])];
+      const result = attestRaw(rootDir, args);
+      assert.equal(result.status, 2, `${JSON.stringify(value)}: ${result.stdout}${result.stderr}`);
+      assert.match(result.stderr, message, JSON.stringify(value));
+      assert.equal(result.stdout, '', JSON.stringify(value));
+      assert.deepEqual(attestationFiles(rootDir), before, `${JSON.stringify(value)} wrote an attestation file`);
+    }
+    if (head !== null) assert.equal(readFileSync(join(rootDir, '.veritas/attestations/HEAD'), 'utf8'), head);
+
+    // The smallest accepted window is one day.
+    const accepted = attestRaw(rootDir, [kind, '--actor', 'owner', '--approval-ref', APPROVAL_REF, ...extra, '--valid-until-days', '1']);
+    assert.equal(accepted.status, 0, accepted.stdout + accepted.stderr);
+    assert.equal(parseCliJson(accepted.stdout).attestation.validUntilDays, 1);
+  });
+}
+
+function currentRecordPath(rootDir) {
+  const head = JSON.parse(readFileSync(join(rootDir, '.veritas/attestations/HEAD'), 'utf8'));
+  return join(rootDir, '.veritas/attestations', `${head.currentAttestationId}.attestation.json`);
+}
+
+// Rewrite the active record's validUntilDays the way a buggy writer or a hand
+// edit would leave it. `bind` re-seals record integrity, `unbound` drops it as
+// a pre-integrity record would, and `tampered` leaves the old digest.
+function rewriteValidity(rootDir, { value, seal }) {
+  const path = currentRecordPath(rootDir);
+  const record = JSON.parse(readFileSync(path, 'utf8'));
+  if (value === undefined) delete record.validUntilDays;
+  else record.validUntilDays = value;
+  let written = record;
+  if (seal === 'bind') {
+    delete record.recordIntegrity;
+    written = bindAttestationRecordIntegrity(record);
+  } else if (seal === 'unbound') {
+    delete record.recordIntegrity;
+  }
+  writeFileSync(path, `${JSON.stringify(written, null, 2)}\n`);
+}
+
+for (const [label, value, seal, reason] of [
+  ['missing', undefined, 'bind', 'validUntilDays is missing; it must be a whole number of days, 1 or more'],
+  ['null', null, 'bind', 'validUntilDays is null; it must be a whole number of days, 1 or more'],
+  ['zero', 0, 'bind', 'validUntilDays is 0; it must be a whole number of days, 1 or more'],
+  ['a string', '90', 'bind', 'validUntilDays is "90"; it must be a whole number of days, 1 or more'],
+  ['missing on an unbound record', undefined, 'unbound', 'validUntilDays is missing; it must be a whole number of days, 1 or more'],
+]) {
+  test(`CLI: a record whose validUntilDays is ${label} fails readiness instead of crashing`, (t) => {
+    const rootDir = initFixture(t, 'veritas-expiry-window-');
+    attestBootstrapCli(rootDir);
+    rewriteValidity(rootDir, { value, seal });
+    editTrackedFile(rootDir);
+
+    const status = veritas(rootDir, ['attest', 'status']);
+    assert.equal(status.status, 0, status.stdout + status.stderr);
+    const attestStatus = parseCliJson(status.stdout);
+    assert.equal(attestStatus.state, 'current');
+    assert.equal(attestStatus.expired, true, 'a window that cannot be evaluated is never open-ended');
+    assert.equal(attestStatus.validUntil, null);
+    assert.equal(attestStatus.validityWindowError, reason);
+
+    const feedback = readiness(rootDir);
+    assert.equal(feedback.status, 1, feedback.stdout + feedback.stderr);
+    assert.equal(
+      ruleLine(feedback.stdout).replace(/Active attestation \S+ /, 'Active attestation <id> '),
+      `FAIL  ${RULE_ID}: Active attestation <id> has no valid validity window (${reason}); readiness fails until an authority records a fresh attestation.`,
+    );
+    assert.ok(feedback.stdout.includes(`         ${INVALID_WINDOW_REMEDY}\n`), feedback.stdout);
+    assertJsonVerdict(rootDir, `expiry-window-${label.replaceAll(' ', '-')}`, { exit: 1, status: 'fail', verdict: 'not-ready', claimStatus: 'rejected' });
+  });
+}
+
+test('CLI: an edited record with no validUntilDays reads as tampered, not a crash', (t) => {
+  const rootDir = initFixture(t, 'veritas-expiry-window-tampered-');
+  attestBootstrapCli(rootDir);
+  rewriteValidity(rootDir, { value: undefined, seal: 'tampered' });
+  editTrackedFile(rootDir);
+
+  const status = veritas(rootDir, ['attest', 'status']);
+  assert.equal(status.status, 0, status.stdout + status.stderr);
+  const attestStatus = parseCliJson(status.stdout);
+  assert.equal(attestStatus.state, 'tampered');
+  assert.equal(attestStatus.validityWindowError, 'validUntilDays is missing; it must be a whole number of days, 1 or more');
+
+  const feedback = readiness(rootDir);
+  assert.equal(feedback.status, 1, feedback.stdout + feedback.stderr);
+  assert.match(ruleLine(feedback.stdout), /^FAIL\s+policy-changes-require-attestation: Active attestation \S+: The attestation record does not match its recordIntegrity digest/);
 });

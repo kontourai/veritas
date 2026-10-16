@@ -117,23 +117,26 @@ Status reports the current attestation, age, expiry, and hash drift. It also rep
 
 ## Validity Window
 
-Each attestation counts for readiness for a fixed number of days after it was recorded: 90 by default, or the value given with `--valid-until-days`. `attest status` reports the end of that window as `validUntil`, and `expired: true` once it has passed. Expiry is judged when readiness runs, and the window includes `validUntil` itself.
+Each attestation counts for readiness for a fixed number of days after it was recorded: 90 by default, or the value given with `--valid-until-days`. That value must be a whole number of days, 1 or more, written in digits; `attest bootstrap` and `attest policy-change` refuse anything else, and a window that would end past the latest date Veritas can represent, with exit code `2` and without writing a record. `attest status` reports the end of that window as `validUntil`, and `expired: true` once it has passed. Expiry is judged when readiness runs, and the window includes `validUntil` itself.
 
 An expired attestation is stale authority: the approval it records has run out under the repository's own policy, even though the protected standards still match. Readiness fails closed on it, as it does on drift:
 
-- The feedback output reports `FAIL  policy-changes-require-attestation: Active attestation <id> expired at <validUntil>; readiness fails until an authority records a fresh attestation.`, names the command below, and the process exits `1`.
+- The feedback output reports `FAIL  policy-changes-require-attestation: Active attestation <id> expired at <validUntil>; readiness fails until an authority records a fresh attestation.`, then says that a human authority must run the command below and that an agent must not run it, and the process exits `1`. The stop hook shows this text to the agent at the end of every turn until the attestation is renewed.
 - JSON output has `readiness.status: "fail"` and `readiness.verdict: "not-ready"`. In the trust bundle the readiness claim is `rejected` and the attestation currency claim is `stale`.
 
 `attest status` still reports `state: "current"` for an expired record whose hashes match, because the files did not drift. Read `expired` for the validity window.
 
-To clear it, have an authority review the protected standards, then record a fresh attestation. A `policy-change` attestation is accepted when nothing changed:
+To clear it, a human authority reviews the protected standards, then records a fresh attestation. A `policy-change` attestation is accepted when nothing changed. Pass the expired attestation's `validUntilDays` again to keep a custom window; the readiness message names it:
 
 ```bash
 npx --no @kontourai/veritas attest policy-change \
   --actor <authority-id> \
   --approval-ref <human-approval-reference> \
-  --message "Renewed the attestation after reviewing the unchanged standards"
+  --message "Renewed the attestation after reviewing the unchanged standards" \
+  --valid-until-days <days>
 ```
+
+A record whose window cannot be evaluated is never treated as open-ended. If `validUntilDays` is missing, `null`, not a whole number of days of 1 or more, or `attestedAt` is not a valid date, `attest status` reports `expired: true`, `validUntil: null` and a `validityWindowError` that names the field. Readiness fails with `Active attestation <id> has no valid validity window (<reason>); readiness fails until an authority records a fresh attestation.`, and the remedy is the same fresh attestation. If the record also fails its record integrity check, readiness reports that instead.
 
 A repository with no attestation yet, or with only the `.veritas/attestations/PENDING` marker that a non-interactive `init` writes, is a different case. No authority has approved its standards yet, so readiness reports a `WARN` and does not block until the bootstrap attestation is recorded.
 

@@ -445,7 +445,8 @@ Readiness now fails closed on an expired attestation, as it does on drift:
 
 - The feedback line is `FAIL  policy-changes-require-attestation: Active attestation <id> expired
   at <validUntil>; readiness fails until an authority records a fresh attestation.`, followed by
-  the command below, and the process exits `1`.
+  the command below, which a human authority must run and an agent must not, and the process
+  exits `1`.
 - JSON output sets `readiness.status: "fail"` and `readiness.verdict: "not-ready"`, and the
   readiness claim in the trust bundle is `rejected`.
 
@@ -453,12 +454,28 @@ To check whether a repository is affected before upgrading, run
 `npx --no @kontourai/veritas attest status` and read `expired` and `validUntil`. An attestation
 that is not expired today still expires at `validUntil`, and readiness starts failing then.
 
-To clear it, have an authority review the protected standards and record a fresh attestation. A
-`policy-change` attestation is accepted when the standards did not change:
+To clear it, a human authority reviews the protected standards and records a fresh attestation. A
+`policy-change` attestation is accepted when the standards did not change. Pass the expired
+attestation's `validUntilDays` again to keep a custom window:
 
 ```bash
-npx --no @kontourai/veritas attest policy-change --actor <authority-id> --approval-ref <human-approval-reference> --message "Renewed the attestation after reviewing the unchanged standards"
+npx --no @kontourai/veritas attest policy-change --actor <authority-id> --approval-ref <human-approval-reference> --message "Renewed the attestation after reviewing the unchanged standards" --valid-until-days <days>
 ```
+
+Two related cases changed at the same time:
+
+- `attest bootstrap` and `attest policy-change` now refuse a `--valid-until-days` that is not a
+  whole number of days, 1 or more, written in digits, or that ends the window past the latest date
+  Veritas can represent. They exit `2` with a message and write no record. Earlier releases wrote
+  `0`, negative and fractional windows, and wrote an empty value as `0`, so such an attestation
+  made readiness fail at once. `abc`, `1e12` or a flag with no value stopped with
+  `Invalid time value`.
+- An attestation record whose `validUntilDays` is missing, `null` or not a whole number of days of
+  1 or more, or whose `attestedAt` is not a valid date, made `attest status` and readiness stop with
+  `Invalid time value`, or, for `null`, expire at `attestedAt`. `attest status` now reports
+  `expired: true`, `validUntil: null` and a `validityWindowError`, and readiness fails with
+  `Active attestation <id> has no valid validity window (<reason>)`. Such a window is never treated
+  as open-ended. Record a fresh attestation to clear it.
 
 No option makes an expired attestation advisory again. To renew less often, record the attestation
 with a longer `--valid-until-days`.

@@ -8,6 +8,11 @@ import { buildAuthorizing } from '../attestations/collection.mjs';
 
 export function runAttestCli(kind, argv = process.argv.slice(2), defaults = {}) {
   const options = parseAttestArgs(argv);
+  // Only decimal digits count as a whole number of days; Number() would also
+  // accept forms such as `1e3`, `0x10` and ` 5 `.
+  if (options.validUntilDays !== undefined && !/^[0-9]+$/.test(options.validUntilDays)) {
+    throw new Error(`veritas attest refuses --valid-until-days ${JSON.stringify(options.validUntilDays)}: it must be a whole number of days, 1 or more.`);
+  }
   const rootDir = resolve(options.rootDir ?? defaults.rootDir ?? process.cwd());
   if (kind === 'status') {
     process.stdout.write(`${JSON.stringify(inspectAttestationStatus(rootDir), null, 2)}\n`);
@@ -65,7 +70,7 @@ export function runAttestCli(kind, argv = process.argv.slice(2), defaults = {}) 
     displayName: options.displayName,
     notes: options.message ?? '',
     approvalRef: options.approvalRef,
-    validUntilDays: options.validUntilDays,
+    validUntilDays: options.validUntilDays === undefined ? undefined : Number(options.validUntilDays),
     authorizing,
   });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
