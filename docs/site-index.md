@@ -42,7 +42,7 @@ Useful requirements should become stronger. Noisy requirements should be relaxed
 
 <div class="pillar">
 <h3>Readiness Report</h3>
-<p class="pillar-what">A human- and agent-facing report with merge readiness, readiness coverage, evidence freshness, boundary crossings, exceptions, recheck options, and change guidance.</p>
+<p class="pillar-what">A human- and agent-facing report with merge readiness, readiness coverage, evidence freshness, boundary crossings, recheck options, and change guidance.</p>
 <p class="pillar-why">Reviewers inspect a focused trust state instead of reconstructing repo expectations from a raw diff.</p>
 </div>
 

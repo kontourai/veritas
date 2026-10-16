@@ -57,11 +57,11 @@ An action that verifies evidence, authority, freshness, or integrity again for t
 _Avoid_: Surface reverification as the user-facing term, guaranteed refresh
 
 **Exception**:
-A recorded decision to accept an unmet or failing requirement for a specific change. Only the pre-tool-use hook records exceptions: when `VERITAS_EXCEPTION_RULE` and `VERITAS_EXCEPTION_REASON` name the rule that blocked an edit, the hook lets the edit through and appends the rule, reason, and actor to `.kontourai/veritas/standards-feedback/exceptions.jsonl`. Veritas does not resolve any authority behind an exception, and readiness does not read exceptions.
+A recorded decision to accept an unmet or failing requirement for a specific change. Only the pre-tool-use hook records exceptions, in `.kontourai/veritas/standards-feedback/exceptions.jsonl`: a `rule-exception` record when `VERITAS_EXCEPTION_RULE` and `VERITAS_EXCEPTION_REASON` name the rule that blocked an edit and the hook lets the edit through, and a `hook-skip` record when `VERITAS_HOOK_SKIP=1` skips the hook's evaluation. Veritas does not resolve any authority behind an exception, and readiness does not read exceptions.
 _Avoid_: Silent bypass, waiver without authority evidence
 
 **Enforcement Level**:
-How strongly Veritas applies a requirement while evaluating merge readiness or repo conformance. Use **Observe** to collect evidence only, **Guide** to give agent-facing correction, and **Require** when the requirement must be satisfied or accepted by exception.
+How strongly Veritas applies a requirement while evaluating merge readiness or repo conformance. Use **Observe** to collect evidence only, **Guide** to give agent-facing correction, and **Require** when the requirement must be satisfied.
 _Avoid_: Shadow/warn/block as product language, requirement stage, promotion as the first mental model
 
 **Observe**:
@@ -125,11 +125,11 @@ The per-change trust state that says whether a change has enough current evidenc
 _Avoid_: Approval, trust score, guaranteed correctness
 
 **Readiness Report**:
-The human- and agent-facing report that explains a change's merge readiness. A readiness report includes readiness coverage, boundary crossings, evidence freshness, exceptions, recheck options, and change guidance when relevant.
+The human- and agent-facing report that explains a change's merge readiness. A readiness report includes readiness coverage, boundary crossings, evidence freshness, recheck options, and change guidance when relevant.
 _Avoid_: Surface trust report as the user-facing term, raw evidence artifact
 
 **Readiness Coverage**:
-The current evidence state for the requirements that apply to a specific change. Readiness coverage explains which requirements are satisfied, missing, stale, failing, advisory, recheckable, or accepted by exception.
+The current evidence state for the requirements that apply to a specific change. Readiness coverage explains which requirements are satisfied, missing, stale, failing, advisory, or recheckable.
 _Avoid_: Verification budget, full repo health, test coverage
 
 **Repo Conformance**:
@@ -164,7 +164,7 @@ Earlier Veritas artifacts used "eval" for generated observations about whether V
 Use attestation only for a recorded assertion, made by a named actor citing an approval reference, that something was verified, accepted, approved, or reviewed. Do not use it for every evidence result, generic approval, or readiness report.
 
 **Authority-backed**:
-Use authority-backed only for an attestation whose approval reference was resolved against an approval record. Veritas checks three things: (1) it was written under the `resolved` or `resolved-strict` approval mode, which refuses to write unless the resolver result is approved and unexpired; (2) its recorded resolver result (`metadata.approvalResolution`) is approved and is for the same reference the attestation cites (`metadata.approvalResolution.approvalRef` equals `metadata.approvalRef`); and (3) when a stored record is read later, its record integrity is `verified`, so the approval metadata is bound to it. In the default `reference-only` mode, and in `prefix` mode, an attestation is a recorded attestation with an unverified approval reference: Veritas records the reference but does not check it. An Exception is not authority-backed either, because Veritas records its actor and reason without resolving any authority.
+Use authority-backed only for an attestation whose approval reference was resolved to an approved result for that reference. Veritas checks three things: (1) it was written under the `resolved` or `resolved-strict` approval mode, which refuses to write unless the resolver result is approved and unexpired (the CLI resolves only through offline approval records; a resolver result passed programmatically to `createAttestation` is trusted as given); (2) its recorded resolver result (`metadata.approvalResolution`) is approved and is for the same reference the attestation cites (`metadata.approvalResolution.approvalRef` equals `metadata.approvalRef`); and (3) when a stored record is read later, its record integrity is `verified`, so the approval metadata is bound to it. In the default `reference-only` mode, and in `prefix` mode, an attestation is a recorded attestation with an unverified approval reference: Veritas records the reference but does not check it. An Exception is not authority-backed either, because Veritas records its actor and reason without resolving any authority.
 
 **Governance Areas**:
 Do not use numbered governance areas as canonical product language; use **Protected Standards**, **Standards Growth**, and **Generated Evidence**.

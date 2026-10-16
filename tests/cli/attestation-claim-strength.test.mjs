@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildTrustReport } from '@kontourai/surface';
 import { buildGovernanceArtifactClaims, createAttestation } from '../../src/index.mjs';
@@ -28,6 +28,7 @@ const RESOLVED_CONFIDENCE = {
   impactLevel: 'high',
 };
 const NOT_RESOLVED_TEXT = /approval reference was not resolved against an approval record/;
+const DIFFERENT_REFERENCE_TEXT = /its approval was resolved, but for a different reference \("something-else"\)/;
 
 function veritas(rootDir, args) {
   const env = cleanGitEnv();
@@ -57,14 +58,14 @@ function setApprovalRefPolicy(rootDir, policy) {
   writeFileSync(path, `${JSON.stringify(settings, null, 2)}\n`);
 }
 
-function writeApprovalRecord(rootDir, id) {
+function writeApprovalRecord(rootDir, id, { approvalRef = `veritas-approval:${id}` } = {}) {
   const dir = join(rootDir, '.veritas/authority/approval-records');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, `${id}.approval.json`), `${JSON.stringify({
     schemaVersion: 1,
     id,
     status: 'approved',
-    approvalRef: `veritas-approval:${id}`,
+    approvalRef,
     provider: 'veritas-offline',
     authorityRef: id,
     approvedBy: 'change-manager',
@@ -275,7 +276,8 @@ test('a resolver result for a different reference does not back the cited refere
 
   const readiness = runReadiness(rootDir);
   assert.deepEqual(readinessSummary(readiness), READY, readiness.result.stdout + readiness.result.stderr);
-  assert.match(governanceAttestationEvidence(readiness.record).excerptOrSummary, NOT_RESOLVED_TEXT);
+  assert.match(attestation.surface.evidence.excerptOrSummary, DIFFERENT_REFERENCE_TEXT);
+  assert.match(governanceAttestationEvidence(readiness.record).excerptOrSummary, DIFFERENT_REFERENCE_TEXT);
   const { currency, artifacts } = projectedGovernanceClaims(readiness.record);
   assert.equal(currency.confidenceBasis.reviewerAuthority, 'none');
   for (const artifact of artifacts) assert.equal(artifact.confidenceBasis.reviewerAuthority, 'none', artifact.id);
@@ -336,3 +338,46 @@ for (const { name, stripIntegrity, state, integrity, exitStatus } of [
     for (const artifact of artifacts) assert.equal(artifact.confidenceBasis.reviewerAuthority, 'none', artifact.id);
   });
 }
+
+// The attestation guide's example record names itself as veritas-approval:chg-123.
+// Any spelling of a reference that leads to that same record file is the
+// approval it records.
+for (const citedRef of [
+  'file:.veritas/authority/approval-records/chg-123.approval.json',
+  'file:./.veritas/authority/approval-records/chg-123.approval.json',
+  'veritas-approval: chg-123',
+]) {
+  test(`a resolved approval cited as ${JSON.stringify(citedRef)} keeps the strong verified claim`, (t) => {
+    const rootDir = initVeritasRepo(t, 'veritas-claim-strength-cited-');
+    setApprovalRefPolicy(rootDir, { mode: 'resolved', allowed_prefixes: [] });
+    writeApprovalRecord(rootDir, 'chg-123');
+    commitAll(rootDir, 'Resolve approval references');
+    const attestation = attestBootstrap(rootDir, citedRef);
+
+    assert.equal(attestation.metadata.approvalRef, citedRef);
+    assert.equal(attestation.metadata.approvalResolution.status, 'approved');
+    assert.equal(attestation.metadata.approvalResolution.approvalRef, citedRef);
+    assert.equal(attestation.surface.claim.status, 'verified');
+    assert.deepEqual(attestation.surface.claim.confidenceBasis, RESOLVED_CONFIDENCE);
+
+    const readiness = runReadiness(rootDir);
+    assert.deepEqual(readinessSummary(readiness), READY, readiness.result.stdout + readiness.result.stderr);
+    assert.match(governanceAttestationEvidence(readiness.record).excerptOrSummary, /^Authority-backed attestation currency is verified/);
+  });
+}
+
+test('a resolved mode refuses a record whose own approvalRef leads to a different record', (t) => {
+  const rootDir = initVeritasRepo(t, 'veritas-claim-strength-other-record-');
+  setApprovalRefPolicy(rootDir, { mode: 'resolved', allowed_prefixes: [] });
+  writeApprovalRecord(rootDir, 'chg-a', { approvalRef: 'veritas-approval:chg-b' });
+  writeApprovalRecord(rootDir, 'chg-b');
+  commitAll(rootDir, 'Resolve approval references');
+
+  const result = veritas(rootDir, ['attest', 'bootstrap', '--actor', 'alice', '--approval-ref', 'veritas-approval:chg-a', '--non-interactive']);
+  assert.notEqual(result.status, 0, result.stdout + result.stderr);
+  assert.match(
+    result.stderr,
+    /not accepted by resolver: out-of-scope \(approval record \.veritas\/authority\/approval-records\/chg-a\.approval\.json records approvalRef "veritas-approval:chg-b", which does not lead to that record\)/,
+  );
+  assert.equal(existsSync(join(rootDir, '.veritas/attestations/HEAD')), false);
+});

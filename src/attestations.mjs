@@ -9,7 +9,7 @@ import {
   summarizeApprovalResolverResult,
 } from './approval-resolvers.mjs';
 import {
-  isAuthorityBackedApproval,
+  approvalAuthorityGap,
   rejectNonHumanActor,
   requireHumanApprovalReference,
   validateApprovalReferencePolicy,
@@ -341,8 +341,9 @@ function buildAttestationSurfaceProjection({
   validUntil,
   contentHash,
   notes,
-  authorityBacked,
+  authorityGap,
 }) {
+  const authorityBacked = authorityGap === null;
   if (typeof Surface.buildHumanAttestationEvidence !== 'function') {
     throw new Error('Surface buildHumanAttestationEvidence public API is required by Veritas attestations.');
   }
@@ -361,7 +362,7 @@ function buildAttestationSurfaceProjection({
     contentHash,
     summary: notes || (authorityBacked
       ? `Authority-backed ${kind} attestation for Veritas Protected Standards.`
-      : `Recorded ${kind} attestation for Veritas Protected Standards; its approval reference was not resolved against an approval record.`),
+      : `Recorded ${kind} attestation for Veritas Protected Standards; ${authorityGap}.`),
   });
   // The claim is only as strong as the approval check that ran. Without a
   // resolved approval nothing verified the human approval, so the claim stays
@@ -497,7 +498,7 @@ export function createAttestation({
       validUntil,
       contentHash: sha256Hex(`${hashes.repoStandardsHash}:${hashes.repoMapHash}:${hashes.authoritySettingsHash}`),
       notes,
-      authorityBacked: isAuthorityBackedApproval({
+      authorityGap: approvalAuthorityGap({
         approvalRef: approvalRef?.trim() ?? null,
         approvalRefPolicy,
         approvalResolution,

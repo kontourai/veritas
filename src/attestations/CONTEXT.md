@@ -9,7 +9,7 @@ The trusted authority context for verifying or accepting changes to Protected St
 _Avoid_: Generic approval, blanket reviewer trust
 
 **Protected Standards Attestation**:
-Recorded evidence that Protected Standards were reviewed, accepted, or approved for a specific integrity scope and validity window. It anchors hashes for the standards, repo map, and authority settings. It is authority-backed only when its Approval Reference was resolved against an approval record (`resolved` or `resolved-strict` mode); in the default `reference-only` mode, and in `prefix` mode, it is a recorded attestation with an unverified approval reference.
+Recorded evidence that Protected Standards were reviewed, accepted, or approved for a specific integrity scope and validity window. It anchors hashes for the standards, repo map, and authority settings. It is authority-backed only when its Approval Reference was resolved to an approved result for that reference (`resolved` or `resolved-strict` mode); in the default `reference-only` mode, and in `prefix` mode, it is a recorded attestation with an unverified approval reference.
 _Avoid_: Signature as the whole concept, waiver
 
 **Attestation Chain**:

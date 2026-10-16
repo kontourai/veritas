@@ -42,7 +42,7 @@
             ]
           },
           "enforcementLevel": {
-            "description": "How strongly Veritas applies the requirement (the canonical Enforcement Level, CONTEXT.md). Observe: record evidence only. Guide: give just-in-time agent-facing correction without blocking merge readiness. Require: must be satisfied or accepted by exception.",
+            "description": "How strongly Veritas applies the requirement (the canonical Enforcement Level, CONTEXT.md). Observe: record evidence only. Guide: give just-in-time agent-facing correction without blocking merge readiness. Require: must be satisfied before merge readiness is complete.",
             "type": "string",
             "enum": ["Observe", "Guide", "Require"]
           },

@@ -81,6 +81,22 @@ function evaluateOfflineApprovalRecordScope(record, request) {
   return null;
 }
 
+// A record's own approvalRef names the approval it records. It counts for the
+// cited reference only when both lead to the same record file, so equivalent
+// spellings (`file:` and `veritas-approval:`, `./` prefixes, spaces after the
+// prefix) match, and a record copied to another path does not.
+function recordReferenceMismatch(rootDir, path, record) {
+  const recordRef = typeof record.approvalRef === 'string' ? record.approvalRef.trim() : '';
+  let recordPath = null;
+  try {
+    recordPath = recordRef ? resolveOfflineApprovalRecordPath(rootDir, recordRef) : null;
+  } catch {
+    recordPath = null;
+  }
+  if (recordPath === path) return null;
+  return `approval record ${relativeRepoPath(rootDir, path)} records approvalRef ${recordRef ? JSON.stringify(recordRef) : '(missing)'}, which does not lead to that record`;
+}
+
 export function normalizeApprovalRefPolicy(policy = {}) {
   const mode = policy.mode ?? 'reference-only';
   if (!APPROVAL_REF_POLICY_MODES.includes(mode)) {
@@ -174,12 +190,14 @@ export function resolveOfflineApprovalReference({ rootDir, approvalRef, request,
   const raw = readFileSync(path, 'utf8');
   const record = JSON.parse(raw);
   const status = record.status ?? 'unresolved';
-  const scopeFailure = status === 'approved' && request
+  const referenceFailure = status === 'approved' ? recordReferenceMismatch(rootDir, path, record) : null;
+  const scopeFailure = referenceFailure ?? (status === 'approved' && request
     ? evaluateOfflineApprovalRecordScope(record, request)
-    : null;
+    : null);
   return normalizeApprovalResolverResult({
     status: scopeFailure ? 'out-of-scope' : status,
-    approvalRef: record.approvalRef ?? trimmedRef,
+    // The cited reference, which the record was just shown to answer.
+    approvalRef: trimmedRef,
     provider: record.provider ?? 'veritas-offline',
     authorityRef: record.authorityRef ?? record.id ?? basename(path),
     approvedBy: record.approvedBy ?? null,

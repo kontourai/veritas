@@ -21,7 +21,7 @@ The product has four jobs:
 
 ## Requirements
 
-A **Requirement** is a condition in the repo standards that must be satisfied, evidenced, or explicitly accepted by exception for a change to earn merge readiness.
+A **Requirement** is a condition in the repo standards that must be satisfied or evidenced for a change to earn merge readiness.
 
 Requirements can be triggered by:
 
@@ -73,9 +73,9 @@ A **Verification Authority** is a person, system, tool, environment, or policy s
 
 **Authority Evidence** explains why a verification authority was allowed to count. Examples include protected CI context, scanner version and configuration, owner identity, team membership, standards-file hash, or signed approval metadata.
 
-An **Attestation** is a recorded assertion, made by a named actor citing an approval reference, that something was verified, accepted, approved, or reviewed. Attestations should identify the authority, subject, integrity scope, and any validity window that affects merge readiness. An attestation is authority-backed only when its approval reference was resolved against an approval record; in the default `reference-only` mode it is a recorded attestation with an unverified approval reference.
+An **Attestation** is a recorded assertion, made by a named actor citing an approval reference, that something was verified, accepted, approved, or reviewed. Attestations should identify the authority, subject, integrity scope, and any validity window that affects merge readiness. An attestation is authority-backed only when its approval reference was resolved to an approved result under a `resolved` approval mode; in the default `reference-only` mode it is a recorded attestation with an unverified approval reference.
 
-An **Exception** is a recorded decision to accept an unmet or failing requirement for a specific change. Only the pre-tool-use hook records exceptions: when `VERITAS_EXCEPTION_RULE` and `VERITAS_EXCEPTION_REASON` name the rule that blocked an edit, the hook lets the edit through and appends the rule, reason, and actor to `.kontourai/veritas/standards-feedback/exceptions.jsonl`. Veritas does not resolve any authority behind an exception, and readiness does not read exceptions.
+An **Exception** is a recorded decision to accept an unmet or failing requirement for a specific change. Only the pre-tool-use hook records exceptions, in `.kontourai/veritas/standards-feedback/exceptions.jsonl`: a `rule-exception` record when `VERITAS_EXCEPTION_RULE` and `VERITAS_EXCEPTION_REASON` name the rule that blocked an edit and the hook lets the edit through, and a `hook-skip` record when `VERITAS_HOOK_SKIP=1` skips the hook's evaluation. Veritas does not resolve any authority behind an exception, and readiness does not read exceptions.
 
 ## Boundaries
 
@@ -98,11 +98,10 @@ It should show:
 - boundary crossings
 - evidence freshness
 - missing or failing evidence
-- exceptions
 - recheck options
 - change guidance
 
-**Readiness Coverage** is the current evidence state for the requirements that apply to a specific change. It explains which requirements are satisfied, missing, stale, failing, advisory, recheckable, or accepted by exception.
+**Readiness Coverage** is the current evidence state for the requirements that apply to a specific change. It explains which requirements are satisfied, missing, stale, failing, advisory, or recheckable.
 
 The current CLI uses `veritas readiness --working-tree` as the primary user-facing command for readiness reports.
 

@@ -5,11 +5,11 @@ Merge Readiness is the Veritas subcontext for deciding whether a specific reposi
 ## Language
 
 **Readiness Run**:
-A single evaluation of a change against the applicable Repo Standards, Repo Map, evidence, freshness, authority, and exceptions. A Readiness Run produces a Readiness Report and may also create Standards Feedback.
+A single evaluation of a change against the applicable Repo Standards, Repo Map, evidence, freshness, and authority. A Readiness Run produces a Readiness Report and may also create Standards Feedback.
 _Avoid_: Check-in, eval run, confidence pass
 
 **Readiness Report**:
-The human- and agent-facing result of a Readiness Run. It explains Merge Readiness, Readiness Coverage, Boundary Crossings, missing or failing evidence, exceptions, and next recheck options.
+The human- and agent-facing result of a Readiness Run. It explains Merge Readiness, Readiness Coverage, Boundary Crossings, missing or failing evidence, and next recheck options.
 _Avoid_: Raw evidence artifact, trust report as the Veritas term
 
 **Readiness Coverage**:

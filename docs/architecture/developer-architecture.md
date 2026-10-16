@@ -146,10 +146,10 @@ Change Boundary:
 : A coordination or risk threshold around a Work Area. Crossing a boundary can add evidence, guidance, authority, or coordination requirements.
 
 Requirement:
-: A condition from Repo Standards that must be satisfied, evidenced, or accepted by exception.
+: A condition from Repo Standards that must be satisfied or evidenced.
 
 Evidence and Evidence Finding:
-: Evidence is a traceable result, observation, artifact, attestation, or record. Evidence Findings explain the observed state for a Requirement, such as satisfied, missing, stale, failing, advisory, recheckable, or accepted by exception.
+: Evidence is a traceable result, observation, artifact, attestation, or record. Evidence Findings explain the observed state for a Requirement, such as satisfied, missing, stale, failing, advisory, or recheckable.
 
 Readiness Report:
 : The generated report that explains Merge Readiness and Readiness Coverage for a change. The current artifact shapes are documented in [Artifacts and Schemas](../reference/artifacts-and-schemas.md).

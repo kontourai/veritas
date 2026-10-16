@@ -511,9 +511,19 @@ approval. In the default `reference-only` mode, and in `prefix` mode, Veritas re
 The strong values need a `resolved` mode and a recorded resolver result that is approved and is
 for the cited reference: `metadata.approvalResolution.approvalRef` must equal `metadata.approvalRef`.
 An approved result passed to `createAttestation` under `reference-only` mode is recorded but never
-checked, and a result for a different reference does not back the cited one. The offline resolver
-reports the approval record's own `approvalRef`, so if you cite records with `file:` references,
-set each record's `approvalRef` to that `file:` reference or cite it as `veritas-approval:<id>`.
+checked, and a result for a different reference does not back the cited one. A result passed to
+`createAttestation` under a `resolved` mode is trusted as given: Veritas checks its status, expiry
+and reference, not where it came from.
+
+The offline resolver now checks that an approval record answers the reference that cites it. It
+accepts a record only when the record's own `approvalRef` leads to the same record file as the
+cited reference, so `veritas-approval:<id>`, `file:` and `file:./` spellings of one record all
+match, and it reports the cited reference in `metadata.approvalResolution.approvalRef` (earlier
+releases reported the record's `approvalRef`). A record whose `approvalRef` names a different record,
+or is not a `veritas-approval:` or `file:` reference, now resolves as `out-of-scope`, so a `resolved`
+mode refuses the attestation, where earlier releases accepted it. Set each such record's
+`approvalRef` to `veritas-approval:<id>` for its own file name. The refusal message now ends with
+the resolver's reason in parentheses.
 
 Existing attestation records are immutable and keep the `surface` values they were written with,
 so a reference-only record written before this release still stores a `verified` claim.
