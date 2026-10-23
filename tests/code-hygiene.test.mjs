@@ -1,4 +1,5 @@
 import test from 'node:test';
+import hygiene from '@kontourai/veritas/hygiene/oxlint';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
@@ -12,7 +13,7 @@ function lint(t, name, source, rules) {
   writeFileSync(file, source);
   const config = join(root, 'oxlint.json');
   writeFileSync(config, JSON.stringify({
-    jsPlugins: [join(repoRootDir, 'examples/code-hygiene/oxlint-plugin.mjs')],
+    jsPlugins: [{ name: hygiene.meta.name, specifier: join(repoRootDir, 'examples/code-hygiene/oxlint-plugin.mjs') }],
     categories: { correctness: 'off' }, rules,
   }));
   return spawnSync(join(repoRootDir, 'node_modules/.bin/oxlint'), ['--config', config, '--format', 'json', file], {
@@ -27,6 +28,24 @@ test('real Oxlint catches unexplained lint/type suppressions and accepts reasons
   assert.match(bad.stdout, /Say why/);
   const good = lint(t, 'target.ts', '// @ts-expect-error -- Deliberate invalid-type fixture.\nconst value: string = 1;\n', rules);
   assert.equal(good.status, 0, good.stdout + good.stderr);
+});
+
+test('Biome suppressions need reasons while end markers and literal examples are not suppressions', (t) => {
+  const rules = { 'repo-hygiene/require-suppression-reason': 'error' };
+  for (const comment of ['// biome-ignore lint/suspicious/noExplicitAny', '// biome-ignore-all lint/suspicious/noExplicitAny:', '// biome-ignore-start lint/suspicious/noExplicitAny:   ']) {
+    const bad = lint(t, 'target.ts', `${comment}\nconst value = 1;`, rules);
+    assert.equal(bad.status, 1, bad.stdout + bad.stderr);
+    assert.match(bad.stdout, /Say why/);
+  }
+  for (const source of [
+    '// biome-ignore lint/suspicious/noExplicitAny: Boundary receives provider-defined values.\nconst value = 1;',
+    '// biome-ignore-end lint/suspicious/noExplicitAny\nconst value = 1;',
+    'const example = "// biome-ignore lint/suspicious/noExplicitAny";',
+    '// Provider values are intentionally untyped.\n// biome-ignore lint/suspicious/noExplicitAny\nconst value = 1;',
+  ]) {
+    const good = lint(t, 'target.ts', source, rules);
+    assert.equal(good.status, 0, good.stdout + good.stderr);
+  }
 });
 
 test('real Oxlint distinguishes timer/clock unit violations from fixed time and explicit event completion', (t) => {

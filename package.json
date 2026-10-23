@@ -52,7 +52,8 @@
   "exports": {
     ".": "./src/engine.mjs",
     "./engine": "./src/engine.mjs",
-    "./governance-review": "./src/governance-review.mjs"
+    "./governance-review": "./src/governance-review.mjs",
+    "./hygiene/oxlint": "./examples/code-hygiene/oxlint-plugin.mjs"
   },
   "bin": {
     "veritas": "bin/veritas.mjs",
