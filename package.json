@@ -1,6 +1,6 @@
 {
   "name": "@kontourai/veritas",
-  "version": "1.12.1",
+  "version": "1.12.2",
   "description": "Connect repository policies to agent guidance and evidence from your existing checks.",
   "private": false,
   "license": "Apache-2.0",
