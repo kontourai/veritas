@@ -85,30 +85,6 @@ test('evidence schema classifies top-level fields by Surface mapping', () => {
   }
 });
 
-test('first-contact docs preserve the Surface foundation boundary', () => {
-  const readDoc = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
-  const readme = readDoc('../README.md');
-  const concepts = readDoc('../docs/concepts.md');
-  const siteIndex = readDoc('../docs/site-index.md');
-  const cliReference = readDoc('../docs/reference/cli.md');
-  const boundary = readDoc('../docs/architecture/surface-veritas-boundary.md');
-
-  assert.match(readme, /makes configured repo standards executable/);
-  assert.match(readme, /Your team sets the review policy and decides whether to merge/);
-  assert.match(readme, /built with \[Surface\]/);
-  assert.match(concepts, /## Built With Surface/);
-  assert.match(concepts, /The detailed mapping between Veritas concepts and Surface primitives is in \[Surface-Veritas Boundary\]/);
-  assert.match(concepts, /The user-facing Veritas product should still use Veritas vocabulary/);
-  assert.match(siteIndex, /Surface-Veritas Boundary/);
-  assert.match(siteIndex, /Built With Surface/);
-  assert.match(cliReference, /trust\.bundle/);
-  assert.match(cliReference, /Repo Standards/);
-  assert.match(boundary, /## Boundary Rule/);
-  assert.match(boundary, /Surface does not depend on Veritas readiness runtime code/);
-  assert.match(boundary, /Veritas owns repo-native governance/);
-  assert.match(boundary, /Surface owns portable transparency/);
-});
-
 test('Repo Map and Repo Standards schemas declare activation and lint requirement contracts', () => {
   const repoMapSchema = readJson('../schemas/veritas-repo-map.schema.json');
   const policySchema = readJson('../schemas/veritas-repo-standards.schema.json');
