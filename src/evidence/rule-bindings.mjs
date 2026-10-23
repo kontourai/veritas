@@ -15,6 +15,6 @@ export function resolveRuleEvidenceBindings({ repoStandards, config, files, root
     }
     const matchedFiles = changedFilesForRule(rule, files, rootDir);
     if (matchedFiles.length === 0) return [];
-    return [{ ruleId: rule.id, enforcementLevel: rule.enforcementLevel, evidenceCheckIds: ids, files: matchedFiles }];
+    return [{ ruleId: rule.id, ruleKind: rule.kind, enforcementLevel: rule.enforcementLevel, evidenceCheckIds: ids, files: matchedFiles }];
   });
 }

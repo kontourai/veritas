@@ -24,11 +24,11 @@ function fixture(t, enforcementLevel = 'Require') {
   const standards = JSON.parse(readFileSync(standardsPath, 'utf8'));
   standards.rules.push({
     id: 'target-behavior',
-    kind: 'required-artifacts',
+    kind: 'evidence-check',
     classification: 'promotable-policy',
     enforcementLevel,
     message: 'Target behavior needs its check.',
-    match: { artifacts: ['src/target.mjs'] },
+    match: { files: ['src/target.mjs', '!src/excluded.mjs'] },
     evidenceCheckIds: ['behavior'],
   });
   writeFileSync(standardsPath, `${JSON.stringify(standards, null, 2)}\n`);

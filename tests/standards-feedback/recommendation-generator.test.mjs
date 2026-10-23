@@ -113,7 +113,7 @@ test('standards feedback recommendation generator covers exception and missing s
   const rootDir = setupRepo(t);
   const recommendations = generateRuleRecommendations({ rootDir, inactiveRunThreshold: 3 });
   assert.ok(recommendations.some((recommendation) => recommendation.type === 'rule-enforcement-relaxation' && recommendation.target === 'strict-rule'));
-  assert.ok(recommendations.some((recommendation) => recommendation.type === 'rule-retirement' && recommendation.target === 'quiet-rule'));
+  assert.equal(recommendations.some((recommendation) => recommendation.type === 'rule-retirement'), false);
   assert.ok(recommendations.some((recommendation) => recommendation.type === 'surface-node-addition' && recommendation.target === 'unknown/path.ts'));
 });
 
@@ -269,4 +269,11 @@ test('recommendation acceptance blocks invalid resolved approval before mutating
   const rule = policy.rules.find((item) => item.id === 'strict-rule');
   assert.equal(rule.enforcement, 'deny');
   assert.equal(rule.enforcementLevel, 'Require');
+});
+
+test('unrelated history never recommends retiring unexercised standards', (t) => {
+  const rootDir = setupRepo(t);
+  writeFileSync(join(rootDir, '.kontourai/veritas/standards-feedback/history.jsonl'),
+    Array.from({ length: 8 }, (_, index) => JSON.stringify({ run_id: `unrelated-${index}`, policy_results: [] })).join('\n') + '\n');
+  assert.deepEqual(generateRuleRecommendations({ rootDir }), []);
 });

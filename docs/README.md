@@ -27,6 +27,8 @@ Find what you need by what you're trying to do.
 
 ### Define repo standards
 
+- [Code Hygiene](guides/code-hygiene.md) for evidence-backed policies, native planning and optional detector packs
+
 - [Concepts Overview](concepts.md) for Repo Standards, Requirements, Evidence Checks, and Change Boundaries
 - [Tune For Your Team](guides/tune-for-your-team.md) for rollout strategy
 - [Repo Standards Schema](design/repo-standards.md) for current schema internals

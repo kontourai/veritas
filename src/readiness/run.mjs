@@ -9,6 +9,7 @@ import {
 import { runEvidenceCheckPlan } from './evidence-check-runner.mjs';
 import { finalizeReadinessArtifacts, hasReadinessOutcomeInputs } from './feedback-artifacts.mjs';
 import { resolveActor } from '../util/actor.mjs';
+import { captureSourceSnapshot, assertSourceSnapshotUnchanged } from './source-snapshot.mjs';
 
 export { hasReadinessOutcomeInputs };
 
@@ -91,7 +92,7 @@ export async function runMergeReadiness(
   const actor = resolvedActor ?? 'unknown';
   const workingTree = options.workingTree || (!options.changedFrom && !options.changedTo);
   runtime.onReadinessPhase?.({ phase: 'scope-resolution' });
-  const { repoMapPath, repoStandardsPath } = resolveVeritasPaths(
+  const { repoMapPath, repoStandardsPath, authoritySettingsPath } = resolveVeritasPaths(
     { ...options, rootDir },
     { ...defaults, rootDir },
   );
@@ -108,6 +109,8 @@ export async function runMergeReadiness(
     throw error;
   }
   assertWorkflowDeadline(workflowDeadline, 'scope-resolution');
+  const sourceSnapshot = captureSourceSnapshot(rootDir, remainingWorkflowTimeout(workflowDeadline, 'source-snapshot'),
+    [...reportInputs.files, repoMapPath, repoStandardsPath, authoritySettingsPath].filter(Boolean));
   const evidenceCheckPlan = resolveEvidenceCheckCommands({
     repoMapPath,
     repoStandardsPath,
@@ -142,6 +145,7 @@ export async function runMergeReadiness(
     evidenceCheckResults.find((result) => result.id === id)?.passed === true
   ));
 
+  assertSourceSnapshotUnchanged(sourceSnapshot, rootDir, remainingWorkflowTimeout(workflowDeadline, 'source-snapshot'));
   assertWorkflowDeadline(workflowDeadline, 'report');
   runtime.onReadinessPhase?.({ phase: 'report' });
   const reportResult = await generateVeritasReport(

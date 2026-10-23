@@ -795,3 +795,28 @@ test('Merge Readiness bounds Git diff scope resolution by the workflow deadline'
   }
   assert.ok(Date.now() - startedAt < 300, 'slow Git scope resolution must honor the workflow deadline');
 });
+
+
+test('readiness rejects source or policy drift during real check execution before emitting evidence', async (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-readiness-drift-');
+  writeFileSync(join(rootDir, 'package.json'), JSON.stringify({ scripts: { test: 'node --version' } }));
+  writeBootstrapStarterKit({ rootDir, projectName: 'source-drift', evidenceCheck: 'node check.mjs', force: true });
+  writeFileSync(join(rootDir, 'target.mjs'), 'export const value = "baseline";\n');
+  const original = readFileSync(join(rootDir, 'target.mjs'), 'utf8');
+  writeFileSync(join(rootDir, 'check.mjs'), `import { readFileSync, writeFileSync } from 'node:fs';
+    if (!readFileSync('target.mjs', 'utf8').includes('baseline')) process.exit(9);
+    writeFileSync('target.mjs', 'export const value = "changed-after-check";\\n');`);
+  commitAll(rootDir, 'Committed drift fixture');
+  await assert.rejects(
+    runMergeReadiness({ rootDir, runId: 'source-drift', force: true }, { rootDir }, ['target.mjs'], { appendHistory: false, includeAttestationGate: false }),
+    (error) => error.code === 'VERITAS_SOURCE_CHANGED' && error.changedPaths.includes('target.mjs'),
+  );
+  assert.equal(existsSync(join(rootDir, '.kontourai/veritas/evidence/source-drift.json')), false);
+  writeFileSync(join(rootDir, 'target.mjs'), original);
+  writeFileSync(join(rootDir, 'check.mjs'), `import { mkdirSync, writeFileSync } from 'node:fs';
+    mkdirSync('.kontourai/veritas/external', { recursive: true });
+    writeFileSync('.kontourai/veritas/external/output.json', '{}');`);
+  const restored = await runMergeReadiness({ rootDir, runId: 'source-restored', force: true }, { rootDir }, ['target.mjs'], { appendHistory: false, includeAttestationGate: false });
+  assert.equal(restored.currentStatus, 'pass');
+  assert.equal(readFileSync(join(rootDir, 'target.mjs'), 'utf8'), original);
+});

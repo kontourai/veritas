@@ -6,6 +6,13 @@ Some schema and path names predate the current product vocabulary. This referenc
 
 If you want command syntax, use [CLI Reference](cli.md). If you want sample payloads, use [Examples](examples.md).
 
+The Repo Standards schema also accepts `kind: "evidence-check"` requirements
+with `match.files` and `evidenceCheckIds`. These select executed evidence directly;
+see [Code Hygiene](../guides/code-hygiene.md). The additive resource schema
+`veritas-repo-standards-resource.schema.json` accepts `RepoStandards` under
+`veritas.kontour.ai/v1alpha1`, with `metadata.name` and `spec.requirements`.
+Legacy standards and durable evidence record schema version 1 remain supported.
+
 ## Repo Areas
 
 - `bin/` contains the public CLI entrypoints.

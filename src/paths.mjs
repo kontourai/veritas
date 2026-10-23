@@ -62,7 +62,7 @@ export function assertWithinDir(candidatePath, allowedDir, errorMessage) {
     canonicalizeBoundaryPath(allowedDir),
     canonicalizeBoundaryPath(candidatePath),
   );
-  if (relativePath === '' || (!relativePath.startsWith('..') && !isAbsolute(relativePath))) {
+  if (relativePath === '' || (relativePath !== '..' && !relativePath.startsWith('../') && !relativePath.startsWith('..\\') && !isAbsolute(relativePath))) {
     return;
   }
 

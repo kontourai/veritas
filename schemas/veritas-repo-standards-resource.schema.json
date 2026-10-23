@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veritas.dev/schemas/veritas-repo-standards-resource.schema.json",
+  "title": "Veritas RepoStandards Resource",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "properties": {
+    "apiVersion": {
+      "const": "veritas.kontour.ai/v1alpha1"
+    },
+    "kind": {
+      "const": "RepoStandards"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "uid": {
+          "type": "string",
+          "minLength": 1
+        },
+        "labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requirements"
+      ],
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "requirements": {
+          "$ref": "veritas-repo-standards.schema.json#/properties/rules"
+        }
+      }
+    }
+  }
+}

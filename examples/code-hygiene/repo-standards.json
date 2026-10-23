@@ -1,0 +1,44 @@
+{
+  "apiVersion": "veritas.kontour.ai/v1alpha1",
+  "kind": "RepoStandards",
+  "metadata": {
+    "name": "code-hygiene"
+  },
+  "spec": {
+    "requirements": [
+      {
+        "id": "code-hygiene",
+        "kind": "evidence-check",
+        "classification": "promotable-policy",
+        "enforcementLevel": "Require",
+        "message": "Source changes must pass the approved syntax hygiene checks.",
+        "match": {
+          "files": [
+            "src/**",
+            "tests/**",
+            "!src/**/*.generated.*"
+          ]
+        },
+        "evidenceCheckIds": [
+          "code-hygiene"
+        ],
+        "explain": {
+          "summary": "Explain suppressions and keep deterministic unit tests independent of real time.",
+          "mustDo": [
+            "Explain each lint/type-check suppression.",
+            "Use a fixed epoch or controlled clock in unit tests.",
+            "Await observable completion rather than timer delays."
+          ],
+          "mustNotDo": [
+            "Do not silence findings by weakening the policy or broadening excludes."
+          ],
+          "exampleGood": "// oxlint-disable-next-line repo-hygiene/deterministic-unit-tests -- Measures actual process timeout; covered by integration suite.",
+          "exampleBad": "await new Promise(resolve => setTimeout(resolve, 100));",
+          "contextLinks": [
+            "docs/guides/code-hygiene.md"
+          ]
+        }
+      }
+    ]
+  }
+}

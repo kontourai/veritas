@@ -9,7 +9,7 @@
 
 Veritas makes configured repo standards executable and reports the evidence behind a change’s merge readiness.
 
-Define what good looks like for your repo. Veritas runs configured checks, gives the agent just-in-time guidance, and reports which applicable requirements are satisfied and which evidence is missing, stale, or failing. Your team sets the review policy and decides whether to merge; a readiness report does not establish code correctness or how much human review is safe to remove.
+Define what good looks like for your repo. Preview the applicable guidance and checks with `veritas plan`, then verify the evidence with `veritas readiness`. Veritas runs configured checks, gives the agent just-in-time guidance, and reports which applicable requirements are satisfied and which evidence is missing, stale, or failing. Your team sets the review policy and decides whether to merge; a readiness report does not establish code correctness or how much human review is safe to remove.
 
 > **Engine and Governance Kit.** `@kontourai/veritas` is a standalone **evaluation engine** — an
 > importable library (engine API at `@kontourai/veritas/engine`) plus the thin CLIs used below.
@@ -168,6 +168,7 @@ The agent gets the missing companion-path requirement, and reviewers can inspect
 - [Developer Architecture](docs/architecture/developer-architecture.md)
 - [Human Attestation](docs/guides/attestation.md)
 - [Standards Recommendations](docs/guides/recommendations.md)
+- [Code Hygiene](docs/guides/code-hygiene.md)
 - [CLI Reference](docs/reference/cli.md)
 - [Surface-Veritas Boundary](docs/architecture/surface-veritas-boundary.md)
 

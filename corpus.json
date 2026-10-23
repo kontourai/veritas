@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "purpose": "Help AI-authored changes earn merge autonomy against the repository’s executable standards.",
+  "purpose": "Help AI-authored changes earn merge autonomy against the repository\u2019s executable standards.",
   "builtOn": [
     {
       "product": "plumb",
@@ -195,6 +195,15 @@
     {
       "source": "docs/RELEASING.md",
       "section": "Contribute"
+    },
+    {
+      "source": "docs/guides/code-hygiene.md",
+      "section": "Guides",
+      "covers": [
+        "src/cli/plan.mjs",
+        "src/readiness/source-snapshot.mjs",
+        "examples/code-hygiene/**"
+      ]
     }
   ],
   "topics": [

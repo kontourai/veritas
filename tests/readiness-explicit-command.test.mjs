@@ -32,6 +32,7 @@ function initFixture(t, prefix, configuredCommand, editRepoMap = null) {
     editRepoMap(repoMap);
     writeFileSync(join(rootDir, '.veritas/repo-map.json'), `${JSON.stringify(repoMap, null, 2)}\n`);
   }
+  writeFileSync(join(rootDir, '.gitignore'), readFileSync(join(rootDir, '.gitignore'), 'utf8') + '\nconfigured-ran\nfirst-ran\nsecond-ran\nexplicit-ran\ninline-ran\nseparate-ran\n');
   commitAll(rootDir, 'Bootstrap Veritas');
   writeFileSync(join(rootDir, 'change.txt'), 'changed\n');
   return rootDir;

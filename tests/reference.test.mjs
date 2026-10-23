@@ -134,6 +134,7 @@ test('Repo Map and Repo Standards schemas declare activation and lint requiremen
   assert.equal(externalTool.properties.artifactPath.pattern, '^\\.kontourai/veritas/');
   assert.deepEqual(ruleProperties.kind.enum, [
     'required-artifacts',
+    'evidence-check',
     'governance-block',
     'diff-required',
     'work-area-boundary',
