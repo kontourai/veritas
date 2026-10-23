@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.12.1](https://github.com/kontourai/veritas/compare/v1.12.0...v1.12.1) (2026-10-23)
+
+
+### Fixes
+
+* publish hygiene plugin and cover Biome suppressions ([#325](https://github.com/kontourai/veritas/issues/325)) ([8952a40](https://github.com/kontourai/veritas/commit/8952a404c59e46a2e7dc19d79b8c79132ca34877))
+
 ## [1.12.0](https://github.com/kontourai/veritas/compare/v1.11.4...v1.12.0) (2026-10-23)
 
 
