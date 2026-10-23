@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.12.0](https://github.com/kontourai/veritas/compare/v1.11.4...v1.12.0) (2026-10-23)
+
+
+### Features
+
+* add resource-based hygiene policies and pre-edit planning ([#323](https://github.com/kontourai/veritas/issues/323)) ([fbd3852](https://github.com/kontourai/veritas/commit/fbd38521ead84c2e129c2c60ec32c7b7b86f18bb))
+
 ## [1.11.4](https://github.com/kontourai/veritas/compare/v1.11.3...v1.11.4) (2026-10-16)
 
 
