@@ -63,14 +63,23 @@ check. Keep requirement claims no broader than the detector's tested coverage.
 ## Optional Oxlint reference pack
 
 The published package includes [an example pack](../../examples/code-hygiene/README.md)
-with an Oxlint plugin, configuration and Repo Standards. Copy the directory into
-your repo's tooling area, install a pinned Oxlint development dependency, and add:
+with an Oxlint plugin, configuration and Repo Standards. Use its public `@kontourai/veritas/hygiene/oxlint` export in a repo-owned
+Oxlint configuration, install a pinned Oxlint development dependency, and add:
 
 ```json
 {
   "scripts": {
-    "lint:hygiene": "oxlint --config tooling/code-hygiene/oxlint.json --report-unused-disable-directives src tests"
+    "lint:hygiene": "oxlint --config config/code-hygiene.oxlint.json --report-unused-disable-directives src tests"
   }
+}
+```
+
+For example, the configuration can load the plugin without importing package internals:
+
+```json
+{
+  "jsPlugins": ["@kontourai/veritas/hygiene/oxlint"],
+  "rules": { "repo-hygiene/require-suppression-reason": "error" }
 }
 ```
 

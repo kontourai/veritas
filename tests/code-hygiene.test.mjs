@@ -1,4 +1,5 @@
 import test from 'node:test';
+import hygiene from '@kontourai/veritas/hygiene/oxlint';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
@@ -12,7 +13,7 @@ function lint(t, name, source, rules) {
   writeFileSync(file, source);
   const config = join(root, 'oxlint.json');
   writeFileSync(config, JSON.stringify({
-    jsPlugins: [join(repoRootDir, 'examples/code-hygiene/oxlint-plugin.mjs')],
+    jsPlugins: [{ name: hygiene.meta.name, specifier: join(repoRootDir, 'examples/code-hygiene/oxlint-plugin.mjs') }],
     categories: { correctness: 'off' }, rules,
   }));
   return spawnSync(join(repoRootDir, 'node_modules/.bin/oxlint'), ['--config', config, '--format', 'json', file], {

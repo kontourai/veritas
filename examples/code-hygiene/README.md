@@ -4,8 +4,9 @@ This is an opt-in reference integration, not the default Veritas policy.
 See the [code hygiene guide](../../docs/guides/code-hygiene.md) for configuration,
 rollout, evidence limitations and standards interoperability.
 
-`oxlint.json` loads the adjacent plugin. Keep the directory together when copying
-it into your repository. `repo-standards.json` supplies the linked requirement;
+`oxlint.json` loads the supported `@kontourai/veritas/hygiene/oxlint` package
+export. Copy the configuration and standards into your repository; the installed
+package supplies the plugin. `repo-standards.json` supplies the linked requirement;
 add a `code-hygiene` Evidence Check that runs the detector. The plugin is tooling,
 not imported by the Veritas evaluation engine. Consumers install their own Oxlint;
 Veritas's development dependency exercises the pack with Oxlint 1.88.0.
