@@ -1,93 +1,74 @@
-# Walkthrough: Next.js API Change
+# Try a policy on an API change
 
-This walkthrough shows the smallest useful Veritas loop: initialize a repo, make an API change without its companion test, see the requirement fail, add the test, and rerun.
+This walkthrough demonstrates a companion-test policy: changing an API route should include a test change. The shipped Next.js template uses `Guide`, so a missing companion produces a warning. It does not prove that a test is meaningful; the test runner provides separate behavioral evidence.
 
-## 1. Install And Initialize
+Use a disposable Git repository with Node.js 22 or newer. These commands use npm and JavaScript modules so no Next.js server or TypeScript loader is needed:
 
 ```bash
+git init veritas-policy-demo
+cd veritas-policy-demo
+npm init -y
+npm pkg set 'scripts.test=node --test'
 npm install -D @kontourai/veritas
-npx --no @kontourai/veritas init --template nextjs-typescript
+npx --no @kontourai/veritas init --template nextjs-typescript --evidence-check "npm test"
 ```
 
-`--template` is the current CLI flag for selecting a starter template. The product concept is a Repo Standards Template.
+Review the generated policy and commands. For a real project, record the owner's bootstrap approval as described in [setup](getting-started.md#2-review-the-generated-configuration). This demonstration does not invent an approval or remove approval warnings.
 
-Output includes generated starter files:
+Commit the setup before demonstrating a source change, using your configured Git identity:
 
-```json
-{
-  "template": "nextjs-typescript",
-  "generatedFiles": [
-    ".veritas/README.md",
-    ".veritas/GOVERNANCE.md",
-    ".veritas/repo-map.json",
-    ".veritas/repo-standards/default.repo-standards.json",
-    ".veritas/authority/default.authority-settings.json",
-    "AGENTS.md",
-    "CLAUDE.md"
-  ]
-}
+```bash
+git add .
+git commit -m "chore: initialize policy demonstration"
 ```
 
-Together, these generated files represent starter Repo Standards, a Repo Map, and protected standards metadata.
-
-## 2. Change An API Route Without A Test
+## 1. Add a route without a test
 
 ```bash
 mkdir -p app/api/projects
-cat > app/api/projects/route.ts <<'EOF'
+cat > app/api/projects/route.mjs <<'JS'
 export async function GET() {
   return Response.json({ projects: [] });
 }
-EOF
+JS
+npx --no @kontourai/veritas plan app/api/projects/route.mjs
+npx --no @kontourai/veritas readiness --working-tree
 ```
 
-Run Veritas:
-
-```bash
-npx --no @kontourai/veritas readiness --working-tree --skip-evidence-check
-```
-
-`--skip-evidence-check` skips the configured evidence-check command (e.g. `npm test`) so this walkthrough can focus on the standards output. It deliberately produces diagnostic-only, not-ready Merge Readiness whenever required Evidence Checks exist. In a real repo, omit this flag and let Veritas run the project tests.
-
-The starter standards report the missing companion test requirement:
+Look for the `api-routes-require-api-tests` finding. Its relevant line is:
 
 ```text
-FAIL  api-routes-require-api-tests: Changed files matched app/api/** but no companion changes matched tests/api/**.
-      -> app/api/projects/route.ts
-FAIL  required-evidence-check:required-evidence-check: skipped
-      -> Run npm test and record an acceptable result before merge readiness can be verified.
-
-2 failures · 0 warnings · run `npx --no @kontourai/veritas readiness --check evidence` for full evidence
+WARN  api-routes-require-api-tests: Changed files matched app/api/** but no companion changes matched tests/api/**.
 ```
 
-## 3. Add The Companion Test
+Other setup or evidence findings may also appear. This warning is advisory because the template uses `Guide`. The configured test command runs separately; passing with no tests is not behavioral coverage.
+
+## 2. Add a test that calls the route
 
 ```bash
 mkdir -p tests/api
-cat > tests/api/projects.test.ts <<'EOF'
-import assert from "node:assert/strict";
-import test from "node:test";
+cat > tests/api/projects.test.mjs <<'JS'
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { GET } from '../../app/api/projects/route.mjs';
 
-test("projects route contract", () => {
-  assert.deepEqual({ projects: [] }, { projects: [] });
+test('projects route returns the project list', async () => {
+  const response = await GET();
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { projects: [] });
 });
-EOF
+JS
+npx --no @kontourai/veritas readiness --working-tree
 ```
 
-Rerun:
-
-```bash
-npx --no @kontourai/veritas readiness --working-tree --skip-evidence-check
-```
-
-Now the requirement passes:
+The companion-path assertion now reports:
 
 ```text
 PASS  api-routes-require-api-tests: Changed files matched app/api/** and included required companion changes under tests/api/**.
-FAIL  required-evidence-check:required-evidence-check: skipped
-      -> Run npm test and record an acceptable result before merge readiness can be verified.
-
-1 failure · 0 warnings · run `npx --no @kontourai/veritas readiness --check evidence` for full evidence
 ```
 
-In a real repo, remove `--skip-evidence-check` and let the configured Evidence Check run the project test or verify command; only an observed passing required result can verify Merge Readiness.
+Separately, `npm test` executes the handler assertion. To confirm that test is useful in this disposable repository, temporarily change the response to `{ projects: ['unexpected'] }`: the test must fail. Restore the original response and rerun green.
+
+The distinction matters: the companion policy checks which paths changed; the behavioral test checks the returned response. Neither covers the entire application. Before promoting this policy to `Require`, assess false positives and obtain the approval required for protected policy changes.
+
+Next: [connect a detector-backed policy](code-hygiene.md) or [add agent guidance](agent-runtime-integrations.md).

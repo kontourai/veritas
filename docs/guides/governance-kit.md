@@ -166,7 +166,7 @@ Write a private review request with absolute paths and your chosen expiry:
     "rootDir": "/absolute/path/to/project",
     "planPath": "/absolute/path/to/project/.veritas/init-plans/proposal.json",
     "hostRoot": "/absolute/private/veritas-review-host",
-    "expiresAt": "2026-10-13T12:00:00Z"
+    "expiresAt": "<future-review-expiry-in-ISO-8601>"
   }
 }
 ```

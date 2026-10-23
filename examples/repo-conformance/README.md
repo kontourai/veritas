@@ -1,6 +1,6 @@
 # Veritas Repo Conformance Examples
 
-These files are curated evidenceCheck artifacts generated from the `veritas` repo using its tracked `.veritas/` configuration.
+These files are curated format fixtures generated from the Veritas configuration. The generator supplies a synthetic successful baseline and builds report artifacts without executing the configured evidence checks. A fixture can therefore show a successful baseline alongside missing required execution; it is not a current readiness, CI or release qualification receipt.
 
 They are intentionally copied out of `.kontourai/veritas/evidence/`, `.kontourai/veritas/standards-feedback-drafts/`, and `.kontourai/veritas/standards-feedback/` so the repo can demonstrate a self-hosted report and standards feedback flow without committing transient local state.
 
@@ -23,7 +23,7 @@ npm run veritas:conformance:examples
 
 The red repo conformance examples are maintained as a curated regression snapshot for the unhealthy path.
 
-Generate an untracked point-in-time self-hosting snapshot with:
+Derive an untracked summary from existing local evidence with:
 
 ```bash
 npm run veritas:conformance

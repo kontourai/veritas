@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "purpose": "Help AI-authored changes earn merge autonomy against the repository\u2019s executable standards.",
+  "purpose": "Connect repository policies to agent guidance and executable checks.",
   "builtOn": [
     {
       "product": "plumb",
@@ -20,7 +20,7 @@
   ],
   "product": "veritas",
   "title": "Veritas",
-  "tagline": "Merge autonomy for AI-authored code: evidence-backed readiness reports against your repo's own standards.",
+  "tagline": "Project rules, agent guidance, and evidence from your existing checks.",
   "repo": "kontourai/veritas",
   "landing": "docs/site-index.md",
   "documents": [
@@ -204,13 +204,17 @@
         "src/readiness/source-snapshot.mjs",
         "examples/code-hygiene/**"
       ]
+    },
+    {
+      "source": "docs/documentation-audit.md",
+      "section": "Project"
     }
   ],
   "topics": [
     {
       "id": "install",
       "title": "Install and first readiness check",
-      "source": "docs/guides/getting-started.md#install"
+      "source": "docs/guides/getting-started.md#1-connect-an-existing-check"
     },
     {
       "id": "readiness-reports",

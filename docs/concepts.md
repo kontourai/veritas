@@ -1,6 +1,6 @@
 # Concepts
 
-Veritas helps teams earn merge autonomy for AI-authored code by making repo standards executable, evidence-backed, and inspectable.
+Veritas connects repository policies to guidance for agents and evidence from checks. Start with [setup](guides/getting-started.md); this page explains the terms used by more detailed configuration.
 
 The product has four jobs:
 
@@ -23,22 +23,15 @@ The product has four jobs:
 
 A **Requirement** is a condition in the repo standards that must be satisfied or evidenced for a change to earn merge readiness.
 
-Requirements can be triggered by:
-
-- changed paths or file types
-- work areas in the repo map
-- change boundaries or protected areas
-- recurring intervals, such as weekly dependency health
-- release branches or protected branches
-- stale or missing standing evidence
-- changes to the repo standards themselves
+Requirements match changed paths and work areas, including protected configuration. Linked evidence checks supply execution results. Other workflows, such as scheduled dependency checks or release-only validation, need explicit CI scheduling and routing; naming a policy does not create a scheduler.
 
 The implementation uses the following requirement kinds (from `veritas-repo-standards.schema.json`):
 
 | Kind | What it checks | Example |
 | --- | --- | --- |
 | `required-artifacts` | Named files or directories must exist in the repo | `AGENTS.md`, `.veritas/repo-standards/` |
-| `governance-block` | Commits that change protected areas must carry governance metadata | PR modifies `.veritas/` without a fresh attestation |
+| `governance-block` | Named instruction files contain the canonical governance block | `AGENTS.md` points agents at the repo policy |
+| `evidence-check` | Matching paths have acceptable results from linked checks | Source changes require the lint command |
 | `diff-required` | Changing one path must be accompanied by a change to another | Edit `app/api/**` → require `tests/api/**` |
 | `forbidden-pattern` | Files must not contain a given text pattern | No hardcoded API keys in source |
 | `required-pattern` | Files must contain a given text pattern | Every service entrypoint must declare a version header |

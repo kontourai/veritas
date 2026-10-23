@@ -14,7 +14,7 @@ The product model has three layers:
 2. **Repo Map**: the mapping from Veritas concepts onto one real codebase: work areas, boundaries, protected areas, ownership context, and dependency relationships.
 3. **Repo Standards**: the requirements, evidenceChecks, verification authorities, exceptions, enforcement levels, and merge thresholds for that repo.
 
-Current schema/file names still include pre-glossary names. Product docs should use the names above and treat implementation renames as open work.
+Use exact schema fields when authoring configuration. The Repo Map declares check commands and routing; requirements in Repo Standards can reference those check IDs. Authority settings are separate protected configuration. Exceptions currently belong to hook feedback and do not waive readiness failures.
 
 ## Why This Helps AI Focus
 
@@ -71,4 +71,4 @@ This is the layer teams should review when deciding what good looks like.
 
 Humans should review the standards, protected changes, exceptions, and high-risk readiness gaps.
 
-Humans should not need to re-audit every routine implementation detail when the change stays inside established standards and the evidence is strong.
+Teams still decide the review required for implementation changes. Policy compliance identifies evidence and gaps; it does not establish that a change is correct or that reduced review is safe.

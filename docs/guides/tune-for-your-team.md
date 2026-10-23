@@ -2,7 +2,7 @@
 
 Tune Veritas by improving your repo standards, not by forking the product or adding one-off scripts for every complaint.
 
-The goal is earned autonomy: requirements become stronger when evidence shows they help, and weaker or clearer when evidence shows they create noise.
+Change enforcement when catch evidence and reviewer feedback justify it. A quiet rule may be useful or unexercised; silence alone does not justify retirement.
 
 ## What To Adjust
 
@@ -14,7 +14,7 @@ Most teams adjust:
 - **Change Boundaries**: where shared-code coordination or stronger authority is needed.
 - **Verification Authorities**: who or what is trusted to verify each requirement.
 
-The current implementation stores some of this in generated files under `.veritas/`. Treat exact file names as implementation details, not product concepts.
+Initialization scaffolds configuration under `.veritas/`. After review, those files are maintained policy source, not disposable generated output. Generated evidence lives under `.kontourai/`.
 
 ## Rollout Ladder
 
@@ -77,4 +77,4 @@ Veritas is tuned well when:
 - readiness reports make review faster
 - exceptions become rare and well-explained
 - standards recommendations are grounded in evidence
-- the team can reduce manual review for low-risk, well-evidenced changes
+- reviewers can identify the evidence and gaps for a change; any decision to reduce review is separately evaluated by the team

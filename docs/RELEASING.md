@@ -14,14 +14,17 @@ This document is the operator checklist for cutting a release of `@kontourai/ver
 - package metadata in `package.json` is correct
 - any breaking changes are documented in [MIGRATING.md](./MIGRATING.md)
 
-## Release Flow
+## Normal release flow
 
-1. Update `package.json` version.
-2. Update `CHANGELOG.md`.
-3. Merge the release commit to `main`.
-4. Create and push a tag matching the package version, for example `v0.4.0`.
-5. Let `.github/workflows/publish-npm.yml` publish the package.
-6. Confirm the published tarball contents and README rendering on npm.
+1. Merge reviewed conventional commits to `main`.
+2. Review the release-please PR: package version, changelog and migration notes.
+3. Merge that PR through the repository's normal process.
+4. Confirm the Release Please workflow created the matching tag and dispatched Publish NPM at that tag.
+5. Confirm both verification jobs and publication succeeded, then inspect the exact version on npm and its provenance.
+
+The workflows are [release-please.yml](../.github/workflows/release-please.yml) and [publish-npm.yml](../.github/workflows/publish-npm.yml). Publication rejects a mismatched tag or a commit outside `main`; dispatching at a branch ref does not bypass those checks. If publication was interrupted, inspect its state before dispatching the same tag again. An already-published version is skipped.
+
+For an exceptional manual release, review and merge the version/changelog changes first, create the matching tag at that main commit, and let the same publish workflow verify it. This is not the routine release path.
 
 ## Tarball Audit
 
@@ -55,4 +58,4 @@ npm trust github @kontourai/veritas --repo kontourai/veritas --file publish-npm.
 
 Publishing through trusted publishing requires npm CLI `11.5.1` or later in CI. The checked-in workflow uses Node 24 for the publish job so npm can authenticate through OIDC without a long-lived `NPM_TOKEN`.
 
-If that OIDC path is unavailable, use the fallback path documented in [docs/guides/publish-and-release.md](./guides/publish-and-release.md).
+If OIDC is unavailable, inspect the trusted-publisher configuration and workflow logs. The checked-in workflow has no token fallback; changing authentication requires a reviewed workflow change. See [publication infrastructure](guides/publish-and-release.md).

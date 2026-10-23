@@ -13,7 +13,7 @@ Fallow and Veritas should stay separate:
 
 Do not make Fallow blocking on the first day in an existing repo. A first run often reveals real cleanup debt that should be triaged before it becomes a gate.
 
-For this Veritas checkout, the advisory lane keeps dead code at zero while carrying an intentional duplication and complexity baseline:
+This checkout's advisory script configures the following accepted thresholds (not current scan results):
 
 - 0 dead-code issues
 - 17 clone groups
@@ -44,7 +44,7 @@ Example Repo Map check:
 }
 ```
 
-Example script:
+Example script (install and pin a compatible Fallow version first; the command refuses an absent local install):
 
 ```js
 import { execFileSync } from 'node:child_process';
@@ -56,8 +56,8 @@ let output = '';
 try {
   output = execFileSync(
     'npx',
-    ['-y', 'fallow', '--format', 'json', '--quiet'],
-    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
+    ['--no', 'fallow', '--format', 'json', '--quiet'],
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true },
   );
 } catch (error) {
   // Fallow exit code 1 means findings were reported. Keep the JSON artifact

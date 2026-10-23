@@ -1,10 +1,6 @@
 # Surface-Veritas Boundary
 
-Veritas is the repo and AI-agent governance **evaluation engine** — a standalone, importable
-library (`@kontourai/veritas`, engine API at `@kontourai/veritas/engine`) plus thin CLIs. Its
-repo-installed **product surface** (init scaffold, hook setup, standards authoring, just-in-time
-agent guidance) is owned by this repository's root-installable **Veritas Governance Kit**, which wraps the engine via
-CLI + artifacts and never reimplements evaluation. See [Engine / Surface Seam](engine-surface-seam.md).
+Veritas provides a standalone CLI and the `@kontourai/veritas/engine` library. The optional Governance Kit distributes setup workflows, skills and hooks through Flow Agents; it calls the same CLI and does not reimplement evaluation. See [Engine / Surface Seam](engine-surface-seam.md).
 Surface is the product-neutral transparency layer Veritas is built with. The dependency direction is one-way: Veritas may use Surface contracts and APIs. Surface does not depend on Veritas readiness runtime code.
 
 ## Boundary Rule
@@ -114,7 +110,7 @@ readiness authority trace; Veritas refuses the projection rather than substituti
 the run actor or inventing an attester. These fields identify the recorded actor;
 approval resolution and record integrity remain separate evidence.
 
-Surface `^0.6.0` supports first-class top-level `authorityTrace`. Veritas emits readiness authority as top-level `TrustBundle` state. Readiness events link to the authority-traced evidence by `evidenceIds`.
+The current Surface projection emits readiness authority as top-level `authorityTrace` in `TrustBundle` state. Readiness events link to the authority-traced evidence by `evidenceIds`.
 
 ## Product Language Rule
 

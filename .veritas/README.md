@@ -40,7 +40,7 @@ The repo-level repo conformance commands live in `package.json`:
 node bin/veritas.mjs readiness --working-tree
 node bin/veritas.mjs readiness --check coverage --working-tree
 node bin/veritas.mjs attest status
-node bin/veritas.mjs attest bootstrap --actor <authority-id> --non-interactive
+node bin/veritas.mjs attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
 ```
 
 If you prefer explicit paths:

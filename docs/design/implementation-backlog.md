@@ -1,5 +1,7 @@
 # Implementation Backlog
 
+Status: historical planning record. This page retains earlier design intent, not a current list of shipped or pending capabilities. Use the [CLI reference](../reference/cli.md), [setup guide](../guides/getting-started.md) and [current audit](../documentation-audit.md) for supported behavior and the disposition of these plans.
+
 This backlog turns the current roadmap and integration plans into executable work. It excludes restoring a Veritas-specific Surface integration: Veritas now emits `trust.bundle` directly, and Surface should not import Veritas readiness runtime code unless a real external product needs it.
 
 ## Now

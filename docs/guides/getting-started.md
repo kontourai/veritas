@@ -1,143 +1,89 @@
-# Getting Started
+# Set up Veritas
 
-This guide gets Veritas readiness checking in a repository so developers and agents can check changes against repo standards.
+Start with one project check and one policy that catches a recurring review problem. You can add more policies after the first one is useful.
 
-The goal is simple:
+The everyday loop is **plan → edit → check readiness**. Setup connects that loop to your repository.
 
-- define what good looks like for the repo
-- map the work areas and change boundaries that matter
-- run evidence checks for the current change
-- produce feedback and generated evidence before review
+## 1. Connect an existing check
 
-For the product model, read [Concepts](../concepts.md). For exact current commands, read [CLI Reference](../reference/cli.md).
-
-## Mental Model
-
-Use Veritas as:
-
-1. **Repo Standards**: what this repo requires.
-2. **Repo Map**: where work lives and which boundaries matter.
-3. **Readiness Report**: whether this change has enough evidence to merge.
-4. **Standards Feedback**: whether the standards are helping or need improvement.
-
-## Minimal Onboarding
-
-Start small:
-
-1. one repo map
-2. a small set of repo standards
-3. one evidenceCheck
-4. one requirement that catches a real review issue
-
-That is enough to make Veritas useful. You do not need to model the whole organization on day one.
-
-## Install
+You need Node.js 22 or newer and a Git repository. Install with the package manager your repository already uses. With npm:
 
 ```bash
 npm install -D @kontourai/veritas
-npx --no @kontourai/veritas init
+npx --no @kontourai/veritas init --evidence-check "npm test"
 ```
 
-`init` writes starter files under `.veritas/`, injects a governance block into AI instruction files, and creates a reviewable starting point for standards and map configuration.
+Replace `npm test` with a real test, lint or verification command. Initialization can infer common package scripts, but inspect the selected command. The fallback `node -e "process.exit(0)"` checks only that Node runs; it provides no evidence about your project.
 
-Current generated paths are documented in [CLI Reference](../reference/cli.md). The product model is Repo Standards, Repo Map, and protected standards metadata.
+`init` currently prints JSON describing the generated files, detected repository structure and selected check. It is not an interactive wizard. In particular, `--guided --answers answers.json` consumes answers supplied by you or an agent; it does not conduct a conversation.
 
-For a repo where setup should be reviewed before files are written, use the guided path:
+If the repository already has Veritas configuration, inspect it first. Do not use `--force` as a routine setup step.
 
-```bash
-npx --no @kontourai/veritas init --explore
-npx --no @kontourai/veritas init --guided --answers answers.json --output .veritas/init-plans/guided.json
-npx --no @kontourai/veritas init --apply --plan .veritas/init-plans/guided.json
-```
+## 2. Review the generated configuration
 
-Exploration is deterministic: it does not call AI. The first command writes its review artifact to
-`.veritas/init-plans/explore.json` by default while leaving active standards untouched.
+| File | Review |
+| --- | --- |
+| `.veritas/repo-map.json` | Source/test paths, work areas and selected check commands |
+| `.veritas/repo-standards/default.repo-standards.json` | Applicable rules, their advice and enforcement levels |
+| `.veritas/authority/default.authority-settings.json` | Approval-reference requirements and rollout/review preferences for protected changes |
+| `.veritas/README.md` | Repository-specific setup notes and suggested wiring |
 
-## Protect The Standards
+Initialization also creates supporting governance and claim files and may update detected AI instruction files. See the [artifact reference](../reference/artifacts-and-schemas.md) for the full inventory. Generated output belongs under the ignored `.kontourai/` directory.
 
-After reviewing the generated standards and map, record the first attestation:
+Readiness runs configured commands with your local permissions. Review those commands before execution. Leave uncertain policies at `Observe` or `Guide`; promote a policy to `Require` after proving its check catches violations and permits valid code.
+
+After the owner reviews the protected configuration, record that actual approval:
 
 ```bash
 npx --no @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
 ```
 
-This records the attesting actor, the current protected standards hashes, and the approval reference you supply. By default Veritas checks only that the reference is present, not that the approval exists; see [Attestation](attestation.md) to require a resolved approval record. If the standards or map change later, Veritas reports that a fresh attestation is needed before those changes can be trusted.
+The maintainer must choose an actually authorized person and a reference to the real approval. The settings do not define an actor membership allowlist or authenticate the supplied name. The default mode records the reference without independently resolving it. The [approval guide](attestation.md) explains stronger resolution and what an attestation establishes.
 
-## Run A Readiness Check
+## 3. Preview an edit
 
-Run a readiness check:
+Choose a real or proposed path in your repository:
+
+```bash
+npx --no @kontourai/veritas plan src/example.ts
+```
+
+The plan shows matching guidance and selected checks. It does not execute them or establish readiness. Use `explain --file src/example.ts` for more detail about a path's rules.
+
+If no useful policy matches, add one before expanding the setup. The [walkthrough](walkthrough.md) demonstrates companion-test guidance; [code hygiene](code-hygiene.md) shows how to connect a policy to a detector or test command.
+
+## 4. Check the change
+
+After editing:
 
 ```bash
 npx --no @kontourai/veritas readiness --working-tree
 ```
 
-The output gives developer- and agent-facing feedback, writes generated evidence, and records enough context for standards feedback. For a repo that satisfies all its standards, the output looks like:
+Read the outcome and affected paths:
 
-```text
-veritas: 0 files changed ->
-PASS  required-veritas-artifacts: All required repository artifacts are present.
-PASS  ai-instruction-files-synced: All required AI instruction files contain the canonical governance block.
+- `PASS`: the reported assertion or check passed within its stated scope.
+- `WARN`: advisory guidance or a coverage gap needs attention.
+- `FAIL`: a required policy or check is unmet; follow its remediation.
 
-0 failures · 0 warnings · run `npx --no @kontourai/veritas readiness --check evidence` for full generated evidence
-```
+A passing smoke command, a companion file change and a passing behavioral test establish different things. Judge the check's coverage before relying on its result. Readiness does not certify correctness or decide how much review to remove.
 
-When a requirement is not satisfied, the output shows the failure with the affected file:
+For committed branch changes, use `--changed-from <ref> --changed-to HEAD` instead of `--working-tree`. Use `--format json` for automation. The [CLI reference](../reference/cli.md) documents exact flags and output.
 
-```text
-FAIL  api-routes-require-api-tests: Changed files matched app/api/** but no companion changes matched tests/api/**.
-      -> app/api/projects/route.ts
+## 5. Make the first policy useful
 
-1 failure · 0 warnings · run `npx --no @kontourai/veritas readiness --check evidence` for full generated evidence
-```
+Demonstrate a known violation, confirm Veritas reports the intended finding, restore the valid code and confirm it passes. Keep this experiment isolated from other work. Only then decide whether to require the policy in CI.
 
-For a lower-level evidence artifact without the full orchestration path:
+Next, add [agent hooks](agent-runtime-integrations.md) or [CI integration](repo-conformance.md). Review [feedback and recommendations](recommendations.md) later, once real usage provides evidence of noisy or missing policies.
 
-```bash
-npx --no @kontourai/veritas readiness --check evidence --working-tree
-```
+## Optional setup paths
 
-`veritas readiness` is the front door for readiness reports. Existing hook and CI integrations may still use the lower-level `veritas readiness` compatibility path.
-
-## Add Change Guidance
-
-Use `explain` when an agent or developer needs context before editing:
+For a reviewable proposal before active policy files are written:
 
 ```bash
-npx --no @kontourai/veritas explain --file src/api/users.ts
-npx --no @kontourai/veritas explain <requirement-id>
+npx --no @kontourai/veritas init --explore
 ```
 
-Good change guidance should say what to do next, what not to do, why it matters, and what evidence will satisfy the requirement.
+Review `.veritas/init-plans/explore.json`. It is generated offline from repository signals. The [CLI reference](../reference/cli.md#init) explains supplied answers, plan integrity, applying a reviewed plan and overwrite behavior.
 
-## Improve The Standards
-
-After Veritas has generated enough evidence, use the current feedback commands:
-
-```bash
-npx --no @kontourai/veritas feedback summary
-npx --no @kontourai/veritas feedback recommend
-npx --no @kontourai/veritas recommendation list
-```
-
-In product language, these commands create **Standards Feedback** and **Standards Recommendations**. Recommendations should be reviewed before they change the repo standards.
-
-## Roll Out Gradually
-
-Use the enforcement ladder:
-
-- **Observe**: collect evidence and learn what matters.
-- **Guide**: give developers and agents just-in-time correction.
-- **Require**: require fresh evidence before merge readiness is complete.
-
-Start in Observe or Guide. Promote requirements only when the evidence says they are useful.
-
-## Why Teams Care
-
-Veritas creates a better contract between AI and humans.
-
-- **For agents:** less ambiguity and more precise correction.
-- **For developers:** repo standards appear at the point of work.
-- **For reviewers:** a readiness report narrows review to evidence and risky boundaries.
-- **For the organization:** humans review the standards and exceptions instead of manually rediscovering the same expectations in every diff.
-
-The point is not only to make agents faster. The point is to make more changes trustworthy enough for reduced human review.
+For an existing repository with substantial verification, follow [brownfield adoption](brownfield-adoption.md). Use the [Governance Kit](governance-kit.md) only if you want Flow Agents to distribute setup workflows and hooks; it is optional for the standalone CLI.

@@ -5,7 +5,13 @@ description: "Get just-in-time Veritas governance guidance for a file or work ar
 
 # Consult Repo Standards
 
-Before editing a governed file, ask the Veritas engine what applies:
+Before editing, preview all intended paths without executing checks:
+
+```bash
+npx --no @kontourai/veritas plan src/path/to/file.ts tests/file.test.ts
+```
+
+For focused rule or work-area detail:
 
 ```bash
 npx --no @kontourai/veritas explain --file src/path/to/file.ts

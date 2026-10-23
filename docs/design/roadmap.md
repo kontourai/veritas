@@ -1,5 +1,7 @@
 # Roadmap
 
+Status: historical planning record. This page retains earlier design intent, not a current list of shipped or pending capabilities. Use the [CLI reference](../reference/cli.md), [setup guide](../guides/getting-started.md) and [current audit](../documentation-audit.md) for supported behavior and the disposition of these plans.
+
 Open design questions and planned work, updated to the current product vocabulary.
 
 ## Standards Feedback Persistence

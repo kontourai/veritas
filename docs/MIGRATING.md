@@ -1,5 +1,13 @@
 # Migration Guide
 
+## Resource-shaped standards and native planning (1.12)
+
+The public loader accepts both legacy `{ version, name, rules }` standards and the resource envelope `{ apiVersion: "veritas.kontour.ai/v1alpha1", kind: "RepoStandards", metadata: { name }, spec: { requirements } }`. Preserve each requirement when moving `rules` to `spec.requirements`; resource validation is strict. Consumers must call `loadRepoStandards` rather than assume raw JSON has a `.rules` property.
+
+`veritas plan --json <paths...>` emits an unexecuted `ChangePlan` resource. Its guidance uses `files`, not a consumer-specific `paths` alias. It selects guidance and checks without producing passing execution evidence. The public hygiene plugin import is `@kontourai/veritas/hygiene/oxlint`.
+
+See [code hygiene](guides/code-hygiene.md) for policy/check wiring and the [CLI reference](reference/cli.md#plan) for the planning contract. Repo Maps and durable readiness/evidence records have not all moved to resource envelopes.
+
 ## Product Terminology Migration
 
 Veritas now uses the product vocabulary in [reference/glossary.md](reference/glossary.md). Pre-glossary names should be renamed, not preserved as a public surface.
@@ -118,7 +126,7 @@ After:
     "requiredEvidenceCheckIds": ["ci-fast"],
     "defaultEvidenceCheckIds": ["unit-tests"],
     "evidenceCheckRoutes": [
-      { "componentIds": ["src/api"], "evidenceCheckIds": ["api-tests"] }
+      { "nodeIds": ["src/api"], "evidenceCheckIds": ["api-tests"] }
     ]
   }
 }
@@ -166,17 +174,11 @@ After:
 
 If you previously relied on shell expansion, move that logic into a real script and call the script as the evidenceCheck.
 
-## Evidence Check Output Now Uses Inherited StdIO
+## Evidence Check Output and machine-readable reports
 
-Evidence Check commands now run with inherited stdio instead of redirecting stdout into stderr.
+Current readiness execution captures check output and replays it through the CLI callback. In feedback and JSON modes, check stdout is replayed on stdout and check stderr on stderr; JSON-mode consumers must account for the trailing report object rather than assume the entire stream is one JSON document. `--format trust-bundle` sends check output to stderr and reserves stdout for the bundle.
 
-Operational effect:
-
-- evidenceCheck stdout stays on stdout
-- evidenceCheck stderr stays on stderr
-- CLI callers that assumed `veritas readiness` emitted only JSON on stdout must now parse the trailing JSON payload instead of the entire stream
-
-This is intentional. The command no longer rewrites evidence-check output streams behind the operator's back.
+This supersedes the earlier inherited-stdio implementation description. Check the selected format before piping stdout into a JSON parser.
 
 ## Claim `surface` Field Renamed to `facet` (Surface 2.0, schemaVersion 5)
 
@@ -526,8 +528,7 @@ external identifier, such as `servicenow:CHG1`, is still accepted, and the store
 that identifier as `recordApprovalRef`. The refusal message now ends with the resolver's reason in
 parentheses.
 
-Attestations written by any released version carry no record integrity, so they are not
-authority-backed for that reason first (see below). Earlier builds also stored the record's own
+Attestations written before record integrity was introduced carry no bound record digest, so they are not authority-backed for that reason first (see below). Current releases write record integrity. Earlier builds also stored the record's own
 `approvalRef` in `metadata.approvalResolution.approvalRef`, not the cited reference. So an
 integrity-bound resolved-mode attestation written before this change, whose cited reference was not
 exactly the record's own `approvalRef`, reads as `resolved, but for a different reference`. Examples

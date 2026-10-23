@@ -36,11 +36,11 @@ Measure:
 - whether generated evidence made review easier
 - which change guidance patterns correlate with faster acceptance
 
-This is enough to tell whether Veritas reduces review work or only moves it around.
+These observations can support a review-effort study, but do not establish causality or reduced review effort by themselves. Human judgment fields must be supplied or explicitly marked unknown.
 
 ## Recommendations
 
-Standards feedback should produce standards recommendations such as:
+Possible improvements for a human to consider include the following. This is a product direction, not the current generator's complete output list; see the [recommendations guide](../guides/recommendations.md) for supported behavior:
 
 - add a requirement for uncovered work
 - clarify change guidance
@@ -60,4 +60,4 @@ Use the enforcement ladder:
 - **Guide**: use feedback to improve just-in-time correction.
 - **Require**: only require what has proven useful and trustworthy.
 
-This is the bridge from static repo rules to earned merge autonomy.
+Use observed catches, false positives and explicit review to decide whether a policy should change.

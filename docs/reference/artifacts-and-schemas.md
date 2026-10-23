@@ -204,6 +204,7 @@ execution and outcome, so the check itself must exercise the behavior claimed.
 
 Supported rule kinds:
 
+- `evidence-check`
 - `required-artifacts`
 - `governance-block`
 - `diff-required`
@@ -429,7 +430,7 @@ Evidence Checks may optionally declare an external tool artifact. Veritas reads 
 }
 ```
 
-External tool artifacts must stay under `.veritas/`. Use advisory mode for existing repos until findings are cleaned up or baselined.
+External tool artifacts must stay under `.kontourai/veritas/`. Use advisory mode for existing repos until findings are cleaned up or baselined.
 
 Selected check records include `runner`, `label`, and an optional `evidence_check_result`. Bash results carry `exitCode`, `signal`, `stdout`, and `stderr`; MCP results carry structural status only (`id`, `runner`, `label`, `passed`, `isError`, and `durationMs`). Timeout classification remains active-run state and is projected as a required-evidence transparency gap without extending the version-1 record. MCP response content, stderr, server configuration, and inputs never appear in generated output.
 
@@ -470,7 +471,7 @@ Veritas owns the repo-specific producer fields. Surface owns generated report fi
 
 When the attestation gate runs, the evidence record includes `governance_state`. This maps protected-standards integrity, Repo Map applicability, authority currency, and freshness into Surface-format state. The raw Repo Map object remains Veritas-local producer metadata. In `governance_state.protectedStandards.hashes`, a protected file that is not a regular file at its protected path has a `null` hash. `protectedStandards.error` names that file, and the file drifts.
 
-Readiness verdicts are exposed through a Surface claim with `claimType: "software-readiness-verdict"` on `surface: "veritas.readiness"` and `subjectType: "repository-change"`. The claim and its evidence include `metadata.integrity` with `sourceRef`, `sourceKind`, `sourceScope`, changed file refs, and protected config refs. The verdict may also include `derivedFrom` and `derivationEdges` that reference the blocking requirement or policy-result claims used to decide merge readiness, allowing Surface report generation to cap the verdict at the weakest blocking Requirement result. Advisory policy results remain visible as claims, claim-group requirements, and metadata, but are not readiness derivation inputs. When the installed Surface package supports first-class `authorityTrace`, the artifact includes top-level `trust.bundle.authorityTrace`. Readiness events carry authority by linking to the authority-traced evidence ids.
+Readiness verdicts are exposed through a Surface claim with `claimType: "software-readiness-verdict"` on `facet: "veritas.readiness"` and `subjectType: "repository-change"`. The claim and its evidence include `metadata.integrity` with `sourceRef`, `sourceKind`, `sourceScope`, changed file refs, and protected config refs. The verdict may also include `derivedFrom` and `derivationEdges` that reference the blocking requirement or policy-result claims used to decide merge readiness, allowing Surface report generation to cap the verdict at the weakest blocking Requirement result. Advisory policy results remain visible as claims, claim-group requirements, and metadata, but are not readiness derivation inputs. When the installed Surface package supports first-class `authorityTrace`, the artifact includes top-level `trust.bundle.authorityTrace`. Readiness events carry authority by linking to the authority-traced evidence ids.
 
 After validation, Veritas calls Surface's public `buildTrustReport` API and persists a compact `trust.report` summary beside the input. The report summary includes per-claim derived status, summary counts, and transparency gaps. `veritas readiness` prints WARN feedback for Surface-derived `stale` and `disputed` claims, and `veritas explain <rule>` includes the latest Surface status and gaps for that rule when an evidence record is available.
 

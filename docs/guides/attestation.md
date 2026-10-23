@@ -62,7 +62,7 @@ Veritas includes a deterministic offline resolver for teams that want resolver-b
 
 Use `veritas-approval:<id>` to load `.veritas/authority/approval-records/<id>.approval.json`, or `file:.veritas/authority/approval-records/<file>` for an explicit repo-local record path. File references must stay inside the approval-records directory.
 
-Example record:
+Illustrative historical record (its dates are expired; use the real approval and a future expiry when recording a new one):
 
 ```json
 {
