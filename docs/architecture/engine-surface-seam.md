@@ -1,5 +1,7 @@
 # Engine / Surface Seam
 
+Current contract: the CLI and `@kontourai/veritas/engine` are supported entry points. This document also retains the historical split plan and closeout evidence; source line numbers and staged Slice/Step descriptions below are revision-bound, not a current feature backlog.
+
 **Status:** ratified seam inventory + completed Veritas Governance Kit migration
 ([flow-agents#646–#652](https://github.com/kontourai/flow-agents/issues/646)).
 **Surveyed at:** `2a57022` (main). Every `file:line` reference below was verified against that
@@ -112,19 +114,7 @@ these is a semver-major event:
 | `buildReadinessCoverage` | `src/evidence/suites.mjs:145` | coverage CLI; CI |
 | `produceSurfaceStateForVeritasRecord` | `src/surface/producer.mjs:8` | record builder (`src/report/record.mjs:259`); embedders projecting trust state |
 
-**Not currently package exports (freeze applies to their semantics, not their import path):**
-`readinessVerdict`, `readinessSurfaceStatus`, and the `readiness*Summary`/
-`readinessIntegrityScope`/`readinessTransparencyGapHints` helpers
-(`src/surface/readiness.mjs:1,7,21,28,37,46,56`) are consumed internally (evidence projection)
-but are **not re-exported from the package root** — `src/index.mjs:163`'s
-`export * from './surface/projection.mjs'` does not re-export `readiness.mjs`, and a runtime
-import of the package returns `undefined` for all seven. Their blocking-failure-first
-*semantics* are frozen via Channel 1 §5; making them public library exports is part of the
-Slice-5 engine-subpath work, not a promise the package keeps today.
-
-Everything else classified *engine* below is **engine-retained**: it stays in the package and
-may evolve normally until Slice 5 formalizes the public engine subpath (see "Slice 5
-prerequisite").
+**Current exports:** `@kontourai/veritas/engine` exports `readinessVerdict`, `readinessSurfaceStatus`, `readinessVerdictSummary`, `readinessPolicyResultSummary`, `readinessEvidenceCheckSummary`, `readinessIntegrityScope` and `readinessTransparencyGapHints` from `src/surface/readiness.mjs`. The package root re-exports the engine contract. Earlier planning text below records the split's history; it does not override the shipped exports in `src/engine.mjs`.
 
 ## Capability inventory
 

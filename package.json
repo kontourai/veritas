@@ -1,7 +1,7 @@
 {
   "name": "@kontourai/veritas",
   "version": "1.12.1",
-  "description": "Merge autonomy for AI-authored code. Turn your repo's standards into evidence-backed readiness reports the agent reads back.",
+  "description": "Connect repository policies to agent guidance and evidence from your existing checks.",
   "private": false,
   "license": "Apache-2.0",
   "type": "module",

@@ -23,6 +23,6 @@ npx --no @kontourai/veritas claim remove --claim-id my-repo.veritas-evidence-che
 npx --no @kontourai/veritas claim validate
 ```
 
-Claims without evidence collected in a given run retain their previous status through the staleness model rather than disappearing. Run artifacts are dynamic; claims are stable declarations owned by the repository.
+Claim IDs and authored definitions remain stable across runs. Each projection derives status from the current definitions, evidence and policies; it does not automatically import previous-run evidence or preserve a prior verified result. A stable identity is not fresh proof.
 
 If you are upgrading from an older version that generated claims per run, see [MIGRATING.md](./MIGRATING.md).

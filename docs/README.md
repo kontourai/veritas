@@ -4,13 +4,13 @@ Find what you need by what you're trying to do.
 
 ## Start Here
 
-- [Concepts Overview](concepts.md) — understand the product model in five minutes
-- [Getting Started](guides/getting-started.md) — install, bootstrap, and run your first readiness check
-- [Glossary](reference/glossary.md) — canonical Veritas vocabulary
+Start with [Set up Veritas](guides/getting-started.md), then [try one policy](guides/walkthrough.md). The everyday loop is `plan` before editing and `readiness` afterward.
+
+[Concepts](concepts.md) and the [glossary](reference/glossary.md) explain terms when you need them; they are not setup prerequisites.
 
 ## I Want To...
 
-### Set up Veritas in a new repo
+### Set up Veritas
 
 - [Getting Started](guides/getting-started.md) for installation and first run
 - [Start Your Next Project](guides/start-your-next-project.md) for greenfield repos
@@ -23,7 +23,7 @@ Find what you need by what you're trying to do.
 - [Agent Runtime Integrations](guides/agent-runtime-integrations.md) for Claude Code, Cursor, and Codex hooks
 - [Governance Kit](guides/governance-kit.md) for Git installation through Flow Agents and guided engine setup
 - [Agent Activation](design/agent-activation.md) for how Veritas reaches agents
-- [CLI Reference](reference/cli.md) for `explain`, boundary checks, and hook setup
+- [CLI Reference](reference/cli.md) for `plan`, `explain`, and hook setup
 
 ### Define repo standards
 
@@ -101,8 +101,12 @@ Find what you need by what you're trying to do.
 - [Schema Evolution](design/schema-evolution.md)
 - [Product Core And Repo Map](design/product-core-and-repo-map.md)
 
-### Project
+### Maintainer plans and history
 
+These pages record development direction and migrations. They are not the installation path or promises that planned features have shipped.
+
+
+- [Documentation audit](documentation-audit.md) — file-by-file scope, corrections and capability disposition
 - [Roadmap](design/roadmap.md)
 - [Implementation Backlog](design/implementation-backlog.md)
 - [Migrating](MIGRATING.md)

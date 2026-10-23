@@ -13,8 +13,8 @@ npm run prepush                 # command used by .githooks/pre-push
 npm run test:prepush            # push-safe verifier; excludes git-mutating test helpers
 npm test                        # run the full test suite
 npm run veritas:evidence-check  # run the evidenceCheck
-npm run veritas:conformance         # full readiness check + repo conformance report
-npm run veritas:conformance:report  # evidence report only
+npm run veritas:conformance         # derive summary from existing local evidence
+npm run veritas:conformance:report  # run readiness and write its evidence
 npm run docs:check              # Corpus gate: links, anchors, reachability, topics
 ```
 

@@ -2,210 +2,65 @@
 
 [![npm version](https://img.shields.io/npm/v/%40kontourai%2Fveritas)](https://www.npmjs.com/package/@kontourai/veritas)
 [![CI](https://github.com/kontourai/veritas/actions/workflows/ci.yml/badge.svg)](https://github.com/kontourai/veritas/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/badge/docs-kontourai.github.io-blue)](https://kontourai.github.io/veritas/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-[Documentation](https://kontourai.github.io/veritas/) · [kontourai.io/veritas](https://kontourai.io/veritas/)
+**Define your project's rules once. Veritas tells agents which rules apply, runs the relevant checks, and shows what still needs attention.**
 
-Veritas makes configured repo standards executable and reports the evidence behind a change’s merge readiness.
-
-Define what good looks like for your repo. Preview the applicable guidance and checks with `veritas plan`, then verify the evidence with `veritas readiness`. Veritas runs configured checks, gives the agent just-in-time guidance, and reports which applicable requirements are satisfied and which evidence is missing, stale, or failing. Your team sets the review policy and decides whether to merge; a readiness report does not establish code correctness or how much human review is safe to remove.
-
-> **Engine and Governance Kit.** `@kontourai/veritas` is a standalone **evaluation engine** — an
-> importable library (engine API at `@kontourai/veritas/engine`) plus the thin CLIs used below.
-> Its repo-installed **product surface** — scaffolding standards, wiring hooks, authoring standards,
-> and delivering just-in-time guidance to agents — is packaged in this repository as the
-> **[Veritas Governance Kit](docs/guides/governance-kit.md)**,
-> which wraps this engine via its CLI + recorded artifacts (it never reimplements evaluation). Use
-> the standalone CLI directly, as in the Quickstart, or adopt the kit inside a Flow Agents setup —
-> both drive the same engine. See the [Engine / Surface Seam](docs/architecture/engine-surface-seam.md).
-
-Optional [Survey plan review](docs/guides/governance-kit.md#review-a-standards-plan-with-survey) lets maintainers inspect proposed standards and record decisions before the existing governance workflow applies them. Local reviews retain their operator identity claim; a trusted host resolves human authority separately.
+Use your existing tests, linters and verification commands. Veritas connects them to repository policies and gives developers and agents guidance before they edit. A readiness report shows the evidence for those policies; your team still decides whether to merge.
 
 ## Quickstart
 
-Inside a git repository:
+Requires Node.js 22 or newer and a Git repository. Install with your project's package manager; for npm:
 
 ```bash
 npm install -D @kontourai/veritas
-npx --no @kontourai/veritas -- --version
-npx --no @kontourai/veritas init
+npx --no @kontourai/veritas init --evidence-check "npm test"
 ```
 
-`veritas --version` prints the installed package version, so setup records can bind the executable
-to an approved engine release. `--no` makes a missing install an error instead of a registry fetch:
-in a fresh clone it fails with `npx canceled due to missing packages`, naming the registry's latest
-version rather than your lockfile's, so run `npm install` first. `init` bootstraps repo standards, a
-repo map, and AI instruction guidance under `.veritas/`.
+Replace `npm test` with an existing command that actually checks your project. Review the generated configuration before running it: readiness executes configured commands. If initialization cannot find a project check, its fallback only verifies that Node can run. That is incomplete project setup, even when the smoke check passes.
 
-Once you've reviewed the generated standards, record an attestation with the attesting actor and
-a reference to the human approval. Do this before your first readiness check, or `readiness` reports
-advisory warnings that no attestation exists yet. By default Veritas checks only that the approval
-reference is present, not that the approval exists; see [Attestation](docs/guides/attestation.md)
-to require a resolved approval record:
+Then use two commands during development:
 
 ```bash
-npx --no @kontourai/veritas attest bootstrap --actor <authority-id> --approval-ref <human-approval-reference> --non-interactive
-```
+# Before editing: see applicable policies, guidance and selected checks.
+npx --no @kontourai/veritas plan src/example.ts
 
-Now check the current working tree:
-
-```bash
+# After editing: execute checks and inspect unmet requirements.
 npx --no @kontourai/veritas readiness --working-tree
 ```
 
-You'll see output like:
-
-```text
-veritas: 8 files changed -> governance.guidance
-PASS  evidence-check: node -e "process.exit(0)"
-PASS  policy-changes-require-attestation: Active attestation bootstrap-2026-07-20T14-18-01-415Z-ba6e20f3f7ba matches current protected standards hashes.
-PASS  required-veritas-artifacts: All required repository artifacts are present.
-PASS  ai-instruction-files-synced: All required AI instruction files contain the canonical Veritas governance block.
-PASS  prefer-veritas-routed-delivery: All required repository artifacts are present.
-
-0 failures · 0 warnings · run `npx --no @kontourai/veritas readiness --check evidence` for full generated evidence
-```
-
-## Governance Kit
-
-This repository is also a root-valid Flow Kit repository. Install the Veritas Governance Kit
-directly from a pinned Git ref, activate its flows and skills, and then use its setup guidance to
-install or configure the standalone engine in the target repository:
-
-```bash
-npx @kontourai/flow-agents kit install \
-  https://github.com/kontourai/veritas.git#v1.5.2 --dest .
-npx @kontourai/flow-agents kit activate --dest . --format json
-```
-
-Git installation never executes setup scripts or silently installs the engine. See the
-[Governance Kit guide](docs/guides/governance-kit.md) for the reviewed engine-setup and readiness
-gate sequence.
+`plan` does not run checks. `readiness` does. Start with the [setup guide](docs/guides/getting-started.md) for configuration review and approval, or the [walkthrough](docs/guides/walkthrough.md) for a concrete policy catch.
 
 ## What You Get
 
-- **Executable repo standards** — requirements for tests, docs, protected files, shared contracts, release checks, security scans, and team-specific expectations.
-- **Merge readiness** — a per-change outcome that says whether the current change has enough fresh evidence to merge under the repo standards.
-- **Readiness coverage** — the evidence state behind that outcome: satisfied, missing, stale, failing, advisory, or recheckable.
-- **Change boundaries** — work areas, protected areas, and boundary crossings that add coordination, evidence, or authority requirements when shared code is touched.
-- **Change guidance** — just-in-time instructions for developers and agents so repo knowledge does not disappear during long AI sessions.
-- **Protected standards** — stronger authority requirements for changes that alter the repo standards, repo map, or verification authorities.
-- **Standards feedback** — observed evidence about where the standards are helpful, noisy, stale, or missing coverage.
-- **Standards recommendations** — suggested improvements to the repo standards based on evidence, with explicit accept/reject review.
+| File | Question it answers |
+| --- | --- |
+| `.veritas/repo-standards/default.repo-standards.json` | What rules apply, and what should an agent do? |
+| `.veritas/repo-map.json` | Where do those rules apply, and which checks provide evidence? |
+| `.veritas/authority/default.authority-settings.json` | What approval-reference and review preferences apply? |
 
-## Caught In The Wild
+A policy can give advice (`Guide`) or require passing evidence (`Require`). Begin with advice for rules you are still tuning. Keep hard requirements small and prove that their checks catch the intended problem.
 
-For a repo requirement like (from the shipped [`nextjs-typescript` template](examples/repo-standards/nextjs-typescript.repo-standards.json)):
+Veritas can require a companion test change, check a forbidden pattern, or connect a policy to an existing test or linter command. Its optional [code hygiene pack](docs/guides/code-hygiene.md) includes detectors for unexplained suppressions and uncontrolled clocks in unit tests. A changed test file alone does not prove that a feature works.
 
-```json
-{
-  "id": "api-routes-require-api-tests",
-  "kind": "diff-required",
-  "enforcementLevel": "Guide",
-  "match": {
-    "if-changed": "app/api/**",
-    "then-require": "tests/api/**"
-  }
-}
-```
+## Choose your next step
 
-`enforcementLevel: "Guide"` means this requirement shows up as a `WARN`, not a blocking `FAIL` — it is advice the agent should follow, not a merge blocker. An agent that edits only the API gets immediate feedback:
+- [Set up an existing repository](docs/guides/getting-started.md) and connect its checks.
+- [See a policy catch](docs/guides/walkthrough.md) and its limits.
+- [Give your agent guidance](docs/guides/agent-runtime-integrations.md) through supported hooks or explicit commands.
+- [Run in CI](docs/guides/repo-conformance.md) and inspect readiness evidence.
+- [Protect policy changes](docs/guides/attestation.md) with explicit approval settings.
+- [Read the concepts](docs/concepts.md) when you need more terminology.
+- [Browse the published documentation](https://kontourai.github.io/veritas/), [documentation index](docs/README.md), [CLI reference](docs/reference/cli.md), or [schemas](docs/reference/artifacts-and-schemas.md).
 
-```text
-$ npx --no @kontourai/veritas readiness --working-tree
-veritas: 1 file changed -> app.app
-PASS  evidence-check: node -e "process.exit(0)"
-PASS  policy-changes-require-attestation: Active attestation bootstrap-2026-07-20T14-19-16-185Z-d827e763e4e0 matches current protected standards hashes.
-PASS  required-veritas-artifacts: All required repository artifacts are present.
-PASS  ai-instruction-files-synced: All required AI instruction files contain the canonical Veritas governance block.
-WARN  api-routes-require-api-tests: Changed files matched app/api/** but no companion changes matched tests/api/**.
-      -> app/api/projects/route.ts
-PASS  no-console-log-in-app: No matched files contain forbidden pattern console\.log.
-PASS  centralize-env-access: No matched files contain forbidden pattern process\.env\.(?!NODE_ENV).
-WARN  surface-status: claim "veritas.policy.fix-sv-caught.nextjs-typescript.api-routes-require-api-tests" is DISPUTED (Evidence explicitly reported a non-passing result.)
+## Optional capabilities
 
-0 failures · 2 warnings · run `npx --no @kontourai/veritas readiness --check evidence` for full generated evidence
-```
+Work-area boundaries, policy approval, external-tool evidence, feedback and recommendations support larger repositories. Add them when they solve a concrete problem; they are not prerequisites for understanding the basic loop.
 
-After adding the missing API test and rerunning:
+The [Governance Kit](docs/guides/governance-kit.md) distributes setup workflows, skills and hooks through Flow Agents. The standalone CLI works without that kit. Developers embedding evaluation can use `@kontourai/veritas/engine`; see [architecture](docs/architecture/developer-architecture.md).
 
-```text
-$ npx --no @kontourai/veritas readiness --working-tree
-veritas: 2 files changed -> app.app, verification.tests
-PASS  evidence-check: node -e "process.exit(0)"
-PASS  policy-changes-require-attestation: Active attestation bootstrap-2026-07-20T14-19-16-185Z-d827e763e4e0 matches current protected standards hashes.
-PASS  required-veritas-artifacts: All required repository artifacts are present.
-PASS  ai-instruction-files-synced: All required AI instruction files contain the canonical Veritas governance block.
-PASS  api-routes-require-api-tests: Changed files matched app/api/** and included required companion changes under tests/api/**.
-PASS  no-console-log-in-app: No matched files contain forbidden pattern console\.log.
-PASS  centralize-env-access: No matched files contain forbidden pattern process\.env\.(?!NODE_ENV).
-
-0 failures · 0 warnings · run `npx --no @kontourai/veritas readiness --check evidence` for full generated evidence
-```
-
-The agent gets the missing companion-path requirement, and reviewers can inspect the result. This example checks that companion paths changed and runs an illustrative no-op evidence command. It does not establish test quality, semantic correctness, or reduced review effort.
-
-## Core Language
-
-- **Repo Standards** define what good looks like for the repository.
-- **Repo Map** defines work areas, change boundaries, protected areas, ownership context, and dependency relationships.
-- **Requirement** is the unit of what must be satisfied or evidenced.
-- **Evidence Check** is a runnable or inspectable check that produces evidence.
-- **Verification Authority** is who or what is trusted to verify a requirement.
-- **Attestation** is a recorded assertion, citing a human approval reference, that something was verified, accepted, approved, or reviewed. It is authority-backed only when that reference was resolved to an approved result under a `resolved` approval mode; the default mode records the reference without checking it.
-- **Exception** is a recorded decision to accept an unmet or failing requirement for a specific change.
-- **Readiness Report** explains merge readiness, readiness coverage, boundary crossings, evidence freshness, recheck options, and change guidance.
-
-## Documentation
-
-- [Full Documentation](https://kontourai.github.io/veritas/)
-- [Getting Started](docs/guides/getting-started.md)
-- [Governance Kit](docs/guides/governance-kit.md)
-- [Concepts Overview](docs/concepts.md)
-- [Glossary](docs/reference/glossary.md)
-- [Veritas and Surface](docs/veritas-and-surface.md)
-- [Developer Architecture](docs/architecture/developer-architecture.md)
-- [Human Attestation](docs/guides/attestation.md)
-- [Standards Recommendations](docs/guides/recommendations.md)
-- [Code Hygiene](docs/guides/code-hygiene.md)
-- [CLI Reference](docs/reference/cli.md)
-- [Surface-Veritas Boundary](docs/architecture/surface-veritas-boundary.md)
-
-## Repository Layout
-
-- `bin/` — CLI entrypoints
-- `src/` — implementation logic
-- `schemas/` — JSON schemas
-- `docs/` — guides, design, reference
-- `tests/` — smoke tests
-
-## Going Deeper
-
-`veritas readiness` is the primary product command for evaluating a change.
+Veritas uses Surface internally for claims and evidence. Normal users do not need to configure Surface. [Product boundaries](docs/veritas-and-surface.md) explain optional integrations with other Kontour tools.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## License
-
-Apache-2.0
-
-*Veritas is built with [Surface](https://kontourai.io/surface). Veritas projects readiness evidence into Surface format so downstream tools — [Flow](https://kontourai.io/flow) gates, the Surface Console, and MCP-connected agents — can inspect claims and gaps without importing Veritas runtime code.*
-
-## Where Veritas fits
-
-Kontour AI shows the work behind AI:
-
-| Product | Owns |
-| --- | --- |
-| **Veritas** | Code/change transparency: repo standards, merge readiness |
-| **[Surface](https://kontourai.io/surface)** | Portable trust state: claims, evidence, policies, trust snapshots |
-| **[Survey](https://kontourai.io/survey)** | Producer evidence: source → extraction → candidate → review → claim |
-| **[Flow](https://kontourai.io/flow)** | Process transparency: steps, gates, transitions, runs, exceptions |
-| **[Flow Agents](https://kontourai.io/flow-agents)** | Agent-facing distribution: skills, kits, runtime adapters, hooks |
-
-(`kontourai.io/<product>` is each product's homepage; `kontourai.github.io/<product>/` is that product's generated docs site, same split as this repo's own [Full Documentation](https://kontourai.github.io/veritas/) link above.)
-
-Each product stands alone. When they're together: Veritas readiness appears as evidence behind a [Flow](https://kontourai.github.io/flow/) gate. This repository ships the **Veritas Governance Kit** — an agentless kit that projects a real `veritas readiness` verdict into a `software-readiness-verdict` trust.bundle claim the gate checks, and that owns the repo-installed governance surface (scaffold, hooks, standards authoring, agent guidance) by wrapping this engine's CLI. [Flow Agents](https://kontourai.github.io/flow-agents/) installs and hosts the kit without reimplementing Veritas evaluation.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Veritas is licensed under [Apache-2.0](LICENSE).

@@ -20,11 +20,9 @@ This is intended as a short-lived escape hatch while repairing an standards feed
 
 ### `VERITAS_STRICT_CONFIG=1`
 
-Turns a Repo Map or Repo Standards file that fails validation against its published schema into a **hard load failure** instead of the default warning.
+Makes legacy Repo Map and legacy Repo Standards schema violations hard load failures instead of warnings. Resource-shaped Repo Standards already validate strictly, and `plan` explicitly requests strict loading for both configurations.
 
-Veritas validates both artifacts on every load. It warns rather than throws by default because those loaders sit on the Claude Code PreToolUse gate's path, where a throw would block every edit in the repo until the config was repaired — and the natural response to that is `VERITAS_HOOK_SKIP=1`, i.e. a schema nit would train operators to disable the enforcement gate.
-
-Set this once your config validates cleanly, to keep it that way. `veritas readiness --check config` is the equivalent check as a discrete, exit-coded command. A future major version makes strict the default.
+`veritas readiness --check config` validates configuration as a discrete command and exits nonzero for invalid input. Use that check when you need a configuration gate independent of loader defaults.
 
 ## Hook Requirement
 
@@ -38,7 +36,7 @@ Earlier releases read `CLAUDE_TRANSCRIPT_PATH`, `CODEX_TRANSCRIPT_PATH` and `COD
 
 Tells generated Veritas hooks to exit without running. Use for local emergency bypasses, not as a normal CI configuration.
 
-The generated git and runtime hooks honour this in their shell body and leave no record. The Claude Code PreToolUse gate is different: it is the only Veritas mechanism that can block an edit, so it resolves the skip inside Veritas and appends a `hook-skip` record to `.kontourai/veritas/standards-feedback/exceptions.jsonl` before approving. That puts it on the same auditable footing as a `VERITAS_EXCEPTION_RULE` bypass.
+The generated git and runtime hooks honour this in their shell body and leave no record. The Claude Code and Codex PreToolUse gates can block edits and resolve the skip inside Veritas and appends a `hook-skip` record to `.kontourai/veritas/standards-feedback/exceptions.jsonl` before approving. That puts it on the same auditable footing as a `VERITAS_EXCEPTION_RULE` bypass.
 
 ### `VERITAS_HOOK_SKIP_REASON`
 

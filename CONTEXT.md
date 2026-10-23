@@ -13,7 +13,7 @@ The maintained definition of what good looks like for a repository. Repo standar
 _Avoid_: Checklist, style guide, repo standards, authority settings as separate human-facing terms
 
 **Requirement**:
-A condition in the repo standards that must be satisfied, evidenced, or explicitly waived for a change to earn merge readiness. Requirements are Veritas concepts; their evaluations may produce claims and evidence for transparency.
+A condition in the repo standards that must be satisfied or evidenced for a change to earn merge readiness. Hook exceptions do not waive readiness requirements. Requirements are Veritas concepts; their evaluations may produce claims and evidence for transparency.
 _Avoid_: Rule as the primary product term, Surface claim as the authoring concept
 
 **Requirement Applicability**:
@@ -29,7 +29,7 @@ Evidence explaining why a verification authority was allowed to count for a requ
 _Avoid_: Trust by label, untraceable approval
 
 **Attestation**:
-Evidence from a verification authority asserting that something was verified, accepted, approved, or reviewed. An attestation should identify the authority, the subject, the integrity scope, and any validity window that affects merge readiness.
+A recorded assertion by a named actor citing an approval reference. An attestation identifies its subject, integrity scope and validity window. Default reference-only mode does not independently establish the approval or actor authority; the authority-backed rules below define the stronger condition.
 _Avoid_: Approval in general, waiver, signature as the only form
 
 **Kontour Resource Shape**:
@@ -186,7 +186,7 @@ Use transcript only when a runtime exposes that exact external name, such as `CO
 
 **Example Dialogue**:
 Developer: "Can this agent-authored change merge with light review?"
-Domain Expert: "Check its Merge Readiness. It needs to satisfy the Repo Standards for API changes before we reduce human review."
+Domain Expert: "Inspect the evidence and gaps against the API policies. The team separately decides the review this change needs."
 
 Agent: "This change also touched shared contracts."
 Domain Expert: "That is a Boundary Crossing. The Repo Standards should add contract evidence and owner authority before Merge Readiness is complete."

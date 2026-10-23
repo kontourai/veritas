@@ -1,5 +1,15 @@
 # Operational Readiness Summaries
 
+For a consumer repository, install its locked dependencies and run the installed CLI against an explicit change scope:
+
+```bash
+npx --no @kontourai/veritas readiness --changed-from <base-commit> --changed-to <head-commit>
+```
+
+Fetch both commits in CI and use the event's actual base/head values. Review configured commands before enabling the job: they execute repository code. Require the job in your hosting platform's branch policy if you want it to block merges; Veritas does not enable branch protection automatically. Retain `.kontourai/veritas/` output as a CI artifact if reviewers need the report after the runner exits.
+
+The `npm run veritas:*` scripts below belong to the Veritas product repository, not to every consumer installation. For consumer flags see the [CLI reference](../reference/cli.md).
+
 This repo currently uses self-hosting scripts to dogfood Veritas on itself. They produce derived readiness, conformance, and standards-feedback summaries.
 
 ## What Is Tracked

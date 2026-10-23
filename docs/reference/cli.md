@@ -150,6 +150,21 @@ Guided initialization splits setup into a reviewed artifact flow:
 - Brownfield repos with existing guidance or convergence scripts also receive an `existing_verification` inventory and a recommended evidence-check inventory. Unknown catch evidence stays candidate/advisory until a maintainer supplies owner and review evidence.
 - Unknown init flags fail before any files are written.
 
+Answers are JSON and may include:
+
+```json
+{
+  "evidenceCheck": "npm run verify",
+  "selectedInstructionTargets": ["AGENTS.md", "CLAUDE.md"],
+  "boundaries": ["Do not edit generated snapshots without approval."],
+  "codingStyle": "Prefer small ESM modules.",
+  "releaseExpectations": "Run npm test and npm run verify before merge."
+}
+```
+
+`selectedInstructionTargets` controls the AI instruction files that `--apply` mutates and the governance-block requirement that starter Repo Standards enforce.
+
+
 ### `attest`
 
 Records or inspects attestations for protected standards.
@@ -265,19 +280,6 @@ Codex and Claude Code have session log readers. Claude Code install wires PreToo
 
 `uninstall` is available for Codex, Claude Code, Cursor, and Copilot, but it is manual guidance only. The JSON response reports `removed: false` and `capabilityState: "manual"`; Veritas does not remove files, hooks, or tool configuration automatically yet.
 
-Answers are JSON and may include:
-
-```json
-{
-  "evidenceCheck": "npm run verify",
-  "selectedInstructionTargets": ["AGENTS.md", "CLAUDE.md"],
-  "boundaries": ["Do not edit generated snapshots without approval."],
-  "codingStyle": "Prefer small ESM modules.",
-  "releaseExpectations": "Run npm test and npm run verify before merge."
-}
-```
-
-`selectedInstructionTargets` controls the AI instruction files that `--apply` mutates and the governance-block requirement that starter Repo Standards enforce.
 
 ### `report`
 
@@ -404,7 +406,7 @@ Evidence Check commands are executed as tokenized argv, not through an implicit 
 
 An explicit `--evidence-check-command` is additive and required. It runs alongside the Repo Map's required checks and does not replace them, and it is itself a required check for that run. If it exits nonzero, readiness fails: the command reports `FAIL  required-evidence-check:<id>: failed`, JSON output sets `evidenceCheckFailure` and `readiness.verdict: "not-ready"`, and the process exits `1`. The `<id>` is the matching Repo Map check's id when the command equals a configured command, and otherwise an `explicit-command-<slug>` id. When the command equals an optional configured check's command, that check becomes required for the run, including its external tool: with `externalTool.blocking: true`, a `fail` or `missing` artifact verdict also blocks readiness. The flag takes exactly one non-empty command as the next argument. Giving it more than once, together with `--skip-evidence-check`, in the `--evidence-check-command=<cmd>` form, or with an empty or missing value is a usage error: readiness exits `2` with a message and runs nothing. A failing configured required check still fails readiness when the explicit command passes. To run a diagnostic that does not block, declare it in the Repo Map as a default or routed check that is not listed in `requiredEvidenceCheckIds`, and run readiness without `--evidence-check-command`; see [MIGRATING.md](../MIGRATING.md#explicit-evidence-check-commands-block-readiness-again).
 
-External tool evidenceChecks follow the same rule. For tools such as Fallow, put shell-sensitive behavior like `2>/dev/null || true` inside a script, have that script write a JSON artifact under `.veritas/`, and point the check's `externalTool.artifactPath` at that file. Advisory external tool findings appear as warnings in feedback; blocking external tool findings fail the run.
+External tool evidenceChecks follow the same rule. For tools such as Fallow, put shell-sensitive behavior like `2>/dev/null || true` inside a script, have that script write a JSON artifact under `.kontourai/veritas/`, and point the check's `externalTool.artifactPath` at that file. Advisory external tool findings appear as warnings in feedback; blocking external tool findings fail the run.
 
 Exit codes:
 
@@ -528,7 +530,7 @@ Reads `.kontourai/veritas/standards-feedback/history.jsonl` and writes non-block
 npx --no @kontourai/veritas feedback recommend [--root <path>] [--force] [--dry-run]
 ```
 
-The generator looks for frequently excepted failures, warning requirements that did not cause follow-up, inactive requirements, and paths that repeatedly matched no work area.
+The generator looks for frequently excepted failures, warning requirements that did not cause follow-up, and paths that repeatedly matched no work area. Quiet history alone does not produce retirement suggestions.
 
 ### `recommendation`
 
@@ -578,7 +580,7 @@ npx --no @kontourai/veritas readiness --check config [--root <path>] [--repo-map
 
 Checks `.veritas/repo-map.json` against `schemas/veritas-repo-map.schema.json` and `.veritas/repo-standards/default.repo-standards.json` against `schemas/veritas-repo-standards.schema.json`, printing one `PASS` / `FAIL` / `SKIP` line per artifact and **exiting 1 if either is invalid**. This is the gateable form of the check — put it in CI or a pre-push lane to make config drift an authoring-time error.
 
-The same validation runs whenever Veritas loads either artifact, but loading only **warns**: these loaders sit on the Claude Code PreToolUse gate's path, and a hard failure there would block every edit in the repo until the config was repaired. Set `VERITAS_STRICT_CONFIG=1` to turn the warning into a load failure today. A future major version makes that the default.
+Legacy Repo Map and legacy Repo Standards loads warn by default unless strict mode is requested or `VERITAS_STRICT_CONFIG=1` is set. Resource-shaped Repo Standards always validate strictly, and `plan` explicitly loads both configurations strictly. The standalone config check exits nonzero for invalid configuration regardless of those load defaults.
 
 Both schemas set `additionalProperties: false`, so a field the schema does not define — a rule attribute Veritas never reads, for example — is reported rather than silently ignored.
 
@@ -717,7 +719,7 @@ They can also produce a `pre-push` hook that:
 - prints failures back to the agent
 - exits `0` so the AI session can continue and repair the findings
 
-`print codex-hook` and `apply codex-hook` produce a tracked Codex config that installs the runtime hook as a `Stop` hook.
+`print codex-hook` and `apply codex-hook` produce a tracked Codex config with `PreToolUse` guidance for supported edit tools and the runtime hook as a `Stop` hook. The host must load and trust the configuration before it executes.
 
 The Claude Code PreToolUse hook (`.veritas/hooks/pre-tool-use.sh`) deliberately does **not** skip itself in the shell body. It always calls `veritas hooks claude-code pre-tool-use`, which honours `VERITAS_HOOK_SKIP=1` and records the bypass before approving.
 
@@ -748,7 +750,7 @@ For the artifact fields themselves, see [Artifacts and Schemas](artifacts-and-sc
 
 `veritas review --plan <path> --host-root <private-directory> --expires-at <ISO-date>
 [--root <path>] [--port <0..65535>]` is the standalone compatibility command that creates and serves an optional Survey review
-of a current init plan. It requires Survey 8.1.x, a Git checkout and a mode-0700
+of a current init plan. It requires Survey `>=8.2.0 <9`, a Git checkout and a mode-0700
 host directory outside it. Port 0 selects an available loopback port. SIGINT or
 SIGTERM closes its server. The JSON startup line includes the URL, private session
 file, basis digest and expiry. Its optional public adapter is `@kontourai/veritas/governance-review`. It records

@@ -10,7 +10,7 @@ Surface remains the portable transparency layer. Veritas emits `trust.bundle` at
 
 ## Remaining Work
 
-Use the active roadmap and backlog instead:
+For current setup and audit findings, use [Set up Veritas](../guides/getting-started.md) and the [documentation audit](../documentation-audit.md). Earlier planning records remain available for history:
 
 - [Roadmap](roadmap.md)
 - [Implementation Backlog](implementation-backlog.md)

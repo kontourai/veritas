@@ -6,19 +6,24 @@ Veritas is intentionally agent-agnostic. These integration notes show where the 
 
 - keep the tracked repo-local config under `.veritas/`
 - use `npx --no @kontourai/veritas readiness --working-tree` as the explicit orchestration command; it prints agent-readable feedback by default
-- use `npx --no @kontourai/veritas integrations claude-code install` to write the Stop hook, the PreToolUse hook and the `.claude/settings.json` wiring in one step
+- use `npx --no @kontourai/veritas integrations claude-code install` to write the Stop, PreToolUse and SessionEnd hooks and the `.claude/settings.json` wiring in one step
 - use `npx --no @kontourai/veritas apply stop-hook --tool claude-code` when you want only the Stop-hook feedback at turn end
 - use the generated git/runtime hooks when you want post-change automation instead of manual invocation
 
 ## Codex
 
-- install the Git-backed Veritas Governance Kit through Flow Agents, then use
-  `flow-agents kit provision veritas-governance --target .` after reviewing its
-  dry run; it installs the declared `.codex/hooks.json` PreToolUse asset
-- use `/hooks` in Codex to review and trust that exact project hook definition;
-  a provisioned file alone does not establish that the host runs it
-- the hook asks Veritas for guidance before path-bearing `apply_patch` edits;
-  `veritas readiness` still owns post-change rule and Evidence Check verdicts
+For a standalone installation, inspect the proposed files and target before running:
+
+```bash
+npx --no @kontourai/veritas integrations codex status
+npx --no @kontourai/veritas integrations codex install --target-hooks-file .codex/hooks.json
+```
+
+The installer creates tracked runtime configuration and Git hooks as well as the selected target hook configuration. Review existing hooks first; conflicting files refuse rather than being a reason to use `--force` routinely. The generated configuration includes PreToolUse and Stop handlers. Use `/hooks` in Codex to review and trust the exact definition; a written file is not proof the host executes it.
+
+If you use Flow Agents to distribute hooks, the optional [Governance Kit](governance-kit.md) has a separate reviewed provision path and migration capability requirements. It is not required to call `plan`, `explain` or `readiness` directly.
+
+The pre-edit hook provides guidance for supported path-bearing edits. `readiness` owns post-change policy and check results. Codex rollout transcript capture is not supported by the current session-log reader.
 
 ## Cursor
 

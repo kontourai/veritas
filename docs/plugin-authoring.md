@@ -82,3 +82,9 @@ The scaffold command adds missing claims and policy templates to `veritas.claims
 ## Reference
 
 See `examples/plugins/npm-audit.mjs` for a minimal npm audit evidence importer. It maps `npm audit --json` output to evidence for authored `package-version-safety` claims.
+
+## Trust and extension details
+
+Plugins execute trusted ESM code in the Veritas process. Review a module before registering it; author metadata attributes output and is not independent verification or sandboxing.
+
+The [plugin interface](../src/plugins/interface.d.ts) is the precise extension contract. It also supports optional `policyTemplates`, claim-type `metadataFields`, evidence `sourceRef`, and repository-specific options passed to `scaffoldClaims(repoName, options)`. Use these only when the consumer needs them; the importer example above is the minimal path.

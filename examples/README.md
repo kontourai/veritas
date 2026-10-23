@@ -13,7 +13,7 @@ Do not move files in this tree without updating references in `tests/`, `docs/`,
 | `classification/` | Canonical classification examples | Reference rule-group examples for work-agent convergence and schema/reference tests. | Edit only when the classification contract changes and update tests in the same change. |
 | `evidence/` | Canonical evidence examples | Passing, failing, policy-gap, and fallow advisory evidence records used by reference tests and docs. | Keep stable as schema examples; refresh alongside evidence schema or report contract changes. |
 | `external/` | External tool samples | Example output from adjacent tools that Veritas can consume or discuss, currently including Fallow audit output. | Keep separate from Veritas-native evidence so source semantics stay clear. |
-| `repo-conformance/` | Generated canonical examples | Curated self-hosted conformance, readiness report, standards-feedback, and red-path artifacts copied out of generated `.veritas/` output for docs and tests. | Refresh green-path examples with `npm run veritas:conformance:examples`; red-path examples are curated regression snapshots. |
+| `repo-conformance/` | Generated canonical examples | Curated self-hosted conformance, readiness report, standards-feedback, and red-path artifacts copied out of generated `.kontourai/veritas/` output for docs and tests. | Refresh green-path examples with `npm run veritas:conformance:examples`; red-path examples are curated regression snapshots. |
 | `repo-standards/` | Starter templates and examples | Template Repo Standards for common repo shapes plus example snippets that demonstrate expected readiness warnings. | Edit when template behavior changes; keep example READMEs aligned with the corresponding `*.repo-standards.json` file. |
 | `standards-feedback/` | Canonical standards-feedback examples | Accepted feedback, draft feedback, and authority settings examples used by feedback tests and docs. | Refresh alongside standards-feedback schema or authority behavior changes. |
 | `plugins/` | Plugin samples | Minimal sample plugins showing the Veritas plugin API, currently an npm audit plugin. | Keep executable and importable by `tests/plugins.test.mjs`. |
@@ -22,7 +22,7 @@ Do not move files in this tree without updating references in `tests/`, `docs/`,
 ## Naming Notes
 
 - **Canonical examples** are stable files that tests and docs use as examples of current contracts.
-- **Generated canonical examples** are tracked snapshots produced from local generation commands so docs can link to concrete output without committing transient `.veritas/` state.
+- **Generated canonical examples** are tracked snapshots produced from local generation commands so docs can link to concrete output without committing transient `.kontourai/veritas/` state.
 - **Benchmark examples** represent scenario inputs and observed outputs; they are not generic examples for new users.
 - **External tool samples** preserve the fact that the data originated outside Veritas.
 - **Plugin samples** should remain runnable modules, not static documentation snippets.

@@ -1,109 +1,24 @@
-# Publish And Release
+# Publication infrastructure
 
-This guide answers three practical questions:
+This is a maintainer reference. For the normal release procedure, use [Releasing Veritas](../RELEASING.md).
 
-1. what gets published
-2. what still needs to be configured outside the repo
-3. what GitHub Actions already exists in the repo to automate release and docs deployment
+## Published artifacts
 
-## What We Publish
+The npm package `@kontourai/veritas` includes the CLI, implementation, schemas, examples, documentation and optional Governance Kit assets. The `files` and `exports` fields in [package.json](../../package.json) are authoritative. Inspect `npm pack --dry-run` before publishing; generated `.kontourai/` evidence is not package source.
 
-The npm package is:
+## Automation
 
-- `@kontourai/veritas`
+- [CI](../../.github/workflows/ci.yml) runs verification, tests and coverage on Node 22 and 24.
+- [Docs](../../.github/workflows/docs.yml) validates the Corpus documentation and deploys the site from `main`.
+- [Release Please](../../.github/workflows/release-please.yml) maintains a release PR, creates the version tag after release and dispatches publication at that tag.
+- [Publish NPM](../../.github/workflows/publish-npm.yml) accepts `v*` tag pushes or manual dispatch. Verification runs on Node 22 and 24. Publication uses Node 24 and requires the ref name to match the package version and the tagged commit to be reachable from `main`. An already-published version is skipped.
 
-The current publish surface is defined in [package.json](../../package.json) and includes:
+Dispatch publication at a version tag, not at `main`: the version/ref validation rejects a branch ref.
 
-- `bin/` for the CLI entrypoints
-- `src/` for implementation logic
-- `schemas/` for the contract surface
-- `repo-maps/` for current Repo Map examples
-- `repo-standards/` for current Repo Standards examples
-- `docs/` for packaged documentation
-- `examples/` for canonical examples
-- `README.md` and `LICENSE`
+## External setup
 
-That means the npm package is not only the CLI binary. It also publishes the schema and example material needed to understand and extend Veritas.
+Repository administrators configure GitHub Pages to use GitHub Actions. The public site is `https://kontourai.github.io/veritas/`.
 
-## What GitHub Actions Already Does
+The npm package's trusted publisher must allow `kontourai/veritas`, workflow `publish-npm.yml`, to publish. The workflow uses OIDC and publishes provenance; it does not use an `NPM_TOKEN`. See the [release guide](../RELEASING.md#trusted-publishing) for the configuration command and npm version requirements.
 
-This repo now ships three core automation lanes:
-
-- [CI](../../.github/workflows/ci.yml) runs `npm run verify`, `npm test`, and the line-coverage gate on Node 20 and Node 22
-- [Docs](../../.github/workflows/docs.yml) runs the shared Corpus gate on every pull request and publishes the GitHub Pages site and `docs-bundle.json` from `main`
-- [Publish NPM](../../.github/workflows/publish-npm.yml) verifies on Node 20 and Node 22, then publishes `@kontourai/veritas` on tag pushes like `v0.4.0`
-
-## What We Need From You
-
-### 1. GitHub Pages
-
-To make the Pages workflow live, you need repo admin access and should:
-
-1. open GitHub repo settings
-2. go to `Pages`
-3. set the source to `GitHub Actions`
-
-Once that is enabled, the `Docs` workflow can deploy the generated site to:
-
-- `https://kontourai.github.io/veritas/`
-
-### 2. npm Publishing
-
-The checked-in publish workflow is configured for npm trusted publishing through GitHub Actions OIDC.
-
-What you need to do on the npm side:
-
-1. make sure the `@kontourai/veritas` package name is available to the `@kontourai` org
-2. open the package settings on npmjs.com and add a trusted publisher for GitHub Actions
-3. set the publisher to:
-   - organization or user: `kontourai`
-   - repository: `veritas`
-   - workflow filename: `publish-npm.yml`
-   - allowed action: `npm publish`
-4. for an already-published package, alternatively configure it from a local authenticated npm CLI with npm `11.15.0` or later:
-   ```bash
-   npm trust github @kontourai/veritas --repo kontourai/veritas --file publish-npm.yml --allow-publish
-   ```
-5. confirm the publishing identity can create or update `@kontourai/veritas`
-
-Once that is configured, the workflow can publish without storing a long-lived npm publish token in GitHub Actions.
-
-If trusted publishing is temporarily unavailable, the fallback is to restore token-based auth with an `NPM_TOKEN` secret, but that is intentionally not the default checked-in path.
-
-### 3. Release Trigger
-
-The current publish workflow triggers on tags matching:
-
-- `v*`
-
-So the normal release path is:
-
-1. bump `package.json` version
-2. commit the release
-3. merge that commit to `main`
-4. create and push a tag like `v0.4.0` that points at the `main` commit you intend to release
-
-## Suggested First Publish Checklist
-
-1. Enable GitHub Pages from Actions.
-2. Confirm npm trusted publishing is configured for `kontourai/veritas` and workflow `publish-npm.yml`.
-3. Run the CI workflow on `main`.
-4. Run the Docs workflow once manually.
-5. Confirm the package metadata looks right on npm:
-   - package name
-   - homepage
-   - repository
-   - bugs URL
-   - README rendering
-6. Tag the first release and let `Publish NPM` run.
-
-The current coverage gate enforces at least 80% aggregate line coverage.
-
-## Badges
-
-The root README should expose at least:
-
-- npm version badge
-- CI badge
-
-If GitHub Pages is enabled, adding a docs badge is also reasonable, but the core two are npm and CI.
+Release automation also needs the configured GitHub App identity described in the release workflow. Do not add credentials to documentation or bypass tag/reachability checks to recover a failed run. Inspect the failed step and repair that prerequisite. Introducing token-based publication would be a separately reviewed workflow change.

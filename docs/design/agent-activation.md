@@ -39,7 +39,8 @@ Some environments should route through Veritas directly:
 
 - wrapper commands
 - agent skills
-- `veritas explain`
+- `veritas plan` before editing
+- `veritas explain` for rule detail
 - `veritas readiness`
 
 This gives stronger guarantees than ambient instructions alone.

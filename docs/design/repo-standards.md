@@ -19,7 +19,7 @@ The current schema makes requirement intent explicit.
 
 ## Current Rule Classes
 
-Schema field names still use `rules` for the requirement list:
+The resource envelope uses `spec.requirements`; the legacy shape uses `rules`. Both normalize through the public loader. Classification values describe the kind of requirement:
 
 - `hard-invariant`: a requirement the repo cannot silently drift from
 - `promotable-policy`: a strong preference that may later become required

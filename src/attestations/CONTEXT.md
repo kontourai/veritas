@@ -13,7 +13,7 @@ Recorded evidence that Protected Standards were reviewed, accepted, or approved 
 _Avoid_: Signature as the whole concept, waiver
 
 **Attestation Chain**:
-The ordered relationship between an existing attestation and later attested changes. A policy-change or recommendation-acceptance attestation depends on a prior valid attestation.
+The ordered relationship between an existing attestation and later attested changes. A policy-change attestation requires an existing attestation HEAD and records its predecessor. It can renew an expired predecessor; the existence of this link does not independently validate prior approval or integrity.
 _Avoid_: Independent approvals, unanchored history
 
 **Governance Drift**:

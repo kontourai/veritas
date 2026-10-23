@@ -107,7 +107,7 @@ sequenceDiagram
 
 **Current implementation:** Repo Map and Repo Standards are Veritas-native artifacts. Evidence records are generated under repo-local Veritas paths and remain inspectable without requiring Surface, Flow, Flow Agents, or Builder Kit to run.
 
-**Future Resource Contract alignment:** Repo Maps and Repo Standards are candidates for `spec` because they describe desired governance intent. Readiness Reports and Evidence records are candidates for `status` because they describe observed facts. Evidence should stay separately inspectable rather than being hidden inside metadata.
+**Resource contract:** The released loader accepts a `veritas.kontour.ai/v1alpha1` `RepoStandards` resource with `spec.requirements`; native `plan --json` emits a `ChangePlan`. Legacy standards remain readable. Durable Repo Map, evidence and report envelope migrations are still future work; the plan resource does not imply those migrations have shipped. See [resource contract audit](../resource-contract-audit.md).
 
 ## Governance Evidence Role
 

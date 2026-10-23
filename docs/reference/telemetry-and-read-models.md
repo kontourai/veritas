@@ -43,9 +43,9 @@ Questions a read-model layer should answer:
 - which evidence checks produce the most friction
 - which standards recommendations are waiting for review
 
-## Optional OTLP Export
+## Proposed OTLP integration
 
-OTLP is optional. Use it for team dashboards, cross-repo aggregation, or trend analysis in existing observability infrastructure.
+Veritas does not currently ship an OTLP exporter or exporter configuration. An external consumer could export canonical artifact summaries to existing observability infrastructure; that consumer and its privacy controls would need separate implementation and verification. The dimensions below are design guidance, not supported CLI options.
 
 Do not use OTLP as the first or only source of truth. Keep rich detail in repo-local generated evidence.
 
