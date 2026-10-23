@@ -96,7 +96,7 @@
   "dependencies": {
     "@kontourai/plumb": "0.2.0",
     "@kontourai/surface": "^2.0.0",
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "cross-spawn": "^7.0.6",
