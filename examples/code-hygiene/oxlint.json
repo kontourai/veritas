@@ -1,0 +1,14 @@
+{
+  "jsPlugins": ["./oxlint-plugin.mjs"],
+  "categories": { "correctness": "off" },
+  "rules": {
+    "repo-hygiene/require-suppression-reason": "error",
+    "repo-hygiene/no-low-value-comments": "warn"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.unit.test.{js,mjs,ts,tsx}"],
+      "rules": { "repo-hygiene/deterministic-unit-tests": "error" }
+    }
+  ]
+}

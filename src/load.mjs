@@ -80,7 +80,19 @@ export function loadRepoMap(configPath, options = {}) {
 }
 
 export function loadRepoStandards(repoStandardsPath, options = {}) {
-  return loadValidatedJson(repoStandardsPath, 'Repo Standards', REPO_STANDARDS_SCHEMA, options);
+  const loaded = loadJson(repoStandardsPath, 'Repo Standards', options);
+  const data = options.includeRaw ? loaded.data : loaded;
+  const resource = data.apiVersion !== undefined || data.kind === 'RepoStandards';
+  const validation = validateAgainstSchema(resource
+    ? 'veritas-repo-standards-resource.schema.json' : REPO_STANDARDS_SCHEMA, data);
+  if (!validation.valid) reportInvalidConfig({ label: 'Repo Standards', filePath: repoStandardsPath,
+    validation, options: resource ? { ...options, strict: true } : options });
+  // The public evaluator keeps its existing rule model; the authored envelope
+  // stays on disk and remains covered by the protected-standards byte hash.
+  const normalized = resource ? { version: 1, name: data.metadata.name,
+    ...(data.spec.description !== undefined ? { description: data.spec.description } : {}),
+    rules: data.spec.requirements } : data;
+  return options.includeRaw ? { ...loaded, data: normalized } : normalized;
 }
 
 export function loadAuthoritySettings(authoritySettingsPath, options = {}) {

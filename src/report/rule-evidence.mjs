@@ -25,7 +25,11 @@ export function bindRuleEvidenceResults({ policyResults, evidenceCheckPlan, evid
         diagnostic: result ? 'failed' : 'missing',
       }];
     });
-    if (failures.length === 0) return policyResult;
+    if (failures.length === 0) {
+      return binding.ruleKind === 'evidence-check' && policyResult.passed === null
+        ? { ...policyResult, passed: true, summary: 'All linked Evidence Checks passed in this run.' }
+        : policyResult;
+    }
     return {
       ...policyResult,
       passed: false,

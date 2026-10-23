@@ -105,7 +105,6 @@ export function generateRuleRecommendations({
   repoStandardsPath,
   repoMapPath,
   now = new Date().toISOString(),
-  inactiveRunThreshold = 5,
   rejectionCooldownDays = 14,
 } = {}) {
   const { repoStandardsPath: resolvedRepoStandardsPath, repoMapPath: resolvedRepoMapPath } =
@@ -162,20 +161,8 @@ export function generateRuleRecommendations({
       }));
     }
 
-    if (history.length >= inactiveRunThreshold && failedRecords.length === 0) {
-      recommendations.push(buildRecommendation({
-        type: 'rule-retirement',
-        target: rule.id,
-        now,
-        evidenceRunIds: history.slice(-inactiveRunThreshold).map((record) => record.run_id),
-        rationale: `Rule ${rule.id} did not fail in the last ${inactiveRunThreshold} standards feedback run(s).`,
-        diff: {
-          repoStandardsPath: relative(rootDir, resolvedRepoStandardsPath).replaceAll('\\', '/'),
-          ruleId: rule.id,
-          changes: { x_status: 'deprecated' },
-        },
-      }));
-    }
+    // A quiet rule may be effective or unexercised. Failure counts alone do
+    // not justify retirement; wait for explicit usefulness/catch evidence.
   }
 
   const unmatchedCounts = new Map();
@@ -258,7 +245,7 @@ export function applyRecommendation({ rootDir, id, actor, accept, reject, messag
     });
     const repoStandardsPath = resolve(rootDir, recommendation.diff.repoStandardsPath);
     const repoStandards = JSON.parse(readFileSync(repoStandardsPath, 'utf8'));
-    const rule = (repoStandards.rules ?? []).find((item) => item.id === recommendation.diff.ruleId);
+    const rule = ((repoStandards.kind === 'RepoStandards' ? repoStandards.spec.requirements : repoStandards.rules) ?? []).find((item) => item.id === recommendation.diff.ruleId);
     if (!rule) throw new Error(`Requirement not found for recommendation ${id}: ${recommendation.diff.ruleId}`);
     Object.assign(rule, recommendation.diff.changes ?? {});
     writeFileSync(repoStandardsPath, `${JSON.stringify(repoStandards, null, 2)}\n`, 'utf8');

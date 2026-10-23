@@ -12,6 +12,7 @@ import {
   evaluateVocabularyConsistencyRule,
 } from './content-rules.mjs';
 import { evaluatePrimitiveFirstGovernanceRule } from './primitive-first.mjs';
+import { changedFilesForRule } from './applicability.mjs';
 import { buildRuleResult } from './result.mjs';
 
 export {
@@ -222,7 +223,25 @@ export function evaluateWorkAreaBoundaryRule(rule, { changedFiles = [], config, 
   });
 }
 
+function evaluateEvidenceCheckRule(rule, { rootDir, changedFiles = [] }) {
+  if (!Array.isArray(rule.match?.files) || rule.match.files.length === 0
+      || !rule.match.files.every((value) => typeof value === 'string' && value.trim())
+      || !Array.isArray(rule.evidenceCheckIds) || rule.evidenceCheckIds.length === 0
+      || !rule.evidenceCheckIds.every((value) => typeof value === 'string' && value.trim())) {
+    throw new Error(`Repo Standard ${rule.id}: evidence-check requires match.files and evidenceCheckIds`);
+  }
+  const files = changedFilesForRule(rule, changedFiles, rootDir);
+  return buildRuleResult(rule, {
+    implemented: true,
+    passed: files.length === 0 ? true : null,
+    summary: files.length === 0
+      ? 'No changed files select this evidence requirement.'
+      : 'Rule-linked evidence checks await verified execution.',
+  });
+}
+
 export const RULE_EVALUATORS = {
+  'evidence-check': evaluateEvidenceCheckRule,
   'required-artifacts': evaluateRequiredArtifactsRule,
   'governance-block': evaluateGovernanceBlockRule,
   'diff-required': evaluateDiffRequiredRule,

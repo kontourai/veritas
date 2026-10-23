@@ -2,6 +2,16 @@
 
 Issue: [kontourai/veritas#18](https://github.com/kontourai/veritas/issues/18)
 
+## Additive adoption
+
+The current [code hygiene integration](guides/code-hygiene.md#kontour-resource-contracts)
+adds a `RepoStandards` resource reader and `ChangePlan` CLI resource under the
+shared convention's `veritas.kontour.ai/v1alpha1` namespace. Legacy standards and
+readiness evidence remain supported. The inventory below is the historical
+migration audit, not a claim that every family has migrated. The shared
+[resource-shape convention](https://github.com/kontourai/kontourai.io/blob/main/docs/kontour-resource-shape.md)
+is the envelope reference; the frozen ADR below predates its namespace spelling.
+
 ## Sources
 
 - Resource Contract decision: [`docs/adr/0005-kubernetes-inspired-resource-contracts.md`](https://github.com/kontourai/flow-agents/blob/main/docs/adr/0005-kubernetes-inspired-resource-contracts.md) in `kontourai/flow-agents`.

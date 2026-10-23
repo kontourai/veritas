@@ -42,3 +42,9 @@ Accepting a recommendation may change protected standards. When it does, Veritas
 ## Product Rule
 
 Standards recommendations are not automatic policy mutation. They are suggested changes backed by standards feedback. A team or trusted authority still decides whether the standards should change.
+
+## Evidence limits
+
+A rule with no failures may be useful or unexercised. Veritas does not suggest
+retirement from quiet history alone. Exception and follow-up heuristics generate
+reviewable suggestions, not automatic changes or independent proofs of usefulness.

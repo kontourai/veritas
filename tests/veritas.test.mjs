@@ -5274,6 +5274,7 @@ test('readiness check CLI treats shell metacharacters as literal evidence-check-
   delete repoMap.evidence.defaultEvidenceCheckIds;
   writeFileSync(repoMapPath, `${JSON.stringify(repoMap, null, 2)}\n`, 'utf8');
 
+  writeFileSync(join(rootDir, '.gitignore'), readFileSync(join(rootDir, '.gitignore'), 'utf8') + '\nevidence-check-output.txt\nevidence-repo conformancejected.txt\n');
   const stdout = execFileSync(
     'npm',
     ['exec', '--', 'veritas', 'readiness', '--format', 'json', '--root', rootDir],

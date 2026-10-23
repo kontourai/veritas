@@ -31,6 +31,7 @@ test('structured explain and text explain select the same rules for a file', (t)
   assert.deepEqual(structured.rules.map((rule) => rule.id), ['docs-review']);
   assert.deepEqual(structured.rules[0].evidenceCheckIds, [map.evidence.evidenceChecks[0].id]);
   assert.match(text, /Rule: docs-review/);
+  assert.ok(text.includes(`Evidence checks: ${map.evidence.evidenceChecks[0].id}`));
 
   const output = execFileSync(process.execPath, [
     'bin/veritas.mjs', 'explain', '--root', rootDir, '--file', 'docs/notes.md', '--json',

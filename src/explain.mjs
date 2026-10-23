@@ -33,6 +33,7 @@ function explainRuleBlock(rule) {
     `Enforcement Level: ${rule.enforcementLevel}`,
     `Summary: ${explain.summary ?? rule.message}`,
   ];
+  if (rule.evidenceCheckIds?.length) lines.push(`Evidence checks: ${rule.evidenceCheckIds.join(', ')}`);
   for (const item of explain.mustDo ?? []) lines.push(`Do: ${item}`);
   for (const item of explain.mustNotDo ?? []) lines.push(`Do not: ${item}`);
   if (explain.exampleGood) lines.push(`Good: ${explain.exampleGood}`);

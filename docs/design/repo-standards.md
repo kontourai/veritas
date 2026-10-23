@@ -43,6 +43,14 @@ The point of keeping both classification and enforcement metadata is that they a
 - Classification: what kind of requirement is this?
 - Enforcement: how strongly should Veritas apply it right now?
 
+## Evidence-backed requirements
+
+Use `kind: "evidence-check"`, a nonempty `match.files` list, and nonempty
+`evidenceCheckIds` when the requirement is established by executed checks.
+No placeholder artifact assertion or text pattern is needed. The rule is pending
+until bound execution is available; missing/failed checks cannot satisfy it.
+See [Code Hygiene](../guides/code-hygiene.md) for an executable integration.
+
 ## Current Reference
 
 Use [repo-standards/work-agent-convergence.repo-standards.json](../../repo-standards/work-agent-convergence.repo-standards.json) as the current schema example.

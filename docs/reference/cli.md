@@ -2,7 +2,7 @@
 
 This page documents the CLI surface that currently ships in this repo.
 
-The primary CLI surface is ten verbs: `init`, `readiness`, `explain`, `attest`, `claim`, `recommendation`, `feedback`, `setup`, `plugin`, `integrations`. Most commands print JSON to stdout. The developer- and agent-facing readiness feedback path prints lint-style text by default; use `--format json` when you need machine-readable orchestration output.
+The primary CLI includes `plan` and the existing verbs: `init`, `readiness`, `explain`, `attest`, `claim`, `recommendation`, `feedback`, `setup`, `plugin`, `integrations`. Most commands print JSON to stdout. The developer- and agent-facing readiness feedback path prints lint-style text by default; use `--format json` when you need machine-readable orchestration output.
 
 ## Entry Points
 
@@ -39,6 +39,26 @@ Use `readiness --check coverage` when you want readiness coverage. The product q
 Breaking evidence-check migration notes live in [../MIGRATING.md](../MIGRATING.md).
 
 ## Commands
+
+### `plan`
+
+Read-only pre-edit routing and guidance, using the same requirement/check selection
+as readiness. It runs no checks and creates no evidence.
+
+```bash
+npx --no @kontourai/veritas plan src/example.ts tests/example.unit.test.ts
+npx --no @kontourai/veritas plan --working-tree --json
+npx --no @kontourai/veritas plan --changed-from origin/main --changed-to HEAD
+```
+
+Use explicit intended paths, the current working tree (default), or a pair of
+revision endpoints. Modes cannot be mixed. `--root`, `--repo-map` and `--repo-standards` select
+the target repository and optional configuration paths. Unknown options, outside paths and
+invalid policy schemas fail before returning a plan. JSON is a `veritas.kontour.ai/v1alpha1` `ChangePlan` resource. Its
+`status` reports `executed: false`, selected checks with required/advisory status, applicable guidance and
+unmapped paths. Unmapped paths retain their coverage policy; a plan is not a
+readiness verdict. See [Code Hygiene](../guides/code-hygiene.md).
+
 
 ### `readiness`
 

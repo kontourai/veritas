@@ -43,7 +43,7 @@ import {
 } from '../src/index.mjs';
 
 const MAIN_USAGE = `Usage:
-  veritas --version
+  veritas plan [paths...] [--working-tree | --changed-from <ref> --changed-to <ref>] [--root <path>] [--json]
   veritas review --plan <path> --host-root <private-directory> --expires-at <ISO-date> [--root <path>] [--port <number>]
   veritas init [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--template <name>] [--force]
   veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree] [--actor <id>] [--format feedback|json|trust-bundle] [--projection-output <path>]
@@ -321,6 +321,12 @@ if (subcommand === '--version' || subcommand === '-V') {
   writeStdout(`${packageManifest.version}\n`);
 } else if (!subcommand || isHelpToken(subcommand)) {
   writeStdout(MAIN_USAGE);
+} else if (subcommand === 'plan') {
+  if (args.some(isHelpToken)) writeStdout('Usage:\n  veritas plan <path> [paths...] [--working-tree | --changed-from <ref> --changed-to <ref>] [--root <path>] [--json]\n');
+  else {
+    const { runPlanCli } = await import('../src/cli/plan.mjs');
+    runPlanCli(args);
+  }
 } else if (subcommand === 'review') {
   if (args.some(isHelpToken)) {
     writeStdout('Usage:\n  veritas review --plan <path> --host-root <private-directory> --expires-at <ISO-date> [--root <path>] [--port <number>]\n');

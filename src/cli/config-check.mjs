@@ -30,11 +30,14 @@ export function validateRepoConfig({ rootDir, repoMapPath, repoStandardsPath }) 
       };
     }
     // Read without the loaders so the check reports rather than warns.
-    const validation = validateAgainstSchema(schema, loadJson(filePath, label));
+    const data = loadJson(filePath, label);
+    const selectedSchema = pathKey === 'repoStandardsPath' && (data.apiVersion !== undefined || data.kind === 'RepoStandards')
+      ? 'veritas-repo-standards-resource.schema.json' : schema;
+    const validation = validateAgainstSchema(selectedSchema, data);
     return {
       label,
       file: relativeRepoPath(rootDir, filePath),
-      schema,
+      schema: selectedSchema,
       status: validation.valid ? 'valid' : 'invalid',
       errors: validation.errors,
     };
