@@ -1,8 +1,9 @@
 // Adapted from T3 Tools; MIT license and source revision in ../LICENSE-T3.
 
 const DIRECTIVE_PATTERN =
-  /^\s*\*?\s*(?:(?:oxlint|eslint)-(?:disable|enable)|@ts-(?:expect-error|ignore|nocheck)|@effect-diagnostics)/u;
+  /^\s*\*?\s*(?:(?:oxlint|eslint)-(?:disable|enable)|@ts-(?:expect-error|ignore|nocheck)|@effect-diagnostics|biome-ignore)/u;
 const TS_DIRECTIVE_PATTERN = /^\s*\*?\s*@ts-(?:expect-error|ignore|nocheck)(?![\w-])(.*)$/su;
+const BIOME_DIRECTIVE_PATTERN = /^\s*\*?\s*biome-ignore(?:-all|-start)?(?![\w-])[^:]*?(?::(.*))?$/su;
 const EMPTY_COMMENT_PATTERN = /^[\s*]*$/u;
 
 export default {
@@ -17,7 +18,7 @@ export default {
     return {
       Program() {
         const comments = sourceCode.getAllComments();
-        const ownLineCommentsByEndLine = new Map                        ();
+        const ownLineCommentsByEndLine = new Map();
         for (const comment of comments) {
           const { line, column } = comment.loc.start;
           if ((sourceCode.lines[line - 1] ?? "").slice(0, column).trim() === "") {
@@ -25,7 +26,7 @@ export default {
           }
         }
 
-        const explainedAbove = (directive                ) => {
+        const explainedAbove = (directive) => {
           let above = ownLineCommentsByEndLine.get(directive.loc.start.line - 1);
           while (
             above &&
@@ -47,6 +48,13 @@ export default {
         }
 
         for (const comment of comments) {
+          const biome = BIOME_DIRECTIVE_PATTERN.exec(comment.value);
+          if (biome && !biome[1]?.replace(/^[\s*:-]+/u, "").trim() && !explainedAbove(comment)) {
+            context.report({
+              loc: comment.loc,
+              message: "Say why: write the Biome suppression reason after `:` or in a comment on the line above.",
+            });
+          }
           const after = TS_DIRECTIVE_PATTERN.exec(comment.value)?.[1];
           if (after === undefined || after.replace(/^[\s:-]+/u, "").trim()) continue;
           if (explainedAbove(comment)) continue;

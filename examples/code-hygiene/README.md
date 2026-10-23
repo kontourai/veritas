@@ -15,6 +15,7 @@ The suppression, comment and namespace-import rules are adapted from
 [T3 Code at 680152e27b2a961686389ca69a1557cbb2c55f08](https://github.com/pingdotgg/t3code/tree/680152e27b2a961686389ca69a1557cbb2c55f08/oxlint-plugin-t3code).
 Type annotations and the identity `defineRule` wrapper were removed for plain
 ESM loading. [LICENSE-T3](LICENSE-T3) retains the original MIT notice.
+The suppression rule additionally handles Biome directives.
 The deterministic-unit-tests rule is a smaller framework-independent example,
 not a port of T3's Effect-aware timing analysis.
 

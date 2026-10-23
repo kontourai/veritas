@@ -30,6 +30,24 @@ test('real Oxlint catches unexplained lint/type suppressions and accepts reasons
   assert.equal(good.status, 0, good.stdout + good.stderr);
 });
 
+test('Biome suppressions need reasons while end markers and literal examples are not suppressions', (t) => {
+  const rules = { 'repo-hygiene/require-suppression-reason': 'error' };
+  for (const comment of ['// biome-ignore lint/suspicious/noExplicitAny', '// biome-ignore-all lint/suspicious/noExplicitAny:', '// biome-ignore-start lint/suspicious/noExplicitAny:   ']) {
+    const bad = lint(t, 'target.ts', `${comment}\nconst value = 1;`, rules);
+    assert.equal(bad.status, 1, bad.stdout + bad.stderr);
+    assert.match(bad.stdout, /Say why/);
+  }
+  for (const source of [
+    '// biome-ignore lint/suspicious/noExplicitAny: Boundary receives provider-defined values.\nconst value = 1;',
+    '// biome-ignore-end lint/suspicious/noExplicitAny\nconst value = 1;',
+    'const example = "// biome-ignore lint/suspicious/noExplicitAny";',
+    '// Provider values are intentionally untyped.\n// biome-ignore lint/suspicious/noExplicitAny\nconst value = 1;',
+  ]) {
+    const good = lint(t, 'target.ts', source, rules);
+    assert.equal(good.status, 0, good.stdout + good.stderr);
+  }
+});
+
 test('real Oxlint distinguishes timer/clock unit violations from fixed time and explicit event completion', (t) => {
   const rules = { 'repo-hygiene/deterministic-unit-tests': 'error' };
   for (const source of ['Date.now();', 'new Date();', 'globalThis.setTimeout(done, 100);', "import { setTimeout as delay } from 'node:timers/promises';"]) {

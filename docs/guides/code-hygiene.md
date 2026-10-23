@@ -87,7 +87,7 @@ Merge the example requirement and check into your reviewed governance config.
 Run `readiness --check config`, `plan` and the real detector before promotion.
 Protected Standards changes retain the repository's approval/attestation process.
 
-The initial pack requires explanations for suppressions, warns about low-value
+The initial pack requires explanations for Biome, ESLint, Oxlint and TypeScript suppressions, warns about low-value
 comments, and bans direct real clocks/timers only in `*.unit.test.*` files.
 Canonical Node namespace imports are available but opt-in: this is a style choice,
 not a universal correctness requirement. The syntax-based timing rule is deliberately
