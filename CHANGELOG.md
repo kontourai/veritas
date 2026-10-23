@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.12.2](https://github.com/kontourai/veritas/compare/v1.12.1...v1.12.2) (2026-10-23)
+
+
+### Documentation
+
+* simplify onboarding and audit product documentation ([#327](https://github.com/kontourai/veritas/issues/327)) ([07c6fd8](https://github.com/kontourai/veritas/commit/07c6fd86c3b5ae880431b9f5b7b9123409628d96))
+
 ## [1.12.1](https://github.com/kontourai/veritas/compare/v1.12.0...v1.12.1) (2026-10-23)
 
 
