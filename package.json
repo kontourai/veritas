@@ -95,7 +95,7 @@
   },
   "dependencies": {
     "@kontourai/plumb": "0.2.0",
-    "@kontourai/surface": "^2.0.0",
+    "@kontourai/surface": "^6.2.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
@@ -112,7 +112,7 @@
     }
   },
   "devDependencies": {
-    "@kontourai/survey": "8.2.0",
+    "@kontourai/survey": "8.2.1",
     "oxlint": "1.88.0"
   }
 }
