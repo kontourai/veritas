@@ -2,6 +2,11 @@
 
 An attestation is a recorded assertion, citing a human approval reference, that something was verified, accepted, approved, or reviewed. It is authority-backed only when that reference was resolved to an approved result for it, which happens only in the `resolved` modes described below. In the default `reference-only` mode it is a recorded attestation with an unverified approval reference.
 
+An attestation carries a claim, evidence and verification event as a fragment. A
+consumer composing a Surface 6 trust bundle must also supply an applicable
+verification policy. Even a resolved approval remains `proposed` in a report
+without that policy; the fragment's recorded `status` is not the derived verdict.
+
 In Veritas, attestations protect the parts of the repo standards and repo map that define what good looks like, where boundaries are, and who or what can verify requirements. The goal is not to make humans approve every routine change. The goal is to keep the definition of good from changing without trusted authority.
 
 ## Bootstrap Attestation
