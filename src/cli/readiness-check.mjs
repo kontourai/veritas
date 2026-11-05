@@ -1,6 +1,7 @@
 import { displayText } from '../util/display.mjs';
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
+import { readinessChangeScope } from '../report/format.mjs';
 import { parseReadinessArgs } from '../args.mjs';
 import { assertWithinDir } from '../paths.mjs';
 import {
@@ -44,6 +45,7 @@ export function readinessRuntimeEnvelope(record, currentStatus) {
     // This lives only in command stdout. The v1 evidence record remains free
     // of execution state and is deliberately not mutated for CLI reporting.
     status: currentStatus,
+    changeScope: readinessChangeScope(record),
     verdict: readinessVerdict(record),
     baselineCiFastPassed: record.baseline_ci_fast_passed,
     requiredEvidenceChecks,
@@ -73,6 +75,10 @@ export async function runReadinessCheckCli(argv = process.argv.slice(2), default
       {
         ...(defaults.readinessRuntime ?? {}),
         onReadinessPhase,
+        onReadinessScope: (inputs) => {
+          const scope = readinessChangeScope({ files: inputs.files, source_kind: inputs.sourceKind, source_scope: inputs.sourceScope, source_ref: inputs.sourceRef });
+          if (scope.message) process.stderr.write(`WARN  empty-change-scope: ${scope.message}\n`);
+        },
         onEvidenceCheckOutput: format === 'feedback'
           ? null
           : (evidenceCheckResult) => {

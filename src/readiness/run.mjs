@@ -108,6 +108,12 @@ export async function runMergeReadiness(
     if (isProcessTimeout(error)) throw workflowTimeoutError('scope-resolution', error);
     throw error;
   }
+  runtime.onReadinessScope?.(Object.freeze({
+    files: Object.freeze([...reportInputs.files]),
+    sourceKind: reportInputs.sourceKind,
+    sourceScope: Object.freeze([...reportInputs.sourceScope]),
+    sourceRef: reportInputs.sourceRef,
+  }));
   assertWorkflowDeadline(workflowDeadline, 'scope-resolution');
   const sourceSnapshot = captureSourceSnapshot(rootDir, remainingWorkflowTimeout(workflowDeadline, 'source-snapshot'),
     [...reportInputs.files, repoMapPath, repoStandardsPath, authoritySettingsPath].filter(Boolean));

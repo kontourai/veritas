@@ -46,7 +46,7 @@ const MAIN_USAGE = `Usage:
   veritas plan [paths...] [--working-tree | --changed-from <ref> --changed-to <ref>] [--root <path>] [--json]
   veritas review --plan <path> --host-root <private-directory> --expires-at <ISO-date> [--root <path>] [--port <number>]
   veritas init [--root <path>] [--project-name <name>] [--evidence-check <cmd>] [--template <name>] [--force]
-  veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree] [--actor <id>] [--format feedback|json|trust-bundle] [--projection-output <path>]
+  veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree | --changed-from <ref> --changed-to <ref>] [--actor <id>] [--format feedback|json|trust-bundle] [--projection-output <path>]
   veritas explain <ruleId|workArea|filePath> [--file <path>] [--work-area <id>] [--json] [--root <path>]
   veritas attest bootstrap --actor <id> --approval-ref <ref> [--root <path>] [--non-interactive] [--valid-until-days <days>]
   veritas attest policy-change --actor <id> --approval-ref <ref> --message <text> [--root <path>] [--valid-until-days <days>]
@@ -69,9 +69,14 @@ const MAIN_USAGE = `Usage:
 `;
 
 const RUN_USAGE = `Usage:
-  veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree] [--actor <id>] [--format feedback|json|trust-bundle] [--projection-output <path>]
+  veritas readiness [--check evidence|boundaries|coverage|config] [--root <path>] [--working-tree | --changed-from <ref> --changed-to <ref>] [--actor <id>] [--format feedback|json|trust-bundle] [--projection-output <path>]
   veritas readiness --check evidence [--evidence-check-command <cmd> | --skip-evidence-check]
   veritas readiness --check boundaries --actor <id> [--diff <ref>] [--root <path>] [--repo-map <path>]
+
+  Scope defaults to the working tree (staged, unstaged and untracked files).
+  Committed changes are excluded. To qualify a branch, select both revision endpoints:
+    veritas readiness --changed-from origin/main --changed-to HEAD
+  An empty scope reports a warning: passing repository checks does not qualify committed changes.
 
   --evidence-check-command <cmd>  Runs in addition to the Repo Map's required checks and is itself
                                   required: a nonzero exit fails readiness. Takes exactly one non-empty
