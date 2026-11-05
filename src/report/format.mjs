@@ -18,6 +18,7 @@ export function buildMarkdownSummary(record, artifactPath) {
   ).length;
   const lines = [
     '## Veritas Report',
+    ...(readinessChangeScope(record).message ? ['', `**Change scope warning:** ${readinessChangeScope(record).message}`] : []),
     '',
     `- **Repo map:** ${markdownCode(record.repo_map.name)} (${record.repo_map.kind})`,
     `- **Source:** ${record.source_kind} (${record.source_scope.map(markdownCode).join(', ')})`,
@@ -173,6 +174,22 @@ function summarizeFeedbackCounts(record, evidenceCheckFailure = null, evidenceCh
   return { failures, warnings, passes };
 }
 
+export function readinessChangeScope(record) {
+  const fileCount = record.files?.length ?? 0;
+  const sourceKind = record.source_kind;
+  const message = fileCount === 0
+    ? `No changed files in the selected ${displayText(sourceKind ?? 'change')} scope. Change-specific policies were not evaluated.${sourceKind === 'working-tree' ? ' Committed changes are excluded from working-tree scope.' : ''} For committed changes, select --changed-from <ref> --changed-to <ref>.`
+    : undefined;
+  return {
+    sourceKind,
+    sourceScope: record.source_scope,
+    sourceRef: record.source_ref,
+    fileCount,
+    status: fileCount > 0 ? 'selected' : 'empty',
+    ...(message ? { message } : {}),
+  };
+}
+
 export function buildFeedbackSummary({
   record,
   reportArtifactPath = null,
@@ -192,6 +209,9 @@ export function buildFeedbackSummary({
   const lines = [
     `veritas: ${files.length} ${files.length === 1 ? 'file' : 'files'} changed -> ${affectedNodes}`,
   ];
+
+  const changeScope = readinessChangeScope(record ?? {});
+  if (changeScope.message) lines.push(`WARN  empty-change-scope: ${changeScope.message}`);
 
   if (evidenceCheckRan) {
     if (evidenceCheckFailure && !evidenceCheckFailureIsRepresentedByRequiredState(record, evidenceCheckFailure)) {
@@ -270,6 +290,7 @@ export function buildFeedbackSummary({
   }
 
   const counts = summarizeFeedbackCounts(record, evidenceCheckFailure, evidenceCheckResults);
+  if (changeScope.message) counts.warnings += 1;
   const nouns = [
     `${counts.failures} ${counts.failures === 1 ? 'failure' : 'failures'}`,
     `${counts.warnings} ${counts.warnings === 1 ? 'warning' : 'warnings'}`,

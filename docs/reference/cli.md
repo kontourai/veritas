@@ -71,6 +71,21 @@ npx --no @kontourai/veritas readiness --check boundaries --actor cli-team [--dif
 
 `--actor <id>` names the governance actor for the run: any `work-area-boundary` requirement the Repo Standards declare, the readiness-verdict authority trace when no current attestation names one, and run history. It takes precedence over `VERITAS_ACTOR`, and an empty value counts as unset; with neither, a `work-area-boundary` requirement fails closed.
 
+Readiness defaults to the working tree: staged, unstaged and untracked paths.
+It excludes committed changes. To qualify a committed branch, name both endpoints:
+
+```bash
+npx --no @kontourai/veritas readiness --changed-from origin/main --changed-to HEAD
+```
+
+An empty selected scope emits `empty-change-scope` before checks run and in the
+feedback summary. Repository-wide checks may still pass, but no change-specific
+policies were evaluated. JSON command output exposes `readiness.changeScope`
+with its source kind, scope, reference, file count and `empty` or `selected`
+status. `selected` means paths were selected; it does not mean their policies
+passed or all paths matched a work area. The persisted v1 evidence and trust-bundle shapes
+are unchanged; they retain their existing source scope and file list.
+
 `readiness` is the recommended current front door for evidenceCheck execution, generated evidence, standards feedback drafting, and change guidance. `readiness --check boundaries` replaces `boundaries check`. `readiness --check coverage` is the current command for readiness coverage. `readiness --check evidence` is the current command for the lower-level generated evidence path. `readiness --check config` validates this repo's Repo Map and Repo Standards against the schemas Veritas publishes for them.
 
 Evidence-check processes have bounded cancellation and per-check deadlines. Embedders may set `runtime.workflowTimeoutMs` for an overall readiness deadline; Veritas checks that deadline before report, finalization, and completion. Report generation and filesystem-backed feedback finalization remain synchronous repository operations: they receive explicit bounded Git diff resolution, but a caller cannot preempt an already-running filesystem operation once that finalization phase has started. The workflow deadline is therefore observed at phase boundaries, not a claim of universal mid-operation cancellation.

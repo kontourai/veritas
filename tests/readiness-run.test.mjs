@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { spawnSync, execFileSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -362,6 +362,7 @@ test('required evidence cannot be forged by reflective copies or callback mutati
     force: true,
   });
   commitAll(rootDir, 'Bootstrap private association fixture');
+  writeFileSync(join(rootDir, 'pending.txt'), 'scope observer must not remove this path');
 
   let observed = null;
   const result = await runMergeReadiness(
@@ -370,6 +371,11 @@ test('required evidence cannot be forged by reflective copies or callback mutati
     [],
     {
       appendHistory: false,
+      onReadinessScope: (scope) => {
+        assert.equal(Object.isFrozen(scope), true);
+        assert.equal(Object.isFrozen(scope.files), true);
+        assert.throws(() => { scope.files.length = 0; }, TypeError);
+      },
       onEvidenceCheckOutput: (snapshot) => {
         observed = snapshot;
         assert.equal(Object.isFrozen(snapshot), true);
@@ -381,6 +387,7 @@ test('required evidence cannot be forged by reflective copies or callback mutati
   );
 
   assert.ok(observed);
+  assert.ok(result.reportResult.record.files.includes('pending.txt'));
   assert.equal(result.evidenceCheckResults[0].passed, false);
   assert.equal(result.evidenceCheckFailure?.reason, 'failed');
   assert.equal(result.currentStatus, 'fail');
@@ -819,4 +826,36 @@ test('readiness rejects source or policy drift during real check execution befor
   const restored = await runMergeReadiness({ rootDir, runId: 'source-restored', force: true }, { rootDir }, ['target.mjs'], { appendHistory: false, includeAttestationGate: false });
   assert.equal(restored.currentStatus, 'pass');
   assert.equal(readFileSync(join(rootDir, 'target.mjs'), 'utf8'), original);
+});
+
+
+test('readiness discloses empty working-tree scope and distinguishes committed branch changes', (t) => {
+  const rootDir = initCommittedRepo(t, 'veritas-empty-scope-');
+  writeBootstrapStarterKit({ rootDir, projectName: 'scope-fixture', evidenceCheck: 'node -e "process.exit(0)"', force: true });
+  commitAll(rootDir, 'Bootstrap scope fixture');
+  writeFileSync(join(rootDir, 'change.txt'), 'committed change');
+  commitAll(rootDir, 'Commit the change to qualify');
+  const run = (args) => spawnSync(process.execPath, [join(repoRootDir, 'bin/veritas.mjs'), 'readiness', '--root', rootDir, ...args], { cwd: rootDir, encoding: 'utf8' });
+  const feedback = run([]);
+  assert.equal(feedback.status, 0, feedback.stderr);
+  assert.match(feedback.stdout, /WARN\s+empty-change-scope/);
+  assert.match(feedback.stdout, /committed changes are excluded/i);
+  assert.match(feedback.stdout, /[1-9]\d* warnings?/);
+  assert.ok(feedback.stderr.indexOf('empty-change-scope') < feedback.stderr.indexOf('RUN   evidence-check'));
+  const empty = run(['--format', 'json']);
+  assert.equal(empty.status, 0, empty.stderr);
+  const emptyOutput = parseCliJson(empty.stdout);
+  assert.equal(emptyOutput.readiness.changeScope.status, 'empty');
+  assert.equal(emptyOutput.readiness.changeScope.sourceKind, 'working-tree');
+  assert.equal(emptyOutput.readiness.changeScope.fileCount, 0);
+  const branch = run(['--changed-from', 'HEAD~1', '--changed-to', 'HEAD', '--format', 'json']);
+  assert.equal(branch.status, 0, branch.stderr);
+  const branchOutput = parseCliJson(branch.stdout);
+  assert.equal(branchOutput.readiness.changeScope.status, 'selected');
+  assert.equal(branchOutput.readiness.changeScope.fileCount, 1);
+  assert.equal(branchOutput.readiness.changeScope.sourceKind, 'branch-diff');
+  assert.doesNotMatch(branch.stderr, /empty-change-scope/);
+  const help = run(['--help']);
+  assert.match(help.stdout, /--changed-from <ref> --changed-to <ref>/);
+  assert.match(help.stdout, /committed changes/i);
 });
