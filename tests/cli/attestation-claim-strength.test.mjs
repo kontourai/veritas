@@ -86,14 +86,27 @@ function attestBootstrap(rootDir, approvalRef) {
 
 // The status Surface itself derives from the record's projection: a consumer
 // that folds the claim, evidence and event sees this, not the claim's own field.
-function surfaceDerivedStatus(surface) {
+function surfaceDerivedStatus(surface, { includePolicy = true } = {}) {
   const report = buildTrustReport({
     schemaVersion: 5,
     source: 'attestation-claim-strength-test',
     claims: [surface.claim],
     evidence: [surface.evidence],
     events: [surface.event],
-    policies: [],
+    // This test isolates approval resolution under an explicit consumer policy.
+    // Surface 6 intentionally leaves a claim without a policy proposed.
+    policies: includePolicy ? [{
+      id: 'resolved-human-approval',
+      claimType: 'veritas-human-attestation',
+      requiredEvidence: ['attestation'],
+      requiredMethods: ['attestation'],
+      acceptanceCriteria: ['The approval reference resolves to an approved record.'],
+      reviewAuthority: 'human',
+      validityRule: { kind: 'duration', durationDays: 30 },
+      stalenessTriggers: [],
+      conflictRules: [],
+      impactLevel: 'high',
+    }] : [],
   });
   return report.claims.find((claim) => claim.id === surface.claim.id).status;
 }
@@ -202,6 +215,7 @@ test('an approval resolved against an offline approval record keeps the strong v
   assert.equal(event.verifiedAt, attestation.attestedAt);
   assert.match(evidence.excerptOrSummary, /^Authority-backed bootstrap attestation/);
   assert.equal(surfaceDerivedStatus(attestation.surface), 'verified');
+  assert.equal(surfaceDerivedStatus(attestation.surface, { includePolicy: false }), 'proposed');
 
   const readiness = runReadiness(rootDir);
   assert.deepEqual(readinessSummary(readiness), READY, readiness.result.stdout + readiness.result.stderr);
