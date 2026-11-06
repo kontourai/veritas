@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for published package releases.
 
+## [1.12.3](https://github.com/kontourai/veritas/compare/v1.12.2...v1.12.3) (2026-11-06)
+
+
+### Documentation
+
+* map production inputs to canonical freshness reviews ([#333](https://github.com/kontourai/veritas/issues/333)) ([b027d1e](https://github.com/kontourai/veritas/commit/b027d1e075e7b8e243381f6e392d85f95883a8b6))
+
 ## [1.12.2](https://github.com/kontourai/veritas/compare/v1.12.1...v1.12.2) (2026-11-05)
 
 
