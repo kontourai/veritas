@@ -134,7 +134,8 @@
       "source": "docs/reference/cli.md",
       "section": "Reference",
       "covers": [
-        "bin/veritas.mjs"
+        "bin/veritas.mjs",
+        "bin/**"
       ]
     },
     {
@@ -166,7 +167,10 @@
     },
     {
       "source": "docs/architecture/developer-architecture.md",
-      "section": "Contribute"
+      "section": "Contribute",
+      "covers": [
+        "src/**"
+      ]
     },
     {
       "source": "docs/architecture/engine-surface-seam.md",
