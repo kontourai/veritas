@@ -112,7 +112,7 @@
     }
   },
   "devDependencies": {
-    "@kontourai/survey": "8.4.0",
+    "@kontourai/survey": "9.0.0",
     "oxlint": "1.91.0"
   }
 }

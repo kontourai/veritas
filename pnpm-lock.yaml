@@ -16,7 +16,7 @@ importers:
         version: 6.3.0
       '@modelcontextprotocol/sdk':
         specifier: ^1.32.1
-        version: 1.32.2(zod@4.4.3)
+        version: 1.32.2(zod@4.6.7)
       ajv:
         specifier: ^8.17.1
         version: 8.20.0
@@ -34,8 +34,8 @@ importers:
         version: 4.0.7
     devDependencies:
       '@kontourai/survey':
-        specifier: 8.4.0
-        version: 8.4.0
+        specifier: 9.0.0
+        version: 9.0.0
       oxlint:
         specifier: 1.91.0
         version: 1.91.0
@@ -57,18 +57,13 @@ packages:
     engines: {node: '>=22'}
     hasBin: true
 
-  '@kontourai/surface@2.14.0':
-    resolution: {integrity: sha512-OiSOUHStjZvfWJe1nXXm3vfbgUvkc3Dc3THqTXbMK70wjKAHfDgz06TwBLeRp3oNJKEIh9xNDYCFT+TqQ7EYrQ==}
-    engines: {node: '>=22'}
-    hasBin: true
-
   '@kontourai/surface@6.3.0':
     resolution: {integrity: sha512-sWejbO0KRVuoCqn5mX6qGfJae4ovbN1ivWToq6sdUeWIhL0dl65tMD/CbIlwiEaBQ1/611RK6eFvEVJffgcuJw==}
     engines: {node: '>=22'}
     hasBin: true
 
-  '@kontourai/survey@8.4.0':
-    resolution: {integrity: sha512-ziY5IbQGw1TSLiLqv7GTxDTdd8PdssKZOQW/iHBLLnTJwSYi9gXuOq3No9hs+e1uOU37ZI+fnZtswXYUDS0HIQ==}
+  '@kontourai/survey@9.0.0':
+    resolution: {integrity: sha512-Ao3wgabAhxfEcdjE+/FcmN+Y2w7OIA8+EZOh5s188ajVaFDwEExLzNhhEOtS9lIuJzY2+k5efTk0AHBh5sSyNQ==}
     engines: {node: '>=22'}
     hasBin: true
     peerDependencies:
@@ -77,8 +72,8 @@ packages:
       typescript:
         optional: true
 
-  '@modelcontextprotocol/core@2.0.0':
-    resolution: {integrity: sha512-pJCEwGG7Lfr/+PQp9ZTwKXNeO5wzbfKL7H3MYpCorM4oFBoQrdjnBgEoqG+RjhsvS1FKrDbKux+M1HhlnGWqcA==}
+  '@modelcontextprotocol/core@2.4.0':
+    resolution: {integrity: sha512-z8QBKqdfXLPzkLQuG4xp8hrVEMm1PZ1IgxMN2sMbJiFiAKOWXnAzogXn2W4aqIBlP1ea6U5yiqVquvUNM1Cj6Q==}
     engines: {node: '>=20'}
 
   '@modelcontextprotocol/sdk@1.32.2':
@@ -91,8 +86,8 @@ packages:
       '@cfworker/json-schema':
         optional: true
 
-  '@modelcontextprotocol/server@2.0.0':
-    resolution: {integrity: sha512-YhHWdHfpFMQfd0prsEnxKeS3Qz3ytIGmsS0sth4KDjnacIT7hxk6hXHkJ9KysxlkvTM+WZAtQbbcUhdoP4Hvtw==}
+  '@modelcontextprotocol/server@2.4.0':
+    resolution: {integrity: sha512-rgR9yxSaAJ+bcsi/XroT/S2AfPiIWloXAnrdfYSCms9ivVju0ishu/wW0J21Ho6+ZOR1r7RyeRbjiRuF87ix5Q==}
     engines: {node: '>=20'}
 
   '@npmcli/agent@5.0.2':
@@ -748,6 +743,9 @@ packages:
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
+
 snapshots:
 
   '@gar/promise-retry@1.0.3':
@@ -759,14 +757,6 @@ snapshots:
 
   '@kontourai/plumb@0.2.0': {}
 
-  '@kontourai/surface@2.14.0':
-    optionalDependencies:
-      '@sigstore/sign': 5.0.0
-      '@sigstore/verify': 4.1.2
-    transitivePeerDependencies:
-      - kerberos
-      - supports-color
-
   '@kontourai/surface@6.3.0':
     optionalDependencies:
       '@sigstore/bundle': 5.0.0
@@ -776,20 +766,20 @@ snapshots:
       - kerberos
       - supports-color
 
-  '@kontourai/survey@8.4.0':
+  '@kontourai/survey@9.0.0':
     dependencies:
-      '@kontourai/surface': 2.14.0
-      '@modelcontextprotocol/server': 2.0.0
-      zod: 4.4.3
+      '@kontourai/surface': 6.3.0
+      '@modelcontextprotocol/server': 2.4.0
+      zod: 4.6.7
     transitivePeerDependencies:
       - kerberos
       - supports-color
 
-  '@modelcontextprotocol/core@2.0.0':
+  '@modelcontextprotocol/core@2.4.0':
     dependencies:
       zod: 4.4.3
 
-  '@modelcontextprotocol/sdk@1.32.2(zod@4.4.3)':
+  '@modelcontextprotocol/sdk@1.32.2(zod@4.6.7)':
     dependencies:
       '@hono/node-server': 1.19.14(hono@4.12.27)
       ajv: 8.20.0
@@ -806,14 +796,14 @@ snapshots:
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
-      zod: 4.4.3
-      zod-to-json-schema: 3.25.2(zod@4.4.3)
+      zod: 4.6.7
+      zod-to-json-schema: 3.25.2(zod@4.6.7)
     transitivePeerDependencies:
       - supports-color
 
-  '@modelcontextprotocol/server@2.0.0':
+  '@modelcontextprotocol/server@2.4.0':
     dependencies:
-      '@modelcontextprotocol/core': 2.0.0
+      '@modelcontextprotocol/core': 2.4.0
       zod: 4.4.3
 
   '@npmcli/agent@5.0.2':
@@ -1485,8 +1475,10 @@ snapshots:
   yallist@4.0.0:
     optional: true
 
-  zod-to-json-schema@3.25.2(zod@4.4.3):
+  zod-to-json-schema@3.25.2(zod@4.6.7):
     dependencies:
-      zod: 4.4.3
+      zod: 4.6.7
 
   zod@4.4.3: {}
+
+  zod@4.6.7: {}
