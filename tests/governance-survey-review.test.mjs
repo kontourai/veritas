@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {execFileSync} from 'node:child_process';
 import {createHmac} from 'node:crypto';
 import {buildReviewSessionEvents, renderReviewWorkbenchHtml} from '@kontourai/survey/review-workbench';
@@ -19,7 +20,7 @@ async function fixture(t, action = 'approve', options = {}) {
   execFileSync(process.execPath, [path.resolve('bin/veritas.mjs'), 'init', '--explore', '--root', rootDir, '--output', '.veritas/init-plans/review.json'], {env, stdio: 'pipe'});
   const planPath = path.join(rootDir, '.veritas/init-plans/review.json');
   const input = {rootDir, hostRoot, planPath, expiresAt: options.expiresAt ?? new Date(Date.now() + 60000).toISOString()};
-  const producer = await prepareKitReview({input, host: options.resolveAuthority ? {resolveAuthority: options.resolveAuthority} : {}});
+  const producer = await prepareKitReview({input, host: options.resolveAuthority ? {resolveAuthority: options.resolveAuthority} : {}, ...(options.survey ? {services: {survey: options.survey}} : {})});
   const contentBeforeServing = JSON.parse(fs.readFileSync(producer.sessionPath));
   if (options.legacy) {
     delete contentBeforeServing.veritas.domain.presentation;
@@ -29,11 +30,11 @@ async function fixture(t, action = 'approve', options = {}) {
   const review = {sessionFile: producer.sessionPath, basisDigest: contentBeforeServing.veritas.domain.basisDigest};
   const server = options.compatibility
     ? await serveGovernanceSurveyReview({hostRoot, sessionPath: review.sessionFile, ...options})
-    : await startReviewConsoleServer({sessionPath: producer.sessionPath, presentation: producer.presentation, producerApply: {binding: producer.binding, apply: producer.apply}});
+    : await (options.startConsole ?? startReviewConsoleServer)({sessionPath: producer.sessionPath, presentation: producer.presentation, producerApply: {binding: producer.binding, apply: producer.apply}});
   t.after(() => server.close());
   const content = JSON.parse(fs.readFileSync(review.sessionFile));
   const snapshot = {...content.snapshot, decisionsByItemName: Object.fromEntries(content.snapshot.items.map(item => [item.metadata.name, item.metadata.name === 'workflow-decision' ? action === 'could-not-confirm' ? action : 'select-proposed' : 'accept-proposed'])), selectedCandidateIdsByItemName: {'workflow-decision': action}, notesByItemName: {'workflow-decision': action === 'request-changes' || action === 'could-not-confirm' ? 'Resolve the owner question' : ''}};
-  const events = buildReviewSessionEvents(snapshot, content.session.metadata.name).filter(event => event.spec.eventType.startsWith('decision-') || event.spec.eventType === 'note-changed');
+  const events = (options.survey?.buildReviewSessionEvents ?? buildReviewSessionEvents)(snapshot, content.session.metadata.name).filter(event => event.spec.eventType.startsWith('decision-') || event.spec.eventType === 'note-changed');
   const get = async () => (await fetch(server.url + 'api/session')).json();
   const post = (route, body) => fetch(server.url + 'api/' + route, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
   const saved = await post('events', {baseRevision: (await get()).revision, events}); assert.equal(saved.status, 200, JSON.stringify(await saved.json()));
@@ -148,4 +149,19 @@ test('an already sealed legacy session without display hints still records its o
   assert.equal((await f.get()).presentation, undefined);
   assert.equal((await f.apply()).status, 200);
   assert.equal(f.receipt().intent.action, 'decline');
+});
+
+// Exercise the supported minimum through the real producer and console, including
+// the refusal path after checkout drift. The default suite exercises Survey 9.
+for (const drift of [false, true]) test(`Survey 8.2 native review ${drift ? 'rejects source drift' : 'records a disposition'}`, async t => {
+  const {survey, startConsole, workbenchUrl} = await import('./survey-min/index.mjs');
+  const packageDir = fs.realpathSync(new URL('./survey-min/node_modules/@kontourai/survey', import.meta.url));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'))).version, '8.2.0');
+  assert.ok(fs.realpathSync(fileURLToPath(workbenchUrl)).startsWith(packageDir + path.sep));
+  const f = await fixture(t, 'approve', {survey, startConsole});
+  if (drift) fs.writeFileSync(path.join(f.rootDir, 'README.md'), 'Changed after review began');
+  assert.equal((await f.apply()).status, drift ? 409 : 200);
+  const receiptPath = path.join(f.hostRoot, f.content.session.metadata.name + '.decision.json');
+  assert.equal(fs.existsSync(receiptPath), !drift);
+  if (!drift) assert.equal(f.receipt().intent.action, 'approve');
 });

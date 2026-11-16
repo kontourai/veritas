@@ -1,0 +1,8 @@
+{
+  "name": "veritas-survey-min-fixture",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@kontourai/survey": "8.2.0"
+  }
+}
