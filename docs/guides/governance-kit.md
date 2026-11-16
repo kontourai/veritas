@@ -180,7 +180,7 @@ This requires a Flow Agents release exposing `kit review` and this kit's declare
 `review` producer. The existing `veritas review` command and
 `serveGovernanceSurveyReview` API remain standalone compatibility interfaces;
 new kit use should select the native host. Standalone review requires the optional
-`@kontourai/survey` peer at version 8.2.0 or later within major 8. The standalone
+`@kontourai/survey` peer at version 8.2.0 or later within major 8 or 9. The standalone
 evaluation engine has no Flow Agents dependency.
 
 Choose a future expiry for the actual review; the command never renews it. Open

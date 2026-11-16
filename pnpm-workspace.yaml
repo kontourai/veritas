@@ -1,3 +1,6 @@
+packages:
+  - 'tests/survey-min'
+
 # Dependency install scripts are blocked by default (pnpm >= 10). Only the
 # packages listed here, at exactly these versions, may run a build script.
 allowBuilds: {}

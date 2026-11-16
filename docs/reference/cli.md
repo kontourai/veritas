@@ -765,7 +765,7 @@ For the artifact fields themselves, see [Artifacts and Schemas](artifacts-and-sc
 
 `veritas review --plan <path> --host-root <private-directory> --expires-at <ISO-date>
 [--root <path>] [--port <0..65535>]` is the standalone compatibility command that creates and serves an optional Survey review
-of a current init plan. It requires Survey `>=8.2.0 <9`, a Git checkout and a mode-0700
+of a current init plan. It requires Survey `>=8.2.0 <10`, a Git checkout and a mode-0700
 host directory outside it. Port 0 selects an available loopback port. SIGINT or
 SIGTERM closes its server. The JSON startup line includes the URL, private session
 file, basis digest and expiry. Its optional public adapter is `@kontourai/veritas/governance-review`. It records

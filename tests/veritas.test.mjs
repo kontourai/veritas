@@ -5421,8 +5421,9 @@ test('package scripts expose a push-safe pre-push command that avoids the full t
   assert.equal(pkg.scripts.prepush, 'npm run test:prepush');
   assert.equal(
     pkg.scripts.test,
-    'node --test tests/*.test.mjs tests/**/*.test.mjs',
+    'node --test tests/*.test.mjs tests/**/*.test.mjs && npm run test:survey-min',
   );
+  assert.equal(pkg.scripts['test:survey-min'], 'node --loader ./tests/survey-min-loader.mjs --test tests/governance-survey-review.test.mjs');
 
   for (const scriptName of ['test:prepush', 'prepush']) {
     assert.doesNotMatch(pkg.scripts[scriptName], /(^|[;&|])\s*npm\s+(run\s+)?test(\s|$)/);
