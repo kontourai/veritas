@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync, execFileSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import Ajv from 'ajv/dist/2020.js';
@@ -859,3 +859,47 @@ test('readiness discloses empty working-tree scope and distinguishes committed b
   assert.match(help.stdout, /--changed-from <ref> --changed-to <ref>/);
   assert.match(help.stdout, /committed changes/i);
 });
+
+for (const scope of ['working-tree', 'branch-diff']) {
+  test(`readiness scans surviving contents while retaining deleted paths in ${scope}`, async (t) => {
+    const rootDir = initCommittedRepo(t, 'veritas-deleted-content-');
+    writeBootstrapStarterKit({ rootDir, projectName: 'deleted-content', evidenceCheck: 'node -e "process.exit(0)"', force: true });
+    mkdirSync(join(rootDir, 'src'), { recursive: true });
+    writeFileSync(join(rootDir, 'src/removed.js'), 'BAD\n');
+    writeFileSync(join(rootDir, 'src/live.js'), 'OK\n');
+    const standardsPath = join(rootDir, '.veritas/repo-standards/default.repo-standards.json');
+    const standards = { version: 1, name: 'deleted-content', rules: [
+      ...[
+        ['forbidden-pattern', { pattern: 'BAD' }],
+        ['required-pattern', { pattern: 'OK' }],
+        ['header-required', { pattern: 'OK' }],
+        ['vocabulary-consistency', { terms: [{ term: 'BAD', prefer: 'OK' }] }],
+      ].map(([kind, match]) => ({ id: kind, kind, classification: 'hard-invariant', enforcementLevel: 'Require', message: 'Check surviving source contents.', match: { files: ['src/**'], ...match } })),
+    ] };
+    writeFileSync(standardsPath, JSON.stringify(standards));
+    commitAll(rootDir, 'Add content policy and source files');
+    unlinkSync(join(rootDir, 'src/removed.js'));
+    writeFileSync(join(rootDir, 'src/live.js'), 'OK changed\n');
+    if (scope === 'branch-diff') commitAll(rootDir, 'Delete obsolete source');
+    const options = scope === 'branch-diff'
+      ? { changedFrom: 'HEAD~1', changedTo: 'HEAD' }
+      : { workingTree: true };
+    const run = (runId) => runMergeReadiness({ rootDir, runId, force: true, ...options }, { rootDir }, [], { appendHistory: false });
+    const result = await run('deleted-content');
+    assert.ok(result.reportResult.record.files.includes('src/removed.js'));
+    for (const rule of standards.rules) {
+      assert.equal(result.reportResult.record.policy_results.find((item) => item.rule_id === rule.id)?.passed, true, rule.id);
+    }
+    assert.equal(result.currentStatus, 'pass');
+
+    // A required artifact still rejects the deletion; content selection must not erase it globally.
+    standards.rules.push({ id: 'keep-source', kind: 'required-artifacts', classification: 'hard-invariant', enforcementLevel: 'Require', message: 'Keep the required source.', match: { artifacts: ['src/removed.js'] } });
+    writeFileSync(standardsPath, JSON.stringify(standards));
+    writeFileSync(join(rootDir, 'src/live.js'), 'BAD\n');
+    const rejected = await run('deleted-content-rejected');
+    const policies = rejected.reportResult.record.policy_results;
+    assert.equal(policies.find((item) => item.rule_id === 'keep-source')?.passed, false);
+    assert.equal(policies.find((item) => item.rule_id === 'forbidden-pattern')?.passed, false);
+    assert.equal(rejected.currentStatus, 'fail');
+  });
+}

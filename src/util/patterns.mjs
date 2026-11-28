@@ -44,14 +44,16 @@ function readAllTrackedFiles(rootDir) {
   }
 }
 
-export function matchedFilesForRule(rule, { rootDir, changedFiles = [], preEdit = false }) {
+export function matchedFilesForRule(rule, { rootDir, changedFiles = [], preEdit = false, classificationScope }) {
   const patterns = rule.match?.files;
   if (!Array.isArray(patterns)) return [];
   const candidates = changedFiles.length > 0 ? changedFiles : readAllTrackedFiles(rootDir);
+  const removedFiles = new Set(classificationScope?.removedFiles ?? []);
   return candidates
     .map((file) => normalizeRepoPath(file, rootDir))
     .filter((file) => matchesPatterns(file, patterns))
-    .filter((file) => !preEdit || existsSync(resolve(rootDir, file)));
+    // Deleted paths remain in report and boundary scope, but have no current content to scan.
+    .filter((file) => !(preEdit || removedFiles.has(file)) || existsSync(resolve(rootDir, file)));
 }
 
 export function readRepoTextFile(rootDir, filePath) {

@@ -81,6 +81,12 @@ The Surface boundary is one-way: Veritas may produce Surface-compatible trust st
 
 ## Evidence And Readiness Lifecycle
 
+Git-confirmed deleted paths remain in readiness scope for Work Area classification,
+Change Boundaries, and required-artifact checks. Content-pattern rules scan surviving
+files only: an absent deleted path has no current content to evaluate. A deleted path
+that exists again in the working tree is scanned normally. Missing explicit inputs
+without Git deletion metadata still raise a read error.
+
 The lifecycle below shows how Veritas turns repo intent and a concrete change into readiness evidence that other systems can inspect.
 
 ```mermaid
